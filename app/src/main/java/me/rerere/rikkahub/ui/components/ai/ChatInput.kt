@@ -229,7 +229,7 @@ fun ChatInput(
             modifier = modifier
                 .imePadding()
                 .navigationBarsPadding()
-                .padding(horizontal = 8.dp)
+                .padding(horizontal = 24.dp)
                 .padding(bottom = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -256,7 +256,9 @@ fun ChatInput(
                 color = Color.Transparent,
             ) {
                 Column(
-                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
+                    // Extra inset so the round buttons stay clear of the capsule's edge; the
+                    // middle (text) column gives up that space instead.
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                     verticalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
                     if (voiceState.phase != VoicePhase.Off) {
@@ -273,19 +275,11 @@ fun ChatInput(
                         MediaFileInputRow(state = state)
                     }
 
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            // Open bar: the row sits at the bottom of the taller box, the way the
-                            // classic input put its buttons under the text area.
-                            .padding(bottom = if (expanded) 6.dp else 0.dp),
-                        verticalAlignment = if (expanded) {
-                            Alignment.Bottom
-                        } else {
-                            Alignment.CenterVertically
-                        },
-                        horizontalArrangement = Arrangement.spacedBy(2.dp),
-                    ) {
+                    // One set of buttons, two layouts: as a pill the buttons flank the one-line
+                    // field, and once the bar opens (focus / attachments / multi-line draft) the
+                    // field takes the full width and the buttons drop to a row underneath it, the
+                    // way the input was laid out before it became a pill.
+                    val leftActions: @Composable () -> Unit = {
                         // Attachments / tools / workspace panel (the bar's "drawer").
                         ActionIconButton(onClick = onMoreClick) {
                             Icon(
@@ -304,16 +298,9 @@ fun ChatInput(
                                 onlyIcon = true,
                             )
                         }
+                    }
 
-                        TextInputRow(
-                            state = state,
-                            completionProviders = completionProviders,
-                            onSendMessage = { sendMessage() },
-                            onFocusChanged = { isFocused = it },
-                            expanded = expanded,
-                            modifier = Modifier.weight(1f),
-                        )
-
+                    val rightActions: @Composable () -> Unit = {
                         // Full-screen editor, moved down from the text field's trailing icon.
                         ActionIconButton(onClick = { isFullScreen = true }) {
                             Icon(
@@ -354,10 +341,45 @@ fun ChatInput(
                                 onLongClick = { sendMessageWithoutAnswer() },
                             )
                         }
+                    }
 
-                        if (loading) {
-                            KeepScreenOn()
+                    if (expanded) {
+                        TextInputRow(
+                            state = state,
+                            completionProviders = completionProviders,
+                            onSendMessage = { sendMessage() },
+                            onFocusChanged = { isFocused = it },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            leftActions()
+                            Spacer(Modifier.weight(1f))
+                            rightActions()
                         }
+                    } else {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            leftActions()
+                            TextInputRow(
+                                state = state,
+                                completionProviders = completionProviders,
+                                onSendMessage = { sendMessage() },
+                                onFocusChanged = { isFocused = it },
+                                modifier = Modifier.weight(1f),
+                            )
+                            rightActions()
+                        }
+                    }
+
+                    if (loading) {
+                        KeepScreenOn()
                     }
                 }
             }
@@ -393,7 +415,7 @@ private fun SendButton(
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
-            .size(30.dp)
+            .size(36.dp)
             .testTag("chat_send_button")
             .clip(CircleShape)
             .combinedClickable(
@@ -403,7 +425,7 @@ private fun SendButton(
             )
     ) {
         Surface(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.size(26.dp),
             shape = CircleShape,
             color = containerColor,
             content = {},
@@ -412,7 +434,7 @@ private fun SendButton(
             imageVector = if (showStop) HugeIcons.Cancel01 else HugeIcons.ArrowUp02,
             contentDescription = stringResource(if (showStop) R.string.stop else R.string.send),
             tint = contentColor,
-            modifier = Modifier.size(18.dp)
+            modifier = Modifier.size(16.dp)
         )
     }
 }
@@ -443,7 +465,6 @@ private fun TextInputRow(
     completionProviders: List<ChatCompletionProvider>,
     onSendMessage: () -> Unit,
     modifier: Modifier = Modifier,
-    expanded: Boolean = false,
     onFocusChanged: (Boolean) -> Unit = {},
 ) {
     val settings = LocalSettings.current
@@ -538,9 +559,6 @@ private fun TextInputRow(
             state = state.textContent,
             modifier = Modifier
                 .fillMaxWidth()
-                // Opening the bar restores the multi-line box: a few empty rows are reserved so the
-                // field reads as a text area rather than a single-line strip.
-                .heightIn(min = if (expanded) 84.dp else 0.dp)
                 .testTag("chat_input")
                 .then(
                     if (multilineDraft) Modifier
