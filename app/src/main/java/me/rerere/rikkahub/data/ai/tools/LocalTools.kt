@@ -1170,26 +1170,32 @@ class LocalTools(
         }
         if (options.contains(LocalToolOption.ModelControl)) {
             // P2-37 — the model roster. The read side is free (settings → text); the three
-            // writes are gated by ToolApprovalDefaults (ALWAYS_ASK) and refused outright in a
-            // headless run via HeadlessToolApprovalPolicy.MODEL_WRITE_TOOL_NAMES.
+            // writes are in the recommended blacklist set (ToolApprovalDefaults.DANGEROUS_TOOLS)
+            // and are refused outright in a headless run via
+            // HeadlessToolApprovalPolicy.MODEL_WRITE_TOOL_NAMES.
             tools.add(me.rerere.rikkahub.data.ai.model.modelListTool(settingsStore))
             tools.add(me.rerere.rikkahub.data.ai.model.modelAddTool(settingsStore, agentRunRepository))
             tools.add(me.rerere.rikkahub.data.ai.model.modelUpdateTool(settingsStore, agentRunRepository))
             tools.add(me.rerere.rikkahub.data.ai.model.modelDeleteTool(settingsStore, agentRunRepository))
         }
-        // Centralised opt-in to needsApproval. Tool factories themselves don't have to know
-        // whether their op is destructive — ToolApprovalDefaults is the single source of
-        // truth, and the GenerationHandler / Telegram/in-app prompt path keys off needsApproval.
+        // Blacklist era: every tool is routed through the runtime approval decision
+        // (ChatService.isToolAutoApproved → ToolApprovalPolicy), so `needsApproval` is true
+        // for every tool — nothing may bypass the decision. Whether a tool actually asks is
+        // decided there, from the user's blacklist plus the non-waivable floor; the default
+        // (empty blacklist) is that nothing asks.
+        //
+        // `ask_user` is the one exception: it is a request for input rather than a capability,
+        // so it runs directly and pauses on its own card / clarify flow.
         // P2-02 - drop the names the assistant opted out of, IN PLACE: workflow_create was
         // built above with a knownToolNamesProvider closure over this very list, so it must
         // not advertise a tool that is no longer on the surface. An empty set mutates nothing.
         LocalToolFilter.removeDisabled(tools, disabledToolNames)
 
         return tools.map { t ->
-            val withApproval = if (ToolApprovalDefaults.requiresApproval(t.name)) {
-                t.copy(needsApproval = { true })
-            } else {
+            val withApproval = if (t.name == ToolApprovalPolicy.ASK_USER_TOOL_NAME) {
                 t
+            } else {
+                t.copy(needsApproval = { true })
             }
             addHumanErrorEnvelopes(appendTopToolExample(withApproval))
         }

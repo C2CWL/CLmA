@@ -44,8 +44,9 @@ object HeadlessToolApprovalPolicy {
      *  - `record_audio` → opens the microphone and writes what it hears to a file
      *  - `speech_to_text` → opens the microphone and ships the audio to a recognizer
      *
-     * Both live in [ToolApprovalDefaults.ALWAYS_ASK], so an ordinary conversation prompts on
-     * every call. A headless one did not — the hole this card closes. This mirrors
+     * Both are in [ToolApprovalDefaults.DANGEROUS_TOOLS] (the recommended blacklist set), so a
+     * user can make an ordinary conversation prompt on every call. A headless one cannot — the
+     * hole this card closes. This mirrors
      * `SubAgentToolSurface.PRIVACY_SENSITIVE_TOOL_NAMES` (T-09), kept as its own copy rather
      * than a shared reference so the two surfaces can diverge on purpose.
      */
@@ -59,7 +60,7 @@ object HeadlessToolApprovalPolicy {
      * belonging to the user *personally*, plus the one write that outlives the run.
      *
      * T-10 stopped at `NO_ALWAYS_ALLOW` and the microphone pair. That left the far larger
-     * [ToolApprovalDefaults.ALWAYS_ASK] group (132 names) auto-approving in headless runs —
+     * [ToolApprovalDefaults.DANGEROUS_TOOLS] group (132 names) auto-approving in headless runs —
      * deliberate for `read_file` / `web_fetch` / `termux_run_command` (a schedule has to be
      * able to do its job), and wrong for these: a run that reads the SMS inbox, the contact
      * list or the call log, fires the camera, re-sends a notification, or posts a message as
@@ -103,9 +104,9 @@ object HeadlessToolApprovalPolicy {
      * `subagent_delete`). Not a privacy surface: these are here because the roster is what every
      * later dispatch resolves against. An unattended cron job must not be able to hand itself a
      * new expert, quietly edit the one the user tuned, or delete it out from under them — there
-     * is nobody to approve the change. In an ordinary conversation each call still prompts (all
-     * three are in [ToolApprovalDefaults.ALWAYS_ASK]), so nothing is subtracted from an attended
-     * run.
+     * is nobody to approve the change. An ordinary conversation can be made to prompt on them
+     * (all three are in [ToolApprovalDefaults.DANGEROUS_TOOLS], the recommended blacklist set), so
+     * refusing them here subtracts nothing a user could not already choose.
      *
      * Second layer: `SubAgentToolSurface` already denies the `subagent_` prefix to any sub-agent
      * surface, so a sub-agent run — itself headless — never even sees these handles. This entry
@@ -123,8 +124,9 @@ object HeadlessToolApprovalPolicy {
      * Not a privacy surface: they are here for the same reason as [EXPERT_WRITE_TOOL_NAMES] —
      * the model roster is what every assistant's picker and every later generation resolves
      * against, and there is nobody present to approve an add, rename or delete in an
-     * unattended run. In an ordinary conversation each call still prompts (all three are in
-     * [ToolApprovalDefaults.ALWAYS_ASK]), so nothing is subtracted from an attended run.
+     * unattended run. An ordinary conversation can be made to prompt on them (all three are in
+     * [ToolApprovalDefaults.DANGEROUS_TOOLS], the recommended blacklist set), so refusing them
+     * here subtracts nothing a user could not already choose.
      *
      * `model_list` is read-only and deliberately absent, so a schedule can still *see* the
      * roster.

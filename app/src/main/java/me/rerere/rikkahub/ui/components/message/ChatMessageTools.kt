@@ -285,14 +285,10 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
                             )
                         }
                     }
-                    // Four-button row: Allow / Always Allow / Allow for this chat / Deny.
-                    // Order matches the Telegram inline-keyboard layout so the user sees the
-                    // same mental model on both surfaces.
-                    // Tools listed in ToolApprovalDefaults.NO_ALWAYS_ALLOW (e.g. mcp_add /
-                    // mcp_update — adding an MCP server is a privilege-escalation surface)
-                    // drop the Always-Allow button so each call requires fresh confirmation.
-                    val allowAlwaysButton = me.rerere.rikkahub.data.ai.tools.ToolApprovalDefaults
-                        .allowsAlwaysAllow(tool.toolName)
+                    // Three-button row: Allow (once) / Allow for this chat / Deny. Order
+                    // matches the Telegram inline-keyboard layout so the user sees the same
+                    // mental model on both surfaces. There is no persistent "always" button:
+                    // the blacklist (Settings → Tool approvals) is where a tool stops asking.
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         FilledTonalIconButton(
                             onClick = {
@@ -312,23 +308,6 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
                                 contentDescription = stringResource(R.string.chat_message_tool_approve),
                                 modifier = Modifier.size(14.dp),
                             )
-                        }
-                        if (allowAlwaysButton) {
-                            FilledTonalIconButton(
-                                onClick = {
-                                    if (inFlight) return@FilledTonalIconButton
-                                    inFlight = true
-                                    onToolApproval(
-                                        tool.toolCallId, true, "",
-                                        me.rerere.rikkahub.service.ChatService.ApprovalScope.Always,
-                                        tool.toolName,
-                                    )
-                                },
-                                enabled = !inFlight,
-                                modifier = Modifier.size(28.dp),
-                            ) {
-                                Text("∞", style = MaterialTheme.typography.labelMedium)
-                            }
                         }
                         FilledTonalIconButton(
                             onClick = {

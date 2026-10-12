@@ -80,10 +80,10 @@ class SubAgentToolSurfaceTest {
             setOf("record_audio", "speech_to_text"),
             SubAgentToolSurface.PRIVACY_SENSITIVE_TOOL_NAMES,
         )
-        // Ground truth: both sit in ALWAYS_ASK (per-call consent) in the non-headless world, and
-        // a headless run is exactly the world that would skip that consent.
+        // Ground truth: both are in the recommended set (they read/ship the user's surroundings),
+        // and a headless run is exactly the world that would skip the consent they deserve.
         SubAgentToolSurface.PRIVACY_SENSITIVE_TOOL_NAMES.forEach { name ->
-            assertTrue(name, name in ToolApprovalDefaults.ALWAYS_ASK)
+            assertTrue(name, name in ToolApprovalDefaults.DANGEROUS_TOOLS)
             assertEquals(name, "tool_not_authorized", SubAgentToolSurface.denialReason(name))
             assertFalse(name, SubAgentToolSurface.safeNames(listOf(name)).contains(name))
         }

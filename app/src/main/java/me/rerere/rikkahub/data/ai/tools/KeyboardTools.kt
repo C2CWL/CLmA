@@ -24,7 +24,7 @@ import me.rerere.rikkahub.data.keyboard.KeyboardApiClient
  * verbatim when that is the cause.
  *
  * Read tools (`keyboard_read_field`, `keyboard_editor_info`) are NOT approval-gated. The
- * side-effecting tools are listed in [ToolApprovalDefaults.ALWAYS_ASK]. None need a
+ * side-effecting tools are listed in [ToolApprovalDefaults.DANGEROUS_TOOLS]. None need a
  * HARDLINE arm: typing a string into a focused field is not shell execution and the
  * keyboard itself refuses password / sensitive fields.
  */

@@ -32,7 +32,7 @@ import me.rerere.ai.ui.UIMessagePart
  * All four mutating tools require approval — flipping any of them changes who's allowed
  * to fire the assistant from outside the app, which is squarely a privilege-escalation
  * surface. None are eligible for "Always Allow" via [ToolApprovalDefaults.NO_ALWAYS_ALLOW]
- * in the current build, but they ARE in [ToolApprovalDefaults.ALWAYS_ASK].
+ * in the current build, but they ARE in [ToolApprovalDefaults.DANGEROUS_TOOLS].
  */
 
 private fun errEnv(error: String, detail: String): List<UIMessagePart> {

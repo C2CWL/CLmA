@@ -1,32 +1,49 @@
 package me.rerere.rikkahub.data.ai.tools
 
 /**
- * Single source of truth for which tools require user approval before they execute.
+ * Static knowledge the runtime approval decision is built on.
  *
- * The matching policy is "tool name in the set" — there's no per-arg gating yet (e.g. you
- * can't say "approve termux but only if the command doesn't start with rm"). When the
- * runtime decides whether to ask the user, it consults this set, then the per-conversation
- * "Allow for this chat" allow-list, then the persistent "Always Allow" allow-list (in that
- * order); the prompt only fires when none of those let it through.
+ * **Blacklist era.** Approval is no longer a fixed "these tools always ask" white-list baked
+ * into the build. Instead every tool is routed through the runtime decision
+ * ([ToolApprovalPolicy.shouldAutoApprove] via `ChatService.isToolAutoApproved`) and the user
+ * says which tools must ask by putting them on a **blacklist** (Settings → Tool approvals).
+ * By default that blacklist is empty: nothing asks. Two things cannot be waived by leaving
+ * them off the blacklist, because they are not the user's to waive at the call site:
  *
- * MCP-relayed tools (any name starting with `mcp__`) are gated separately at the
- * GenerationHandler level — this set covers only locally-defined tools. See
- * [requiresApproval] for the combined logic.
+ *  - [NO_ALWAYS_ALLOW] — a small, hard floor of privilege-escalation surfaces. Never
+ *    auto-approved, cannot be removed from the asking set, no "always" shortcut.
+ *  - Every `mcp__*` relayed tool — an MCP server's surface is opaque to us, so a call to one
+ *    always asks (again, no blanket grant).
  *
- * If you add a new LLM-callable tool, decide:
- *   - Is it side-effecting (writes to disk, runs shell, controls hardware, posts to a
- *     remote service, manipulates UI)? → add it here.
- *   - Is it a pure read (battery, location, screenshot, list-installed-apps)? → leave it
- *     out; the user doesn't need to be interrupted for "what's the brightness".
+ * [DANGEROUS_TOOLS] is the curated list of side-effecting / privacy-reading tools. It no
+ * longer gates anything; it is what the Settings screen offers as a one-tap "add the usual
+ * suspects to the blacklist" starting point, so the safe behaviour is one tap away without
+ * being forced on anyone.
  *
- * Privacy-sensitive READS (contacts, sms, call log) ARE in here: reading PII off the
- * device into an LLM context deserves the same friction as a write does — the secret
- * is leaving the device either way.
+ * The command-level [HardlineCommandGuard] floor is separate and still unconditional: even a
+ * blacklist miss and YOLO cannot push `rm -rf /` through.
  */
 object ToolApprovalDefaults {
 
-    /** Tool names that ALWAYS require approval unless the user has granted an exception. */
-    val ALWAYS_ASK: Set<String> = setOf(
+    /**
+     * The `mcp__` namespace prefix `buildMcpToolName` puts on every relayed MCP tool. Kept
+     * here as well as at the call sites so the approval floor and the hardline floor agree on
+     * what "this is an opaque MCP call" means.
+     */
+    const val MCP_TOOL_PREFIX: String = "mcp__"
+
+    /**
+     * Curated set of tools worth blacklisting: everything side-effecting (writes to disk,
+     * runs shell, controls hardware, posts to a remote service, manipulates UI) plus the
+     * privacy-sensitive READS (contacts, sms, call log) — reading PII off the device into an
+     * LLM context deserves the same friction as a write. NOT a gate any more; the Settings
+     * screen uses it as its "recommended" one-tap selection.
+     *
+     * If you add a new LLM-callable tool, decide: side-effecting or PII-reading → add it here
+     * so users can find it in the picker. A pure read (battery, brightness) does not need an
+     * entry — nothing has to be configured for it to run.
+     */
+    val DANGEROUS_TOOLS: Set<String> = setOf(
         // Shell / arbitrary code execution
         "termux_run_command",
         "termux_session_start",  // opens a persistent interactive shell; the meaningful consent moment
@@ -272,11 +289,14 @@ object ToolApprovalDefaults {
     )
 
     /**
-     * Tools whose approval prompt MUST drop the "Always Allow" button so the user has to
-     * confirm every single call. Reserved for tools that are inherently privilege-escalation
-     * surfaces — adding an MCP server is exactly that, since a hostile server can exfiltrate
-     * anything reachable through the assistant's tool set. Both in-app and Telegram surfaces
-     * read this set when rendering the keyboard.
+     * The hard floor: tools that require a fresh confirmation on **every single call**, no
+     * matter what. Reserved for tools that are inherently privilege-escalation surfaces —
+     * adding an MCP server is exactly that, since a hostile server can exfiltrate anything
+     * reachable through the assistant's tool set.
+     *
+     * These are neither removable from the asking set (leaving them off the blacklist does
+     * not waive them) nor eligible for the per-call shortcut. Only YOLO — and the command
+     * floor [HardlineCommandGuard] — sit above this set.
      */
     val NO_ALWAYS_ALLOW: Set<String> = setOf(
         "mcp_add",
@@ -311,15 +331,11 @@ object ToolApprovalDefaults {
         "grant_directory_access",
     )
 
-    fun allowsAlwaysAllow(toolName: String): Boolean = toolName !in NO_ALWAYS_ALLOW
-
     /**
-     * True if [toolName] requires approval. Local tools are looked up in [ALWAYS_ASK];
-     * MCP-relayed tools (`mcp__*`) are always gated because the MCP server's tool surface
-     * is opaque to us — we can't know which calls are destructive. An MCP server that
-     * exposes purely-read tools costs the user one approval per session via "Always
-     * Allow", which is a fair trade for the floor.
+     * True when [toolName] is on the non-waivable floor: a member of [NO_ALWAYS_ALLOW] or an
+     * opaque relayed MCP tool (`mcp__*`). Such a tool asks on every call regardless of the
+     * user's blacklist; only YOLO (the explicit "stop asking me" switch) sits above it.
      */
-    fun requiresApproval(toolName: String): Boolean =
-        toolName in ALWAYS_ASK || toolName.startsWith("mcp__")
+    fun isHardFloor(toolName: String): Boolean =
+        toolName in NO_ALWAYS_ALLOW || toolName.startsWith(MCP_TOOL_PREFIX)
 }

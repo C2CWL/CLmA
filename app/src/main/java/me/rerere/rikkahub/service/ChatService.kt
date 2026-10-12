@@ -518,16 +518,12 @@ class ChatService(
             description = tool.description ?: "",
             parameters = { tool.inputSchema },
             // MCP servers' tool surfaces are opaque to us - we can't tell read from write or safe
-            // from destructive - so every MCP call is approval-gated by default. The user can
-            // grant Always-Allow per-tool to suppress prompts on a known-safe MCP server. The
-            // HARDLINE floor still applies via HardlineCommandGuard's `mcp__*` branch, which scans
-            // every string arg for shell-content patterns (rm -rf /, mkfs, shutdown, encoded
-            // payloads).
-            needsApproval = {
-                me.rerere.rikkahub.data.ai.tools
-                    .ToolApprovalDefaults.requiresApproval(mcpToolName) ||
-                    tool.needsApproval
-            },
+            // from destructive - so every MCP call asks by default. `mcp__*` is on the
+            // non-waivable floor (ToolApprovalDefaults.isHardFloor), so this holds regardless of
+            // the user's blacklist; only YOLO sits above it. The HARDLINE floor still applies via
+            // HardlineCommandGuard's `mcp__*` branch, which scans every string arg for
+            // shell-content patterns (rm -rf /, mkfs, shutdown, encoded payloads).
+            needsApproval = { true },
             execute = {
                 mcpManager.callTool(serverId, tool.name, it.jsonObject)
             },
@@ -1260,9 +1256,10 @@ class ChatService(
     // ---- 处理工具调用审批 ----
 
     /** Scope of an "approve" decision. Once = this single tool call only. ChatScope =
-     *  every future call of the same tool name in this conversation (until /new). Always =
-     *  every future call of this tool name across the whole app, persisted to disk. */
-    enum class ApprovalScope { Once, ChatScope, Always }
+     *  every future call of the same tool name in this conversation (until /new). There is no
+     *  persistent "always" scope any more — the blacklist (Settings → Tool approvals) is where
+     *  a tool stops asking for good. */
+    enum class ApprovalScope { Once, ChatScope }
 
     fun handleToolApproval(
         conversationId: Uuid,
@@ -1286,22 +1283,14 @@ class ChatService(
         // skips the Pending → handleToolApproval path entirely.
         val priorGenerationJob = session.getJob()
 
-        // Commit the broader-scope grant on a NonCancellable scope BEFORE the cancellable
-        // mutation block. Previous design ran grantAlways() inside the cancellable
-        // appScope.launch — a rapid second tap would cancel the first job and silently
-        // drop the persisted Always-Allow grant; the user thinks they granted it, the next
-        // prompt reappears. NonCancellable + before-launch-completion guarantees the write.
-        if (approved && toolName != null && scope != ApprovalScope.Once) {
+        // Commit the "allow for this chat" grant on a NonCancellable scope BEFORE the
+        // cancellable mutation block: a rapid second tap would otherwise cancel the first job
+        // and silently drop the in-memory grant while the user believes they granted it.
+        if (approved && toolName != null && scope == ApprovalScope.ChatScope) {
             appScope.launch(NonCancellable) {
                 runCatching {
-                    // Smart-cast on the surrounding `if` excluded Once already, so only
-                    // ChatScope and Always remain — the when is exhaustive without else.
-                    when (scope) {
-                        ApprovalScope.ChatScope -> me.rerere.rikkahub.data.ai.tools
-                            .ToolApprovalAllowList.grantForChat(conversationId, toolName)
-                        ApprovalScope.Always -> grantAlwaysScope(conversationId, toolName)
-                        ApprovalScope.Once -> Unit
-                    }
+                    me.rerere.rikkahub.data.ai.tools
+                        .ToolApprovalAllowList.grantForChat(conversationId, toolName)
                 }.onFailure { Log.w(TAG, "approval grant write failed", it) }
             }
         }
@@ -1370,36 +1359,6 @@ class ChatService(
         }
 
         session.setJob(job, cancelPrevious = false)
-    }
-
-    /** Always-scope grant for [toolName]. Workspace tools (the "workspace_" prefix,
-     *  reserved by createWorkspaceTools) must NOT land in the global always-allow set -
-     *  that set is checked in every workspace, so a global grant would silently override
-     *  each workspace's own per-tool toggle. Route those through a per-workspace override
-     *  instead, resolving the workspace the same way createWorkspaceToolsIfReady does
-     *  (via the conversation's assistant). Fall back to a ChatScope-style grant (this
-     *  conversation only) when no workspace is resolvable, never the global set. */
-    private suspend fun grantAlwaysScope(conversationId: Uuid, toolName: String) {
-        if (isWorkspaceToolName(toolName)) {
-            val conversation = conversationRepo.getConversationById(conversationId)
-            val assistant = conversation?.let {
-                AssistantResolver.byId(settingsStore.settingsFlow.first(), it.assistantId)
-            }
-            val workspaceId = assistant?.workspaceId?.toString()
-            val granted = workspaceId != null &&
-                workspaceRepository.setToolApproval(workspaceId, toolName, needsApproval = false)
-            if (!granted) {
-                // Workspace row missing (delete/grant race) or unresolvable - fall back to
-                // the chat-scoped grant so the user's Always tap never silently does nothing.
-                if (workspaceId != null) {
-                    Log.w(TAG, "setToolApproval found no workspace row for '$workspaceId', falling back to chat-scoped grant for '$toolName'")
-                }
-                me.rerere.rikkahub.data.ai.tools
-                    .ToolApprovalAllowList.grantForChat(conversationId, toolName)
-            }
-        } else {
-            toolApprovalPreferences.grantAlways(toolName)
-        }
     }
 
     /** Outcome of [rerunTool]. [Failure.message] is a short, non-localized diagnostic
@@ -1620,10 +1579,8 @@ class ChatService(
                     name = mcpToolName,
                     description = mcpTool.description ?: "",
                     parameters = { mcpTool.inputSchema },
-                    needsApproval = {
-                        me.rerere.rikkahub.data.ai.tools
-                            .ToolApprovalDefaults.requiresApproval(mcpToolName) || mcpTool.needsApproval
-                    },
+                    // mcp__* is on the non-waivable approval floor; see buildMcpTool above.
+                    needsApproval = { true },
                     execute = { mcpManager.callTool(serverId, mcpTool.name, it.jsonObject) },
                 )
             )
@@ -1777,44 +1734,23 @@ class ChatService(
                 systemAddendum = me.rerere.rikkahub.data.ai.tools
                     .ConversationSystemAddendum.get(conversationId),
                 isToolAutoApproved = { toolName ->
-                    // YOLO mode ("I AM STUPID" toggle in Settings → Tool approvals): every
-                    // tool auto-approves. User opted into this explicitly. HARDLINE still
-                    // blocks rm -rf / et al — that check runs BEFORE auto-approval in
-                    // GenerationLoop, so YOLO can't smuggle one through.
-                    //
-                    // Headless conversations (cron-driven) also auto-approve EVERY tool;
-                    // the user pre-authorised the schedule itself at job-creation time
-                    // and there's no UI surface to prompt at fire time.
-                    //
-                    // Otherwise: "Allow for this chat" (in-memory, per-conversation) OR
-                    // "Always Allow" (DataStore-backed, across the whole app). The
-                    // Once-grant lives in the message itself as
-                    // ToolApprovalState.Approved, so it's already handled by the regular
-                    // Pending → Approved transition.
-                    //
-                    // ask_user is a human-input request, NOT a permission gate. It must pause
-                    // for the user whenever there's a surface to ask on (the in-app question card
-                    // or the Telegram clarify flow), so it ignores YOLO and the allow-lists —
-                    // otherwise it auto-executes its placeholder body and returns
-                    // ask_user_unavailable. In a headless run (cron / sub-agent) there's nobody to
-                    // answer, so it still auto-approves there and falls through to that graceful
-                    // envelope instead of hanging the turn.
-                    if (toolName == "ask_user") {
-                        me.rerere.rikkahub.data.ai.tools.HeadlessConversations
-                            .shouldAutoApprove(conversationId)
-                    } else {
-                        toolApprovalPreferences.currentYolo() ||
-                            me.rerere.rikkahub.data.ai.tools.HeadlessConversations
-                                .shouldAutoApprove(conversationId) ||
-                            me.rerere.rikkahub.data.ai.tools.ToolApprovalAllowList
-                                .isAllowedForChat(conversationId, toolName) ||
-                            // The global always-allow set must never auto-approve a
-                            // workspace tool (it is per-app, not per-workspace) - this
-                            // guard also covers any stale "workspace_" entry left over
-                            // from before ToolApprovalPreferences started filtering them.
-                            (!isWorkspaceToolName(toolName) &&
-                                toolApprovalPreferences.current().contains(toolName))
-                    }
+                    // The decision itself is pure — see ToolApprovalPolicy (unit-tested). Here
+                    // we only supply the async inputs: the persisted blacklist + YOLO (one
+                    // DataStore read), whether this conversation is headless, and any in-memory
+                    // "allow for this chat" grant. A tool asks only when it is on the user's
+                    // blacklist or on the non-waivable floor; the default (empty blacklist) is
+                    // that nothing asks. YOLO sits above both; the HARDLINE command floor still
+                    // blocks rm -rf / et al because GenerationLoop checks it before this.
+                    val snapshot = toolApprovalPreferences.snapshot()
+                    me.rerere.rikkahub.data.ai.tools.ToolApprovalPolicy.shouldAutoApprove(
+                        toolName = toolName,
+                        blacklist = snapshot.blacklist,
+                        yolo = snapshot.yolo,
+                        headless = me.rerere.rikkahub.data.ai.tools.HeadlessConversations
+                            .shouldAutoApprove(conversationId),
+                        allowedForChat = me.rerere.rikkahub.data.ai.tools.ToolApprovalAllowList
+                            .isAllowedForChat(conversationId, toolName),
+                    )
                 },
                 onAfterToolExecution = { generatedMessages ->
                     if (messageRange != null || !settings.enableAutoCompaction) {

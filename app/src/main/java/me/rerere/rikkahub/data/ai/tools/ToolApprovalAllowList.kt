@@ -9,9 +9,9 @@ import kotlin.uuid.Uuid
  *   - Starting a fresh in-app chat (ChatService can call clearChat on new conversation)
  *   - App process restart (this object is process-local)
  *
- * Persistent "Always Allow" grants live in [ToolApprovalPreferences] (DataStore-backed) and
- * are queried separately so the user can revoke them from Settings without losing per-chat
- * grants.
+ * There is no persistent counterpart any more: the blacklist in [ToolApprovalPreferences]
+ * (DataStore-backed) is where a tool stops asking for good, so a per-chat grant is the only
+ * shortcut, and it dies with the conversation.
  */
 object ToolApprovalAllowList {
 

@@ -31,7 +31,6 @@ import kotlin.uuid.Uuid
 const val APPROVAL_CB_PREFIX: String = "apv:"
 const val APPROVAL_CB_ONCE: String = "1"
 const val APPROVAL_CB_CHAT: String = "2"
-const val APPROVAL_CB_ALWAYS: String = "3"
 const val APPROVAL_CB_DENY: String = "4"
 
 /** Inline-keyboard prefix for an interactive ask_user (clarify) question. callback_data is
@@ -111,31 +110,19 @@ internal object ProviderPickRegistry {
 }
 
 /**
- * Build the tool-approval inline keyboard. Two rows:
- *  - Row 1: ✅ Allow (always) + ∞ Always Allow (only when ToolApprovalDefaults
- *    permits — privilege-escalation surfaces like mcp_add and skill_install_* opt out
- *    of the always-allow path).
- *  - Row 2: 💬 Allow for this chat + ❌ Deny.
+ * Build the tool-approval inline keyboard. One row:
+ *  - ✅ Allow (this call) + 💬 Allow for this chat + ❌ Deny.
+ *
+ * There is no persistent "always" button any more: a tool stops asking for good by being
+ * taken off the blacklist in Settings → Tool approvals, not from a chat prompt.
  */
-internal fun buildApprovalKeyboard(toolCallId: String, toolName: String? = null): JsonObject = buildJsonObject {
-    val allowAlways = toolName == null ||
-        me.rerere.rikkahub.data.ai.tools.ToolApprovalDefaults.allowsAlwaysAllow(toolName)
+internal fun buildApprovalKeyboard(toolCallId: String, @Suppress("UNUSED_PARAMETER") toolName: String? = null): JsonObject = buildJsonObject {
     put("inline_keyboard", buildJsonArray {
-        // Row 1: positive scopes
         addJsonArray {
             addJsonObject {
                 put("text", "✅ Allow")
                 put("callback_data", "$APPROVAL_CB_PREFIX${APPROVAL_CB_ONCE}:$toolCallId")
             }
-            if (allowAlways) {
-                addJsonObject {
-                    put("text", "∞ Always Allow")
-                    put("callback_data", "$APPROVAL_CB_PREFIX${APPROVAL_CB_ALWAYS}:$toolCallId")
-                }
-            }
-        }
-        // Row 2: chat-scope + deny
-        addJsonArray {
             addJsonObject {
                 put("text", "💬 Allow for this chat")
                 put("callback_data", "$APPROVAL_CB_PREFIX${APPROVAL_CB_CHAT}:$toolCallId")

@@ -27,7 +27,7 @@ import me.rerere.rikkahub.workflow.trigger.TriggerRegistry
  * action tools actually exist on the assistant before persistence.
  *
  * Approval semantics: workflow_create / workflow_update / workflow_delete /
- * workflow_set_enabled / workflow_run are all in ToolApprovalDefaults.ALWAYS_ASK with the
+ * workflow_set_enabled / workflow_run are all in ToolApprovalDefaults.DANGEROUS_TOOLS with the
  * approval prompt rendered by [WorkflowApprovalRenderer] (so the user sees readable
  * "Create workflow X — when WiFi connects, run …" instead of raw JSON). workflow_list
  * and workflow_get are read-only — no approval needed.

@@ -13,8 +13,8 @@ import kotlinx.coroutines.flow.map
 private const val TAG = "ToolApprovalPreferences"
 
 /** Workspace tools (created by createWorkspaceTools) are per-workspace, never
- *  per-app, so this prefix must never be granted or read from the global
- *  always-allow set. */
+ *  per-app, so this prefix must never be written to or read from the global
+ *  blacklist. */
 private const val WORKSPACE_TOOL_PREFIX = "workspace_"
 
 private val Context.toolApprovalDataStore by preferencesDataStore(name = "tool_approval")
@@ -25,24 +25,39 @@ private val Context.toolApprovalDataStore by preferencesDataStore(name = "tool_a
 internal fun isWorkspaceToolName(name: String): Boolean = name.startsWith(WORKSPACE_TOOL_PREFIX)
 
 /** Splits [stored] into (kept, removed) where removed is every workspace_-prefixed
- *  entry. Pure - backs both the read-time filter and the one-shot migration below. */
+ *  entry. Pure - backs the read-time filter that keeps workspace tools out of the
+ *  global blacklist. */
 internal fun migrateWorkspaceToolsFrom(stored: Set<String>): Pair<Set<String>, Set<String>> {
     val removed = stored.filterTo(mutableSetOf(), ::isWorkspaceToolName)
     return (stored - removed) to removed
 }
 
 /**
- * Persistent tool-approval prefs. Two pieces:
+ * The approval decision's persisted inputs, read in one go so a single tool call does not pay
+ * two DataStore round-trips.
  *
- * 1. **"Always Allow" allow-list** — per-tool grants that survive app restart until the
- *    user revokes them from Settings → Tool approvals. The HARDLINE floor still applies
- *    even with Always Allow granted.
+ * @property blacklist tools that require a fresh confirmation before running. Empty by default:
+ *   nothing asks until the user says so.
+ * @property yolo the "I AM STUPID" blanket consent toggle.
+ */
+data class ToolApprovalSnapshot(
+    val blacklist: Set<String> = emptySet(),
+    val yolo: Boolean = false,
+)
+
+/**
+ * Persistent tool-approval prefs, blacklist era. Two pieces:
  *
- * 2. **"I AM STUPID" global auto-approve** — single boolean that, when true, treats every
- *    tool as pre-approved across every conversation and every surface (in-app, Telegram,
- *    cron). HARDLINE STILL APPLIES — there is no override for that. This is the user's
- *    explicit "I trust the agent fully, stop asking me" escape hatch. Surfaced as a
- *    bright-red toggle behind a confirm dialog because it's a live foot-gun.
+ * 1. **Blacklist** — the user's list of tools that must ask before they run. Default empty, so
+ *    out of the box nothing prompts. Configured from Settings → Tool approvals; each entry can
+ *    be removed there to stop it asking. The non-waivable floor
+ *    ([me.rerere.rikkahub.data.ai.tools.ToolApprovalDefaults.isHardFloor]) and every opaque
+ *    `mcp__*` tool ask regardless of this set.
+ *
+ * 2. **"I AM STUPID" global auto-approve** — single boolean that, when true, treats every tool
+ *    as pre-approved across every conversation and every surface (in-app, Telegram, cron),
+ *    including the blacklist and the floor. HARDLINE STILL APPLIES — there is no override for
+ *    that. Surfaced as a bright-red toggle behind a confirm dialog because it's a live foot-gun.
  *
  * The companion in-memory "Allow for this chat" allow-list lives in
  * [me.rerere.rikkahub.data.ai.tools.ToolApprovalAllowList] and resets on /new or app
@@ -50,14 +65,13 @@ internal fun migrateWorkspaceToolsFrom(stored: Set<String>): Pair<Set<String>, S
  */
 class ToolApprovalPreferences(private val context: Context) {
     private val store = context.toolApprovalDataStore
-    private val K_ALWAYS_ALLOW = stringSetPreferencesKey("always_allow_tool_names")
+    private val K_BLACKLIST = stringSetPreferencesKey("tool_blacklist")
     private val K_GLOBAL_YOLO = booleanPreferencesKey("global_auto_approve_yolo")
 
-    // Filtered on every read: a stale workspace_-prefixed entry (from before this
-    // filtering existed) must never resurface in the settings list or an auto-approve
-    // check, even before the lazy migration below gets a chance to persist the cleanup.
-    val alwaysAllowFlow: Flow<Set<String>> = store.data.map {
-        migrateWorkspaceToolsFrom(it[K_ALWAYS_ALLOW].orEmpty()).first
+    // Filtered on every read: a stale workspace_-prefixed entry must never surface in the
+    // settings list or an approval check, even before any cleanup write happens.
+    val blacklistFlow: Flow<Set<String>> = store.data.map {
+        migrateWorkspaceToolsFrom(it[K_BLACKLIST].orEmpty()).first
     }
 
     /** Live flow of the "I AM STUPID" global auto-approve flag. Default false. */
@@ -65,52 +79,49 @@ class ToolApprovalPreferences(private val context: Context) {
         it[K_GLOBAL_YOLO] ?: false
     }
 
-    suspend fun current(): Set<String> = migrateAwayWorkspaceTools()
+    suspend fun currentBlacklist(): Set<String> =
+        migrateWorkspaceToolsFrom(store.data.first()[K_BLACKLIST].orEmpty()).first
 
-    /** Snapshot read of the YOLO flag. Used by the per-call auto-approval check. */
+    /** Blacklist + YOLO in one read, for the per-call auto-approval check. */
+    suspend fun snapshot(): ToolApprovalSnapshot {
+        val prefs = store.data.first()
+        return ToolApprovalSnapshot(
+            blacklist = migrateWorkspaceToolsFrom(prefs[K_BLACKLIST].orEmpty()).first,
+            yolo = prefs[K_GLOBAL_YOLO] ?: false,
+        )
+    }
+
+    /** Snapshot read of the YOLO flag alone. */
     suspend fun currentYolo(): Boolean = globalYoloFlow.first()
 
     suspend fun setYolo(enabled: Boolean) {
         store.edit { it[K_GLOBAL_YOLO] = enabled }
     }
 
-    suspend fun grantAlways(toolName: String) {
-        // Workspace tools are per-workspace, not per-app; ChatService routes those
-        // through WorkspaceRepository.setToolApproval instead, so this should never be
-        // called with one. Refuse rather than silently poisoning the global set.
+    /** Put [toolName] on the blacklist ([needsApproval] = true) or take it off. */
+    suspend fun setBlacklisted(toolName: String, needsApproval: Boolean) {
+        // Workspace tools are per-workspace, not per-app; the global blacklist is checked
+        // from every workspace, so a global entry would leak across them. Refuse rather than
+        // silently poisoning the set.
         if (isWorkspaceToolName(toolName)) {
-            Log.w(TAG, "refusing to add workspace tool '$toolName' to the global always-allow set")
+            Log.w(TAG, "refusing to put workspace tool '$toolName' on the global blacklist")
             return
         }
-        store.edit { it[K_ALWAYS_ALLOW] = (it[K_ALWAYS_ALLOW].orEmpty()) + toolName }
-    }
-
-    /** One-shot lazy migration: strips any stale workspace_-prefixed entry out of the
-     *  persisted always-allow set (left over from before this filtering existed) and
-     *  persists the cleanup. Cheap on the steady-state path: only opens a write
-     *  transaction when there is actually something to remove. */
-    private suspend fun migrateAwayWorkspaceTools(): Set<String> {
-        val stored = store.data.first()[K_ALWAYS_ALLOW].orEmpty()
-        val (_, removed) = migrateWorkspaceToolsFrom(stored)
-        if (removed.isEmpty()) return stored
-        // Return the post-edit snapshot, not the pre-edit `stored` read above: a concurrent
-        // grantAlways landing between that read and this edit is persisted by DataStore's
-        // read-modify-write but would otherwise be dropped from this call's return value.
-        val result = store.edit { prefs ->
-            val (cleaned, actuallyRemoved) = migrateWorkspaceToolsFrom(prefs[K_ALWAYS_ALLOW].orEmpty())
-            if (actuallyRemoved.isNotEmpty()) {
-                Log.i(TAG, "removing stale workspace tool grants from always-allow: $actuallyRemoved")
-                prefs[K_ALWAYS_ALLOW] = cleaned
-            }
+        store.edit { prefs ->
+            val current = prefs[K_BLACKLIST].orEmpty()
+            prefs[K_BLACKLIST] = if (needsApproval) current + toolName else current - toolName
         }
-        return migrateWorkspaceToolsFrom(result[K_ALWAYS_ALLOW].orEmpty()).first
     }
 
-    suspend fun revoke(toolName: String) {
-        store.edit { it[K_ALWAYS_ALLOW] = (it[K_ALWAYS_ALLOW].orEmpty()) - toolName }
+    /** Drop every blacklist entry. The floor and `mcp__*` tools still ask. */
+    suspend fun clearBlacklist() {
+        store.edit { it.remove(K_BLACKLIST) }
     }
 
-    suspend fun revokeAll() {
-        store.edit { it.remove(K_ALWAYS_ALLOW) }
+    /** Add every name in [toolNames] (workspace tools filtered out) to the blacklist in one write. */
+    suspend fun addAllToBlacklist(toolNames: Collection<String>) {
+        val clean = toolNames.filterNot(::isWorkspaceToolName).toSet()
+        if (clean.isEmpty()) return
+        store.edit { prefs -> prefs[K_BLACKLIST] = prefs[K_BLACKLIST].orEmpty() + clean }
     }
 }

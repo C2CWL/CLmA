@@ -25,8 +25,9 @@ import me.rerere.rikkahub.data.files.SkillManager
  *   - data: optional, JSON string passed as the first arg to the JS function
  *   - secret_key: optional, name of a stored secret to pass as the second JS arg (skill API keys)
  *
- * Approval: ALWAYS_ASK — JS skill code can issue arbitrary network requests on behalf of
- * the user. The user reviews each invocation. Eligible for "Always allow" once trusted.
+ * Approval: blacklistable — JS skill code can issue arbitrary network requests on behalf of
+ * the user, so it ships in the recommended blacklist set (ToolApprovalDefaults.DANGEROUS_TOOLS)
+ * and asks whenever the user has it blacklisted.
  *
  * Returns either a single text part with the JS skill's `result` field, an image part if
  * the skill returned base64 image data, or both. Webview returns are rendered as a Text

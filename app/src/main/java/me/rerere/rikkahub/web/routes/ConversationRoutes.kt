@@ -362,10 +362,10 @@ fun Route.conversationRoutes(
         post("/{id}/tool-approval") {
             val uuid = call.parameters["id"].toUuid("conversation id")
             val request = call.receive<ToolApprovalRequest>()
-            // Resolve the scope string to the enum. Default "once" preserves backwards
-            // compatibility with web clients that don't know about the broader scopes.
+            // Resolve the scope string to the enum. "chat" grants the in-memory per-conversation
+            // allow; anything else (including a legacy "always", which no longer exists — the
+            // blacklist is where a tool stops asking) falls back to "once".
             val scope = when (request.scope?.lowercase()) {
-                "always" -> me.rerere.rikkahub.service.ChatService.ApprovalScope.Always
                 "chat" -> me.rerere.rikkahub.service.ChatService.ApprovalScope.ChatScope
                 else -> me.rerere.rikkahub.service.ChatService.ApprovalScope.Once
             }

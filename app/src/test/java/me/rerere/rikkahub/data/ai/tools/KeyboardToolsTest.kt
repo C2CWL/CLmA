@@ -128,13 +128,13 @@ class KeyboardToolsTest {
     }
 
     @Test
-    fun `ToolApprovalDefaults gates exactly the six side-effecting keyboard tools`() {
+    fun `ToolApprovalDefaults lists the six side-effecting keyboard tools as recommended-to-blacklist`() {
         val gated = setOf(
             "keyboard_type", "keyboard_press_key", "keyboard_delete",
             "keyboard_clear", "keyboard_set_cursor", "keyboard_select_range",
         )
-        gated.forEach { assertTrue("$it must be in ALWAYS_ASK", ToolApprovalDefaults.requiresApproval(it)) }
-        assertFalse(ToolApprovalDefaults.requiresApproval("keyboard_read_field"))
-        assertFalse(ToolApprovalDefaults.requiresApproval("keyboard_editor_info"))
+        gated.forEach { assertTrue("$it should be in DANGEROUS_TOOLS", it in ToolApprovalDefaults.DANGEROUS_TOOLS) }
+        assertFalse("keyboard_read_field" in ToolApprovalDefaults.DANGEROUS_TOOLS)
+        assertFalse("keyboard_editor_info" in ToolApprovalDefaults.DANGEROUS_TOOLS)
     }
 }

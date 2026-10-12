@@ -640,11 +640,11 @@ class GenerationLoop(
         // result. ChatService uses this to reassert the foreground service before a background
         // continuation opens a new socket.
         onBeforeModelRequest: suspend () -> Unit = {},
-        // Returns true when the user has pre-approved [toolName] for this turn (e.g.
-        // "Allow for this chat" or "Always Allow" granted earlier). When true, the loop
-        // below skips the Pending flip and lets the tool execute. ChatService injects the
-        // closure that reads ToolApprovalAllowList + ToolApprovalPreferences. Default
-        // returns false so callers that don't care still get vanilla approval gating.
+        // Returns true when the loop may run [toolName] without flipping it to Pending.
+        // ChatService injects a closure over the user's blacklist + the YOLO toggle + the
+        // non-waivable floor + the in-memory "allow for this chat" grants (see
+        // ToolApprovalPolicy). Default returns false so callers that don't care still get
+        // vanilla approval gating.
         isToolAutoApproved: suspend (toolName: String) -> Boolean = { false },
         // Optional per-call addendum appended to the system prompt. Used by surfaces that
         // need the model to know runtime context (e.g. "you're talking via Telegram, the

@@ -1867,7 +1867,6 @@ class TelegramBotService : Service() {
             val (approved, scope, label) = when (scopeChar) {
                 APPROVAL_CB_ONCE -> Triple(true, ChatService.ApprovalScope.Once, "✅ Approved (once)")
                 APPROVAL_CB_CHAT -> Triple(true, ChatService.ApprovalScope.ChatScope, "💬 Approved (this chat)")
-                APPROVAL_CB_ALWAYS -> Triple(true, ChatService.ApprovalScope.Always, "∞ Approved (always)")
                 APPROVAL_CB_DENY -> Triple(false, ChatService.ApprovalScope.Once, "❌ Denied")
                 else -> {
                     client.answerCallbackQuery(cq.callbackQueryId, "unknown scope")

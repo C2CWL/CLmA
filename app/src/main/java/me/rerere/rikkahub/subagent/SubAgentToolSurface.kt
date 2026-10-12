@@ -41,8 +41,8 @@ import me.rerere.rikkahub.data.ai.tools.ToolApprovalDefaults
  *
  * ## Grounded in code, not in guesswork
  *
- * Every set below is derived from something the app actually does (a `ToolHostActivity` host, an
- * `ALWAYS_ASK` registration, a prefix rule), so it cannot drift out of sync with the tool
+ * Every set below is derived from something the app actually does (a `ToolHostActivity` host, a
+ * `NO_ALWAYS_ALLOW` registration, a prefix rule), so it cannot drift out of sync with the tool
  * implementations the way a hand-maintained "risky tools" list would.
  */
 object SubAgentToolSurface {
@@ -81,8 +81,9 @@ object SubAgentToolSurface {
      *  - `record_audio` → opens the microphone and writes what it hears to a file
      *  - `speech_to_text` → opens the microphone and ships the audio to a recognizer
      *
-     * Both live in [ToolApprovalDefaults.ALWAYS_ASK] (the privacy / hardware-actuation group), so
-     * an ordinary conversation prompts the user on every call. A headless one does not: `ChatService
+     * Both are in [ToolApprovalDefaults.DANGEROUS_TOOLS] (the privacy / hardware-actuation group),
+     * so a user can make an ordinary conversation prompt on every call. A headless one does not:
+     * `ChatService
      * .isToolAutoApproved` blanket-approves every tool in a `HeadlessConversations` run without
      * consulting `NO_ALWAYS_ALLOW`, which is the hole the floor closes at the surface level.
      * Excluding them here means a prompt-injected parent cannot turn its sub-agent into a silent

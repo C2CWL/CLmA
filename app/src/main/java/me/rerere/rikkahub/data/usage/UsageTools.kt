@@ -254,7 +254,7 @@ fun usageGetPricesTool(settingsStore: SettingsStore): Tool = Tool(
 
 /**
  * Write half: replaces the whole table, audits the attempt, and refuses anything that did
- * not pass UsagePriceTable.validate. Gated by ToolApprovalDefaults.ALWAYS_ASK.
+ * not pass UsagePriceTable.validate. Gated by ToolApprovalDefaults.DANGEROUS_TOOLS.
  */
 fun usageSetPricesTool(
     settingsStore: SettingsStore,

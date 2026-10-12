@@ -25,7 +25,7 @@ import java.io.File
  * across the sandbox boundary. For public-storage paths (/sdcard/...) we use a
  * direct file:// URI which the OS handles.
  *
- * Approval-gated (in [me.rerere.rikkahub.data.ai.tools.ToolApprovalDefaults.ALWAYS_ASK])
+ * Approval-gated (in [me.rerere.rikkahub.data.ai.tools.ToolApprovalDefaults.DANGEROUS_TOOLS])
  * because launching arbitrary apps on a user-supplied path is a privilege surface —
  * same reasoning as `launch_app`.
  */

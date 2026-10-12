@@ -31,9 +31,9 @@ data class ToolApprovalRequest(
     val answer: String? = null,
     /**
      * Approval scope. "once" (default) approves only this specific call; "chat" grants
-     * "Allow for this chat" (in-memory until /new); "always" grants the persistent
-     * "Always Allow" written to DataStore. Required when [approved] is true and
-     * [toolName] is provided.
+     * "Allow for this chat" (in-memory until /new). Any other value (including a legacy
+     * "always", which no longer exists — the blacklist in Settings → Tool approvals is where
+     * a tool stops asking for good) falls back to "once".
      */
     val scope: String? = null,
     /** Tool name — required when [scope] != "once" so the persistent grant can key by name. */

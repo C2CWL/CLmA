@@ -49,7 +49,7 @@ import me.rerere.rikkahub.utils.JsonInstant
  *    success or failure, exactly like the price-table tool (P2-11d-3, D10). The row carries the
  *    operation, the expert's id/name and which fields changed — metadata only, never the
  *    definition's prompt text (the ledger stores no content).
- *  - **A write is never unattended.** All three tools are in `ToolApprovalDefaults.ALWAYS_ASK`,
+ *  - **A write is never unattended.** All three tools are in `ToolApprovalDefaults.DANGEROUS_TOOLS`,
  *    so a human confirms each call in an ordinary conversation, and they are in
  *    [HeadlessToolApprovalPolicy]'s refused set, so a cron / workflow / sub-agent run cannot
  *    rewrite the roster behind the user's back. The refusal below is the second layer: even a
