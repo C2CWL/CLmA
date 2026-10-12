@@ -118,4 +118,154 @@ class StreamFirstOutputWatchdogTest {
             .collect { seen += it }
         assertEquals(listOf(7), seen)
     }
+
+    // ---- two-phase form (abortIfSilent): the mid-reply stall -----------------------------------
+
+    @Test
+    fun `a reply that goes quiet after its first element fails with the stall failure`() = runBlocking {
+        var caught: Throwable? = null
+        try {
+            flow<Int> {
+                emit(1)
+                delay(60_000)
+            }.abortIfSilent(
+                firstElementTimeoutMs = 5_000L,
+                interChunkTimeoutMs = 50L,
+                noFirstElement = { IOException("no first element") },
+                stalled = { IOException("stalled") },
+            ).collect { }
+        } catch (e: Throwable) {
+            caught = e
+        }
+        assertTrue("expected an IOException, got $caught", caught is IOException)
+        assertEquals("stalled", caught?.message)
+    }
+
+    @Test
+    fun `a stalled reply cancels its upstream collection`() = runBlocking {
+        var upstreamCancelled = false
+        try {
+            flow<Int> {
+                try {
+                    emit(1)
+                    delay(60_000)
+                } finally {
+                    upstreamCancelled = true
+                }
+            }.abortIfSilent(
+                firstElementTimeoutMs = 5_000L,
+                interChunkTimeoutMs = 50L,
+                noFirstElement = { IOException("no first element") },
+                stalled = { IOException("stalled") },
+            ).collect { }
+        } catch (_: IOException) {
+            // expected
+        }
+        assertTrue("upstream must be cancelled so the stalled socket is released", upstreamCancelled)
+    }
+
+    @Test
+    fun `a slow but alive reply is never aborted`() = runBlocking {
+        val seen = mutableListOf<Int>()
+        flow {
+            repeat(6) {
+                emit(it)
+                delay(40)
+            }
+        }.abortIfSilent(
+            firstElementTimeoutMs = 5_000L,
+            interChunkTimeoutMs = 150L,
+            noFirstElement = { IOException("no first element") },
+            stalled = { IOException("stalled") },
+        ).collect { seen += it }
+        assertEquals(listOf(0, 1, 2, 3, 4, 5), seen)
+    }
+
+    /** The budget is per gap, never a cap on the total reply: three 120ms gaps, budget 200ms. */
+    @Test
+    fun `the stall budget is per gap and not a cap on the whole reply`() = runBlocking {
+        val seen = mutableListOf<Int>()
+        flow {
+            emit(1)
+            delay(120)
+            emit(2)
+            delay(120)
+            emit(3)
+        }.abortIfSilent(
+            firstElementTimeoutMs = 5_000L,
+            interChunkTimeoutMs = 200L,
+            noFirstElement = { IOException("no first element") },
+            stalled = { IOException("stalled") },
+        ).collect { seen += it }
+        assertEquals(listOf(1, 2, 3), seen)
+    }
+
+    @Test
+    fun `stall detection still applies when the first output phase is disabled`() = runBlocking {
+        var caught: Throwable? = null
+        try {
+            flow<Int> {
+                delay(120) // 0 = no budget at all before the first element
+                emit(1)
+                delay(60_000)
+            }.abortIfSilent(
+                firstElementTimeoutMs = 0L,
+                interChunkTimeoutMs = 50L,
+                noFirstElement = { IOException("no first element") },
+                stalled = { IOException("stalled") },
+            ).collect { }
+        } catch (e: Throwable) {
+            caught = e
+        }
+        assertEquals("stalled", caught?.message)
+    }
+
+    @Test
+    fun `a disabled stall budget leaves a quiet reply alone`() = runBlocking {
+        val seen = mutableListOf<Int>()
+        flow {
+            emit(1)
+            delay(150)
+            emit(2)
+        }.abortIfSilent(
+            firstElementTimeoutMs = 50L,
+            interChunkTimeoutMs = 0L,
+            noFirstElement = { IOException("no first element") },
+            stalled = { IOException("stalled") },
+        ).collect { seen += it }
+        assertEquals(listOf(1, 2), seen)
+    }
+
+    @Test
+    fun `a stream that never starts still reports the first element phase`() = runBlocking {
+        var caught: Throwable? = null
+        try {
+            flow<Int> { delay(60_000) }
+                .abortIfSilent(
+                    firstElementTimeoutMs = 50L,
+                    interChunkTimeoutMs = 150L,
+                    noFirstElement = { IOException("no first element") },
+                    stalled = { IOException("stalled") },
+                ).collect { }
+        } catch (e: Throwable) {
+            caught = e
+        }
+        assertEquals("no first element", caught?.message)
+    }
+
+    @Test
+    fun `both phases off passes the stream through unchanged`() = runBlocking {
+        val seen = mutableListOf<Int>()
+        flow {
+            emit(1)
+            delay(100)
+            emit(2)
+        }.abortIfSilent(
+            firstElementTimeoutMs = 0L,
+            interChunkTimeoutMs = 0L,
+            noFirstElement = { IOException("no first element") },
+            stalled = { IOException("stalled") },
+        ).collect { seen += it }
+        assertEquals(listOf(1, 2), seen)
+    }
 }

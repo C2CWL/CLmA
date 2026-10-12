@@ -1091,7 +1091,25 @@ data class NetworkSetting(
      * with no content" report. Kept well above a legitimate long-context prefill.
      */
     val streamFirstOutputTimeoutSeconds: Int = 120,
-)
+    /**
+     * Seconds to wait for the NEXT piece of a streamed reply once it has already started, before
+     * treating it as stalled and recovering (continue the partial reply, or restart it). `0`
+     * disables the watchdog. The first-output watchdog cannot see this case: as soon as the stream
+     * emits anything - including its first reasoning delta - that one is disarmed for good, and a
+     * reply that then goes quiet for minutes leaves the UI counting seconds with nothing to show
+     * for it. This is a per-gap budget, not a cap on the whole reply.
+     */
+    val streamStallTimeoutSeconds: Int = 120,
+) {
+    companion object {
+        /**
+         * Upper bound for both silence watchdogs. Hand-typed values are clamped to this on the way
+         * in, and the settings screen clamps to it too, so the two agree. Ten minutes matches the
+         * shared OkHttp client's readTimeout: waiting longer than that cannot succeed.
+         */
+        const val MAX_WATCHDOG_SECONDS = 600
+    }
+}
 
 @Serializable
 enum class ChatFontFamily {

@@ -49,6 +49,7 @@ import me.rerere.hugeicons.stroke.View
 import me.rerere.hugeicons.stroke.ViewOff
 import me.rerere.rikkahub.BuildConfig
 import me.rerere.rikkahub.R
+import me.rerere.rikkahub.data.datastore.NetworkSetting
 import me.rerere.rikkahub.data.network.toProxyOrNull
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.CardGroup
@@ -64,6 +65,9 @@ import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 private const val PROXY_TEST_URL = "https://www.google.com/generate_204"
+
+/** Digits the watchdog seconds fields accept before flagging the value as out of range. */
+private const val MAX_WATCHDOG_DIGITS = 5
 
 @Composable
 fun SettingPreferencesNetworkPage(vm: SettingVM = koinViewModel()) {
@@ -86,9 +90,6 @@ fun SettingPreferencesNetworkPage(vm: SettingVM = koinViewModel()) {
     var proxyPasswordDraft by remember { mutableStateOf("") }
     var proxyPasswordVisible by remember { mutableStateOf(false) }
     var proxyDialogVisible by remember { mutableStateOf(false) }
-    var firstOutputTimeout by remember(settings.networkSetting.streamFirstOutputTimeoutSeconds) {
-        mutableStateOf(settings.networkSetting.streamFirstOutputTimeoutSeconds.toString())
-    }
     val defaultUserAgent = "RikkaHub-Android/${BuildConfig.VERSION_NAME}"
     val proxyUrlInvalid = proxyUrlDraft.isNotBlank() && proxyUrlDraft.toProxyOrNull() == null
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -291,49 +292,49 @@ fun SettingPreferencesNetworkPage(vm: SettingVM = koinViewModel()) {
                         supportingContent = {
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Text(stringResource(R.string.setting_page_preferences_network_first_output_timeout_desc))
-                                OutlinedTextField(
-                                    value = firstOutputTimeout,
-                                    onValueChange = { value ->
-                                        firstOutputTimeout = value.filter(Char::isDigit).take(3)
-                                        firstOutputTimeout.toIntOrNull()?.let { parsed ->
-                                            val normalized = parsed.coerceIn(0, 600)
-                                            if (normalized != settings.networkSetting.streamFirstOutputTimeoutSeconds) {
-                                                vm.updateSettings { current ->
-                                                    current.copy(
-                                                        networkSetting = current.networkSetting.copy(
-                                                            streamFirstOutputTimeoutSeconds = normalized,
-                                                        ),
-                                                    )
-                                                }
+                                SilentWatchdogSecondsField(
+                                    value = settings.networkSetting.streamFirstOutputTimeoutSeconds,
+                                    label = stringResource(R.string.setting_page_preferences_network_first_output_timeout_input),
+                                    onCommit = { seconds ->
+                                        vm.updateSettings { current ->
+                                            if (current.networkSetting.streamFirstOutputTimeoutSeconds == seconds) {
+                                                current
+                                            } else {
+                                                current.copy(
+                                                    networkSetting = current.networkSetting.copy(
+                                                        streamFirstOutputTimeoutSeconds = seconds,
+                                                    ),
+                                                )
                                             }
                                         }
                                     },
-                                    singleLine = true,
-                                    label = {
-                                        Text(stringResource(R.string.setting_page_preferences_network_first_output_timeout_input))
-                                    },
-                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .onFocusChanged { focusState ->
-                                            if (!focusState.isFocused) {
-                                                val normalized = firstOutputTimeout.toIntOrNull()
-                                                    ?.coerceIn(0, 600)
-                                                    ?: settings.networkSetting.streamFirstOutputTimeoutSeconds
-                                                firstOutputTimeout = normalized.toString()
-                                                vm.updateSettings { current ->
-                                                    if (current.networkSetting.streamFirstOutputTimeoutSeconds == normalized) {
-                                                        current
-                                                    } else {
-                                                        current.copy(
-                                                            networkSetting = current.networkSetting.copy(
-                                                                streamFirstOutputTimeoutSeconds = normalized,
-                                                            ),
-                                                        )
-                                                    }
-                                                }
+                                )
+                            }
+                        },
+                    )
+                    item(
+                        headlineContent = {
+                            Text(stringResource(R.string.setting_page_preferences_network_stall_timeout))
+                        },
+                        supportingContent = {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(stringResource(R.string.setting_page_preferences_network_stall_timeout_desc))
+                                SilentWatchdogSecondsField(
+                                    value = settings.networkSetting.streamStallTimeoutSeconds,
+                                    label = stringResource(R.string.setting_page_preferences_network_first_output_timeout_input),
+                                    onCommit = { seconds ->
+                                        vm.updateSettings { current ->
+                                            if (current.networkSetting.streamStallTimeoutSeconds == seconds) {
+                                                current
+                                            } else {
+                                                current.copy(
+                                                    networkSetting = current.networkSetting.copy(
+                                                        streamStallTimeoutSeconds = seconds,
+                                                    ),
+                                                )
                                             }
-                                        },
+                                        }
+                                    },
                                 )
                             }
                         },
@@ -440,4 +441,51 @@ fun SettingPreferencesNetworkPage(vm: SettingVM = koinViewModel()) {
             }
         }
     }
+}
+
+/**
+ * Seconds field for one of the two stream-silence watchdogs.
+ *
+ * Two things this deliberately does *not* do, because both read as "the setting was not saved":
+ * it never truncates what was typed (`take(3)` turned a typed 1200 into 120 - the default), and it
+ * never silently rewrites an out-of-range value (the old `coerceIn(0, 600)` stored 600 while the
+ * field kept showing 900). Anything outside the range stays on screen, flagged, and snaps back to
+ * the stored value once the field loses focus. Every valid keystroke is committed, so a value typed
+ * and then abandoned by navigating away is still saved.
+ */
+@Composable
+private fun SilentWatchdogSecondsField(
+    value: Int,
+    label: String,
+    onCommit: (Int) -> Unit,
+) {
+    var text by remember(value) { mutableStateOf(value.toString()) }
+    val parsed = text.toIntOrNull()
+    val outOfRange = parsed == null || parsed !in 0..NetworkSetting.MAX_WATCHDOG_SECONDS
+    OutlinedTextField(
+        value = text,
+        onValueChange = { raw ->
+            text = raw.filter(Char::isDigit).take(MAX_WATCHDOG_DIGITS)
+            text.toIntOrNull()
+                ?.takeIf { it in 0..NetworkSetting.MAX_WATCHDOG_SECONDS }
+                ?.let(onCommit)
+        },
+        singleLine = true,
+        isError = outOfRange,
+        label = { Text(label) },
+        supportingText = {
+            Text(
+                stringResource(
+                    R.string.setting_page_preferences_network_seconds_range,
+                    NetworkSetting.MAX_WATCHDOG_SECONDS,
+                )
+            )
+        },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        modifier = Modifier
+            .fillMaxWidth()
+            .onFocusChanged { focusState ->
+                if (!focusState.isFocused) text = value.toString()
+            },
+    )
 }

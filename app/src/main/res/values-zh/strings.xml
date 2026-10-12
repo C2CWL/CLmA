@@ -2312,6 +2312,9 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="setting_page_preferences_network_first_output_timeout">首字节超时</string>
   <string name="setting_page_preferences_network_first_output_timeout_desc">流式回复在此秒数内一个字符都没返回时，视为连接已失效，并换一条新连接重发请求；0 表示关闭该看门狗。请设得比模型最慢的 prefill 更长（长上下文开始响应可能较慢）。</string>
   <string name="setting_page_preferences_network_first_output_timeout_input">秒</string>
+  <string name="setting_page_preferences_network_stall_timeout">流中静默超时</string>
+  <string name="setting_page_preferences_network_stall_timeout_desc">流式回复已经开始后，若连续此秒数没有任何内容返回，视为已卡死：已有部分正文就接着写，否则整段重来。每收到一段内容都会重新计时，所以不会打断「慢但仍在输出」的模型；0 表示关闭该看门狗。</string>
+  <string name="setting_page_preferences_network_seconds_range">最多 %1$d 秒（0 表示关闭）</string>
   <string name="setting_provider_page_test_non_streaming">非流式</string>
   <string name="setting_provider_page_test_streaming">流式</string>
   <string name="setting_provider_page_test_tool_call">工具调用</string>

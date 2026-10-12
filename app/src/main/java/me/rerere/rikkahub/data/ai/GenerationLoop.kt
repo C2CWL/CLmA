@@ -63,6 +63,7 @@ import me.rerere.rikkahub.data.ai.limits.ToolRuntimeLimits
 import me.rerere.rikkahub.data.ai.tools.ToolExecutionRetryPolicy
 import me.rerere.rikkahub.data.ai.tools.buildMemoryTools
 import me.rerere.rikkahub.data.ai.tools.truncateToolResult
+import me.rerere.rikkahub.data.datastore.NetworkSetting
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.datastore.findProvider
 import me.rerere.rikkahub.data.model.Assistant
@@ -83,10 +84,12 @@ private const val GENERATION_STREAM_RETRY_INITIAL_DELAY_MS = 750L
 private const val GENERATION_STREAM_RETRY_MAX_DELAY_MS = 4_000L
 
 /**
- * Upper bound for the first-output watchdog, in seconds. Its only job is to keep a hand-typed
- * setting sane; the value itself is user-configurable (Settings -> Network), defaulting to 120s.
+ * Upper bound for both stream-silence watchdogs, in seconds. Its only job is to keep a hand-typed
+ * setting sane; the values themselves are user-configurable (Settings -> Network), defaulting to
+ * 120s each. Kept in [NetworkSetting] so the settings screen clamps to the same number the
+ * generation loop does.
  */
-private const val STREAM_FIRST_OUTPUT_MAX_SECONDS = 600
+private const val STREAM_SILENCE_MAX_SECONDS = NetworkSetting.MAX_WATCHDOG_SECONDS
 
 /**
  * U3 — how many times a mid-stream break is patched by asking the model to continue from the text
@@ -1560,18 +1563,29 @@ class GenerationLoop(
                     // Stream-idle watchdog: lets the chat say "still working" vs "wedged"
                     // instead of counting seconds with no explanation (see StreamIdleNotifier).
                     val idleNotifier = StreamIdleNotifier()
-                    // First-output watchdog: a socket that is silently dead emits nothing and
-                    // fails nothing, so without this the shared client's 10-minute readTimeout is
-                    // the only thing that ever notices (see abortIfSilentBeforeFirstElement). It
-                    // is armed only when a retry is actually available - otherwise aborting would
-                    // just turn a slow-but-alive reply into a hard failure. 0 disables it.
+                    // Stream-silence watchdog (see abortIfSilent). Two phases, two settings:
+                    //
+                    //  - first element: a socket that is silently dead emits nothing and fails
+                    //    nothing, so without this the shared client's 10-minute readTimeout is the
+                    //    only thing that ever notices. Armed only when a retry is actually
+                    //    available - otherwise aborting would just turn a slow-but-alive reply into
+                    //    a hard failure. 0 disables it.
+                    //  - mid-reply: after the stream has started, a reply can still go quiet for
+                    //    minutes while the socket stays open (a stalled provider, a gateway holding
+                    //    the request, a dead connection the pings don't catch). The idle notifier
+                    //    only *says* "stalled"; this is what actually recovers, by failing the
+                    //    stream into the existing continue / restart path. Armed whenever the user
+                    //    asked for it, because the post-output recovery does not need a retry.
                     val firstOutputTimeoutMs = if (params.maxStreamRetries > 0) {
                         settings.networkSetting.streamFirstOutputTimeoutSeconds
-                            .coerceIn(0, STREAM_FIRST_OUTPUT_MAX_SECONDS)
+                            .coerceIn(0, STREAM_SILENCE_MAX_SECONDS)
                             .toLong() * 1_000L
                     } else {
                         0L
                     }
+                    val stallTimeoutMs = settings.networkSetting.streamStallTimeoutSeconds
+                        .coerceIn(0, STREAM_SILENCE_MAX_SECONDS)
+                        .toLong() * 1_000L
                     // P2-12a - a streamed call is a model round trip exactly like the non-stream
                     // one below, so it carries the same ambient context. It was previously left
                     // unwrapped, which (once the decorator started wrapping `streamText`) would have
@@ -1597,16 +1611,30 @@ class GenerationLoop(
                                         messages = attemptMessages,
                                         params = params
                                     )
-                                }.abortIfSilentBeforeFirstElement(firstOutputTimeoutMs) {
-                                    // A dead socket produces neither bytes nor an error; make it
-                                    // an ordinary transport failure so retryWhen re-issues the
-                                    // request on a fresh connection. Only reached before ANY
-                                    // output, which is exactly when a retry is safe.
-                                    IOException(
-                                        "Model stream produced no output within " +
-                                            "${firstOutputTimeoutMs / 1000}s"
-                                    )
-                                }.onCompletion { cause ->
+                                }.abortIfSilent(
+                                    firstElementTimeoutMs = firstOutputTimeoutMs,
+                                    interChunkTimeoutMs = stallTimeoutMs,
+                                    noFirstElement = {
+                                        // A dead socket produces neither bytes nor an error; make
+                                        // it an ordinary transport failure so retryWhen re-issues
+                                        // the request on a fresh connection. Only reached before
+                                        // ANY output, which is exactly when a retry is safe.
+                                        IOException(
+                                            "Model stream produced no output within " +
+                                                "${firstOutputTimeoutMs / 1000}s"
+                                        )
+                                    },
+                                    stalled = {
+                                        // Reached with the reply already under way: the retry
+                                        // policy refuses to re-run the turn here (that would
+                                        // duplicate visible text), so this failure is what feeds
+                                        // the continue / restart path instead.
+                                        IOException(
+                                            "Model stream went silent for " +
+                                                "${stallTimeoutMs / 1000}s after its first output"
+                                        )
+                                    },
+                                ).onCompletion { cause ->
                                     // Some SSE implementations report an abruptly closed socket through onClosed
                                     // without an exception. Treat a clean close with no chunks at all as a transport
                                     // failure so the retry policy can recover a background continuation. A clean
