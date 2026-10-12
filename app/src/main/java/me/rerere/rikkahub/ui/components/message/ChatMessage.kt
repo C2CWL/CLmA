@@ -335,13 +335,21 @@ private fun MessagePartsBlock(
             }
     }
 
-    // Render parts in original order (group thinking/tool as chain-of-thought)
-    // Key by size + last-part identity to avoid Compose's O(N) list-comparison on every
-    // recomposition. During streaming the list grows one element at a time so size alone is
-    // sufficient to detect a meaningful change; the lastOrNull() hash catches in-place edits
-    // on the tail part (e.g. streaming text appended to the final Text part).
-    val partsKey = parts.size.toString() + (parts.lastOrNull()?.hashCode()?.toString() ?: "")
-    val groupedParts = remember(partsKey) { parts.groupMessageParts() }
+    // Render parts in original order (group thinking/tool as chain-of-thought).
+    //
+    // The grouping is recomputed whenever ANY part changes, not only when the list grows or its
+    // tail changes. Parts mutate in place at positions that are not the tail all the time: a tool
+    // result or approval lands while another tool (or the next round's reasoning) already sits
+    // after it, and a text/reasoning part can still be streaming with a later part appended. A key
+    // built from `size + last.hashCode()` cannot see any of those, so the message kept rendering a
+    // frozen snapshot - tools that never appeared, a reply that stopped mid-sentence, a reasoning
+    // card stuck on "thinking" - until something else happened to change the tail, at which point
+    // everything jumped forward at once.
+    //
+    // `remember(parts)` compares structurally, which is cheap here: these are data classes, and
+    // the bulk of a streaming part is one string whose length differs on every delta, so the
+    // comparison short-circuits without walking the text.
+    val groupedParts = remember(parts) { parts.groupMessageParts() }
     groupedParts.fastForEach { block ->
         when (block) {
             is MessagePartBlock.ThinkingBlock -> {

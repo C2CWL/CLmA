@@ -539,8 +539,9 @@ private fun ExportedChatMessage(
         model?.displayName?.isNotBlank() == true -> model.displayName
         else -> "AI"
     }
-    val partsKey = message.parts.size.toString() + (message.parts.lastOrNull()?.hashCode()?.toString() ?: "")
-    val groupedParts = remember(partsKey) { message.parts.groupMessageParts() }
+    // Key on the parts list itself: a key of `size + last-part hash` misses in-place edits to any
+    // part that is not the tail (see ChatMessage), which renders a stale snapshot of the message.
+    val groupedParts = remember(message.parts) { message.parts.groupMessageParts() }
     val messageContent: @Composable () -> Unit = {
         Column(
             modifier = Modifier

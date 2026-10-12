@@ -183,6 +183,12 @@ class RikkaHubApp : Application() {
         // makes background sub-agents survivable across process death.
         runAgentRunBootRecovery()
 
+        // Close reasoning parts a dead process left open. A stream killed mid-flight (process
+        // reclaimed in the background, an install, a crash) persists its partial message with the
+        // reasoning part still open, and the chat then renders "thinking for N seconds" on that
+        // turn forever - the number keeps climbing. See OrphanedReasoningRecovery.
+        runOrphanedReasoningRecovery()
+
         // Auto-recover from a prior native crash inside a local-runtime JNI lib
         // (LiteRT-LM 0.11.0 has known SIGSEGVs on the GPU/NNAPI backend during
         // inference on Pixel Tensor-G). If we detect one, force the runtime to
@@ -301,6 +307,21 @@ class RikkaHubApp : Application() {
                 get<me.rerere.rikkahub.data.agentrun.AgentRunBootRecovery>().runRecovery()
             }.onFailure {
                 Log.w(TAG, "runAgentRunBootRecovery failed", it)
+            }
+        }
+    }
+
+    /**
+     * Close reasoning parts left open by a process that died mid-stream, so a dead turn stops being
+     * rendered as "still thinking". Best-effort, on IO, off [AppScope], failures swallowed - the
+     * same contract as [runAgentRunBootRecovery].
+     */
+    private fun runOrphanedReasoningRecovery() {
+        get<AppScope>().launch(Dispatchers.IO) {
+            runCatching {
+                get<me.rerere.rikkahub.data.ai.OrphanedReasoningRecovery>().runRecovery()
+            }.onFailure {
+                Log.w(TAG, "runOrphanedReasoningRecovery failed", it)
             }
         }
     }

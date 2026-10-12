@@ -19,6 +19,15 @@ interface MessageNodeDAO {
     @Query("SELECT * FROM message_node WHERE conversation_id = :conversationId ORDER BY node_index ASC")
     suspend fun getNodesOfConversation(conversationId: String): List<MessageNodeEntity>
 
+    /**
+     * Nodes holding a part whose `finishedAt` is still null, i.e. a stream that was cut off before
+     * it could close the part (a killed process). Matches on the serialized marker so the scan
+     * stays an `instr()` over the blob instead of a JSON parse of every row; the caller parses only
+     * the rows this returns. Same trick as [hasFileReference].
+     */
+    @Query("SELECT * FROM message_node WHERE instr(messages, '\"finishedAt\":null') > 0")
+    suspend fun getNodesWithOpenFinishedAt(): List<MessageNodeEntity>
+
     @Query(
         "SELECT * FROM message_node WHERE conversation_id = :conversationId " +
             "ORDER BY node_index ASC LIMIT :limit OFFSET :offset"

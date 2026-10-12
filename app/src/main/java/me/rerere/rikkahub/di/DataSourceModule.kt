@@ -38,6 +38,7 @@ import me.rerere.rikkahub.data.db.fts.MessageFtsManager
 import me.rerere.rikkahub.data.ai.mcp.McpManager
 import me.rerere.rikkahub.data.agentrun.AgentRunBootRecovery
 import me.rerere.rikkahub.data.agentrun.AgentRunRepository
+import me.rerere.rikkahub.data.ai.OrphanedReasoningRecovery
 import me.rerere.rikkahub.data.network.SettingsProxySelector
 import me.rerere.rikkahub.data.network.SettingsProxyAuthenticator
 import me.rerere.rikkahub.data.network.SettingsSocks5Authenticator
@@ -146,6 +147,12 @@ val dataSourceModule = module {
     single { get<AppDatabase>().agentRunDao() }
     single { AgentRunRepository(get()) }
     single { AgentRunBootRecovery(context = get(), repository = get()) }
+    single {
+        OrphanedReasoningRecovery(
+            conversationDAO = get<AppDatabase>().conversationDao(),
+            messageNodeDAO = get<AppDatabase>().messageNodeDao(),
+        )
+    }
 
     single { McpManager(settingsStore = get(), appScope = get(), filesManager = get()) }
 

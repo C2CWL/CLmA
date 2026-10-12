@@ -594,9 +594,10 @@ private fun StatusRow(text: String) {
 @Composable
 private fun MessageSegments(message: UIMessage) {
     val isUser = message.role == MessageRole.USER
-    val partsKey = message.parts.size.toString() +
-        (message.parts.lastOrNull()?.hashCode()?.toString() ?: "")
-    val blocks = remember(partsKey) { message.parts.groupMessageParts() }
+    // Key on the parts list itself: a key of `size + last-part hash` misses in-place edits to any
+    // part that is not the tail (see ChatMessage), which renders a stale snapshot that only
+    // catches up when the tail happens to change.
+    val blocks = remember(message.parts) { message.parts.groupMessageParts() }
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(6.dp),
