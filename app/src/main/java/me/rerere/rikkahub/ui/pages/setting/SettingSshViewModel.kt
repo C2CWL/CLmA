@@ -16,6 +16,7 @@ import me.rerere.rikkahub.data.ai.tools.local.SshAuth
 import me.rerere.rikkahub.data.ai.tools.local.forgetHostKey
 import me.rerere.rikkahub.data.ai.tools.local.isUsable
 import me.rerere.rikkahub.data.ai.tools.local.knownHostsFile
+import me.rerere.rikkahub.data.ai.tools.local.networkRaceSocketFactory
 import me.rerere.rikkahub.data.ai.tools.local.newJSch
 import me.rerere.rikkahub.data.ai.tools.local.openSshSession
 import me.rerere.rikkahub.data.ai.tools.local.wrapConnectError
@@ -39,9 +40,12 @@ data class SshTestResult(
  * tools (`save_ssh_host` / `delete_ssh_host` / `list_ssh_hosts`). This is the first
  * human-facing surface for that data.
  *
- * The connection test calls [openSshSession] + `Session.connect` directly rather than
- * [me.rerere.rikkahub.data.ai.tools.local.execOneShot]: a test is one explicit attempt against
- * one host, so it has no reason to walk every candidate transport the way the exec path does.
+ * The connection test uses [openSshSession] rather than
+ * [me.rerere.rikkahub.data.ai.tools.local.execOneShot] — a test opens no channel and runs no
+ * command — but it deliberately walks the same candidate transports, because otherwise the
+ * page can report a failure for a host the tools reach without trouble (the tools spend their
+ * first candidate on the default route too, then fall back to a physical network; a test
+ * pinned to the default route alone cannot).
  */
 class SettingSshViewModel(
     private val context: Context,
@@ -117,10 +121,16 @@ class SettingSshViewModel(
         _testingName.value = host.name
         _testResult.value = null
         viewModelScope.launch {
-            val result = runCatching { performHandshake(host) }
-                .getOrElse { SshTestResult(false, "connect_failed", it.message) }
-            _testResult.value = host.name to result
-            _testingName.value = null
+            // `finally`, not a trailing assignment: if the scope is cancelled (the user leaves
+            // the page mid-test) the spinner must not be left running forever — the guard above
+            // would then refuse every later test on every host.
+            try {
+                val result = runCatching { performHandshake(host) }
+                    .getOrElse { SshTestResult(false, "connect_failed", it.message) }
+                _testResult.value = host.name to result
+            } finally {
+                _testingName.value = null
+            }
         }
     }
 
@@ -135,26 +145,53 @@ class SettingSshViewModel(
                 return@withContext SshTestResult(false, "no_credentials", null)
             }
             val jsch = newJSch(context)
+            // Same candidate transports the exec path walks, so "test" agrees with
+            // `ssh_exec` / `ssh_exec_saved` on the very same host: a factory pinned to the
+            // default route alone cannot fall back to a physical network when the default
+            // route (an active VPN, adaptive routing, a captive portal) is the broken one, and
+            // the page then reported connect_failed for a host the tools reached fine.
+            val factory = networkRaceSocketFactory(context)
             var session: Session? = null
             try {
-                session = openSshSession(jsch, host.host, host.port, host.user, auth, TEST_TIMEOUT_MS)
-                session.connect(TEST_TIMEOUT_MS)
+                // [openSshSession] performs the connect. Do NOT add a second `Session.connect`
+                // after it: JSch throws "session is already connected" (a JSchException that
+                // reads like a network failure) and the page rendered that as a bogus
+                // "connect_failed" even though the handshake had just succeeded.
+                session = openSshSession(
+                    jsch, host.host, host.port, host.user, auth, TEST_TIMEOUT_MS, factory,
+                )
                 SshTestResult(ok = true)
             } catch (e: Throwable) {
-                val env = wrapConnectError(host.host, e)
-                SshTestResult(
-                    ok = false,
-                    errorCode = env["error"]?.jsonPrimitive?.contentOrNull,
-                    detail = env["raw"]?.jsonPrimitive?.contentOrNull
-                        ?: env["reason"]?.jsonPrimitive?.contentOrNull,
-                )
+                if (factory.winningLabel == null && factory.failures.isNotEmpty()) {
+                    // No transport reached the host at all: report what we tried, the same way
+                    // the exec path does, instead of a bare "connect_failed".
+                    SshTestResult(
+                        ok = false,
+                        errorCode = "tcp_unreachable",
+                        detail = factory.failures.joinToString("; ") { (label, reason) ->
+                            "$label: $reason"
+                        },
+                    )
+                } else {
+                    val env = wrapConnectError(host.host, e)
+                    SshTestResult(
+                        ok = false,
+                        errorCode = env["error"]?.jsonPrimitive?.contentOrNull,
+                        detail = env["raw"]?.jsonPrimitive?.contentOrNull
+                            ?: env["reason"]?.jsonPrimitive?.contentOrNull,
+                    )
+                }
             } finally {
                 runCatching { session?.disconnect() }
             }
         }
 
     private companion object {
-        /** Deliberately short: a settings-page test should fail fast, not hang the sheet. */
-        const val TEST_TIMEOUT_MS = 15_000
+        /**
+         * Deliberately generous — the same ceiling `ssh_exec` uses by default. A test that gives
+         * up sooner than the tool it stands in for would report failures the tool never had: the
+         * first byte through an active VPN can take several seconds longer than over a LAN.
+         */
+        const val TEST_TIMEOUT_MS = 30_000
     }
 }

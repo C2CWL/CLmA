@@ -40,6 +40,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dokar.sonner.ToastType
@@ -144,6 +145,18 @@ fun SettingSshPage(vm: SettingSshViewModel = koinViewModel()) {
                                             },
                                             style = MaterialTheme.typography.bodySmall,
                                         )
+                                        // The failure code alone ("connect_failed") says nothing
+                                        // about why: show the underlying reason the connection
+                                        // threw (timeout, auth, host key, unreachable transport).
+                                        result.detail?.takeIf { !result.ok }?.let { reason ->
+                                            Text(
+                                                text = reason,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                maxLines = 3,
+                                                overflow = TextOverflow.Ellipsis,
+                                            )
+                                        }
                                     }
                                 }
                             },

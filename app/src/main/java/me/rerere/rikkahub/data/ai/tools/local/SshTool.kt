@@ -246,9 +246,11 @@ internal data class SshAuth(
 internal fun SshAuth.isUsable() = !password.isNullOrBlank() || !privateKey.isNullOrBlank()
 
 /**
- * Construct a JSch instance pre-loaded with the app's persistent known_hosts file. New host
- * keys are automatically appended ("StrictHostKeyChecking=accept-new"); changed keys cause
- * the connect to fail (MITM protection).
+ * Construct a JSch instance pre-loaded with the app's persistent known_hosts file.
+ *
+ * Host-key policy is trust-on-first-use, implemented explicitly (see [TofuUserInfo]): a host we
+ * have never seen is accepted and its key recorded, a host whose key changed fails the connect
+ * so the user can decide whether to call `ssh_forget_host_key`.
  */
 internal fun newJSch(context: Context): JSch {
     val jsch = JSch()
@@ -261,6 +263,60 @@ internal fun newJSch(context: Context): JSch {
 }
 
 internal fun knownHostsFile(context: Context): File = File(context.filesDir, "known_hosts")
+
+/**
+ * Answers JSch's host-key and credential prompts without a UI.
+ *
+ * JSch 0.2.21 does NOT implement OpenSSH's `accept-new`. `Session.checkHost` only branches on
+ * the literal values `ask` / `yes` / `no`, so `accept-new` fell through *every* branch: an
+ * unknown host key was neither verified nor stored (which is why the settings page's "known
+ * host keys" list stayed empty no matter how many times a host connected, despite its "a key is
+ * recorded the first time a host is reached" promise) and a *changed* key was accepted in
+ * silence — i.e. there was no trust-on-first-use and no man-in-the-middle protection at all.
+ *
+ * We therefore keep JSch's own `ask` mode and answer the prompts programmatically: "yes" for a
+ * host we have never seen (JSch then persists that key into known_hosts itself) and "no" for a
+ * host whose key changed (JSch then throws "HostKey has been changed", which
+ * [wrapConnectError] surfaces as `host_key_changed` with the `ssh_forget_host_key` hint).
+ */
+private class TofuUserInfo(
+    private val password: String?,
+    private val passphrase: String?,
+) : com.jcraft.jsch.UserInfo {
+    override fun getPassphrase(): String? = passphrase
+
+    override fun getPassword(): String? = password
+
+    override fun promptPassword(message: String?): Boolean = !password.isNullOrBlank()
+
+    override fun promptPassphrase(message: String?): Boolean = !passphrase.isNullOrBlank()
+
+    /**
+     * JSch asks this for an unseen host and for a changed one; only the wording tells them
+     * apart. Accept the former (so the key is recorded — the TOFU half), refuse the latter so a
+     * changed key fails loudly instead of being trusted.
+     */
+    override fun promptYesNo(message: String?): Boolean =
+        !message.orEmpty().contains("IDENTIFICATION HAS CHANGED", ignoreCase = true)
+
+    override fun showMessage(message: String?) {
+        Log.i(TAG_SSH, "jsch: ${message.orEmpty().lineSequence().firstOrNull().orEmpty()}")
+    }
+}
+
+/**
+ * Connect [session] unless it is already up.
+ *
+ * JSch's [Session.connect] throws `JSchException("session is already connected")` when it is
+ * called a second time. That reads like an SSH failure but is a caller mistake, and it has
+ * bitten us: the settings page's connection test called `openSshSession` (which connects) and
+ * then `Session.connect` again, so a perfectly healthy handshake was reported as
+ * `connect_failed`. Every caller goes through here instead, which makes a redundant call
+ * harmless rather than fatal.
+ */
+internal fun connectIfNeeded(session: Session, timeoutMs: Int) {
+    if (!session.isConnected) session.connect(timeoutMs)
+}
 
 /**
  * Open a connected SSH session. Caller MUST call [Session.disconnect] in a finally block.
@@ -292,9 +348,12 @@ internal fun openSshSession(
         session.setHostKeyAlias(host)
     }
     if (!auth.password.isNullOrBlank()) session.setPassword(auth.password)
+    // Trust on first use, without a UI prompt: see [TofuUserInfo]. (Not `accept-new` — JSch
+    // 0.2.21 ignores that value entirely, storing nothing and verifying nothing.)
+    session.setUserInfo(TofuUserInfo(auth.password, auth.passphrase))
     session.setConfig(Properties().apply {
-        // accept-new: trust on first use, fail if a known host's key changes
-        setProperty("StrictHostKeyChecking", "accept-new")
+        // "ask" + [TofuUserInfo] = trust on first use, fail if a known host's key changes.
+        setProperty("StrictHostKeyChecking", "ask")
         setProperty("PreferredAuthentications", "publickey,keyboard-interactive,password")
     })
     // Install a socket factory so JSch's internal sockets get a bounded connect timeout and,
@@ -315,7 +374,7 @@ internal fun openSshSession(
     // upload/download, so setting it here covers every JSch session in the app.
     session.serverAliveInterval = SERVER_ALIVE_INTERVAL_MS
     session.serverAliveCountMax = SERVER_ALIVE_COUNT_MAX
-    session.connect(timeoutMs)
+    connectIfNeeded(session, timeoutMs)
     return session
 }
 
