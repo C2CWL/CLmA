@@ -4,6 +4,7 @@ import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.FlowRow
@@ -867,4 +868,69 @@ fun ModelAbilityTag(model: Model) {
             }
         }
     }
+}
+
+/**
+ * The chat model entry as a half-width card for the attachments sheet's quick-config row. Model
+ * switching used to sit in the input bar; it now lives here and opens the same [ModelListSheet].
+ */
+@Composable
+fun ModelPickerCard(
+    state: ModelListState,
+    onSelect: (Model) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val model = state.currentModel
+
+    Surface(
+        onClick = { state.open() },
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        tonalElevation = 0.dp,
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Box(
+                modifier = Modifier.size(24.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (model != null) {
+                    AutoAIIcon(
+                        name = model.modelId,
+                        modifier = Modifier.size(20.dp),
+                        color = Color.Transparent,
+                    )
+                } else {
+                    Icon(
+                        imageVector = HugeIcons.Brain02,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.chat_page_input_model_label),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = model?.displayName ?: stringResource(R.string.model_list_select_model),
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+
+    ModelListSheet(state = state, onSelect = onSelect)
 }

@@ -26,6 +26,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -34,6 +35,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberBottomSheetState
@@ -126,47 +128,159 @@ fun SearchPickerButton(
         }
     }
 
-    if (showSearchPicker) {
-        ModalBottomSheet(
-            onDismissRequest = { showSearchPicker = false },
-            sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded))
-        ) {
-            var selectingProvider by remember { mutableStateOf(false) }
-            AnimatedContent(
-                targetState = selectingProvider,
-                transitionSpec = {
-                    if (targetState) {
-                        slideInHorizontally { it } + fadeIn() togetherWith
-                            slideOutHorizontally { -it } + fadeOut()
-                    } else {
-                        slideInHorizontally { -it } + fadeIn() togetherWith
-                            slideOutHorizontally { it } + fadeOut()
-                    }
-                },
-                label = "SearchPickerPage"
-            ) { selecting ->
-                if (selecting) {
-                    SearchProviderPicker(
-                        settings = settings,
-                        onUpdateSearchService = { index ->
-                            onUpdateSearchService(index)
-                            selectingProvider = false
-                        },
-                        onBack = { selectingProvider = false }
-                    )
+    SearchPickerSheet(
+        visible = showSearchPicker,
+        onDismiss = { showSearchPicker = false },
+        enableSearch = enableSearch,
+        settings = settings,
+        onUpdateSearchMode = onUpdateSearchMode,
+        onUpdateSearchService = onUpdateSearchService,
+        model = model,
+    )
+}
+
+@Composable
+private fun SearchPickerSheet(
+    visible: Boolean,
+    onDismiss: () -> Unit,
+    enableSearch: Boolean,
+    settings: Settings,
+    onUpdateSearchMode: (SearchMode) -> Unit,
+    onUpdateSearchService: (Int) -> Unit,
+    model: Model?,
+) {
+    if (!visible) return
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberBottomSheetState(
+            initialValue = SheetValue.Hidden,
+            enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)
+        )
+    ) {
+        var selectingProvider by remember { mutableStateOf(false) }
+        AnimatedContent(
+            targetState = selectingProvider,
+            transitionSpec = {
+                if (targetState) {
+                    slideInHorizontally { it } + fadeIn() togetherWith
+                        slideOutHorizontally { -it } + fadeOut()
                 } else {
-                    SearchPicker(
-                        enableSearch = enableSearch,
-                        settings = settings,
-                        onUpdateSearchMode = onUpdateSearchMode,
-                        model = model,
-                        onSelectProvider = { selectingProvider = true },
-                        onDismiss = { showSearchPicker = false }
-                    )
+                    slideInHorizontally { -it } + fadeIn() togetherWith
+                        slideOutHorizontally { it } + fadeOut()
                 }
+            },
+            label = "SearchPickerPage"
+        ) { selecting ->
+            if (selecting) {
+                SearchProviderPicker(
+                    settings = settings,
+                    onUpdateSearchService = { index ->
+                        onUpdateSearchService(index)
+                        selectingProvider = false
+                    },
+                    onBack = { selectingProvider = false }
+                )
+            } else {
+                SearchPicker(
+                    enableSearch = enableSearch,
+                    settings = settings,
+                    onUpdateSearchMode = onUpdateSearchMode,
+                    model = model,
+                    onSelectProvider = { selectingProvider = true },
+                    onDismiss = onDismiss
+                )
             }
         }
     }
+}
+
+/**
+ * The web-search entry as a half-width card for the attachments sheet's quick-config row. Opens the
+ * very same sheet as [SearchPickerButton], which no longer fits in the input bar.
+ */
+@Composable
+fun SearchServiceCard(
+    enableSearch: Boolean,
+    settings: Settings,
+    model: Model?,
+    onUpdateSearchMode: (SearchMode) -> Unit,
+    onUpdateSearchService: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var showSearchPicker by remember { mutableStateOf(false) }
+    val currentService = settings.searchServices.getOrNull(settings.searchServiceSelected)
+    val builtIn = model?.tools?.contains(BuiltInTools.Search) == true
+    val serviceOn = builtIn || (enableSearch && currentService != null)
+
+    Surface(
+        onClick = { showSearchPicker = true },
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        tonalElevation = 0.dp,
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Box(
+                modifier = Modifier.size(24.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                when {
+                    builtIn -> Icon(
+                        imageVector = HugeIcons.AiSearch02,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                    )
+
+                    serviceOn && currentService != null -> AutoAIIcon(
+                        name = currentService.displayName,
+                        modifier = Modifier.size(20.dp),
+                        color = Color.Transparent,
+                    )
+
+                    else -> Icon(
+                        imageVector = HugeIcons.Search01,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.chat_page_input_search_label),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = if (serviceOn) {
+                        currentService?.displayName ?: stringResource(R.string.web_search_enabled)
+                    } else {
+                        stringResource(R.string.chat_page_input_search_off)
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+
+    SearchPickerSheet(
+        visible = showSearchPicker,
+        onDismiss = { showSearchPicker = false },
+        enableSearch = enableSearch,
+        settings = settings,
+        onUpdateSearchMode = onUpdateSearchMode,
+        onUpdateSearchService = onUpdateSearchService,
+        model = model,
+    )
 }
 
 @Composable

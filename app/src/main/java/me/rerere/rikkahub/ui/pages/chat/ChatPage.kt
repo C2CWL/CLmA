@@ -3,15 +3,18 @@ package me.rerere.rikkahub.ui.pages.chat
 import android.net.Uri
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -35,7 +38,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
@@ -46,7 +51,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dokar.sonner.ToastType
+import dev.chrisbanes.haze.HazeInput
 import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.glass.GlassDefaults
+import dev.chrisbanes.haze.glass.GlassStyle
+import dev.chrisbanes.haze.glass.OpticalSizeValue
+import dev.chrisbanes.haze.glass.hazeGlass
+import dev.chrisbanes.haze.glass.material3.Material3
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.Job
@@ -363,6 +374,45 @@ private fun ChatPageContent(
         }.orEmpty()
     }
 
+    // Model / search-provider switching moved out of the input bar and into the attachments panel
+    // (the bar's "+"), so the same handlers now feed that sheet instead.
+    val onUpdateSearchMode: (SearchMode) -> Unit = { mode ->
+        val current = setting.getCurrentAssistant()
+        val model = setting.getCurrentChatModel()
+        vm.updateSettings(
+            setting.copy(
+                assistants = setting.assistants.map { assistant ->
+                    if (assistant.id == current.id) {
+                        assistant.copy(enableWebSearch = mode == SearchMode.LOCAL)
+                    } else {
+                        assistant
+                    }
+                },
+                providers = if (model == null) {
+                    setting.providers
+                } else {
+                    setting.providers.map { provider ->
+                        provider.editModel(
+                            model.copy(
+                                tools = if (mode == SearchMode.BUILT_IN) {
+                                    model.tools + BuiltInTools.Search
+                                } else {
+                                    model.tools - BuiltInTools.Search
+                                }
+                            )
+                        )
+                    }
+                },
+            )
+        )
+    }
+    val onUpdateChatModel: (Model) -> Unit = { model ->
+        vm.setChatModel(assistant = setting.getCurrentAssistant(), model = model)
+    }
+    val onUpdateSearchService: (Int) -> Unit = { index ->
+        vm.updateSettings(setting.copy(searchServiceSelected = index))
+    }
+
     TTSAutoPlay(vm = vm, setting = setting, conversation = conversation)
 
     Surface(
@@ -377,6 +427,7 @@ private fun ChatPageContent(
                     conversation = conversation,
                     bigScreen = bigScreen,
                     drawerState = drawerState,
+                    hazeState = hazeState,
                     previewMode = previewMode,
                     onNewChat = {
                         navigateToChatPage(navController)
@@ -405,37 +456,6 @@ private fun ChatPageContent(
                     completionProviders = completionProviders,
                     onCancelClick = {
                         vm.stopGeneration()
-                    },
-                    enableSearch = enableWebSearch,
-                    onUpdateSearchMode = { mode ->
-                        val current = setting.getCurrentAssistant()
-                        val model = setting.getCurrentChatModel()
-                        vm.updateSettings(
-                            setting.copy(
-                                assistants = setting.assistants.map { assistant ->
-                                    if (assistant.id == current.id) {
-                                        assistant.copy(enableWebSearch = mode == SearchMode.LOCAL)
-                                    } else {
-                                        assistant
-                                    }
-                                },
-                                providers = if (model == null) {
-                                    setting.providers
-                                } else {
-                                    setting.providers.map { provider ->
-                                        provider.editModel(
-                                            model.copy(
-                                                tools = if (mode == SearchMode.BUILT_IN) {
-                                                    model.tools + BuiltInTools.Search
-                                                } else {
-                                                    model.tools - BuiltInTools.Search
-                                                }
-                                            )
-                                        )
-                                    }
-                                },
-                            )
-                        )
                     },
                     onSendClick = {
                         if (currentChatModel == null) {
@@ -477,9 +497,6 @@ private fun ChatPageContent(
                         }
                         inputState.clearInput()
                     },
-                    onUpdateChatModel = {
-                        vm.setChatModel(assistant = setting.getCurrentAssistant(), model = it)
-                    },
                     onUpdateAssistant = {
                         vm.updateSettings(
                             setting.copy(
@@ -490,13 +507,6 @@ private fun ChatPageContent(
                                         assistant
                                     }
                                 }
-                            )
-                        )
-                    },
-                    onUpdateSearchService = { index ->
-                        vm.updateSettings(
-                            setting.copy(
-                                searchServiceSelected = index
                             )
                         )
                     },
@@ -596,6 +606,10 @@ private fun ChatPageContent(
                 assistant = assistant,
                 vm = vm,
                 attachmentPickerActions = attachmentPickerActions,
+                enableSearch = enableWebSearch,
+                onUpdateSearchMode = onUpdateSearchMode,
+                onUpdateChatModel = onUpdateChatModel,
+                onUpdateSearchService = onUpdateSearchService,
                 onStartVoiceMode = onStartVoiceMode,
                 onDismiss = { showFilesSheet = false },
             )
@@ -611,6 +625,10 @@ private fun ChatFilesPickerSheet(
     assistant: Assistant,
     vm: ChatVM,
     attachmentPickerActions: ChatAttachmentPickerActions,
+    enableSearch: Boolean,
+    onUpdateSearchMode: (SearchMode) -> Unit,
+    onUpdateChatModel: (Model) -> Unit,
+    onUpdateSearchService: (Int) -> Unit,
     onStartVoiceMode: () -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -639,6 +657,10 @@ private fun ChatFilesPickerSheet(
             state = inputState,
             assistant = assistant,
             mcpManager = vm.mcpManager,
+            enableSearch = enableSearch,
+            onUpdateSearchMode = onUpdateSearchMode,
+            onUpdateChatModel = onUpdateChatModel,
+            onUpdateSearchService = onUpdateSearchService,
             onCompressContext = { additionalPrompt, targetTokens, keepRecentMessages ->
                 vm.handleCompressContext(additionalPrompt, targetTokens, keepRecentMessages)
             },
@@ -689,6 +711,7 @@ private fun TopBar(
     settings: Settings,
     conversation: Conversation,
     drawerState: DrawerState,
+    hazeState: HazeState,
     bigScreen: Boolean,
     previewMode: Boolean,
     onClickMenu: () -> Unit,
@@ -704,10 +727,11 @@ private fun TopBar(
         colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
         navigationIcon = {
             if (!bigScreen) {
-                IconButton(
+                GlassTopBarButton(
                     onClick = {
                         scope.launch { drawerState.open() }
-                    }
+                    },
+                    hazeState = hazeState,
                 ) {
                     Icon(HugeIcons.Menu03, stringResource(R.string.menu))
                 }
@@ -750,21 +774,69 @@ private fun TopBar(
             }
         },
         actions = {
-            IconButton(
+            GlassTopBarButton(
                 onClick = {
                     onClickMenu()
-                }
+                },
+                hazeState = hazeState,
             ) {
                 Icon(if (previewMode) HugeIcons.Cancel01 else HugeIcons.LeftToRightListBullet, stringResource(R.string.accessibility_chat_options))
             }
 
-            IconButton(
+            GlassTopBarButton(
                 onClick = {
                     onNewChat()
-                }
+                },
+                hazeState = hazeState,
             ) {
                 Icon(HugeIcons.MessageAdd01, stringResource(R.string.chat_page_new_message))
             }
         },
     )
+}
+
+/**
+ * The title bar keeps its transparent background (the conversation shows through); only the three
+ * buttons get a glass disc each, so they stay legible over whatever scrolls behind them.
+ */
+@Composable
+private fun GlassTopBarButton(
+    onClick: () -> Unit,
+    hazeState: HazeState,
+    content: @Composable () -> Unit,
+) {
+    val base = MaterialTheme.colorScheme.surfaceContainer
+    val glassStyle = GlassStyle.Material3(
+        containerColor = base,
+        tint = base.copy(alpha = 0.30f),
+    ) {
+        optics(
+            GlassDefaults.optics.copy(
+                blurRadius = OpticalSizeValue.Fixed(12.dp),
+                depth = OpticalSizeValue.Fixed(0.4f),
+            )
+        )
+        shape(CircleShape)
+    }
+    Surface(
+        onClick = onClick,
+        modifier = Modifier
+            .padding(horizontal = 4.dp)
+            .size(40.dp)
+            .clip(CircleShape)
+            .hazeGlass(
+                input = HazeInput.Sources(hazeState),
+                style = glassStyle,
+            ),
+        shape = CircleShape,
+        color = Color.Transparent,
+        tonalElevation = 0.dp,
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) {
+            content()
+        }
+    }
 }
