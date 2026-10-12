@@ -1,5 +1,6 @@
 package me.rerere.rikkahub.ui.pages.setting
 
+import me.rerere.rikkahub.R
 import me.rerere.rikkahub.Screen
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -42,5 +43,39 @@ class SettingsSearchIndexTest {
         assertFalse(withoutDeveloper.any { it.route == Screen.Developer })
         assertTrue(withDeveloper.any { it.route == Screen.Developer })
         assertEquals(withoutDeveloper.size + 1, withDeveloper.size)
+    }
+
+    @Test
+    fun `every row belongs to one of the seven hub groups`() {
+        val groups = setOf(
+            R.string.setting_page_group_appearance,
+            R.string.setting_page_group_models,
+            R.string.setting_page_group_assistant,
+            R.string.setting_page_group_device,
+            R.string.setting_page_group_connections,
+            R.string.setting_page_group_data,
+            R.string.setting_page_group_about,
+            // The developer-only row reuses the settings page title as its group.
+            R.string.settings,
+        )
+        settingsSearchIndex(developerMode = true).forEach { entry ->
+            assertTrue("unexpected group for ${entry.route}", groups.contains(entry.groupRes))
+        }
+    }
+
+    @Test
+    fun `search-only aliases are non-zero`() {
+        settingsSearchIndex(developerMode = false).forEach { entry ->
+            entry.altTitles.forEach { alias ->
+                assertTrue("alias must be non-zero for ${entry.route}", alias != 0)
+            }
+        }
+    }
+
+    @Test
+    fun `the theme page answers to the colour-mode alias`() {
+        val entry = settingsSearchIndex(developerMode = false)
+            .single { it.route == Screen.SettingPreferencesTheme }
+        assertTrue(entry.altTitles.contains(R.string.setting_page_color_mode))
     }
 }

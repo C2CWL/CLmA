@@ -591,9 +591,7 @@ private fun ToolPaletteRow(
  * (the same reason [LocalToolGroups.all] is explicit). The resources are the ones the assistant's
  * own local-tools page uses, so the two screens name a group identically.
  */
-@Composable
-private fun localToolTitle(option: LocalToolOption): String = stringResource(
-    when (option) {
+internal fun localToolTitleRes(option: LocalToolOption): Int = when (option) {
         LocalToolOption.JavascriptEngine -> R.string.assistant_page_local_tools_javascript_engine_title
         LocalToolOption.TimeInfo -> R.string.assistant_page_local_tools_time_info_title
         LocalToolOption.Clipboard -> R.string.assistant_page_local_tools_clipboard_title
@@ -655,8 +653,7 @@ private fun localToolTitle(option: LocalToolOption): String = stringResource(
         LocalToolOption.AppLauncher -> R.string.assistant_page_local_tools_app_launcher_title
         LocalToolOption.Termux -> R.string.assistant_page_local_tools_termux_title
         LocalToolOption.KeyboardControl -> R.string.assistant_page_local_tools_keyboard_title
-    },
-)
+}
 
 /**
  * D10b - one titled card per concern in the edit sheet (identity, model, prompt, surface), so a
@@ -912,7 +909,7 @@ private fun AgentDefinitionEditSheet(
                                 hits.forEach { hit ->
                                     ToolPaletteRow(
                                         hit = hit,
-                                        groupTitle = localToolTitle(hit.group),
+                                        groupTitle = stringResource(localToolTitleRes(hit.group)),
                                         groupEnabled = effectiveGroups.contains(hit.group),
                                         disabled = draft.disabledLocalTools.orEmpty().contains(hit.name),
                                         onDisabledChange = { disabled ->
@@ -946,7 +943,7 @@ private fun AgentDefinitionEditSheet(
                     ) {
                         LocalToolGroups.all.forEach { option ->
                             PickerRow(
-                                label = localToolTitle(option),
+                                label = stringResource(localToolTitleRes(option)),
                                 checked = draft.localTools.orEmpty().contains(option),
                                 onCheckedChange = { onEdit(draft.toggleLocalTool(option, it)) },
                             )

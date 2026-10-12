@@ -286,28 +286,6 @@ fun SettingPreferencesNetworkPage(vm: SettingVM = koinViewModel()) {
                 ) {
                     item(
                         headlineContent = {
-                            Text(stringResource(R.string.setting_page_preferences_network_auto_retry))
-                        },
-                        supportingContent = {
-                            Text(stringResource(R.string.setting_page_preferences_network_auto_retry_desc))
-                        },
-                        trailingContent = {
-                            Switch(
-                                checked = settings.networkSetting.enableAutoRetry,
-                                onCheckedChange = { enabled ->
-                                    vm.updateSettings(
-                                        settings.copy(
-                                            networkSetting = settings.networkSetting.copy(
-                                                enableAutoRetry = enabled,
-                                            ),
-                                        )
-                                    )
-                                },
-                            )
-                        },
-                    )
-                    item(
-                        headlineContent = {
                             Text(stringResource(R.string.setting_page_preferences_network_first_output_timeout))
                         },
                         supportingContent = {

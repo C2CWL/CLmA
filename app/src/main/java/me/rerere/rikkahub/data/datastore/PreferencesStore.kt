@@ -504,12 +504,15 @@ class SettingsStore(
                     }
                 } ?: emptyList(),
                 developerMode = preferences[DEVELOPER_MODE] == true,
+                // `enableLatexRendering` is forced on: rendering LaTeX is strictly better than
+                // showing the raw `$...$` source, so the switch was removed and the stored value
+                // ignored. The field is kept on DisplaySetting so old blobs still decode.
                 displaySetting = runCatching {
                     JsonInstant.decodeFromString<DisplaySetting>(preferences[DISPLAY_SETTING] ?: "{}")
                 }.getOrElse {
                     Log.w(TAG, "Failed to decode displaySetting, using default", it)
                     DisplaySetting()
-                },
+                }.copy(enableLatexRendering = true),
                 networkSetting = runCatching {
                     JsonInstant.decodeFromString<NetworkSetting>(preferences[NETWORK_SETTING] ?: "{}")
                 }.getOrElse {

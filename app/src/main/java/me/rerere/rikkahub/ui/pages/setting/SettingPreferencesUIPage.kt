@@ -246,18 +246,6 @@ fun SettingPreferencesUIPage(vm: SettingVM = koinViewModel()) {
                         },
                     )
                     item(
-                        headlineContent = { Text(stringResource(R.string.setting_display_page_enable_latex_rendering_title)) },
-                        supportingContent = { Text(stringResource(R.string.setting_display_page_enable_latex_rendering_desc)) },
-                        trailingContent = {
-                            Switch(
-                                checked = displaySetting.enableLatexRendering,
-                                onCheckedChange = {
-                                    updateDisplaySetting(displaySetting.copy(enableLatexRendering = it))
-                                }
-                            )
-                        },
-                    )
-                    item(
                         headlineContent = { Text(stringResource(R.string.setting_display_page_chat_font_family_title)) },
                         supportingContent = {
                             Select(

@@ -1510,7 +1510,9 @@ class GenerationLoop(
             temperature = assistant.temperature,
             topP = assistant.topP,
             maxTokens = assistant.maxTokens,
-            maxStreamRetries = if (settings.networkSetting.enableAutoRetry) settings.responseStreamMaxRetries else 0,
+            // Auto-retry is forced on: retrying a transient network failure is strictly better
+            // than surfacing it as a dead error, so the switch was removed and the flag ignored.
+            maxStreamRetries = settings.responseStreamMaxRetries,
             tools = tools,
             textToolCallParsing = settings.parseTextToolCalls,
             reasoningLevel = assistant.reasoningLevel,

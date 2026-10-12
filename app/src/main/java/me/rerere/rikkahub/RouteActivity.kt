@@ -115,7 +115,6 @@ import me.rerere.rikkahub.ui.pages.setting.SettingAccessibilityPage
 import me.rerere.rikkahub.ui.pages.setting.SettingFloatingBallPage
 import me.rerere.rikkahub.ui.pages.setting.SettingNotificationsPage
 import me.rerere.rikkahub.ui.pages.setting.SettingPermissionsPage
-import me.rerere.rikkahub.ui.pages.setting.SettingPreferencesPage
 import me.rerere.rikkahub.ui.pages.setting.SettingPreferencesThemePage
 import me.rerere.rikkahub.ui.pages.setting.SettingPreferencesNotificationPage
 import me.rerere.rikkahub.ui.pages.setting.SettingPreferencesGeneralPage
@@ -464,10 +463,6 @@ class RouteActivity : ComponentActivity() {
                                 SettingThemePage()
                             }
 
-                            entry<Screen.SettingPreferences> {
-                                SettingPreferencesPage()
-                            }
-
                             entry<Screen.SettingPreferencesTheme> {
                                 SettingPreferencesThemePage()
                             }
@@ -779,9 +774,6 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data object SettingTheme : Screen
-
-    @Serializable
-    data object SettingPreferences : Screen
 
     @Serializable
     data object SettingPreferencesTheme : Screen

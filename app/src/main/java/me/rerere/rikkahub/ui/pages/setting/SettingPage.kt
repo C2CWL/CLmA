@@ -10,9 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -44,50 +42,49 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.AiMagic
 import me.rerere.hugeicons.stroke.Alert01
-import me.rerere.hugeicons.stroke.Tick01
 import me.rerere.hugeicons.stroke.Book01
-import me.rerere.hugeicons.stroke.Book03
 import me.rerere.hugeicons.stroke.Bookshelf01
 import me.rerere.hugeicons.stroke.Brain02
 import me.rerere.hugeicons.stroke.Clapping01
-// P2-32 ssh hosts page
-import me.rerere.hugeicons.stroke.ComputerTerminal01
 import me.rerere.hugeicons.stroke.Clock02
-import me.rerere.hugeicons.stroke.Database02
+import me.rerere.hugeicons.stroke.ComputerTerminal01
+import me.rerere.hugeicons.stroke.Connect
 import me.rerere.hugeicons.stroke.Console
-import me.rerere.hugeicons.stroke.Earth
-import me.rerere.hugeicons.stroke.Wrench01
+import me.rerere.hugeicons.stroke.CursorPointer01
+import me.rerere.hugeicons.stroke.Database02
 import me.rerere.hugeicons.stroke.Developer
+import me.rerere.hugeicons.stroke.Earth
 import me.rerere.hugeicons.stroke.GlobalSearch
 import me.rerere.hugeicons.stroke.ImageUpload
+import me.rerere.hugeicons.stroke.Internet
+import me.rerere.hugeicons.stroke.Link01
 import me.rerere.hugeicons.stroke.LookTop
 import me.rerere.hugeicons.stroke.McpServer
-import me.rerere.hugeicons.stroke.Message01
 import me.rerere.hugeicons.stroke.Megaphone01
+import me.rerere.hugeicons.stroke.Message01
+import me.rerere.hugeicons.stroke.Notification01
 import me.rerere.hugeicons.stroke.Package
-import me.rerere.hugeicons.stroke.Connect
 import me.rerere.hugeicons.stroke.Robot01
 import me.rerere.hugeicons.stroke.ServerStack01
-import me.rerere.hugeicons.stroke.Shield01
-import me.rerere.hugeicons.stroke.Telegram
-import me.rerere.hugeicons.stroke.Settings03
 import me.rerere.hugeicons.stroke.Share04
+import me.rerere.hugeicons.stroke.Shield01
 import me.rerere.hugeicons.stroke.SmartPhone01
 import me.rerere.hugeicons.stroke.Sun01
+import me.rerere.hugeicons.stroke.Telegram
+import me.rerere.hugeicons.stroke.Tick01
 import me.rerere.hugeicons.stroke.Tiktok
+import me.rerere.hugeicons.stroke.View
+import me.rerere.hugeicons.stroke.Wrench01
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.Screen
 import me.rerere.rikkahub.data.datastore.isNotConfigured
 import me.rerere.rikkahub.data.files.FilesManager
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.CardGroup
-import me.rerere.rikkahub.ui.components.ui.Select
 import me.rerere.rikkahub.ui.components.ui.icons.DiscordIcon
 import me.rerere.rikkahub.ui.components.ui.icons.TencentQQIcon
 import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.context.Navigator
-import me.rerere.rikkahub.ui.hooks.rememberColorMode
-import me.rerere.rikkahub.ui.theme.ColorMode
 import me.rerere.rikkahub.ui.theme.CustomColors
 import me.rerere.rikkahub.utils.joinQQGroup
 import me.rerere.rikkahub.utils.openUrl
@@ -96,12 +93,30 @@ import me.rerere.rikkahub.utils.writeClipboardText
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 
+/**
+ * The settings hub.
+ *
+ * Rebuilt as a flat, one-scope-per-concern page: every row is one tap from its destination, and
+ * no section is a dumping ground. The old "Models & Services" bucket held twenty unrelated entries
+ * (model config, agent capabilities, external integrations, device permissions, diagnostics);
+ * those now live in five sections that each answer a single question — what does the app look
+ * like, which models does it talk to, what can the assistant do, what device access does it hold,
+ * and what is it connected to.
+ *
+ * There is deliberately no intermediate "Preferences" page any more: it held five rows whose
+ * subjects already belonged at the top level, and it duplicated the top-level "General" group it
+ * sat next to.
+ *
+ * NOTE: [SettingsSearchIndex] keeps a hand-written mirror of the rows below. Add/remove/rename a
+ * row here -> update that file too.
+ */
 @Composable
 fun SettingPage(vm: SettingVM = koinViewModel()) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val navController = LocalNavController.current
     val settings by vm.settings.collectAsStateWithLifecycle()
     val filesManager: FilesManager = koinInject()
+    val context = LocalContext.current
 
     Scaffold(
         topBar = {
@@ -120,7 +135,7 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                     ) {
                         Icon(HugeIcons.GlobalSearch, stringResource(R.string.accessibility_search))
                     }
-                    if(settings.developerMode) {
+                    if (settings.developerMode) {
                         IconButton(
                             onClick = {
                                 navController.navigate(Screen.Developer)
@@ -137,8 +152,6 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = CustomColors.topBarColors.containerColor
     ) { innerPadding ->
-        // NOTE: SettingsSearchIndex.kt keeps a hand-written mirror of the rows below for the
-        // settings search page. Add/remove/rename a row here -> update that file too.
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = innerPadding + PaddingValues(8.dp),
@@ -150,69 +163,44 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                 }
             }
 
-            item("generalSettings") {
-                var colorMode by rememberColorMode()
-                val selectedColorModeText = when (colorMode) {
-                    ColorMode.SYSTEM -> stringResource(R.string.setting_page_color_mode_system)
-                    ColorMode.LIGHT -> stringResource(R.string.setting_page_color_mode_light)
-                    ColorMode.DARK -> stringResource(R.string.setting_page_color_mode_dark)
-                }
+            // 1. Appearance & interaction — everything the user *sees and feels*.
+            item("appearanceSettings") {
                 CardGroup(
                     modifier = Modifier.padding(horizontal = 8.dp),
-                    title = { Text(stringResource(R.string.setting_page_general_settings)) },
+                    title = { Text(stringResource(R.string.setting_page_group_appearance)) },
                 ) {
                     item(
+                        onClick = { navController.navigate(Screen.SettingPreferencesTheme) },
                         leadingContent = { Icon(HugeIcons.Sun01, null) },
-                        trailingContent = {
-                            Select(
-                                options = ColorMode.entries,
-                                selectedOption = colorMode,
-                                onOptionSelected = {
-                                    colorMode = it
-                                    navController.navigate(Screen.Setting) {
-                                        popUpTo(Screen.Setting) {
-                                            inclusive = true
-                                        }
-                                    }
-                                },
-                                optionToString = {
-                                    when (it) {
-                                        ColorMode.SYSTEM -> stringResource(R.string.setting_page_color_mode_system)
-                                        ColorMode.LIGHT -> stringResource(R.string.setting_page_color_mode_light)
-                                        ColorMode.DARK -> stringResource(R.string.setting_page_color_mode_dark)
-                                    }
-                                },
-                                modifier = Modifier.width(150.dp)
-                            )
-                        },
-                        headlineContent = { Text(stringResource(R.string.setting_page_color_mode)) },
-                        supportingContent = { Text(selectedColorModeText) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_preferences_theme_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_preferences_theme)) },
                     )
                     item(
-                        onClick = { navController.navigate(Screen.SettingPreferences) },
-                        leadingContent = { Icon(HugeIcons.Settings03, null) },
-                        supportingContent = { Text(stringResource(R.string.setting_page_preferences_desc)) },
-                        headlineContent = { Text(stringResource(R.string.setting_page_preferences)) },
+                        onClick = { navController.navigate(Screen.SettingPreferencesUI) },
+                        leadingContent = { Icon(HugeIcons.View, null) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_preferences_ui_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_preferences_ui)) },
                     )
                     item(
-                        onClick = { navController.navigate(Screen.Assistant) },
-                        leadingContent = { Icon(HugeIcons.LookTop, null) },
-                        supportingContent = { Text(stringResource(R.string.setting_page_assistant_desc)) },
-                        headlineContent = { Text(stringResource(R.string.setting_page_assistant)) },
+                        onClick = { navController.navigate(Screen.SettingPreferencesGeneral) },
+                        leadingContent = { Icon(HugeIcons.CursorPointer01, null) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_preferences_general_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_preferences_general)) },
                     )
                     item(
-                        onClick = { navController.navigate(Screen.Extensions) },
-                        leadingContent = { Icon(HugeIcons.Package, null) },
-                        supportingContent = { Text(stringResource(R.string.setting_page_extensions_desc)) },
-                        headlineContent = { Text(stringResource(R.string.setting_page_extensions)) },
+                        onClick = { navController.navigate(Screen.SettingPreferencesNotification) },
+                        leadingContent = { Icon(HugeIcons.Notification01, null) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_preferences_notification_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_preferences_notification)) },
                     )
                 }
             }
 
-            item("modelServices") {
+            // 2. Models & AI — what the assistant thinks with, and how the requests travel.
+            item("modelSettings") {
                 CardGroup(
                     modifier = Modifier.padding(horizontal = 8.dp),
-                    title = { Text(stringResource(R.string.setting_page_model_and_services)) },
+                    title = { Text(stringResource(R.string.setting_page_group_models)) },
                 ) {
                     item(
                         onClick = { navController.navigate(Screen.SettingModels) },
@@ -239,10 +227,31 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                         headlineContent = { Text(stringResource(R.string.setting_page_tts_service)) },
                     )
                     item(
-                        onClick = { navController.navigate(Screen.SettingMcp) },
-                        leadingContent = { Icon(HugeIcons.McpServer, null) },
-                        supportingContent = { Text(stringResource(R.string.setting_page_mcp_desc)) },
-                        headlineContent = { Text(stringResource(R.string.setting_page_mcp)) },
+                        onClick = { navController.navigate(Screen.SettingPreferencesNetwork) },
+                        leadingContent = { Icon(HugeIcons.Internet, null) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_preferences_network_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_preferences_network)) },
+                    )
+                }
+            }
+
+            // 3. Assistant & automation — what the assistant is allowed to be and to do.
+            item("assistantSettings") {
+                CardGroup(
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    title = { Text(stringResource(R.string.setting_page_group_assistant)) },
+                ) {
+                    item(
+                        onClick = { navController.navigate(Screen.Assistant) },
+                        leadingContent = { Icon(HugeIcons.LookTop, null) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_assistant_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_assistant)) },
+                    )
+                    item(
+                        onClick = { navController.navigate(Screen.Extensions) },
+                        leadingContent = { Icon(HugeIcons.Package, null) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_extensions_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_extensions)) },
                     )
                     item(
                         onClick = { navController.navigate(Screen.SettingSubAgents) },
@@ -251,8 +260,86 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                         headlineContent = { Text(stringResource(R.string.setting_page_sub_agents)) },
                     )
                     item(
-                        onClick = { navController.navigate(Screen.SettingSsh) },
+                        onClick = { navController.navigate(Screen.SettingMcp) },
+                        leadingContent = { Icon(HugeIcons.McpServer, null) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_mcp_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_mcp)) },
+                    )
+                    item(
+                        onClick = { navController.navigate(Screen.SettingWorkflows) },
+                        leadingContent = { Icon(HugeIcons.Connect, null) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_workflows_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_workflows)) },
+                    )
+                    item(
+                        onClick = { navController.navigate(Screen.SettingScheduledJobs) },
+                        leadingContent = { Icon(HugeIcons.Clock02, null) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_scheduled_jobs_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_scheduled_jobs)) },
+                    )
+                    item(
+                        onClick = { navController.navigate(Screen.SettingToolApprovals) },
+                        leadingContent = { Icon(HugeIcons.Tick01, null) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_tool_approvals_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_tool_approvals)) },
+                    )
+                }
+            }
+
+            // 4. Device & permissions — the Android grants the automation rides on.
+            item("deviceSettings") {
+                CardGroup(
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    title = { Text(stringResource(R.string.setting_page_group_device)) },
+                ) {
+                    item(
+                        onClick = { navController.navigate(Screen.SettingAccessibility) },
+                        leadingContent = { Icon(HugeIcons.SmartPhone01, null) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_accessibility_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_accessibility)) },
+                    )
+                    item(
+                        onClick = { navController.navigate(Screen.SettingFloatingBall) },
+                        leadingContent = { Icon(HugeIcons.Message01, null) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_floating_ball_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_floating_ball)) },
+                    )
+                    item(
+                        onClick = { navController.navigate(Screen.SettingNotifications) },
+                        leadingContent = { Icon(HugeIcons.Notification01, null) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_notifications_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_notifications)) },
+                    )
+                    item(
+                        onClick = { navController.navigate(Screen.SettingPermissions) },
+                        leadingContent = { Icon(HugeIcons.Shield01, null) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_permissions_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_permissions)) },
+                    )
+                    item(
+                        onClick = { navController.navigate(Screen.SettingShizuku) },
+                        leadingContent = { Icon(HugeIcons.Console, null) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_shizuku_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_shizuku)) },
+                    )
+                    item(
+                        onClick = { navController.navigate(Screen.SettingTermux) },
                         leadingContent = { Icon(HugeIcons.ComputerTerminal01, null) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_termux_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_termux)) },
+                    )
+                }
+            }
+
+            // 5. Connections — everything that reaches another machine.
+            item("connectionSettings") {
+                CardGroup(
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    title = { Text(stringResource(R.string.setting_page_group_connections)) },
+                ) {
+                    item(
+                        onClick = { navController.navigate(Screen.SettingSsh) },
+                        leadingContent = { Icon(HugeIcons.Link01, null) },
                         supportingContent = { Text(stringResource(R.string.setting_page_ssh_desc)) },
                         headlineContent = { Text(stringResource(R.string.setting_page_ssh)) },
                     )
@@ -269,81 +356,22 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                         headlineContent = { Text(stringResource(R.string.setting_page_telegram)) },
                     )
                     item(
-                        onClick = { navController.navigate(Screen.SettingWorkflows) },
-                        leadingContent = { Icon(HugeIcons.Connect, null) },
-                        supportingContent = { Text(stringResource(R.string.setting_page_workflows_desc)) },
-                        headlineContent = { Text(stringResource(R.string.setting_page_workflows)) },
-                    )
-                    item(
-                        onClick = { navController.navigate(Screen.SettingScheduledJobs) },
-                        leadingContent = { Icon(HugeIcons.Clock02, null) },
-                        supportingContent = { Text(stringResource(R.string.setting_page_scheduled_jobs_desc)) },
-                        headlineContent = { Text(stringResource(R.string.setting_page_scheduled_jobs)) },
-                    )
-                    item(
                         onClick = { navController.navigate(Screen.SettingBrowser) },
                         leadingContent = { Icon(HugeIcons.Earth, null) },
                         supportingContent = { Text(stringResource(R.string.setting_page_browser_desc)) },
                         headlineContent = { Text(stringResource(R.string.setting_page_browser)) },
                     )
-                    item(
-                        onClick = { navController.navigate(Screen.SettingTermux) },
-                        leadingContent = { Icon(HugeIcons.Console, null) },
-                        supportingContent = { Text(stringResource(R.string.setting_page_termux_desc)) },
-                        headlineContent = { Text(stringResource(R.string.setting_page_termux)) },
-                    )
-                    item(
-                        onClick = { navController.navigate(Screen.SettingShizuku) },
-                        leadingContent = { Icon(HugeIcons.Console, null) },
-                        supportingContent = { Text(stringResource(R.string.setting_page_shizuku_desc)) },
-                        headlineContent = { Text(stringResource(R.string.setting_page_shizuku)) },
-                    )
-                    item(
-                        onClick = { navController.navigate(Screen.SettingDoctor) },
-                        leadingContent = { Icon(HugeIcons.Wrench01, null) },
-                        supportingContent = { Text(stringResource(R.string.setting_page_doctor_desc)) },
-                        headlineContent = { Text(stringResource(R.string.setting_page_doctor)) },
-                    )
-                    item(
-                        onClick = { navController.navigate(Screen.SettingToolApprovals) },
-                        leadingContent = { Icon(HugeIcons.Tick01, null) },
-                        supportingContent = { Text(stringResource(R.string.setting_page_tool_approvals_desc)) },
-                        headlineContent = { Text(stringResource(R.string.setting_page_tool_approvals)) },
-                    )
-                    item(
-                        onClick = { navController.navigate(Screen.SettingAccessibility) },
-                        leadingContent = { Icon(HugeIcons.SmartPhone01, null) },
-                        supportingContent = { Text(stringResource(R.string.setting_page_accessibility_desc)) },
-                        headlineContent = { Text(stringResource(R.string.setting_page_accessibility)) },
-                    )
-                    item(
-                        onClick = { navController.navigate(Screen.SettingFloatingBall) },
-                        leadingContent = { Icon(HugeIcons.Message01, null) },
-                        supportingContent = { Text(stringResource(R.string.setting_page_floating_ball_desc)) },
-                        headlineContent = { Text(stringResource(R.string.setting_page_floating_ball)) },
-                    )
-                    item(
-                        onClick = { navController.navigate(Screen.SettingNotifications) },
-                        leadingContent = { Icon(HugeIcons.Alert01, null) },
-                        supportingContent = { Text(stringResource(R.string.setting_page_notifications_desc)) },
-                        headlineContent = { Text(stringResource(R.string.setting_page_notifications)) },
-                    )
-                    item(
-                        onClick = { navController.navigate(Screen.SettingPermissions) },
-                        leadingContent = { Icon(HugeIcons.Shield01, null) },
-                        supportingContent = { Text(stringResource(R.string.setting_page_permissions_desc)) },
-                        headlineContent = { Text(stringResource(R.string.setting_page_permissions)) },
-                    )
                 }
             }
 
+            // 6. Data.
             item("dataSettings") {
                 val storageState by produceState(-1 to 0L) {
                     value = filesManager.countChatFiles()
                 }
                 CardGroup(
                     modifier = Modifier.padding(horizontal = 8.dp),
-                    title = { Text(stringResource(R.string.setting_page_data_settings)) },
+                    title = { Text(stringResource(R.string.setting_page_group_data)) },
                 ) {
                     item(
                         onClick = { navController.navigate(Screen.Backup) },
@@ -372,6 +400,7 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                 }
             }
 
+            // 7. About & diagnostics.
             item("aboutSettings") {
                 val context = LocalContext.current
                 val shareText = stringResource(R.string.setting_page_share_text)
@@ -379,8 +408,20 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                 val noShareApp = stringResource(R.string.setting_page_no_share_app)
                 CardGroup(
                     modifier = Modifier.padding(horizontal = 8.dp),
-                    title = { Text(stringResource(R.string.setting_page_about)) },
+                    title = { Text(stringResource(R.string.setting_page_group_about)) },
                 ) {
+                    item(
+                        onClick = { navController.navigate(Screen.SettingDoctor) },
+                        leadingContent = { Icon(HugeIcons.Wrench01, null) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_doctor_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_doctor)) },
+                    )
+                    item(
+                        onClick = { navController.navigate(Screen.Log) },
+                        leadingContent = { Icon(HugeIcons.Bookshelf01, null) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_request_logs_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_request_logs)) },
+                    )
                     item(
                         onClick = { navController.navigate(Screen.SettingAbout) },
                         leadingContent = { Icon(HugeIcons.Clapping01, null) },
@@ -432,12 +473,6 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                         leadingContent = { Icon(HugeIcons.Book01, null) },
                         supportingContent = { Text(stringResource(R.string.setting_page_documentation_desc)) },
                         headlineContent = { Text(stringResource(R.string.setting_page_documentation)) },
-                    )
-                    item(
-                        onClick = { navController.navigate(Screen.Log) },
-                        leadingContent = { Icon(HugeIcons.Bookshelf01, null) },
-                        supportingContent = { Text(stringResource(R.string.setting_page_request_logs_desc)) },
-                        headlineContent = { Text(stringResource(R.string.setting_page_request_logs)) },
                     )
                     item(
                         onClick = {
