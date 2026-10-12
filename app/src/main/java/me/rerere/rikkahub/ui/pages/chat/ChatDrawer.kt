@@ -244,7 +244,7 @@ fun ChatDrawerContent(
     val drawerBlurStyle = HazeBlurStyle.Material3 {
         blurRadius(24.dp)
     }
-    // 上方功能区：磨砂玻璃卡片，固定悬浮在抽屉顶部；对话列表从其下方滚过并被虚化。
+    // 上方功能区：玻璃卡片，固定悬浮在抽屉顶部；对话列表从其下方滚过并被折射虚化。
     val topBarShape = RoundedCornerShape(20.dp)
     val drawerTopArea: @Composable () -> Unit = {
         Column(
@@ -260,15 +260,15 @@ fun ChatDrawerContent(
                 onClick = { navController.navigate(Screen.Backup) },
             )
 
-            // 上方功能区：磨砂玻璃卡片（无边框；阴影 + 磨砂做出浮起感，与背后磨砂面板一致）。
+            // 上方功能区：玻璃卡片（无边框；阴影 + 玻璃高光做立体感，与底部功能区一致）。
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
                     .shadow(6.dp, topBarShape, clip = false)
                     .clip(topBarShape)
-                    .hazeBlur(
+                    .hazeGlass(
                         input = HazeInput.Sources(drawerHazeState),
-                        style = HazeBlurStyle.Material3 { blurRadius(16.dp) },
+                        style = drawerGlassStyle(topBarShape),
                     ),
                 shape = topBarShape,
                 color = Color.Transparent,
@@ -403,7 +403,7 @@ fun ChatDrawerContent(
                 }
             )
 
-                // 上方功能区：固定悬浮在抽屉顶部，对话列表从其下方滚过时被磨砂虚化。
+                // 上方功能区：固定悬浮在抽屉顶部，对话列表从其下方滚过时被玻璃折射虚化。
                 Column(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
