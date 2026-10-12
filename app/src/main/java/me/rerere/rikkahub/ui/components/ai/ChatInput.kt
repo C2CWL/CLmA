@@ -215,10 +215,12 @@ fun ChatInput(
 
     val model = settings.getCurrentChatModel()
     val showReasoning = model?.abilities?.contains(ModelAbility.REASONING) == true
-    val collapsed = !isFocused &&
-        state.messageContent.isEmpty() &&
-        !state.textContent.text.contains('\n')
-    val containerShape = RoundedCornerShape(if (collapsed) 28.dp else 16.dp)
+    // Collapsed = a one-line pill. It opens into a taller multi-line box as soon as it is focused,
+    // carries attachments, or holds a multi-line draft.
+    val expanded = isFocused ||
+        state.messageContent.isNotEmpty() ||
+        state.textContent.text.contains('\n')
+    val containerShape = RoundedCornerShape(if (expanded) 16.dp else 28.dp)
 
     Surface(
         color = Color.Transparent,
@@ -272,8 +274,16 @@ fun ChatInput(
                     }
 
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            // Open bar: the row sits at the bottom of the taller box, the way the
+                            // classic input put its buttons under the text area.
+                            .padding(bottom = if (expanded) 6.dp else 0.dp),
+                        verticalAlignment = if (expanded) {
+                            Alignment.Bottom
+                        } else {
+                            Alignment.CenterVertically
+                        },
                         horizontalArrangement = Arrangement.spacedBy(2.dp),
                     ) {
                         // Attachments / tools / workspace panel (the bar's "drawer").
@@ -300,6 +310,7 @@ fun ChatInput(
                             completionProviders = completionProviders,
                             onSendMessage = { sendMessage() },
                             onFocusChanged = { isFocused = it },
+                            expanded = expanded,
                             modifier = Modifier.weight(1f),
                         )
 
@@ -432,6 +443,7 @@ private fun TextInputRow(
     completionProviders: List<ChatCompletionProvider>,
     onSendMessage: () -> Unit,
     modifier: Modifier = Modifier,
+    expanded: Boolean = false,
     onFocusChanged: (Boolean) -> Unit = {},
 ) {
     val settings = LocalSettings.current
@@ -526,6 +538,9 @@ private fun TextInputRow(
             state = state.textContent,
             modifier = Modifier
                 .fillMaxWidth()
+                // Opening the bar restores the multi-line box: a few empty rows are reserved so the
+                // field reads as a text area rather than a single-line strip.
+                .heightIn(min = if (expanded) 84.dp else 0.dp)
                 .testTag("chat_input")
                 .then(
                     if (multilineDraft) Modifier

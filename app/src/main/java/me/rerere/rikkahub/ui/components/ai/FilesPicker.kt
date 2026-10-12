@@ -135,17 +135,6 @@ internal fun FilesPicker(
             .fillMaxWidth()
             .padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Model / web-search switching, moved out of the input bar and parked at the top of this
-        // panel: one row, two half-width cards, each opening its own picker.
-        InputQuickConfigRow(
-            assistant = assistant,
-            settings = settings,
-            enableSearch = enableSearch,
-            onUpdateChatModel = onUpdateChatModel,
-            onUpdateSearchMode = onUpdateSearchMode,
-            onUpdateSearchService = onUpdateSearchService,
-        )
-
         FlowRow(
             modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.CenterHorizontally),
             horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.Start),
@@ -176,6 +165,17 @@ internal fun FilesPicker(
 
         HorizontalDivider(
             modifier = Modifier.fillMaxWidth()
+        )
+
+        // Model / web-search switching, moved out of the input bar: one row, two half-width cards,
+        // each opening its own picker. Sits under the divider and above the workspace card.
+        InputQuickConfigRow(
+            assistant = assistant,
+            settings = settings,
+            enableSearch = enableSearch,
+            onUpdateChatModel = onUpdateChatModel,
+            onUpdateSearchMode = onUpdateSearchMode,
+            onUpdateSearchService = onUpdateSearchService,
         )
 
         if (workspaces.isNotEmpty()) {

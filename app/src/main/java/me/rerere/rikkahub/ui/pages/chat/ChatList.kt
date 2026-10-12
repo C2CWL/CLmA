@@ -317,13 +317,17 @@ private fun ChatListNormal(
         ChatFontProvider(displaySetting = settings.displaySetting) {
             LazyColumn(
                 state = state,
-                contentPadding = PaddingValues(16.dp) + PaddingValues(bottom = 32.dp + innerPadding.calculateBottomPadding()),
+                // The top inset is content padding rather than a modifier padding, so the messages
+                // can scroll UNDER the title bar (where they fade out) instead of being clipped by it.
+                contentPadding = PaddingValues(16.dp) + PaddingValues(
+                    top = innerPadding.calculateTopPadding(),
+                    bottom = 32.dp + innerPadding.calculateBottomPadding(),
+                ),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier
                     .fillMaxSize()
-                    .hazeSource(state = hazeState)
-                    .padding(top = innerPadding.calculateTopPadding()),
+                    .hazeSource(state = hazeState),
             ) {
             items(
                 items = displayGroups,

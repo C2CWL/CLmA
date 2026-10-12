@@ -3,8 +3,10 @@ package me.rerere.rikkahub.ui.pages.chat
 import android.net.Uri
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -41,9 +43,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -421,22 +427,10 @@ private fun ChatPageContent(
     ) {
         AssistantBackground(setting = setting, modifier = Modifier.hazeSource(hazeState))
         Scaffold(
-            topBar = {
-                TopBar(
-                    settings = setting,
-                    conversation = conversation,
-                    bigScreen = bigScreen,
-                    drawerState = drawerState,
-                    hazeState = hazeState,
-                    previewMode = previewMode,
-                    onNewChat = {
-                        navigateToChatPage(navController)
-                    },
-                    onClickMenu = {
-                        previewMode = !previewMode
-                    },
-                )
-            },
+            // The title bar is drawn inside the content instead (see the overlay below): Scaffold
+            // places its content over the top bar, and the conversation has to scroll UNDER the
+            // title and fade out behind it.
+            topBar = {},
             bottomBar = {
                 val messageQueue by vm.messageQueue.collectAsStateWithLifecycle()
                 val voiceState by vm.voiceSession.state.collectAsStateWithLifecycle()
@@ -517,85 +511,138 @@ private fun ChatPageContent(
             },
             containerColor = Color.Transparent,
         ) { innerPadding ->
-            ChatList(
-                innerPadding = innerPadding,
-                conversation = conversation,
-                turnFooters = turnFooters,
-                state = chatListState,
-                loading = loadingJob != null,
-                processingStatus = processingStatus,
-                previewMode = previewMode,
-                settings = setting,
-                hazeState = hazeState,
-                errors = errors,
-                onDismissError = onDismissError,
-                onClearAllErrors = onClearAllErrors,
-                onRegenerate = {
-                    vm.regenerateAtMessage(it)
+            // The title bar rides above the message list, so its measured height is what the list
+            // has to stay clear of at rest; the rest of the inset becomes content padding, which is
+            // what lets messages scroll underneath the bar.
+            var topBarHeightPx by remember { mutableStateOf(0) }
+            val topBarHeight = with(LocalDensity.current) { topBarHeightPx.toDp() }
+            val layoutDirection = LocalLayoutDirection.current
+            val listInset = PaddingValues(
+                start = innerPadding.calculateLeftPadding(layoutDirection),
+                top = if (topBarHeightPx > 0) {
+                    topBarHeight
+                } else {
+                    innerPadding.calculateTopPadding() + 64.dp
                 },
-                onEdit = {
-                    inputState.editingMessage = it.id
-                    inputState.setContents(it.parts)
-                },
-                onForkMessage = {
-                    scope.launch {
-                        val fork = vm.forkMessage(message = it)
-                        navigateToChatPage(navController, chatId = fork.id)
-                    }
-                },
-                onDelete = {
-                    if (loadingJob != null) {
-                        vm.showDeleteBlockedWhileGeneratingError()
-                    } else {
-                        vm.deleteMessage(it)
-                    }
-                },
-                onUpdateMessage = { newNode ->
-                    vm.updateConversation(
-                        conversation.copy(
-                            messageNodes = conversation.messageNodes.map { node ->
-                                if (node.id == newNode.id) {
-                                    newNode
-                                } else {
-                                    node
-                                }
-                            }
-                        ))
-                    vm.saveConversationAsync()
-                },
-                onClickSuggestion = { suggestion ->
-                    inputState.editingMessage = null
-                    inputState.setMessageText(suggestion)
-                },
-                onTranslate = { message, locale ->
-                    vm.translateMessage(message, locale)
-                },
-                onClearTranslation = { message ->
-                    vm.clearTranslationField(message.id)
-                },
-                onJumpToMessage = { index ->
-                    previewMode = false
-                    scope.launch {
-                        chatListState.requestScrollToItem(index)
-                    }
-                },
-                onToolApproval = { toolCallId, approved, reason, scope, toolName ->
-                    vm.handleToolApproval(toolCallId, approved, reason, scope, toolName)
-                },
-                onToolAnswer = { toolCallId, answer ->
-                    vm.handleToolAnswer(toolCallId, answer)
-                },
-                onRerunTool = { toolCallId ->
-                    vm.rerunTool(toolCallId)
-                },
-                onToggleFavorite = { node ->
-                    vm.toggleMessageFavorite(node)
-                },
-                onConversationSystemPromptChange = { newPrompt ->
-                    vm.updateConversation(conversation.copy(customSystemPrompt = newPrompt))
-                    vm.saveConversationAsync()
-                },
+                end = innerPadding.calculateRightPadding(layoutDirection),
+                bottom = innerPadding.calculateBottomPadding(),
             )
+
+            Box(modifier = Modifier.fillMaxSize()) {
+                ChatList(
+                    innerPadding = listInset,
+                    conversation = conversation,
+                    turnFooters = turnFooters,
+                    state = chatListState,
+                    loading = loadingJob != null,
+                    processingStatus = processingStatus,
+                    previewMode = previewMode,
+                    settings = setting,
+                    hazeState = hazeState,
+                    errors = errors,
+                    onDismissError = onDismissError,
+                    onClearAllErrors = onClearAllErrors,
+                    onRegenerate = {
+                        vm.regenerateAtMessage(it)
+                    },
+                    onEdit = {
+                        inputState.editingMessage = it.id
+                        inputState.setContents(it.parts)
+                    },
+                    onForkMessage = {
+                        scope.launch {
+                            val fork = vm.forkMessage(message = it)
+                            navigateToChatPage(navController, chatId = fork.id)
+                        }
+                    },
+                    onDelete = {
+                        if (loadingJob != null) {
+                            vm.showDeleteBlockedWhileGeneratingError()
+                        } else {
+                            vm.deleteMessage(it)
+                        }
+                    },
+                    onUpdateMessage = { newNode ->
+                        vm.updateConversation(
+                            conversation.copy(
+                                messageNodes = conversation.messageNodes.map { node ->
+                                    if (node.id == newNode.id) {
+                                        newNode
+                                    } else {
+                                        node
+                                    }
+                                }
+                            ))
+                        vm.saveConversationAsync()
+                    },
+                    onClickSuggestion = { suggestion ->
+                        inputState.editingMessage = null
+                        inputState.setMessageText(suggestion)
+                    },
+                    onTranslate = { message, locale ->
+                        vm.translateMessage(message, locale)
+                    },
+                    onClearTranslation = { message ->
+                        vm.clearTranslationField(message.id)
+                    },
+                    onJumpToMessage = { index ->
+                        previewMode = false
+                        scope.launch {
+                            chatListState.requestScrollToItem(index)
+                        }
+                    },
+                    onToolApproval = { toolCallId, approved, reason, scope, toolName ->
+                        vm.handleToolApproval(toolCallId, approved, reason, scope, toolName)
+                    },
+                    onToolAnswer = { toolCallId, answer ->
+                        vm.handleToolAnswer(toolCallId, answer)
+                    },
+                    onRerunTool = { toolCallId ->
+                        vm.rerunTool(toolCallId)
+                    },
+                    onToggleFavorite = { node ->
+                        vm.toggleMessageFavorite(node)
+                    },
+                    onConversationSystemPromptChange = { newPrompt ->
+                        vm.updateConversation(conversation.copy(customSystemPrompt = newPrompt))
+                        vm.saveConversationAsync()
+                    },
+                )
+                // Fade + title bar, drawn over the list: content dissolves as it slides under the
+                // bar, and the glass discs refract whatever passes behind them.
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .fillMaxWidth()
+                        .onSizeChanged { topBarHeightPx = it.height },
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    0f to MaterialTheme.colorScheme.background,
+                                    0.5f to MaterialTheme.colorScheme.background.copy(alpha = 0.75f),
+                                    1f to Color.Transparent,
+                                )
+                            )
+                    )
+                    TopBar(
+                        settings = setting,
+                        conversation = conversation,
+                        bigScreen = bigScreen,
+                        drawerState = drawerState,
+                        hazeState = hazeState,
+                        previewMode = previewMode,
+                        onNewChat = {
+                            navigateToChatPage(navController)
+                        },
+                        onClickMenu = {
+                            previewMode = !previewMode
+                        },
+                    )
+                }
+            }
         }
 
         if (showFilesSheet) {
