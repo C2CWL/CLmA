@@ -38,7 +38,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListItemInfo
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -240,15 +239,6 @@ private fun ChatListNormal(
         }
     }
 
-    fun List<LazyListItemInfo>.isAtBottom(): Boolean {
-        val lastItem = lastOrNull() ?: return false
-        val inputBarHeight = with(density) { innerPadding.calculateBottomPadding().toPx() }
-        val lastPos = lastItem.offset + lastItem.size
-        val inputPos = (state.layoutInfo.viewportEndOffset - inputBarHeight.roundToInt())
-        // println("lastPos = $lastPos, inputPos = $inputPos  | ${lastPos <= inputPos - 8}")
-        return lastPos <= inputPos - 8
-    }
-
     // 聊天选择
     val selectedItems = remember { mutableStateListOf<Uuid>() }
     var selecting by remember { mutableStateOf(false) }
@@ -285,18 +275,30 @@ private fun ChatListNormal(
             .fillMaxSize(),
     ) {
         // 自动滚动到底部
+        // 只在用户停留在底部时跟随流式输出。生成期间用户主动上滑查看历史后，
+        // 不再把列表强行拉回底部，直到用户自己滚回底部为止。
         if (settings.displaySetting.enableAutoScroll) {
+            // 用户是否已主动滚离底部（暂停自动跟随）
+            var userScrolledAway by remember { mutableStateOf(false) }
+
+            // 只在「滚动刚刚停止」的那一刻采样一次是否仍在底部，
+            // 这样流式内容增长本身不会把用户误判成离开了底部。
             LaunchedEffect(state) {
-                snapshotFlow { state.layoutInfo.visibleItemsInfo }.collect { visibleItemsInfo ->
-                    // println("is bottom = ${visibleItemsInfo.isAtBottom()}, scroll = ${state.isScrollInProgress}, can_scroll = ${state.canScrollForward}, loading = $loading")
-                    if (!state.isScrollInProgress && loadingState) {
-                        if (visibleItemsInfo.isAtBottom()) {
-                            val latestGroupIndex = conversationUpdated.messageNodes
-                                .groupAutomaticCompactionMessages()
-                                .lastIndex
-                            state.requestScrollToItem(latestGroupIndex + 10)
-                            // Log.i(TAG, "ChatList: scroll to $latestGroupIndex")
-                        }
+                snapshotFlow { state.isScrollInProgress }.collect { scrolling ->
+                    if (!scrolling) {
+                        // 仍有可向下滚动的余量 => 用户不在底部
+                        userScrolledAway = state.canScrollForward
+                    }
+                }
+            }
+
+            LaunchedEffect(state) {
+                snapshotFlow { state.layoutInfo.visibleItemsInfo }.collect {
+                    if (!state.canScrollForward) {
+                        // 已经真正到底（或内容不足一屏）：恢复自动跟随
+                        userScrolledAway = false
+                    } else if (!state.isScrollInProgress && !userScrolledAway && loadingState) {
+                        state.requestScrollToItem(conversationUpdated.messageNodes.size + 10)
                     }
                 }
             }
