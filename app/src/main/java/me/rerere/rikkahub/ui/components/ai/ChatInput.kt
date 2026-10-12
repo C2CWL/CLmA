@@ -58,6 +58,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -275,108 +276,100 @@ fun ChatInput(
                         MediaFileInputRow(state = state)
                     }
 
-                    // One set of buttons, two layouts: as a pill the buttons flank the one-line
+                    // One composition, two arrangements: as a pill the buttons flank the one-line
                     // field, and once the bar opens (focus / attachments / multi-line draft) the
-                    // field takes the full width and the buttons drop to a row underneath it, the
-                    // way the input was laid out before it became a pill.
-                    val leftActions: @Composable () -> Unit = {
-                        // Attachments / tools / workspace panel (the bar's "drawer").
-                        ActionIconButton(onClick = onMoreClick) {
-                            Icon(
-                                imageVector = HugeIcons.Add01,
-                                contentDescription = stringResource(R.string.more_options)
-                            )
-                        }
+                    // field takes the full width with the buttons on a row underneath it, the way
+                    // the input was laid out before it became a pill.
+                    //
+                    // The two arrangements go through ONE custom layout instead of an if/else on
+                    // purpose: an if/else moves the field to a different composition slot, and a
+                    // moved field is re-created, which drops the focus that had just arrived - the
+                    // bar flashed open and shut the moment it was tapped.
+                    ChatInputBar(
+                        expanded = expanded,
+                        modifier = Modifier.fillMaxWidth(),
+                        left = {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            ) {
+                                // Attachments / tools / workspace panel (the bar's "drawer").
+                                ActionIconButton(onClick = onMoreClick) {
+                                    Icon(
+                                        imageVector = HugeIcons.Add01,
+                                        contentDescription = stringResource(R.string.more_options)
+                                    )
+                                }
 
-                        // Reasoning depth: second on the left, hidden when the model cannot reason.
-                        if (showReasoning) {
-                            ReasoningButton(
-                                reasoningLevel = assistant.reasoningLevel,
-                                onUpdateReasoningLevel = {
-                                    onUpdateAssistant(assistant.copy(reasoningLevel = it))
-                                },
-                                onlyIcon = true,
-                            )
-                        }
-                    }
-
-                    val rightActions: @Composable () -> Unit = {
-                        // Full-screen editor, moved down from the text field's trailing icon.
-                        ActionIconButton(onClick = { isFullScreen = true }) {
-                            Icon(
-                                imageVector = HugeIcons.Fullscreen,
-                                contentDescription = stringResource(R.string.text_area_fullscreen_edit),
-                            )
-                        }
-
-                        // One slot, two faces: the send arrow while there is something to send, the
-                        // microphone when the draft is empty and speech input is available. While
-                        // recording the microphone stays (the transcript itself would otherwise
-                        // flip the slot to "send" and strand the recording).
-                        val voiceAvailable =
-                            !voiceState.isActive && (asrState.isAvailable || asrState.isRecording)
-                        when {
-                            asrState.isRecording -> AsrButton(state = asrState, onClick = onAsrClick)
-
-                            loading && state.isEmpty() -> SendButton(
-                                loading = true,
-                                empty = true,
-                                onClick = { sendMessage() },
-                                onLongClick = { sendMessageWithoutAnswer() },
-                            )
-
-                            !state.isEmpty() -> SendButton(
-                                loading = loading,
-                                empty = false,
-                                onClick = { sendMessage() },
-                                onLongClick = { sendMessageWithoutAnswer() },
-                            )
-
-                            voiceAvailable -> AsrButton(state = asrState, onClick = onAsrClick)
-
-                            else -> SendButton(
-                                loading = false,
-                                empty = true,
-                                onClick = { sendMessage() },
-                                onLongClick = { sendMessageWithoutAnswer() },
-                            )
-                        }
-                    }
-
-                    if (expanded) {
-                        TextInputRow(
-                            state = state,
-                            completionProviders = completionProviders,
-                            onSendMessage = { sendMessage() },
-                            onFocusChanged = { isFocused = it },
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        ) {
-                            leftActions()
-                            Spacer(Modifier.weight(1f))
-                            rightActions()
-                        }
-                    } else {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        ) {
-                            leftActions()
+                                // Reasoning depth: second on the left, hidden when the model cannot reason.
+                                if (showReasoning) {
+                                    ReasoningButton(
+                                        reasoningLevel = assistant.reasoningLevel,
+                                        onUpdateReasoningLevel = {
+                                            onUpdateAssistant(assistant.copy(reasoningLevel = it))
+                                        },
+                                        onlyIcon = true,
+                                    )
+                                }
+                            }
+                        },
+                        center = {
                             TextInputRow(
                                 state = state,
                                 completionProviders = completionProviders,
                                 onSendMessage = { sendMessage() },
                                 onFocusChanged = { isFocused = it },
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier.fillMaxWidth(),
                             )
-                            rightActions()
-                        }
-                    }
+                        },
+                        right = {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            ) {
+                                // Full-screen editor, moved down from the text field's trailing icon.
+                                ActionIconButton(onClick = { isFullScreen = true }) {
+                                    Icon(
+                                        imageVector = HugeIcons.Fullscreen,
+                                        contentDescription = stringResource(R.string.text_area_fullscreen_edit),
+                                    )
+                                }
+
+                                // One slot, two faces: the send arrow while there is something to send, the
+                                // microphone when the draft is empty and speech input is available. While
+                                // recording the microphone stays (the transcript itself would otherwise
+                                // flip the slot to "send" and strand the recording).
+                                val voiceAvailable =
+                                    !voiceState.isActive && (asrState.isAvailable || asrState.isRecording)
+                                when {
+                                    asrState.isRecording -> AsrButton(state = asrState, onClick = onAsrClick)
+
+                                    loading && state.isEmpty() -> SendButton(
+                                        loading = true,
+                                        empty = true,
+                                        onClick = { sendMessage() },
+                                        onLongClick = { sendMessageWithoutAnswer() },
+                                    )
+
+                                    !state.isEmpty() -> SendButton(
+                                        loading = loading,
+                                        empty = false,
+                                        onClick = { sendMessage() },
+                                        onLongClick = { sendMessageWithoutAnswer() },
+                                    )
+
+                                    voiceAvailable -> AsrButton(state = asrState, onClick = onAsrClick)
+
+                                    else -> SendButton(
+                                        loading = false,
+                                        empty = true,
+                                        onClick = { sendMessage() },
+                                        onLongClick = { sendMessageWithoutAnswer() },
+                                    )
+                                }
+                            }
+                        },
+                    )
 
                     if (loading) {
                         KeepScreenOn()
@@ -389,6 +382,55 @@ fun ChatInput(
     if (isFullScreen) {
         FullScreenEditor(state = state) {
             isFullScreen = false
+        }
+    }
+}
+
+/**
+ * Places the bar's three slots ([left], [center], [right]) either on one line - the buttons
+ * flanking the field - or on two storeys with the field on top and the buttons underneath.
+ *
+ * This is a [Layout] rather than two branches of an `if`: switching branches would put the text
+ * field in a different composition slot, re-creating it and losing the focus that just arrived,
+ * so tapping the bar made it flash open and immediately close again.
+ */
+@Composable
+private fun ChatInputBar(
+    expanded: Boolean,
+    modifier: Modifier = Modifier,
+    left: @Composable () -> Unit,
+    center: @Composable () -> Unit,
+    right: @Composable () -> Unit,
+) {
+    Layout(modifier = modifier, content = { left(); center(); right() }) { measurables, constraints ->
+        val gap = 4.dp.roundToPx()
+        val width = constraints.maxWidth
+        val loose = constraints.copy(minWidth = 0, maxWidth = width)
+        val leftPlaceable = measurables[0].measure(loose)
+        val rightPlaceable = measurables[2].measure(loose)
+
+        if (expanded) {
+            val centerPlaceable = measurables[1].measure(constraints.copy(minWidth = width, maxWidth = width))
+            val actionHeight = maxOf(leftPlaceable.height, rightPlaceable.height)
+            layout(width, centerPlaceable.height + gap + actionHeight) {
+                centerPlaceable.place(0, 0)
+                leftPlaceable.place(0, centerPlaceable.height + gap + (actionHeight - leftPlaceable.height) / 2)
+                rightPlaceable.place(
+                    width - rightPlaceable.width,
+                    centerPlaceable.height + gap + (actionHeight - rightPlaceable.height) / 2,
+                )
+            }
+        } else {
+            val centerWidth = (width - leftPlaceable.width - rightPlaceable.width - gap * 2).coerceAtLeast(0)
+            val centerPlaceable = measurables[1].measure(
+                constraints.copy(minWidth = centerWidth, maxWidth = centerWidth)
+            )
+            val height = maxOf(leftPlaceable.height, centerPlaceable.height, rightPlaceable.height)
+            layout(width, height) {
+                leftPlaceable.place(0, (height - leftPlaceable.height) / 2)
+                centerPlaceable.place(leftPlaceable.width + gap, (height - centerPlaceable.height) / 2)
+                rightPlaceable.place(width - rightPlaceable.width, (height - rightPlaceable.height) / 2)
+            }
         }
     }
 }
@@ -458,6 +500,18 @@ private fun ActionIconButton(
         }
     }
 }
+
+/** Short prompts cycled through for the empty bar, picked at random on every composition. */
+private val chatInputHints = listOf(
+    R.string.chat_input_hint_1,
+    R.string.chat_input_hint_2,
+    R.string.chat_input_hint_3,
+    R.string.chat_input_hint_4,
+    R.string.chat_input_hint_5,
+)
+
+@Composable
+private fun rememberChatInputHint(): Int = remember { chatInputHints.random() }
 
 @Composable
 private fun TextInputRow(
@@ -555,6 +609,8 @@ private fun TextInputRow(
             )
         }
 
+        val hint = rememberChatInputHint()
+
         TextField(
             state = state.textContent,
             modifier = Modifier
@@ -587,7 +643,7 @@ private fun TextInputRow(
                 },
             shape = MaterialTheme.shapes.largeIncreased,
             placeholder = {
-                Text(stringResource(R.string.chat_input_placeholder))
+                Text(stringResource(hint))
             },
             lineLimits = TextFieldLineLimits.MultiLine(maxHeightInLines = 5),
             keyboardOptions = KeyboardOptions(
@@ -828,6 +884,8 @@ private fun FullScreenEditor(
                         }
                     }
                     val receiveContentListener = rememberPasteLongTextAsFileListener(state)
+                    val hint = rememberChatInputHint()
+
                     TextField(
                         state = state.textContent,
                         modifier = Modifier
@@ -836,7 +894,7 @@ private fun FullScreenEditor(
                             .contentReceiver(receiveContentListener),
                         shape = RoundedCornerShape(32.dp),
                         placeholder = {
-                            Text(stringResource(R.string.chat_input_placeholder))
+                            Text(stringResource(hint))
                         },
                         keyboardOptions = KeyboardOptions(
                             capitalization = KeyboardCapitalization.Sentences,

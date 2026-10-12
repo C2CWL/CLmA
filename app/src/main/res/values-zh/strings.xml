@@ -237,6 +237,11 @@
   <string name="chain_of_thought_collapse">收起</string>
   <string name="chain_of_thought_show_more_steps">再显示 %d 步</string>
   <string name="chat_input_placeholder">输入消息与AI聊天</string>
+  <string name="chat_input_hint_1">说点什么？</string>
+  <string name="chat_input_hint_2">从哪开始？</string>
+  <string name="chat_input_hint_3">继续吧</string>
+  <string name="chat_input_hint_4">在想什么？</string>
+  <string name="chat_input_hint_5">接下来呢？</string>
   <string name="chat_input_unsupported_file_type">不支持的文件类型：%s</string>
   <string name="chat_input_attachment_too_large">%1$s 过大——上限为 %2$d MB</string>
   <string name="chat_input_file_read_failed">文件读取失败：%s</string>

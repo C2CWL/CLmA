@@ -263,6 +263,11 @@
   <string name="chain_of_thought_collapse">Collapse</string>
   <string name="chain_of_thought_show_more_steps">Show %d more steps</string>
   <string name="chat_input_placeholder">Chat with AI</string>
+  <string name="chat_input_hint_1">Say something…</string>
+  <string name="chat_input_hint_2">Where do we start?</string>
+  <string name="chat_input_hint_3">Go on…</string>
+  <string name="chat_input_hint_4">What are you thinking?</string>
+  <string name="chat_input_hint_5">What is next?</string>
   <string name="chat_page_input_model_label">Model</string>
   <string name="chat_page_input_search_label">Search provider</string>
   <string name="chat_page_input_search_off">Off</string>
