@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -25,7 +26,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalDrawerSheet
@@ -113,7 +113,6 @@ import me.rerere.rikkahub.ui.hooks.EditStateContent
 import me.rerere.rikkahub.ui.hooks.readBooleanPreference
 import me.rerere.rikkahub.ui.hooks.rememberIsPlayStoreVersion
 import me.rerere.rikkahub.ui.hooks.useEditState
-import me.rerere.rikkahub.ui.modifier.onClick
 import me.rerere.rikkahub.utils.navigateToChatPage
 import me.rerere.rikkahub.utils.toDp
 import org.koin.androidx.compose.koinViewModel
@@ -131,7 +130,10 @@ import kotlin.uuid.Uuid
 private fun drawerGlassStyle(containerShape: RoundedCornerShape): GlassStyle {
     val base = MaterialTheme.colorScheme.surfaceContainer
     return GlassStyle.Material3(
-        containerColor = base,
+        // ★必须半透明：GlassStyle 的 containerColor 最终落到 backgroundColor，而不透明的
+        // backgroundColor 会把捕获到的模糊内容整块盖住（渲染侧按 `alpha == 1f` 判定
+        // sourceIsOpaque），玻璃就此退化成一块实心白板 —— 这就是「跟抽屉不搭」的根因。
+        containerColor = base.copy(alpha = 0.55f),
         tint = base.copy(alpha = 0.30f),
     ) {
         optics(
@@ -278,64 +280,62 @@ fun ChatDrawerContent(
                     modifier = Modifier.padding(vertical = 4.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-            // 用户头像和昵称自定义区域
+            // 身份区（头像在上、昵称在下）与两个常用入口并排：入口不再各占一整行，
+            // 卡片因此矮了一截；身份列与下边文件夹胶囊的文字都落在同一条 16dp 竖线上。
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 8.dp),
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                UIAvatar(
-                    name = settings.displaySetting.userNickname.ifBlank { stringResource(R.string.user_default_name) },
-                    value = settings.displaySetting.userAvatar,
-                    onUpdate = { newAvatar ->
-                        vm.updateSettings(
-                            settings.copy(
-                                displaySetting = settings.displaySetting.copy(
-                                    userAvatar = newAvatar
+                // 昵称本身就是编辑入口（原先那个铅笔图标已去掉，点一下名字即可改名），
+                // 所以这里不再额外留一个点击热区，只把无障碍标签挂在昵称上。
+                Column(
+                    modifier = Modifier.widthIn(max = 96.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    UIAvatar(
+                        name = settings.displaySetting.userNickname.ifBlank { stringResource(R.string.user_default_name) },
+                        value = settings.displaySetting.userAvatar,
+                        onUpdate = { newAvatar ->
+                            vm.updateSettings(
+                                settings.copy(
+                                    displaySetting = settings.displaySetting.copy(
+                                        userAvatar = newAvatar
+                                    )
                                 )
                             )
-                        )
-                    },
-                    modifier = Modifier.size(50.dp),
-                )
+                        },
+                        modifier = Modifier.size(50.dp),
+                    )
 
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        Text(
-                            text = settings.displaySetting.userNickname.ifBlank { stringResource(R.string.user_default_name) },
-                            style = MaterialTheme.typography.titleMedium,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.clickable {
+                    Text(
+                        text = settings.displaySetting.userNickname.ifBlank { stringResource(R.string.user_default_name) },
+                        style = MaterialTheme.typography.titleSmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier
+                            .clip(MaterialTheme.shapes.small)
+                            .clickable(
+                                onClickLabel = stringResource(R.string.accessibility_edit_nickname),
+                            ) {
                                 nicknameEditState.open(settings.displaySetting.userNickname)
                             }
-                        )
+                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                    )
 
-                        Icon(
-                            imageVector = HugeIcons.PencilEdit01,
-                            contentDescription = stringResource(R.string.accessibility_edit_nickname),
-                            modifier = Modifier
-                                .onClick {
-                                    nicknameEditState.open(settings.displaySetting.userNickname)
-                                }
-                                .size(LocalTextStyle.current.fontSize.toDp())
-                        )
-                    }
                     Greeting(
                         style = MaterialTheme.typography.labelMedium,
                     )
                 }
-            }
 
-            DrawerActions(navController = navController)
+                DrawerActions(
+                    navController = navController,
+                    modifier = Modifier.weight(1f),
+                )
+            }
 
             FolderBar(
                 protectedFolderId = protectedFolderId,
@@ -891,8 +891,11 @@ fun ChatDrawerContent(
 }
 
 @Composable
-private fun DrawerActions(navController: Navigator) {
-    Column {
+private fun DrawerActions(
+    navController: Navigator,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier) {
         // 搜索入口
         Surface(
             onClick = { navController.navigate(Screen.MessageSearch) },
