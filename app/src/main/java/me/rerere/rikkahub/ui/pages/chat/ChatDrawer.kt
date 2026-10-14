@@ -90,7 +90,6 @@ import me.rerere.rikkahub.ui.components.ui.BackupReminderCard
 import me.rerere.rikkahub.ui.components.ui.Tooltip
 import me.rerere.rikkahub.ui.components.ui.AssistantAvatar
 import me.rerere.rikkahub.ui.components.ui.UIAvatar
-import me.rerere.rikkahub.ui.components.ui.rikkaGlassStyle
 import me.rerere.rikkahub.ui.components.ui.UpdateCard
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
@@ -102,9 +101,6 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.blur.HazeBlurStyle
 import dev.chrisbanes.haze.blur.hazeBlur
 import dev.chrisbanes.haze.blur.material3.Material3
-import dev.chrisbanes.haze.glass.hazeGlass
-import dev.chrisbanes.haze.hazeSource
-import dev.chrisbanes.haze.rememberHazeState
 import me.rerere.rikkahub.ui.hooks.EditStateContent
 import me.rerere.rikkahub.ui.hooks.readBooleanPreference
 import me.rerere.rikkahub.ui.hooks.rememberIsPlayStoreVersion
@@ -202,8 +198,6 @@ fun ChatDrawerContent(
         }
     }
 
-    // 底部功能区浮在对话列表之上：对话列表作为玻璃来源，底部卡片折射列表内容。
-    val drawerHazeState = rememberHazeState()
     var bottomBarHeightPx by remember { mutableStateOf(0) }
     val bottomBarHeight = with(LocalDensity.current) { bottomBarHeightPx.toDp() }
     // 上方功能区固定悬浮在顶部，对话列表从其下方滚过；用实测高度给列表留出顶部空间。
@@ -231,18 +225,15 @@ fun ChatDrawerContent(
                 onClick = { navController.navigate(Screen.Backup) },
             )
 
-            // 上方功能区：玻璃卡片（无边框；阴影 + 玻璃高光做立体感，与底部功能区一致）。
+            // 上方功能区：一块 M3 填充卡片（阴影视作悬浮）。这里刻意不用 hazeGlass——两张固定
+            // 卡片下方没有可折射的内容（对话列表为它们留了上下 padding），空背板会让玻璃把
+            // 自己的边缘渲染成一圈灰边，卡片中心与边缘出现明显色差，所以直接换成纯色卡片。
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .shadow(6.dp, topBarShape, clip = false)
-                    .clip(topBarShape)
-                    .hazeGlass(
-                        input = HazeInput.Sources(drawerHazeState),
-                        style = rikkaGlassStyle(topBarShape, blurRadius = 20.dp, depth = 0.5f),
-                    ),
+                    .shadow(4.dp, topBarShape, clip = false),
                 shape = topBarShape,
-                color = Color.Transparent,
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 tonalElevation = 0.dp,
             ) {
                 Column(
@@ -339,8 +330,7 @@ fun ChatDrawerContent(
                 listState = conversationListState,
                 contentPadding = PaddingValues(top = topAreaHeight + 12.dp, bottom = bottomBarHeight + 12.dp),
                 modifier = Modifier
-                    .fillMaxSize()
-                    .hazeSource(state = drawerHazeState),
+                    .fillMaxSize(),
             onClick = {
                     navigateToChatPage(navController, it.id)
                 },
@@ -379,22 +369,16 @@ fun ChatDrawerContent(
                     drawerTopArea()
                 }
 
-                // 底部功能区：浮在对话列表之上的玻璃卡片（无边框；阴影 + 玻璃高光做立体感），
-                // 列表从它下方滑过时被折射虚化。
+                // 底部功能区：同样是 M3 填充卡片（列表并不会滑到它下面，玻璃没有可折射的对象）。
                 val bottomBarShape = RoundedCornerShape(20.dp)
                 Surface(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
-                        .shadow(6.dp, bottomBarShape, clip = false)
-                        .clip(bottomBarShape)
-                        .hazeGlass(
-                            input = HazeInput.Sources(drawerHazeState),
-                            style = rikkaGlassStyle(bottomBarShape, blurRadius = 20.dp, depth = 0.5f),
-                        )
+                        .shadow(4.dp, bottomBarShape, clip = false)
                         .onSizeChanged { bottomBarHeightPx = it.height },
                     shape = bottomBarShape,
-                    color = Color.Transparent,
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
                     tonalElevation = 0.dp,
                 ) {
                     Column(
@@ -861,65 +845,64 @@ private fun DrawerActions(
     navController: Navigator,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier) {
-        // 搜索入口
-        Surface(
+    // 两个常用入口各占一格、图标在上文字在下、各自居中。原先它们各占一整行且靠右对齐，
+    // 卡片右半边空出一大片，整张卡看着向左失衡；改成等宽两格后右半张被填满，也和底部
+    // 功能卡那排圆形按钮的排布语言对上了。
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        DrawerShortcut(
+            icon = HugeIcons.Search01,
+            label = stringResource(R.string.chat_page_search_chats),
             onClick = { navController.navigate(Screen.MessageSearch) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 4.dp),
-            shape = MaterialTheme.shapes.medium,
-            color = Color.Transparent,
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 8.dp, end = 4.dp, top = 10.dp, bottom = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
-            ) {
-                Icon(
-                    imageVector = HugeIcons.Search01,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    text = stringResource(R.string.chat_page_search_chats),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-            }
-        }
-
-        // 历史记录入口
-        Surface(
+            modifier = Modifier.weight(1f),
+        )
+        DrawerShortcut(
+            icon = HugeIcons.TransactionHistory,
+            label = stringResource(R.string.chat_page_history),
             onClick = { navController.navigate(Screen.History) },
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
+@Composable
+private fun DrawerShortcut(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier.semantics(mergeDescendants = true) {
+            contentDescription = label
+        },
+        shape = MaterialTheme.shapes.medium,
+        color = Color.Transparent,
+    ) {
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 4.dp),
-            shape = MaterialTheme.shapes.medium,
-            color = Color.Transparent,
+                .padding(vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 8.dp, end = 4.dp, top = 10.dp, bottom = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
-            ) {
-                Icon(
-                    imageVector = HugeIcons.TransactionHistory,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    text = stringResource(R.string.chat_page_history),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-            }
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }
