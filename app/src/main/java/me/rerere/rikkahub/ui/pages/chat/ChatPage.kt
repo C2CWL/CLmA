@@ -59,13 +59,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dokar.sonner.ToastType
 import dev.chrisbanes.haze.HazeInput
 import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.glass.GlassDefaults
-import dev.chrisbanes.haze.glass.GlassStyle
-import dev.chrisbanes.haze.glass.OpticalSizeValue
 import dev.chrisbanes.haze.glass.hazeGlass
-import dev.chrisbanes.haze.glass.material3.Material3
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
+import me.rerere.rikkahub.ui.components.ui.rikkaGlassStyle
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -852,19 +849,7 @@ private fun GlassTopBarButton(
     hazeState: HazeState,
     content: @Composable () -> Unit,
 ) {
-    val base = MaterialTheme.colorScheme.surfaceContainer
-    val glassStyle = GlassStyle.Material3(
-        containerColor = base,
-        tint = base.copy(alpha = 0.30f),
-    ) {
-        optics(
-            GlassDefaults.optics.copy(
-                blurRadius = OpticalSizeValue.Fixed(12.dp),
-                depth = OpticalSizeValue.Fixed(0.4f),
-            )
-        )
-        shape(CircleShape)
-    }
+    val glassStyle = rikkaGlassStyle(CircleShape, blurRadius = 12.dp, depth = 0.4f)
     Surface(
         onClick = onClick,
         modifier = Modifier

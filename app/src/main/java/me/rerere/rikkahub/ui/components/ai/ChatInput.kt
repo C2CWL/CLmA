@@ -1,5 +1,9 @@
 package me.rerere.rikkahub.ui.components.ai
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -69,13 +73,12 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.lerp
 import androidx.compose.ui.window.DialogProperties
 import com.dokar.sonner.ToastType
 import dev.chrisbanes.haze.HazeInput
 import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.blur.HazeBlurStyle
-import dev.chrisbanes.haze.blur.hazeBlur
-import dev.chrisbanes.haze.blur.material3.Material3
+import dev.chrisbanes.haze.glass.hazeGlass
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.collectLatest
 import me.rerere.ai.provider.ModelAbility
@@ -105,6 +108,7 @@ import me.rerere.rikkahub.ui.components.ui.KeepScreenOn
 import me.rerere.rikkahub.ui.components.ui.permission.PermissionManager
 import me.rerere.rikkahub.ui.components.ui.permission.PermissionRecordAudio
 import me.rerere.rikkahub.ui.components.ui.permission.rememberPermissionState
+import me.rerere.rikkahub.ui.components.ui.rikkaGlassStyle
 import me.rerere.rikkahub.ui.context.LocalASRState
 import me.rerere.rikkahub.ui.context.LocalSettings
 import me.rerere.rikkahub.ui.context.LocalToaster
@@ -113,6 +117,7 @@ import me.rerere.rikkahub.utils.SoundEffectPlayer
 import org.koin.compose.koinInject
 import me.rerere.rikkahub.ui.pages.chat.VoicePhase
 import me.rerere.rikkahub.ui.pages.chat.VoiceSessionState
+import kotlin.math.roundToInt
 import kotlin.uuid.Uuid
 
 @Composable
@@ -139,9 +144,6 @@ fun ChatInput(
 ) {
     val toaster = LocalToaster.current
     val assistant = settings.getCurrentAssistant()
-    val inputHazeStyle = HazeBlurStyle.Material3 {
-        blurRadius(12.dp)
-    }
 
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
@@ -221,7 +223,14 @@ fun ChatInput(
     val expanded = isFocused ||
         state.messageContent.isNotEmpty() ||
         state.textContent.text.contains('\n')
-    val containerShape = RoundedCornerShape(if (expanded) 16.dp else 28.dp)
+    // Animate the corner along with the layout change below, so the pill does not snap between
+    // its 28dp and 16dp radii while the bar is growing.
+    val containerCorner by animateDpAsState(
+        targetValue = if (expanded) 16.dp else 28.dp,
+        animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
+        label = "chatInputCorner",
+    )
+    val containerShape = RoundedCornerShape(containerCorner)
 
     Surface(
         color = Color.Transparent,
@@ -241,19 +250,18 @@ fun ChatInput(
                 onFinishEdit = onFinishEditQueuedMessage,
                 onResume = onResumeMessageQueue,
             )
-            // Fixed glass — the bar is the app's primary control surface, so it keeps the frosted
-            // look regardless of the blur preference (same call as the drawer's bottom panel).
+            // Fixed glass — the bar is the app's primary control surface, so it keeps the glass
+            // material regardless of the blur preference (same recipe as the drawer's cards).
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(containerShape)
-                    .hazeBlur(
+                    .hazeGlass(
                         input = HazeInput.Sources(hazeState),
-                        style = inputHazeStyle,
+                        style = rikkaGlassStyle(containerShape, blurRadius = 12.dp, depth = 0.4f),
                     ),
                 shape = containerShape,
                 tonalElevation = 0.dp,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
                 color = Color.Transparent,
             ) {
                 Column(
@@ -402,6 +410,16 @@ private fun ChatInputBar(
     center: @Composable () -> Unit,
     right: @Composable () -> Unit,
 ) {
+    // The two arrangements differ in exactly two things: how wide the field is, and which row the
+    // button pair sits on. Animating between them means interpolating just those, and every child
+    // stays in the same composition slot, so the focus that triggered the switch survives it (an
+    // AnimatedContent / AnimatedVisibility wrapper would recreate the field and drop the focus —
+    // the bug this layout exists to avoid).
+    val progress by animateFloatAsState(
+        targetValue = if (expanded) 1f else 0f,
+        animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
+        label = "chatInputBarExpanded",
+    )
     Layout(modifier = modifier, content = { left(); center(); right() }) { measurables, constraints ->
         val gap = 4.dp.roundToPx()
         val width = constraints.maxWidth
@@ -409,28 +427,38 @@ private fun ChatInputBar(
         val leftPlaceable = measurables[0].measure(loose)
         val rightPlaceable = measurables[2].measure(loose)
 
-        if (expanded) {
-            val centerPlaceable = measurables[1].measure(constraints.copy(minWidth = width, maxWidth = width))
-            val actionHeight = maxOf(leftPlaceable.height, rightPlaceable.height)
-            layout(width, centerPlaceable.height + gap + actionHeight) {
-                centerPlaceable.place(0, 0)
-                leftPlaceable.place(0, centerPlaceable.height + gap + (actionHeight - leftPlaceable.height) / 2)
-                rightPlaceable.place(
-                    width - rightPlaceable.width,
-                    centerPlaceable.height + gap + (actionHeight - rightPlaceable.height) / 2,
-                )
-            }
-        } else {
-            val centerWidth = (width - leftPlaceable.width - rightPlaceable.width - gap * 2).coerceAtLeast(0)
-            val centerPlaceable = measurables[1].measure(
-                constraints.copy(minWidth = centerWidth, maxWidth = centerWidth)
+        val p = progress.coerceIn(0f, 1f)
+        val collapsedCenterWidth =
+            (width - leftPlaceable.width - rightPlaceable.width - gap * 2).coerceAtLeast(0)
+        val centerWidth = lerp(collapsedCenterWidth.toFloat(), width.toFloat(), p).roundToInt()
+        val centerPlaceable = measurables[1].measure(
+            constraints.copy(minWidth = centerWidth, maxWidth = centerWidth)
+        )
+
+        val actionHeight = maxOf(leftPlaceable.height, rightPlaceable.height)
+        val collapsedHeight =
+            maxOf(leftPlaceable.height, centerPlaceable.height, rightPlaceable.height)
+        val expandedHeight = centerPlaceable.height + gap + actionHeight
+        val height = lerp(collapsedHeight.toFloat(), expandedHeight.toFloat(), p).roundToInt()
+
+        layout(width, height) {
+            // Collapsed: one row, everything centred on it. Expanded: the field owns the top row
+            // and the pair drops to the row below, each centred on that row's height.
+            val centerY = lerp((collapsedHeight - centerPlaceable.height) / 2f, 0f, p)
+            val leftY = lerp(
+                (collapsedHeight - leftPlaceable.height) / 2f,
+                (centerPlaceable.height + gap + (actionHeight - leftPlaceable.height) / 2f).toFloat(),
+                p,
             )
-            val height = maxOf(leftPlaceable.height, centerPlaceable.height, rightPlaceable.height)
-            layout(width, height) {
-                leftPlaceable.place(0, (height - leftPlaceable.height) / 2)
-                centerPlaceable.place(leftPlaceable.width + gap, (height - centerPlaceable.height) / 2)
-                rightPlaceable.place(width - rightPlaceable.width, (height - rightPlaceable.height) / 2)
-            }
+            val rightY = lerp(
+                (collapsedHeight - rightPlaceable.height) / 2f,
+                (centerPlaceable.height + gap + (actionHeight - rightPlaceable.height) / 2f).toFloat(),
+                p,
+            )
+            val centerX = lerp((leftPlaceable.width + gap).toFloat(), 0f, p)
+            centerPlaceable.place(centerX.roundToInt(), centerY.roundToInt())
+            leftPlaceable.place(0, leftY.roundToInt())
+            rightPlaceable.place(width - rightPlaceable.width, rightY.roundToInt())
         }
     }
 }

@@ -87,10 +87,10 @@ import me.rerere.rikkahub.data.model.Folder
 import me.rerere.rikkahub.data.repository.ConversationRepository
 import me.rerere.rikkahub.ui.components.ai.AssistantPicker
 import me.rerere.rikkahub.ui.components.ui.BackupReminderCard
-import me.rerere.rikkahub.ui.components.ui.Greeting
 import me.rerere.rikkahub.ui.components.ui.Tooltip
 import me.rerere.rikkahub.ui.components.ui.AssistantAvatar
 import me.rerere.rikkahub.ui.components.ui.UIAvatar
+import me.rerere.rikkahub.ui.components.ui.rikkaGlassStyle
 import me.rerere.rikkahub.ui.components.ui.UpdateCard
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
@@ -102,11 +102,7 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.blur.HazeBlurStyle
 import dev.chrisbanes.haze.blur.hazeBlur
 import dev.chrisbanes.haze.blur.material3.Material3
-import dev.chrisbanes.haze.glass.GlassDefaults
-import dev.chrisbanes.haze.glass.GlassStyle
-import dev.chrisbanes.haze.glass.OpticalSizeValue
 import dev.chrisbanes.haze.glass.hazeGlass
-import dev.chrisbanes.haze.glass.material3.Material3
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import me.rerere.rikkahub.ui.hooks.EditStateContent
@@ -118,33 +114,6 @@ import me.rerere.rikkahub.utils.toDp
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 import kotlin.uuid.Uuid
-
-/**
- * Glass style shared by the drawer panel and its two floating bars.
- *
- * Frosted rather than clear so the page refracting through stays legible. The built-in lighting
- * and edge highlight supply the "glass" depth; callers stack a soft [shadow] behind it so the
- * bar reads as floating above the panel.
- */
-@Composable
-private fun drawerGlassStyle(containerShape: RoundedCornerShape): GlassStyle {
-    val base = MaterialTheme.colorScheme.surfaceContainer
-    return GlassStyle.Material3(
-        // ★必须半透明：GlassStyle 的 containerColor 最终落到 backgroundColor，而不透明的
-        // backgroundColor 会把捕获到的模糊内容整块盖住（渲染侧按 `alpha == 1f` 判定
-        // sourceIsOpaque），玻璃就此退化成一块实心白板 —— 这就是「跟抽屉不搭」的根因。
-        containerColor = base.copy(alpha = 0.55f),
-        tint = base.copy(alpha = 0.30f),
-    ) {
-        optics(
-            GlassDefaults.optics.copy(
-                blurRadius = OpticalSizeValue.Fixed(20.dp),
-                depth = OpticalSizeValue.Fixed(0.5f),
-            )
-        )
-        shape(containerShape)
-    }
-}
 
 @Composable
 fun ChatDrawerContent(
@@ -270,7 +239,7 @@ fun ChatDrawerContent(
                     .clip(topBarShape)
                     .hazeGlass(
                         input = HazeInput.Sources(drawerHazeState),
-                        style = drawerGlassStyle(topBarShape),
+                        style = rikkaGlassStyle(topBarShape, blurRadius = 20.dp, depth = 0.5f),
                     ),
                 shape = topBarShape,
                 color = Color.Transparent,
@@ -326,9 +295,6 @@ fun ChatDrawerContent(
                             .padding(horizontal = 6.dp, vertical = 2.dp),
                     )
 
-                    Greeting(
-                        style = MaterialTheme.typography.labelMedium,
-                    )
                 }
 
                 DrawerActions(
@@ -424,7 +390,7 @@ fun ChatDrawerContent(
                         .clip(bottomBarShape)
                         .hazeGlass(
                             input = HazeInput.Sources(drawerHazeState),
-                            style = drawerGlassStyle(bottomBarShape),
+                            style = rikkaGlassStyle(bottomBarShape, blurRadius = 20.dp, depth = 0.5f),
                         )
                         .onSizeChanged { bottomBarHeightPx = it.height },
                     shape = bottomBarShape,
@@ -908,9 +874,9 @@ private fun DrawerActions(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 10.dp),
+                    .padding(start = 8.dp, end = 4.dp, top = 10.dp, bottom = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
             ) {
                 Icon(
                     imageVector = HugeIcons.Search01,
@@ -938,9 +904,9 @@ private fun DrawerActions(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 10.dp),
+                    .padding(start = 8.dp, end = 4.dp, top = 10.dp, bottom = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
             ) {
                 Icon(
                     imageVector = HugeIcons.TransactionHistory,
@@ -1006,7 +972,7 @@ private fun FolderBar(
     LazyRow(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 4.dp),
+            .padding(horizontal = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
