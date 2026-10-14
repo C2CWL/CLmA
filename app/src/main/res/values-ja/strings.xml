@@ -809,6 +809,10 @@
   <string name="setting_page_search_config">設定</string>
   <string name="setting_page_search_delete_provider">プロバイダー削除</string>
   <string name="setting_page_search_result_size">結果数</string>
+  <string name="setting_page_search_snippet_max_chars">要約の文字数</string>
+  <string name="setting_page_search_snippet_max_chars_desc">検索結果 1 件あたりの要約の最大文字数。統合回答は 4 倍で切り詰めます。0 は無制限（既定 800）。</string>
+  <string name="setting_page_search_scrape_max_chars">取得の文字数</string>
+  <string name="setting_page_search_scrape_max_chars_desc">ページ取得時に残す本文の最大文字数。0 は無制限（既定 8000）。</string>
   <string name="setting_page_search_service">検索サービス</string>
   <string name="setting_page_search_service_desc">検索サービスを設定</string>
   <string name="setting_page_search_test">検索テスト</string>

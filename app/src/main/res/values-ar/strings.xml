@@ -824,6 +824,10 @@
   <string name="setting_page_search_common_options">الخيارات الشائعة</string>
   <string name="setting_page_search_delete_provider">حذف المزوّد</string>
   <string name="setting_page_search_result_size">حجم النتائج</string>
+  <string name="setting_page_search_snippet_max_chars">طول المقتطف</string>
+  <string name="setting_page_search_snippet_max_chars_desc">الحد الأقصى لأحرف مقتطف كل نتيجة. يُقص الجواب المركّب عند 4 أضعاف هذا الحد. 0 يعني بلا حد (الافتراضي 800).</string>
+  <string name="setting_page_search_scrape_max_chars">طول الاستخراج</string>
+  <string name="setting_page_search_scrape_max_chars_desc">الحد الأقصى لأحرف نص الصفحة عند الاستخراج. 0 يعني بلا حد (الافتراضي 8000).</string>
   <string name="setting_page_search_service">خدمة البحث</string>
   <string name="setting_page_search_service_desc">إعداد خدمة البحث</string>
   <string name="setting_page_search_title">خدمة البحث</string>

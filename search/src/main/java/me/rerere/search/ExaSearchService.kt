@@ -32,8 +32,6 @@ import okhttp3.RequestBody.Companion.toRequestBody
 private const val TAG = "ExaSearchService"
 
 object ExaSearchService : SearchService<SearchServiceOptions.ExaOptions> {
-    private const val MAX_EVIDENCE_TEXT_CHARACTERS = 8_000
-    private const val MAX_EVIDENCE_HIGHLIGHT_CHARACTERS = 1_200
     private const val MIN_MAX_AGE_HOURS = -1
     private const val MAX_MAX_AGE_HOURS = 720
     override val name: String = "Exa"
@@ -109,7 +107,11 @@ object ExaSearchService : SearchService<SearchServiceOptions.ExaOptions> {
         serviceOptions: SearchServiceOptions.ExaOptions
     ): Result<SearchResult> = withContext(Dispatchers.IO) {
         runCatching {
-            val body = buildSearchRequestBody(params, commonOptions.resultSize)
+            val body = buildSearchRequestBody(
+                params,
+                commonOptions.resultSize,
+                commonOptions.snippetMaxChars,
+            )
             val apiKey = keyRoulette.next(serviceOptions.apiKey, serviceOptions.id.toString())
 
             val request = Request.Builder()
@@ -142,7 +144,7 @@ object ExaSearchService : SearchService<SearchServiceOptions.ExaOptions> {
         serviceOptions: SearchServiceOptions.ExaOptions
     ): Result<ScrapedResult> = withContext(Dispatchers.IO) {
         runCatching {
-            val body = buildScrapeRequestBody(params)
+            val body = buildScrapeRequestBody(params, commonOptions.scrapeMaxChars)
             val apiKey = keyRoulette.next(serviceOptions.apiKey, serviceOptions.id.toString())
 
             val request = Request.Builder()
@@ -232,6 +234,7 @@ object ExaSearchService : SearchService<SearchServiceOptions.ExaOptions> {
     internal fun buildSearchRequestBody(
         params: JsonObject,
         resultSize: Int,
+        snippetMaxChars: Int = 0,
     ) = buildJsonObject {
         val query = params["query"]?.jsonPrimitive?.content ?: error("query is required")
         val maxAgeHours = optionalMaxAgeHours(params)
@@ -248,28 +251,34 @@ object ExaSearchService : SearchService<SearchServiceOptions.ExaOptions> {
         putOptionalString(this, params, "endPublishedDate")
         putOptionalStringArray(this, params, "includeDomains")
         putOptionalStringArray(this, params, "excludeDomains")
+        val contents = exaContentsSpec(snippetMaxChars, hasEvidenceOptions)
         put("contents", buildJsonObject {
-            if (hasEvidenceOptions) {
-                put("text", buildJsonObject {
-                    put("maxCharacters", JsonPrimitive(MAX_EVIDENCE_TEXT_CHARACTERS))
-                })
-                put("highlights", buildJsonObject {
-                    put("maxCharacters", JsonPrimitive(MAX_EVIDENCE_HIGHLIGHT_CHARACTERS))
-                })
-            } else {
+            if (contents.unboundedText) {
                 put("text", JsonPrimitive(true))
+            } else {
+                put("text", buildJsonObject {
+                    put("maxCharacters", JsonPrimitive(contents.textMaxCharacters))
+                })
+                if (contents.highlightMaxCharacters > 0) {
+                    put("highlights", buildJsonObject {
+                        put("maxCharacters", JsonPrimitive(contents.highlightMaxCharacters))
+                    })
+                }
             }
             maxAgeHours?.let { put("maxAgeHours", it) }
         })
     }
 
-    internal fun buildScrapeRequestBody(params: JsonObject) = buildJsonObject {
+    internal fun buildScrapeRequestBody(
+        params: JsonObject,
+        scrapeMaxChars: Int = 0,
+    ) = buildJsonObject {
         val url = params["url"]?.jsonPrimitive?.content ?: error("url is required")
         put("urls", buildJsonArray {
             add(JsonPrimitive(url))
         })
         put("text", buildJsonObject {
-            put("maxCharacters", JsonPrimitive(MAX_EVIDENCE_TEXT_CHARACTERS))
+            put("maxCharacters", JsonPrimitive(exaScrapeMaxCharacters(scrapeMaxChars)))
         })
         optionalMaxAgeHours(params)?.let { put("maxAgeHours", it) }
     }

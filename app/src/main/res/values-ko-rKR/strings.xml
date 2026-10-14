@@ -809,6 +809,10 @@
   <string name="setting_page_search_config">설정</string>
   <string name="setting_page_search_delete_provider">제공업체 삭제</string>
   <string name="setting_page_search_result_size">결과 크기</string>
+  <string name="setting_page_search_snippet_max_chars">요약 글자 수</string>
+  <string name="setting_page_search_snippet_max_chars_desc">검색 결과 한 건의 요약에 남길 최대 글자 수. 종합 답변은 4배로 자릅니다. 0은 제한 없음(기본 800).</string>
+  <string name="setting_page_search_scrape_max_chars">스크랩 글자 수</string>
+  <string name="setting_page_search_scrape_max_chars_desc">페이지를 가져올 때 본문에 남길 최대 글자 수. 0은 제한 없음(기본 8000).</string>
   <string name="setting_page_search_service">검색 서비스</string>
   <string name="setting_page_search_service_desc">검색 서비스 설정</string>
   <string name="setting_page_search_test">검색 테스트</string>

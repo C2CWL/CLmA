@@ -183,6 +183,52 @@ class ExaSearchServiceTest {
     }
 
     @Test
+    fun `snippet cap bounds text and requests highlights`() {
+        val body = ExaSearchService.buildSearchRequestBody(
+            params = buildJsonObject {
+                put("query", "stable knowledge")
+            },
+            resultSize = 10,
+            snippetMaxChars = 800,
+        )
+
+        val contents = body["contents"]!!.jsonObject
+        assertEquals(800, contents["text"]!!.jsonObject["maxCharacters"]!!.jsonPrimitive.int)
+        assertEquals(800, contents["highlights"]!!.jsonObject["maxCharacters"]!!.jsonPrimitive.int)
+    }
+
+    @Test
+    fun `snippet cap overrides the evidence text budget`() {
+        val body = ExaSearchService.buildSearchRequestBody(
+            params = buildJsonObject {
+                put("query", "latest release")
+                put("maxAgeHours", 1)
+            },
+            resultSize = 10,
+            snippetMaxChars = 500,
+        )
+
+        val contents = body["contents"]!!.jsonObject
+        assertEquals(500, contents["text"]!!.jsonObject["maxCharacters"]!!.jsonPrimitive.int)
+        assertEquals(500, contents["highlights"]!!.jsonObject["maxCharacters"]!!.jsonPrimitive.int)
+        assertEquals(1, contents["maxAgeHours"]!!.jsonPrimitive.int)
+    }
+
+    @Test
+    fun `scrape request honours the scrape cap and keeps the legacy default`() {
+        val capped = ExaSearchService.buildScrapeRequestBody(
+            buildJsonObject { put("url", "https://example.com/release") },
+            scrapeMaxChars = 3_000,
+        )
+        assertEquals(3_000, capped["text"]!!.jsonObject["maxCharacters"]!!.jsonPrimitive.int)
+
+        val legacy = ExaSearchService.buildScrapeRequestBody(
+            buildJsonObject { put("url", "https://example.com/release") },
+        )
+        assertEquals(8_000, legacy["text"]!!.jsonObject["maxCharacters"]!!.jsonPrimitive.int)
+    }
+
+    @Test
     fun `scrape request supports content freshness and bounded text`() {
         val body = ExaSearchService.buildScrapeRequestBody(
             buildJsonObject {

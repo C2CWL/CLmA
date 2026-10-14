@@ -809,6 +809,10 @@
   <string name="setting_page_search_config">Конфигурация</string>
   <string name="setting_page_search_delete_provider">Удалить поставщика</string>
   <string name="setting_page_search_result_size">Размер результата</string>
+  <string name="setting_page_search_snippet_max_chars">Длина фрагмента</string>
+  <string name="setting_page_search_snippet_max_chars_desc">Максимум символов во фрагменте каждого результата. Сводный ответ обрезается на 4×. 0 — без ограничения (по умолчанию 800).</string>
+  <string name="setting_page_search_scrape_max_chars">Длина извлечения</string>
+  <string name="setting_page_search_scrape_max_chars_desc">Максимум символов текста страницы при извлечении. 0 — без ограничения (по умолчанию 8000).</string>
   <string name="setting_page_search_service">Служба поиска</string>
   <string name="setting_page_search_service_desc">Настроить службу поиска</string>
   <string name="setting_page_search_test">Тест поиска</string>

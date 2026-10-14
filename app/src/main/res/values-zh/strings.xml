@@ -930,6 +930,10 @@
   <string name="setting_page_search_config">配置</string>
   <string name="setting_page_search_delete_provider">删除提供商</string>
   <string name="setting_page_search_result_size">结果数量</string>
+  <string name="setting_page_search_snippet_max_chars">摘要字数</string>
+  <string name="setting_page_search_snippet_max_chars_desc">每条搜索结果摘要最多保留的字符数；综合回答按 4 倍截断。填 0 表示不限制（默认 800）。</string>
+  <string name="setting_page_search_scrape_max_chars">抓取字数</string>
+  <string name="setting_page_search_scrape_max_chars_desc">抓取网页时正文最多保留的字符数。填 0 表示不限制（默认 8000）。</string>
   <string name="setting_page_search_service">搜索服务</string>
   <string name="setting_page_search_service_desc">设置搜索服务</string>
   <string name="setting_page_search_test">测试搜索</string>

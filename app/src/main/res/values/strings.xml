@@ -995,6 +995,10 @@
   <string name="setting_page_search_config">Configuration</string>
   <string name="setting_page_search_delete_provider">Delete Provider</string>
   <string name="setting_page_search_result_size">Result Size</string>
+  <string name="setting_page_search_snippet_max_chars">Snippet length</string>
+  <string name="setting_page_search_snippet_max_chars_desc">Maximum characters kept per result snippet. A synthesized answer is capped at 4× this. 0 means no limit (default 800).</string>
+  <string name="setting_page_search_scrape_max_chars">Scrape length</string>
+  <string name="setting_page_search_scrape_max_chars_desc">Maximum characters kept from a scraped page. 0 means no limit (default 8000).</string>
   <string name="setting_page_search_service">Search Service</string>
   <string name="setting_page_search_service_desc">Set up search service</string>
   <string name="setting_page_search_test">Test Search</string>

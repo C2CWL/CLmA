@@ -414,6 +414,42 @@ private fun CommonOptions(
 
             FormItem(
                 label = {
+                    Text(stringResource(R.string.setting_page_search_snippet_max_chars))
+                },
+                description = {
+                    Text(stringResource(R.string.setting_page_search_snippet_max_chars_desc))
+                }
+            ) {
+                OutlinedNumberInput(
+                    value = commonOptions.snippetMaxChars,
+                    onValueChange = {
+                        commonOptions = commonOptions.copy(snippetMaxChars = it.coerceIn(0, 20_000))
+                        onUpdate(commonOptions)
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            FormItem(
+                label = {
+                    Text(stringResource(R.string.setting_page_search_scrape_max_chars))
+                },
+                description = {
+                    Text(stringResource(R.string.setting_page_search_scrape_max_chars_desc))
+                }
+            ) {
+                OutlinedNumberInput(
+                    value = commonOptions.scrapeMaxChars,
+                    onValueChange = {
+                        commonOptions = commonOptions.copy(scrapeMaxChars = it.coerceIn(0, 100_000))
+                        onUpdate(commonOptions)
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            FormItem(
+                label = {
                     Text(stringResource(R.string.setting_page_search_web_fetch_tools_title))
                 },
                 description = {

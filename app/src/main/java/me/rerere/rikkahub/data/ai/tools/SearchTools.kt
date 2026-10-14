@@ -13,6 +13,7 @@ import me.rerere.rikkahub.utils.JsonInstantPretty
 import me.rerere.rikkahub.utils.toLocalString
 import me.rerere.search.SearchService
 import me.rerere.search.SearchServiceOptions
+import me.rerere.search.limitedBy
 import java.time.LocalDate
 import kotlin.time.Clock
 import kotlin.uuid.Uuid
@@ -36,6 +37,7 @@ fun createSearchTools(settings: Settings): Set<Tool> {
                     Response format:
                     - retrievedAt is the local retrieval time, never a publication date
                     - items[].id (short id), index, title, url, publishedDate (if supplied), highlights (if supplied), text
+                    - items[].text is a snippet capped by the user's snippet length, not the full page. When it contains "chars omitted", call scrape_web on that url instead of searching again.
                     - images[]: image urls related to the query (may be empty)
 
                     Citations:
@@ -68,7 +70,9 @@ fun createSearchTools(settings: Settings): Set<Tool> {
                         params = it.jsonObject,
                         commonOptions = settings.searchCommonOptions,
                         serviceOptions = options,
-                    ).getOrThrow().copy(retrievedAt = Clock.System.now().toString())
+                    ).getOrThrow()
+                        .limitedBy(settings.searchCommonOptions)
+                        .copy(retrievedAt = Clock.System.now().toString())
                     val results =
                         JsonInstantPretty.encodeToJsonElement(result).jsonObject.let { json ->
                             val map = json.toMutableMap()
@@ -116,7 +120,9 @@ fun createSearchTools(settings: Settings): Set<Tool> {
                             params = it.jsonObject,
                             commonOptions = settings.searchCommonOptions,
                             serviceOptions = options,
-                        ).getOrThrow().copy(retrievedAt = Clock.System.now().toString())
+                        ).getOrThrow()
+                            .limitedBy(settings.searchCommonOptions)
+                            .copy(retrievedAt = Clock.System.now().toString())
                         val payload = JsonInstantPretty.encodeToJsonElement(result).jsonObject
                         listOf(UIMessagePart.Text(payload.toString()))
                     }

@@ -818,6 +818,10 @@
   <string name="setting_page_search_config">設定</string>
   <string name="setting_page_search_delete_provider">刪除提供商</string>
   <string name="setting_page_search_result_size">結果數量</string>
+  <string name="setting_page_search_snippet_max_chars">摘要字數</string>
+  <string name="setting_page_search_snippet_max_chars_desc">每條搜尋結果摘要最多保留的字元數；綜合回答按 4 倍截斷。填 0 表示不限制（預設 800）。</string>
+  <string name="setting_page_search_scrape_max_chars">擷取字數</string>
+  <string name="setting_page_search_scrape_max_chars_desc">擷取網頁時正文最多保留的字元數。填 0 表示不限制（預設 8000）。</string>
   <string name="setting_page_search_service">搜尋服務</string>
   <string name="setting_page_search_service_desc">設定搜尋服務</string>
   <string name="setting_page_search_test">測試搜尋</string>

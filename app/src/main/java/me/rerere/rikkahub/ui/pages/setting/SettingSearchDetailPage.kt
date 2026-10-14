@@ -61,6 +61,7 @@ import me.rerere.search.SearchCommonOptions
 import me.rerere.search.SearchResult
 import me.rerere.search.SearchService
 import me.rerere.search.SearchServiceOptions
+import me.rerere.search.limitedBy
 import org.koin.androidx.compose.koinViewModel
 import kotlin.uuid.Uuid
 
@@ -280,6 +281,7 @@ private fun SearchTestSection(
                                     mapOf("query" to JsonPrimitive(query))
                                 )
                                 result = service.search(params, commonOptions, options)
+                                    .map { it.limitedBy(commonOptions) }
                                 testing = false
                             }
                         }
