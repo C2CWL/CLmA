@@ -393,6 +393,8 @@
   <string name="code_block_collapse">طي</string>
   <string name="code_block_copy">نسخ الشيفرة</string>
   <string name="code_block_expand">توسيع</string>
+  <string name="chat_message_collapse">طي</string>
+  <string name="chat_message_expand">توسيع</string>
   <string name="code_block_preview">معاينة</string>
   <string name="collapse_translation">طي الترجمة</string>
   <string name="confirm">تأكيد</string>

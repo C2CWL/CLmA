@@ -309,6 +309,8 @@
   <string name="code_block_collapse">折りたたむ</string>
   <string name="code_block_copy">コードをコピー</string>
   <string name="code_block_expand">展開</string>
+  <string name="chat_message_collapse">折りたたむ</string>
+  <string name="chat_message_expand">展開</string>
   <string name="code_block_preview">プレビュー</string>
   <string name="collapse_translation">翻訳を折りたたむ</string>
   <string name="confirm">確認</string>

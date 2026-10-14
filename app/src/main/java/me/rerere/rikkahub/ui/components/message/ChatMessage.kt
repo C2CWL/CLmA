@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.CardDefaults
@@ -34,16 +35,24 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -51,6 +60,7 @@ import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withLink
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastAll
 import androidx.compose.ui.util.fastForEach
@@ -71,6 +81,8 @@ import me.rerere.ai.ui.UIMessageAnnotation
 import me.rerere.ai.ui.UIMessagePart
 import me.rerere.ai.ui.isEmptyUIMessage
 import me.rerere.hugeicons.HugeIcons
+import me.rerere.hugeicons.stroke.ArrowDown01
+import me.rerere.hugeicons.stroke.ArrowUp01
 import me.rerere.hugeicons.stroke.File02
 import me.rerere.hugeicons.stroke.MusicNote03
 import me.rerere.hugeicons.stroke.Video01
@@ -421,23 +433,20 @@ private fun MessagePartsBlock(
                             role != MessageRole.USER && SkillWebviewCardOrNull(part)
                         val textContent = @Composable {
                             if (role == MessageRole.USER) {
-                                Surface(
-                                    modifier = Modifier.animateContentSize(),
-                                    shape = RoundedCornerShape(16.dp),
-                                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = settings.displaySetting.bubbleOpacity),
+                                // Long pasted prompts collapse to a preview. The chevron
+                                // expands in place; tapping the bubble still edits.
+                                UserMessageBubble(
+                                    text = part.text.replaceRegexes(
+                                        assistant = assistant,
+                                        scope = AssistantAffectScope.USER,
+                                        visual = true,
+                                    ),
+                                    bubbleColor = MaterialTheme.colorScheme.primaryContainer.copy(
+                                        alpha = settings.displaySetting.bubbleOpacity,
+                                    ),
                                     onClick = { onUserMessageClick?.invoke() },
-                                ) {
-                                    Column(modifier = Modifier.padding(8.dp)) {
-                                        MarkdownBlock(
-                                            content = part.text.replaceRegexes(
-                                                assistant = assistant,
-                                                scope = AssistantAffectScope.USER,
-                                                visual = true,
-                                            ),
-                                            onClickCitation = handleClickCitation
-                                        )
-                                    }
-                                }
+                                    onClickCitation = handleClickCitation,
+                                )
                             } else {
                                 if (settings.displaySetting.showAssistantBubble) {
                                     Surface(
@@ -687,6 +696,102 @@ private fun MessagePartsBlock(
                 }
             ) {
                 Text(stringResource(R.string.citations_count, annotations.size))
+            }
+        }
+    }
+}
+
+@Composable
+private fun UserMessageBubble(
+    text: String,
+    bubbleColor: Color,
+    onClick: () -> Unit,
+    onClickCitation: (String) -> Unit,
+) {
+    var expanded by rememberSaveable { mutableStateOf(false) }
+    var showToggle by remember(text) { mutableStateOf(UserMessageCollapse.likelyOverflows(text)) }
+    val limitPx = with(LocalDensity.current) { UserMessageCollapse.LIMIT_DP.dp.roundToPx() }
+    val collapsed = showToggle && !expanded
+    Surface(
+        modifier = Modifier.animateContentSize(),
+        shape = RoundedCornerShape(16.dp),
+        color = bubbleColor,
+        onClick = onClick,
+    ) {
+        Column(modifier = Modifier.padding(8.dp)) {
+            Box(
+                modifier = Modifier
+                    .clipToBounds()
+                    .then(
+                        if (collapsed) {
+                            Modifier
+                                // Offscreen, or DstIn punches through the bubble color.
+                                .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+                                .drawWithContent {
+                                    drawContent()
+                                    val fade = 28.dp.toPx()
+                                    if (size.height > fade) {
+                                        val stop = (size.height - fade) / size.height
+                                        drawRect(
+                                            brush = Brush.verticalGradient(
+                                                0f to Color.Black,
+                                                stop to Color.Black,
+                                                1f to Color.Transparent,
+                                            ),
+                                            blendMode = BlendMode.DstIn,
+                                        )
+                                    }
+                                }
+                        } else {
+                            Modifier
+                        }
+                    )
+                    .layout { measurable, constraints ->
+                        val placeable = measurable.measure(
+                            constraints.copy(maxHeight = Constraints.Infinity),
+                        )
+                        val decision = UserMessageCollapse.layout(
+                            fullHeightPx = placeable.height,
+                            limitPx = limitPx,
+                            expanded = expanded,
+                        )
+                        if (showToggle != decision.showToggle) showToggle = decision.showToggle
+                        layout(placeable.width, decision.heightPx) {
+                            placeable.place(0, 0)
+                        }
+                    },
+            ) {
+                MarkdownBlock(
+                    content = text,
+                    onClickCitation = onClickCitation,
+                )
+            }
+            if (showToggle) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp),
+                    contentAlignment = Alignment.CenterEnd,
+                ) {
+                    Surface(
+                        onClick = { expanded = !expanded },
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surface,
+                        shadowElevation = 1.dp,
+                        modifier = Modifier.size(30.dp),
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = if (expanded) HugeIcons.ArrowUp01 else HugeIcons.ArrowDown01,
+                                contentDescription = stringResource(
+                                    if (expanded) R.string.chat_message_collapse else R.string.chat_message_expand,
+                                ),
+                                modifier = Modifier.size(18.dp),
+                                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f),
+                            )
+                        }
+                    }
+                }
             }
         }
     }

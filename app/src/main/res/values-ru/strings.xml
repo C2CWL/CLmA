@@ -309,6 +309,8 @@
   <string name="code_block_collapse">Свернуть</string>
   <string name="code_block_copy">Копировать код</string>
   <string name="code_block_expand">Развернуть</string>
+  <string name="chat_message_collapse">Свернуть</string>
+  <string name="chat_message_expand">Развернуть</string>
   <string name="code_block_preview">Предпросмотр</string>
   <string name="collapse_translation">Свернуть перевод</string>
   <string name="confirm">Подтвердить</string>
