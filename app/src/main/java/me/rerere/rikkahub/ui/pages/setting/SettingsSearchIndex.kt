@@ -230,6 +230,12 @@ fun settingsSearchIndex(developerMode: Boolean): List<SettingsSearchEntry> {
             groupRes = R.string.setting_page_group_about,
             route = Screen.SettingAbout,
         ),
+        SettingsSearchEntry(
+            titleRes = R.string.setting_page_sponsor,
+            descriptionRes = R.string.setting_page_sponsor_desc,
+            groupRes = R.string.setting_page_group_about,
+            route = Screen.SettingSponsor,
+        ),
     )
 
     if (developerMode) {

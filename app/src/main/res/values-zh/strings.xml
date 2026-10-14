@@ -2687,4 +2687,17 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
 
   <string name="chat_page_continuing">连接中断，正在续写回复（%1$d/%2$d）</string>
   <string name="chat_page_subagents_running">子 agent %1$d 个运行中 · %2$s</string>
+
+  <string name="setting_page_sponsor">赞助支持</string>
+  <string name="setting_page_sponsor_desc">赞助本项目</string>
+  <string name="setting_sponsor_page_title">赞助支持</string>
+  <string name="setting_sponsor_page_desc">本应用无广告、无付费墙。如果它对你有用，一点赞助就是它继续做下去的动力，谢谢！</string>
+  <string name="setting_sponsor_qr_section">扫码赞助</string>
+  <string name="setting_sponsor_link_section">其他支持方式</string>
+  <string name="setting_sponsor_wechat">微信</string>
+  <string name="setting_sponsor_wechat_desc">用微信扫一扫</string>
+  <string name="setting_sponsor_alipay">支付宝</string>
+  <string name="setting_sponsor_alipay_desc">用支付宝扫一扫</string>
+  <string name="setting_sponsor_qr_hint">截图保存后，用上面的 App 扫码即可。谢谢支持！</string>
+  <string name="setting_sponsor_qr_close">关闭</string>
 </resources>

@@ -132,6 +132,7 @@ import me.rerere.rikkahub.ui.pages.setting.SettingSearchPage
 import me.rerere.rikkahub.ui.pages.setting.SettingsSearchPage
 import me.rerere.rikkahub.ui.pages.setting.SettingTTSPage
 import me.rerere.rikkahub.ui.pages.setting.SettingSpeechPage
+import me.rerere.rikkahub.ui.pages.setting.SettingSponsorPage
 import me.rerere.rikkahub.ui.pages.setting.SettingSubAgentsPage
 // P2-32 ssh hosts page
 import me.rerere.rikkahub.ui.pages.setting.SettingSshPage
@@ -500,6 +501,10 @@ class RouteActivity : ComponentActivity() {
                                 SettingAboutPage()
                             }
 
+                            entry<Screen.SettingSponsor> {
+                                SettingSponsorPage()
+                            }
+
                             entry<Screen.SettingSearch> {
                                 SettingSearchPage()
                             }
@@ -801,6 +806,9 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data object SettingAbout : Screen
+
+    @Serializable
+    data object SettingSponsor : Screen
 
     @Serializable
     data object SettingSearch : Screen

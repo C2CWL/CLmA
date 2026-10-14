@@ -56,6 +56,7 @@ import me.rerere.hugeicons.stroke.Developer
 import me.rerere.hugeicons.stroke.Earth
 import me.rerere.hugeicons.stroke.GlobalSearch
 import me.rerere.hugeicons.stroke.ImageUpload
+import me.rerere.hugeicons.stroke.InLove
 import me.rerere.hugeicons.stroke.Internet
 import me.rerere.hugeicons.stroke.Link01
 import me.rerere.hugeicons.stroke.LookTop
@@ -460,6 +461,12 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                             }
                         },
                         headlineContent = { Text(stringResource(R.string.setting_page_about)) },
+                    )
+                    item(
+                        onClick = { navController.navigate(Screen.SettingSponsor) },
+                        leadingContent = { Icon(HugeIcons.InLove, null) },
+                        supportingContent = { Text(stringResource(R.string.setting_page_sponsor_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_page_sponsor)) },
                     )
                     item(
                         onClick = {
