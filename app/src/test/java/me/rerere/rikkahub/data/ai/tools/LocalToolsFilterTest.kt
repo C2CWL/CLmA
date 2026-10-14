@@ -67,4 +67,34 @@ class LocalToolsFilterTest {
         assertSame(keepFirst, tools[0])
         assertSame(keepLast, tools[1])
     }
+
+    @Test
+    fun `ungrouped names are not a per-assistant opt-out`() {
+        assertSame(emptySet<String>(), LocalToolFilter.applicableDisabledNames(emptySet()))
+        assertEquals(
+            setOf("read_file"),
+            LocalToolFilter.applicableDisabledNames(
+                setOf("read_file", "web_fetch", "web_extract", "check_app_updates"),
+            ),
+        )
+        assertEquals(
+            emptySet<String>(),
+            LocalToolFilter.applicableDisabledNames(LocalToolFilter.UNGROUPED_TOOL_NAMES),
+        )
+    }
+
+    @Test
+    fun `ungrouped names survive a deny list that names them`() {
+        val tools = mutableListOf(
+            tool("read_file"),
+            tool("web_fetch"),
+            tool("web_extract"),
+            tool("check_app_updates"),
+        )
+        LocalToolFilter.removeDisabled(
+            tools,
+            LocalToolFilter.applicableDisabledNames(setOf("web_fetch", "web_extract", "read_file")),
+        )
+        assertEquals(listOf("web_fetch", "web_extract", "check_app_updates"), tools.map { it.name })
+    }
 }

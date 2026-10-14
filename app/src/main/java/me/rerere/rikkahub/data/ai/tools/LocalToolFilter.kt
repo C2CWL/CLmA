@@ -29,6 +29,31 @@ import me.rerere.ai.core.Tool
 object LocalToolFilter {
 
     /**
+     * Names [LocalTools.getTools] appends no matter which group was requested.
+     *
+     * `check_app_updates` is the app's own update check. `web_fetch` and `web_extract` are
+     * gated by Search settings (`enableWebFetchTools`), not by a [LocalToolOption] — the old
+     * per-assistant entries were removed and are dropped on decode. A per-group inventory is
+     * built with `getTools(listOf(oneGroup))`, so without this set every category lists the
+     * two web tools.
+     */
+    val UNGROUPED_TOOL_NAMES: Set<String> = setOf(
+        "check_app_updates",
+        "web_fetch",
+        "web_extract",
+    )
+
+    /**
+     * Per-assistant opt-out does not apply to [UNGROUPED_TOOL_NAMES]. Those tools have their
+     * own switch (or none); a name left in `disabledLocalTools` from the old per-group rows
+     * must not keep them off. An empty input is returned as-is, so the empty-deny no-op below
+     * still holds.
+     */
+    fun applicableDisabledNames(disabledToolNames: Set<String>): Set<String> =
+        if (disabledToolNames.isEmpty()) disabledToolNames
+        else disabledToolNames - UNGROUPED_TOOL_NAMES
+
+    /**
      * Removes every tool whose [Tool.name] is in [disabledToolNames] from [tools], in place,
      * preserving the order of the survivors. Returns the same list instance for convenience.
      */

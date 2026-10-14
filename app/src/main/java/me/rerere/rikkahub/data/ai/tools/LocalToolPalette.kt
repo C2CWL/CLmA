@@ -27,7 +27,9 @@ import me.rerere.ai.core.Tool
  *
  * A name offered by two groups is attributed to the **first** one in inventory order: the row
  * has to point somewhere, and inventory order is the reading order of the group list the user
- * already knows.
+ * already knows. Names in [LocalToolFilter.UNGROUPED_TOOL_NAMES] are dropped instead: the
+ * factory appends them to every group query, and attributing them to the first group would
+ * still list `web_fetch` / `web_extract` under a category they do not belong to.
  *
  * Pure: no Android, no coroutines, no `R`, no `Context`. `LocalToolPaletteTest` runs it on a
  * bare JVM.
@@ -109,7 +111,8 @@ class LocalToolPalette private constructor(
          * Builds the palette from per-group inventories.
          *
          * Blank tool names are skipped (a nameless tool cannot be addressed by the model either),
-         * and a name already claimed by an earlier group is left with that group.
+         * [LocalToolFilter.UNGROUPED_TOOL_NAMES] are skipped (they belong to no group), and a
+         * name already claimed by an earlier group is left with that group.
          */
         fun build(inventory: List<LocalToolInventory>): LocalToolPalette {
             val groups = mutableListOf<LocalToolOption>()
@@ -117,7 +120,10 @@ class LocalToolPalette private constructor(
             val entries = mutableListOf<ToolCatalogEntry>()
             for (section in inventory) {
                 for (tool in section.tools) {
-                    if (tool.name.isBlank() || groupOf.containsKey(tool.name)) continue
+                    if (tool.name.isBlank() ||
+                        tool.name in LocalToolFilter.UNGROUPED_TOOL_NAMES ||
+                        groupOf.containsKey(tool.name)
+                    ) continue
                     groupOf[tool.name] = section.group
                     if (section.group !in groups) groups += section.group
                     entries += ToolCatalogEntry(

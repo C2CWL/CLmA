@@ -66,6 +66,29 @@ class LocalToolPaletteTest {
     }
 
     @Test
+    fun `web_fetch and web_extract are not attributed to any group`() {
+        // The factory appends these to every single-group query. Attributing them to the
+        // first group would still show them under one category; dropping them shows them
+        // under none, which is where Search settings owns them.
+        val palette = LocalToolPalette.build(
+            inventory(
+                LocalToolOption.JavascriptEngine to listOf(
+                    "javascript", "web_fetch", "web_extract", "check_app_updates",
+                ),
+                LocalToolOption.Battery to listOf("battery", "web_fetch", "web_extract"),
+            )
+        )
+        assertEquals(listOf("javascript", "battery"), palette.hits.map { it.name })
+        assertNull(palette.group("web_fetch"))
+        assertNull(palette.group("web_extract"))
+        assertNull(palette.group("check_app_updates"))
+        assertEquals(
+            listOf(LocalToolOption.JavascriptEngine, LocalToolOption.Battery),
+            palette.groups,
+        )
+    }
+
+    @Test
     fun `hits carry the LOCAL source`() {
         val palette = LocalToolPalette.build(inventory(LocalToolOption.Files to listOf("read_file")))
         assertEquals(ToolCatalogSource.LOCAL, palette.hits.single().source)

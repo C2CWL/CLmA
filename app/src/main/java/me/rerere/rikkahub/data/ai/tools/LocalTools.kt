@@ -1085,7 +1085,8 @@ class LocalTools(
             }
         }
         // web_fetch/web_extract are always-on unless disabled in Search settings, no
-        // per-assistant toggle.
+        // per-assistant toggle. They are in [LocalToolFilter.UNGROUPED_TOOL_NAMES]: a
+        // per-group inventory must not present them as that group's tools.
         if (settingsStore.settingsFlow.value.enableWebFetchTools) {
             tools.add(webFetchTool(okHttpClient))
             tools.add(webExtractTool(okHttpClient))
@@ -1189,7 +1190,7 @@ class LocalTools(
         // P2-02 - drop the names the assistant opted out of, IN PLACE: workflow_create was
         // built above with a knownToolNamesProvider closure over this very list, so it must
         // not advertise a tool that is no longer on the surface. An empty set mutates nothing.
-        LocalToolFilter.removeDisabled(tools, disabledToolNames)
+        LocalToolFilter.removeDisabled(tools, LocalToolFilter.applicableDisabledNames(disabledToolNames))
 
         return tools.map { t ->
             val withApproval = if (t.name == ToolApprovalPolicy.ASK_USER_TOOL_NAME) {
@@ -1204,9 +1205,10 @@ class LocalTools(
     companion object {
         /**
          * Tools that are always registered but deliberately withheld from the per-assistant
-         * individual-tool list: they implement built-in app behaviour (app updates) rather
-         * than a capability the user opts into, so there is nothing for them to toggle.
+         * individual-tool list. There is nothing to toggle here: app updates are built-in,
+         * and `web_fetch` / `web_extract` are the Search-settings switch. Same set the
+         * palette drops, so a group row and a palette row cannot disagree.
          */
-        val HIDDEN_TOOL_NAMES: Set<String> = setOf("check_app_updates")
+        val HIDDEN_TOOL_NAMES: Set<String> = LocalToolFilter.UNGROUPED_TOOL_NAMES
     }
 }
