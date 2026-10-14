@@ -40,8 +40,12 @@ fun skillGetContentTool(
         Show a skill's full markdown content, description, and current enabled state without
         running it. Read-only — use this to display a skill to the user or inspect one before
         calling use_skill. Works on disabled skills too. Returns
-        { name, description, format, source_label, enabled, content_md, args_schema } on
-        success, or { error: "skill_not_found", available_skills: [...] } if the name is unknown.
+        { name, description, format, source_label, enabled, content_md, args_schema,
+        license, allowed_tools, metadata } on success, or
+        { error: "skill_not_found", available_skills: [...] } if the name is unknown.
+        `license`, `allowed_tools` and `metadata` come from the Agent Skills frontmatter and
+        `allowed_tools` is advisory only — it lists the tools the skill's author expects, it
+        does not restrict what you may call.
     """.trimIndent().replace("\n", " "),
     parameters = {
         InputSchema.Obj(
@@ -85,6 +89,17 @@ fun skillGetContentTool(
             put("enabled", name in enabledSkills)
             put("content_md", content.contentMd)
             content.argsSchema?.let { put("args_schema", it) }
+            content.license?.let { put("license", it) }
+            if (content.allowedTools.isNotEmpty()) {
+                put("allowed_tools", buildJsonArray {
+                    content.allowedTools.forEach { add(JsonPrimitive(it)) }
+                })
+            }
+            if (content.metadata.isNotEmpty()) {
+                put("metadata", buildJsonObject {
+                    content.metadata.forEach { (key, value) -> put(key, value) }
+                })
+            }
         }
         listOf(UIMessagePart.Text(payload.toString()))
     },

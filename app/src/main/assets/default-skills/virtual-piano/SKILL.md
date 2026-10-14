@@ -1,8 +1,10 @@
 ---
 name: virtual-piano
 description: Show a playable 88-key virtual piano with synthesized note audio inside a webview.
-compatibility: js
-auto_load: false
+license: Apache-2.0
+compatibility: Requires the JS skills tool (run_js) to be enabled.
+metadata:
+  upstream: https://github.com/google-ai-edge/gallery
 ---
 
 # Virtual Piano

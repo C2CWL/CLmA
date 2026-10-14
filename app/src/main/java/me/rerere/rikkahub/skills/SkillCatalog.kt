@@ -27,6 +27,12 @@ data class SkillCatalog(
  * (the four already in `assets/default-skills/`); the install action is a no-op for those
  * since they're already on disk. Non-null `sourceUrl` triggers a fetch through
  * [SkillUrlImporter.importFromUrl] when the user taps Install.
+ *
+ * [runtime] is this catalog's own annotation (`js` / `any`) and is deliberately **not**
+ * called `compatibility`: in a `SKILL.md` that key belongs to the Agent Skills spec, where
+ * it means free-text environment requirements, not a machine-readable runtime tag. Naming
+ * it `runtime` keeps the two apart so nobody copies a catalog value into a skill's
+ * frontmatter and silently writes off-spec prose there.
  */
 @Serializable
 data class CatalogEntry(
@@ -37,7 +43,7 @@ data class CatalogEntry(
     val license: String = "",
     @SerialName("size_kb")
     val sizeKb: Int = 0,
-    val compatibility: String = "any",
+    val runtime: String = "any",
     @SerialName("source_url")
     val sourceUrl: String? = null,
     @SerialName("is_bundled")

@@ -71,6 +71,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import me.rerere.rikkahub.skills.SkillTestRunner
+import me.rerere.rikkahub.data.files.SkillMetadata
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.RikkaConfirmDialog
 import me.rerere.rikkahub.ui.context.LocalToaster
@@ -85,6 +86,7 @@ fun SkillDetailPage(skillName: String) {
     LaunchedEffect(skillName) { vm.init(skillName) }
 
     val tree by vm.tree.collectAsStateWithLifecycle()
+    val metadata by vm.metadata.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val toaster = LocalToaster.current
 
@@ -141,6 +143,7 @@ fun SkillDetailPage(skillName: String) {
                 .verticalScroll(scrollState)
                 .padding(innerPadding + PaddingValues(8.dp)),
         ) {
+            metadata?.let { SkillFrontmatterCard(it) }
             FileTree(
                 nodes = tree,
                 depth = 0,
@@ -547,4 +550,55 @@ private fun AddFileDialog(
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
         },
     )
+}
+
+/**
+ * Read-only view of the skill's SKILL.md frontmatter, in the Agent Skills spec's own
+ * vocabulary: the spec's optional fields (`compatibility`, `license`, `allowed-tools`) plus
+ * every entry of the `metadata` mapping, prefixed so it is obvious which block it came from.
+ *
+ * `allowed-tools` is **advisory** — the app never narrows a skill's tool surface from it, so
+ * the row is display-only. Renders nothing when the skill declares none of these fields,
+ * which is the common case for hand-authored skills.
+ */
+@Composable
+private fun SkillFrontmatterCard(metadata: SkillMetadata) {
+    val rows = buildList {
+        metadata.compatibility?.let { add("compatibility" to it) }
+        metadata.license?.let { add("license" to it) }
+        if (metadata.allowedTools.isNotEmpty()) {
+            add("allowed-tools" to metadata.allowedTools.joinToString(" "))
+        }
+        metadata.metadata.forEach { (key, value) -> add("metadata.$key" to value) }
+    }
+    if (rows.isEmpty()) return
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            rows.forEach { (key, value) ->
+                Column {
+                    Text(
+                        text = key,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontFamily = FontFamily.Monospace,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Text(
+                        text = value,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+    }
 }

@@ -24,7 +24,7 @@ class SkillCatalogTest {
               "category": "automation",
               "license": "Apache-2.0",
               "size_kb": 4,
-              "compatibility": "any",
+              "runtime": "any",
               "is_bundled": true
             },
             {
@@ -34,7 +34,7 @@ class SkillCatalogTest {
               "category": "productivity",
               "license": "Apache-2.0",
               "size_kb": 4,
-              "compatibility": "any",
+              "runtime": "any",
               "is_bundled": true
             },
             {
@@ -44,7 +44,7 @@ class SkillCatalogTest {
               "category": "automation",
               "license": "Apache-2.0",
               "size_kb": 4,
-              "compatibility": "any",
+              "runtime": "any",
               "is_bundled": true
             },
             {
@@ -54,7 +54,7 @@ class SkillCatalogTest {
               "category": "productivity",
               "license": "Apache-2.0",
               "size_kb": 5,
-              "compatibility": "any",
+              "runtime": "any",
               "is_bundled": true
             }
           ]
@@ -95,7 +95,7 @@ class SkillCatalogTest {
         assertEquals("uncategorised", e.category)
         assertEquals("", e.license)
         assertEquals(0, e.sizeKb)
-        assertEquals("any", e.compatibility)
+        assertEquals("any", e.runtime)
         assertEquals(false, e.isBundled)
         // updated_at also has a default ("") since it's missing in the sparse JSON.
         assertEquals("", catalog.updatedAt)

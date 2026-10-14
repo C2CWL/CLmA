@@ -1,8 +1,10 @@
 ---
 name: text-spinner
 description: Render a 3D-spinning text label inside a webview. Returns a relative webview URL the chat surface can embed.
-compatibility: js
-auto_load: false
+license: Apache-2.0
+compatibility: Requires the JS skills tool (run_js) to be enabled.
+metadata:
+  upstream: https://github.com/google-ai-edge/gallery
 ---
 
 # Instructions

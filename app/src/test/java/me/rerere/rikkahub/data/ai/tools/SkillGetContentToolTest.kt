@@ -133,6 +133,50 @@ class SkillGetContentToolTest {
     }
 
     @Test
+    fun `spec frontmatter fields - surfaced when the skill declares them`() {
+        // A community SKILL.md carries license / allowed-tools / metadata; all three must
+        // reach the model instead of being dropped on the floor.
+        val content = SkillContent(
+            name = "pdf-processing",
+            description = "Extract PDF text",
+            contentMd = "# body",
+            license = "Apache-2.0",
+            allowedTools = listOf("Read", "Write"),
+            metadata = mapOf("author" to "example-org", "version" to "1.0"),
+        )
+        val tool = skillGetContentTool(
+            enabledSkills = setOf("pdf-processing"),
+            allSkills = listOf(meta("pdf-processing")),
+            contentReader = { content },
+        )
+
+        val out = Json.parseToJsonElement(exec(tool, """{"name":"pdf-processing"}""")).jsonObject
+
+        assertEquals("Apache-2.0", out["license"]!!.jsonPrimitive.content)
+        assertEquals(
+            listOf("Read", "Write"),
+            out["allowed_tools"]!!.jsonArray.map { it.jsonPrimitive.content },
+        )
+        assertEquals("example-org", out["metadata"]!!.jsonObject["author"]!!.jsonPrimitive.content)
+    }
+
+    @Test
+    fun `spec frontmatter fields - omitted when the skill declares none`() {
+        val content = SkillContent(name = "plain", description = "no extras", contentMd = "# x")
+        val tool = skillGetContentTool(
+            enabledSkills = setOf("plain"),
+            allSkills = listOf(meta("plain")),
+            contentReader = { content },
+        )
+
+        val out = Json.parseToJsonElement(exec(tool, """{"name":"plain"}""")).jsonObject
+
+        assertFalse(out.containsKey("license"))
+        assertFalse(out.containsKey("allowed_tools"))
+        assertFalse(out.containsKey("metadata"))
+    }
+
+    @Test
     fun `missing name arg - returns missing_required_arg`() {
         val tool = skillGetContentTool(
             enabledSkills = emptySet(),

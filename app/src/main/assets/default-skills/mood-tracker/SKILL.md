@@ -1,8 +1,10 @@
 ---
 name: mood-tracker
 description: Log a daily 1-10 mood score with comments and view trend dashboards. Stores history in WebView localStorage.
-compatibility: js
-auto_load: false
+license: Apache-2.0
+compatibility: Requires the JS skills tool (run_js) to be enabled.
+metadata:
+  upstream: https://github.com/google-ai-edge/gallery
 ---
 
 # Mood Tracker

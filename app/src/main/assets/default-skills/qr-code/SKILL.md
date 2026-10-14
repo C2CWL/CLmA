@@ -1,8 +1,10 @@
 ---
 name: qr-code
 description: Generate a 512x512 QR code PNG for a given URL. Returns a base64-encoded image. Works fully offline.
-compatibility: js
-auto_load: false
+license: Apache-2.0
+compatibility: Requires the JS skills tool (run_js) to be enabled.
+metadata:
+  upstream: https://github.com/google-ai-edge/gallery
 ---
 
 # Instructions

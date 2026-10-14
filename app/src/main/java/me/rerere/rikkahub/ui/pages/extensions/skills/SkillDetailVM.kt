@@ -11,6 +11,7 @@ import kotlinx.coroutines.withContext
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.files.SkillFrontmatterParser
 import me.rerere.rikkahub.data.files.SkillManager
+import me.rerere.rikkahub.data.files.SkillMetadata
 import java.io.File
 
 data class SkillFile(
@@ -35,6 +36,10 @@ class SkillDetailVM(
     private val _tree = MutableStateFlow<List<SkillFileNode>>(emptyList())
     val tree = _tree.asStateFlow()
 
+    /** Parsed SKILL.md frontmatter for the header card; null until [init] loads. */
+    private val _metadata = MutableStateFlow<SkillMetadata?>(null)
+    val metadata = _metadata.asStateFlow()
+
     private var skillName = ""
 
     fun init(name: String) {
@@ -46,6 +51,7 @@ class SkillDetailVM(
     fun loadFiles() {
         viewModelScope.launch(Dispatchers.IO) {
             val dir = skillManager.getSkillDir(skillName) ?: return@launch
+            _metadata.value = skillManager.getSkillMetadata(skillName)
             _tree.value = buildTree(dir, dir)
         }
     }

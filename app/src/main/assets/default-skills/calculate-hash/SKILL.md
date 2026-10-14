@@ -1,8 +1,10 @@
 ---
 name: calculate-hash
 description: Calculate the SHA-1 hash of a given text via the WebView's WebCrypto API.
-compatibility: js
-auto_load: false
+license: Apache-2.0
+compatibility: Requires the JS skills tool (run_js) to be enabled.
+metadata:
+  upstream: https://github.com/google-ai-edge/gallery
 ---
 
 # Calculate hash

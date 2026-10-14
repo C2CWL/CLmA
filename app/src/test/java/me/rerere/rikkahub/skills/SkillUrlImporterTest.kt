@@ -227,7 +227,14 @@ class SkillUrlImporterTest {
         assertEquals("missing_name", (r as SkillUrlImporter.Result.Err).code)
     }
 
-    @Test fun `invalid skill name rejected`() {
+    @Test fun `legacy skill name is normalised to the spec shape`() {
+        // The Agent Skills spec's `name` rules (lowercase, alphanumerics + hyphens, <= 64
+        // chars) replace the old `[a-z0-9_-]{1,40}` check. A name that only violates the
+        // *shape* is normalised and its frontmatter `name:` line rewritten, so the installed
+        // directory still matches the declared name — the spec's layout rule, and what makes
+        // `SkillNameRules.isValid` meaningful for everything we install.
+        val saver = TempDirSkillSaver()
+        val localImporter = SkillUrlImporter(skillManager = saver)
         val md = """
             ---
             name: BAD NAME WITH SPACES!
@@ -235,8 +242,40 @@ class SkillUrlImporterTest {
             ---
             body
         """.trimIndent()
+        val r = localImporter.importFromText(md, sourceLabel = null)
+        assertTrue("expected Ok, got $r", r is SkillUrlImporter.Result.Ok)
+        assertEquals("bad-name-with-spaces", (r as SkillUrlImporter.Result.Ok).metadata.name)
+        val written = saver.tmpDir.resolve("bad-name-with-spaces/SKILL.md").readText()
+        assertTrue("frontmatter name must be rewritten, got: $written",
+            written.contains("name: \"bad-name-with-spaces\""))
+        assertFalse(written.contains("BAD NAME"))
+    }
+
+    @Test fun `underscore name is hyphenated on import`() {
+        val saver = TempDirSkillSaver()
+        val localImporter = SkillUrlImporter(skillManager = saver)
+        val md = """
+            ---
+            name: my_old_skill
+            description: x
+            ---
+            body
+        """.trimIndent()
+        val r = localImporter.importFromText(md, sourceLabel = null)
+        assertTrue("expected Ok, got $r", r is SkillUrlImporter.Result.Ok)
+        assertEquals("my-old-skill", (r as SkillUrlImporter.Result.Ok).metadata.name)
+    }
+
+    @Test fun `a name with nothing salvageable is still rejected`() {
+        val md = """
+            ---
+            name: "!!!"
+            description: x
+            ---
+            body
+        """.trimIndent()
         val r = importer.importFromText(md, sourceLabel = null)
-        assertTrue(r is SkillUrlImporter.Result.Err)
+        assertTrue("expected Err, got $r", r is SkillUrlImporter.Result.Err)
         assertEquals("invalid_name", (r as SkillUrlImporter.Result.Err).code)
     }
 }

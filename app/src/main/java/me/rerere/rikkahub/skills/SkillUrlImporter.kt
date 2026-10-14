@@ -3,6 +3,7 @@ package me.rerere.rikkahub.skills
 import me.rerere.rikkahub.data.files.SkillFrontmatterParser
 import me.rerere.rikkahub.data.files.SkillManager
 import me.rerere.rikkahub.data.files.SkillMetadata
+import me.rerere.rikkahub.data.files.SkillNameRules
 import kotlinx.serialization.json.contentOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -22,8 +23,13 @@ interface SkillSaver {
  * Phase 16 — install a skill from a URL.
  *
  * Accepts three input shapes:
- *  - **Native** — RikkaHub-format markdown with YAML frontmatter (`name:`, `description:`,
- *    optional `allowed-tools:`). Stored as-is.
+ *  - **Native** — a `SKILL.md` in the community Agent Skills format (the open standard at
+ *    agentskills.io, which RikkaHub's own bundled skills follow): `name` + `description`
+ *    required, `license` / `compatibility` / `metadata` / `allowed-tools` optional. Stored
+ *    as-is, so a community skill keeps every field its author declared. A `name` that is
+ *    merely off-spec (uppercase, `_`, over 64 characters) is normalised — see
+ *    [me.rerere.rikkahub.data.files.SkillNameRules] — and the frontmatter's `name:` line is
+ *    rewritten to match, keeping the spec's "name equals the directory name" layout rule.
  *  - **openclaw** — markdown skill with `## When to use` / `## Steps` / `## Tools used`
  *    sections. We synthesise a frontmatter block (`name:` from the first H1, `description:`
  *    from the paragraph beneath the first heading) and run the body through the
@@ -116,17 +122,27 @@ class SkillUrlImporter(
 
         // Pull name / description out of the (now-canonical) frontmatter for the saved-skill record.
         val frontmatter = SkillFrontmatterParser.parse(nativeMd)
-        val name = (overrideName?.takeIf { it.isNotBlank() } ?: frontmatter["name"])?.trim()
+        val declaredName = (overrideName?.takeIf { it.isNotBlank() } ?: frontmatter["name"])?.trim()
             ?: return Result.Err("missing_name", "imported skill has no 'name'")
-        if (!isValidSkillName(name)) {
+        // Aligned with the Agent Skills spec's `name` rules (see SkillNameRules): a name that
+        // already satisfies them is used verbatim, and anything else — uppercase, `_`, more
+        // than 64 characters, stray punctuation — is *normalised* into a valid one instead of
+        // being refused, then the frontmatter's `name:` line is rewritten to match. That keeps
+        // the spec's "name must equal the parent directory name" layout rule true on disk
+        // (saveSkill resolves skillsDir/<name>) for community skills that were merely sloppy
+        // about the name rather than fundamentally unusable.
+        val name = if (SkillNameRules.isValid(declaredName)) declaredName
+            else SkillNameRules.normalize(declaredName)
+        if (name.isEmpty()) {
             return Result.Err("invalid_name",
-                "skill name must be 1..40 chars, [a-z0-9-_] (got '$name')")
+                "skill name must be 1..${SkillNameRules.MAX_LENGTH} chars, [a-z0-9-] separated by single hyphens (got '$declaredName')")
         }
         val withSourceUrl = ensureSourceUrl(nativeMd, sourceForFrontmatter)
-        // If the user overrode the name, rewrite the frontmatter's `name:` line too — otherwise
-        // the saved skill's parsed metadata (which is what the LLM and Settings page see) keeps
-        // the source-declared name and the override only changes the directory.
-        val finalBody = if (overrideName != null && overrideName.isNotBlank())
+        // If the name changed (user override, or normalisation above), rewrite the frontmatter's
+        // `name:` line too — otherwise the saved skill's parsed metadata (what the LLM and the
+        // Settings page see) keeps the source-declared name and the change only affects the
+        // directory name.
+        val finalBody = if (name != frontmatter["name"]?.trim())
             rewriteFrontmatterName(withSourceUrl, name) else withSourceUrl
 
         val metadata = skillManager.saveSkill(name, finalBody)
@@ -326,16 +342,9 @@ class SkillUrlImporter(
         }.getOrDefault(false)
     }
 
-    private fun isValidSkillName(name: String): Boolean =
-        name.length in 1..40 && name.matches(Regex("""^[a-z0-9_-]+$"""))
-
     /** Lowercase, alphanumerics + hyphens only, hyphenated where source had spaces. */
-    private fun slugify(input: String): String {
-        val cleaned = input.trim().lowercase()
-            .replace(Regex("""[^a-z0-9]+"""), "-")
-            .trim('-')
-        return if (cleaned.isBlank()) "imported-skill" else cleaned.take(40)
-    }
+    private fun slugify(input: String): String =
+        SkillNameRules.normalize(input).ifBlank { "imported-skill" }
 
     companion object {
         const val MAX_BODY_BYTES = 256 * 1024  // 256 KB

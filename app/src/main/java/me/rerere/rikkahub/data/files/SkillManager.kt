@@ -93,7 +93,22 @@ class SkillManager(
             sourceLabel = frontmatter["source-url"]?.takeIf { it.isNotBlank() },
             contentMd = SkillFrontmatterParser.extractBody(raw),
             argsSchema = argsSchema,
+            license = frontmatter["license"]?.takeIf { it.isNotBlank() },
+            allowedTools = frontmatter.list("allowed-tools"),
+            metadata = frontmatter.map("metadata"),
         )
+    }
+
+    /**
+     * Frontmatter metadata for a single installed skill, or null when [skillName] does not
+     * resolve to a directory holding a readable `SKILL.md`. Cheaper than scanning
+     * [listSkills] when the caller already knows the name (the skill detail page).
+     */
+    fun getSkillMetadata(skillName: String): SkillMetadata? {
+        val skillDir = resolveSkillDir(skillName) ?: return null
+        val skillFile = skillDir.resolve("SKILL.md")
+        if (!skillFile.exists()) return null
+        return parseSkillFile(skillFile, skillDir)
     }
 
     /**
@@ -338,7 +353,7 @@ class SkillManager(
                 assetMgr.open("$assetRoot/$skillName/SKILL.md").bufferedReader().use { it.readText() }
             }.getOrNull()
             val isCoreSkill = bundledSkillMd?.let { content ->
-                SkillFrontmatterParser.parse(content)["auto_load"]?.equals("true", ignoreCase = true) == true
+                SkillFrontmatterParser.parse(content).boolean("auto_load")
             } == true
 
             val sentinel = targetDir.resolve(".seeded")
@@ -504,8 +519,11 @@ class SkillManager(
             SkillMetadata(
                 name = name,
                 description = description,
-                compatibility = frontmatter["compatibility"],
-                autoLoad = frontmatter["auto_load"]?.equals("true", ignoreCase = true) == true,
+                compatibility = frontmatter["compatibility"]?.takeIf { it.isNotBlank() },
+                license = frontmatter["license"]?.takeIf { it.isNotBlank() },
+                allowedTools = frontmatter.list("allowed-tools"),
+                metadata = frontmatter.map("metadata"),
+                autoLoad = frontmatter.boolean("auto_load"),
                 autoLoadPath = frontmatter["auto_load_path"]?.takeIf { it.isNotBlank() },
                 skillDir = skillDir,
             )
@@ -576,13 +594,30 @@ internal fun decideSeedAction(
 data class SkillMetadata(
     val name: String,
     val description: String,
+    /**
+     * The spec's `compatibility` field: a short, human-readable description of the
+     * environment the skill needs ("Requires git, docker and network access"). Free text —
+     * the app shows it as a badge and never parses behaviour out of it.
+     */
     val compatibility: String? = null,
-    // NOTE: the `allowed-tools:` frontmatter key is intentionally NOT parsed. It was
-    // never enforced anywhere (the tool set offered to the model is built from the
-    // assistant's enabled tools/skills in ChatService, with no per-skill filtering),
-    // so surfacing it as a field implied a sandbox boundary that did not exist. There
-    // is no clean seam to enforce it: skills are loaded lazily mid-turn via use_skill,
-    // while the tool list is fixed for the whole turn. Dropped rather than faked.
+    /** The spec's optional `license` field (a licence name, or a bundled licence file). */
+    val license: String? = null,
+    /**
+     * The spec's `allowed-tools` field, split into individual tool names. **Advisory only.**
+     * It is parsed and displayed so an author's declared tool surface is visible, and so a
+     * community skill's declaration survives import instead of being dropped — but the app
+     * never narrows a skill's tool surface from it. It could not honestly do so: a skill is
+     * loaded lazily mid-turn via `use_skill`, while the tool list handed to the model is
+     * built once per turn from the assistant's enabled tools/skills in `ChatService`.
+     */
+    val allowedTools: List<String> = emptyList(),
+    /**
+     * The spec's `metadata` mapping (string keys to string values) — where portable skills
+     * carry `author`, `version`, an upstream link, and so on. Surfaced read-only in the UI;
+     * the app keeps its own out-of-band keys (`format`, `source-url`, `args_schema`)
+     * top-level for backward compatibility with skills already on disk.
+     */
+    val metadata: Map<String, String> = emptyMap(),
     val autoLoad: Boolean = false,
     val autoLoadPath: String? = null,
     val skillDir: File,
@@ -605,5 +640,14 @@ data class SkillContent(
     val sourceLabel: String? = null,
     val contentMd: String,
     val argsSchema: kotlinx.serialization.json.JsonObject? = null,
+    /** Spec `license` field, when the skill declares one. */
+    val license: String? = null,
+    /**
+     * Spec `allowed-tools` field, split into names. **Advisory only** — surfaced so a skill's
+     * declared surface is visible to the model and to the user, never enforced by the app.
+     */
+    val allowedTools: List<String> = emptyList(),
+    /** Spec `metadata` mapping (author / version / upstream link …), read-only. */
+    val metadata: Map<String, String> = emptyMap(),
 )
 

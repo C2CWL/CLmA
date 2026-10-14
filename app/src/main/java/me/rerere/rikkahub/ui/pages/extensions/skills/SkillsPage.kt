@@ -454,9 +454,12 @@ private fun SkillCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,
                 )
-                if (!skill.compatibility.isNullOrBlank()) {
+                if (!skill.compatibility.isNullOrBlank() || !skill.license.isNullOrBlank()) {
                     Text(
-                        text = skill.compatibility,
+                        text = listOfNotNull(
+                            skill.compatibility?.takeIf { it.isNotBlank() },
+                            skill.license?.takeIf { it.isNotBlank() },
+                        ).joinToString(" · "),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.tertiary,
                     )
