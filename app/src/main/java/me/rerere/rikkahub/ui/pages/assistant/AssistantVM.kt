@@ -14,6 +14,7 @@ import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.Avatar
 import me.rerere.rikkahub.data.repository.ConversationRepository
 import me.rerere.rikkahub.data.repository.MemoryRepository
+import kotlin.uuid.Uuid
 
 class AssistantVM(
     private val settingsStore: SettingsStore,
@@ -27,6 +28,28 @@ class AssistantVM(
     fun updateSettings(settings: Settings) {
         viewModelScope.launch {
             settingsStore.update(settings)
+        }
+    }
+
+    // Dragging reorders a local snapshot (see AssistantPage). This writes that
+    // order onto the latest settings, so a gesture cannot clobber a concurrent edit.
+    fun reorderAssistants(orderedIds: List<Uuid>) {
+        viewModelScope.launch {
+            settingsStore.update { current ->
+                current.copy(
+                    assistants = AssistantReorder.merge(current.assistants, orderedIds) { it.id },
+                )
+            }
+        }
+    }
+
+    fun reorderAssistantTags(orderedIds: List<Uuid>) {
+        viewModelScope.launch {
+            settingsStore.update { current ->
+                current.copy(
+                    assistantTags = AssistantReorder.merge(current.assistantTags, orderedIds) { it.id },
+                )
+            }
         }
     }
 

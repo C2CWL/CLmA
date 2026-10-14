@@ -41,7 +41,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -99,15 +101,28 @@ fun AssistantPage(vm: AssistantVM = koinViewModel()) {
     // 操作菜单状态
     var actionSheetAssistant by remember { mutableStateOf<Assistant?>(null) }
 
-    // 根据搜索关键词和选中的标签过滤助手
-    val filteredAssistants = remember(settings.assistants, selectedTagIds, searchQuery) {
-        settings.assistants.filter { assistant ->
+    // onMove 必须在返回前换位。写设置要先落盘，列表随后才变，库会把拖着的行
+    // 停在预测位移上再弹回，这就是抽搐。手势期间只改这份快照，松手再落盘。
+    // 拖动中不跟设置回写，否则落盘那一帧会把行弹回旧顺序。
+    val assistants = remember { mutableStateListOf<Assistant>().apply { addAll(settings.assistants) } }
+    var reordering by remember { mutableStateOf(false) }
+    LaunchedEffect(settings.assistants) {
+        if (!reordering && assistants.toList() != settings.assistants) {
+            assistants.clear()
+            assistants.addAll(settings.assistants)
+        }
+    }
+    val isFiltering = selectedTagIds.isNotEmpty() || searchQuery.isNotBlank()
+    val displayedAssistants: List<Assistant> = if (isFiltering) {
+        assistants.filter { assistant ->
             val matchesSearch = searchQuery.isBlank() ||
                 assistant.name.contains(searchQuery, ignoreCase = true)
             val matchesTags = selectedTagIds.isEmpty() ||
                 assistant.tags.any { tagId -> tagId in selectedTagIds }
             matchesSearch && matchesTags
         }
+    } else {
+        assistants
     }
 
     Scaffold(
@@ -143,13 +158,9 @@ fun AssistantPage(vm: AssistantVM = koinViewModel()) {
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             val lazyListState = rememberLazyListState()
-            val isFiltering = selectedTagIds.isNotEmpty() || searchQuery.isNotBlank()
             val reorderableState = rememberReorderableLazyListState(lazyListState) { from, to ->
                 if (!isFiltering) {
-                    val newAssistants = settings.assistants.toMutableList().apply {
-                        add(to.index, removeAt(from.index))
-                    }
-                    vm.updateSettings(settings.copy(assistants = newAssistants))
+                    AssistantReorder.move(assistants, from.index, to.index)
                 }
             }
             val haptic = LocalHapticFeedback.current
@@ -194,7 +205,7 @@ fun AssistantPage(vm: AssistantVM = koinViewModel()) {
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 state = lazyListState,
             ) {
-                lazyItems(filteredAssistants, key = { assistant -> assistant.id }) { assistant ->
+                lazyItems(displayedAssistants, key = { assistant -> assistant.id }) { assistant ->
                     ReorderableItem(
                         state = reorderableState,
                         key = assistant.id,
@@ -212,19 +223,26 @@ fun AssistantPage(vm: AssistantVM = koinViewModel()) {
                             onShowActions = {
                                 actionSheetAssistant = assistant
                             },
+                            // ReorderableItem 已经给没被拖的行加了 animateItem()。
+                            // 卡片上再加一次会和拖拽位移叠成两段位移动画，行会跳离手指。
                             modifier = Modifier
                                 .scale(if (isDragging) 0.95f else 1f)
                                 .fillMaxWidth()
-                                .animateItem()
                                 .then(
                                     if (!isFiltering) {
                                         Modifier.longPressDraggableHandle(
                                             onDragStarted = {
+                                                reordering = true
                                                 haptic.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate)
                                             },
                                             onDragStopped = {
                                                 haptic.performHapticFeedback(HapticFeedbackType.GestureEnd)
-                                            }
+                                                val orderedIds = assistants.map { it.id }
+                                                reordering = false
+                                                if (orderedIds != settings.assistants.map { it.id }) {
+                                                    vm.reorderAssistants(orderedIds)
+                                                }
+                                            },
                                         )
                                     } else {
                                         Modifier
@@ -265,12 +283,21 @@ private fun AssistantTagsFilterRow(
 ) {
     val haptic = LocalHapticFeedback.current
     if (settings.assistantTags.isNotEmpty()) {
+        val tags = remember {
+            mutableStateListOf<me.rerere.rikkahub.data.model.Tag>().apply {
+                addAll(settings.assistantTags)
+            }
+        }
+        var reorderingTags by remember { mutableStateOf(false) }
+        LaunchedEffect(settings.assistantTags) {
+            if (!reorderingTags && tags.toList() != settings.assistantTags) {
+                tags.clear()
+                tags.addAll(settings.assistantTags)
+            }
+        }
         val tagsListState = rememberLazyListState()
         val tagsReorderableState = rememberReorderableLazyListState(tagsListState) { from, to ->
-            val newTags = settings.assistantTags.toMutableList().apply {
-                add(to.index, removeAt(from.index))
-            }
-            vm.updateSettings(settings.copy(assistantTags = newTags))
+            AssistantReorder.move(tags, from.index, to.index)
         }
 
         LazyRow(
@@ -278,7 +305,7 @@ private fun AssistantTagsFilterRow(
             modifier = Modifier.padding(horizontal = 16.dp),
             state = tagsListState
         ) {
-            lazyItems(items = settings.assistantTags, key = { tag -> tag.id }) { tag ->
+            lazyItems(items = tags, key = { tag -> tag.id }) { tag ->
                 ReorderableItem(
                     state = tagsReorderableState, key = tag.id
                 ) { isDragging ->
@@ -305,10 +332,16 @@ private fun AssistantTagsFilterRow(
                                 .scale(if (isDragging) 0.95f else 1f)
                                 .longPressDraggableHandle(
                                     onDragStarted = {
+                                        reorderingTags = true
                                         haptic.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate)
                                     },
                                     onDragStopped = {
                                         haptic.performHapticFeedback(HapticFeedbackType.GestureEnd)
+                                        val orderedIds = tags.map { it.id }
+                                        reorderingTags = false
+                                        if (orderedIds != settings.assistantTags.map { it.id }) {
+                                            vm.reorderAssistantTags(orderedIds)
+                                        }
                                     },
                                 )
                         )
