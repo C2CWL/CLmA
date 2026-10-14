@@ -102,7 +102,6 @@ import me.rerere.rikkahub.ui.components.ui.Tooltip
 import me.rerere.rikkahub.ui.hooks.ImeLazyListAutoScroller
 import me.rerere.rikkahub.ui.theme.ChatFontProvider
 import me.rerere.rikkahub.utils.plus
-import kotlin.math.roundToInt
 import kotlin.uuid.Uuid
 
 private const val TAG = "ChatList"
@@ -275,30 +274,30 @@ private fun ChatListNormal(
             .fillMaxSize(),
     ) {
         // 自动滚动到底部
-        // 只在用户停留在底部时跟随流式输出。生成期间用户主动上滑查看历史后，
-        // 不再把列表强行拉回底部，直到用户自己滚回底部为止。
+        // 只在「本来就在跟随、且用户没有接管过滚动」时跟随流式输出：任何滚动一开始就暂停跟随，
+        // 直到列表真正停在末尾才恢复。判定见 ChatAutoFollow.kt —— 不能退化成「离底部近」，
+        // 那会在「拖动结束 → 惯性滑行开始」的那一帧把用户的快速滑动拽回底部
+        // （requestScrollToItem 会取消同优先级的 fling）。
         if (settings.displaySetting.enableAutoScroll) {
-            // 用户是否已主动滚离底部（暂停自动跟随）
-            var userScrolledAway by remember { mutableStateOf(false) }
-
-            // 只在「滚动刚刚停止」的那一刻采样一次是否仍在底部，
-            // 这样流式内容增长本身不会把用户误判成离开了底部。
-            LaunchedEffect(state) {
-                snapshotFlow { state.isScrollInProgress }.collect { scrolling ->
-                    if (!scrolling) {
-                        // 仍有可向下滚动的余量 => 用户不在底部
-                        userScrolledAway = state.canScrollForward
-                    }
-                }
-            }
+            var following by remember { mutableStateOf(false) }
 
             LaunchedEffect(state) {
-                snapshotFlow { state.layoutInfo.visibleItemsInfo }.collect {
-                    if (!state.canScrollForward) {
-                        // 已经真正到底（或内容不足一屏）：恢复自动跟随
-                        userScrolledAway = false
-                    } else if (!state.isScrollInProgress && !userScrolledAway && loadingState) {
-                        state.requestScrollToItem(conversationUpdated.messageNodes.size + 10)
+                // 四个信号必须在同一个快照里读：拆成两个 collector 时，同一个 apply 里会读到
+                // 彼此错位的值（正是上面说的那一帧）。
+                snapshotFlow {
+                    AutoFollowSample(
+                        scrolling = state.isScrollInProgress,
+                        canScrollForward = state.canScrollForward,
+                        itemCount = state.layoutInfo.totalItemsCount,
+                        loading = loadingState,
+                    )
+                }.collect { sample ->
+                    when (autoFollowAction(sample, following)) {
+                        AutoFollowAction.PAUSE -> following = false
+                        AutoFollowAction.RESUME -> following = true
+                        AutoFollowAction.FOLLOW ->
+                            state.requestScrollToItem(conversationUpdated.messageNodes.size + 10)
+                        AutoFollowAction.NONE -> Unit
                     }
                 }
             }
