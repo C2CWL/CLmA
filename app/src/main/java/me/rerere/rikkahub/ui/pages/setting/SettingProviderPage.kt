@@ -9,11 +9,12 @@ import me.rerere.hugeicons.stroke.Image02
 import me.rerere.hugeicons.stroke.FileImport
 import me.rerere.hugeicons.stroke.Add01
 import me.rerere.hugeicons.stroke.Search01
-import me.rerere.hugeicons.stroke.Sparkles
 import me.rerere.hugeicons.stroke.Cancel01
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.StringRes
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -41,16 +42,13 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
@@ -74,7 +72,8 @@ import io.github.g00fy2.quickie.ScanQRCode
 import me.rerere.ai.provider.ProviderSetting
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.Screen
-import me.rerere.rikkahub.data.datastore.RECOMMENDED_PROVIDERS
+import me.rerere.rikkahub.data.datastore.ProviderCategory
+import me.rerere.rikkahub.data.datastore.category
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.AutoAIIcon
 import me.rerere.rikkahub.ui.components.ui.Tag
@@ -100,28 +99,32 @@ fun SettingProviderPage(vm: SettingVM = koinViewModel()) {
     var searchQuery by remember { mutableStateOf("") }
     val lazyListState = rememberLazyListState()
     var providerToDelete by remember { mutableStateOf<ProviderSetting?>(null) }
-    // D12 - enabled providers first. A stable sort keeps the user's manual order inside each
-    // group, so reordering within "enabled" or within "disabled" still sticks.
-    val filteredProviders = remember(settings.providers, searchQuery) {
-        val visible = if (searchQuery.isBlank()) {
-            settings.providers
-        } else {
-            settings.providers.filter { provider ->
-                provider.name.contains(searchQuery, ignoreCase = true)
-            }
-        }
-        visible.sortedByDescending { it.enabled }
+    // 预配置服务商按 国模/国际/本地 分组展示（见 ProviderCategories），用户自建的归「其他」。
+    // 「已启用」单独置顶成一组，不与品类混排；组内顺序沿用服务商列表里的既有顺序。
+    val sections = remember(settings.providers, searchQuery) {
+        buildProviderSections(settings.providers, searchQuery)
     }
 
     val reorderableState = rememberReorderableLazyListState(lazyListState) { from, to ->
-        // Reorder the list the user actually sees (enabled-first) and persist it, so a drag keeps
-        // its meaning under the sort. Only when no search filter is active: the visible list is
-        // then a subset, and writing its order back would drop the hidden providers.
+        // 拖拽只在同一分组内生效：分组归属由品类/启用状态决定，跨组拖过去也会被重新归类，
+        // 把顺序写回服务商列表反而会让行「弹」回原位。搜索态下可见列表是子集，直接不重排。
         if (searchQuery.isBlank()) {
-            val reordered = filteredProviders.toMutableList().apply {
-                add(to.index, removeAt(from.index))
+            val rows = buildProviderSections(settings.providers, searchQuery).flattenRows()
+            val fromRow = rows.getOrNull(from.index)
+            val toRow = rows.getOrNull(to.index)
+            if (fromRow is ProviderRow.Entry && toRow is ProviderRow.Entry &&
+                fromRow.sectionKey == toRow.sectionKey
+            ) {
+                val reordered = rows.filterIsInstance<ProviderRow.Entry>()
+                    .map { it.provider }
+                    .toMutableList()
+                val fromIndex = reordered.indexOfFirst { it.id == fromRow.provider.id }
+                val toIndex = reordered.indexOfFirst { it.id == toRow.provider.id }
+                if (fromIndex >= 0 && toIndex >= 0) {
+                    reordered.add(toIndex, reordered.removeAt(fromIndex))
+                    vm.updateSettings(settings.copy(providers = reordered))
+                }
             }
-            vm.updateSettings(settings.copy(providers = reordered))
         }
     }
 
@@ -135,13 +138,6 @@ fun SettingProviderPage(vm: SettingVM = koinViewModel()) {
                     BackButton()
                 },
                 actions = {
-                    RecommendProviderButton { provider ->
-                        vm.updateSettings(
-                            settings.copy(
-                                providers = listOf(provider.copyProvider(Uuid.random())) + settings.providers
-                            )
-                        )
-                    }
                     ImportProviderButton {
                         vm.updateSettings(
                             settings.copy(
@@ -202,43 +198,48 @@ fun SettingProviderPage(vm: SettingVM = koinViewModel()) {
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 state = lazyListState,
             ) {
-                items(filteredProviders, key = { it.id }) { provider ->
-                    ReorderableItem(
-                        state = reorderableState,
-                        key = provider.id
-                    ) { isDragging ->
-                        ProviderItem(
-                            modifier = Modifier
-                                .scale(if (isDragging) 0.95f else 1f)
-                                .fillMaxWidth(),
-                            provider = provider,
-                            dragHandle = {
-                                val haptic = LocalHapticFeedback.current
-                                IconButton(
-                                    onClick = {},
-                                    modifier = Modifier
-                                        .longPressDraggableHandle(
-                                            onDragStarted = {
-                                                haptic.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate)
-                                            },
-                                            onDragStopped = {
-                                                haptic.performHapticFeedback(HapticFeedbackType.GestureEnd)
-                                            }
+                sections.forEach { section ->
+                    stickyHeader(key = "header:${section.key}") {
+                        ProviderSectionHeader(section.titleRes)
+                    }
+                    items(section.providers, key = { it.id }) { provider ->
+                        ReorderableItem(
+                            state = reorderableState,
+                            key = provider.id
+                        ) { isDragging ->
+                            ProviderItem(
+                                modifier = Modifier
+                                    .scale(if (isDragging) 0.95f else 1f)
+                                    .fillMaxWidth(),
+                                provider = provider,
+                                dragHandle = {
+                                    val haptic = LocalHapticFeedback.current
+                                    IconButton(
+                                        onClick = {},
+                                        modifier = Modifier
+                                            .longPressDraggableHandle(
+                                                onDragStarted = {
+                                                    haptic.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate)
+                                                },
+                                                onDragStopped = {
+                                                    haptic.performHapticFeedback(HapticFeedbackType.GestureEnd)
+                                                }
+                                            )
+                                    ) {
+                                        Icon(
+                                            imageVector = HugeIcons.DragDropHorizontal,
+                                            contentDescription = null
                                         )
-                                ) {
-                                    Icon(
-                                        imageVector = HugeIcons.DragDropHorizontal,
-                                        contentDescription = null
-                                    )
+                                    }
+                                },
+                                onClick = {
+                                    navController.navigate(Screen.SettingProviderDetail(providerId = provider.id.toString()))
+                                },
+                                onLongClick = {
+                                    providerToDelete = provider
                                 }
-                            },
-                            onClick = {
-                                navController.navigate(Screen.SettingProviderDetail(providerId = provider.id.toString()))
-                            },
-                            onLongClick = {
-                                providerToDelete = provider
-                            }
-                        )
+                            )
+                        }
                     }
                 }
             }
@@ -281,101 +282,6 @@ fun SettingProviderPage(vm: SettingVM = koinViewModel()) {
                     }
                 },
             )
-        }
-    }
-}
-
-@Composable
-private fun RecommendProviderButton(
-    onAdd: (ProviderSetting) -> Unit
-) {
-    val toaster = LocalToaster.current
-    var showSheet by remember { mutableStateOf(false) }
-    val importSuccessMessage = stringResource(R.string.setting_provider_page_import_success)
-
-    IconButton(
-        onClick = { showSheet = true }
-    ) {
-        Icon(HugeIcons.Sparkles, contentDescription = stringResource(R.string.setting_provider_page_recommend))
-    }
-
-    if (showSheet) {
-        ModalBottomSheet(
-            onDismissRequest = { showSheet = false },
-            sheetState = rememberBottomSheetState(
-                initialValue = SheetValue.Hidden,
-                enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)
-            )
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .padding(bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.setting_provider_page_recommend),
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.padding(bottom = 4.dp)
-                )
-                RECOMMENDED_PROVIDERS.forEach { provider ->
-                    RecommendProviderItem(
-                        provider = provider,
-                        onAdd = {
-                            onAdd(provider)
-                            toaster.show(
-                                importSuccessMessage,
-                                type = ToastType.Success
-                            )
-                        }
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun RecommendProviderItem(
-    provider: ProviderSetting,
-    onAdd: () -> Unit
-) {
-    Card(
-        colors = CardDefaults.cardColors(
-            containerColor = CustomColors.listItemColors.containerColor
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            AutoAIIcon(
-                name = provider.name,
-                modifier = Modifier.size(40.dp)
-            )
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                Text(
-                    text = provider.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                ProvideTextStyle(MaterialTheme.typography.labelSmall) {
-                    CompositionLocalProvider(LocalContentColor provides LocalContentColor.current.copy(alpha = 0.7f)) {
-                        provider.description()
-                    }
-                }
-            }
-            IconButton(onClick = onAdd) {
-                Icon(HugeIcons.Add01, contentDescription = stringResource(R.string.setting_provider_page_add))
-            }
         }
     }
 }
@@ -697,11 +603,6 @@ private fun ProviderItem(
                             )
                         )
                     }
-                    if (provider.name == "AiHubMix") {
-                        Tag(type = TagType.INFO) {
-                            Text(stringResource(R.string.setting_provider_page_discount_badge))
-                        }
-                    }
                     ProviderRequirement.from(provider).forEach { req ->
                         Tag(type = req.severity) {
                             Text(req.label)
@@ -712,4 +613,69 @@ private fun ProviderItem(
             dragHandle()
         }
     }
+}
+
+/**
+ * 服务商列表的一个分组（已启用 / 国模 / 国际 / 本地 / 其他）。
+ * `key` 用于 stickyHeader 与拖拽时判断是否同组；`titleRes` 是展示用的分组标题。
+ */
+private data class ProviderSection(
+    val key: String,
+    @StringRes val titleRes: Int,
+    val providers: List<ProviderSetting>,
+)
+
+/** LazyColumn 的行：分组标题或服务商，用于把拖拽的 LazyList 索引映射回服务商。 */
+private sealed interface ProviderRow {
+    data class Header(@StringRes val titleRes: Int, val key: String) : ProviderRow
+    data class Entry(val provider: ProviderSetting, val sectionKey: String) : ProviderRow
+}
+
+private fun List<ProviderSection>.flattenRows(): List<ProviderRow> = flatMap { section ->
+    buildList {
+        add(ProviderRow.Header(section.titleRes, "header:${section.key}"))
+        section.providers.forEach { add(ProviderRow.Entry(it, section.key)) }
+    }
+}
+
+/**
+ * 把服务商列表切成展示用的分组。顺序固定为：已启用 → 国模 → 国际 → 本地 → 其他；
+ * 组内保持传入列表的既有顺序（用户手动排序的影响仍在组内保留）。
+ */
+private fun buildProviderSections(
+    providers: List<ProviderSetting>,
+    query: String,
+): List<ProviderSection> {
+    val visible = if (query.isBlank()) {
+        providers
+    } else {
+        providers.filter { it.name.contains(query, ignoreCase = true) }
+    }
+    return buildList {
+        val enabled = visible.filter { it.enabled }
+        if (enabled.isNotEmpty()) {
+            add(ProviderSection(ENABLED_SECTION_KEY, R.string.setting_provider_category_enabled, enabled))
+        }
+        ProviderCategory.entries.forEach { category ->
+            val group = visible.filter { !it.enabled && it.category() == category }
+            if (group.isNotEmpty()) {
+                add(ProviderSection("cat:${category.name}", category.titleRes, group))
+            }
+        }
+    }
+}
+
+private const val ENABLED_SECTION_KEY = "enabled"
+
+@Composable
+private fun ProviderSectionHeader(@StringRes titleRes: Int) {
+    Text(
+        text = stringResource(titleRes),
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(CustomColors.topBarColors.containerColor)
+            .padding(top = 8.dp, bottom = 2.dp),
+    )
 }

@@ -613,6 +613,23 @@ class SettingsStore(
             var providers = it.providers.ifEmpty {
                 DEFAULT_PROVIDERS.filter { p -> p.id !in deletedDefaultIds }
             }.toMutableList()
+            // One-shot cleanup (2026-10): the upstream-sponsored built-in providers carrying
+            // affiliate links (AiHubMix / APIMart / 小马算力 / 随想AI网关 / MaruCode / AckAI /
+            // UnifyLLM) are no longer shipped in DEFAULT_PROVIDERS. Fresh installs never seed
+            // them; existing installs already have them, so drop only the rows the user never
+            // touched (still disabled, no API key, no models) and leave a configured one be.
+            providers.removeAll { provider ->
+                provider.builtIn &&
+                    provider.id in REMOVED_SPONSORED_PROVIDER_IDS &&
+                    !provider.enabled &&
+                    provider.models.isEmpty() &&
+                    when (provider) {
+                        is ProviderSetting.OpenAI -> provider.apiKey.isBlank()
+                        is ProviderSetting.Google -> provider.apiKey.isBlank()
+                        is ProviderSetting.Claude -> provider.apiKey.isBlank()
+                        else -> true
+                    }
+            }
             // For existing installs that pre-date the on-device AICore provider being
             // promoted to first-place, hoist it to the top so the user does not have to
             // scroll past every legacy aggregator to find it.

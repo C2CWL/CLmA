@@ -923,7 +923,6 @@ mDNSアドレス: .localホスト名を使用し、IPを知らなくても同じ
   <string name="setting_provider_page_scan_error">エラー: %s</string>
   <string name="setting_provider_page_scan_qr_code">QRコードをスキャン</string>
   <string name="setting_provider_page_search_providers">プロバイダーを検索</string>
-  <string name="setting_provider_page_recommend">おすすめのプロバイダー</string>
   <string name="setting_provider_page_select_all">すべて選択 (%1$d)</string>
   <string name="setting_provider_page_select_from_gallery">ギャラリーから選択</string>
   <string name="setting_provider_page_service_account_email">サービスアカウントメール</string>
@@ -1557,7 +1556,6 @@ mDNSアドレス: .localホスト名を使用し、IPを知らなくても同じ
   <string name="setting_provider_delete_cancel">キャンセル</string>
   <string name="setting_provider_delete_confirm">削除</string>
   <string name="setting_provider_delete_title">プロバイダーを削除しますか？</string>
-  <string name="setting_provider_page_discount_badge">10% オフ</string>
   <string name="share_sheet_title">LLM モデルを共有</string>
   <string name="skill_catalog_install">インストール</string>
   <string name="skill_catalog_install_failed">インストール失敗：%s</string>

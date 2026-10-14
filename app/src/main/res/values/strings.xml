@@ -909,6 +909,11 @@
   <string name="setting_page_assistant">Assistant</string>
   <string name="setting_page_assistant_desc">Set up personalized assistants (agents)</string>
   <string name="setting_page_built_in_tools">Built-in Tools</string>
+  <string name="setting_provider_category_enabled">Enabled</string>
+  <string name="setting_provider_category_domestic">Chinese models</string>
+  <string name="setting_provider_category_international">International</string>
+  <string name="setting_provider_category_local">On-device</string>
+  <string name="setting_provider_category_other">Other</string>
   <string name="setting_provider_page_pricing">价格</string>
   <string name="setting_provider_page_pricing_desc">每百万 tokens 的美元价格，用于账本计费。缓存读/写留空时回退到输入价。</string>
   <string name="setting_provider_page_pricing_input">输入（每百万）</string>
@@ -1118,7 +1123,6 @@
   <string name="setting_provider_page_scan_error">Error: %s</string>
   <string name="setting_provider_page_scan_qr_code">Scan QR Code</string>
   <string name="setting_provider_page_search_providers">Search providers</string>
-  <string name="setting_provider_page_recommend">Recommended providers</string>
   <string name="setting_provider_page_select_all">Select All (%1$d)</string>
   <string name="setting_provider_page_select_from_gallery">Select from Gallery</string>
   <string name="setting_provider_page_service_account_email">Service Account Email</string>
@@ -1970,7 +1974,6 @@
   <string name="mcp_error_reconnect_exhausted">Connection lost — maximum reconnect attempts reached</string>
   <string name="ocr_status_recognizing">Recognizing image…</string>
   <string name="share_sheet_title">Share your LLM models</string>
-  <string name="setting_provider_page_discount_badge">10% off</string>
   <string name="chat_select_model_first">Please select a model first</string>
   <string name="image_preview_saving">Saving…</string>
   <string name="image_preview_saved">Image saved</string>

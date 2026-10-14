@@ -23,4 +23,15 @@ class DefaultProvidersTest {
         assertEquals("/credits", provider.balanceOption.apiPath)
         assertEquals("balance", provider.balanceOption.resultPath)
     }
+
+    @Test
+    fun `every default provider is assigned an explicit category`() {
+        // Guard for the grouped provider page: a built-in that nobody mapped would silently
+        // fall into the "其他" bucket, which is reserved for user-added providers.
+        val uncategorized = DEFAULT_PROVIDERS.filter { it.category() == ProviderCategory.OTHER }
+        assertTrue(
+            "uncategorized built-ins: ${uncategorized.map { it.name }}",
+            uncategorized.isEmpty(),
+        )
+    }
 }

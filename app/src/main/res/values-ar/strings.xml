@@ -1468,7 +1468,6 @@
   <string name="mcp_error_reconnect_exhausted">انقطع الاتصال — تم بلوغ الحد الأقصى لمحاولات إعادة الاتصال</string>
   <string name="ocr_status_recognizing">جارٍ التعرف على الصورة…</string>
   <string name="share_sheet_title">شارك نماذجك اللغوية</string>
-  <string name="setting_provider_page_discount_badge">خصم 10%</string>
   <string name="chat_select_model_first">من فضلك اختر نموذجًا أولًا</string>
   <string name="image_preview_saving">جارٍ الحفظ…</string>
   <string name="image_preview_saved">تم حفظ الصورة</string>
@@ -1621,7 +1620,6 @@
   <string name="setting_theme_page_export_success">تم نسخ JSON السمة إلى الحافظة</string>
   <string name="setting_theme_page_import_success">تم استيراد السمة بنجاح</string>
   <string name="setting_theme_page_dynamic_color_hint">اللون الديناميكي مفعّل. قم بتعطيله في التفضيلات &gt; السمة لاستخدام السمات المخصصة.</string>
-  <string name="setting_provider_page_recommend">المزوّدون الموصى بهم</string>
   <string name="setting_tts_page_default_playback_speed">سرعة التشغيل الافتراضية</string>
   <string name="setting_tts_page_default_playback_speed_description">تُطبق محلياً على كل مزوّد TTS دون تغيير إعدادات التوليد الصوتية.</string>
   <string name="setting_tts_page_similarity_boost">تعزيز التشابه</string>

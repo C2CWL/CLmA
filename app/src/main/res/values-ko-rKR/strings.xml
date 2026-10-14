@@ -923,7 +923,6 @@ mDNS 주소: .local 호스트네임을 사용하며, IP를 몰라도 같은 네�
   <string name="setting_provider_page_scan_error">오류: %s</string>
   <string name="setting_provider_page_scan_qr_code">QR 코드 스캔</string>
   <string name="setting_provider_page_search_providers">공급자 검색</string>
-  <string name="setting_provider_page_recommend">추천 공급자</string>
   <string name="setting_provider_page_select_all">전체 선택 (%1$d)</string>
   <string name="setting_provider_page_select_from_gallery">갤러리에서 선택</string>
   <string name="setting_provider_page_service_account_email">서비스 계정 이메일</string>
@@ -1557,7 +1556,6 @@ mDNS 주소: .local 호스트네임을 사용하며, IP를 몰라도 같은 네�
   <string name="setting_provider_delete_cancel">취소</string>
   <string name="setting_provider_delete_confirm">제거</string>
   <string name="setting_provider_delete_title">제공자를 제거할까요?</string>
-  <string name="setting_provider_page_discount_badge">10% 할인</string>
   <string name="share_sheet_title">LLM 모델 공유</string>
   <string name="skill_catalog_install">설치</string>
   <string name="skill_catalog_install_failed">설치 실패: %s</string>
