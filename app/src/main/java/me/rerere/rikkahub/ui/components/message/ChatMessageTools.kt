@@ -135,6 +135,8 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
     onToolApproval: ((toolCallId: String, approved: Boolean, reason: String, scope: me.rerere.rikkahub.service.ChatService.ApprovalScope, toolName: String) -> Unit)? = null,
     onToolAnswer: ((toolCallId: String, answer: String) -> Unit)? = null,
     onRerunTool: (suspend (toolCallId: String) -> me.rerere.rikkahub.service.ChatService.RerunToolResult)? = null,
+    // workspace_shell：后面的思考或正文已经开始。null 表示用户还没手动拨过展开状态。
+    collapseInlineOutput: Boolean = false,
 ) {
     // ask_user 是交互式问答流程, 不走注册式渲染框架
     if (tool.toolName == ASK_USER_TOOL_NAME) {
@@ -154,7 +156,12 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
 
     var showResult by remember { mutableStateOf(false) }
     var showDenyDialog by remember { mutableStateOf(false) }
-    var expanded by remember { mutableStateOf(true) }
+    // 用户点过展开/收起之后以用户的为准；否则 shell 跟着 collapseInlineOutput 走，
+    // 其它工具保持旧行为（默认展开）。历史消息第一次组合时后面已经有正文，直接以收起开始，
+    // 不会先闪开再合上。正在生成时这一步先以展开进入组合，等后面的 part 出现才收，
+    // 父卡片的 animateContentSize 把收起播出来。
+    var userExpanded by remember { mutableStateOf<Boolean?>(null) }
+    val expanded = userExpanded ?: !collapseInlineOutput
     val isPending = tool.isPending
     val isDenied = tool.approvalState is ToolApprovalState.Denied
     val images = tool.output.filterIsInstance<UIMessagePart.Image>()
@@ -171,7 +178,7 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
 
     ControlledChainOfThoughtStep(
         expanded = expanded,
-        onExpandedChange = { expanded = it },
+        onExpandedChange = { userExpanded = it },
         icon = {
             if (loading) {
                 DotLoading(

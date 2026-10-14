@@ -15,6 +15,7 @@ class GroupMessagePartsTest {
     private fun text(s: String) = UIMessagePart.Text(s)
     private fun reasoning(s: String) = UIMessagePart.Reasoning(reasoning = s)
     private fun tool(id: String) = UIMessagePart.Tool(toolCallId = id, toolName = "t", input = "{}")
+    private fun shell(id: String) = UIMessagePart.Tool(toolCallId = id, toolName = "workspace_shell", input = "{}")
 
     @Test
     fun `empty list produces no blocks`() {
@@ -105,5 +106,47 @@ class GroupMessagePartsTest {
         assertEquals(2, result.size)
         assertTrue(result[0] is MessagePartBlock.ContentBlock)
         assertTrue(result[1] is MessagePartBlock.ThinkingBlock)
+    }
+
+    @Test
+    fun `shell stays open while it is the latest step`() {
+        val call = shell("s1")
+        assertTrue(!shellInlineOutputShouldCollapse(listOf(reasoning("think"), call), call))
+    }
+
+    @Test
+    fun `shell collapses once a later reasoning part exists`() {
+        val call = shell("s1")
+        val parts = listOf(call, reasoning(""))
+        assertTrue(shellInlineOutputShouldCollapse(parts, call))
+    }
+
+    @Test
+    fun `shell collapses once a later text part exists`() {
+        val call = shell("s1")
+        val parts = listOf(reasoning("think"), call, text("answer"))
+        assertTrue(shellInlineOutputShouldCollapse(parts, call))
+    }
+
+    @Test
+    fun `shell does not collapse for a later tool that is not reply text`() {
+        val call = shell("s1")
+        val parts = listOf(call, tool("other"))
+        assertTrue(!shellInlineOutputShouldCollapse(parts, call))
+    }
+
+    @Test
+    fun `non shell tools never auto collapse`() {
+        val call = tool("t1")
+        assertTrue(!shellInlineOutputShouldCollapse(listOf(call, text("answer")), call))
+    }
+
+    @Test
+    fun `only the shell before the reply collapses when two shells are split by text`() {
+        val first = shell("s1")
+        val second = shell("s2")
+        val parts = listOf(first, text("mid"), second)
+        assertTrue(shellInlineOutputShouldCollapse(parts, first))
+        assertTrue(!shellInlineOutputShouldCollapse(parts, second))
     }
 }

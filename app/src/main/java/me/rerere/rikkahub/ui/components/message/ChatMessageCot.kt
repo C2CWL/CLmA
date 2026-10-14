@@ -66,3 +66,23 @@ fun List<UIMessagePart>.groupMessageParts(): List<MessagePartBlock> {
     flushThinkingSteps()
     return result
 }
+
+/**
+ * workspace_shell 的内联输出要不要收起。
+ *
+ * 这个调用还是消息里的最后一步时保持展开，输出长出来的过程还在。
+ * 它后面一旦出现推理 part 或正文 part（下一次思考或输出已经开始），就收起。
+ * 后面如果只是另一个工具，先不收。非 shell 工具恒为 false。
+ */
+fun shellInlineOutputShouldCollapse(parts: List<UIMessagePart>, tool: UIMessagePart.Tool): Boolean {
+    if (tool.toolName != "workspace_shell") return false
+    val index = if (tool.toolCallId.isNotBlank()) {
+        parts.indexOfFirst { it is UIMessagePart.Tool && it.toolCallId == tool.toolCallId }
+    } else {
+        parts.indexOfFirst { it === tool }
+    }
+    if (index < 0) return false
+    return parts.drop(index + 1).any { part ->
+        part is UIMessagePart.Reasoning || part is UIMessagePart.Text
+    }
+}

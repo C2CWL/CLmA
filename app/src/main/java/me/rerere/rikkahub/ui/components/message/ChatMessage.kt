@@ -393,6 +393,7 @@ private fun MessagePartsBlock(
                                         onToolApproval = onToolApproval,
                                         onToolAnswer = onToolAnswer,
                                         onRerunTool = onRerunTool,
+                                        collapseInlineOutput = shellInlineOutputShouldCollapse(parts, step.tool),
                                     )
                                 }
                             }
