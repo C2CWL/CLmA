@@ -4,6 +4,7 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -20,6 +21,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -37,6 +39,7 @@ import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -44,6 +47,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -81,11 +85,14 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.glass.hazeGlass
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.collectLatest
+import me.rerere.ai.provider.Model
 import me.rerere.ai.provider.ModelAbility
+import me.rerere.ai.provider.ModelType
 import me.rerere.ai.ui.UIMessagePart
 import me.rerere.asr.ASRStatus
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Add01
+import me.rerere.hugeicons.stroke.Brain02
 import me.rerere.hugeicons.stroke.ArrowUp02
 import me.rerere.hugeicons.stroke.Cancel01
 import me.rerere.hugeicons.stroke.Fullscreen
@@ -104,6 +111,7 @@ import me.rerere.rikkahub.ui.components.ai.completion.ChatCompletionContext
 import me.rerere.rikkahub.ui.components.ai.completion.ChatCompletionItem
 import me.rerere.rikkahub.ui.components.ai.completion.ChatCompletionList
 import me.rerere.rikkahub.ui.components.ai.completion.ChatCompletionProvider
+import me.rerere.rikkahub.ui.components.ui.AutoAIIconFill
 import me.rerere.rikkahub.ui.components.ui.KeepScreenOn
 import me.rerere.rikkahub.ui.components.ui.permission.PermissionManager
 import me.rerere.rikkahub.ui.components.ui.permission.PermissionRecordAudio
@@ -127,6 +135,10 @@ fun ChatInput(
     settings: Settings,
     hazeState: HazeState,
     onUpdateAssistant: (Assistant) -> Unit,
+    enableSearch: Boolean,
+    onUpdateChatModel: (Model) -> Unit,
+    onUpdateSearchMode: (SearchMode) -> Unit,
+    onUpdateSearchService: (Int) -> Unit,
     onMoreClick: () -> Unit,
     onCancelClick: () -> Unit,
     onSendClick: () -> Unit,
@@ -216,8 +228,6 @@ fun ChatInput(
         }
     }
 
-    val model = settings.getCurrentChatModel()
-    val showReasoning = model?.abilities?.contains(ModelAbility.REASONING) == true
     // Collapsed = a one-line pill. It opens into a taller multi-line box as soon as it is focused,
     // carries attachments, or holds a multi-line draft.
     val expanded = isFocused ||
@@ -309,16 +319,15 @@ fun ChatInput(
                                     )
                                 }
 
-                                // Reasoning depth: second on the left, hidden when the model cannot reason.
-                                if (showReasoning) {
-                                    ReasoningButton(
-                                        reasoningLevel = assistant.reasoningLevel,
-                                        onUpdateReasoningLevel = {
-                                            onUpdateAssistant(assistant.copy(reasoningLevel = it))
-                                        },
-                                        onlyIcon = true,
-                                    )
-                                }
+                                // Model, with thinking depth on the same entry. The name is capped so a
+                                // long id cannot push the field off the pill; the sheet shows the full one.
+                                ModelReasoningChip(
+                                    settings = settings,
+                                    assistant = assistant,
+                                    expanded = expanded,
+                                    onUpdateChatModel = onUpdateChatModel,
+                                    onUpdateAssistant = onUpdateAssistant,
+                                )
                             }
                         },
                         center = {
@@ -327,6 +336,10 @@ fun ChatInput(
                                 completionProviders = completionProviders,
                                 onSendMessage = { sendMessage() },
                                 onFocusChanged = { isFocused = it },
+                                // The pill is one line. A wrapping placeholder makes the whole bar
+                                // two rows tall, which is what "在想什么？" did once the model name
+                                // sat beside it. Multiline returns as soon as the bar opens.
+                                singleLine = !expanded,
                                 modifier = Modifier.fillMaxWidth(),
                             )
                         },
@@ -335,13 +348,24 @@ fun ChatInput(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                             ) {
-                                // Full-screen editor, moved down from the text field's trailing icon.
-                                ActionIconButton(onClick = { isFullScreen = true }) {
-                                    Icon(
-                                        imageVector = HugeIcons.Fullscreen,
-                                        contentDescription = stringResource(R.string.text_area_fullscreen_edit),
-                                    )
+                                // Full screen only once the bar is open. The collapsed pill has no room,
+                                // and a double-tap on the field would steal word selection.
+                                if (expanded) {
+                                    ActionIconButton(onClick = { isFullScreen = true }) {
+                                        Icon(
+                                            imageVector = HugeIcons.Fullscreen,
+                                            contentDescription = stringResource(R.string.text_area_fullscreen_edit),
+                                        )
+                                    }
                                 }
+
+                                SearchPickerButton(
+                                    enableSearch = enableSearch,
+                                    settings = settings,
+                                    model = settings.getCurrentChatModel(),
+                                    onUpdateSearchMode = onUpdateSearchMode,
+                                    onUpdateSearchService = onUpdateSearchService,
+                                )
 
                                 // One slot, two faces: the send arrow while there is something to send, the
                                 // microphone when the draft is empty and speech input is available. While
@@ -392,6 +416,114 @@ fun ChatInput(
             isFullScreen = false
         }
     }
+}
+
+private val modelDateSuffix = Regex("""[-_](\d{8}|\d{4}-\d{2}-\d{2})$""")
+
+/** Drop a trailing build date (`-20250929`, `-2024-08-06`). Never invents a nickname. */
+internal fun compactModelLabel(name: String): String =
+    name.replace(modelDateSuffix, "").ifBlank { name }
+
+/**
+ * One entry for the chat model and, when the model can reason, its thinking depth.
+ * Collapsed, only the icon: the name was what wrapped a five-character hint onto two lines.
+ * The name comes back once the bar opens and the field has its own row. The sheet is the model
+ * list with the depth slider on top.
+ */
+@Composable
+private fun ModelReasoningChip(
+    settings: Settings,
+    assistant: Assistant,
+    expanded: Boolean,
+    onUpdateChatModel: (Model) -> Unit,
+    onUpdateAssistant: (Assistant) -> Unit,
+) {
+    val model = settings.getCurrentChatModel()
+    val showReasoning = model?.abilities?.contains(ModelAbility.REASONING) == true
+    val level = assistant.reasoningLevel
+    val modelListState = rememberModelListState(
+        modelId = assistant.chatModelId ?: settings.chatModelId,
+        providers = settings.providers,
+        type = ModelType.CHAT,
+    )
+    val fullName = model?.displayName?.takeIf { it.isNotBlank() }
+        ?: model?.modelId?.takeIf { it.isNotBlank() }
+    val label = fullName?.let(::compactModelLabel)?.takeIf { it.isNotBlank() }
+        ?: stringResource(R.string.model_list_select_model)
+
+    // height() is the outer constraint, so Material's 48dp minimum touch target cannot grow the pill.
+    Surface(
+        onClick = { modelListState.open() },
+        modifier = Modifier.height(30.dp),
+        shape = CircleShape,
+        color = Color.Transparent,
+        tonalElevation = 0.dp,
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Box(modifier = Modifier.size(22.dp), contentAlignment = Alignment.Center) {
+                if (model != null) {
+                    AutoAIIconFill(
+                        name = model.modelId.ifBlank { model.displayName },
+                        modifier = Modifier.size(20.dp),
+                        color = Color.Transparent,
+                        iconPadding = 2.dp,
+                    )
+                } else {
+                    Icon(
+                        imageVector = HugeIcons.Brain02,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                if (showReasoning && level.isEnabled) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .size(12.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surface),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CompositionLocalProvider(
+                            LocalContentColor provides MaterialTheme.colorScheme.primary,
+                        ) {
+                            ReasoningIcon(level = level, modifier = Modifier.size(10.dp))
+                        }
+                    }
+                }
+            }
+            // Name only on the open bar. On the pill it stole the hint's line.
+            if (expanded) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.widthIn(max = 128.dp),
+                )
+            }
+        }
+    }
+
+    ModelListSheet(
+        state = modelListState,
+        onSelect = onUpdateChatModel,
+        header = {
+            if (showReasoning) {
+                ReasoningLevelControl(
+                    reasoningLevel = level,
+                    onUpdateReasoningLevel = {
+                        onUpdateAssistant(assistant.copy(reasoningLevel = it))
+                    },
+                )
+            }
+        },
+    )
 }
 
 /**
@@ -548,6 +680,7 @@ private fun TextInputRow(
     onSendMessage: () -> Unit,
     modifier: Modifier = Modifier,
     onFocusChanged: (Boolean) -> Unit = {},
+    singleLine: Boolean = false,
 ) {
     val settings = LocalSettings.current
     val assistant = settings.getCurrentAssistant()
@@ -673,7 +806,11 @@ private fun TextInputRow(
             placeholder = {
                 Text(stringResource(hint))
             },
-            lineLimits = TextFieldLineLimits.MultiLine(maxHeightInLines = 5),
+            lineLimits = if (singleLine) {
+                TextFieldLineLimits.SingleLine
+            } else {
+                TextFieldLineLimits.MultiLine(maxHeightInLines = 5)
+            },
             keyboardOptions = KeyboardOptions(
                 capitalization = KeyboardCapitalization.Sentences,
                 imeAction = if (settings.displaySetting.sendOnEnter) ImeAction.Send else ImeAction.Default

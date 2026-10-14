@@ -69,6 +69,7 @@ import me.rerere.rikkahub.Screen
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.datastore.findProvider
 import me.rerere.rikkahub.ui.components.ui.AutoAIIcon
+import me.rerere.rikkahub.ui.components.ui.AutoAIIconFill
 import me.rerere.rikkahub.ui.components.ui.ToggleSurface
 import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.pages.setting.SearchAbilityTagLine
@@ -91,39 +92,32 @@ fun SearchPickerButton(
     var showSearchPicker by remember { mutableStateOf(false) }
     val currentService = settings.searchServices.getOrNull(settings.searchServiceSelected)
 
+    val builtIn = model?.tools?.contains(BuiltInTools.Search) == true
+    val serviceOn = builtIn || (enableSearch && currentService != null)
     ToggleSurface(
-        modifier = modifier,
-        checked = enableSearch || model?.tools?.contains(BuiltInTools.Search) == true,
-        onClick = {
-            showSearchPicker = true
-        }
+        modifier = modifier.size(30.dp),
+        shape = CircleShape,
+        checked = serviceOn,
+        onClick = { showSearchPicker = true },
     ) {
-        Row(
-            modifier = Modifier
-                .padding(vertical = 8.dp, horizontal = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Box(
-                modifier = Modifier.size(24.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                if (model?.tools?.contains(BuiltInTools.Search) == true) {
-                    Icon(
-                        imageVector = HugeIcons.AiSearch02,
-                        contentDescription = stringResource(R.string.use_web_search),
-                    )
-                } else if (enableSearch && currentService != null) {
-                    AutoAIIcon(
-                        name = currentService.displayName,
-                        color = Color.Transparent
-                    )
-                } else {
-                    Icon(
-                        imageVector = HugeIcons.Search01,
-                        contentDescription = stringResource(R.string.use_web_search),
-                    )
-                }
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            when {
+                builtIn -> Icon(
+                    imageVector = HugeIcons.AiSearch02,
+                    contentDescription = stringResource(R.string.use_web_search),
+                    modifier = Modifier.size(20.dp),
+                )
+                serviceOn && currentService != null -> AutoAIIconFill(
+                    name = currentService.displayName,
+                    modifier = Modifier.size(20.dp),
+                    color = Color.Transparent,
+                    iconPadding = 2.dp,
+                )
+                else -> Icon(
+                    imageVector = HugeIcons.Search01,
+                    contentDescription = stringResource(R.string.use_web_search),
+                    modifier = Modifier.size(20.dp),
+                )
             }
         }
     }
@@ -192,95 +186,6 @@ private fun SearchPickerSheet(
             }
         }
     }
-}
-
-/**
- * The web-search entry as a half-width card for the attachments sheet's quick-config row. Opens the
- * very same sheet as [SearchPickerButton], which no longer fits in the input bar.
- */
-@Composable
-fun SearchServiceCard(
-    enableSearch: Boolean,
-    settings: Settings,
-    model: Model?,
-    onUpdateSearchMode: (SearchMode) -> Unit,
-    onUpdateSearchService: (Int) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    var showSearchPicker by remember { mutableStateOf(false) }
-    val currentService = settings.searchServices.getOrNull(settings.searchServiceSelected)
-    val builtIn = model?.tools?.contains(BuiltInTools.Search) == true
-    val serviceOn = builtIn || (enableSearch && currentService != null)
-
-    Surface(
-        onClick = { showSearchPicker = true },
-        modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        tonalElevation = 0.dp,
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            Box(
-                modifier = Modifier.size(24.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                when {
-                    builtIn -> Icon(
-                        imageVector = HugeIcons.AiSearch02,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp),
-                    )
-
-                    serviceOn && currentService != null -> AutoAIIcon(
-                        name = currentService.displayName,
-                        modifier = Modifier.size(20.dp),
-                        color = Color.Transparent,
-                    )
-
-                    else -> Icon(
-                        imageVector = HugeIcons.Search01,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
-                Text(
-                    text = stringResource(R.string.chat_page_input_search_label),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(
-                    text = if (serviceOn) {
-                        currentService?.displayName ?: stringResource(R.string.web_search_enabled)
-                    } else {
-                        stringResource(R.string.chat_page_input_search_off)
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        }
-    }
-
-    SearchPickerSheet(
-        visible = showSearchPicker,
-        onDismiss = { showSearchPicker = false },
-        enableSearch = enableSearch,
-        settings = settings,
-        onUpdateSearchMode = onUpdateSearchMode,
-        onUpdateSearchService = onUpdateSearchService,
-        model = model,
-    )
 }
 
 @Composable

@@ -51,8 +51,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Deferred
-import me.rerere.ai.provider.Model
-import me.rerere.ai.provider.ModelType
 import me.rerere.ai.provider.Modality
 import me.rerere.ai.provider.ProviderSetting
 import me.rerere.hugeicons.HugeIcons
@@ -97,10 +95,6 @@ internal fun FilesPicker(
     assistant: Assistant,
     state: ChatInputState,
     mcpManager: McpManager,
-    enableSearch: Boolean,
-    onUpdateSearchMode: (SearchMode) -> Unit,
-    onUpdateChatModel: (Model) -> Unit,
-    onUpdateSearchService: (Int) -> Unit,
     onCompressContext: (additionalPrompt: String, targetTokens: Int, keepRecentMessages: Int) -> Deferred<Result<Unit>>,
     onUpdateAssistant: (Assistant) -> Unit,
     onUpdateConversation: (Conversation) -> Unit,
@@ -165,17 +159,6 @@ internal fun FilesPicker(
 
         HorizontalDivider(
             modifier = Modifier.fillMaxWidth()
-        )
-
-        // Model / web-search switching, moved out of the input bar: one row, two half-width cards,
-        // each opening its own picker. Sits under the divider and above the workspace card.
-        InputQuickConfigRow(
-            assistant = assistant,
-            settings = settings,
-            enableSearch = enableSearch,
-            onUpdateChatModel = onUpdateChatModel,
-            onUpdateSearchMode = onUpdateSearchMode,
-            onUpdateSearchService = onUpdateSearchService,
         )
 
         if (workspaces.isNotEmpty()) {
@@ -578,46 +561,5 @@ private fun BigIconTextButtonPreview() {
         }, text = {
             Text(stringResource(R.string.photo))
         }) {}
-    }
-}
-
-/**
- * The input bar's quick-config row: the chat model and the web-search provider, side by side as two
- * half-width cards. Both used to live in the input bar itself; clicking a card opens the very same
- * picker sheet it opened there.
- */
-@Composable
-private fun InputQuickConfigRow(
-    assistant: Assistant,
-    settings: Settings,
-    enableSearch: Boolean,
-    onUpdateChatModel: (Model) -> Unit,
-    onUpdateSearchMode: (SearchMode) -> Unit,
-    onUpdateSearchService: (Int) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val modelListState = rememberModelListState(
-        modelId = assistant.chatModelId ?: settings.chatModelId,
-        providers = settings.providers,
-        type = ModelType.CHAT,
-    )
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        ModelPickerCard(
-            state = modelListState,
-            onSelect = onUpdateChatModel,
-            modifier = Modifier.weight(1f),
-        )
-
-        SearchServiceCard(
-            enableSearch = enableSearch,
-            settings = settings,
-            model = settings.getCurrentChatModel(),
-            onUpdateSearchMode = onUpdateSearchMode,
-            onUpdateSearchService = onUpdateSearchService,
-            modifier = Modifier.weight(1f),
-        )
     }
 }

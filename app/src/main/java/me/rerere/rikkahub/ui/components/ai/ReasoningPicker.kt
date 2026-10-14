@@ -195,20 +195,93 @@ fun ReasoningPicker(
 }
 
 @Composable
-private fun ReasoningIcon(level: ReasoningLevel) {
+internal fun ReasoningIcon(level: ReasoningLevel, modifier: Modifier = Modifier) {
     when (level) {
-        ReasoningLevel.OFF -> Icon(HugeIcons.Idea, null)
-        ReasoningLevel.AUTO -> Icon(HugeIcons.Idea01, null)
-        ReasoningLevel.LOW -> Icon(ReasoningLow, null)
-        ReasoningLevel.MEDIUM -> Icon(ReasoningMedium, null)
-        ReasoningLevel.HIGH -> Icon(ReasoningHigh, null)
-        ReasoningLevel.XHIGH -> Icon(ReasoningHigh, null)
-        ReasoningLevel.MAX -> Icon(ReasoningHigh, null)
+        ReasoningLevel.OFF -> Icon(HugeIcons.Idea, null, modifier = modifier)
+        ReasoningLevel.AUTO -> Icon(HugeIcons.Idea01, null, modifier = modifier)
+        ReasoningLevel.LOW -> Icon(ReasoningLow, null, modifier = modifier)
+        ReasoningLevel.MEDIUM -> Icon(ReasoningMedium, null, modifier = modifier)
+        ReasoningLevel.HIGH -> Icon(ReasoningHigh, null, modifier = modifier)
+        ReasoningLevel.XHIGH -> Icon(ReasoningHigh, null, modifier = modifier)
+        ReasoningLevel.MAX -> Icon(ReasoningHigh, null, modifier = modifier)
+    }
+}
+
+/**
+ * Compact thinking-depth control meant to sit at the top of another sheet (the model picker).
+ * The standalone [ReasoningPicker] sheet stays as it is for the settings pages.
+ */
+@Composable
+fun ReasoningLevelControl(
+    reasoningLevel: ReasoningLevel,
+    onUpdateReasoningLevel: (ReasoningLevel) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val currentIndex = levels.indexOf(reasoningLevel).coerceAtLeast(0)
+    var sliderValue by remember { mutableFloatStateOf(currentIndex.toFloat()) }
+
+    LaunchedEffect(currentIndex) {
+        sliderValue = currentIndex.toFloat()
+    }
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .padding(bottom = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            ReasoningIcon(reasoningLevel, Modifier.size(16.dp))
+            Text(
+                text = reasoningLevel.label(),
+                style = MaterialTheme.typography.labelLarge,
+            )
+        }
+        Slider(
+            value = sliderValue,
+            onValueChange = { sliderValue = it },
+            onValueChangeFinished = {
+                val snappedIndex = sliderValue.roundToInt().coerceIn(0, levelCount - 1)
+                sliderValue = snappedIndex.toFloat()
+                onUpdateReasoningLevel(levels[snappedIndex])
+            },
+            valueRange = 0f..(levelCount - 1).toFloat(),
+            steps = levelCount - 2,
+            modifier = Modifier.fillMaxWidth(),
+            thumb = {
+                Box(
+                    modifier = Modifier
+                        .size(20.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.onPrimary)
+                    )
+                }
+            },
+            track = { sliderState ->
+                SliderDefaults.Track(
+                    sliderState = sliderState,
+                    drawStopIndicator = null,
+                    thumbTrackGapSize = 0.dp,
+                )
+            },
+        )
     }
 }
 
 @Composable
-private fun ReasoningLevel.label(): String = when (this) {
+internal fun ReasoningLevel.label(): String = when (this) {
     ReasoningLevel.OFF -> stringResource(R.string.reasoning_off)
     ReasoningLevel.AUTO -> stringResource(R.string.reasoning_auto)
     ReasoningLevel.LOW -> stringResource(R.string.reasoning_light)
