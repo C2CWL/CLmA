@@ -12,6 +12,7 @@ import androidx.compose.ui.layout.ContentScale
 import coil3.compose.AsyncImage
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.datastore.getCurrentAssistant
+import me.rerere.rikkahub.ui.theme.LocalDarkMode
 
 @Composable
 fun AssistantBackground(setting: Settings, modifier: Modifier) {
@@ -23,6 +24,9 @@ fun AssistantBackground(setting: Settings, modifier: Modifier) {
     if (assistant.background != null) {
         val backgroundColor = MaterialTheme.colorScheme.background
         val backgroundOpacity = assistant.backgroundOpacity.coerceIn(0f, 1f)
+        // Light theme: no veil (a white ramp is what washes a dark photo out).
+        // Dark theme: the historical near-black ramp, which a dark photo absorbs.
+        val scrim = wallpaperScrim(LocalDarkMode.current)
         Box(modifier = modifier) {
             AsyncImage(
                 model = assistant.background,
@@ -33,19 +37,20 @@ fun AssistantBackground(setting: Settings, modifier: Modifier) {
                     .alpha(backgroundOpacity)
             )
 
-            // 全屏渐变遮罩
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                backgroundColor.copy(alpha = 0.2f),
-                                backgroundColor.copy(alpha = 0.5f)
+            if (scrim.topAlpha > 0f || scrim.bottomAlpha > 0f) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    backgroundColor.copy(alpha = scrim.topAlpha),
+                                    backgroundColor.copy(alpha = scrim.bottomAlpha),
+                                )
                             )
                         )
-                    )
-            )
+                )
+            }
         }
     }
 }

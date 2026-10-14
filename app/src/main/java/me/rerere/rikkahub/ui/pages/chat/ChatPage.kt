@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Icon
@@ -63,6 +64,7 @@ import dev.chrisbanes.haze.glass.hazeGlass
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import me.rerere.rikkahub.ui.components.ui.rikkaGlassStyle
+import me.rerere.rikkahub.ui.theme.LocalDarkMode
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -611,6 +613,13 @@ private fun ChatPageContent(
                 )
                 // Fade + title bar, drawn over the list: content dissolves as it slides under the
                 // bar, and the glass discs refract whatever passes behind them.
+                // A light-theme photo uses a shorter fade. The old opaque ramp, stacked on the
+                // full-screen veil, is what turned the wallpaper grey.
+                val fade = titleBarFade(
+                    darkTheme = LocalDarkMode.current,
+                    photoShown = chatPhotoShown(assistant.background, assistant.useGradientBackground),
+                )
+                val fadeColor = MaterialTheme.colorScheme.background
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
@@ -622,9 +631,9 @@ private fun ChatPageContent(
                             .matchParentSize()
                             .background(
                                 Brush.verticalGradient(
-                                    0f to MaterialTheme.colorScheme.background,
-                                    0.5f to MaterialTheme.colorScheme.background.copy(alpha = 0.75f),
-                                    1f to Color.Transparent,
+                                    0f to fadeColor.copy(alpha = fade.topAlpha),
+                                    0.5f to fadeColor.copy(alpha = fade.midAlpha),
+                                    1f to fadeColor.copy(alpha = fade.bottomAlpha),
                                 )
                             )
                     )
@@ -775,6 +784,11 @@ private fun TopBar(
         },
         title = {
             val editTitleWarning = stringResource(R.string.chat_page_edit_title_warning)
+            val assistant = settings.getCurrentAssistant()
+            val titleOnPhoto = looseTextNeedsPhotoPlate(
+                darkTheme = LocalDarkMode.current,
+                photoShown = chatPhotoShown(assistant.background, assistant.useGradientBackground),
+            )
             Surface(
                 onClick = {
                     if (conversation.messageNodes.isNotEmpty()) {
@@ -783,10 +797,20 @@ private fun TopBar(
                         toaster.show(editTitleWarning, type = ToastType.Warning)
                     }
                 },
-                color = Color.Transparent,
+                shape = RoundedCornerShape(12.dp),
+                color = if (titleOnPhoto) {
+                    MaterialTheme.colorScheme.surface.copy(alpha = PHOTO_TITLE_PLATE_ALPHA)
+                } else {
+                    Color.Transparent
+                },
             ) {
-                Column {
-                    val assistant = settings.getCurrentAssistant()
+                Column(
+                    modifier = if (titleOnPhoto) {
+                        Modifier.padding(horizontal = 10.dp, vertical = 2.dp)
+                    } else {
+                        Modifier
+                    },
+                ) {
                     val model = settings.getCurrentChatModel()
                     Text(
                         text = conversation.title.ifBlank { stringResource(R.string.chat_page_new_chat) },

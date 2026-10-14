@@ -102,7 +102,11 @@ import me.rerere.rikkahub.ui.components.ui.Favicon
 import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.modifier.shimmer
 import me.rerere.rikkahub.ui.context.LocalSettings
+import me.rerere.rikkahub.ui.pages.chat.PHOTO_TEXT_PLATE_ALPHA
+import me.rerere.rikkahub.ui.pages.chat.assistantTextNeedsPhotoPlate
+import me.rerere.rikkahub.ui.pages.chat.chatPhotoShown
 import me.rerere.rikkahub.ui.theme.LocalChatFontFamily
+import me.rerere.rikkahub.ui.theme.LocalDarkMode
 import me.rerere.rikkahub.ui.theme.rememberChatFontFamily
 import me.rerere.rikkahub.ui.theme.extendColors
 import me.rerere.rikkahub.utils.JsonInstant
@@ -448,11 +452,28 @@ private fun MessagePartsBlock(
                                     onClickCitation = handleClickCitation,
                                 )
                             } else {
-                                if (settings.displaySetting.showAssistantBubble) {
+                                // Light theme no longer fogs the photo, so bare onSurface text
+                                // would sit on the picture. A plate stands in for the veil.
+                                // A user-enabled bubble already is that plate.
+                                val onPhoto = assistantTextNeedsPhotoPlate(
+                                    darkTheme = LocalDarkMode.current,
+                                    photoShown = chatPhotoShown(
+                                        assistant?.background,
+                                        assistant?.useGradientBackground == true,
+                                    ),
+                                    showAssistantBubble = settings.displaySetting.showAssistantBubble,
+                                )
+                                if (settings.displaySetting.showAssistantBubble || onPhoto) {
                                     Surface(
                                         modifier = Modifier.animateContentSize(),
                                         shape = RoundedCornerShape(16.dp),
-                                        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = settings.displaySetting.bubbleOpacity),
+                                        color = if (settings.displaySetting.showAssistantBubble) {
+                                            MaterialTheme.colorScheme.surfaceContainerHigh.copy(
+                                                alpha = settings.displaySetting.bubbleOpacity,
+                                            )
+                                        } else {
+                                            MaterialTheme.colorScheme.surface.copy(alpha = PHOTO_TEXT_PLATE_ALPHA)
+                                        },
                                     ) {
                                         Column(modifier = Modifier.padding(8.dp)) {
                                             MarkdownBlock(
