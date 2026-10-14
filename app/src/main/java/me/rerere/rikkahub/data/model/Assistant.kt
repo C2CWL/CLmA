@@ -144,10 +144,11 @@ data class Assistant(
     // Appended last on purpose: a new field may never shift the position of an existing one.
     @EncodeDefault(EncodeDefault.Mode.NEVER)
     val orchestrationTokenBudget: Long? = null,
-    // 上下文预算提醒阈值: 占 model.contextLength 的百分比。当本助手启用了 compact_context 工具
-    // 时, 上下文估算达到该比例就在请求里注入 <context_reminder>, 让模型赶在自动压缩之前自行决定
-    // 是否压缩。默认 70% —— 刻意低于自动压缩的默认 80%, 否则同一个阈值下客户端会抢先强制压缩,
-    // 提醒就没有意义了 (@EncodeDefault(NEVER) 让没动过该设置的助手在 store 里保持字节不变)。
+    // 上下文预算提醒阈值: 占**有效模型窗口**的百分比(解析见 Settings.getEffectiveContextLength)。
+    // 当本助手启用了 compact_context 工具时, 上下文估算达到该比例就在请求里注入 <context_reminder>,
+    // 让模型赶在自动压缩之前自行决定是否压缩。默认 70% —— 刻意低于自动压缩的默认 80%, 否则同一个
+    // 阈值下客户端会抢先强制压缩, 提醒就没有意义了 (@EncodeDefault(NEVER) 让没动过该设置的助手在
+    // store 里保持字节不变)。
     // Appended last on purpose: a new field may never shift the position of an existing one.
     @EncodeDefault(EncodeDefault.Mode.NEVER)
     val contextBudgetReminderPercent: Int = 70,

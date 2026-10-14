@@ -596,7 +596,11 @@ private fun ModelSettingsForm(
                 displayName = id,
                 inputModalities = inputModality,
                 outputModalities = outputModality,
-                abilities = abilities
+                abilities = abilities,
+                // Same source order the request-time resolver uses: keep a window the user has
+                // already set for this model, otherwise take the registry entry for the id.
+                contextLength = model.contextLength
+                    ?: ModelRegistry.MODEL_CONTEXT_LENGTH.getData(id)?.takeIf { it > 0 },
             )
         )
     }
@@ -694,6 +698,14 @@ private fun ModelSettingsForm(
                             onTypeSelected = {
                                 onModelChange(model.copy(type = it))
                             }
+                        )
+
+                        ContextLengthInput(
+                            contextLength = model.contextLength,
+                            registryWindow = ModelRegistry.MODEL_CONTEXT_LENGTH
+                                .getData(model.modelId)
+                                ?.takeIf { it > 0 },
+                            onUpdate = { onModelChange(model.copy(contextLength = it)) },
                         )
 
                         ModelModalitySelector(
@@ -1703,14 +1715,71 @@ private fun ProviderOverrideSettings(
  * supportedParameters, modalities, abilities and the IMAGE model type); only fall back to
  * the static ModelRegistry lookup for providers that return bare model ids. Without this,
  * the registry lookup clobbered OpenRouter's detected image/tool/reasoning capabilities.
+ *
+ * `contextLength` is filled from the registry either way: no provider other than OpenRouter
+ * and Gemini publishes a window, so leaving it null here meant every percent-based context
+ * feature (the `<context_reminder>` threshold, automatic compaction in percent mode) was
+ * silently dead on DeepSeek / Qwen / GLM / every OpenAI-compatible gateway. An already-known
+ * window is never overwritten.
  */
-private fun Model.enrichCapabilities(): Model =
-    if (supportedParameters.isNotEmpty()) {
-        this
+private fun Model.enrichCapabilities(): Model {
+    val registryWindow = ModelRegistry.MODEL_CONTEXT_LENGTH.getData(modelId)?.takeIf { it > 0 }
+    val withWindow = if (contextLength != null) this else copy(contextLength = registryWindow)
+    return if (supportedParameters.isNotEmpty()) {
+        withWindow
     } else {
-        copy(
+        withWindow.copy(
             inputModalities = ModelRegistry.MODEL_INPUT_MODALITIES.getData(modelId),
             outputModalities = ModelRegistry.MODEL_OUTPUT_MODALITIES.getData(modelId),
             abilities = ModelRegistry.MODEL_ABILITIES.getData(modelId),
         )
     }
+}
+
+/**
+ * The model's context window, optionally spelled out by hand.
+ *
+ * Percent-based context features — the `<context_reminder>` threshold and automatic compaction in
+ * percent mode — measure against this number, and most providers never publish one, so the field
+ * exists rather than leaving those features silently switched off. Empty is a legitimate value: the
+ * request-time resolver then uses what the provider published, and the built-in registry entry for
+ * this model id after that (`Settings.getEffectiveContextLength`).
+ *
+ * Kept as raw text so clearing the field does not fight the user, and digits-only so a stray
+ * separator can never be stored as a token count.
+ */
+@Composable
+private fun ContextLengthInput(
+    contextLength: Int?,
+    registryWindow: Int?,
+    onUpdate: (Int?) -> Unit,
+) {
+    var text by remember(contextLength) { mutableStateOf(contextLength?.toString().orEmpty()) }
+    OutlinedTextField(
+        value = text,
+        onValueChange = { raw ->
+            val digits = raw.filter { it.isDigit() }.take(8)
+            text = digits
+            onUpdate(digits.toIntOrNull()?.takeIf { it > 0 })
+        },
+        label = { Text(stringResource(R.string.setting_provider_page_context_window)) },
+        supportingText = {
+            Text(
+                text = when {
+                    contextLength != null -> stringResource(
+                        R.string.setting_provider_page_context_window_set,
+                        contextLength.toString(),
+                    )
+                    registryWindow != null -> stringResource(
+                        R.string.setting_provider_page_context_window_registry,
+                        registryWindow.toString(),
+                    )
+                    else -> stringResource(R.string.setting_provider_page_context_window_unknown)
+                }
+            )
+        },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth(),
+    )
+}

@@ -123,10 +123,10 @@ import me.rerere.rikkahub.data.datastore.AutoCompactionThresholdMode
 import me.rerere.rikkahub.data.datastore.DEFAULT_AUTO_MODEL_ID
 import me.rerere.rikkahub.data.datastore.findModelById
 import me.rerere.rikkahub.data.datastore.findProvider
-import me.rerere.rikkahub.data.datastore.getCompactionContextLength
 import me.rerere.rikkahub.data.datastore.getContextCompactionTargetTokens
 import me.rerere.rikkahub.data.datastore.getCurrentAssistant
 import me.rerere.rikkahub.data.datastore.getCurrentChatModel
+import me.rerere.rikkahub.data.datastore.getEffectiveContextLength
 import me.rerere.rikkahub.data.files.FilesManager
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.Conversation
@@ -224,12 +224,12 @@ internal fun backgroundTextGenerationParams(
 )
 
 /**
- * Resolve the compression model's usable context ceiling. The token-threshold setting is an
- * explicit user-controlled limit when that mode is selected, which also covers providers such
- * as Codex whose model list does not publish context metadata.
+ * Resolve the compression model's usable context ceiling. Shares one window with the reminder and
+ * the automatic compaction trigger (see [Settings.getEffectiveContextLength]) so the compression
+ * input budget is sized against the same number the rest of the pipeline reasons about.
  */
 internal fun compactionContextLength(settings: Settings, model: Model): Int? =
-    settings.getCompactionContextLength(model)
+    settings.getEffectiveContextLength(model)
 
 /**
  * Resolve the model to compress against. `settings.compressModelId` defaults to (and is
@@ -2747,9 +2747,15 @@ class ChatService(
         )
     }
 
+    /**
+     * The token count at which automatic compaction fires. Both branches read the same window as
+     * the reminder transformer (see [Settings.getEffectiveContextLength]); in PERCENT mode a window
+     * nobody published now falls back to the registry entry instead of silently disabling
+     * compaction, which is what `model.contextLength == null` used to do.
+     */
     private fun automaticCompactionTriggerTokens(settings: Settings, model: Model): Int? =
         when (settings.autoCompactionThresholdMode) {
-            AutoCompactionThresholdMode.PERCENT -> model.contextLength
+            AutoCompactionThresholdMode.PERCENT -> settings.getEffectiveContextLength(model)
                 ?.takeIf { it > 0 }
                 ?.let { length ->
                     (length.toLong() * settings.autoCompactionThresholdPercent

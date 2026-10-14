@@ -1085,6 +1085,10 @@
   <string name="setting_provider_page_import_dialog_message">Please select import method:</string>
   <string name="setting_provider_page_import_dialog_title">Import Provider Configuration</string>
   <string name="setting_provider_page_import_service_account_json">Import Service Account JSON</string>
+  <string name="setting_provider_page_context_window">Context window (tokens)</string>
+  <string name="setting_provider_page_context_window_set">In effect: %1$s tokens, set here. The context reminder and percent-based automatic compaction measure against this.</string>
+  <string name="setting_provider_page_context_window_registry">In effect: %1$s tokens, from the built-in list for this model id. Set a value here to override it.</string>
+  <string name="setting_provider_page_context_window_unknown">Unknown. The context reminder and percent-based automatic compaction stay off until a window is set here or advertised by the provider.</string>
   <string name="setting_provider_page_import_success">Import successful</string>
   <string name="setting_provider_page_input_modality">Input Modality</string>
   <string name="setting_provider_page_location">Location (e.g. us-central1)</string>

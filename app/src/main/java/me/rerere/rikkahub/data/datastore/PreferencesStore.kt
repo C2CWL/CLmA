@@ -32,8 +32,10 @@ import me.rerere.ai.core.MessageRole
 import me.rerere.ai.core.ReasoningLevel
 import me.rerere.ai.provider.Model
 import me.rerere.ai.provider.ProviderSetting
+import me.rerere.ai.registry.ModelRegistry
 import me.rerere.rikkahub.AppScope
 import me.rerere.rikkahub.data.ai.AssistantResolver
+import me.rerere.rikkahub.data.ai.ContextWindowResolver
 import me.rerere.rikkahub.data.ai.mcp.McpServerConfig
 import me.rerere.rikkahub.data.gemini.DENIED_MODEL_IDS
 import me.rerere.rikkahub.data.ai.prompts.DEFAULT_COMPRESS_PROMPT
@@ -1229,8 +1231,12 @@ fun Settings.getContextCompactionTargetTokens(contextLength: Int?): Int {
         ?: FALLBACK_CONTEXT_COMPACTION_TARGET_TOKENS
 }
 
-/** Uses the token-threshold setting as the model context ceiling when that mode is active. */
-fun Settings.getCompactionContextLength(model: Model?): Int? =
+/**
+ * The user's explicit context ceiling: the token-threshold setting in tokens, and only while that
+ * mode is selected. A declared model limit, so it outranks provider metadata wherever a window is
+ * needed.
+ */
+private fun Settings.declaredContextCeiling(): Int? =
     autoCompactionThresholdTokensK
         .takeIf { autoCompactionThresholdMode == AutoCompactionThresholdMode.TOKENS }
         ?.toLong()
@@ -1238,7 +1244,29 @@ fun Settings.getCompactionContextLength(model: Model?): Int? =
         ?.times(1_000L)
         ?.coerceAtMost(Int.MAX_VALUE.toLong())
         ?.toInt()
-        ?: model?.contextLength
+
+/**
+ * The model window every context-budget decision reads — the reminder threshold, the automatic
+ * compaction trigger and the compression input budget must agree on one number, or they fire in an
+ * order nobody can explain.
+ *
+ * Sources, in order: the declared ceiling (TOKENS mode) → what the provider's model list published
+ * (OpenRouter `context_length`, Gemini `inputTokenLimit`) → the static [ModelRegistry] entry for
+ * the model id → null. `Model.contextLength` is empty for every provider that does not publish
+ * one, which is why the registry lookup is not optional here: without it, percent-based features
+ * were dead on DeepSeek / Gemini / Qwen / GLM and every OpenAI-compatible gateway.
+ *
+ * Null means the window is genuinely unknown; percent-based features must then stay off rather
+ * than divide by an invented number (see [ContextWindowResolver]).
+ */
+fun Settings.getEffectiveContextLength(model: Model?): Int? =
+    ContextWindowResolver.resolve(
+        declaredCeiling = declaredContextCeiling(),
+        providerWindow = model?.contextLength,
+        registryWindow = model?.modelId?.let { modelId ->
+            ModelRegistry.MODEL_CONTEXT_LENGTH.getData(modelId)
+        },
+    )
 
 /**
  * P2-01 — every assistant lookup funnels through [AssistantResolver]; these extensions stay

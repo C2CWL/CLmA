@@ -3,6 +3,7 @@ package me.rerere.rikkahub.data.ai.transformers
 import me.rerere.ai.core.MessageRole
 import me.rerere.ai.ui.UIMessage
 import me.rerere.rikkahub.data.ai.ContextBudgetPlanner
+import me.rerere.rikkahub.data.datastore.getEffectiveContextLength
 
 /**
  * 上下文预算提醒注入转换器
@@ -14,10 +15,14 @@ import me.rerere.rikkahub.data.ai.ContextBudgetPlanner
  * 注入方式参照 [TimeReminderTransformer](合成 user 消息)。只在助手启用了 `compact_context`
  * 工具 (`Assistant.enableCompactContextTool`) 时生效 —— 没有工具可调时提醒没有意义。
  *
- * 阈值是**每助手**的 `Assistant.contextBudgetReminderPercent`(占 `model.contextLength` 的
- * 百分比, 默认 70%)。它刻意**低于**自动压缩的默认阈值(80%): 提醒必须先于客户端的强制压缩
- * 到达, 模型才有机会自己决定是否需要压缩; 否则同一个阈值下客户端会抢先压缩, 提醒沦为多余动作。
- * `model.contextLength` 缺失(无法估算占比)时不注入。
+ * 阈值是**每助手**的 `Assistant.contextBudgetReminderPercent`(占**有效模型窗口**的百分比, 默认
+ * 70%)。它刻意**低于**自动压缩的默认阈值(80%): 提醒必须先于客户端的强制压缩到达, 模型才有机会
+ * 自己决定是否需要压缩; 否则同一个阈值下客户端会抢先压缩, 提醒沦为多余动作。
+ *
+ * 窗口取自 `Settings.getEffectiveContextLength`(与自动压缩、压缩输入预算同一个解析器), 因为它才是
+ * 「模型窗口」的唯一事实来源: 服务商公布的元数据(OpenRouter `context_length` / Gemini
+ * `inputTokenLimit`)、用户显式声明的 token 上限、静态 `ModelRegistry` 条目, 依次兜底。窗口仍然
+ * 完全未知时才不注入 —— 猜一个窗口会让提醒在错误的时机出现。
  */
 object ContextBudgetReminderTransformer : InputMessageTransformer {
     override suspend fun transform(
@@ -25,7 +30,9 @@ object ContextBudgetReminderTransformer : InputMessageTransformer {
         messages: List<UIMessage>,
     ): List<UIMessage> {
         if (!ctx.assistant.enableCompactContextTool) return messages
-        val contextLength = ctx.model.contextLength?.takeIf { it > 0 } ?: return messages
+        // The window comes from the same resolver the automatic compactor uses, so the reminder
+        // always fires before the client-side compaction that is supposed to be its fallback.
+        val contextLength = ctx.settings.getEffectiveContextLength(ctx.model) ?: return messages
         val reminder = buildContextBudgetReminder(
             messages = messages,
             contextLength = contextLength,

@@ -184,6 +184,13 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
                         modelId = modelObject["name"]!!.jsonPrimitive.content.substringAfter("/"),
                         displayName = modelObject["displayName"]!!.jsonPrimitive.content,
                         type = if ("generateContent" in supportedGenerationMethods) ModelType.CHAT else ModelType.EMBEDDING,
+                        // `inputTokenLimit` is the window the API advertises for this model; without
+                        // it the percent-based context features (reminder, auto compaction) have
+                        // nothing to measure against.
+                        contextLength = modelObject["inputTokenLimit"]
+                            ?.jsonPrimitive
+                            ?.intOrNull
+                            ?.takeIf { it > 0 },
                     )
                 }
             } else {

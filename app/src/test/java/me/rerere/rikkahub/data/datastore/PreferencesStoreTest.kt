@@ -34,9 +34,9 @@ class PreferencesStoreTest {
             autoCompactionThresholdTokensK = 372,
         )
 
-        assertEquals(372_000, settings.getCompactionContextLength(null))
+        assertEquals(372_000, settings.getEffectiveContextLength(null))
         assertEquals(3_720, settings.getContextCompactionTargetTokens(
-            settings.getCompactionContextLength(null),
+            settings.getEffectiveContextLength(null),
         ))
     }
 

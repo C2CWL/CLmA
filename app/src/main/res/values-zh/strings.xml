@@ -1022,6 +1022,10 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="setting_provider_page_location">位置（例如 us-central1）</string>
   <string name="setting_provider_page_model_count">%d个模型</string>
   <string name="setting_provider_page_model_display_name">模型显示名称</string>
+  <string name="setting_provider_page_context_window">上下文窗口（token）</string>
+  <string name="setting_provider_page_context_window_set">当前生效：%1$s token（在此设定）。上下文提醒与百分比模式的自动压缩都按它计算。</string>
+  <string name="setting_provider_page_context_window_registry">当前生效：%1$s token（该模型 id 的内置值）。在此填写可覆盖。</string>
+  <string name="setting_provider_page_context_window_unknown">未知。上下文提醒与百分比模式的自动压缩会保持关闭，直到在此填写，或由服务商公布窗口。</string>
   <string name="setting_provider_page_model_display_name_placeholder">例如：GPT-3.5, 用于UI显示</string>
   <string name="setting_provider_page_model_id">模型ID</string>
   <string name="setting_provider_page_model_id_placeholder">例如：gpt-3.5-turbo</string>
