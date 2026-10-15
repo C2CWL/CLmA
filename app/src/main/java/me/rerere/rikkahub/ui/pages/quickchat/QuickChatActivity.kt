@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
@@ -87,6 +88,17 @@ class QuickChatActivity : ComponentActivity() {
     private val mirror = mutableStateOf(false)
     private val ballCenterY = mutableIntStateOf(0)
 
+    /**
+     * Whether this window can count on a blurred backdrop.
+     *
+     * When the OS will blur what is behind us we leave the panel's own surface translucent and let
+     * the app underneath show through softened. When it will not — the cross-window blur feature is
+     * switched off, or the OEM never implemented it — a translucent panel is just a washed-out slab
+     * over a busy app, so the panel paints itself nearly opaque instead. Readability must not depend
+     * on a blur the device may not have.
+     */
+    private val blurredBackdrop = mutableStateOf(false)
+
     /** Opened by holding the ball: the panel records for as long as the ball stays held. */
     private val holdToTalk = mutableStateOf(false)
 
@@ -94,6 +106,16 @@ class QuickChatActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         noSystemTransition()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val enabled = getSystemService(WindowManager::class.java)
+                ?.isCrossWindowBlurEnabled == true
+            blurredBackdrop.value = enabled
+            if (enabled) {
+                // The radius is in raw pixels and the panel is a large surface, so scale it with
+                // density to keep the amount of diffusion constant across screens.
+                window.setBackgroundBlurRadius((24 * resources.displayMetrics.density).toInt())
+            }
+        }
         readPanelExtras(intent)
         setContent {
             RikkahubTheme {
@@ -120,6 +142,7 @@ class QuickChatActivity : ComponentActivity() {
                         holdToTalk = holdToTalk.value,
                         mirror = mirror.value,
                         ballCenterY = ballCenterY.intValue,
+                        blurredBackdrop = blurredBackdrop.value,
                         // Told from the panel's first frame, not from onCreate: the ball folds itself
                         // away exactly as the panel unfolds, and stands the idle countdown down while
                         // the panel owns the screen. It comes back when we finish.
