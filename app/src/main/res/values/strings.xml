@@ -1852,14 +1852,14 @@
   <string name="setting_termux_command_timeout">Default command timeout</string>
   <string name="setting_termux_command_timeout_desc">How long to wait for a background shell command to return output. Range 5 s to 600 s.</string>
   <string name="setting_termux_turn_budget">Per-turn wall-clock budget (all tools)</string>
-  <string name="setting_termux_turn_budget_desc">Hard cap on the total time any single user turn can spend executing tools. Range 1 min to 180 min.</string>
+  <string name="setting_termux_turn_budget_desc">Hard cap on the total time any single user turn can spend executing tools. Range 1 min to 720 min (12 h).</string>
   <string name="setting_termux_verify_timeout">Verify smoke-test timeout</string>
   <string name="setting_termux_verify_timeout_desc">Timeout for the allow-external-apps echo smoke test. Range 3 s to 30 s.</string>
   <string name="setting_termux_unit_seconds">seconds</string>
   <string name="setting_termux_unit_minutes">minutes</string>
   <string name="setting_termux_unit_steps">steps</string>
   <string name="setting_termux_max_tool_steps">Tool steps per turn</string>
-  <string name="setting_termux_max_tool_steps_desc">How many tool calls one reply may chain before it is force-ended. Raise this for long install or build tasks. Range 1 to 900; the turn time budget above still applies.</string>
+  <string name="setting_termux_max_tool_steps_desc">How many tool calls one reply may chain before it is force-ended. Raise this for long install or build tasks. Range 1 to 1500; the turn time budget above still applies.</string>
   <string name="setting_termux_unit_bytes">bytes</string>
   <string name="setting_termux_section_defaults">Defaults &amp; limits</string>
   <string name="setting_termux_working_dir">Default working directory</string>

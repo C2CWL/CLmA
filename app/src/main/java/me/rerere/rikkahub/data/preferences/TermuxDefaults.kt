@@ -16,19 +16,21 @@ object TermuxDefaults {
     const val MAX_COMMAND_TIMEOUT_MS     = 600_000L  // 10 min
 
     // --- Per-turn wall-clock budget (app-wide) ---------------------------------------------
-    // Default is 10 min matching the constant that was in GenerationHandler.kt.
+    // Default raised to 30 min (was 10, matching the constant that used to live in
+    // GenerationHandler.kt); ceiling raised to 12 h so an unattended install / build chain
+    // can finish instead of being force-ended mid-task.
     /** Default per-turn wall-clock budget in ms. */
-    const val DEFAULT_TURN_BUDGET_MS = 10L * 60L * 1_000L  // 10 min
-    const val MIN_TURN_BUDGET_MS     =  1L * 60L * 1_000L  //  1 min
-    const val MAX_TURN_BUDGET_MS     = 180L * 60L * 1_000L // 180 min
+    const val DEFAULT_TURN_BUDGET_MS = 30L * 60L * 1_000L   // 30 min
+    const val MIN_TURN_BUDGET_MS     =  1L * 60L * 1_000L   //  1 min
+    const val MAX_TURN_BUDGET_MS     = 720L * 60L * 1_000L  // 12 h
 
     // --- Per-turn tool-call step cap (app-wide) --------------------------------------------
-    // Default is the 32 that used to be GenerationHandler's hardcoded maxSteps. The ceiling is
-    // the backstop: the wall-clock turn budget is the primary limit, so this only has to stop a
-    // runaway loop from iterating without bound.
-    const val DEFAULT_MAX_TOOL_STEPS = 32
+    // Default raised to 90 (was the 32 that used to be GenerationHandler's hardcoded maxSteps).
+    // The ceiling is the backstop: the wall-clock turn budget is the primary limit, so this only
+    // has to stop a runaway loop from iterating without bound.
+    const val DEFAULT_MAX_TOOL_STEPS = 90
     const val MIN_MAX_TOOL_STEPS     =  1
-    const val MAX_MAX_TOOL_STEPS     = 900
+    const val MAX_MAX_TOOL_STEPS     = 1500
 
     // --- Verify smoke-test timeout ---------------------------------------------------------
     const val DEFAULT_VERIFY_TIMEOUT_MS =  8_000L   //  8 s

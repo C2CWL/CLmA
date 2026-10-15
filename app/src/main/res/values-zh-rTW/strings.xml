@@ -1959,14 +1959,14 @@
   <string name="setting_termux_command_timeout">預設指令逾時</string>
   <string name="setting_termux_command_timeout_desc">等待背景 shell 指令傳回輸出的時長。範圍為 5 秒到 600 秒。</string>
   <string name="setting_termux_turn_budget">單輪總時間預算（所有工具）</string>
-  <string name="setting_termux_turn_budget_desc">單一使用者回合內執行工具所能花費的總時間上限。範圍為 1 分鐘到 180 分鐘。</string>
+  <string name="setting_termux_turn_budget_desc">單一使用者回合內執行工具所能花費的總時間上限。範圍為 1 分鐘到 720 分鐘（12 小時）。</string>
   <string name="setting_termux_verify_timeout">冒煙測試驗證逾時</string>
   <string name="setting_termux_verify_timeout_desc">allow-external-apps echo 冒煙測試的逾時時間。範圍為 3 秒到 30 秒。</string>
   <string name="setting_termux_unit_seconds">秒</string>
   <string name="setting_termux_unit_minutes">分鐘</string>
   <string name="setting_termux_unit_steps">步驟</string>
   <string name="setting_termux_max_tool_steps">每輪工具步驟數</string>
-  <string name="setting_termux_max_tool_steps_desc">一次回覆在被強制結束前最多可連續呼叫多少次工具。若需執行較長的安裝或建置工作，可調高此值。範圍為 1 到 900；上方的回合時間預算仍然適用。</string>
+  <string name="setting_termux_max_tool_steps_desc">一次回覆在被強制結束前最多可連續呼叫多少次工具。若需執行較長的安裝或建置工作，可調高此值。範圍為 1 到 1500；上方的回合時間預算仍然適用。</string>
   <string name="setting_termux_unit_bytes">位元組</string>
   <string name="setting_termux_section_defaults">預設值與限制</string>
   <string name="setting_termux_working_dir">預設工作目錄</string>

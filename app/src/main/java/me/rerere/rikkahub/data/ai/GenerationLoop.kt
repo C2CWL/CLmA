@@ -468,7 +468,7 @@ private const val TAG_GH_LOOP = "GenHandlerLoop"
 private const val LOOP_GUARD_REPEAT_THRESHOLD = 3
 
 // The per-turn wall-clock budget was hardcoded here (most recently 10 min). It now lives in
-// ToolRuntimeLimits.turnBudgetMs (default 10 min), user-configurable via Settings -> Termux;
+// ToolRuntimeLimits.turnBudgetMs (default 30 min), user-configurable via Settings -> Termux;
 // every read site below uses that holder directly.
 
 /**

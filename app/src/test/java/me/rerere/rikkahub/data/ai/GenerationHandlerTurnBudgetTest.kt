@@ -10,13 +10,12 @@ import org.junit.Test
 
 /**
  * Verifies that the per-turn wall-clock budget is now read from [ToolRuntimeLimits] rather
- * than a deleted compile-time constant, and that the default value is 10 minutes.
+ * than a deleted compile-time constant, and that the default value is 30 minutes.
  *
  * Full GenerationHandler instantiation requires Android Context + full Koin graph — beyond JVM
  * unit test scope. Instead, we test the invariants that GenerationHandler.kt relies on:
  *  - The runtime holder field exists and is readable/writable.
- *  - The default value is 10 min (per the task override; the spec says 5 min but that was
- *    overridden because the original const was 10 min).
+ *  - The default value is 30 min (raised from the 10 min that used to be the hardcoded const).
  *  - Writes to the holder are immediately visible (the deleted const had only one value;
  *    the holder can change dynamically).
  */
@@ -31,14 +30,14 @@ class GenerationHandlerTurnBudgetTest {
     fun restore() { ToolRuntimeLimits.turnBudgetMs = prevBudget }
 
     @Test
-    fun defaultBudget_is10Minutes() {
-        // The original hardcoded const in GenerationHandler.kt was 10 min.
-        // The task override spec says: "Turn-budget default = 10 minutes, NOT the spec's 5."
-        assertEquals(10L * 60L * 1_000L, TermuxDefaults.DEFAULT_TURN_BUDGET_MS)
+    fun defaultBudget_is30Minutes() {
+        // The original hardcoded const in GenerationHandler.kt was 10 min; the default is
+        // now 30 min.
+        assertEquals(30L * 60L * 1_000L, TermuxDefaults.DEFAULT_TURN_BUDGET_MS)
     }
 
     @Test
-    fun toolRuntimeLimits_initialDefault_matches10Minutes() {
+    fun toolRuntimeLimits_initialDefault_matchesTheDefaultBudget() {
         // On a fresh JVM process the holder initialises from TermuxDefaults.DEFAULT_TURN_BUDGET_MS.
         // We read prevBudget (captured before any test runs) to check what the holder started at.
         assertEquals(TermuxDefaults.DEFAULT_TURN_BUDGET_MS, prevBudget)

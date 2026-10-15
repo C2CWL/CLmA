@@ -2099,14 +2099,14 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="setting_termux_command_timeout">默认命令超时</string>
   <string name="setting_termux_command_timeout_desc">等待后台 shell 命令返回输出的时长。范围为 5 秒到 600 秒。</string>
   <string name="setting_termux_turn_budget">单轮总时间预算（所有工具）</string>
-  <string name="setting_termux_turn_budget_desc">单个用户回合内执行工具所能花费的总时间上限。范围为 1 分钟到 180 分钟。</string>
+  <string name="setting_termux_turn_budget_desc">单个用户回合内执行工具所能花费的总时间上限。范围为 1 分钟到 720 分钟（12 小时）。</string>
   <string name="setting_termux_verify_timeout">冒烟测试验证超时</string>
   <string name="setting_termux_verify_timeout_desc">allow-external-apps echo 冒烟测试的超时时间。范围为 3 秒到 30 秒。</string>
   <string name="setting_termux_unit_seconds">秒</string>
   <string name="setting_termux_unit_minutes">分钟</string>
   <string name="setting_termux_unit_steps">步骤</string>
   <string name="setting_termux_max_tool_steps">每轮工具步骤数</string>
-  <string name="setting_termux_max_tool_steps_desc">一次回复在被强制结束前最多可连续调用多少次工具。若需执行较长的安装或构建任务，可调高此值。范围为 1 到 900；上方的回合时间预算仍然适用。</string>
+  <string name="setting_termux_max_tool_steps_desc">一次回复在被强制结束前最多可连续调用多少次工具。若需执行较长的安装或构建任务，可调高此值。范围为 1 到 1500；上方的回合时间预算仍然适用。</string>
   <string name="setting_termux_unit_bytes">字节</string>
   <string name="setting_termux_section_defaults">默认值与限制</string>
   <string name="setting_termux_working_dir">默认工作目录</string>
