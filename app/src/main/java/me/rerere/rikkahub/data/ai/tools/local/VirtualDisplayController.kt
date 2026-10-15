@@ -116,15 +116,16 @@ object VirtualDisplayController {
         densityDpi: Int,
         surface: Surface,
     ): VirtualDisplay {
-        // Use VirtualDisplayConfig on API 33+ (Android 14+), deprecated overload below.
         return if (android.os.Build.VERSION.SDK_INT >= 33) {
             val config = android.hardware.display.VirtualDisplayConfig.Builder(name, width, height, densityDpi)
                 .setSurface(surface)
                 .build()
             dm.createVirtualDisplay(config)
+                ?: throw RuntimeException("createVirtualDisplay returned null")
         } else {
             @Suppress("DEPRECATION")
             dm.createVirtualDisplay(name, width, height, densityDpi, surface, 0)
+                ?: throw RuntimeException("createVirtualDisplay returned null")
         }
     }
 
