@@ -271,6 +271,18 @@ fun SettingPreferencesGeneralPage(vm: SettingVM = koinViewModel()) {
                         )
                     }
                     item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_bounce_overscroll_title)) },
+                        supportingContent = { Text(stringResource(R.string.setting_display_page_bounce_overscroll_desc)) },
+                        trailingContent = {
+                            Switch(
+                                checked = displaySetting.enableBounceOverscroll,
+                                onCheckedChange = {
+                                    updateDisplaySetting(displaySetting.copy(enableBounceOverscroll = it))
+                                }
+                            )
+                        },
+                    )
+                    item(
                         headlineContent = { Text(stringResource(R.string.setting_display_page_parse_text_tool_calls_title)) },
                         supportingContent = { Text(stringResource(R.string.setting_display_page_parse_text_tool_calls_desc)) },
                         trailingContent = {

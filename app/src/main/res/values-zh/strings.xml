@@ -789,6 +789,8 @@
   <string name="setting_display_page_tts_read_outside_brackets_title">TTS不朗读括号内的内容</string>
   <string name="setting_display_page_use_app_icon_style_loading_indicator_desc">使用应用图标动画替代默认的圆形加载指示器</string>
   <string name="setting_display_page_use_app_icon_style_loading_indicator_title">使用APP图标风格的加载指示器</string>
+  <string name="setting_display_page_bounce_overscroll_desc">聊天列表滑到边缘时回弹效果</string>
+  <string name="setting_display_page_bounce_overscroll_title">回弹过拉效果</string>
   <string name="setting_display_page_volume_key_scroll_desc">使用音量键翻页，非常适合电子墨水屏</string>
   <string name="setting_display_page_volume_key_scroll_ratio">滚动幅度</string>
   <string name="setting_display_page_volume_key_scroll_title">音量键翻页</string>

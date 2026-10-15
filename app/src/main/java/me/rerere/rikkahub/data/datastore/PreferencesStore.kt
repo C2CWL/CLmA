@@ -1182,6 +1182,7 @@ data class DisplaySetting(
     val chatCustomFontName: String = "",
     val enableVolumeKeyScroll: Boolean = false,
     val volumeKeyScrollRatio: Float = 1.0f,
+    val enableBounceOverscroll: Boolean = true,
 )
 
 @Serializable

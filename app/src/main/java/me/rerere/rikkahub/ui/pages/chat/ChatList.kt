@@ -22,6 +22,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.LocalOverscrollFactory
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -54,6 +55,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -95,6 +97,7 @@ import me.rerere.rikkahub.data.model.Conversation
 import me.rerere.rikkahub.data.model.MessageNode
 import me.rerere.rikkahub.service.ChatError
 import me.rerere.rikkahub.ui.components.message.ChatMessage
+import me.rerere.rikkahub.ui.components.ui.bounceOverscroll
 import me.rerere.rikkahub.ui.components.ui.ErrorCardsDisplay
 import me.rerere.rikkahub.ui.components.ui.ListSelectableItem
 import me.rerere.rikkahub.ui.components.ui.RabbitLoadingIndicator
@@ -316,20 +319,26 @@ private fun ChatListNormal(
         }
 
         ChatFontProvider(displaySetting = settings.displaySetting) {
-            LazyColumn(
-                state = state,
-                // The top inset is content padding rather than a modifier padding, so the messages
-                // can scroll UNDER the title bar (where they fade out) instead of being clipped by it.
-                contentPadding = PaddingValues(16.dp) + PaddingValues(
-                    top = innerPadding.calculateTopPadding(),
-                    bottom = 32.dp + innerPadding.calculateBottomPadding(),
-                ),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier
-                    .fillMaxSize()
-                    .hazeSource(state = hazeState),
+            val bounceEnabled = settings.displaySetting.enableBounceOverscroll
+            val defaultOverscrollFactory = LocalOverscrollFactory.current
+            CompositionLocalProvider(
+                LocalOverscrollFactory provides if (bounceEnabled) null else defaultOverscrollFactory,
             ) {
+                LazyColumn(
+                    state = state,
+                    // The top inset is content padding rather than a modifier padding, so the messages
+                    // can scroll UNDER the title bar (where they fade out) instead of being clipped by it.
+                    contentPadding = PaddingValues(16.dp) + PaddingValues(
+                        top = innerPadding.calculateTopPadding(),
+                        bottom = 32.dp + innerPadding.calculateBottomPadding(),
+                    ),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .bounceOverscroll(state, enabled = bounceEnabled)
+                        .hazeSource(state = hazeState),
+                ) {
             items(
                 items = displayGroups,
                 key = { it.id },
@@ -435,6 +444,7 @@ private fun ChatListNormal(
                         .fillMaxWidth()
                         .height(5.dp)
                 )
+            }
             }
             }
         }
