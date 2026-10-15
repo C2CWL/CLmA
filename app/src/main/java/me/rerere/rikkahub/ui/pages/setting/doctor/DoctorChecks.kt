@@ -112,6 +112,7 @@ private object Capability {
     )
     val Shizuku: Set<LocalToolOption> = setOf(
         LocalToolOption.Shizuku,             // shizuku_exec runs shell commands with Shizuku's privileges
+        LocalToolOption.VirtualDisplay,     // virtual_display_* uses `input -d` / `am start --display` via Shizuku
     )
 }
 

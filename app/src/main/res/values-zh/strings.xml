@@ -1336,6 +1336,7 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="assistant_page_local_tools_location_title">位置</string>
   <string name="assistant_page_local_tools_mcp_control_desc">让助手添加、编辑和移除 MCP 服务器。助手可以在 Termux 或远程 SSH 主机上安装 MCP，然后将其接入应用 — 无需你打开设置。</string>
   <string name="assistant_page_local_tools_model_control_title">模型管理</string>
+  <string name="assistant_page_local_tools_virtual_display_title">虚拟屏</string>
   <string name="assistant_page_local_tools_model_control_desc">让助手列出、新增、修改和删除你已配置提供商下的模型（model_list / model_add / model_update / model_delete）。写操作会直接改动设置，故每次写入都需要授权并记入运行账本；无头运行（定时任务、子智能体）只可列出、不可写入。</string>
   <string name="assistant_page_local_tools_mcp_control_title">MCP 控制</string>
   <string name="assistant_page_local_tools_media_player_desc">从文件路径或网址播放和停止音频。</string>
