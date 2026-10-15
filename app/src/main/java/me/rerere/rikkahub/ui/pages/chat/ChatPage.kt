@@ -413,7 +413,7 @@ private fun ChatPageContent(
         )
     }
     val onUpdateChatModel: (Model) -> Unit = { model ->
-        vm.setChatModel(assistant = setting.getCurrentAssistant(), model = model)
+        vm.setConversationChatModel(model)
     }
     val onUpdateSearchService: (Int) -> Unit = { index ->
         vm.updateSettings(setting.copy(searchServiceSelected = index))
@@ -505,6 +505,7 @@ private fun ChatPageContent(
                         )
                     },
                     enableSearch = enableWebSearch,
+                    conversationChatModelId = conversation.chatModelId,
                     onUpdateChatModel = onUpdateChatModel,
                     onUpdateSearchMode = onUpdateSearchMode,
                     onUpdateSearchService = onUpdateSearchService,

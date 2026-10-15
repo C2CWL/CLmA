@@ -239,7 +239,7 @@ class ChatVM(
         }
     }
 
-    // 设置聊天模型
+    // 设置聊天模型（全局，影响助手的默认模型）
     fun setChatModel(assistant: Assistant, model: Model) {
         viewModelScope.launch {
             settingsStore.update { settings ->
@@ -253,6 +253,15 @@ class ChatVM(
                             it
                         }
                     })
+            }
+        }
+    }
+
+    // 为当前对话单独设置模型，不影响助手默认模型或其他对话
+    fun setConversationChatModel(model: Model) {
+        viewModelScope.launch {
+            chatService.updateConversationState(_conversationId) { conversation ->
+                conversation.copy(chatModelId = model.id)
             }
         }
     }
