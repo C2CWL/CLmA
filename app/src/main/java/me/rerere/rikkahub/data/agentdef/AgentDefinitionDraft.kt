@@ -338,6 +338,7 @@ object LocalToolGroups {
         LocalToolOption.ScreenAutomation,
         LocalToolOption.AppLauncher,
         LocalToolOption.Termux,
+        LocalToolOption.VirtualDisplay,
         LocalToolOption.KeyboardControl,
         LocalToolOption.ModelControl,
     )

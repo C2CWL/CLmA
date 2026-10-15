@@ -53,6 +53,14 @@ object ToolApprovalDefaults {
         // Shell via Shizuku (shell UID, no root)
         "shizuku_exec",
 
+        // Virtual display: launches apps + injects input via Shizuku shell
+        "virtual_display_create",
+        "virtual_display_launch",
+        "virtual_display_tap",
+        "virtual_display_swipe",
+        "virtual_display_key",
+        "virtual_display_text",
+
         // Remote shell (SSH)
         "ssh_exec",
         "ssh_exec_saved",
