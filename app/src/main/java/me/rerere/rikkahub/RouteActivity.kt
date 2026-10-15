@@ -159,6 +159,13 @@ class RouteActivity : ComponentActivity() {
     companion object {
         const val EXTRA_OPEN_CODEX_SETTINGS = "open_codex_settings"
         const val EXTRA_OPEN_GEMINI_SETTINGS = "open_gemini_settings"
+
+        /**
+         * Content id of a page another window (the floating quick-chat panel) reached but cannot
+         * show itself — it is a window over whatever app the user is in, with no nav stack of its
+         * own. See [Screen.WebView] and `QuickChatActivity`.
+         */
+        const val EXTRA_OPEN_WEBVIEW_CONTENT = "open_webview_content"
     }
 
     private val okHttpClient by inject<OkHttpClient>()
@@ -246,6 +253,14 @@ class RouteActivity : ComponentActivity() {
             val destination = Screen.SettingProviderDetail(DEFAULT_GEMINI_OAUTH_PROVIDER_ID.toString())
             if (backStack.lastOrNull() != destination) backStack.add(destination)
             intent.removeExtra(EXTRA_OPEN_GEMINI_SETTINGS)
+        }
+        // A page the quick-chat panel could not open itself — tapping the eye on a code block
+        // there. The panel hands the content id over rather than pushing the screen onto a stack
+        // nothing renders, and the page is read back from the shared on-disk cache.
+        intent.getStringExtra(EXTRA_OPEN_WEBVIEW_CONTENT)?.let { contentId ->
+            val destination = Screen.WebView(contentId = contentId)
+            if (backStack.lastOrNull() != destination) backStack.add(destination)
+            intent.removeExtra(EXTRA_OPEN_WEBVIEW_CONTENT)
         }
         val destination = when (intent.action) {
             ACTION_TRANSLATE -> Screen.Translator

@@ -10,12 +10,16 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation3.runtime.NavKey
 import coil3.ImageLoader
 import coil3.annotation.ExperimentalCoilApi
 import coil3.compose.setSingletonImageLoaderFactory
@@ -27,10 +31,14 @@ import coil3.request.crossfade
 import coil3.svg.SvgDecoder
 import com.dokar.sonner.Toaster
 import com.dokar.sonner.rememberToasterState
+import me.rerere.rikkahub.RouteActivity
+import me.rerere.rikkahub.Screen
 import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.service.FloatingBallService
+import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.context.LocalSettings
 import me.rerere.rikkahub.ui.context.LocalToaster
+import me.rerere.rikkahub.ui.context.Navigator
 import me.rerere.rikkahub.ui.theme.LocalDarkMode
 import me.rerere.rikkahub.ui.theme.RikkahubTheme
 import okhttp3.OkHttpClient
@@ -125,14 +133,28 @@ class QuickChatActivity : ComponentActivity() {
                 val settings by settingsStore.settingsFlow.collectAsStateWithLifecycle()
                 val toaster = rememberToasterState()
                 ConfigureImageLoader()
-                // The panel hosts real app components (the assistant avatar in its header), and
-                // those reach for the app-level CompositionLocals that only RouteActivity used to
+                // The panel answers through the same components the main window uses, and those
+                // reach for the app-level CompositionLocals that only RouteActivity used to
                 // provide. Without them here AssistantAvatar -> UIAvatar -> useCropLauncher dies on
-                // LocalToaster.current — whose default is `error("Not provided")` — the moment the
-                // panel composes, so provide the same set the main activity does.
+                // LocalToaster.current, and a reply with a fenced code block dies on
+                // LocalNavController.current — both default to `error("Not provided")` — the moment
+                // the panel composes, so provide the same set the main activity does.
+                //
+                // The navigator here is the one difference: the panel is a window over whatever app
+                // the user is in and has no NavDisplay, so a screen reached from inside it (a code
+                // block's preview, a Mermaid diagram) is handed to the main window instead of being
+                // pushed onto a stack nothing renders.
+                val panelNavBackStack = remember { mutableStateListOf<NavKey>() }
+                val panelNavigator = remember { Navigator(panelNavBackStack) }
+                LaunchedEffect(panelNavBackStack.size) {
+                    val target = panelNavBackStack.lastOrNull() ?: return@LaunchedEffect
+                    panelNavBackStack.clear()
+                    openInMainWindow(target)
+                }
                 CompositionLocalProvider(
                     LocalSettings provides settings,
                     LocalToaster provides toaster,
+                    LocalNavController provides panelNavigator,
                 ) {
                     Toaster(
                         state = toaster,
@@ -191,6 +213,32 @@ class QuickChatActivity : ComponentActivity() {
         mirror.value = intent?.getStringExtra(EXTRA_BALL_SIDE) == "left"
         ballCenterY.intValue = intent?.getIntExtra(EXTRA_BALL_CENTER_Y, 0) ?: 0
         holdToTalk.value = intent?.getBooleanExtra(EXTRA_VOICE, false) == true
+    }
+
+    /**
+     * Show a screen the panel reached in the main window, then close the panel.
+     *
+     * The destination belongs to the main window's stack and the panel sits on top of it, so
+     * leaving the panel up would hide the page the user just asked for. Only [Screen.WebView] is
+     * reachable from the panel today (a fenced code block's preview, a Mermaid diagram); anything
+     * else just brings the app forward rather than guessing at a destination.
+     */
+    private fun openInMainWindow(key: NavKey) {
+        val intent = Intent(this, RouteActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                Intent.FLAG_ACTIVITY_SINGLE_TOP
+            when (key) {
+                is Screen.WebView -> putExtra(
+                    RouteActivity.EXTRA_OPEN_WEBVIEW_CONTENT,
+                    key.contentId,
+                )
+
+                else -> Unit
+            }
+        }
+        startActivity(intent)
+        finish()
     }
 }
 
