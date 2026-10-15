@@ -278,17 +278,20 @@ class AssistantDetailVM(
     }
 
     fun checkBackgroundDelete(old: Assistant, new: Assistant) {
-        val oldBackground = old.background
-        val newBackground = new.background
+        // Clean up any per-theme wallpapers that were removed or changed.
+        val oldBackgrounds = setOf(old.background, old.darkBackground, old.lightBackground)
+        val newBackgrounds = setOf(new.background, new.darkBackground, new.lightBackground)
+        val removed = oldBackgrounds - newBackgrounds
 
-        if (oldBackground != null && oldBackground != newBackground) {
+        for (bg in removed) {
+            if (bg == null) continue
             try {
-                val oldUri = oldBackground.toUri()
-                if (oldUri.scheme == "content" || oldUri.scheme == "file") {
-                    filesManager.deleteChatFiles(listOf(oldUri))
+                val uri = bg.toUri()
+                if (uri.scheme == "content" || uri.scheme == "file") {
+                    filesManager.deleteChatFiles(listOf(uri))
                 }
             } catch (e: Exception) {
-                Log.w(TAG, "Failed to delete background file: $oldBackground", e)
+                Log.w(TAG, "Failed to delete background file: $bg", e)
             }
         }
     }

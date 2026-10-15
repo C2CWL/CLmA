@@ -48,6 +48,12 @@ data class Assistant(
     val background: String? = null, // 聊天页背景图地址(本地文件 URI 或网络 URL), 为 null 时无背景
     val backgroundOpacity: Float = 1.0f, // 背景图不透明度(0~1)
     val useGradientBackground: Boolean = false, // 开启后聊天页使用动态渐变背景
+    // Per-theme wallpapers. Null falls back to [background], so an assistant that
+    // never touched these is byte-identical in the store.
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val darkBackground: String? = null, // 深色主题壁纸, null 时回退到 background
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val lightBackground: String? = null, // 浅色主题壁纸, null 时回退到 background
     val modeInjectionIds: Set<Uuid> = emptySet(),      // 关联的模式注入 ID
     val lorebookIds: Set<Uuid> = emptySet(),            // 关联的 Lorebook ID
     val enabledSkills: Set<String> = emptySet(),        // 启用的 skill 名称列表

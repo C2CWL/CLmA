@@ -843,18 +843,22 @@ internal fun AssistantBasicContent(
                 BackgroundPicker(
                     modifier = Modifier.padding(8.dp),
                     background = assistant.background,
+                    darkBackground = assistant.darkBackground,
+                    lightBackground = assistant.lightBackground,
                     backgroundOpacity = assistant.backgroundOpacity,
-                    onUpdate = { background ->
+                    onUpdate = { slot, value ->
                         onUpdate(
-                            assistant.copy(
-                                background = background
-                            )
+                            when (slot) {
+                                BackgroundSlot.COMMON -> assistant.copy(background = value)
+                                BackgroundSlot.DARK -> assistant.copy(darkBackground = value)
+                                BackgroundSlot.LIGHT -> assistant.copy(lightBackground = value)
+                            }
                         )
                     }
                 )
             }
 
-            if (!assistant.useGradientBackground && assistant.background != null) {
+            if (!assistant.useGradientBackground && (assistant.background != null || assistant.darkBackground != null || assistant.lightBackground != null)) {
                 val backgroundOpacity = assistant.backgroundOpacity.coerceIn(0f, 1f)
                 HorizontalDivider()
                 FormItem(

@@ -50,6 +50,10 @@
   <string name="assistant_page_background_opacity">Background Opacity</string>
   <string name="assistant_page_background_opacity_desc">Adjust chat background image visibility</string>
   <string name="assistant_page_background_opacity_value">Opacity: %1$d%%</string>
+  <string name="assistant_page_background_slot_common">Common</string>
+  <string name="assistant_page_background_slot_dark">Dark</string>
+  <string name="assistant_page_background_slot_light">Light</string>
+  <string name="assistant_page_background_fallback_hint">Not set — falls back to the common wallpaper.</string>
   <string name="assistant_page_background_set">Background image set</string>
   <string name="assistant_page_balanced">Balanced</string>
   <string name="assistant_page_body_key">Body Key</string>

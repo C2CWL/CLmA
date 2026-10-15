@@ -6,13 +6,17 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -31,14 +35,22 @@ import me.rerere.rikkahub.data.files.FilesManager
 import me.rerere.rikkahub.ui.components.ui.FormItem
 import org.koin.compose.koinInject
 
+/** Which wallpaper slot the user is editing. */
+enum class BackgroundSlot {
+    COMMON, DARK, LIGHT
+}
+
 @Composable
 fun BackgroundPicker(
     modifier: Modifier = Modifier,
     background: String?,
+    darkBackground: String?,
+    lightBackground: String?,
     backgroundOpacity: Float = 1.0f,
-    onUpdate: (String?) -> Unit
+    onUpdate: (slot: BackgroundSlot, value: String?) -> Unit
 ) {
     val filesManager: FilesManager = koinInject()
+    var selectedSlot by remember { mutableStateOf(BackgroundSlot.COMMON) }
     var showPickOption by remember { mutableStateOf(false) }
     var showUrlInput by remember { mutableStateOf(false) }
     var urlInput by remember { mutableStateOf("") }
@@ -49,12 +61,18 @@ fun BackgroundPicker(
         uri?.let {
             val localUris = filesManager.createChatFilesByContents(listOf(it))
             localUris.firstOrNull()?.let { localUri ->
-                onUpdate(localUri.toString())
+                onUpdate(selectedSlot, localUri.toString())
             }
         }
     }
 
     val previewOpacity = backgroundOpacity.coerceIn(0f, 1f)
+
+    val currentValue = when (selectedSlot) {
+        BackgroundSlot.COMMON -> background
+        BackgroundSlot.DARK -> darkBackground
+        BackgroundSlot.LIGHT -> lightBackground
+    }
 
     FormItem(
         modifier = modifier,
@@ -65,6 +83,35 @@ fun BackgroundPicker(
             Text(stringResource(R.string.assistant_page_chat_background_desc))
         }
     ) {
+        // Segmented control: common / dark / light
+        SingleChoiceSegmentedButtonRow(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            SegmentedButton(
+                selected = selectedSlot == BackgroundSlot.COMMON,
+                onClick = { selectedSlot = BackgroundSlot.COMMON },
+                shape = SegmentedButtonDefaults.itemShape(index = 0, count = 3),
+            ) {
+                Text(stringResource(R.string.assistant_page_background_slot_common))
+            }
+            SegmentedButton(
+                selected = selectedSlot == BackgroundSlot.DARK,
+                onClick = { selectedSlot = BackgroundSlot.DARK },
+                shape = SegmentedButtonDefaults.itemShape(index = 1, count = 3),
+            ) {
+                Text(stringResource(R.string.assistant_page_background_slot_dark))
+            }
+            SegmentedButton(
+                selected = selectedSlot == BackgroundSlot.LIGHT,
+                onClick = { selectedSlot = BackgroundSlot.LIGHT },
+                shape = SegmentedButtonDefaults.itemShape(index = 2, count = 3),
+            ) {
+                Text(stringResource(R.string.assistant_page_background_slot_light))
+            }
+        }
+
+        Spacer(Modifier.height(4.dp))
+
         Button(
             onClick = {
                 showPickOption = true
@@ -72,7 +119,7 @@ fun BackgroundPicker(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(
-                text = if (background != null) {
+                text = if (currentValue != null) {
                     stringResource(R.string.assistant_page_change_background)
                 } else {
                     stringResource(R.string.assistant_page_select_background)
@@ -80,7 +127,7 @@ fun BackgroundPicker(
             )
         }
 
-        if (background != null) {
+        if (currentValue != null) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -94,7 +141,7 @@ fun BackgroundPicker(
                 )
                 TextButton(
                     onClick = {
-                        onUpdate(null)
+                        onUpdate(selectedSlot, null)
                     }
                 ) {
                     Text(stringResource(R.string.assistant_page_remove))
@@ -102,11 +149,17 @@ fun BackgroundPicker(
             }
 
             AsyncImage(
-                model = background,
+                model = currentValue,
                 contentDescription = null,
                 modifier = Modifier
                     .fillMaxWidth()
                     .alpha(previewOpacity)
+            )
+        } else if (selectedSlot != BackgroundSlot.COMMON && background != null) {
+            Text(
+                text = stringResource(R.string.assistant_page_background_fallback_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -142,11 +195,11 @@ fun BackgroundPicker(
                     ) {
                         Text(stringResource(R.string.assistant_page_enter_image_url))
                     }
-                    if (background != null) {
+                    if (currentValue != null) {
                         Button(
                             onClick = {
                                 showPickOption = false
-                                onUpdate(null)
+                                onUpdate(selectedSlot, null)
                             },
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -189,7 +242,7 @@ fun BackgroundPicker(
                 TextButton(
                     onClick = {
                         if (urlInput.isNotBlank()) {
-                            onUpdate(urlInput.trim())
+                            onUpdate(selectedSlot, urlInput.trim())
                             showUrlInput = false
                         }
                     }

@@ -57,4 +57,28 @@ class WallpaperContrastTest {
         assertFalse(looseTextNeedsPhotoPlate(darkTheme = true, photoShown = true))
         assertFalse(looseTextNeedsPhotoPlate(darkTheme = false, photoShown = false))
     }
+
+    // --- effectiveBackground: per-theme resolution ---
+
+    @Test fun `dark theme prefers darkBackground then falls back to background`() {
+        assertEquals("dark.jpg", effectiveBackground(true, "common.jpg", "dark.jpg", "light.jpg"))
+        assertEquals("common.jpg", effectiveBackground(true, "common.jpg", null, "light.jpg"))
+        assertEquals("common.jpg", effectiveBackground(true, "common.jpg", null, null))
+    }
+
+    @Test fun `light theme prefers lightBackground then falls back to background`() {
+        assertEquals("light.jpg", effectiveBackground(false, "common.jpg", "dark.jpg", "light.jpg"))
+        assertEquals("common.jpg", effectiveBackground(false, "common.jpg", "dark.jpg", null))
+        assertEquals("common.jpg", effectiveBackground(false, "common.jpg", null, null))
+    }
+
+    @Test fun `effective background is null when nothing is set`() {
+        assertEquals(null, effectiveBackground(true, null, null, null))
+        assertEquals(null, effectiveBackground(false, null, null, null))
+    }
+
+    @Test fun `per-theme wallpaper overrides common even when common is null`() {
+        assertEquals("dark.jpg", effectiveBackground(true, null, "dark.jpg", null))
+        assertEquals("light.jpg", effectiveBackground(false, null, null, "light.jpg"))
+    }
 }

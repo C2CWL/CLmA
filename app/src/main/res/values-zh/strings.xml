@@ -50,6 +50,10 @@
   <string name="assistant_page_background_opacity">背景透明度</string>
   <string name="assistant_page_background_opacity_desc">调整聊天背景图显示透明度</string>
   <string name="assistant_page_background_opacity_value">透明度：%1$d%%</string>
+  <string name="assistant_page_background_slot_common">通用</string>
+  <string name="assistant_page_background_slot_dark">深色</string>
+  <string name="assistant_page_background_slot_light">浅色</string>
+  <string name="assistant_page_background_fallback_hint">未设置，将使用通用壁纸。</string>
   <string name="assistant_page_background_set">已设置背景图片</string>
   <string name="assistant_page_balanced">平衡</string>
   <string name="assistant_page_body_key">Body Key</string>

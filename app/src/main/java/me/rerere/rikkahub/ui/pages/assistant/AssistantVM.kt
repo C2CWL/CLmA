@@ -83,6 +83,8 @@ class AssistantVM(
         val uris = buildList {
             (assistant.avatar as? Avatar.Image)?.let { add(it.url.toUri()) }
             assistant.background?.let { add(it.toUri()) }
+            assistant.darkBackground?.let { add(it.toUri()) }
+            assistant.lightBackground?.let { add(it.toUri()) }
         }
 
         if (uris.isNotEmpty()) {

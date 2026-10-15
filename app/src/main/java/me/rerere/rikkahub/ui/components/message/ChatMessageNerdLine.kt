@@ -3,9 +3,12 @@ package me.rerere.rikkahub.ui.components.message
 import androidx.annotation.VisibleForTesting
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ProvideTextStyle
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
@@ -15,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import me.rerere.ai.ui.UIMessage
 import me.rerere.rikkahub.data.usage.TurnFooter
 import me.rerere.rikkahub.ui.context.LocalSettings
+import me.rerere.rikkahub.ui.theme.LocalDarkMode
 
 /**
  * 显示消息的技术统计信息（如 token 使用量）。
@@ -31,16 +35,42 @@ fun ChatMessageNerdLine(
     message: UIMessage,
     turnFooter: TurnFooter? = null,
     modifier: Modifier = Modifier,
-    color: Color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f),
+    photoShown: Boolean = false,
 ) {
     val settings = LocalSettings.current.displaySetting
     // A user message has no turn footer; when the ledger has nothing to say and the turn is not
     // running there is simply nothing to draw.
     if (!settings.showTokenUsage || turnFooter == null) return
 
+    val darkTheme = LocalDarkMode.current
+    val needPlate = photoShown  // any photo (light or dark) benefits from a plate
+    // On a photo the usual secondary@0.5 can disappear into the image. Use a
+    // higher-contrast colour and let the plate carry the rest.
+    val color = if (photoShown) {
+        if (darkTheme) {
+            MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f)
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f)
+        }
+    } else {
+        MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f)
+    }
+
     ProvideTextStyle(MaterialTheme.typography.labelSmall.copy(color = color)) {
         CompositionLocalProvider(LocalContentColor provides color) {
-            TurnUsageLine(footer = turnFooter, modifier = modifier)
+            if (needPlate) {
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.55f),
+                ) {
+                    TurnUsageLine(
+                        footer = turnFooter,
+                        modifier = modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                    )
+                }
+            } else {
+                TurnUsageLine(footer = turnFooter, modifier = modifier)
+            }
         }
     }
 }

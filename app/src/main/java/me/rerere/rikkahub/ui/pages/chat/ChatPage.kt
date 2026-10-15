@@ -618,7 +618,15 @@ private fun ChatPageContent(
                 // full-screen veil, is what turned the wallpaper grey.
                 val fade = titleBarFade(
                     darkTheme = LocalDarkMode.current,
-                    photoShown = chatPhotoShown(assistant.background, assistant.useGradientBackground),
+                    photoShown = chatPhotoShown(
+                        effectiveBackground(
+                            darkTheme = LocalDarkMode.current,
+                            background = assistant.background,
+                            darkBackground = assistant.darkBackground,
+                            lightBackground = assistant.lightBackground,
+                        ),
+                        assistant.useGradientBackground,
+                    ),
                 )
                 val fadeColor = MaterialTheme.colorScheme.background
                 Box(
@@ -790,7 +798,15 @@ private fun TopBar(
             val assistant = settings.getCurrentAssistant()
             val titleOnPhoto = looseTextNeedsPhotoPlate(
                 darkTheme = LocalDarkMode.current,
-                photoShown = chatPhotoShown(assistant.background, assistant.useGradientBackground),
+                photoShown = chatPhotoShown(
+                    effectiveBackground(
+                        darkTheme = LocalDarkMode.current,
+                        background = assistant.background,
+                        darkBackground = assistant.darkBackground,
+                        lightBackground = assistant.lightBackground,
+                    ),
+                    assistant.useGradientBackground,
+                ),
             )
             Surface(
                 onClick = {

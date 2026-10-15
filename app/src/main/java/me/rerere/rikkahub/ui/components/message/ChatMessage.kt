@@ -105,6 +105,7 @@ import me.rerere.rikkahub.ui.context.LocalSettings
 import me.rerere.rikkahub.ui.pages.chat.PHOTO_TEXT_PLATE_ALPHA
 import me.rerere.rikkahub.ui.pages.chat.assistantTextNeedsPhotoPlate
 import me.rerere.rikkahub.ui.pages.chat.chatPhotoShown
+import me.rerere.rikkahub.ui.pages.chat.effectiveBackground
 import me.rerere.rikkahub.ui.theme.LocalChatFontFamily
 import me.rerere.rikkahub.ui.theme.LocalDarkMode
 import me.rerere.rikkahub.ui.theme.rememberChatFontFamily
@@ -250,7 +251,16 @@ fun ChatMessage(
         )
 
         ProvideTextStyle(textStyle) {
-            ChatMessageNerdLine(message = message, turnFooter = turnFooter)
+            val photoShown = chatPhotoShown(
+                effectiveBackground(
+                    darkTheme = LocalDarkMode.current,
+                    background = assistant?.background,
+                    darkBackground = assistant?.darkBackground,
+                    lightBackground = assistant?.lightBackground,
+                ),
+                assistant?.useGradientBackground == true,
+            )
+            ChatMessageNerdLine(message = message, turnFooter = turnFooter, photoShown = photoShown)
         }
 
     }
@@ -458,7 +468,12 @@ private fun MessagePartsBlock(
                                 val onPhoto = assistantTextNeedsPhotoPlate(
                                     darkTheme = LocalDarkMode.current,
                                     photoShown = chatPhotoShown(
-                                        assistant?.background,
+                                        effectiveBackground(
+                                            darkTheme = LocalDarkMode.current,
+                                            background = assistant?.background,
+                                            darkBackground = assistant?.darkBackground,
+                                            lightBackground = assistant?.lightBackground,
+                                        ),
                                         assistant?.useGradientBackground == true,
                                     ),
                                     showAssistantBubble = settings.displaySetting.showAssistantBubble,

@@ -16,6 +16,18 @@ package me.rerere.rikkahub.ui.pages.chat
 internal fun chatPhotoShown(background: String?, useGradientBackground: Boolean): Boolean =
     background != null && !useGradientBackground
 
+/**
+ * Resolve the effective wallpaper for the current theme. A per-theme wallpaper
+ * (`darkBackground` / `lightBackground`) overrides the shared `background` when set;
+ * null falls back to `background`. Both null → no wallpaper.
+ */
+internal fun effectiveBackground(
+    darkTheme: Boolean,
+    background: String?,
+    darkBackground: String?,
+    lightBackground: String?,
+): String? = if (darkTheme) darkBackground ?: background else lightBackground ?: background
+
 internal data class WallpaperScrim(val topAlpha: Float, val bottomAlpha: Float)
 
 /** Dark theme keeps the historical veil. Light theme leaves the photo alone. */

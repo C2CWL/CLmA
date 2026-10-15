@@ -21,7 +21,13 @@ fun AssistantBackground(setting: Settings, modifier: Modifier) {
         MeshGradientBackground(modifier = modifier)
         return
     }
-    if (assistant.background != null) {
+    val bg = effectiveBackground(
+        darkTheme = LocalDarkMode.current,
+        background = assistant.background,
+        darkBackground = assistant.darkBackground,
+        lightBackground = assistant.lightBackground,
+    )
+    if (bg != null) {
         val backgroundColor = MaterialTheme.colorScheme.background
         val backgroundOpacity = assistant.backgroundOpacity.coerceIn(0f, 1f)
         // Light theme: no veil (a white ramp is what washes a dark photo out).
@@ -29,7 +35,7 @@ fun AssistantBackground(setting: Settings, modifier: Modifier) {
         val scrim = wallpaperScrim(LocalDarkMode.current)
         Box(modifier = modifier) {
             AsyncImage(
-                model = assistant.background,
+                model = bg,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
