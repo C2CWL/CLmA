@@ -100,7 +100,7 @@ import me.rerere.hugeicons.stroke.Zap
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.datastore.getCurrentAssistant
-import me.rerere.rikkahub.data.datastore.getCurrentChatModel
+import me.rerere.rikkahub.data.datastore.findModelById
 import me.rerere.rikkahub.data.datastore.getQuickMessagesOfAssistant
 import me.rerere.rikkahub.data.files.FilesManager
 import me.rerere.rikkahub.data.model.Assistant
@@ -136,6 +136,7 @@ fun ChatInput(
     hazeState: HazeState,
     onUpdateAssistant: (Assistant) -> Unit,
     enableSearch: Boolean,
+    conversationChatModelId: Uuid? = null,
     onUpdateChatModel: (Model) -> Unit,
     onUpdateSearchMode: (SearchMode) -> Unit,
     onUpdateSearchService: (Int) -> Unit,
@@ -156,6 +157,9 @@ fun ChatInput(
 ) {
     val toaster = LocalToaster.current
     val assistant = settings.getCurrentAssistant()
+    val effectiveChatModel = settings.findModelById(
+        conversationChatModelId ?: assistant.chatModelId ?: settings.chatModelId
+    )
 
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
@@ -324,6 +328,7 @@ fun ChatInput(
                                 ModelReasoningChip(
                                     settings = settings,
                                     assistant = assistant,
+                                    conversationChatModelId = conversationChatModelId,
                                     expanded = expanded,
                                     onUpdateChatModel = onUpdateChatModel,
                                     onUpdateAssistant = onUpdateAssistant,
@@ -362,7 +367,7 @@ fun ChatInput(
                                 SearchPickerButton(
                                     enableSearch = enableSearch,
                                     settings = settings,
-                                    model = settings.getCurrentChatModel(),
+                                    model = effectiveChatModel,
                                     onUpdateSearchMode = onUpdateSearchMode,
                                     onUpdateSearchService = onUpdateSearchService,
                                 )
@@ -434,15 +439,17 @@ internal fun compactModelLabel(name: String): String =
 private fun ModelReasoningChip(
     settings: Settings,
     assistant: Assistant,
+    conversationChatModelId: Uuid? = null,
     expanded: Boolean,
     onUpdateChatModel: (Model) -> Unit,
     onUpdateAssistant: (Assistant) -> Unit,
 ) {
-    val model = settings.getCurrentChatModel()
+    val effectiveModelId = conversationChatModelId ?: assistant.chatModelId ?: settings.chatModelId
+    val model = settings.findModelById(effectiveModelId)
     val showReasoning = model?.abilities?.contains(ModelAbility.REASONING) == true
     val level = assistant.reasoningLevel
     val modelListState = rememberModelListState(
-        modelId = assistant.chatModelId ?: settings.chatModelId,
+        modelId = effectiveModelId,
         providers = settings.providers,
         type = ModelType.CHAT,
     )
