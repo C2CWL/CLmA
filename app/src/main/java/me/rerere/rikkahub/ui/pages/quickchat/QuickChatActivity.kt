@@ -111,6 +111,9 @@ class QuickChatActivity : ComponentActivity() {
                 ?.isCrossWindowBlurEnabled == true
             blurredBackdrop.value = enabled
             if (enabled) {
+                // PhoneWindow.setBackgroundBlurRadius accesses mDecor directly without
+                // installing it; force creation first or it NPEs before setContent.
+                window.decorView
                 // The radius is in raw pixels and the panel is a large surface, so scale it with
                 // density to keep the amount of diffusion constant across screens.
                 window.setBackgroundBlurRadius((24 * resources.displayMetrics.density).toInt())
