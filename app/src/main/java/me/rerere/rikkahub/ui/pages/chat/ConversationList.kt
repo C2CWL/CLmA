@@ -56,6 +56,7 @@ import me.rerere.rikkahub.ui.theme.extendColors
 import me.rerere.rikkahub.utils.toLocalString
 import java.time.LocalDate
 import java.time.ZoneId
+import java.util.Locale
 import kotlin.uuid.Uuid
 
 /**
@@ -105,9 +106,9 @@ fun ConversationList(
 
     LazyColumn(
         state = listState,
-        modifier = modifier,
+        modifier = modifier.padding(horizontal = 8.dp),
         contentPadding = contentPadding,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         if (conversations.itemCount == 0) {
             item {
@@ -183,14 +184,14 @@ private fun DateHeaderItem(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+            .padding(start = 10.dp, end = 8.dp, top = 8.dp, bottom = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.labelLarge,
+            style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f)
         )
     }
 }
@@ -202,19 +203,19 @@ private fun PinnedHeader(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+            .padding(start = 10.dp, end = 8.dp, top = 8.dp, bottom = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = HugeIcons.Pin,
             contentDescription = null,
-            modifier = Modifier.size(16.dp),
+            modifier = Modifier.size(14.dp),
             tint = MaterialTheme.colorScheme.primary
         )
-        Spacer(Modifier.size(8.dp))
+        Spacer(Modifier.size(6.dp))
         Text(
             text = stringResource(R.string.pinned_chats),
-            style = MaterialTheme.typography.labelLarge,
+            style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary
         )
@@ -236,17 +237,30 @@ private fun ConversationItem(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val focusManager = LocalFocusManager.current
+    val itemShape = RoundedCornerShape(12.dp)
     val backgroundColor = if (selected) {
-        MaterialTheme.colorScheme.surfaceColorAtElevation(8.dp)
+        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
     } else {
         Color.Transparent
+    }
+    val timeText = remember(conversation.updateAt) {
+        val zoneId = ZoneId.systemDefault()
+        val dt = conversation.updateAt.atZone(zoneId).toLocalDateTime()
+        val today = LocalDate.now(zoneId)
+        if (dt.toLocalDate() == today) {
+            String.format(Locale.getDefault(), "%02d:%02d", dt.hour, dt.minute)
+        } else if (dt.year == today.year) {
+            String.format(Locale.getDefault(), "%d/%d", dt.monthValue, dt.dayOfMonth)
+        } else {
+            String.format(Locale.getDefault(), "%02d/%d/%d", dt.year % 100, dt.monthValue, dt.dayOfMonth)
+        }
     }
     var showDropdownMenu by remember {
         mutableStateOf(false)
     }
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(50f))
+            .clip(itemShape)
             .combinedClickable(
                 interactionSource = interactionSource,
                 indication = LocalIndication.current,
@@ -262,15 +276,39 @@ private fun ConversationItem(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(horizontal = 10.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
+            // 选中指示竖条（未选中时透明占位，保证各条目文字起始基线严格对齐）
+            Box(
+                modifier = Modifier
+                    .size(width = 3.dp, height = 16.dp)
+                    .clip(CircleShape)
+                    .background(if (selected) MaterialTheme.colorScheme.primary else Color.Transparent)
+            )
+
             Text(
                 text = conversation.title.ifBlank { stringResource(id = R.string.chat_page_new_message) },
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                color = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
             )
-            Spacer(Modifier.weight(1f))
+
+            // 时间标签
+            Text(
+                text = timeText,
+                style = MaterialTheme.typography.labelSmall,
+                color = if (selected) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                },
+                maxLines = 1,
+            )
 
             // 置顶图标
             AnimatedVisibility(conversation.isPinned) {
@@ -287,7 +325,7 @@ private fun ConversationItem(
                     modifier = Modifier
                         .clip(CircleShape)
                         .background(MaterialTheme.extendColors.green6)
-                        .size(4.dp)
+                        .size(6.dp)
                         .semantics {
                             contentDescription = loadingDescription
                         }

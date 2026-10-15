@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -369,22 +370,28 @@ fun ChatDrawerContent(
                     drawerTopArea()
                 }
 
-                // 底部功能区：同样是 M3 填充卡片（列表并不会滑到它下面，玻璃没有可折射的对象）。
+                // 底部功能区：M3 填充卡片悬浮岛屿，边距与顶部卡片对称（8dp），并避让系统手势导航条。
                 val bottomBarShape = RoundedCornerShape(20.dp)
-                Surface(
+                Column(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
-                        .shadow(4.dp, bottomBarShape, clip = false)
+                        .padding(horizontal = 8.dp, vertical = 8.dp)
+                        .navigationBarsPadding()
                         .onSizeChanged { bottomBarHeightPx = it.height },
-                    shape = bottomBarShape,
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    tonalElevation = 0.dp,
                 ) {
-                    Column(
-                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .shadow(4.dp, bottomBarShape, clip = false),
+                        shape = bottomBarShape,
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        tonalElevation = 0.dp,
                     ) {
+                        Column(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
             // 助手选择器
             AssistantPicker(
                 settings = settings,
@@ -415,7 +422,7 @@ fun ChatDrawerContent(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 8.dp)
+                    .padding(horizontal = 4.dp)
             ) {
                 DrawerAction(
                     icon = { Icon(HugeIcons.LookTop, null) },
@@ -476,8 +483,6 @@ fun ChatDrawerContent(
                     onClick = { navController.navigate(Screen.Stats) },
                 )
 
-                Spacer(Modifier.weight(1f))
-
                 DrawerAction(
                     icon = { Icon(HugeIcons.Settings03, null) },
                     label = { Text(stringResource(R.string.settings)) },
@@ -485,6 +490,7 @@ fun ChatDrawerContent(
                     onClick = { navController.navigate(Screen.Setting) },
                 )
             }
+                        }
                     }
                 }
         }
@@ -922,7 +928,7 @@ private fun DrawerAction(
                 this.contentDescription = contentDescription
             }
         },
-        color = MaterialTheme.colorScheme.primaryContainer,
+        color = MaterialTheme.colorScheme.surfaceContainerHighest,
         shape = CircleShape,
         contentColor = MaterialTheme.colorScheme.onSurface,
     ) {
@@ -933,7 +939,7 @@ private fun DrawerAction(
         ) {
             Box(
                 modifier = Modifier
-                    .padding(10.dp)
+                    .padding(9.dp)
                     .size(20.dp),
             ) {
                 icon()
