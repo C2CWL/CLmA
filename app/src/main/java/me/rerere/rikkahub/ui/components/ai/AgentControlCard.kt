@@ -1,6 +1,5 @@
 package me.rerere.rikkahub.ui.components.ai
 
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -152,15 +151,10 @@ fun AgentControlCard(
                 )
                 Spacer(Modifier.weight(1f))
                 if (showReasoning) {
-                    ReasoningIcon(previewLevel, Modifier.size(16.dp))
-                    val wordColor by animateColorAsState(
-                        reasoningLevelColor(previewLevel),
-                        label = "reasoningWord",
-                    )
-                    Text(
-                        text = previewLevel.label(),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = wordColor,
+                    ReasoningIcon(previewLevel, Modifier.size(18.dp))
+                    ReasoningLevelWord(
+                        level = previewLevel,
+                        style = MaterialTheme.typography.titleLarge,
                     )
                 }
             }

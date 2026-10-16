@@ -1392,7 +1392,7 @@
   <string name="setting_page_doctor_copy_report">Copy report</string>
   <string name="setting_page_doctor_report_copied">Diagnostic report copied to clipboard.</string>
   <string name="setting_page_tool_approvals">Tool approvals</string>
-  <string name="setting_page_tool_approvals_desc">Approval mode (Auto / Semi / Manual) and the tools that must ask before running.</string>
+  <string name="setting_page_tool_approvals_desc">Approval mode (Auto / General / Manual) and the tools that must ask before running.</string>
   <string name="setting_page_tool_approvals_header">Every tool runs without asking unless you add it to the blacklist below. Turn a switch on to require your approval before that tool runs.</string>
   <string name="setting_page_tool_approvals_empty">The blacklist is empty — nothing asks.</string>
   <string name="setting_page_tool_approvals_summary">%1$d tool(s) require approval.</string>
@@ -1400,7 +1400,7 @@
   <string name="setting_page_tool_approvals_revoke_all">Clear blacklist</string>
   <string name="setting_page_tool_approvals_switch_desc">Ask before running</string>
   <string name="setting_page_tool_approvals_floor_badge">Always asks — this can\'t be turned off</string>
-  <string name="setting_page_tool_approvals_mcp_note">Tools from MCP servers ask in Semi and Manual (Auto waives them). A few privilege-escalation tools always ask — those can never be switched off.</string>
+  <string name="setting_page_tool_approvals_mcp_note">Tools from MCP servers ask in General and Manual (Auto waives them). A few privilege-escalation tools always ask — those can never be switched off.</string>
   <string name="setting_page_tool_approvals_search">Search tools</string>
   <string name="setting_page_tool_approvals_add_recommended">Add common dangerous tools</string>
   <string name="setting_page_tool_approvals_no_match">No tools match.</string>
@@ -1471,13 +1471,13 @@
   <string name="setting_page_tool_approvals_yolo_dialog_body">Every tool — local shell, SSH, file writes, screen automation, Telegram outbound, MCP, and everything on your blacklist — will run without asking you. The agent could send messages, run commands on remote hosts, take photos, write files, schedule jobs, all without confirmation.\n\nHARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block devices, fork bomb, encoded payload pipes — those keep blocking.\n\nThis is a foot-gun. Only enable if you trust the model + assistant config + your own prompts to behave responsibly.</string>
   <string name="setting_page_tool_approvals_mode_title">Approval mode</string>
   <string name="setting_page_tool_approvals_mode_auto">Auto</string>
-  <string name="setting_page_tool_approvals_mode_semi">Semi</string>
+  <string name="setting_page_tool_approvals_mode_semi">General</string>
   <string name="setting_page_tool_approvals_mode_manual">Manual</string>
   <string name="setting_page_tool_approvals_auto_desc">Every tool runs without asking — including tools from MCP servers. Only privilege-escalation surfaces (adding MCP servers, skill installs, code eval, keystore, NFC writes) still ask every time.</string>
   <string name="setting_page_tool_approvals_semi_desc">Only tools on your blacklist below ask before running.</string>
   <string name="setting_page_tool_approvals_manual_desc">Every tool call asks for confirmation. Tap "Allow for this chat" on a prompt to reduce friction for trusted tools.</string>
   <string name="setting_page_tool_approvals_blacklist_ignored">The blacklist is ignored in Auto mode — every tool runs without asking (except the floor).</string>
-  <string name="setting_page_tool_approvals_blacklist_manual">Every tool asks in Manual mode. The blacklist below only takes effect in Semi mode.</string>
+  <string name="setting_page_tool_approvals_blacklist_manual">Every tool asks in Manual mode. The blacklist below only takes effect in General mode.</string>
   <string name="setting_page_tool_approvals_auto_dialog_title">Switch to Auto mode?</string>
   <string name="setting_page_tool_approvals_auto_dialog_body">Every tool — local shell, SSH, file writes, screen automation, Telegram outbound, MCP server tools, and everything on your blacklist — will run without asking you.
 

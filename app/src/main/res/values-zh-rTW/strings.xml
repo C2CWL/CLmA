@@ -1539,7 +1539,7 @@
   <string name="setting_page_telegram_whitelist">允許的聊天 ID</string>
   <string name="setting_page_telegram_whitelist_desc">以逗號分隔。留空 = 不允許任何人。用 @userinfobot 查詢你的 ID。</string>
   <string name="setting_page_tool_approvals">工具授權</string>
-  <string name="setting_page_tool_approvals_desc">審批模式（自動/半自動/手動）與執行前需詢問的工具。</string>
+  <string name="setting_page_tool_approvals_desc">審批模式（自動/通用/手動）與執行前需詢問的工具。</string>
   <string name="setting_page_tool_approvals_empty">尚未授予任何工具「永遠允許」。機器人在執行任何有副作用的工具前都會詢問。</string>
   <string name="setting_page_tool_approvals_header">以下工具在本裝置上執行時永不詢問。如果你不再信任模型擁有此能力，請撤銷。</string>
   <string name="setting_page_tool_approvals_revoke">撤銷</string>

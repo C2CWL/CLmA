@@ -43,7 +43,10 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TileMode
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -56,7 +59,9 @@ import me.rerere.rikkahub.ui.components.ui.ToggleSurface
 import me.rerere.rikkahub.ui.components.ui.icons.ReasoningHigh
 import me.rerere.rikkahub.ui.components.ui.icons.ReasoningLow
 import me.rerere.rikkahub.ui.components.ui.icons.ReasoningMedium
+import kotlin.math.PI
 import kotlin.math.roundToInt
+import kotlin.math.sin
 
 private val levels = ReasoningLevel.entries
 private val levelCount = levels.size
@@ -164,14 +169,9 @@ fun ReasoningPicker(
                     modifier = Modifier.size(32.dp),
                     tint = iconColor,
                 )
-                val wordColor by animateColorAsState(
-                    reasoningLevelColor(reasoningLevel),
-                    label = "reasoningWord",
-                )
-                Text(
-                    text = reasoningLevel.label(),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = wordColor,
+                ReasoningLevelWord(
+                    level = reasoningLevel,
+                    style = MaterialTheme.typography.headlineSmall,
                 )
             }
 
@@ -224,41 +224,120 @@ internal fun ReasoningIcon(level: ReasoningLevel, modifier: Modifier = Modifier)
 }
 
 // ── Thinking-depth surge visuals ─────────────────────────────────────────────
-// The per-level hue lives ONLY on the level word (拍板 2026-10-16). The slider itself keeps
-// the theme primary and expresses depth through motion: a light band flows along the active
-// track, scrolling faster and breathing harder the deeper the level. OFF is fully static.
+// 拍板 2026-10-17 (reverses the 2026-10-16 "hue only on the word" call): the surge itself
+// carries the colour — a fixed cold→warm ramp that ignores the theme, ending in an animated
+// rainbow at MAX — plus sparks that multiply and quicken with depth. The level word follows
+// the bar: same fixed colour, or the same rainbow at MAX.
 
-private val ReasoningFastColor = Color(0xFF00B8D4)     // 快速 / Fast
-private val ReasoningBalancedColor = Color(0xFF43A047) // 均衡 / Balanced
-private val ReasoningDeepColor = Color(0xFF7E57C2)     // 沉思 / Deep
-private val ReasoningResearchColor = Color(0xFFFB8C00) // 研究 / Research
-private val ReasoningMaxColor = Color(0xFFE53935)      // 极致 / Max
+private val SurgeOffColor = Color(0xFF8B96A3)         // 关闭 / Off — static grey
+private val SurgeAutoColor = Color(0xFF29B6F6)        // 自动 / Auto — ice blue
+private val SurgeFastColor = Color(0xFF26C6DA)        // 快速 / Fast — cyan
+private val SurgeBalancedColor = Color(0xFF66BB6A)    // 均衡 / Balanced — green
+private val SurgeDeepColor = Color(0xFFFFB300)        // 沉思 / Deep — amber
+private val SurgeResearchColor = Color(0xFFFB8C00)    // 研究 / Research — orange
+private val SurgeMaxFallbackColor = Color(0xFFE53935) // 极致 / Max — single-colour fallback
 
-/** The colour of the level word for [level]. Theme-derived for OFF/AUTO, fixed mid-tones else. */
-@Composable
+/** Looped rainbow for MAX (first stop repeated at the end so TileMode.Repeated stays smooth). */
+private val SurgeRainbow = listOf(
+    Color(0xFFFF5252),
+    Color(0xFFFF9800),
+    Color(0xFFFFEB3B),
+    Color(0xFF4CAF50),
+    Color(0xFF2196F3),
+    Color(0xFF9C27B0),
+    Color(0xFFFF5252),
+)
+
+/**
+ * The surge colour for [level]: a fixed cold→warm palette, theme-independent (拍板 2026-10-17).
+ * MAX returns a hot red used only where a single [Color] is unavoidable — the bar and the
+ * level word render the animated rainbow instead.
+ */
 internal fun reasoningLevelColor(level: ReasoningLevel): Color = when (level) {
-    ReasoningLevel.OFF -> MaterialTheme.colorScheme.onSurfaceVariant
-    ReasoningLevel.AUTO -> MaterialTheme.colorScheme.primary
-    ReasoningLevel.LOW -> ReasoningFastColor
-    ReasoningLevel.MEDIUM -> ReasoningBalancedColor
-    ReasoningLevel.HIGH -> ReasoningDeepColor
-    ReasoningLevel.XHIGH -> ReasoningResearchColor
-    ReasoningLevel.MAX -> ReasoningMaxColor
+    ReasoningLevel.OFF -> SurgeOffColor
+    ReasoningLevel.AUTO -> SurgeAutoColor
+    ReasoningLevel.LOW -> SurgeFastColor
+    ReasoningLevel.MEDIUM -> SurgeBalancedColor
+    ReasoningLevel.HIGH -> SurgeDeepColor
+    ReasoningLevel.XHIGH -> SurgeResearchColor
+    ReasoningLevel.MAX -> SurgeMaxFallbackColor
+}
+
+/** The bar's MAX rainbow, drifting slowly — shared by the level word so it follows the bar. */
+@Composable
+private fun reasoningSurgeRainbowBrush(label: String): Brush {
+    val transition = rememberInfiniteTransition(label = label)
+    val phase by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(3200, easing = LinearEasing)),
+        label = "rainbow",
+    )
+    val period = with(LocalDensity.current) { 96.dp.toPx() }
+    val shift = phase * period
+    return Brush.linearGradient(
+        colors = SurgeRainbow,
+        start = Offset(shift - period, 0f),
+        end = Offset(shift, 0f),
+        tileMode = TileMode.Repeated,
+    )
 }
 
 /**
- * The depth slider's track: inactive side in surfaceContainerHighest, active side in primary
- * with a scrolling light band (infinite transition; period shrinks from 3.4s at AUTO to 0.7s
- * at MAX) plus a halo that breathes with an amplitude scaled by the level. [level] is the
- * previewed level so the motion reacts while the finger is still on the thumb.
+ * The thinking-depth word, enlarged (拍板 2026-10-17) and coloured to follow the surge bar:
+ * the fixed level colour, or the bar's animated rainbow at MAX.
+ */
+@Composable
+internal fun ReasoningLevelWord(
+    level: ReasoningLevel,
+    style: TextStyle,
+    modifier: Modifier = Modifier,
+) {
+    if (level == ReasoningLevel.MAX) {
+        Text(
+            text = level.label(),
+            modifier = modifier,
+            style = style.copy(brush = reasoningSurgeRainbowBrush("reasoningWordRainbow")),
+            fontWeight = FontWeight.Bold,
+        )
+    } else {
+        val wordColor by animateColorAsState(reasoningLevelColor(level), label = "reasoningWord")
+        Text(
+            text = level.label(),
+            modifier = modifier,
+            style = style,
+            color = wordColor,
+            fontWeight = FontWeight.Bold,
+        )
+    }
+}
+
+/** One spark rising off the active bar; fields are fixed, position derives from the clock. */
+private data class SurgeParticle(
+    val xFrac: Float,   // home position along the active bar, 0..1
+    val offset: Float,  // clock phase offset, 0..1
+    val rise: Float,    // rise-height multiplier, 0.55..1.2
+    val radiusDp: Float,
+    val sway: Float,    // horizontal wobble multiplier, -1..1
+)
+
+private fun sinf(x: Float): Float = sin(x.toDouble()).toFloat()
+
+/**
+ * The depth slider's track: inactive side in surfaceContainerHighest; the active side carries
+ * the level's colour as a scrolling light band (period 3.4s at AUTO → 0.7s at MAX) over a
+ * breathing halo, with sparks rising off the bar — more of them, faster, the deeper the level.
+ * MAX swaps the band for a flowing rainbow. OFF is fully static. [level] is the previewed
+ * level so the motion reacts while the finger is still on the thumb.
  */
 @Composable
 internal fun ReasoningSurgeTrack(sliderState: SliderState, level: ReasoningLevel) {
-    val base = MaterialTheme.colorScheme.primary
+    val base = reasoningLevelColor(level)
     val inactive = MaterialTheme.colorScheme.surfaceContainerHighest
     val ordinal = levels.indexOf(level).coerceAtLeast(0)
     val intensity = ordinal / (levelCount - 1).toFloat()
     val animated = level != ReasoningLevel.OFF
+    val isMax = level == ReasoningLevel.MAX
     val flowPeriodMs = (3400 - (2600 * intensity)).roundToInt().coerceAtLeast(700)
     val transition = rememberInfiniteTransition(label = "reasoningSurge")
     val phase by transition.animateFloat(
@@ -276,13 +355,34 @@ internal fun ReasoningSurgeTrack(sliderState: SliderState, level: ReasoningLevel
         ),
         label = "pulse",
     )
+    // Sparks: count (3→18) and rise speed (~2.3s→0.7s) both scale with depth.
+    val particleCount = (intensity * 18f).roundToInt()
+    val particlePeriodMs = (2300 - 1600 * intensity).roundToInt().coerceAtLeast(700)
+    val particleClock by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(particlePeriodMs, easing = LinearEasing)),
+        label = "particles",
+    )
+    val particles = remember(ordinal) {
+        List(particleCount) { i ->
+            val rnd = kotlin.random.Random(i.toLong() * 31 + 17)
+            SurgeParticle(
+                xFrac = rnd.nextFloat(),
+                offset = rnd.nextFloat(),
+                rise = 0.55f + 0.65f * rnd.nextFloat(),
+                radiusDp = 1.2f + 1.4f * rnd.nextFloat(),
+                sway = rnd.nextFloat() * 2f - 1f,
+            )
+        }
+    }
     val range = sliderState.valueRange.endInclusive - sliderState.valueRange.start
     val fraction =
         if (range > 0f) ((sliderState.value - sliderState.valueRange.start) / range).coerceIn(0f, 1f)
         else 0f
 
-    Canvas(modifier = Modifier.fillMaxWidth().height(16.dp)) {
-        val trackHeight = 4.dp.toPx()
+    Canvas(modifier = Modifier.fillMaxWidth().height(32.dp)) {
+        val trackHeight = 8.dp.toPx()
         val y = (size.height - trackHeight) / 2f
         val radius = CornerRadius(trackHeight / 2f, trackHeight / 2f)
         drawRoundRect(
@@ -302,33 +402,75 @@ internal fun ReasoningSurgeTrack(sliderState: SliderState, level: ReasoningLevel
             )
             return@Canvas
         }
+        // Flowing band: a repeated colour→dim→colour wave sliding along the track; a flowing
+        // rainbow at MAX.
+        val bandPeriod = (if (isMax) 200.dp else 140.dp).toPx()
+        val shift = phase * bandPeriod
+        val bandBrush = if (isMax) {
+            Brush.linearGradient(
+                colors = SurgeRainbow,
+                start = Offset(shift - bandPeriod, 0f),
+                end = Offset(shift, 0f),
+                tileMode = TileMode.Repeated,
+            )
+        } else {
+            Brush.linearGradient(
+                colorStops = arrayOf(
+                    0.0f to base,
+                    0.45f to base.copy(alpha = 0.45f),
+                    0.55f to base.copy(alpha = 0.45f),
+                    1.0f to base,
+                ),
+                start = Offset(shift - bandPeriod, 0f),
+                end = Offset(shift, 0f),
+                tileMode = TileMode.Repeated,
+            )
+        }
         // Breathing halo behind the active side.
+        val haloAlpha = 0.06f + 0.20f * intensity * pulse
+        val haloTopLeft = Offset(0f, y - trackHeight * 0.75f)
+        val haloSize = Size(activeWidth, trackHeight * 2.5f)
+        val haloRadius = CornerRadius(trackHeight * 1.25f, trackHeight * 1.25f)
+        if (isMax) {
+            drawRoundRect(
+                brush = bandBrush,
+                topLeft = haloTopLeft,
+                size = haloSize,
+                cornerRadius = haloRadius,
+                alpha = haloAlpha,
+            )
+        } else {
+            drawRoundRect(
+                color = base,
+                topLeft = haloTopLeft,
+                size = haloSize,
+                cornerRadius = haloRadius,
+                alpha = haloAlpha,
+            )
+        }
         drawRoundRect(
-            color = base.copy(alpha = 0.06f + 0.20f * intensity * pulse),
-            topLeft = Offset(0f, y - trackHeight * 0.75f),
-            size = Size(activeWidth, trackHeight * 2.5f),
-            cornerRadius = CornerRadius(trackHeight * 1.25f, trackHeight * 1.25f),
-        )
-        // Flowing band: a repeated primary→dim→primary wave sliding along the track.
-        val period = 140.dp.toPx()
-        val shift = phase * period
-        val brush = Brush.linearGradient(
-            colorStops = arrayOf(
-                0.0f to base,
-                0.45f to base.copy(alpha = 0.45f),
-                0.55f to base.copy(alpha = 0.45f),
-                1.0f to base,
-            ),
-            start = Offset(shift - period, 0f),
-            end = Offset(shift, 0f),
-            tileMode = TileMode.Repeated,
-        )
-        drawRoundRect(
-            brush = brush,
+            brush = bandBrush,
             topLeft = Offset(0f, y),
             size = Size(activeWidth, trackHeight),
             cornerRadius = radius,
         )
+        // Sparks rising off the bar, fading in then out over their rise.
+        val riseMax = trackHeight * 2f
+        val barCenterY = y + trackHeight / 2f
+        val rainbowSwatches = SurgeRainbow.size - 1
+        particles.forEachIndexed { i, p ->
+            val t = (particleClock + p.offset) % 1f
+            val px = activeWidth * p.xFrac +
+                sinf(t * 2f * PI.toFloat() + i.toFloat()) * trackHeight * 0.5f * p.sway
+            val py = barCenterY - t * riseMax * p.rise
+            val alpha = sinf(t * PI.toFloat()) * (0.45f + 0.45f * intensity)
+            drawCircle(
+                color = if (isMax) SurgeRainbow[i % rainbowSwatches] else base,
+                alpha = alpha,
+                radius = p.radiusDp.dp.toPx(),
+                center = Offset(px, py),
+            )
+        }
     }
 }
 
