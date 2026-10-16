@@ -42,6 +42,23 @@ class BrowserPreferences(private val context: Context) {
     private val perToolTimeoutKey = longPreferencesKey("per_tool_timeout_ms")
     private val singleTaskTimeoutKey = longPreferencesKey("single_task_timeout_ms")
 
+    // --- Address-bar search engine ----------------------------------------------------------
+
+    private val searchEngineKey = androidx.datastore.preferences.core.stringPreferencesKey("search_engine")
+
+    /** Persisted search-engine id (see [BrowserSearchEngines]); missing/unknown → default. */
+    fun searchEngineFlow(): Flow<String> = store.data.map { prefs ->
+        prefs[searchEngineKey] ?: BrowserSearchEngines.DEFAULT.id
+    }
+
+    suspend fun setSearchEngine(id: String) {
+        // Only persist catalogue ids — a stale/garbage value would otherwise silently pin
+        // the fallback in fromId and make the dropdown look stuck.
+        if (BrowserSearchEngines.ALL.any { it.id == id }) {
+            store.edit { it[searchEngineKey] = id }
+        }
+    }
+
     init {
         // Push the persisted (or default) timeout values into [BrowserController] — the
         // synchronous runtime source of truth read by every browser tool's withTimeoutOrNull

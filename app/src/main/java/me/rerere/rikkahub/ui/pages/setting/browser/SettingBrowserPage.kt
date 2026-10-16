@@ -1,6 +1,7 @@
 package me.rerere.rikkahub.ui.pages.setting.browser
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -9,6 +10,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -33,6 +36,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dokar.sonner.ToastType
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.browser.BrowserActivity
+import me.rerere.rikkahub.browser.BrowserSearchEngines
 import me.rerere.rikkahub.browser.BrowserToolDefaults
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.CardGroup
@@ -64,6 +68,7 @@ fun SettingBrowserPage(
     val toolStates by vm.toolStates.collectAsStateWithLifecycle()
     val perToolTimeoutMs by vm.perToolTimeoutMs.collectAsStateWithLifecycle()
     val singleTaskTimeoutMs by vm.singleTaskTimeoutMs.collectAsStateWithLifecycle()
+    val searchEngineId by vm.searchEngineId.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     var showClearConfirm by remember { mutableStateOf(false) }
@@ -169,6 +174,28 @@ fun SettingBrowserPage(
                 item(
                     headlineContent = { Text(stringResource(R.string.setting_browser_search_engine)) },
                     supportingContent = { Text(stringResource(R.string.setting_browser_search_engine_desc)) },
+                    trailingContent = {
+                        var engineMenu by remember { mutableStateOf(false) }
+                        Box {
+                            TextButton(onClick = { engineMenu = true }) {
+                                Text(BrowserSearchEngines.fromId(searchEngineId).label)
+                            }
+                            DropdownMenu(
+                                expanded = engineMenu,
+                                onDismissRequest = { engineMenu = false },
+                            ) {
+                                BrowserSearchEngines.ALL.forEach { engine ->
+                                    DropdownMenuItem(
+                                        text = { Text(engine.label) },
+                                        onClick = {
+                                            engineMenu = false
+                                            vm.setSearchEngine(engine.id)
+                                        },
+                                    )
+                                }
+                            }
+                        }
+                    },
                 )
                 // Per-tool timeout — editable, expressed in seconds. Clamped to 10 s..10 min
                 // in BrowserPreferences before persist (GitHub issue #4).

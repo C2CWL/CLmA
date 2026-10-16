@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.rerere.rikkahub.browser.BrowserPreferences
+import me.rerere.rikkahub.browser.BrowserSearchEngines
 import me.rerere.rikkahub.browser.BrowserToolDefaults
 import java.io.File
 
@@ -38,6 +39,17 @@ class SettingBrowserViewModel(
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = BrowserToolDefaults.DEFAULT_SINGLE_TASK_TIMEOUT_MS,
     )
+
+    /** Address-bar search engine id (see [BrowserSearchEngines]). */
+    val searchEngineId: StateFlow<String> = prefs.searchEngineFlow().stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = BrowserSearchEngines.DEFAULT.id,
+    )
+
+    fun setSearchEngine(id: String) {
+        viewModelScope.launch { prefs.setSearchEngine(id) }
+    }
 
     fun setToolEnabled(toolName: String, enabled: Boolean) {
         viewModelScope.launch { prefs.setToolEnabled(toolName, enabled) }

@@ -71,3 +71,53 @@ class NormalizeBrowserQueryTest {
         assertEquals("http://example.com", normalizeBrowserQuery("  http://example.com  "))
     }
 }
+
+class BrowserSearchEnginesTest {
+
+    @Test fun `unknown engine id falls back to duckduckgo`() {
+        val result = normalizeBrowserQuery("hello", engineId = "no-such-engine")
+        assertTrue(result.startsWith("https://duckduckgo.com/?q="))
+        assertEquals(BrowserSearchEngines.DEFAULT, BrowserSearchEngines.fromId("garbage"))
+        assertEquals(BrowserSearchEngines.DEFAULT, BrowserSearchEngines.fromId(null))
+    }
+
+    @Test fun `each engine produces its own search url`() {
+        assertEquals("https://www.google.com/search?q=kotlin", normalizeBrowserQuery("kotlin", "google"))
+        assertEquals("https://www.bing.com/search?q=kotlin", normalizeBrowserQuery("kotlin", "bing"))
+        assertEquals("https://www.baidu.com/s?wd=kotlin", normalizeBrowserQuery("kotlin", "baidu"))
+    }
+
+    @Test fun `engine choice does not affect urls or hosts`() {
+        // Engine only applies to the search branch — URL detection is unchanged.
+        assertEquals("https://example.com", normalizeBrowserQuery("example.com", "google"))
+        assertEquals("http://x.com", normalizeBrowserQuery("http://x.com", "baidu"))
+    }
+
+    @Test fun `queries are url encoded per engine`() {
+        val result = normalizeBrowserQuery("你好 世界", "google")
+        assertTrue(result.startsWith("https://www.google.com/search?q="))
+        assertTrue(!result.substringAfter("q=").contains(" "))
+    }
+}
+
+class ShortHostForDisplayTest {
+
+    @Test fun `host is extracted and www stripped`() {
+        assertEquals("example.com", shortHostForDisplay("https://www.example.com/path?q=1"))
+        assertEquals("blog.example.com", shortHostForDisplay("https://blog.example.com/x"))
+    }
+
+    @Test fun `about blank becomes empty so the placeholder shows`() {
+        assertEquals("", shortHostForDisplay("about:blank"))
+        assertEquals("", shortHostForDisplay(""))
+    }
+
+    @Test fun `unparseable input returns the raw string`() {
+        // A bare host without scheme has no URI host — keep showing what the user typed.
+        assertEquals("example.com", shortHostForDisplay("example.com"))
+    }
+
+    @Test fun `port and userinfo do not leak into the display`() {
+        assertEquals("example.com", shortHostForDisplay("https://user@example.com:8443/x"))
+    }
+}

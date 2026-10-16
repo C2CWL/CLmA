@@ -1,17 +1,28 @@
 package me.rerere.rikkahub.browser
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.view.View
+import android.view.ViewGroup
 import android.webkit.CookieManager
+import android.webkit.ValueCallback
+import android.webkit.WebChromeClient
 import android.webkit.WebView
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.mutableStateOf
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 import me.rerere.rikkahub.ui.theme.RikkahubTheme
+import org.koin.android.ext.android.inject
 import java.io.File
 
 /**
@@ -40,7 +51,29 @@ class BrowserActivity : ComponentActivity() {
     private val currentUrl = mutableStateOf("about:blank")
     private val currentTitle = mutableStateOf("")
     private val loadProgress = mutableStateOf(0)
+    private val searchEngineId = mutableStateOf(BrowserSearchEngines.DEFAULT.id)
+    private val desktopMode = mutableStateOf(false)
+    private var defaultUserAgent: String? = null
     private var conversationId: Uuid? = null
+
+    private val browserPreferences: BrowserPreferences by inject()
+
+    // Fullscreen video (WebChromeClient.onShowCustomView) — the custom view is attached
+    // above the whole Compose content and system bars are hidden until onHideCustomView.
+    private var customView: View? = null
+    private var customViewCallback: WebChromeClient.CustomViewCallback? = null
+
+    // <input type=file> bridge: the WebChromeClient callback is parked here while the
+    // system picker is open, then resolved with the picked URIs (or null on cancel).
+    private var filePathCallback: ValueCallback<Array<Uri>>? = null
+    private val pickFiles =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            val callback = filePathCallback
+            filePathCallback = null
+            callback?.onReceiveValue(
+                WebChromeClient.FileChooserParams.parseResult(result.resultCode, result.data),
+            )
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -51,6 +84,12 @@ class BrowserActivity : ComponentActivity() {
         // queue follow-up prompts without leaving the activity.
         conversationId = intent?.getStringExtra(EXTRA_CONVERSATION_ID)
             ?.let { runCatching { Uuid.parse(it) }.getOrNull() }
+
+        // Address-bar search engine (Settings → Browser). Collected for the Activity's
+        // lifetime; the address bar normalises queries through it on every submit.
+        lifecycleScope.launch {
+            browserPreferences.searchEngineFlow().collect { searchEngineId.value = it }
+        }
 
         // Best-effort profile dir creation. The WebView falls back to its default location if
         // creation fails — never a crash-on-launch risk. Pass 3's "Clear browsing data" will
@@ -64,9 +103,13 @@ class BrowserActivity : ComponentActivity() {
         // for third-party cookies on so the AI can navigate sites that auth across domains.
         CookieManager.getInstance().setAcceptCookie(true)
 
-        // Hardware back: prefer WebView history, fall back to finishing the Activity.
+        // Hardware back: fullscreen video exits first, then WebView history, then finish.
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
+                if (customView != null) {
+                    hideCustomView()
+                    return
+                }
                 val wv = webView
                 if (wv != null && wv.canGoBack()) {
                     wv.goBack()
@@ -103,14 +146,73 @@ class BrowserActivity : ComponentActivity() {
                     onForwardTap = { webView?.takeIf { it.canGoForward() }?.goForward() },
                     onRefreshTap = { webView?.reload() },
                     onStopAi = { BrowserController.stopCurrentTask() },
-                    onNavigate = { raw ->
-                        webView?.loadUrl(normalizeBrowserQuery(raw))
+                    onNavigate = { normalized ->
+                        // Already normalised by BrowserView with the current search engine.
+                        webView?.loadUrl(normalized)
                     },
+                    searchEngineId = searchEngineId.value,
+                    desktopMode = desktopMode.value,
+                    onDesktopModeChange = { enabled -> setDesktopMode(enabled) },
+                    onShowFileChooser = { callback, params -> showFileChooser(callback, params) },
+                    onShowCustomView = { view, callback -> showCustomView(view, callback) },
+                    onHideCustomView = { hideCustomView() },
                     initialUrl = intent?.getStringExtra(EXTRA_INITIAL_URL) ?: "about:blank",
                     conversationId = conversationId,
                 )
             }
         }
+    }
+
+    private fun showFileChooser(
+        callback: ValueCallback<Array<Uri>>,
+        params: WebChromeClient.FileChooserParams,
+    ) {
+        // A stale callback (picker reopened without finishing) must be cancelled first —
+        // WebView blocks further file inputs while one is outstanding.
+        filePathCallback?.onReceiveValue(null)
+        filePathCallback = callback
+        runCatching { pickFiles.launch(params.createIntent()) }
+            .onFailure {
+                filePathCallback = null
+                callback.onReceiveValue(null)
+            }
+    }
+
+    private fun setDesktopMode(enabled: Boolean) {
+        desktopMode.value = enabled
+        val wv = webView ?: return
+        val defaultUa = defaultUserAgent
+            ?: wv.settings.userAgentString.also { defaultUserAgent = it }
+        wv.settings.userAgentString = if (enabled) DESKTOP_USER_AGENT else defaultUa
+        wv.reload()
+    }
+
+    private fun showCustomView(view: View, callback: WebChromeClient.CustomViewCallback) {
+        if (customView != null) {
+            // Already fullscreen — tell the new requester to go away (WebView contract).
+            callback.onCustomViewHidden()
+            return
+        }
+        customView = view
+        customViewCallback = callback
+        (window.decorView as ViewGroup).addView(
+            view,
+            ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT,
+            ),
+        )
+        WindowCompat.getInsetsController(window, view).hide(WindowInsetsCompat.Type.systemBars())
+    }
+
+    private fun hideCustomView() {
+        val view = customView ?: return
+        (window.decorView as ViewGroup).removeView(view)
+        customView = null
+        customViewCallback?.onCustomViewHidden()
+        customViewCallback = null
+        WindowCompat.getInsetsController(window, window.decorView)
+            .show(WindowInsetsCompat.Type.systemBars())
     }
 
     override fun onDestroy() {
@@ -140,6 +242,14 @@ class BrowserActivity : ComponentActivity() {
          * launches from Settings can omit this and the overlay self-hides.
          */
         const val EXTRA_CONVERSATION_ID = "me.rerere.rikkahub.browser.EXTRA_CONVERSATION_ID"
+
+        /**
+         * Desktop-mode UA (menu toggle). A desktop Chrome string is enough for the vast
+         * majority of UA-sniffing sites; the original UA is restored when toggled off.
+         */
+        private const val DESKTOP_USER_AGENT =
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+                "(KHTML, like Gecko) Chrome/126.0.6478.122 Safari/537.36"
 
         /**
          * Builds the launch Intent. Used by the `browser_open` tool, by the skill webview

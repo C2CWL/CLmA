@@ -1,19 +1,18 @@
 package me.rerere.rikkahub.browser
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -25,11 +24,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
@@ -39,24 +38,28 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ArrowLeft01
-import me.rerere.hugeicons.stroke.ArrowRight01
 import me.rerere.hugeicons.stroke.Cancel01
+import me.rerere.hugeicons.stroke.CheckmarkCircle01
+import me.rerere.hugeicons.stroke.Lock
 import me.rerere.hugeicons.stroke.MoreVertical
 import me.rerere.hugeicons.stroke.Refresh01
 import me.rerere.rikkahub.R
 
 /**
- * Top app bar for [BrowserActivity]. Editable URL/search bar + history nav arrows +
- * refresh + close + kebab.
+ * Top app bar for [BrowserActivity]. Editable URL/search bar + back + refresh + kebab.
  *
  * The title slot is an editable [TextField] so the user can navigate manually before
  * (or instead of) handing control to the AI. Submitting the field invokes [onNavigate]
- * with the raw query — the caller is responsible for normalisation (add scheme, switch
- * to a search query if no dot, etc.) so the search engine pref lives in one place.
+ * with the raw query — the caller normalises it (scheme / host / search engine).
  *
- * Tap the field to edit; the text auto-selects on focus so the user can replace the
- * existing URL with one keystroke. Tap outside (or trigger IME-Go) to commit and
- * dismiss the keyboard.
+ * Display contract (Chrome-style): while UNFOCUSED the field shows only the page's host
+ * (plus a lock glyph on HTTPS) so the user can see which site they're on despite the
+ * narrow screen; on FOCUS it switches to the full URL with everything selected, ready
+ * to replace in one keystroke.
+ *
+ * Rarely-used actions (forward, desktop mode, copy/share/open-external, stop AI) live in
+ * the overflow menu — the bar itself stays within [✕][←][url…][⟳][⋮] even on 360dp-wide
+ * phones.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,12 +67,17 @@ fun BrowserAddressBar(
     url: String,
     canGoBack: Boolean,
     canGoForward: Boolean,
+    desktopMode: Boolean,
     onClose: () -> Unit,
     onBack: () -> Unit,
     onForward: () -> Unit,
     onRefresh: () -> Unit,
     onStopAi: () -> Unit,
     onNavigate: (String) -> Unit,
+    onDesktopModeChange: (Boolean) -> Unit,
+    onCopyLink: () -> Unit,
+    onShare: () -> Unit,
+    onOpenExternal: () -> Unit,
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
     var fieldValue by remember(url) {
@@ -87,10 +95,16 @@ fun BrowserAddressBar(
         }
     }
 
+    // Chrome-style: unfocused shows just the host (full URL is noise at this width);
+    // focused shows the full URL, fully selected. about:blank → "" so the placeholder
+    // shows; unparseable input falls back to the raw string inside shortHostForDisplay.
+    val displayValue = if (hasFocus) fieldValue else TextFieldValue(shortHostForDisplay(fieldValue.text))
+    val isSecure = fieldValue.text.startsWith("https://", ignoreCase = true)
+
     TopAppBar(
         title = {
             TextField(
-                value = fieldValue,
+                value = displayValue,
                 onValueChange = { fieldValue = it },
                 singleLine = true,
                 placeholder = {
@@ -98,6 +112,18 @@ fun BrowserAddressBar(
                         text = stringResource(R.string.browser_address_bar_placeholder),
                         style = MaterialTheme.typography.bodyMedium,
                     )
+                },
+                leadingIcon = if (isSecure && !hasFocus) {
+                    {
+                        Icon(
+                            imageVector = HugeIcons.Lock,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(14.dp),
+                        )
+                    }
+                } else {
+                    null
                 },
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Uri,
@@ -118,9 +144,9 @@ fun BrowserAddressBar(
                     focusedContainerColor = MaterialTheme.colorScheme.surface,
                     unfocusedContainerColor = MaterialTheme.colorScheme.surface,
                     disabledContainerColor = MaterialTheme.colorScheme.surface,
-                    focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-                    unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-                    disabledIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    disabledIndicatorColor = Color.Transparent,
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -152,12 +178,6 @@ fun BrowserAddressBar(
                     contentDescription = stringResource(R.string.browser_address_bar_back),
                 )
             }
-            IconButton(onClick = onForward, enabled = canGoForward) {
-                Icon(
-                    imageVector = HugeIcons.ArrowRight01,
-                    contentDescription = stringResource(R.string.browser_address_bar_forward),
-                )
-            }
             IconButton(onClick = onRefresh) {
                 Icon(
                     imageVector = HugeIcons.Refresh01,
@@ -175,6 +195,58 @@ fun BrowserAddressBar(
                     expanded = menuExpanded,
                     onDismissRequest = { menuExpanded = false },
                 ) {
+                    // Forward is low-frequency on a phone (system back covers the common
+                    // case) — it lives here instead of costing the bar 48dp.
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.browser_address_bar_forward)) },
+                        enabled = canGoForward,
+                        onClick = {
+                            menuExpanded = false
+                            onForward()
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.browser_menu_desktop)) },
+                        trailingIcon = if (desktopMode) {
+                            {
+                                Icon(
+                                    imageVector = HugeIcons.CheckmarkCircle01,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                            }
+                        } else {
+                            null
+                        },
+                        onClick = {
+                            menuExpanded = false
+                            onDesktopModeChange(!desktopMode)
+                        },
+                    )
+                    HorizontalDivider()
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.browser_menu_copy_link)) },
+                        onClick = {
+                            menuExpanded = false
+                            onCopyLink()
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.browser_menu_share)) },
+                        onClick = {
+                            menuExpanded = false
+                            onShare()
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.browser_menu_open_external)) },
+                        onClick = {
+                            menuExpanded = false
+                            onOpenExternal()
+                        },
+                    )
+                    HorizontalDivider()
                     DropdownMenuItem(
                         text = { Text(stringResource(R.string.browser_address_bar_stop_ai)) },
                         onClick = {
@@ -190,29 +262,4 @@ fun BrowserAddressBar(
         ),
         modifier = Modifier.padding(horizontal = 0.dp),
     )
-}
-
-/**
- * Normalise raw user input into a navigable URL.
- *
- *  - already absolute (`http://`, `https://`, `file://`, `about:`, `data:`) → unchanged
- *  - looks like a host (`example.com`, `foo.bar/baz`, `192.168.1.1:8080`) → prepend `https://`
- *  - everything else (no dot, no colon, has a space) → search query via DuckDuckGo
- *
- * Search engine is hardcoded to DuckDuckGo in v1 — the spec's pref dropdown is a no-op
- * stub for v1.5. Wire through `BrowserPreferences` once Pass 2 lands the read path.
- */
-fun normalizeBrowserQuery(raw: String): String {
-    val q = raw.trim()
-    if (q.isEmpty()) return "about:blank"
-    val lower = q.lowercase()
-    if (lower.startsWith("http://")
-        || lower.startsWith("https://")
-        || lower.startsWith("file://")
-        || lower.startsWith("about:")
-        || lower.startsWith("data:")
-    ) return q
-    // Heuristic: if it contains a dot OR a colon (port/scheme), treat as URL.
-    val looksLikeHost = (q.contains('.') || q.contains(':')) && !q.contains(' ')
-    return if (looksLikeHost) "https://$q" else "https://duckduckgo.com/?q=${java.net.URLEncoder.encode(q, "UTF-8")}"
 }
