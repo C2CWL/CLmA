@@ -28,6 +28,7 @@ class SystemPromptBuilder {
         recentChatsPrompt: String = "",
         toolPrompts: List<String> = emptyList(),
         systemAddendum: String? = null,
+        policyPrompt: String = "",
     ): Pair<String, String> {
         val stable = buildString {
             if (assistantPrompt.isNotBlank()) append(assistantPrompt)
@@ -51,6 +52,10 @@ class SystemPromptBuilder {
                 if (isNotEmpty()) appendLine()
                 append(systemAddendum)
             }
+            if (policyPrompt.isNotBlank()) {
+                if (isNotEmpty()) appendLine()
+                append(policyPrompt)
+            }
         }.trim()
 
         return stable to volatile
@@ -64,9 +69,10 @@ class SystemPromptBuilder {
         recentChatsPrompt: String = "",
         toolPrompts: List<String> = emptyList(),
         systemAddendum: String? = null,
+        policyPrompt: String = "",
     ): String {
         val (stable, volatile) = buildSections(
-            assistantPrompt, memoryPrompt, recentChatsPrompt, toolPrompts, systemAddendum
+            assistantPrompt, memoryPrompt, recentChatsPrompt, toolPrompts, systemAddendum, policyPrompt
         )
         return listOf(stable, volatile).filter { it.isNotBlank() }.joinToString("\n")
     }
