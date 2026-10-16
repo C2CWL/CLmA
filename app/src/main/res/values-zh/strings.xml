@@ -292,6 +292,7 @@
   <string name="chat_stream_waiting_first_output">已等待 %1$d 秒，模型尚未开始输出（上下文较长时会更慢）</string>
   <string name="chat_stream_stalled">已 %1$d 秒没有新内容，可能已卡住；可停止后重试</string>
   <string name="chat_page_retrying">正在重试（第 %1$d/%2$d 次）。上次失败原因：%3$s</string>
+  <string name="chat_page_model_routing">正在切换到 %1$s（模型路由）</string>
   <string name="chat_page_conversation_system_prompt">对话系统提示</string>
   <string name="chat_page_conversation_system_prompt_clear">清除</string>
   <string name="chat_page_conversation_system_prompt_hint">覆盖此对话的助手系统提示</string>

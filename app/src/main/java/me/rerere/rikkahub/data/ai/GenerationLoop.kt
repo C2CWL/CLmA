@@ -102,7 +102,7 @@ private const val MAX_STREAM_CONTINUATIONS = 2
  * never written back into the visible conversation, so the user only sees the streamed continuation
  * text (which merges into the same assistant message).
  */
-private const val CONTINUATION_INSTRUCTION =
+internal const val CONTINUATION_INSTRUCTION =
     "Your previous reply was cut off by a network error. Continue it from exactly where it " +
         "stopped. Do not repeat anything you already wrote, do not restate the question, and do " +
         "not start over — just keep going to a natural end."
@@ -656,6 +656,12 @@ class GenerationLoop(
         conversationModeInjectionIds: Set<Uuid> = emptySet(),
         conversationLorebookIds: Set<Uuid> = emptySet(),
         workspaceCwd: String? = null,
+        // When true, appends a synthetic user instruction after the conversation
+        // messages asking the model to continue from the partial assistant text
+        // left behind by a failed generation. Used by model routing (cross-model
+        // continuation). The synthetic message is request-only: it is never
+        // written back into the visible conversation.
+        continuationFromPartial: Boolean = false,
     ): Flow<GenerationChunk> = flow {
         val provider = model.findProvider(settings.providers) ?: error("Provider not found")
         val providerImpl = providerManager.getProviderByType(provider)
@@ -795,6 +801,7 @@ class GenerationLoop(
                         conversationModeInjectionIds = conversationModeInjectionIds,
                         conversationLorebookIds = conversationLorebookIds,
                         workspaceCwd = workspaceCwd,
+                        continuationFromPartial = continuationFromPartial && stepIndex == 0,
                     )
                 } catch (t: Throwable) {
                     // CancellationException is honoured verbatim — stopGeneration has its
@@ -1455,6 +1462,7 @@ class GenerationLoop(
         conversationLorebookIds: Set<Uuid> = emptySet(),
         workspaceCwd: String? = null,
         stepIndex: Int = 0,
+        continuationFromPartial: Boolean = false,
     ) {
         val internalMessages = buildList {
             // Conversation-level system prompt override (upstream): when the assistant
@@ -1494,6 +1502,17 @@ class GenerationLoop(
             // TemplateTransformer) and its stepped truncation (which now preserves
             // prompt caching instead of trimming one message at a time).
             addAll(messages.limitContext(assistant.contextMessageLimit).ageOldToolImages())
+            // Cross-model continuation: when the previous model's generation failed
+            // mid-stream and routing switched to this model, append a synthetic user
+            // instruction so the new model continues from the partial assistant text
+            // instead of starting over. Request-only — never written back to messages.
+            if (continuationFromPartial) {
+                add(UIMessage(
+                    role = MessageRole.USER,
+                    parts = listOf(UIMessagePart.Text(CONTINUATION_INSTRUCTION)),
+                    isSynthetic = true,
+                ))
+            }
         }.transforms(
             transformers = transformers,
             context = context,

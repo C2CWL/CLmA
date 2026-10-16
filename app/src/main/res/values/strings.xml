@@ -321,6 +321,7 @@
   <string name="chat_stream_waiting_first_output">Waiting for the model to start responding — %1$d s so far (slower on a long context)</string>
   <string name="chat_stream_stalled">No new content for %1$d s — this looks stalled; stop and retry</string>
   <string name="chat_page_retrying">Retrying (%1$d/%2$d). Previous failure: %3$s</string>
+  <string name="chat_page_model_routing">Switching to %1$s (model routing)</string>
   <string name="chat_page_conversation_system_prompt">Conversation System Prompt</string>
   <string name="chat_page_conversation_system_prompt_clear">Clear</string>
   <string name="chat_page_conversation_system_prompt_hint">Override the assistant\'s system prompt for this conversation</string>

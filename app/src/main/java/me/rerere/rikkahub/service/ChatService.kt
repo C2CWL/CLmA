@@ -74,6 +74,7 @@ import me.rerere.rikkahub.data.ai.tools.AppPlaybookFile
 import me.rerere.rikkahub.data.ai.tools.AppPlaybookRules
 import me.rerere.rikkahub.data.ai.GenerationChunk
 import me.rerere.rikkahub.data.ai.GenerationLoop
+import me.rerere.rikkahub.data.ai.ModelRouter
 import me.rerere.rikkahub.data.ai.ContextBudgetPlanner
 import me.rerere.rikkahub.data.ai.ContextCompactionPlanner
 import me.rerere.rikkahub.data.ai.ContextCompactionPresentation
@@ -461,6 +462,13 @@ class ChatService(
 
     // Title/suggestion aux-generation jobs, keyed per conversation - see AuxJobRegistry.
     private val auxJobs = AuxJobRegistry()
+
+    // Model routing state: when the current model's generation fails after all
+    // internal retries, this holds cooldown timers and picks the next candidate
+    // from the user's favourites list. Pure in-memory — nothing persists.
+    private val modelRouter = ModelRouter(
+        nowMs = { android.os.SystemClock.elapsedRealtime() },
+    )
 
     /**
      * Per-conversation mutex serialising state-mutating operations: handleToolApproval,
@@ -1596,6 +1604,17 @@ class ChatService(
         conversationId: Uuid,
         messageRange: ClosedRange<Int>? = null,
         allowContextRetry: Boolean = true,
+        // Model routing: when non-null, use this model instead of the
+        // conversation/assistant/settings default. Set during a routed
+        // fallback after the original model failed.
+        overrideModelId: Uuid? = null,
+        // Model routing: the set of model ids already tried (original +
+        // previously-routed). Prevents infinite routing loops.
+        routeAttempts: Set<Uuid> = emptySet(),
+        // Model routing: when true, append a synthetic user instruction so the
+        // (routed) model continues from the partial assistant text left by the
+        // failed generation, instead of starting over.
+        continuationFromPartial: Boolean = false,
     ) {
         // A generation is one "turn" for read_window_tree's snapshot: within it a re-read can be
         // answered with "unchanged" or a delta, but a diff never spans two turns — so a model
@@ -1612,9 +1631,10 @@ class ChatService(
             conversationAssistantId = initialConversation.assistantId,
             currentAssistantId = settings.assistantId,
         ).assistant
-        val model = settings.findModelById(
-            initialConversation.chatModelId ?: assistant.chatModelId ?: settings.chatModelId
-        )
+        val model = overrideModelId?.let { settings.findModelById(it) }
+            ?: settings.findModelById(
+                initialConversation.chatModelId ?: assistant.chatModelId ?: settings.chatModelId
+            )
             ?: throw IllegalStateException(
                 "No chat model selected. Pick one in Settings → Default models, or send /model in Telegram."
             )
@@ -1947,6 +1967,7 @@ class ChatService(
                         }
                     }
                 }.let { me.rerere.rikkahub.subagent.SubAgentSurface.apply(conversationId, it) },
+                continuationFromPartial = continuationFromPartial,
             ).onCompletion { completionCause ->
                 // 取消 Live Update 通知
                 cancelLiveUpdateNotification(conversationId)
@@ -2102,6 +2123,57 @@ class ChatService(
         // Retry status is transient. Clear it before surfacing the final result so a failed
         // stream does not leave the conversation stuck on “retrying” after the error card appears.
         getOrCreateSession(conversationId).processingStatus.value = null
+
+        // Model routing: if the generation failed (not a cancellation, and
+        // context-limit retry already had its chance above), try to route to
+        // the next usable model in the user's favourites list. The original
+        // model enters a 5-minute cooldown; it is silently restored on the
+        // next user turn because routing only overrides this single attempt.
+        if (
+            messageRange == null &&
+            generationFailure != null &&
+            generationFailure !is CancellationException
+        ) {
+            val routeExclude = routeAttempts + model.id
+            val routedModel = modelRouter.nextRouteCandidate(
+                favorites = settings.favoriteModels,
+                findModel = { id -> settings.findModelById(id) },
+                isUsable = { m ->
+                    m.id != DEFAULT_AUTO_MODEL_ID &&
+                        m.findProvider(settings.providers)?.enabled == true
+                },
+                exclude = routeExclude,
+            )
+            if (routedModel != null) {
+                modelRouter.putCooldown(model.id)
+                Log.i(
+                    TAG,
+                    "handleMessageComplete: routing from '${model.displayName}' to " +
+                        "'${routedModel.displayName}' (tried ${routeExclude.size} model(s))",
+                )
+                // If the failed generation left a partial assistant reply, ask
+                // the new model to continue from it instead of starting over.
+                val lastMsg = getConversationFlow(conversationId).value.currentMessages.lastOrNull()
+                val needsContinuation = lastMsg != null &&
+                    lastMsg.role == MessageRole.ASSISTANT &&
+                    lastMsg.parts.none { it is UIMessagePart.ToolCall } &&
+                    lastMsg.parts.any { it is UIMessagePart.Text && it.text.isNotBlank() }
+                getOrCreateSession(conversationId).processingStatus.value =
+                    context.getString(
+                        R.string.chat_page_model_routing,
+                        routedModel.displayName.ifBlank { routedModel.modelId },
+                    )
+                handleMessageComplete(
+                    conversationId = conversationId,
+                    messageRange = null,
+                    allowContextRetry = false,
+                    overrideModelId = routedModel.id,
+                    routeAttempts = routeExclude,
+                    continuationFromPartial = needsContinuation,
+                )
+                return
+            }
+        }
 
         generationResult.onFailure {
             if (it is CancellationException) throw it

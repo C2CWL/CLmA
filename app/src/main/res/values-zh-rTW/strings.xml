@@ -271,6 +271,7 @@
   <string name="chat_page_compress_warning">壓縮只會更新傳送給模型的上下文摘要，原始訊息會保留。</string>
   <string name="chat_page_compressing">正在壓縮...</string>
   <string name="chat_page_retrying">正在重試（第 %1$d/%2$d 次）。上次失敗原因：%3$s</string>
+  <string name="chat_page_model_routing">正在切換到 %1$s（模型路由）</string>
   <string name="chat_page_conversation_system_prompt">對話系統提示</string>
   <string name="chat_page_conversation_system_prompt_clear">清除</string>
   <string name="chat_page_conversation_system_prompt_hint">覆蓋此對話的助理系統提示</string>
