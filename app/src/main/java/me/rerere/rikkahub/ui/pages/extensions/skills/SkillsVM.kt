@@ -10,6 +10,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import me.rerere.rikkahub.data.datastore.SkillGroup
+import me.rerere.rikkahub.data.datastore.SkillGroupRules
+import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.files.SkillFrontmatterParser
 import me.rerere.rikkahub.data.files.SkillManager
 import me.rerere.rikkahub.data.files.SkillMetadata
@@ -17,6 +20,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlin.uuid.Uuid
 import me.rerere.rikkahub.skills.CatalogEntry
 import me.rerere.rikkahub.skills.SkillCatalog
 import me.rerere.rikkahub.skills.SkillUrlImporter
@@ -35,6 +39,7 @@ class SkillsVM(
     private val context: Context,
     private val skillManager: SkillManager,
     private val urlImporter: SkillUrlImporter,
+    private val settingsStore: SettingsStore,
 ) : ViewModel() {
 
     companion object {
@@ -55,6 +60,11 @@ class SkillsVM(
 
     /** Phase 19D — bundled catalog. Loaded lazily on first access. */
     val catalog: SkillCatalog by lazy { loadCatalogFromAssets(context) }
+
+    /** User-created skill groups, surfaced from settings; the page renders one section each. */
+    val skillGroups = settingsStore.settingsFlow
+        .map { it.skillGroups }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     init {
         loadSkills()
@@ -80,6 +90,110 @@ class SkillsVM(
         viewModelScope.launch(Dispatchers.IO) {
             skillManager.deleteSkill(name)
             _skills.value = skillManager.listSkills()
+            // Drop the name from any group it belonged to so no group holds a phantom.
+            settingsStore.update { s ->
+                s.copy(skillGroups = SkillGroupRules.removeFromGroup(s.skillGroups, name))
+            }
+        }
+    }
+
+    // ---- Skill groups -------------------------------------------------------
+
+    /** Create a group named [name] holding [skillNames]; each skill leaves any previous group. */
+    fun createGroup(name: String, skillNames: Set<String>) {
+        val trimmed = name.trim()
+        if (trimmed.isBlank()) return
+        viewModelScope.launch(Dispatchers.IO) {
+            settingsStore.update { s ->
+                val pulled = skillNames.fold(s.skillGroups) { acc, n ->
+                    SkillGroupRules.removeFromGroup(acc, n)
+                }
+                s.copy(
+                    skillGroups = pulled + SkillGroup(
+                        id = Uuid.random().toString(),
+                        name = trimmed,
+                        skillNames = skillNames,
+                    ),
+                )
+            }
+        }
+    }
+
+    fun renameGroup(groupId: String, name: String) {
+        val trimmed = name.trim()
+        if (trimmed.isBlank()) return
+        viewModelScope.launch(Dispatchers.IO) {
+            settingsStore.update { s ->
+                s.copy(skillGroups = SkillGroupRules.renameGroup(s.skillGroups, groupId, trimmed))
+            }
+        }
+    }
+
+    /** Flip one group's on/off switch; a disabled group's skills stop surfacing to the model. */
+    fun setGroupEnabled(groupId: String, enabled: Boolean) {
+        viewModelScope.launch(Dispatchers.IO) {
+            settingsStore.update { s ->
+                s.copy(skillGroups = SkillGroupRules.setGroupEnabled(s.skillGroups, groupId, enabled))
+            }
+        }
+    }
+
+    fun assignSkillToGroup(groupId: String, skillName: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            settingsStore.update { s ->
+                s.copy(skillGroups = SkillGroupRules.assignToGroup(s.skillGroups, groupId, skillName))
+            }
+        }
+    }
+
+    /**
+     * Replace the membership of group [groupId] with exactly [skillNames]: current members
+     * not in the new set are removed, and each newly-chosen skill is pulled out of whatever
+     * group it was in (a skill has at most one home). Used by the editor dialog's Save.
+     */
+    fun setGroupMembers(groupId: String, skillNames: Set<String>) {
+        viewModelScope.launch(Dispatchers.IO) {
+            settingsStore.update { s ->
+                val current = s.skillGroups.firstOrNull { it.id == groupId }?.skillNames.orEmpty()
+                var groups = s.skillGroups
+                (current - skillNames).forEach { name ->
+                    groups = SkillGroupRules.removeFromGroup(groups, name)
+                }
+                skillNames.forEach { name ->
+                    groups = SkillGroupRules.assignToGroup(groups, groupId, name)
+                }
+                s.copy(skillGroups = groups)
+            }
+        }
+    }
+
+    fun removeSkillFromGroup(skillName: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            settingsStore.update { s ->
+                s.copy(skillGroups = SkillGroupRules.removeFromGroup(s.skillGroups, skillName))
+            }
+        }
+    }
+
+    /** Delete the group definition; its skills stay on disk and fall back to "ungrouped". */
+    fun deleteGroup(groupId: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            settingsStore.update { s ->
+                s.copy(skillGroups = SkillGroupRules.deleteGroup(s.skillGroups, groupId))
+            }
+        }
+    }
+
+    /** Delete the group definition AND uninstall every skill it held. */
+    fun deleteGroupWithSkills(groupId: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val group = settingsStore.settingsFlow.value.skillGroups.firstOrNull { it.id == groupId }
+                ?: return@launch
+            group.skillNames.forEach { skillManager.deleteSkill(it) }
+            _skills.value = skillManager.listSkills()
+            settingsStore.update { s ->
+                s.copy(skillGroups = SkillGroupRules.deleteGroup(s.skillGroups, groupId))
+            }
         }
     }
 
@@ -228,6 +342,13 @@ class SkillsVM(
             val url = entry.sourceUrl
             if (url.isNullOrBlank()) {
                 withContext(Dispatchers.Main) { onResult(false, "skill_catalog_install_failed") }
+                return@launch
+            }
+            // GitHub tree URL (https://github.com/owner/repo/tree/branch/sub/path) →
+            // recursive Contents API download, so multi-file skills (scripts/, assets/)
+            // land intact. Anything else falls back to the single-file raw-URL importer.
+            if (parseGitHubUrl(url) != null) {
+                importSkillFromGitHub(url, onResult)
                 return@launch
             }
             val result = withTimeoutOrNull(30_000) {

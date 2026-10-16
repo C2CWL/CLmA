@@ -66,14 +66,16 @@ class SkillNameRulesTest {
         }
     }
 
-    @Test fun `every bundled skill name is spec-valid`() {
-        // Guards the shipped assets against a rename that would violate the spec.
-        val bundled = listOf(
+    @Test fun `every shipped skill name is spec-valid`() {
+        // Guards the skills this repo ships — the two auto_load cores still in
+        // assets/default-skills/ plus the thirteen catalog-only ones now under skills/ —
+        // against a rename that would violate the spec.
+        val shipped = listOf(
             "agent-core", "auto-reply", "autonomous-agent", "calculate-hash", "interactive-map",
             "kitchen-adventure", "mood-tracker", "morning-briefing",
             "notification-summarise-and-act", "openclaw-converter", "qr-code", "query-wikipedia",
             "smart-forward", "text-spinner", "virtual-piano",
         )
-        for (name in bundled) assertTrue(name, SkillNameRules.isValid(name))
+        for (name in shipped) assertTrue(name, SkillNameRules.isValid(name))
     }
 }

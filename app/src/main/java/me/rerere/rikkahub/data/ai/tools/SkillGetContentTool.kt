@@ -34,6 +34,11 @@ fun skillGetContentTool(
     enabledSkills: Set<String>,
     allSkills: List<SkillMetadata>,
     contentReader: (String) -> SkillContent?,
+    /**
+     * Skill names suppressed by a disabled group. Mirrors the [createSkillTools] filter so
+     * the `enabled` flag reported here matches what the model actually sees. Default empty.
+     */
+    disabledSkills: Set<String> = emptySet(),
 ): Tool = Tool(
     name = "skill_get_content",
     description = """
@@ -86,7 +91,7 @@ fun skillGetContentTool(
             put("description", content.description)
             content.format?.let { put("format", it) }
             content.sourceLabel?.let { put("source_label", it) }
-            put("enabled", name in enabledSkills)
+            put("enabled", name in enabledSkills && name !in disabledSkills)
             put("content_md", content.contentMd)
             content.argsSchema?.let { put("args_schema", it) }
             content.license?.let { put("license", it) }

@@ -95,6 +95,7 @@ import me.rerere.rikkahub.data.ai.tools.InvalidMcpServerNamesException
 import me.rerere.rikkahub.data.ai.tools.LocalTools
 import me.rerere.rikkahub.data.ai.tools.createSearchTools
 import me.rerere.rikkahub.data.ai.tools.createSkillTools
+import me.rerere.rikkahub.data.datastore.SkillGroupRules
 import me.rerere.rikkahub.data.ai.tools.CompactionToolResult
 import me.rerere.rikkahub.data.ai.tools.buildCompactionTools
 import me.rerere.rikkahub.data.ai.tools.createWorkspaceTools
@@ -1573,6 +1574,7 @@ class ChatService(
                     enabledSkills = surfaceAssistant.enabledSkills,
                     allSkills = skillManager.listSkills(),
                     skillManager = skillManager,
+                    disabledSkills = SkillGroupRules.disabledSkillNames(settings.skillGroups),
                 )
             )
         }
@@ -1892,6 +1894,7 @@ class ChatService(
                                 enabledSkills = surfaceAssistant.enabledSkills,
                                 allSkills = skillManager.listSkills(),
                                 skillManager = skillManager,
+                                disabledSkills = SkillGroupRules.disabledSkillNames(settings.skillGroups),
                             )
                         )
                     }

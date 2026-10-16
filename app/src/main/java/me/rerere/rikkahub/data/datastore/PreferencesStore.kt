@@ -214,6 +214,7 @@ class SettingsStore(
         // Names of bundled skills the user explicitly deleted; the seed pass skips these
         // (see Settings.deletedBundledSkills). Missing key -> emptySet(), no migration.
         val DELETED_BUNDLED_SKILLS = stringPreferencesKey("deleted_bundled_skills")
+        val SKILL_GROUPS = stringPreferencesKey("skill_groups")
 
         // 助手
         val SELECT_ASSISTANT = stringPreferencesKey("select_assistant")
@@ -342,6 +343,7 @@ class SettingsStore(
                     settings.deletedBuiltInProviderIds.map { it.toString() }.toSet()
                 )
                 preferences[DELETED_BUNDLED_SKILLS] = JsonInstant.encodeToString(settings.deletedBundledSkills)
+                preferences[SKILL_GROUPS] = JsonInstant.encodeToString(settings.skillGroups)
 
                 preferences[ASSISTANTS] = JsonInstant.encodeToString(settings.assistants)
                 preferences[SELECT_ASSISTANT] = settings.assistantId.toString()
@@ -478,6 +480,12 @@ class SettingsStore(
                         emptySet()
                     }
                 } ?: emptySet(),
+                skillGroups = preferences[SKILL_GROUPS]?.let { raw ->
+                    runCatching { JsonInstant.decodeFromString<List<SkillGroup>>(raw) }.getOrElse {
+                        Log.w(TAG, "Failed to decode skillGroups, using default", it)
+                        emptyList()
+                    }
+                } ?: emptyList(),
                 assistants = runCatching {
                     JsonInstant.decodeFromString<List<Assistant>>(preferences[ASSISTANTS] ?: "[]")
                 }.getOrElse {
@@ -1032,6 +1040,12 @@ data class Settings(
      * skill catalog removes the name again.
      */
     val deletedBundledSkills: Set<String> = emptySet(),
+    /**
+     * User-created skill groups. Each group carries an on/off switch so a whole batch of
+     * skills can be disabled in one tap without touching per-assistant `enabledSkills`.
+     * See [SkillGroup] / [SkillGroupRules].
+     */
+    val skillGroups: List<SkillGroup> = emptyList(),
     val assistantTags: List<Tag> = emptyList(),
     val searchServices: List<SearchServiceOptions> = listOf(SearchServiceOptions.DEFAULT),
     val searchCommonOptions: SearchCommonOptions = SearchCommonOptions(),
@@ -1349,11 +1363,16 @@ internal val DEFAULT_ASSISTANT_ID = Uuid.parse("0950e2dc-9bd5-4801-afa3-aa887aa3
 
 /**
  * Bundled skills shipped enabled-by-default on top of agent-core. The behavioral
- * `autonomous-agent` skill is auto_load (injected every turn); `openclaw-converter` is lazy
- * (loaded on demand). Both are seeded to disk by [SkillManager.seedDefaultSkillsIfNeeded] and
- * added to the default assistants' enabledSkills once via [Settings.autoEnabledDefaultSkills].
+ * `autonomous-agent` skill is auto_load (injected every turn). It is seeded to disk by
+ * [SkillManager.seedDefaultSkillsIfNeeded] and added to the default assistants'
+ * enabledSkills once via [Settings.autoEnabledDefaultSkills].
+ *
+ * `openclaw-converter` used to live here too but moved to the catalog-only set when the
+ * bundled skills were trimmed to the two auto_load cores; existing users keep it (their
+ * `autoEnabledDefaultSkills` already records it) and new users can install it from the
+ * catalog.
  */
-internal val DEFAULT_AUTO_ENABLED_SKILLS = setOf("autonomous-agent", "openclaw-converter")
+internal val DEFAULT_AUTO_ENABLED_SKILLS = setOf("autonomous-agent")
 
 internal val DEFAULT_ASSISTANTS = listOf(
     Assistant(

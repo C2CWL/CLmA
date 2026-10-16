@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-05-07",
+  "updated_at": "2026-10-16",
   "skills": [
     {
       "name": "auto-reply",
@@ -10,7 +10,8 @@
       "license": "Apache-2.0",
       "size_kb": 4,
       "runtime": "any",
-      "is_bundled": true
+      "source_url": "https://github.com/wuyhong715/rikkahub-agent-pure/tree/master/skills/auto-reply",
+      "is_bundled": false
     },
     {
       "name": "morning-briefing",
@@ -20,7 +21,8 @@
       "license": "Apache-2.0",
       "size_kb": 4,
       "runtime": "any",
-      "is_bundled": true
+      "source_url": "https://github.com/wuyhong715/rikkahub-agent-pure/tree/master/skills/morning-briefing",
+      "is_bundled": false
     },
     {
       "name": "smart-forward",
@@ -30,7 +32,8 @@
       "license": "Apache-2.0",
       "size_kb": 4,
       "runtime": "any",
-      "is_bundled": true
+      "source_url": "https://github.com/wuyhong715/rikkahub-agent-pure/tree/master/skills/smart-forward",
+      "is_bundled": false
     },
     {
       "name": "notification-summarise-and-act",
@@ -40,7 +43,19 @@
       "license": "Apache-2.0",
       "size_kb": 5,
       "runtime": "any",
-      "is_bundled": true
+      "source_url": "https://github.com/wuyhong715/rikkahub-agent-pure/tree/master/skills/notification-summarise-and-act",
+      "is_bundled": false
+    },
+    {
+      "name": "openclaw-converter",
+      "title": "OpenClaw Converter",
+      "description": "Convert OpenClaw skills from ClawHub or raw markdown into RikkaHub-compatible skills.",
+      "category": "utility",
+      "license": "Apache-2.0",
+      "size_kb": 12,
+      "runtime": "any",
+      "source_url": "https://github.com/wuyhong715/rikkahub-agent-pure/tree/master/skills/openclaw-converter",
+      "is_bundled": false
     },
     {
       "name": "calculate-hash",
@@ -50,7 +65,8 @@
       "license": "Apache-2.0",
       "size_kb": 12,
       "runtime": "js",
-      "is_bundled": true
+      "source_url": "https://github.com/wuyhong715/rikkahub-agent-pure/tree/master/skills/calculate-hash",
+      "is_bundled": false
     },
     {
       "name": "interactive-map",
@@ -58,9 +74,10 @@
       "description": "Embed a Google Maps view for a location. Returns a webview URL.",
       "category": "demo",
       "license": "Apache-2.0",
-      "size_kb": 8,
+      "size_kb": 15,
       "runtime": "js",
-      "is_bundled": true
+      "source_url": "https://github.com/wuyhong715/rikkahub-agent-pure/tree/master/skills/interactive-map",
+      "is_bundled": false
     },
     {
       "name": "kitchen-adventure",
@@ -68,9 +85,10 @@
       "description": "Text-based RPG where every kitchen appliance is a sentient character. Pure prompt skill.",
       "category": "demo",
       "license": "Apache-2.0",
-      "size_kb": 4,
+      "size_kb": 8,
       "runtime": "any",
-      "is_bundled": true
+      "source_url": "https://github.com/wuyhong715/rikkahub-agent-pure/tree/master/skills/kitchen-adventure",
+      "is_bundled": false
     },
     {
       "name": "mood-tracker",
@@ -80,7 +98,8 @@
       "license": "Apache-2.0",
       "size_kb": 36,
       "runtime": "js",
-      "is_bundled": true
+      "source_url": "https://github.com/wuyhong715/rikkahub-agent-pure/tree/master/skills/mood-tracker",
+      "is_bundled": false
     },
     {
       "name": "qr-code",
@@ -88,9 +107,10 @@
       "description": "Generate a 512x512 QR code PNG for any URL. Requires internet (cdnjs qrcode.js).",
       "category": "demo",
       "license": "Apache-2.0",
-      "size_kb": 8,
+      "size_kb": 35,
       "runtime": "js",
-      "is_bundled": true
+      "source_url": "https://github.com/wuyhong715/rikkahub-agent-pure/tree/master/skills/qr-code",
+      "is_bundled": false
     },
     {
       "name": "query-wikipedia",
@@ -100,7 +120,8 @@
       "license": "Apache-2.0",
       "size_kb": 12,
       "runtime": "js",
-      "is_bundled": true
+      "source_url": "https://github.com/wuyhong715/rikkahub-agent-pure/tree/master/skills/query-wikipedia",
+      "is_bundled": false
     },
     {
       "name": "text-spinner",
@@ -108,9 +129,10 @@
       "description": "Render a 3D-spinning text label inside a webview embed.",
       "category": "demo",
       "license": "Apache-2.0",
-      "size_kb": 16,
+      "size_kb": 23,
       "runtime": "js",
-      "is_bundled": true
+      "source_url": "https://github.com/wuyhong715/rikkahub-agent-pure/tree/master/skills/text-spinner",
+      "is_bundled": false
     },
     {
       "name": "virtual-piano",
@@ -118,9 +140,10 @@
       "description": "Playable 88-key piano with sampled note audio. Bundles ~7.7 MB of MP3 samples.",
       "category": "demo",
       "license": "Apache-2.0",
-      "size_kb": 7884,
+      "size_kb": 39,
       "runtime": "js",
-      "is_bundled": true
+      "source_url": "https://github.com/wuyhong715/rikkahub-agent-pure/tree/master/skills/virtual-piano",
+      "is_bundled": false
     }
   ]
 }

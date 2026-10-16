@@ -8,15 +8,18 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -32,6 +35,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SmallFloatingActionButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -43,6 +47,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
@@ -63,6 +68,8 @@ import me.rerere.hugeicons.stroke.Delete01
 import me.rerere.hugeicons.stroke.Download01
 import me.rerere.hugeicons.stroke.MoreVertical
 import me.rerere.hugeicons.stroke.Puzzle
+import me.rerere.rikkahub.data.datastore.SkillGroup
+import me.rerere.rikkahub.data.datastore.SkillGroupRules
 import me.rerere.rikkahub.data.files.SkillFrontmatterParser
 import me.rerere.rikkahub.data.files.SkillMetadata
 import me.rerere.rikkahub.Screen
@@ -80,6 +87,7 @@ fun SkillsPage() {
     val navController = LocalNavController.current
     val vm = koinViewModel<SkillsVM>()
     val skills by vm.skills.collectAsStateWithLifecycle()
+    val groups by vm.skillGroups.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val toaster = LocalToaster.current
     val context = LocalContext.current
@@ -87,6 +95,21 @@ fun SkillsPage() {
     var showImportDialog by rememberSaveable { mutableStateOf(false) }
     var showCatalog by rememberSaveable { mutableStateOf(false) }
     var deleteTarget by remember { mutableStateOf<SkillMetadata?>(null) }
+    // Group management UI state. `groupEditor` is null when closed, New when creating, or
+    // Edit(group) when renaming / re-picking members.
+    var groupEditor by remember { mutableStateOf<GroupEditorTarget?>(null) }
+    var deleteGroupTarget by remember { mutableStateOf<SkillGroup?>(null) }
+    var deleteGroupSkillsToo by remember { mutableStateOf(false) }
+
+    val byName = remember(skills) { skills.associateBy { it.name } }
+    // Core (auto_load) skills get their own locked section: they are the system persona and
+    // cannot be grouped or disabled (see SkillGroupRules.canGroupSkill).
+    val coreSkills = remember(skills) { skills.filter { it.autoLoad } }
+    val groupableSkills = remember(skills) { skills.filter { SkillGroupRules.canGroupSkill(it.name) } }
+    val ungroupedSkills = remember(skills, groups) {
+        val grouped = SkillGroupRules.groupedSkillNames(groups)
+        skills.filter { !it.autoLoad && it.name !in grouped }
+    }
 
     Scaffold(
         topBar = {
@@ -163,12 +186,92 @@ fun SkillsPage() {
                 }
             }
 
-            items(skills, key = { it.skillDir.absolutePath }) { skill ->
-                SkillCard(
-                    skill = skill,
-                    onClick = { navController.navigate(Screen.SkillDetail(skill.name)) },
-                    onDelete = { deleteTarget = skill },
-                )
+            // Entry point for group creation. Empty-group-only case is fine to show always:
+            // an empty list still lets the user land here before installing anything.
+            item(key = "new-group") {
+                OutlinedButton(
+                    onClick = { groupEditor = GroupEditorTarget.New },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(
+                        imageVector = HugeIcons.Add01,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Text(
+                        text = stringResource(R.string.skills_page_new_group),
+                        modifier = Modifier.padding(start = 8.dp),
+                    )
+                }
+            }
+
+            // Core (auto_load) skills — locked section, no group controls.
+            if (coreSkills.isNotEmpty()) {
+                item(key = "core-header") {
+                    SectionHeader(
+                        title = stringResource(R.string.skills_page_group_core),
+                        subtitle = stringResource(R.string.skills_page_group_core_hint),
+                    )
+                }
+                items(coreSkills, key = { "core-${it.name}" }) { skill ->
+                    SkillCard(
+                        skill = skill,
+                        onClick = { navController.navigate(Screen.SkillDetail(skill.name)) },
+                        onDelete = { deleteTarget = skill },
+                    )
+                }
+            }
+
+            // User-created groups. A disabled group dims its members and suppresses them from
+            // the AI surface (see SkillGroupRules.disabledSkillNames).
+            groups.forEach { group ->
+                val members = group.skillNames.mapNotNull { byName[it] }
+                item(key = "grp-${group.id}") {
+                    GroupHeader(
+                        group = group,
+                        onToggle = { vm.setGroupEnabled(group.id, it) },
+                        onEdit = { groupEditor = GroupEditorTarget.Edit(group) },
+                        onDelete = { withSkills ->
+                            deleteGroupSkillsToo = withSkills
+                            deleteGroupTarget = group
+                        },
+                    )
+                }
+                if (members.isEmpty()) {
+                    item(key = "grp-empty-${group.id}") {
+                        Text(
+                            text = stringResource(R.string.skills_page_group_empty),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = 4.dp, bottom = 4.dp),
+                        )
+                    }
+                } else {
+                    items(members, key = { "m-${group.id}-${it.name}" }) { skill ->
+                        SkillCard(
+                            skill = skill,
+                            onClick = { navController.navigate(Screen.SkillDetail(skill.name)) },
+                            onDelete = { deleteTarget = skill },
+                            dimmed = !group.enabled,
+                        )
+                    }
+                }
+            }
+
+            if (ungroupedSkills.isNotEmpty()) {
+                item(key = "ungrouped-header") {
+                    SectionHeader(
+                        title = stringResource(R.string.skills_page_group_ungrouped),
+                        subtitle = null,
+                    )
+                }
+                items(ungroupedSkills, key = { "u-${it.name}" }) { skill ->
+                    SkillCard(
+                        skill = skill,
+                        onClick = { navController.navigate(Screen.SkillDetail(skill.name)) },
+                        onDelete = { deleteTarget = skill },
+                    )
+                }
             }
         }
     }
@@ -278,6 +381,63 @@ fun SkillsPage() {
         onDismiss = { deleteTarget = null },
     ) {
         Text(stringResource(R.string.skills_page_delete_message, deleteTarget?.name ?: ""))
+    }
+
+    // Group deletion — one dialog, two modes: keep skills (they fall back to Ungrouped) or
+    // uninstall them along with the group.
+    RikkaConfirmDialog(
+        show = deleteGroupTarget != null,
+        title = stringResource(R.string.skills_page_group_delete),
+        confirmText = stringResource(R.string.delete),
+        dismissText = stringResource(R.string.cancel),
+        onConfirm = {
+            val target = deleteGroupTarget
+            if (target != null) {
+                if (deleteGroupSkillsToo) vm.deleteGroupWithSkills(target.id) else vm.deleteGroup(target.id)
+            }
+            deleteGroupTarget = null
+            deleteGroupSkillsToo = false
+        },
+        onDismiss = {
+            deleteGroupTarget = null
+            deleteGroupSkillsToo = false
+        },
+    ) {
+        val target = deleteGroupTarget
+        val message = if (deleteGroupSkillsToo) {
+            stringResource(
+                R.string.skills_page_group_delete_with_skills_message,
+                target?.name ?: "",
+                target?.skillNames?.size ?: 0,
+            )
+        } else {
+            stringResource(R.string.skills_page_group_delete_message, target?.name ?: "")
+        }
+        Text(message)
+    }
+
+    groupEditor?.let { target ->
+        val editing = target as? GroupEditorTarget.Edit
+        SkillGroupEditorDialog(
+            initialName = editing?.group?.name ?: "",
+            initialSelected = editing?.group?.skillNames ?: emptySet(),
+            allSkills = groupableSkills,
+            onDismiss = { groupEditor = null },
+            onConfirm = { name, selected ->
+                when (target) {
+                    is GroupEditorTarget.New -> {
+                        vm.createGroup(name, selected)
+                        toaster.show(context.getString(R.string.skills_page_group_created))
+                    }
+
+                    is GroupEditorTarget.Edit -> {
+                        vm.renameGroup(target.group.id, name)
+                        vm.setGroupMembers(target.group.id, selected)
+                    }
+                }
+                groupEditor = null
+            },
+        )
     }
 
     if (showCatalog) {
@@ -418,12 +578,16 @@ private fun SkillCard(
     skill: SkillMetadata,
     onClick: () -> Unit,
     onDelete: () -> Unit,
+    /** Render faded when the owning group is disabled (its skills are suppressed). */
+    dimmed: Boolean = false,
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
 
     Card(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .alpha(if (dimmed) 0.45f else 1f),
         colors = CustomColors.cardColorsOnSurfaceContainer,
     ) {
         Row(
@@ -653,4 +817,221 @@ private fun mapImportErrorKeyToString(context: android.content.Context, key: Str
             context.getString(R.string.skill_import_empty_file)
         else -> key  // already a free-form message (e.g. importer's "html_response" detail)
     }
+}
+
+/** Small labelled divider above a section of skill cards. */
+@Composable
+private fun SectionHeader(title: String, subtitle: String?) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp, bottom = 2.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmallEmphasized,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        if (subtitle != null) {
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/**
+ * A group's header row: name, member count, on/off switch, and an overflow menu with
+ * edit / delete-group / delete-group-and-skills. The switch is the whole-group toggle —
+ * flipping it off suppresses every member from the AI surface without touching any
+ * assistant's `enabledSkills`.
+ */
+@Composable
+private fun GroupHeader(
+    group: SkillGroup,
+    onToggle: (Boolean) -> Unit,
+    onEdit: () -> Unit,
+    onDelete: (withSkills: Boolean) -> Unit,
+) {
+    var menuExpanded by remember { mutableStateOf(false) }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp, bottom = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(group.name, style = MaterialTheme.typography.titleSmallEmphasized)
+            Text(
+                text = stringResource(R.string.skills_page_group_members, group.skillNames.size),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Switch(checked = group.enabled, onCheckedChange = onToggle)
+        Box {
+            IconButton(onClick = { menuExpanded = true }) {
+                Icon(
+                    imageVector = HugeIcons.MoreVertical,
+                    contentDescription = stringResource(R.string.skills_page_more_actions),
+                )
+            }
+            DropdownMenu(
+                expanded = menuExpanded,
+                onDismissRequest = { menuExpanded = false },
+            ) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.skills_page_group_edit)) },
+                    leadingIcon = {
+                        Icon(HugeIcons.Puzzle, contentDescription = null)
+                    },
+                    onClick = {
+                        menuExpanded = false
+                        onEdit()
+                    },
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.skills_page_group_delete)) },
+                    leadingIcon = {
+                        Icon(HugeIcons.Delete01, contentDescription = null)
+                    },
+                    onClick = {
+                        menuExpanded = false
+                        onDelete(false)
+                    },
+                )
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            stringResource(R.string.skills_page_group_delete_with_skills),
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            HugeIcons.Delete01,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                        )
+                    },
+                    onClick = {
+                        menuExpanded = false
+                        onDelete(true)
+                    },
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Create / edit dialog for a skill group: a name field plus a checkbox list of the skills
+ * that may be grouped. Core (auto_load) skills are never passed in — they cannot be grouped.
+ */
+@Composable
+private fun SkillGroupEditorDialog(
+    initialName: String,
+    initialSelected: Set<String>,
+    allSkills: List<SkillMetadata>,
+    onDismiss: () -> Unit,
+    onConfirm: (name: String, selected: Set<String>) -> Unit,
+) {
+    var name by rememberSaveable { mutableStateOf(initialName) }
+    var selected by remember { mutableStateOf(initialSelected) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                stringResource(
+                    if (initialName.isBlank()) R.string.skills_page_new_group
+                    else R.string.skills_page_group_edit
+                )
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text(stringResource(R.string.skills_page_group_name)) },
+                    placeholder = { Text(stringResource(R.string.skills_page_group_name_hint)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Text(
+                    text = stringResource(R.string.skills_page_group_select_skills),
+                    style = MaterialTheme.typography.labelMedium,
+                )
+                if (allSkills.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.skills_page_group_no_skills),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 320.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        items(allSkills, key = { it.name }) { skill ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        selected = if (skill.name in selected) {
+                                            selected - skill.name
+                                        } else {
+                                            selected + skill.name
+                                        }
+                                    }
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Checkbox(
+                                    checked = skill.name in selected,
+                                    onCheckedChange = { checked ->
+                                        selected = if (checked) selected + skill.name else selected - skill.name
+                                    },
+                                )
+                                Column(modifier = Modifier.padding(start = 4.dp)) {
+                                    Text(skill.name, style = MaterialTheme.typography.bodyMedium)
+                                    if (skill.description.isNotBlank()) {
+                                        Text(
+                                            text = skill.description,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            maxLines = 1,
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(name, selected) },
+                enabled = name.isNotBlank(),
+            ) {
+                Text(stringResource(R.string.skills_page_save))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+        },
+    )
+}
+
+/** Which group the editor dialog is open for: a fresh one, or an existing group being edited. */
+private sealed interface GroupEditorTarget {
+    data object New : GroupEditorTarget
+    data class Edit(val group: SkillGroup) : GroupEditorTarget
 }
