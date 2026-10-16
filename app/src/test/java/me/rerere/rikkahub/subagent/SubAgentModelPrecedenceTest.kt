@@ -80,4 +80,60 @@ class SubAgentModelPrecedenceTest {
 
         assertTrue(combined is SubAgentModelResolver.Result.Inherit)
     }
+
+    // — assistant-level default (the "run my sub-agents on this cheaper model" setting) —
+
+    @Test
+    fun `the assistant default applies when neither model_id nor the expert pins a model`() {
+        val assistantModel = Uuid.random()
+
+        val combined = resolveSubAgentModel(
+            SubAgentModelResolver.Result.Inherit,
+            definition = null,
+            assistantSubAgentModelId = assistantModel,
+        )
+
+        assertEquals(SubAgentModelResolver.Result.Resolved(assistantModel), combined)
+    }
+
+    @Test
+    fun `the expert's model wins over the assistant default`() {
+        val expertModelId = Uuid.random()
+        val expert = researcher.copy(modelId = expertModelId.toString())
+
+        val combined = resolveSubAgentModel(
+            SubAgentModelResolver.Result.Inherit,
+            expert,
+            assistantSubAgentModelId = Uuid.random(),
+        )
+
+        assertEquals(SubAgentModelResolver.Result.Resolved(expertModelId), combined)
+    }
+
+    @Test
+    fun `an explicit model_id wins over the assistant default`() {
+        val explicitModelId = Uuid.random()
+
+        val combined = resolveSubAgentModel(
+            SubAgentModelResolver.Result.Resolved(explicitModelId),
+            definition = null,
+            assistantSubAgentModelId = Uuid.random(),
+        )
+
+        assertEquals(SubAgentModelResolver.Result.Resolved(explicitModelId), combined)
+    }
+
+    @Test
+    fun `an unparseable expert model falls through to the assistant default`() {
+        val assistantModel = Uuid.random()
+        val expert = researcher.copy(modelId = "not-a-uuid")
+
+        val combined = resolveSubAgentModel(
+            SubAgentModelResolver.Result.Inherit,
+            expert,
+            assistantSubAgentModelId = assistantModel,
+        )
+
+        assertEquals(SubAgentModelResolver.Result.Resolved(assistantModel), combined)
+    }
 }

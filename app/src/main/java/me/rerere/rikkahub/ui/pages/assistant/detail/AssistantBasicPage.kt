@@ -1015,6 +1015,68 @@ internal fun AssistantBasicContent(
                     }
                 )
             }
+
+            HorizontalDivider()
+
+            // The assistant-level sub-agent defaults. Both fields existed in the Assistant model
+            // (and were already persisted) but nothing ever read them — wiring them here is what
+            // makes "sub-agents on a cheaper model" a real setting instead of a dead column.
+            FormItem(
+                modifier = Modifier.padding(8.dp),
+                label = {
+                    Text(stringResource(R.string.assistant_page_sub_agent_model))
+                },
+                description = {
+                    Text(stringResource(R.string.assistant_page_sub_agent_model_desc))
+                },
+                content = {
+                    ModelSelector(
+                        modelId = assistant.subAgentModelId,
+                        providers = providers,
+                        type = ModelType.CHAT,
+                        onSelect = {
+                            onUpdate(
+                                assistant.copy(
+                                    subAgentModelId = it.id
+                                )
+                            )
+                        },
+                    )
+                }
+            )
+
+            HorizontalDivider()
+
+            var subAgentPromptInput by remember(assistant.id, assistant.subAgentSystemPrompt) {
+                mutableStateOf(assistant.subAgentSystemPrompt)
+            }
+            var subAgentPromptFocused by remember(assistant.id) { mutableStateOf(false) }
+            val subAgentPromptFocusManager = LocalFocusManager.current
+            FormItem(
+                modifier = Modifier.padding(8.dp),
+                label = {
+                    Text(stringResource(R.string.assistant_page_sub_agent_system_prompt))
+                },
+                description = {
+                    Text(stringResource(R.string.assistant_page_sub_agent_system_prompt_desc))
+                }
+            ) {
+                OutlinedTextField(
+                    value = subAgentPromptInput,
+                    onValueChange = { subAgentPromptInput = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onFocusChanged { focusState ->
+                            if (subAgentPromptFocused && !focusState.isFocused &&
+                                subAgentPromptInput != assistant.subAgentSystemPrompt
+                            ) {
+                                onUpdate(assistant.copy(subAgentSystemPrompt = subAgentPromptInput))
+                            }
+                            subAgentPromptFocused = focusState.isFocused
+                        },
+                    minLines = 3,
+                )
+            }
         }
     }
 }

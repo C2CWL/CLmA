@@ -56,6 +56,7 @@ import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -72,6 +73,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.rerere.ai.provider.ModelType
@@ -98,6 +100,9 @@ import me.rerere.rikkahub.data.ai.tools.LocalToolPaletteHit
 import me.rerere.rikkahub.data.ai.tools.LocalTools
 import me.rerere.rikkahub.data.files.SkillManager
 import me.rerere.rikkahub.data.files.SkillMetadata
+import me.rerere.rikkahub.subagent.SubAgentRegistry
+import me.rerere.rikkahub.subagent.SubAgentRun
+import me.rerere.rikkahub.subagent.SubAgentStatus
 import me.rerere.rikkahub.ui.components.ai.ModelSelector
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.FormItem
@@ -259,6 +264,13 @@ fun SettingSubAgentsPage(
                     }
                 }
 
+                // Live view of this session's sub-agent runs — until now the only signal was a
+                // one-line status in chat, and a failed background run left no trace a user
+                // could read. Renders nothing when nothing was ever dispatched, so an install
+                // that never uses sub-agents sees the page exactly as before.
+                item {
+                    SubAgentRunsSection()
+                }
                 if (definitions.isEmpty()) {
                     item {
                         Column(
@@ -356,6 +368,111 @@ fun SettingSubAgentsPage(
             )
         }
     }
+}
+
+@Composable
+private fun SubAgentRunsSection(
+    registry: SubAgentRegistry = koinInject(),
+) {
+    val runs by registry.runs.collectAsStateWithLifecycle()
+    val ordered = runs.values.sortedByDescending { it.startedAtMs }
+    if (ordered.isEmpty()) return
+    // A 1s tick keeps active runs' elapsed time moving; it stops as soon as nothing is active.
+    val hasActive = ordered.any { it.status == SubAgentStatus.RUNNING || it.status == SubAgentStatus.PENDING }
+    var nowMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(hasActive) {
+        while (hasActive) {
+            nowMs = System.currentTimeMillis()
+            delay(1_000)
+        }
+    }
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        ),
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.setting_sub_agents_page_runs_title),
+                style = MaterialTheme.typography.titleSmall,
+            )
+            ordered.forEach { run ->
+                SubAgentRunRow(
+                    run = run,
+                    nowMs = nowMs,
+                    onCancel = { registry.requestCancel(run.id) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SubAgentRunRow(
+    run: SubAgentRun,
+    nowMs: Long,
+    onCancel: () -> Unit,
+) {
+    val active = run.status == SubAgentStatus.RUNNING || run.status == SubAgentStatus.PENDING
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = run.label,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            val statusColor = when (run.status) {
+                SubAgentStatus.FAILED, SubAgentStatus.TIMED_OUT -> MaterialTheme.colorScheme.error
+                SubAgentStatus.CANCELLED -> MaterialTheme.colorScheme.onSurfaceVariant
+                else -> MaterialTheme.colorScheme.primary
+            }
+            val elapsedS = (((run.finishedAtMs ?: nowMs) - run.startedAtMs) / 1_000L).coerceAtLeast(0L)
+            val detail = buildString {
+                append(stringResource(subAgentRunStatusRes(run.status)))
+                append(" · %d:%02d".format(elapsedS / 60, elapsedS % 60))
+                if (run.tokensIn + run.tokensOut > 0) {
+                    append(" · ")
+                    append(stringResource(R.string.setting_sub_agents_page_runs_tokens, run.tokensIn, run.tokensOut))
+                }
+            }
+            Text(
+                text = detail,
+                style = MaterialTheme.typography.bodySmall,
+                color = statusColor,
+            )
+            run.error?.takeIf { it.isNotBlank() }?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+        if (active) {
+            TextButton(onClick = onCancel) {
+                Text(stringResource(R.string.setting_sub_agents_page_runs_cancel))
+            }
+        }
+    }
+}
+
+private fun subAgentRunStatusRes(status: SubAgentStatus): Int = when (status) {
+    SubAgentStatus.PENDING -> R.string.setting_sub_agents_page_runs_status_pending
+    SubAgentStatus.RUNNING -> R.string.setting_sub_agents_page_runs_status_running
+    SubAgentStatus.SUCCEEDED -> R.string.setting_sub_agents_page_runs_status_succeeded
+    SubAgentStatus.FAILED -> R.string.setting_sub_agents_page_runs_status_failed
+    SubAgentStatus.TIMED_OUT -> R.string.setting_sub_agents_page_runs_status_timed_out
+    SubAgentStatus.CANCELLED -> R.string.setting_sub_agents_page_runs_status_cancelled
 }
 
 @Composable

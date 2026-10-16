@@ -19,6 +19,8 @@ import me.rerere.rikkahub.data.agentrun.AgentRunKind
 import me.rerere.rikkahub.data.agentrun.AgentRunRepository
 import me.rerere.rikkahub.data.agentrun.AgentRunStatus
 import me.rerere.rikkahub.data.ai.tools.HeadlessConversations
+import me.rerere.rikkahub.data.ai.tools.ConversationSystemAddendum
+import me.rerere.rikkahub.data.ai.limits.ConversationToolStepLimits
 import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.usage.OrchestrationBudget
 import me.rerere.rikkahub.data.usage.OrchestrationGate
@@ -469,6 +471,10 @@ class SubAgentEngine(
                 tokensIn = summary.inputTokens,
                 tokensOut = summary.outputTokens,
                 usageCalls = summary.calls,
+                // Each tool-loop trip is exactly one billed model call, so the ledger count IS
+                // the trip count — filling it here retires the always-zero placeholder that
+                // `subagent_get` / `subagent_list` used to report.
+                tripCount = summary.calls,
             )
         }
     }
@@ -550,6 +556,9 @@ class SubAgentEngine(
         val modelResolution = resolveSubAgentModel(
             SubAgentModelResolver.resolve(request.modelId, settings.providers),
             definition,
+            // The assistant-level default ("run this assistant's sub-agents on model X") sits
+            // below an explicit model_id and the expert's model, above plain inheritance.
+            parentAssistant?.subAgentModelId,
         )
         val resolvedChatModelId = when (modelResolution) {
             is SubAgentModelResolver.Result.Inherit -> null
@@ -559,19 +568,24 @@ class SubAgentEngine(
                 return
             }
         }
-        // The expert's system prompt is prepended to the task text itself (same technique as
-        // the wrap-up instruction below) rather than plumbed into Conversation/ChatService -
-        // sub-agent runs don't get a per-run system prompt override today, and wiring one in
-        // is out of scope here (see Non-goals: don't change how runs execute).
-        val effectiveTask = definition?.systemPrompt?.trim()?.takeIf { it.isNotEmpty() }
-            ?.let { "$it\n\n${request.task}" }
-            ?: request.task
+        // The run's system prompt is assembled from the three layers that may define one
+        // (assistant default → expert → per-dispatch) and delivered through
+        // [ConversationSystemAddendum] so it lands in the system slot instead of being
+        // prepended to the task text: the archived conversation keeps a clean first user
+        // message, and the Moxw vector index never embeds the scaffolding. `request.systemPrompt`
+        // is honoured here for the first time — it used to be parsed into SubAgentRequest and
+        // then dropped on the floor.
+        val systemPromptAddendum = composeSubAgentSystemPrompt(
+            assistantPrompt = parentAssistant?.subAgentSystemPrompt.orEmpty(),
+            expertPrompt = definition?.systemPrompt,
+            requestPrompt = request.systemPrompt,
+        )
         // T-04 / (4) - the caller asked for part of its own conversation to travel with the
         // task. A sub-agent's conversation starts empty, so the ONLY channel is this text:
         // materialise the referenced turns into the first user message rather than trying to
         // share history. Best-effort by design - a lookup failure degrades to the pre-T-04
         // behaviour (task alone) instead of failing the run.
-        val taskWithContext = withParentContext(parentChatId, request, effectiveTask)
+        val taskWithContext = withParentContext(parentChatId, request, request.task)
         // D3 — when the caller asked for it, carry the parent's newest user-message audio/video
         // attachments into the sub-agent's first message. Best-effort like the context refs
         // above: any lookup failure degrades to "no media" rather than failing the run.
@@ -646,6 +660,14 @@ class SubAgentEngine(
                 appendLine()
                 append("When you have finished, end with one short paragraph in plain text that summarises what you did and what you found. Do NOT stop on a tool call — finish with assistant text. The dispatcher harvests only your final text reply, so this paragraph is the entire response the parent sees.")
             }
+            // The run's per-conversation runtime overrides, registered inside this try so the
+            // finally below provably releases them (a cancellation landing between registration
+            // and try entry would otherwise strand them):
+            //  - the system-prompt addendum assembled above (assistant → expert → dispatch);
+            //  - the `max_trips` tool-step cap, which ChatService reads at the generation call
+            //    site — this is what makes the parameter real instead of advisory.
+            ConversationSystemAddendum.set(conv.id, systemPromptAddendum)
+            ConversationToolStepLimits.set(conv.id, request.maxTrips)
             // D3 — media first, then the task text, matching the order DashScope's own
             // multimodal examples use.
             chatService.sendMessage(
@@ -698,6 +720,11 @@ class SubAgentEngine(
             notifyParentIfBackground(parentChatId, registry.get(runId))
         } finally {
             HeadlessConversations.unmark(conv.id)
+            // Release the per-conversation runtime overrides registered at the top, so a
+            // cancelled / failed / timed-out run cannot leave a stale addendum or step cap
+            // behind. Both clears are unconditional and safe on a never-registered id.
+            ConversationSystemAddendum.clear(conv.id)
+            ConversationToolStepLimits.clear(conv.id)
             // T-09 / (8) + P2-04 — release in the same finally that unmarks the conversation, so a
             // cancelled / failed / timed-out run cannot leave a stale freeze behind. Releasing is
             // unconditional and safe: removing a record that was never written is a no-op.
@@ -760,6 +787,8 @@ class SubAgentEngine(
      */
     private suspend fun notifyParentIfBackground(parentChatId: String?, run: SubAgentRun?) {
         if (parentChatId == null || run == null || !run.runInBackground) return
+        // CANCELLED and noResult successes stay silent on purpose — see shouldNotifyParent.
+        if (!shouldNotifyParent(run)) return
         val parentUuid = runCatching { Uuid.parse(parentChatId) }.getOrNull() ?: return
         if (HeadlessConversations.isHeadless(parentUuid)) return
 

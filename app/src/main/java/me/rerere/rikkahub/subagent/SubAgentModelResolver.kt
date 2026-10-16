@@ -92,14 +92,27 @@ internal object SubAgentModelResolver {
  *
  * Split out as a pure function (same rationale as [finishSubAgentWait]) so the precedence rule is
  * unit-testable without a live [SubAgentEngine].
+ *
+ * Later addition — the assistant-level default: when neither `model_id` nor the expert pins a
+ * model, the parent assistant's own `subAgentModelId` (the user's standing "run my sub-agents
+ * on this cheaper model" setting) gets its turn before the run falls back to inheriting the
+ * conversation's model. The field existed in the Assistant model — and was even counted as a
+ * reference when deleting a model — but nothing ever read it; wiring it here is what makes the
+ * setting real. Null (or an unset field) preserves the pre-existing behavior byte-for-byte.
  */
 internal fun resolveSubAgentModel(
     modelResolution: SubAgentModelResolver.Result,
     definition: AgentDefinition?,
+    assistantSubAgentModelId: Uuid? = null,
 ): SubAgentModelResolver.Result = when (modelResolution) {
     is SubAgentModelResolver.Result.Inherit -> {
         val parsed = definition?.modelId?.let { runCatching { Uuid.parse(it) }.getOrNull() }
-        if (parsed != null) SubAgentModelResolver.Result.Resolved(parsed) else modelResolution
+        when {
+            parsed != null -> SubAgentModelResolver.Result.Resolved(parsed)
+            assistantSubAgentModelId != null ->
+                SubAgentModelResolver.Result.Resolved(assistantSubAgentModelId)
+            else -> modelResolution
+        }
     }
     else -> modelResolution
 }

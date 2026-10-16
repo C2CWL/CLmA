@@ -1751,6 +1751,13 @@ class ChatService(
                 settings = settings,
                 model = model,
                 processingStatus = session.processingStatus,
+                // Per-conversation tool-step cap: a sub-agent run registers its `max_trips`
+                // here for exactly its own lifetime (see ConversationToolStepLimits); every
+                // other conversation falls through to the global default, read live so a
+                // settings change applies to the next turn.
+                maxSteps = me.rerere.rikkahub.data.ai.limits.ConversationToolStepLimits
+                    .get(conversation.id)
+                    ?: me.rerere.rikkahub.data.ai.limits.ToolRuntimeLimits.maxToolSteps,
                 // Read once per call so the surface that wrote the addendum (Telegram bot,
                 // anything else) gets its runtime context into the system prompt without
                 // having to plumb a parameter all the way through sendMessage. Returns null

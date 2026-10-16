@@ -108,10 +108,20 @@ fun subagentDispatchTool(
                                 "display name (case-insensitive exact match). Ambiguous or unknown " +
                                 "values fail the dispatch and the error lists the valid options. " +
                                 "Takes precedence over agent's model. Omit to inherit the " +
-                                "expert's model (if agent is set) or the parent assistant's model.",
+                                "expert's model (if agent is set), then the parent assistant's " +
+                                "sub-agent default, then the conversation's model.",
                         )
                     })
-                    put("system_prompt", buildJsonObject { put("type", "string") })
+                    put("system_prompt", buildJsonObject {
+                        put("type", "string")
+                        put(
+                            "description",
+                            "Per-run system-prompt layer, appended after the assistant's " +
+                                "sub-agent default and the expert's (if `agent` is set). Use it " +
+                                "for run-specific rules (output shape, constraints), not for " +
+                                "restating the task.",
+                        )
+                    })
                     put("tools", buildJsonObject {
                         put("type", "array")
                         put("items", buildJsonObject { put("type", "string") })
@@ -151,12 +161,25 @@ fun subagentDispatchTool(
                         put(
                             "description",
                             "When true the sub-agent's final output is not returned to you " +
-                                "(only status, ids and counters). Use for fire-and-forget work " +
-                                "whose result you do not need, to keep your context small.",
+                                "(only status, ids and counters), and a background run that " +
+                                "succeeds will NOT wake this conversation with a completion " +
+                                "notice. Use for fire-and-forget work whose result you do not " +
+                                "need, to keep your context small. Failures and timeouts still " +
+                                "notify, so silent work never fails in silence.",
                         )
                     })
                     put("timeout_seconds", buildJsonObject { put("type", "integer") })
-                    put("max_trips", buildJsonObject { put("type", "integer") })
+                    put("max_trips", buildJsonObject {
+                        put("type", "integer")
+                        put(
+                            "description",
+                            "Hard cap on the sub-agent's tool-loop steps (model round trips " +
+                                "with tool calls), default ${SubAgentDefaults.DEFAULT_MAX_TRIPS}, " +
+                                "max ${SubAgentDefaults.MAX_MAX_TRIPS}. The turn force-ends when " +
+                                "the cap is hit, so size it to the task: a lookup needs 2-3, " +
+                                "multi-step work needs more.",
+                        )
+                    })
                     // T-04: only offered when the assistant has the feature enabled. When it
                     // is off the schema is byte-identical to pre-T-04, so an install that
                     // never turns this on sends exactly the same request as before.
