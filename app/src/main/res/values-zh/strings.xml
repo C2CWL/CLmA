@@ -1741,6 +1741,23 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="setting_page_tool_approvals_no_match">没有匹配的工具。</string>
   <string name="setting_page_tool_approvals_load_failed">无法加载工具列表。</string>
   <string name="setting_page_tool_approvals_yolo_dialog_body">每个工具 — 本地 shell、SSH、文件写入、屏幕自动化、Telegram 外发、MCP，以及黑名单里的全部工具 — 都将无需询问你直接运行。智能体可能发送消息、在远程主机上运行命令、拍照、写入文件、安排任务，全部无需确认。\n\nHARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备 dd、fork 炸弹、编码载荷管道 — 这些仍会被拦截。\n\n这是个危险操作。仅在你信任模型 + 助手配置 + 你自己的提示词会负责任地行事时才启用。</string>
+  <string name="setting_page_tool_approvals_mode_title">审批模式</string>
+  <string name="setting_page_tool_approvals_mode_auto">自动</string>
+  <string name="setting_page_tool_approvals_mode_semi">半自动</string>
+  <string name="setting_page_tool_approvals_mode_manual">手动</string>
+  <string name="setting_page_tool_approvals_auto_desc">所有工具无需询问直接运行 — 提权类工具（MCP 服务器、技能安装、代码执行、密钥库、NFC 写入）仍每次询问。</string>
+  <string name="setting_page_tool_approvals_semi_desc">只有下方黑名单中的工具在运行前会询问。</string>
+  <string name="setting_page_tool_approvals_manual_desc">每个工具调用都会询问确认。在提示上点「本次对话允许」可减少可信工具的打扰。</string>
+  <string name="setting_page_tool_approvals_blacklist_ignored">自动模式下黑名单被忽略 — 所有工具无需询问（提权类除外）。</string>
+  <string name="setting_page_tool_approvals_blacklist_manual">手动模式下每个工具都会询问。下方黑名单仅在半自动模式下生效。</string>
+  <string name="setting_page_tool_approvals_auto_dialog_title">切换到自动模式？</string>
+  <string name="setting_page_tool_approvals_auto_dialog_body">每个工具 — 本地 shell、SSH、文件写入、屏幕自动化、Telegram 外发、以及黑名单里的全部工具 — 都将无需询问你直接运行。
+
+提权类工具（添加 MCP 服务器、安装技能、eval_js、密钥库操作、NFC 写入、目录授权）仍每次需要确认。
+
+HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备 dd、fork 炸弹、编码载荷管道 — 这些仍会被拦截。</string>
+  <string name="setting_page_tool_approvals_auto_dialog_confirm">切换到自动</string>
+  <string name="setting_page_tool_approvals_auto_dialog_cancel">取消</string>
   <string name="setting_page_tool_approvals_yolo_dialog_cancel">保持授权开启</string>
   <string name="setting_page_tool_approvals_yolo_dialog_confirm">是的，我很蠢，启用</string>
   <string name="setting_page_tool_approvals_yolo_dialog_title">关闭所有授权提示？</string>

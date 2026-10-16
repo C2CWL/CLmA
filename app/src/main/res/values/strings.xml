@@ -1454,6 +1454,23 @@
   <string name="setting_page_tool_approvals_yolo_off">Off. Only tools on your blacklist ask before running.</string>
   <string name="setting_page_tool_approvals_yolo_dialog_title">Turn off all approval prompts?</string>
   <string name="setting_page_tool_approvals_yolo_dialog_body">Every tool — local shell, SSH, file writes, screen automation, Telegram outbound, MCP, and everything on your blacklist — will run without asking you. The agent could send messages, run commands on remote hosts, take photos, write files, schedule jobs, all without confirmation.\n\nHARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block devices, fork bomb, encoded payload pipes — those keep blocking.\n\nThis is a foot-gun. Only enable if you trust the model + assistant config + your own prompts to behave responsibly.</string>
+  <string name="setting_page_tool_approvals_mode_title">Approval mode</string>
+  <string name="setting_page_tool_approvals_mode_auto">Auto</string>
+  <string name="setting_page_tool_approvals_mode_semi">Semi</string>
+  <string name="setting_page_tool_approvals_mode_manual">Manual</string>
+  <string name="setting_page_tool_approvals_auto_desc">Every tool runs without asking — except privilege-escalation surfaces (MCP servers, skill installs, code eval, keystore, NFC writes) which always ask.</string>
+  <string name="setting_page_tool_approvals_semi_desc">Only tools on your blacklist below ask before running.</string>
+  <string name="setting_page_tool_approvals_manual_desc">Every tool call asks for confirmation. Tap "Allow for this chat" on a prompt to reduce friction for trusted tools.</string>
+  <string name="setting_page_tool_approvals_blacklist_ignored">The blacklist is ignored in Auto mode — every tool runs without asking (except the floor).</string>
+  <string name="setting_page_tool_approvals_blacklist_manual">Every tool asks in Manual mode. The blacklist below only takes effect in Semi mode.</string>
+  <string name="setting_page_tool_approvals_auto_dialog_title">Switch to Auto mode?</string>
+  <string name="setting_page_tool_approvals_auto_dialog_body">Every tool — local shell, SSH, file writes, screen automation, Telegram outbound, and everything on your blacklist — will run without asking you.
+
+Privilege-escalation surfaces (adding MCP servers, installing skills, eval_js, keystore operations, NFC writes, directory grants) still require confirmation every time.
+
+HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block devices, fork bomb, encoded payload pipes — those keep blocking.</string>
+  <string name="setting_page_tool_approvals_auto_dialog_confirm">Switch to Auto</string>
+  <string name="setting_page_tool_approvals_auto_dialog_cancel">Cancel</string>
   <string name="setting_page_tool_approvals_yolo_dialog_confirm">Yes, I AM STUPID, enable</string>
   <string name="setting_page_tool_approvals_yolo_dialog_cancel">Keep approvals on</string>
   <string name="language_arabic">🇸🇦 العربية</string>

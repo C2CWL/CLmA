@@ -1759,17 +1759,17 @@ class ChatService(
                     .ConversationSystemAddendum.get(conversationId),
                 isToolAutoApproved = { toolName ->
                     // The decision itself is pure — see ToolApprovalPolicy (unit-tested). Here
-                    // we only supply the async inputs: the persisted blacklist + YOLO (one
+                    // we only supply the async inputs: the persisted blacklist + mode (one
                     // DataStore read), whether this conversation is headless, and any in-memory
-                    // "allow for this chat" grant. A tool asks only when it is on the user's
-                    // blacklist or on the non-waivable floor; the default (empty blacklist) is
-                    // that nothing asks. YOLO sits above both; the HARDLINE command floor still
-                    // blocks rm -rf / et al because GenerationLoop checks it before this.
+                    // "allow for this chat" grant. The mode decides the posture: Auto approves
+                    // everything but the floor; Semi consults the blacklist; Manual asks on
+                    // every call. The HARDLINE command floor still blocks rm -rf / et al because
+                    // GenerationLoop checks it before this.
                     val snapshot = toolApprovalPreferences.snapshot()
                     me.rerere.rikkahub.data.ai.tools.ToolApprovalPolicy.shouldAutoApprove(
                         toolName = toolName,
                         blacklist = snapshot.blacklist,
-                        yolo = snapshot.yolo,
+                        mode = snapshot.mode,
                         headless = me.rerere.rikkahub.data.ai.tools.HeadlessConversations
                             .shouldAutoApprove(conversationId),
                         allowedForChat = me.rerere.rikkahub.data.ai.tools.ToolApprovalAllowList

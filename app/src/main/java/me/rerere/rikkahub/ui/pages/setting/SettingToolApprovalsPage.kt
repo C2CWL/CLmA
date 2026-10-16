@@ -11,6 +11,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.FilterChip
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -42,6 +45,7 @@ import me.rerere.rikkahub.data.ai.tools.LocalToolInventory
 import me.rerere.rikkahub.data.ai.tools.LocalToolPalette
 import me.rerere.rikkahub.data.ai.tools.LocalTools
 import me.rerere.rikkahub.data.ai.tools.ToolApprovalDefaults
+import me.rerere.rikkahub.data.ai.tools.ApprovalMode
 import me.rerere.rikkahub.data.ai.tools.ToolApprovalPolicy
 import me.rerere.rikkahub.data.preferences.ToolApprovalPreferences
 import me.rerere.rikkahub.ui.components.nav.BackButton
@@ -60,45 +64,45 @@ import org.koin.compose.koinInject
  *
  * Two things cannot be switched off: the non-waivable floor
  * ([ToolApprovalDefaults.NO_ALWAYS_ALLOW] — privilege-escalation surfaces) and every opaque
- * `mcp__*` relayed tool. Their rows render an on, disabled switch. The YOLO toggle at the top is
- * the opposite escape hatch: when enabled, everything auto-approves — blacklist and floor
- * included — and only the HARDLINE command floor still blocks.
+ * `mcp__*` relayed tool. Their rows render an on, disabled switch. The three-mode selector at
+ * the top picks the posture: Auto (everything but the floor auto-approves), Semi (blacklist
+ * decides), Manual (every call asks).
  */
 @Composable
 fun SettingToolApprovalsPage() {
     val prefs: ToolApprovalPreferences = koinInject()
     val blacklist by prefs.blacklistFlow.collectAsStateWithLifecycle(initialValue = emptySet())
-    val yolo by prefs.globalYoloFlow.collectAsStateWithLifecycle(initialValue = false)
+    val mode by prefs.modeFlow.collectAsStateWithLifecycle(initialValue = ApprovalMode.MANUAL)
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val scope = rememberCoroutineScope()
 
-    var pendingYoloEnable by remember { mutableStateOf(false) }
-    if (pendingYoloEnable) {
+    var pendingAuto by remember { mutableStateOf(false) }
+    if (pendingAuto) {
         AlertDialog(
-            onDismissRequest = { pendingYoloEnable = false },
+            onDismissRequest = { pendingAuto = false },
             title = {
                 Text(
-                    text = stringResource(R.string.setting_page_tool_approvals_yolo_dialog_title),
+                    text = stringResource(R.string.setting_page_tool_approvals_auto_dialog_title),
                     fontWeight = FontWeight.Bold,
                 )
             },
             text = {
-                Text(stringResource(R.string.setting_page_tool_approvals_yolo_dialog_body))
+                Text(stringResource(R.string.setting_page_tool_approvals_auto_dialog_body))
             },
             confirmButton = {
                 TextButton(onClick = {
-                    pendingYoloEnable = false
-                    scope.launch { prefs.setYolo(true) }
+                    pendingAuto = false
+                    scope.launch { prefs.setMode(ApprovalMode.AUTO) }
                 }) {
                     Text(
-                        text = stringResource(R.string.setting_page_tool_approvals_yolo_dialog_confirm),
+                        text = stringResource(R.string.setting_page_tool_approvals_auto_dialog_confirm),
                         color = MaterialTheme.colorScheme.error,
                     )
                 }
             },
             dismissButton = {
-                TextButton(onClick = { pendingYoloEnable = false }) {
-                    Text(stringResource(R.string.setting_page_tool_approvals_yolo_dialog_cancel))
+                TextButton(onClick = { pendingAuto = false }) {
+                    Text(stringResource(R.string.setting_page_tool_approvals_auto_dialog_cancel))
                 }
             },
         )
@@ -140,57 +144,60 @@ fun SettingToolApprovalsPage() {
             contentPadding = innerPadding + PaddingValues(8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            // YOLO toggle. Top of the page so the user always sees its state when they come here.
-            // Background goes red when the toggle is on so it is visually unmistakable.
+            // Three-mode selector: Auto / Semi / Manual. Replaces the old YOLO toggle.
+            // Auto still asks for the floor (mcp_add, eval_js, …); Manual asks for everything.
             item {
-                val containerColor =
-                    if (yolo) MaterialTheme.colorScheme.errorContainer
-                    else MaterialTheme.colorScheme.surfaceVariant
-                val onContainer =
-                    if (yolo) MaterialTheme.colorScheme.onErrorContainer
-                    else MaterialTheme.colorScheme.onSurfaceVariant
-                Row(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 8.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(containerColor)
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(2.dp),
-                    ) {
-                        Text(
-                            text = stringResource(R.string.setting_page_tool_approvals_yolo_title),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = onContainer,
+                        .background(
+                            if (mode == ApprovalMode.AUTO) MaterialTheme.colorScheme.errorContainer
+                            else MaterialTheme.colorScheme.surfaceVariant
                         )
-                        Text(
-                            text = stringResource(
-                                if (yolo) R.string.setting_page_tool_approvals_yolo_on
-                                else R.string.setting_page_tool_approvals_yolo_off
-                            ),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = onContainer,
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.setting_page_tool_approvals_mode_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = if (mode == ApprovalMode.AUTO) MaterialTheme.colorScheme.onErrorContainer
+                               else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        FilterChip(
+                            selected = mode == ApprovalMode.AUTO,
+                            onClick = { if (mode != ApprovalMode.AUTO) pendingAuto = true },
+                            label = { Text(stringResource(R.string.setting_page_tool_approvals_mode_auto)) },
+                            modifier = Modifier.weight(1f),
+                        )
+                        FilterChip(
+                            selected = mode == ApprovalMode.SEMI,
+                            onClick = { scope.launch { prefs.setMode(ApprovalMode.SEMI) } },
+                            label = { Text(stringResource(R.string.setting_page_tool_approvals_mode_semi)) },
+                            modifier = Modifier.weight(1f),
+                        )
+                        FilterChip(
+                            selected = mode == ApprovalMode.MANUAL,
+                            onClick = { scope.launch { prefs.setMode(ApprovalMode.MANUAL) } },
+                            label = { Text(stringResource(R.string.setting_page_tool_approvals_mode_manual)) },
+                            modifier = Modifier.weight(1f),
                         )
                     }
-                    Switch(
-                        checked = yolo,
-                        onCheckedChange = { wantOn ->
-                            if (wantOn) {
-                                pendingYoloEnable = true
-                            } else {
-                                scope.launch { prefs.setYolo(false) }
-                            }
+                    Text(
+                        text = when (mode) {
+                            ApprovalMode.AUTO -> stringResource(R.string.setting_page_tool_approvals_auto_desc)
+                            ApprovalMode.SEMI -> stringResource(R.string.setting_page_tool_approvals_semi_desc)
+                            ApprovalMode.MANUAL -> stringResource(R.string.setting_page_tool_approvals_manual_desc)
                         },
-                        colors = if (yolo) SwitchDefaults.colors(
-                            checkedThumbColor = MaterialTheme.colorScheme.error,
-                            checkedTrackColor = MaterialTheme.colorScheme.error.copy(alpha = 0.3f),
-                        ) else SwitchDefaults.colors(),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (mode == ApprovalMode.AUTO) MaterialTheme.colorScheme.onErrorContainer
+                               else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -201,19 +208,25 @@ fun SettingToolApprovalsPage() {
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     Text(
-                        text = stringResource(R.string.setting_page_tool_approvals_header),
+                        text = when (mode) {
+                            ApprovalMode.AUTO -> stringResource(R.string.setting_page_tool_approvals_blacklist_ignored)
+                            ApprovalMode.SEMI -> stringResource(R.string.setting_page_tool_approvals_header)
+                            ApprovalMode.MANUAL -> stringResource(R.string.setting_page_tool_approvals_blacklist_manual)
+                        },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    Text(
-                        text = if (blacklist.isEmpty()) {
-                            stringResource(R.string.setting_page_tool_approvals_empty)
-                        } else {
-                            stringResource(R.string.setting_page_tool_approvals_summary, blacklist.size)
-                        },
+                    if (mode == ApprovalMode.SEMI) {
+                        Text(
+                            text = if (blacklist.isEmpty()) {
+                                stringResource(R.string.setting_page_tool_approvals_empty)
+                            } else {
+                                stringResource(R.string.setting_page_tool_approvals_summary, blacklist.size)
+                            },
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium,
-                    )
+                        )
+                    }
                 }
             }
 

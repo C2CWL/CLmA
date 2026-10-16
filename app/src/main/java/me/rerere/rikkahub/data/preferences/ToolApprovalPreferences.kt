@@ -4,11 +4,14 @@ import android.content.Context
 import android.util.Log
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import me.rerere.rikkahub.data.ai.tools.ApprovalMode
+import me.rerere.rikkahub.data.ai.tools.ToolApprovalDefaults
 
 private const val TAG = "ToolApprovalPreferences"
 
@@ -36,28 +39,30 @@ internal fun migrateWorkspaceToolsFrom(stored: Set<String>): Pair<Set<String>, S
  * The approval decision's persisted inputs, read in one go so a single tool call does not pay
  * two DataStore round-trips.
  *
- * @property blacklist tools that require a fresh confirmation before running. Empty by default:
- *   nothing asks until the user says so.
- * @property yolo the "I AM STUPID" blanket consent toggle.
+ * @property blacklist tools that require a fresh confirmation before running. In Semi mode
+ *   these ask; in Auto they are ignored; in Manual every tool asks regardless.
+ * @property mode the posture level ([ApprovalMode]). Default [ApprovalMode.MANUAL] on a fresh
+ *   install or after upgrade from the old YOLO scheme — the safest posture, so the user opts
+ *   *out* of friction deliberately rather than discovering it was off.
  */
 data class ToolApprovalSnapshot(
     val blacklist: Set<String> = emptySet(),
-    val yolo: Boolean = false,
+    val mode: ApprovalMode = ApprovalMode.MANUAL,
 )
 
 /**
- * Persistent tool-approval prefs, blacklist era. Two pieces:
+ * Persistent tool-approval prefs, mode era. Two pieces:
  *
- * 1. **Blacklist** — the user's list of tools that must ask before they run. Default empty, so
- *    out of the box nothing prompts. Configured from Settings → Tool approvals; each entry can
- *    be removed there to stop it asking. The non-waivable floor
+ * 1. **Blacklist** — the user's list of tools that must ask before running. Only consulted in
+ *    Semi mode; in Auto it is ignored, in Manual every tool asks anyway. Configured from
+ *    Settings → Tool approvals. The non-waivable floor
  *    ([me.rerere.rikkahub.data.ai.tools.ToolApprovalDefaults.isHardFloor]) and every opaque
- *    `mcp__*` tool ask regardless of this set.
+ *    `mcp__*` tool ask regardless of this set and regardless of the mode.
  *
- * 2. **"I AM STUPID" global auto-approve** — single boolean that, when true, treats every tool
- *    as pre-approved across every conversation and every surface (in-app, Telegram, cron),
- *    including the blacklist and the floor. HARDLINE STILL APPLIES — there is no override for
- *    that. Surfaced as a bright-red toggle behind a confirm dialog because it's a live foot-gun.
+ * 2. **Approval mode** — the three-level posture selector ([ApprovalMode]). Replaces the old
+ *    single-boolean YOLO toggle. The retired `global_auto_approve_yolo` key is no longer read;
+ *    a pre-existing value is simply ignored (the mode defaults to MANUAL), so upgrading from
+ *    the YOLO scheme resets every user to the safest posture.
  *
  * The companion in-memory "Allow for this chat" allow-list lives in
  * [me.rerere.rikkahub.data.ai.tools.ToolApprovalAllowList] and resets on /new or app
@@ -66,7 +71,9 @@ data class ToolApprovalSnapshot(
 class ToolApprovalPreferences(private val context: Context) {
     private val store = context.toolApprovalDataStore
     private val K_BLACKLIST = stringSetPreferencesKey("tool_blacklist")
-    private val K_GLOBAL_YOLO = booleanPreferencesKey("global_auto_approve_yolo")
+    @Suppress("unused")
+    private val K_GLOBAL_YOLO = booleanPreferencesKey("global_auto_approve_yolo") // retired
+    private val K_MODE = stringPreferencesKey("approval_mode")
 
     // Filtered on every read: a stale workspace_-prefixed entry must never surface in the
     // settings list or an approval check, even before any cleanup write happens.
@@ -74,35 +81,30 @@ class ToolApprovalPreferences(private val context: Context) {
         migrateWorkspaceToolsFrom(it[K_BLACKLIST].orEmpty()).first
     }
 
-    /** Live flow of the "I AM STUPID" global auto-approve flag. Default false. */
-    val globalYoloFlow: Flow<Boolean> = store.data.map {
-        it[K_GLOBAL_YOLO] ?: false
-    }
+    /** Live flow of the current approval mode. Default [ApprovalMode.MANUAL]. */
+    val modeFlow: Flow<ApprovalMode> = store.data.map { snapshotMode(it[K_MODE]) }
 
     suspend fun currentBlacklist(): Set<String> =
         migrateWorkspaceToolsFrom(store.data.first()[K_BLACKLIST].orEmpty()).first
 
-    /** Blacklist + YOLO in one read, for the per-call auto-approval check. */
+    /** Blacklist + mode in one read, for the per-call auto-approval check. */
     suspend fun snapshot(): ToolApprovalSnapshot {
         val prefs = store.data.first()
         return ToolApprovalSnapshot(
             blacklist = migrateWorkspaceToolsFrom(prefs[K_BLACKLIST].orEmpty()).first,
-            yolo = prefs[K_GLOBAL_YOLO] ?: false,
+            mode = snapshotMode(prefs[K_MODE]),
         )
     }
 
-    /** Snapshot read of the YOLO flag alone. */
-    suspend fun currentYolo(): Boolean = globalYoloFlow.first()
+    /** Snapshot read of the mode alone. */
+    suspend fun currentMode(): ApprovalMode = modeFlow.first()
 
-    suspend fun setYolo(enabled: Boolean) {
-        store.edit { it[K_GLOBAL_YOLO] = enabled }
+    suspend fun setMode(mode: ApprovalMode) {
+        store.edit { it[K_MODE] = mode.name }
     }
 
     /** Put [toolName] on the blacklist ([needsApproval] = true) or take it off. */
     suspend fun setBlacklisted(toolName: String, needsApproval: Boolean) {
-        // Workspace tools are per-workspace, not per-app; the global blacklist is checked
-        // from every workspace, so a global entry would leak across them. Refuse rather than
-        // silently poisoning the set.
         if (isWorkspaceToolName(toolName)) {
             Log.w(TAG, "refusing to put workspace tool '$toolName' on the global blacklist")
             return
@@ -124,4 +126,8 @@ class ToolApprovalPreferences(private val context: Context) {
         if (clean.isEmpty()) return
         store.edit { prefs -> prefs[K_BLACKLIST] = prefs[K_BLACKLIST].orEmpty() + clean }
     }
+
+    /** Resolve a stored mode string to [ApprovalMode], defaulting to [ApprovalMode.MANUAL]. */
+    private fun snapshotMode(stored: String?): ApprovalMode =
+        stored?.let { runCatching { ApprovalMode.valueOf(it) }.getOrNull() } ?: ApprovalMode.MANUAL
 }
