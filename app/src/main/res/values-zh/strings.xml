@@ -2293,6 +2293,13 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="accessibility_qr_code_value">二维码：%1$s</string>
   <string name="setting_page_sub_agents">子智能体配置</string>
   <string name="setting_page_sub_agents_desc">具名的模型 + 系统提示词预设，subagent_dispatch 可按名称派发到这些预设。</string>
+  <string name="setting_sub_agents_dispatch_profile_title">派发姿态</string>
+  <string name="setting_sub_agents_dispatch_profile_desc">控制模型将工作委托给子代理的积极程度。</string>
+  <string name="setting_sub_agents_profile_never">绝不</string>
+  <string name="setting_sub_agents_profile_assist">辅助</string>
+  <string name="setting_sub_agents_profile_normal">常规</string>
+  <string name="setting_sub_agents_profile_burst">高并发</string>
+  <string name="setting_sub_agents_profile_unleashed">全派发</string>
   <string name="setting_sub_agents_page_title">子智能体配置</string>
   <string name="setting_sub_agents_page_empty">暂无子智能体配置</string>
   <string name="setting_sub_agents_page_empty_hint">添加一个配置，以便助手可以按名称向其派发子智能体。</string>

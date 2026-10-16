@@ -36,6 +36,11 @@ import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.FilterChip
+import androidx.compose.ui.text.font.FontWeight
+import me.rerere.rikkahub.data.datastore.SettingsStore
+import me.rerere.rikkahub.subagent.SubAgentDispatchProfile
+import me.rerere.rikkahub.subagent.SubAgentDispatchProfileRules
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -186,6 +191,74 @@ fun SettingSubAgentsPage(
                 contentPadding = innerPadding + PaddingValues(16.dp) + PaddingValues(bottom = 128.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
+                // Dispatch profile selector — five-level posture (拍板: default NEVER).
+                item {
+                    val profile = settings.subAgentDispatchProfile
+                    val prefs = koinInject<SettingsStore>()
+                    val pscope = rememberCoroutineScope()
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.setting_sub_agents_dispatch_profile_title),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Text(
+                            text = stringResource(R.string.setting_sub_agents_dispatch_profile_desc),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            FilterChip(
+                                selected = profile == SubAgentDispatchProfile.NEVER,
+                                onClick = { pscope.launch { prefs.update { it.copy(subAgentDispatchProfile = SubAgentDispatchProfile.NEVER) } } },
+                                label = { Text(stringResource(R.string.setting_sub_agents_profile_never)) },
+                                modifier = Modifier.weight(1f),
+                            )
+                            FilterChip(
+                                selected = profile == SubAgentDispatchProfile.ASSIST,
+                                onClick = { pscope.launch { prefs.update { it.copy(subAgentDispatchProfile = SubAgentDispatchProfile.ASSIST) } } },
+                                label = { Text(stringResource(R.string.setting_sub_agents_profile_assist)) },
+                                modifier = Modifier.weight(1f),
+                            )
+                            FilterChip(
+                                selected = profile == SubAgentDispatchProfile.NORMAL,
+                                onClick = { pscope.launch { prefs.update { it.copy(subAgentDispatchProfile = SubAgentDispatchProfile.NORMAL) } } },
+                                label = { Text(stringResource(R.string.setting_sub_agents_profile_normal)) },
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            FilterChip(
+                                selected = profile == SubAgentDispatchProfile.BURST,
+                                onClick = { pscope.launch { prefs.update { it.copy(subAgentDispatchProfile = SubAgentDispatchProfile.BURST) } } },
+                                label = { Text(stringResource(R.string.setting_sub_agents_profile_burst)) },
+                                modifier = Modifier.weight(1f),
+                            )
+                            FilterChip(
+                                selected = profile == SubAgentDispatchProfile.UNLEASHED,
+                                onClick = { pscope.launch { prefs.update { it.copy(subAgentDispatchProfile = SubAgentDispatchProfile.UNLEASHED) } } },
+                                label = { Text(stringResource(R.string.setting_sub_agents_profile_unleashed)) },
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                        val caps = SubAgentDispatchProfileRules.caps(profile)
+                        Text(
+                            text = "Global: ${'$'}{caps.globalCap} | Per-assistant: ${'$'}{caps.perAssistantCap} | Max trips: ${'$'}{caps.maxTripsCeiling} | Timeout: ${'$'}{caps.timeoutCeilingSec}s",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+
                 if (definitions.isEmpty()) {
                     item {
                         Column(

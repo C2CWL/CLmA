@@ -2340,6 +2340,13 @@
   <!-- Task 5 (#36): named sub-agent profiles -->
   <string name="setting_page_sub_agents">Sub-agent profiles</string>
   <string name="setting_page_sub_agents_desc">Named model + system prompt presets subagent_dispatch can dispatch to by name.</string>
+  <string name="setting_sub_agents_dispatch_profile_title">Dispatch posture</string>
+  <string name="setting_sub_agents_dispatch_profile_desc">Controls how aggressively the model delegates work to sub-agents.</string>
+  <string name="setting_sub_agents_profile_never">Never</string>
+  <string name="setting_sub_agents_profile_assist">Assist</string>
+  <string name="setting_sub_agents_profile_normal">Normal</string>
+  <string name="setting_sub_agents_profile_burst">Burst</string>
+  <string name="setting_sub_agents_profile_unleashed">All-out</string>
   <string name="setting_sub_agents_page_title">Sub-agent profiles</string>
   <string name="setting_sub_agents_page_empty">No sub-agent profiles yet</string>
   <string name="setting_sub_agents_page_empty_hint">Add one so the assistant can dispatch a sub-agent to it by name.</string>

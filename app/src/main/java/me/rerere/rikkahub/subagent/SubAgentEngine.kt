@@ -201,7 +201,19 @@ class SubAgentEngine(
         if (validation is SubAgentRequestValidator.Result.Reject) {
             return@withContext DispatchResult.Reject(validation.error, validation.detail)
         }
-        val cleaned = (validation as SubAgentRequestValidator.Result.Ok).request
+        val profile = currentProfile()
+        if (!SubAgentDispatchProfileRules.isDispatchEnabled(profile)) {
+            return@withContext DispatchResult.Reject(
+                "disabled_by_policy",
+                "sub-agent dispatch is disabled (profile = $profile). Do all work inline.",
+            )
+        }
+        val cleaned = (validation as SubAgentRequestValidator.Result.Ok).request.let {
+            it.copy(
+                maxTrips = SubAgentDispatchProfileRules.clampMaxTrips(profile, it.maxTrips),
+                timeoutSeconds = SubAgentDispatchProfileRules.clampTimeout(profile, it.timeoutSeconds),
+            )
+        }
 
         // P2-13 — the budget gate. Judged before a concurrency slot is taken, so an
         // over-budget orchestration is refused on policy rather than on capacity.
@@ -238,7 +250,7 @@ class SubAgentEngine(
         // PENDING holds a slot too (see SubAgentRegistry.activeCount*), so claiming the slot IS the
         // addPending — done atomically with the capacity check under [slotMutex] so two dispatches
         // waking together cannot both take the last slot. Waiting happens outside the lock.
-        val waitDeadlineMs = now + SubAgentDefaults.SLOT_WAIT_TIMEOUT_MS
+        val waitDeadlineMs = now + SubAgentDispatchProfileRules.caps(profile).slotWaitMs
         var slotRefusal: String? = null
         while (true) {
             val reserved = slotMutex.withLock {
@@ -340,13 +352,18 @@ class SubAgentEngine(
     }
 
     private suspend fun currentAssistantCap(parentAssistantId: String): Int {
-        val asstUuid = runCatching { Uuid.parse(parentAssistantId) }.getOrNull() ?: return SubAgentDefaults.MAX_PER_ASSISTANT_CAP
+        val profile = currentProfile()
+        if (!SubAgentDispatchProfileRules.isDispatchEnabled(profile)) return 0
+        val profileCap = SubAgentDispatchProfileRules.caps(profile).perAssistantCap
+        val asstUuid = runCatching { Uuid.parse(parentAssistantId) }.getOrNull() ?: return profileCap
         val settings = settingsStore.settingsFlow.first()
-        val asst = AssistantResolver.byId(settings, asstUuid)
-            ?: return SubAgentDefaults.MAX_PER_ASSISTANT_CAP
-        return asst.maxConcurrentSubAgents.coerceIn(
-            SubAgentDefaults.MIN_PER_ASSISTANT_CAP,
-            SubAgentDefaults.MAX_PER_ASSISTANT_CAP,
+        val asst = AssistantResolver.byId(settings, asstUuid) ?: return profileCap
+        return SubAgentDispatchProfileRules.effectivePerAssistantCap(
+            profile,
+            asst.maxConcurrentSubAgents.coerceIn(
+                SubAgentDefaults.MIN_PER_ASSISTANT_CAP,
+                SubAgentDefaults.MAX_PER_ASSISTANT_CAP,
+            ),
         )
     }
 
@@ -357,13 +374,12 @@ class SubAgentEngine(
      * dispatch, and the value is clamped so a hand-edited preference cannot park it outside the
      * supported range.
      */
+    private suspend fun currentProfile(): SubAgentDispatchProfile =
+        runCatching { settingsStore.settingsFlow.first().subAgentDispatchProfile }
+            .getOrDefault(SubAgentDispatchProfile.NEVER)
+
     private suspend fun globalConcurrencyCap(): Int =
-        runCatching { settingsStore.settingsFlow.first().subAgentGlobalConcurrencyCap }
-            .getOrDefault(SubAgentDefaults.GLOBAL_CONCURRENCY_CAP)
-            .coerceIn(
-                SubAgentDefaults.MIN_GLOBAL_CONCURRENCY_CAP,
-                SubAgentDefaults.MAX_GLOBAL_CONCURRENCY_CAP,
-            )
+        SubAgentDispatchProfileRules.caps(currentProfile()).globalCap
 
     /**
      * P2-13 — refuse the dispatch when this conversation has already spent its orchestration

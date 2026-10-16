@@ -1003,13 +1003,21 @@ class LocalTools(
             // blocking snapshot (this factory is not suspend), so the `agent` parameter and the
             // names it advertises always describe the current roster.
             val definitions = agentDefinitionRepository.snapshotBlocking()
-            tools.add(
-                me.rerere.rikkahub.subagent.subagentDispatchTool(
-                    subAgentEngine,
-                    invocationContext,
-                    definitions,
+            // NEVER profile: dispatch tool is not registered (engine also refuses);
+            // list/get/cancel/create/update/delete stay so the user can still manage runs.
+            if (me.rerere.rikkahub.subagent.SubAgentDispatchProfileRules
+                    .isDispatchEnabled(
+                        me.rerere.rikkahub.subagent.SubAgentDispatchProfileRules.getLiveDispatchProfile()
+                    )
+            ) {
+                tools.add(
+                    me.rerere.rikkahub.subagent.subagentDispatchTool(
+                        subAgentEngine,
+                        invocationContext,
+                        definitions,
+                    )
                 )
-            )
+            }
             tools.add(me.rerere.rikkahub.subagent.subagentListTool(subAgentRegistry, definitions))
             // P2-06b — the roster write tools. Registered alongside the reads; each one prompts
             // per call and refuses outright in a headless conversation.

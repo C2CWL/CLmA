@@ -1098,6 +1098,8 @@ class ChatService(
         // common no-match path stays at a single regex scan + an early return.
         // Fast-path is gated on !isHeadless above; pass the caller context so any tools the
         // router fires inherit the right assistant id (workflows / sub-agents / etc).
+        me.rerere.rikkahub.subagent.SubAgentDispatchProfileRules
+            .setLiveDispatchProfile(settingsStore.settingsFlow.first().subAgentDispatchProfile)
         val tools = ToolSurfaceResolver.resolve(
             localTools = localTools,
             assistant = assistant,
@@ -1546,6 +1548,8 @@ class ChatService(
         // T-04 / (4) + T-09 / (8) - the rebuild path (regenerate) must offer the SAME tool
         // surface as the first pass, otherwise the subagent_dispatch definition would
         // silently lose its `include_recent_turns` / `tools` parameters on a re-run.
+        me.rerere.rikkahub.subagent.SubAgentDispatchProfileRules
+            .setLiveDispatchProfile(settingsStore.settingsFlow.first().subAgentDispatchProfile)
         addAll(
             ToolSurfaceResolver.resolve(
                 localTools = localTools,
