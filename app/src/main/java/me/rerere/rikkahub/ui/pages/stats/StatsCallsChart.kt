@@ -91,7 +91,12 @@ fun StatsCallsChart(
                 ),
                 rangeProvider = CallsRangeProvider,
             ),
-            startAxis = VerticalAxis.rememberStart(),
+            startAxis = VerticalAxis.rememberStart(
+                // Compact counts ("1.2K") instead of the default raw numbers.
+                valueFormatter = CartesianValueFormatter { _, value, _ ->
+                    formatCompactCount(value.toLong())
+                },
+            ),
             bottomAxis = HorizontalAxis.rememberBottom(
                 valueFormatter = bottomFormatter,
                 itemPlacer = remember { HorizontalAxis.ItemPlacer.segmented() },

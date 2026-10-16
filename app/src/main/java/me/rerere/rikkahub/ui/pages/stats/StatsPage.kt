@@ -6,7 +6,6 @@ import me.rerere.hugeicons.stroke.ArrowUp01
 import me.rerere.hugeicons.stroke.ChartColumn
 import me.rerere.hugeicons.stroke.Database02
 import me.rerere.hugeicons.stroke.Message01
-import me.rerere.hugeicons.stroke.Refresh03
 import me.rerere.hugeicons.stroke.Robot01
 import me.rerere.hugeicons.stroke.Rocket01
 import me.rerere.hugeicons.stroke.Zap
@@ -63,6 +62,7 @@ import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.usage.LedgerStatsView
 import me.rerere.rikkahub.data.usage.OrchestrationNode
 import me.rerere.rikkahub.data.usage.OrchestrationTree
+import me.rerere.rikkahub.data.usage.UsageDaySeries
 import me.rerere.rikkahub.data.usage.UsagePurpose
 import me.rerere.rikkahub.data.usage.UsagePurposeGroups
 import me.rerere.rikkahub.data.usage.UsageStatBucket
@@ -126,12 +126,14 @@ fun StatsPage(vm: StatsVM = koinViewModel()) {
                     item {
                         DailyUsageChartCard(
                             byDay = ledger.byDay,
+                            windowDays = range.days,
                             modifier = Modifier.padding(horizontal = 8.dp),
                         )
                     }
                     item {
                         StatsCallsCard(
                             byDay = ledger.byDay,
+                            windowDays = range.days,
                             modifier = Modifier.padding(horizontal = 8.dp),
                         )
                     }
@@ -144,8 +146,9 @@ fun StatsPage(vm: StatsVM = koinViewModel()) {
                         StatsSectionHeader(
                             icon = HugeIcons.ChartColumn,
                             title = stringResource(R.string.stats_page_overview_title),
+                            trailing = stringResource(R.string.stats_page_overview_window_all),
                         )
-                        StatsOverview(stats = stats, ledger = ledgerStats)
+                        StatsOverview(stats = stats)
                     }
                 }
                 ledgerStats?.let { ledger ->
@@ -153,6 +156,7 @@ fun StatsPage(vm: StatsVM = koinViewModel()) {
                         LedgerStatsSection(
                             view = ledger,
                             assistantNames = assistantNames,
+                            windowDays = range.days,
                             modifier = Modifier.padding(horizontal = 8.dp),
                         )
                     }
@@ -185,9 +189,16 @@ fun StatsPage(vm: StatsVM = koinViewModel()) {
 @Composable
 private fun DailyUsageChartCard(
     byDay: List<UsageStatBucket>,
+    windowDays: Int,
     modifier: Modifier = Modifier,
 ) {
-    val days = byDay.reversed()
+    // The ledger's byDay ranking is sparse: only days with rows get a bucket. For a trend chart
+    // that silently stitches active days together, so the series is filled to a continuous
+    // calendar first — a quiet day is a zero bar, and the average below divides by the window
+    // length rather than by the number of days that happened to have rows.
+    val days = remember(byDay, windowDays) {
+        UsageDaySeries.fillWindow(byDay, windowDays, LocalDate.now()).reversed()
+    }
 
     Card(modifier = modifier.fillMaxWidth(), colors = CustomColors.cardColorsOnSurfaceContainer) {
         Column(
@@ -205,15 +216,15 @@ private fun DailyUsageChartCard(
                     modifier = Modifier.weight(1f),
                 )
                 Text(
-                    text = stringResource(R.string.stats_page_daily_window, days.size),
+                    text = stringResource(R.string.stats_page_daily_window, windowDays),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
-            if (days.isEmpty()) {
+            if (byDay.isEmpty()) {
                 Text(
-                    text = stringResource(R.string.stats_page_ledger_empty),
+                    text = stringResource(R.string.stats_page_ledger_empty, windowDays),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -229,22 +240,26 @@ private fun DailyUsageChartCard(
                     DailyMetric(
                         modifier = Modifier.weight(1f),
                         label = stringResource(R.string.stats_page_daily_total),
-                        value = formatTokens(totalTokens),
+                        value = formatCompactTokens(totalTokens),
                     )
                     DailyMetric(
                         modifier = Modifier.weight(1f),
                         label = stringResource(R.string.stats_page_daily_average),
-                        value = formatTokens(totalTokens / days.size),
+                        // Calendar average: the filled series always spans the whole window.
+                        value = formatCompactTokens(totalTokens / days.size),
                     )
                     DailyMetric(
                         modifier = Modifier.weight(1f),
-                        label = stringResource(R.string.stats_page_daily_peak),
-                        value = formatTokens(busiest?.totalTokens ?: 0L),
+                        // The date matters as much as the figure — "MM-dd" from the ISO key.
+                        label = busiest?.let {
+                            stringResource(R.string.stats_page_daily_peak_on, it.key.takeLast(5))
+                        } ?: stringResource(R.string.stats_page_daily_peak),
+                        value = formatCompactTokens(busiest?.totalTokens ?: 0L),
                     )
                     DailyMetric(
                         modifier = Modifier.weight(1f),
                         label = stringResource(R.string.stats_page_daily_calls),
-                        value = formatCount(totalCalls.toLong()),
+                        value = formatCompactCount(totalCalls.toLong()),
                     )
                 }
 
@@ -300,9 +315,13 @@ private fun StatsRangeSelector(
 @Composable
 private fun StatsCallsCard(
     byDay: List<UsageStatBucket>,
+    windowDays: Int,
     modifier: Modifier = Modifier,
 ) {
-    val days = remember(byDay) { byDay.reversed() }
+    // Same fill as the token chart: quiet days are zero points, not missing ones.
+    val days = remember(byDay, windowDays) {
+        UsageDaySeries.fillWindow(byDay, windowDays, LocalDate.now()).reversed()
+    }
     Card(modifier = modifier.fillMaxWidth(), colors = CustomColors.cardColorsOnSurfaceContainer) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -319,20 +338,20 @@ private fun StatsCallsCard(
                     modifier = Modifier.weight(1f),
                 )
                 Text(
-                    text = stringResource(R.string.stats_page_daily_window, days.size),
+                    text = stringResource(R.string.stats_page_daily_window, windowDays),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            if (days.isEmpty()) {
+            if (byDay.isEmpty()) {
                 Text(
-                    text = stringResource(R.string.stats_page_ledger_empty),
+                    text = stringResource(R.string.stats_page_ledger_empty, windowDays),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             } else {
                 Text(
-                    text = formatCount(days.sumOf { it.callCount }.toLong()),
+                    text = formatCompactCount(days.sumOf { it.callCount }.toLong()),
                     style = MaterialTheme.typography.headlineMedium,
                 )
                 StatsCallsChart(
@@ -426,70 +445,53 @@ private data class OverviewMetric(
 )
 
 /**
- * D10b - the overview is a two-column grid of paired cards rather than a stack of full-width ones.
- * The token figures read the ledger's grand total (D1), the same source the section below uses, so
- * the two can never disagree; the counts (conversations / messages / launches) stay on the message
- * DB. `ledger` is null until it loads (or if the read fails), and the cards then fall back to the
- * old `message.usage` numbers instead of blanking out. A run that leaves an odd metric (launch
- * count) gets a full-width row with the icon beside the number, so it never reads as a half-empty
- * card.
+ * The all-time overview: every figure covers the whole message history (or the settings store's
+ * launch counter), so the section has a single time scope and the header can say so. The
+ * windowed token figures live in the ledger section below — an earlier revision swapped these
+ * cards to the ledger's window total once it loaded, which mixed two time scopes on one screen
+ * and made the numbers jump as the load finished.
+ *
+ * No all-time cache hit rate: the message DB cannot tell "provider reported no caching" from
+ * "provider does not report cache fields", so the rate would read low for no real reason (the
+ * P2-11a rule). The windowed rate, computed over reporting rows only, is on the ledger summary
+ * card instead.
  */
 @Composable
-private fun StatsOverview(stats: AppStats, ledger: LedgerStatsView?, modifier: Modifier = Modifier) {
-    val total = ledger?.total
-    val promptTokens = total?.inputTokens ?: stats.totalPromptTokens
-    val completionTokens = total?.outputTokens ?: stats.totalCompletionTokens
-    val cachedTokens = total?.cacheHitTokens ?: stats.totalCachedTokens
-    // Input tokens already include the cached ones, so the rate is the share of input served from
-    // cache (issue #23) - what lets a user tell an unstable prompt prefix apart from an inherently
-    // expensive workload. Null when nothing reported cache fields.
-    val cacheHitRate = if (cachedTokens > 0 && promptTokens > 0) {
-        "${cachedTokens.coerceAtMost(promptTokens) * 100 / promptTokens}%"
-    } else {
-        null
-    }
-
+private fun StatsOverview(stats: AppStats, modifier: Modifier = Modifier) {
     // `listOfNotNull` (not `buildList`) so every `stringResource` is evaluated in the composable
     // scope at this call site rather than inside a non-composable builder lambda.
     val metrics = listOfNotNull(
         OverviewMetric(
             icon = HugeIcons.ChartColumn,
             label = stringResource(R.string.stats_page_total_conversations),
-            value = formatCount(stats.totalConversations.toLong()),
+            value = formatCompactCount(stats.totalConversations.toLong()),
         ),
         OverviewMetric(
             icon = HugeIcons.Message01,
             label = stringResource(R.string.stats_page_total_messages),
-            value = formatCount(stats.totalMessages.toLong()),
+            value = formatCompactCount(stats.totalMessages.toLong()),
         ),
         OverviewMetric(
             icon = HugeIcons.ArrowDown01,
             label = stringResource(R.string.stats_page_input_tokens),
-            value = formatTokens(promptTokens),
+            value = formatCompactTokens(stats.totalPromptTokens),
         ),
         OverviewMetric(
             icon = HugeIcons.ArrowUp01,
             label = stringResource(R.string.stats_page_output_tokens),
-            value = formatTokens(completionTokens),
+            value = formatCompactTokens(stats.totalCompletionTokens),
         ),
-        if (cachedTokens > 0) {
+        if (stats.totalCachedTokens > 0) {
             OverviewMetric(
                 icon = HugeIcons.Zap,
                 label = stringResource(R.string.stats_page_cached_tokens),
-                value = formatTokens(cachedTokens),
-            )
-        } else null,
-        if (cacheHitRate != null) {
-            OverviewMetric(
-                icon = HugeIcons.Refresh03,
-                label = stringResource(R.string.stats_page_cache_hit_rate),
-                value = cacheHitRate,
+                value = formatCompactTokens(stats.totalCachedTokens),
             )
         } else null,
         OverviewMetric(
             icon = HugeIcons.Rocket01,
             label = stringResource(R.string.stats_page_launch_count),
-            value = formatCount(stats.launchCount.toLong()),
+            value = formatCompactCount(stats.launchCount.toLong()),
         ),
     )
 
@@ -579,29 +581,11 @@ private fun MetricIcon(icon: ImageVector) {
     }
 }
 
-private fun formatCount(count: Long): String = when {
-    count >= 1_000_000 -> "%.1fM".format(count / 1_000_000.0)
-    count >= 1_000 -> "%.1fK".format(count / 1_000.0)
-    else -> count.toString()
-}
-
-private fun formatTokens(count: Long): String = when {
-    count >= 1_000_000_000 -> "%.2fB".format(count / 1_000_000_000.0)
-    count >= 1_000_000 -> "%.2fM".format(count / 1_000_000.0)
-    count >= 1_000 -> "%.1fK".format(count / 1_000.0)
-    else -> count.toString()
-}
-
-/** D6 — one decimal is enough to compare rows; the unit lives in the string. */
-private fun formatRate(rate: Double): String = "%.1f".format(rate)
-
 // ---- P2-12c: the usage-ledger section ---------------------------------------------------------
 
 /** Rows shown per dimension before the "show all" toggle appears. */
 private const val LEDGER_COLLAPSED_ROWS = 5
 
-/** D10 - how many of the newest days the daily chart plots. */
-private const val DAILY_CHART_DAYS = 30
 private const val ORCHESTRATION_COLLAPSED_ROWS = 5
 
 /**
@@ -683,7 +667,7 @@ private fun OrchestrationTreeCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    text = formatTokens(tree.totalTokens),
+                    text = formatCompactTokens(tree.totalTokens),
                     style = MaterialTheme.typography.labelSmall,
                 )
                 ledgerCostText(tree.providerCostUsd, tree.costMicros)?.let { cost ->
@@ -698,9 +682,9 @@ private fun OrchestrationTreeCard(
                 Text(
                     text = stringResource(
                         R.string.stats_page_orchestration_budget,
-                        formatTokens(tree.totalTokens),
-                        formatTokens(tree.budget ?: 0L),
-                        formatTokens(tree.remaining ?: 0L),
+                        formatCompactTokens(tree.totalTokens),
+                        formatCompactTokens(tree.budget ?: 0L),
+                        formatCompactTokens(tree.remaining ?: 0L),
                     ),
                     style = MaterialTheme.typography.labelSmall,
                     color = if (tree.budgetExceeded) {
@@ -773,7 +757,7 @@ private fun OrchestrationChildRow(node: OrchestrationNode) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
-            text = formatTokens(node.totalTokens),
+            text = formatCompactTokens(node.totalTokens),
             style = MaterialTheme.typography.labelSmall,
         )
         ledgerCostText(node.providerCostUsd, node.costMicros)?.let { cost ->
@@ -792,6 +776,7 @@ private fun OrchestrationChildRow(node: OrchestrationNode) {
 private fun LedgerStatsSection(
     view: LedgerStatsView,
     assistantNames: Map<String, String>,
+    windowDays: Int,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -801,13 +786,14 @@ private fun LedgerStatsSection(
         StatsSectionHeader(
             icon = HugeIcons.Database02,
             title = stringResource(R.string.stats_page_ledger_title),
-            trailing = stringResource(R.string.stats_page_ledger_window),
+            // The real selected window — the header used to claim "last 90 days" regardless.
+            trailing = stringResource(R.string.stats_page_daily_window, windowDays),
         )
 
         if (view.total.callCount == 0) {
             Card(colors = CustomColors.cardColorsOnSurfaceContainer) {
                 Text(
-                    text = stringResource(R.string.stats_page_ledger_empty),
+                    text = stringResource(R.string.stats_page_ledger_empty, windowDays),
                     modifier = Modifier.padding(16.dp),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -906,12 +892,12 @@ private fun LedgerSummaryCard(view: LedgerStatsView, modifier: Modifier = Modifi
                 DailyMetric(
                     modifier = Modifier.weight(1f),
                     label = stringResource(R.string.stats_page_ledger_summary_calls),
-                    value = formatCount(total.callCount.toLong()),
+                    value = formatCompactCount(total.callCount.toLong()),
                 )
                 DailyMetric(
                     modifier = Modifier.weight(1f),
                     label = stringResource(R.string.stats_page_ledger_summary_tokens),
-                    value = formatTokens(total.totalTokens),
+                    value = formatCompactTokens(total.totalTokens),
                 )
                 if (cost != null) {
                     DailyMetric(
@@ -941,7 +927,7 @@ private fun LedgerSummaryCard(view: LedgerStatsView, modifier: Modifier = Modifi
                     }
                     if (rate != null) {
                         Text(
-                            text = stringResource(R.string.stats_page_ledger_tok_per_sec, formatRate(rate)),
+                            text = stringResource(R.string.stats_page_ledger_tok_per_sec, formatTokenRate(rate)),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -1018,7 +1004,7 @@ private fun LedgerBucketRow(
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = formatTokens(bucket.totalTokens),
+                text = formatCompactTokens(bucket.totalTokens),
                 style = MaterialTheme.typography.labelLarge,
             )
         }
@@ -1052,7 +1038,7 @@ private fun LedgerBucketRow(
             // shows nothing rather than a made-up 0.
             bucket.tokensPerSecond?.let { rate ->
                 Text(
-                    text = stringResource(R.string.stats_page_ledger_tok_per_sec, formatRate(rate)),
+                    text = stringResource(R.string.stats_page_ledger_tok_per_sec, formatTokenRate(rate)),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

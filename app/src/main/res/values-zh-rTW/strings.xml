@@ -1052,13 +1052,12 @@
   <string name="stats_page_total_conversations">總對話數</string>
   <string name="stats_page_total_messages">總訊息</string>
   <string name="stats_page_ledger_title">用量帳本</string>
-  <string name="stats_page_ledger_window">最近 90 天</string>
   <string name="stats_page_ledger_by_day">依日期</string>
   <string name="stats_page_ledger_by_purpose">依用途</string>
   <string name="stats_page_ledger_by_model">依模型</string>
   <string name="stats_page_ledger_by_assistant">依助手</string>
   <string name="stats_page_ledger_unknown">未知</string>
-  <string name="stats_page_ledger_empty">最近 90 天沒有帳本紀錄。</string>
+  <string name="stats_page_ledger_empty">最近 %1$d 天沒有帳本紀錄。</string>
   <string name="stats_page_ledger_expand">展開全部 %1$d 項</string>
   <string name="stats_page_ledger_collapse">收合</string>
   <string name="stats_page_ledger_calls">%1$d 次呼叫</string>
@@ -2316,6 +2315,8 @@
   <string name="stats_page_daily_total">區間合計</string>
   <string name="stats_page_daily_average">日均</string>
   <string name="stats_page_daily_peak">峰值日</string>
+  <string name="stats_page_daily_peak_on">峰值日 · %1$s</string>
+  <string name="stats_page_overview_window_all">全部時間</string>
   <string name="stats_page_daily_calls">呼叫次數</string>
   <string name="stats_page_daily_calls_legend">每日呼叫</string>
   <string name="stats_page_usage_group_conversation">對話</string>

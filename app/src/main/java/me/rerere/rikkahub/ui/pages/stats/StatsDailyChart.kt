@@ -72,18 +72,30 @@ fun StatsDailyChart(
         if (index in labels.indices) labels[index].takeLast(5) else ""
     }
 
+    // A fixed 14.dp column overflows the card on the 90-day window (~90 columns into ~350dp).
+    val columnThickness = when {
+        days.size > 62 -> 4.dp
+        days.size > 31 -> 8.dp
+        else -> 14.dp
+    }
+
     CartesianChartHost(
         chart = rememberCartesianChart(
             rememberColumnCartesianLayer(
                 columnProvider = ColumnCartesianLayer.ColumnProvider.series(
                     listOf(
-                        rememberLineComponent(fill = Fill(inputColor), thickness = 14.dp),
-                        rememberLineComponent(fill = Fill(outputColor), thickness = 14.dp),
+                        rememberLineComponent(fill = Fill(inputColor), thickness = columnThickness),
+                        rememberLineComponent(fill = Fill(outputColor), thickness = columnThickness),
                     )
                 ),
                 mergeMode = { ColumnCartesianLayer.MergeMode.Stacked },
             ),
-            startAxis = VerticalAxis.rememberStart(),
+            startAxis = VerticalAxis.rememberStart(
+                // Compact tokens ("1.2M") instead of the default raw numbers ("1200000").
+                valueFormatter = CartesianValueFormatter { _, value, _ ->
+                    formatCompactTokens(value.toLong())
+                },
+            ),
             bottomAxis = HorizontalAxis.rememberBottom(
                 valueFormatter = bottomFormatter,
                 itemPlacer = remember { HorizontalAxis.ItemPlacer.segmented() },

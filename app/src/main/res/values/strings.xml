@@ -1256,17 +1256,17 @@
   <string name="stats_page_output_tokens">Output Tokens</string>
   <string name="stats_page_title">Statistics</string>
   <string name="stats_page_overview_title">Overview</string>
+  <string name="stats_page_overview_window_all">All time</string>
   <string name="stats_page_total_conversations">Total Conversations</string>
   <string name="stats_page_total_messages">Total Messages</string>
   <string name="stats_page_ledger_title">Usage ledger</string>
-  <string name="stats_page_ledger_window">Last 90 days</string>
   <string name="stats_page_ledger_by_day">By day</string>
   <string name="stats_page_ledger_by_purpose">By purpose</string>
   <string name="stats_page_ledger_by_model">By model</string>
   <string name="stats_page_ledger_by_provider">By provider</string>
   <string name="stats_page_ledger_by_assistant">By assistant</string>
   <string name="stats_page_ledger_unknown">Unknown</string>
-  <string name="stats_page_ledger_empty">No ledger rows in the last 90 days.</string>
+  <string name="stats_page_ledger_empty">No ledger rows in the last %1$d days.</string>
   <string name="stats_page_ledger_expand">Show all %1$d</string>
   <string name="stats_page_ledger_collapse">Show less</string>
   <string name="stats_page_ledger_calls">%1$d calls</string>
@@ -2853,6 +2853,7 @@
   <string name="stats_page_daily_total">Window total</string>
   <string name="stats_page_daily_average">Daily average</string>
   <string name="stats_page_daily_peak">Busiest day</string>
+  <string name="stats_page_daily_peak_on">Busiest day · %1$s</string>
   <string name="stats_page_daily_calls">Calls</string>
   <string name="stats_page_daily_calls_legend">calls / day</string>
   <string name="stats_page_calls_title">Calls per day</string>
