@@ -820,13 +820,19 @@ private fun TextInputRow(
             },
             keyboardOptions = KeyboardOptions(
                 capitalization = KeyboardCapitalization.Sentences,
-                imeAction = if (settings.displaySetting.sendOnEnter) ImeAction.Send else ImeAction.Default
+                // Only show the Send action when there is something to send; otherwise let the
+                // IME use its default (newline) so the user can start a new line.
+                imeAction = if (settings.displaySetting.sendOnEnter && !state.isEmpty()) ImeAction.Send else ImeAction.Default
             ),
-            onKeyboardAction = {
-                if (settings.displaySetting.sendOnEnter && !state.isEmpty()) {
-                    onSendMessage()
+            // null when sendOnEnter is off — a non-null handler (even an empty one) tells the IME
+            // the Enter key is an IME action, which blocks newline insertion in multi-line mode.
+            onKeyboardAction = if (settings.displaySetting.sendOnEnter) {
+                {
+                    if (!state.isEmpty()) {
+                        onSendMessage()
+                    }
                 }
-            },
+            } else null,
             colors = TextFieldDefaults.colors().copy(
                 unfocusedIndicatorColor = Color.Transparent,
                 focusedIndicatorColor = Color.Transparent,
