@@ -8,6 +8,7 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
@@ -83,7 +84,18 @@ fun takeScreenshotTool(context: Context): Tool = Tool(
         val displayId = input.jsonObject["display_id"]?.jsonPrimitive?.intOrNull ?: 0
         val keep = input.jsonObject["keep"]?.jsonPrimitive?.booleanOrNull ?: false
 
-        val outcome = AccessibilityServiceHandle.withService { svc ->
+        // Virtual displays: AccessibilityService.takeScreenshot() returns
+        // ERROR_TAKE_SCREENSHOT_INVALID_DISPLAY for any non-default display (platform
+        // limitation, verified by CTS). Route virtual-display captures through the
+        // ImageReader that backs the display's Surface instead.
+        val isVirtualDisplay = displayId != 0 && VirtualDisplayController.contains(displayId)
+
+        val outcome = if (isVirtualDisplay) {
+            val cacheDir = File(context.cacheDir, SCREENSHOT_CACHE_DIR).apply { mkdirs() }
+            pruneOldCacheScreenshots(cacheDir)
+            captureVirtualDisplay(displayId, keep, cacheDir, context)
+        } else {
+            AccessibilityServiceHandle.withService { svc ->
             val cacheDir = File(context.cacheDir, SCREENSHOT_CACHE_DIR).apply { mkdirs() }
             pruneOldCacheScreenshots(cacheDir)
             val res = svc.captureScreenshot(displayId)
@@ -207,6 +219,7 @@ fun takeScreenshotTool(context: Context): Tool = Tool(
                 }
             }
         }
+        }
 
         val parts = mutableListOf<UIMessagePart>()
         outcome.jsonObject["file_path"]?.jsonPrimitive?.contentOrNull?.let { fp ->
@@ -219,6 +232,105 @@ fun takeScreenshotTool(context: Context): Tool = Tool(
 
 /** A gallery copy of a screenshot: where the user can find it, and how to take it back out. */
 private class GallerySave(val path: String, val remove: () -> Boolean)
+
+/**
+ * Captures a frame from a virtual display via its ImageReader, writes the model-size PNG to the
+ * cache, and optionally saves a full-resolution gallery copy. Mirrors the flow of the
+ * AccessibilityService screenshot path but without any a11y dependency.
+ */
+private fun captureVirtualDisplay(
+    displayId: Int,
+    keep: Boolean,
+    cacheDir: File,
+    context: Context,
+): JsonObject {
+    val bitmap = VirtualDisplayController.captureFrame(displayId)
+        ?: return buildJsonObject {
+            put("error", "screenshot_unavailable")
+            put("reason", "no_frame")
+            put("detail", "Virtual display has not rendered a frame yet. The display may be empty or the target app has not drawn anything. Retry after a short delay or after an interaction (tap/swipe/key).")
+        }
+
+    val ts = System.currentTimeMillis()
+    val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date(ts))
+    val displayName = "Screenshot_${timestamp}_display${displayId}.png"
+
+    val modelBitmap = downscaleForModel(bitmap, MODEL_MAX_DIM)
+    // NOTE: keep the original bitmap alive for the gallery full-resolution copy below.
+
+    val pngBytes: ByteArray? = try {
+        ByteArrayOutputStream().use { bos ->
+            modelBitmap.compress(Bitmap.CompressFormat.PNG, 100, bos)
+            bos.toByteArray()
+        }
+    } catch (t: Throwable) {
+        null
+    }
+    if (pngBytes == null) {
+        if (modelBitmap !== bitmap) modelBitmap.recycle()
+        bitmap.recycle()
+        return buildJsonObject {
+            put("error", "write_failed")
+            put("reason", "encode_failed")
+        }
+    }
+
+    val cacheFile = File(cacheDir, "screen-vd${displayId}-$ts.png")
+    try {
+        cacheFile.writeBytes(pngBytes)
+    } catch (t: Throwable) {
+        if (modelBitmap !== bitmap) modelBitmap.recycle()
+        bitmap.recycle()
+        return buildJsonObject {
+            put("error", "write_failed")
+            put("reason", t.message ?: t::class.simpleName ?: "unknown")
+        }
+    }
+
+    val writeGallery = keep || !AgentTurnTracker.didAutomate()
+    val gallerySave: GallerySave? = if (writeGallery) {
+        // Use the original (full-resolution) bitmap for the gallery copy.
+        val fullPng = try {
+            ByteArrayOutputStream().use { bos ->
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, bos)
+                bos.toByteArray()
+            }
+        } catch (t: Throwable) {
+            null
+        }
+        if (fullPng != null) saveToGallery(context, fullPng, displayName) else null
+    } else {
+        null
+    }
+    // Now safe to recycle both bitmaps.
+    if (modelBitmap !== bitmap) modelBitmap.recycle()
+    bitmap.recycle()
+
+    val galleryPath = gallerySave?.path
+    if (!keep) {
+        ScreenshotLedger.recordTransient {
+            runCatching { cacheFile.delete() }.getOrDefault(false)
+        }
+        gallerySave?.let { saved ->
+            ScreenshotLedger.recordTransient { saved.remove() }
+        }
+    }
+
+    return buildJsonObject {
+        put("success", true)
+        put("file_path", cacheFile.absolutePath)
+        put("display_id", displayId)
+        if (keep) put("kept", true)
+        if (galleryPath != null) {
+            put("gallery_path", galleryPath)
+            put("saved_to", "Pictures/$PICTURES_SUBDIR")
+        } else {
+            put("note", "Transient working copy — deleted when this turn ends. Pass keep=true to save.")
+        }
+        // No screen_state for virtual displays — the a11y service only tracks the default display.
+        put("virtual_display", true)
+    }
+}
 
 /**
  * Persist already-encoded [pngBytes] as a PNG into the device gallery at

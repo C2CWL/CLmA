@@ -1,6 +1,7 @@
 package me.rerere.rikkahub.data.ai.tools.local
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
 import android.media.ImageReader
@@ -11,9 +12,10 @@ import android.view.Surface
  * Manages virtual display lifecycle from the app process (no Shizuku/root needed for creation).
  *
  * Each virtual display is created with an [ImageReader]-backed [Surface] so the framework has a
- * valid render target. The display's content is readable via
- * [me.rerere.rikkahub.service.RikkaAccessibilityService.captureScreenshot] (the existing
- * `take_screenshot` tool — pass `display_id`).
+ * valid render target. The display's content is readable via [captureFrame] (the `take_screenshot`
+ * tool routes virtual-display captures here, because
+ * `AccessibilityService.takeScreenshot(displayId)` returns `ERROR_TAKE_SCREENSHOT_INVALID_DISPLAY`
+ * for any display other than `Display.DEFAULT_DISPLAY` — a platform limitation verified by CTS).
  *
  * Input injection and app launching on the virtual display require shell privileges and go
  * through Shizuku (`input -d <id>`, `am start --display <id>`) — see [VirtualDisplayTools].
@@ -106,6 +108,43 @@ object VirtualDisplayController {
     /** True if a display with the given id is managed by this controller. */
     fun contains(displayId: Int): Boolean = synchronized(lock) {
         displayId in displays
+    }
+
+    /**
+     * Capture the latest rendered frame from a virtual display's [ImageReader].
+     *
+     * Returns a software [Bitmap] (ARGB_8888) sized to the display, or null when the display
+     * is unknown or no frame has been rendered yet (callers may retry after a short delay).
+     * The caller owns the bitmap and must [recycle] it when done.
+     */
+    fun captureFrame(displayId: Int): Bitmap? = synchronized(lock) {
+        val entry = displays[displayId] ?: return null
+        val image = try {
+            entry.imageReader.acquireLatestImage()
+        } catch (e: Exception) {
+            Log.w(TAG, "acquireLatestImage failed: ${e.message}")
+            null
+        } ?: return null
+        try {
+            val plane = image.planes[0]
+            val buffer = plane.buffer
+            val pixelStride = plane.pixelStride
+            val rowStride = plane.rowStride
+            // ImageReader rowStride may include padding beyond the visible width.
+            val rowPadding = rowStride - pixelStride * entry.width
+            val paddedWidth = entry.width + rowPadding / pixelStride
+            val bitmap = Bitmap.createBitmap(paddedWidth, entry.height, Bitmap.Config.ARGB_8888)
+            buffer.rewind()
+            bitmap.copyPixelsFromBuffer(buffer)
+            // Crop away the padding so the caller gets exactly the display dimensions.
+            if (paddedWidth != entry.width) {
+                Bitmap.createBitmap(bitmap, 0, 0, entry.width, entry.height).also { bitmap.recycle() }
+            } else {
+                bitmap
+            }
+        } finally {
+            image.close()
+        }
     }
 
     private fun createVirtualDisplay(

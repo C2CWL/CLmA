@@ -30,4 +30,13 @@ class WindowTreeToolTest {
         val result = execTool(tool, """{"max_nodes":50}""")
         assertTrue(result.contains("AccessibilityService not active"))
     }
+
+    @Test
+    fun `read_window_tree accepts display_id param without error`() {
+        val tool = readWindowTreeTool()
+        val result = execTool(tool, """{"display_id":2}""")
+        // Service is offline in JVM tests, so we get the not-active envelope —
+        // but no parameter-validation error.
+        assertTrue(result.contains("AccessibilityService not active"))
+    }
 }

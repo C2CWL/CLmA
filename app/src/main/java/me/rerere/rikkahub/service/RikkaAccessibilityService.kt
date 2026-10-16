@@ -256,6 +256,8 @@ class RikkaAccessibilityService : AccessibilityService() {
                             ERROR_TAKE_SCREENSHOT_INTERVAL_TIME_SHORT -> "rate_limited"
                             ERROR_TAKE_SCREENSHOT_NO_ACCESSIBILITY_ACCESS -> "no_access"
                             ERROR_TAKE_SCREENSHOT_INTERNAL_ERROR -> "internal_error"
+                            ERROR_TAKE_SCREENSHOT_INVALID_DISPLAY -> "invalid_display"
+                            ERROR_TAKE_SCREENSHOT_INVALID_WINDOW -> "invalid_window"
                             else -> "error_code_$errorCode"
                         }
                         if (cont.isActive) cont.resume(ScreenshotOutcome.Failure(reason))

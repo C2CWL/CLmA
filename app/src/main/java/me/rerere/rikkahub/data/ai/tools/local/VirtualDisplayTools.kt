@@ -27,12 +27,14 @@ private fun shizukuResultToParts(result: JsonObject): List<UIMessagePart.Text> =
 
 /**
  * Create a virtual display that runs apps off-screen. The agent can launch apps on it,
- * inject touch/input, and screenshot it via `take_screenshot(display_id=N)` — all without
- * stealing the foreground from the user.
+ * inject touch/input, and screenshot it via `take_screenshot(display_id=N)` or inspect its
+ * window tree via `read_window_tree(display_id=N)` — all without stealing the foreground
+ * from the user.
  *
  * Requires no special permission for creation (uses DisplayManager public API). Input
- * injection and app launching need Shizuku (shell UID). Screenshots use the existing
- * AccessibilityService `take_screenshot` tool with `display_id`.
+ * injection and app launching need Shizuku (shell UID). Screenshots use the ImageReader
+ * backing the display's Surface. Window tree inspection uses the accessibility service's
+ * `getWindows()` filtered by display ID (API 33+).
  */
 fun virtualDisplayCreateTool(context: Context): Tool = Tool(
     name = "virtual_display_create",
@@ -77,7 +79,7 @@ fun virtualDisplayCreateTool(context: Context): Tool = Tool(
                     put("width", (width + 15) and 15.inv())
                     put("height", (height + 15) and 15.inv())
                     put("density", density ?: 320)
-                    put("hint", "Use take_screenshot(display_id=${result.value}) to capture this display")
+                    put("hint", "Use take_screenshot(display_id=${result.value}) or read_window_tree(display_id=${result.value}) to capture / inspect this display")
                 }.toString()
             ))
             is VirtualDisplayController.Result.Error -> listOf(UIMessagePart.Text(
@@ -203,7 +205,7 @@ fun virtualDisplayTapTool(context: Context): Tool = Tool(
     name = "virtual_display_tap",
     description = """
         Tap at coordinates on a virtual display. Requires Shizuku (uses `input -d <id> tap`).
-        Use take_screenshot(display_id=N) to see the result.
+        Use take_screenshot(display_id=N) or read_window_tree(display_id=N) to see the result.
     """.trimIndent().replace("\n", " "),
     parameters = {
         InputSchema.Obj(
@@ -249,7 +251,7 @@ fun virtualDisplaySwipeTool(context: Context): Tool = Tool(
     description = """
         Swipe between two points on a virtual display. Requires Shizuku (uses `input -d <id>
         swipe`). duration_ms is optional (default ~300ms). Use take_screenshot(display_id=N)
-        to verify the result.
+        or read_window_tree(display_id=N) to verify the result.
     """.trimIndent().replace("\n", " "),
     parameters = {
         InputSchema.Obj(
