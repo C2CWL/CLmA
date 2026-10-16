@@ -342,7 +342,8 @@ object ToolApprovalDefaults {
     /**
      * True when [toolName] is on the non-waivable floor: a member of [NO_ALWAYS_ALLOW] or an
      * opaque relayed MCP tool (`mcp__*`). Such a tool asks on every call regardless of the
-     * user's blacklist; only YOLO (the explicit "stop asking me" switch) sits above it.
+     * user's blacklist; the only exception is Auto mode, which waives relayed `mcp__*` calls
+     * (拍板 2026-10-16) but never the named [NO_ALWAYS_ALLOW] set.
      */
     fun isHardFloor(toolName: String): Boolean =
         toolName in NO_ALWAYS_ALLOW || toolName.startsWith(MCP_TOOL_PREFIX)

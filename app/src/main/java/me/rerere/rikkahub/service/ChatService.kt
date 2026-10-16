@@ -526,11 +526,11 @@ class ChatService(
             description = tool.description ?: "",
             parameters = { tool.inputSchema },
             // MCP servers' tool surfaces are opaque to us - we can't tell read from write or safe
-            // from destructive - so every MCP call asks by default. `mcp__*` is on the
-            // non-waivable floor (ToolApprovalDefaults.isHardFloor), so this holds regardless of
-            // the user's blacklist; only YOLO sits above it. The HARDLINE floor still applies via
-            // HardlineCommandGuard's `mcp__*` branch, which scans every string arg for
-            // shell-content patterns (rm -rf /, mkfs, shutdown, encoded payloads).
+            // from destructive - so every MCP call asks by default. `mcp__*` asks in Semi/Manual
+            // regardless of the user's blacklist; Auto mode waives it (拍板 2026-10-16), and only
+            // the named floor (mcp_add / mcp_update / …) still confirms every call. The HARDLINE
+            // floor still applies via HardlineCommandGuard's `mcp__*` branch, which scans every
+            // string arg for shell-content patterns (rm -rf /, mkfs, shutdown, encoded payloads).
             needsApproval = { true },
             execute = {
                 mcpManager.callTool(serverId, tool.name, it.jsonObject)
@@ -1769,9 +1769,10 @@ class ChatService(
                     // we only supply the async inputs: the persisted blacklist + mode (one
                     // DataStore read), whether this conversation is headless, and any in-memory
                     // "allow for this chat" grant. The mode decides the posture: Auto approves
-                    // everything but the floor; Semi consults the blacklist; Manual asks on
-                    // every call. The HARDLINE command floor still blocks rm -rf / et al because
-                    // GenerationLoop checks it before this.
+                    // everything but the named floor (relayed mcp__* tools are waived in Auto);
+                    // Semi consults the blacklist; Manual asks on every call. The HARDLINE
+                    // command floor still blocks rm -rf / et al because GenerationLoop checks
+                    // it before this.
                     val snapshot = toolApprovalPreferences.snapshot()
                     me.rerere.rikkahub.data.ai.tools.ToolApprovalPolicy.shouldAutoApprove(
                         toolName = toolName,

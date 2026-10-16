@@ -593,17 +593,17 @@
   <string name="reasoning_auto">自动</string>
   <string name="reasoning_auto_desc">让模型自动决定推理级别。</string>
   <string name="reasoning_custom">自定义推理预算</string>
-  <string name="reasoning_heavy">高</string>
+  <string name="reasoning_heavy">沉思</string>
   <string name="reasoning_heavy_desc">模型将使用大量推理来回答问题。</string>
-  <string name="reasoning_light">低</string>
+  <string name="reasoning_light">快速</string>
   <string name="reasoning_light_desc">模型将使用少量推理来回答问题。</string>
-  <string name="reasoning_medium">中等</string>
+  <string name="reasoning_medium">均衡</string>
   <string name="reasoning_medium_desc">模型将使用更多推理来回答问题。</string>
   <string name="reasoning_off">关闭</string>
   <string name="reasoning_off_desc">关闭推理功能，模型将直接回答问题。</string>
   <string name="reasoning_picker_hint">并非所有模型都支持深度调整。请参考模型和提供商文档。</string>
   <string name="reasoning_picker_title">调整模型思考深度</string>
-  <string name="reasoning_xhigh">超高</string>
+  <string name="reasoning_xhigh">研究</string>
   <string name="regenerate">重新生成</string>
   <string name="regenerate_confirm_message">确定要重新生成此消息吗？</string>
   <string name="render_with_webview">网页视图渲染</string>
@@ -1733,7 +1733,7 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="setting_page_tool_approvals_revoke_all">清空黑名单</string>
   <string name="setting_page_tool_approvals_switch_desc">运行前询问</string>
   <string name="setting_page_tool_approvals_floor_badge">始终需要审批 — 无法关闭</string>
-  <string name="setting_page_tool_approvals_mcp_note">来自 MCP 服务器的工具始终需要审批，另有少数高权限工具也始终需要审批 — 两者都无法关闭。</string>
+  <string name="setting_page_tool_approvals_mcp_note">来自 MCP 服务器的工具在半自动/手动模式下需要审批（自动模式豁免）；少数高权限工具始终需要审批，无法关闭。</string>
   <string name="setting_page_tool_approvals_search">搜索工具</string>
   <string name="setting_page_tool_approvals_add_recommended">加入常见危险工具</string>
   <string name="setting_page_tool_approvals_no_match">没有匹配的工具。</string>
@@ -1743,13 +1743,13 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="setting_page_tool_approvals_mode_auto">自动</string>
   <string name="setting_page_tool_approvals_mode_semi">半自动</string>
   <string name="setting_page_tool_approvals_mode_manual">手动</string>
-  <string name="setting_page_tool_approvals_auto_desc">所有工具无需询问直接运行 — 提权类工具（MCP 服务器、技能安装、代码执行、密钥库、NFC 写入）仍每次询问。</string>
+  <string name="setting_page_tool_approvals_auto_desc">所有工具无需询问直接运行 — 包括 MCP 服务器提供的工具。仅提权类操作（添加 MCP 服务器、技能安装、代码执行、密钥库、NFC 写入）仍每次询问。</string>
   <string name="setting_page_tool_approvals_semi_desc">只有下方黑名单中的工具在运行前会询问。</string>
   <string name="setting_page_tool_approvals_manual_desc">每个工具调用都会询问确认。在提示上点「本次对话允许」可减少可信工具的打扰。</string>
   <string name="setting_page_tool_approvals_blacklist_ignored">自动模式下黑名单被忽略 — 所有工具无需询问（提权类除外）。</string>
   <string name="setting_page_tool_approvals_blacklist_manual">手动模式下每个工具都会询问。下方黑名单仅在半自动模式下生效。</string>
   <string name="setting_page_tool_approvals_auto_dialog_title">切换到自动模式？</string>
-  <string name="setting_page_tool_approvals_auto_dialog_body">每个工具 — 本地 shell、SSH、文件写入、屏幕自动化、Telegram 外发、以及黑名单里的全部工具 — 都将无需询问你直接运行。
+  <string name="setting_page_tool_approvals_auto_dialog_body">每个工具 — 本地 shell、SSH、文件写入、屏幕自动化、Telegram 外发、MCP 服务器工具、以及黑名单里的全部工具 — 都将无需询问你直接运行。
 
 提权类工具（添加 MCP 服务器、安装技能、eval_js、密钥库操作、NFC 写入、目录授权）仍每次需要确认。
 
@@ -2057,7 +2057,7 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="setting_update_reminder_pause_description">选择暂停更新提醒的时长。它们会自动恢复。</string>
   <string name="setting_update_reminder_pause_days">%1$d 天</string>
   <string name="setting_update_reminder_resume_now">立即恢复</string>
-  <string name="reasoning_max">最大</string>
+  <string name="reasoning_max">极致</string>
   <string name="imggen_page_image_missing">图片文件丢失，可能未从备份中恢复</string>
   <string name="safe_mode_enter_app">进入应用</string>
   <string name="setting_page_search_web_fetch_tools_title">网页抓取与提取</string>

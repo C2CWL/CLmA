@@ -8,8 +8,10 @@ import org.junit.Test
  * The mode-era approval decision, exercised as a pure function so the whole matrix runs on
  * a bare JVM. Ordering matters and each branch gets its own case.
  *
- * ★拍板①: Auto does NOT waive the floor — this is the deliberate semantic break from the
- * retired YOLO toggle, which sat ABOVE the floor. Here the floor is checked before the mode.
+ * ★拍板 (2026-10-16): Auto waives opaque relayed `mcp__*` tools — an agent build whose MCP
+ * calls all ask is not autonomous. The named privilege-escalation floor
+ * ([ToolApprovalDefaults.NO_ALWAYS_ALLOW]) is still checked before the mode, so Auto cannot
+ * waive it.
  */
 class ToolApprovalPolicyTest {
 
@@ -47,8 +49,8 @@ class ToolApprovalPolicyTest {
     }
 
     @Test
-    fun `auto does NOT waive mcp tools`() {
-        assertFalse(decide("mcp__server__tool", mode = ApprovalMode.AUTO))
+    fun `auto waives relayed mcp tools`() {
+        assertTrue(decide("mcp__server__tool", mode = ApprovalMode.AUTO))
     }
 
     // --- SEMI mode (blacklist) ---
@@ -101,8 +103,7 @@ class ToolApprovalPolicyTest {
     }
 
     @Test
-    fun `opaque mcp tools ask regardless of mode`() {
-        assertFalse(decide("mcp__server__tool", mode = ApprovalMode.AUTO))
+    fun `opaque mcp tools still ask in semi and manual`() {
         assertFalse(decide("mcp__server__tool", mode = ApprovalMode.SEMI))
         assertFalse(decide("mcp__server__tool", mode = ApprovalMode.MANUAL))
     }
@@ -120,6 +121,12 @@ class ToolApprovalPolicyTest {
     fun `a chat grant cannot waive the floor`() {
         assertFalse(decide("eval_javascript", allowedForChat = true, mode = ApprovalMode.AUTO))
         assertFalse(decide("mcp__server__tool", allowedForChat = true, mode = ApprovalMode.MANUAL))
+    }
+
+    @Test
+    fun `auto still refuses the named floor even for mcp management tools`() {
+        assertFalse(decide("mcp_add", mode = ApprovalMode.AUTO))
+        assertFalse(decide("mcp_update", mode = ApprovalMode.AUTO))
     }
 
     // --- headless (no approval channel) ---

@@ -1,12 +1,21 @@
 package me.rerere.rikkahub.ui.components.ai
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -14,7 +23,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.SliderState
 import androidx.compose.material3.Text
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberBottomSheetState
@@ -28,6 +37,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -149,9 +164,14 @@ fun ReasoningPicker(
                     modifier = Modifier.size(32.dp),
                     tint = iconColor,
                 )
+                val wordColor by animateColorAsState(
+                    reasoningLevelColor(reasoningLevel),
+                    label = "reasoningWord",
+                )
                 Text(
                     text = reasoningLevel.label(),
                     style = MaterialTheme.typography.titleMedium,
+                    color = wordColor,
                 )
             }
 
@@ -183,11 +203,7 @@ fun ReasoningPicker(
                     }
                 },
                 track = { sliderState ->
-                    SliderDefaults.Track(
-                        sliderState = sliderState,
-                        drawStopIndicator = null,
-                        thumbTrackGapSize = 0.dp,
-                    )
+                    ReasoningSurgeTrack(sliderState, reasoningLevel)
                 }
             )
         }
@@ -207,75 +223,111 @@ internal fun ReasoningIcon(level: ReasoningLevel, modifier: Modifier = Modifier)
     }
 }
 
+// ── Thinking-depth surge visuals ─────────────────────────────────────────────
+// The per-level hue lives ONLY on the level word (拍板 2026-10-16). The slider itself keeps
+// the theme primary and expresses depth through motion: a light band flows along the active
+// track, scrolling faster and breathing harder the deeper the level. OFF is fully static.
+
+private val ReasoningFastColor = Color(0xFF00B8D4)     // 快速 / Fast
+private val ReasoningBalancedColor = Color(0xFF43A047) // 均衡 / Balanced
+private val ReasoningDeepColor = Color(0xFF7E57C2)     // 沉思 / Deep
+private val ReasoningResearchColor = Color(0xFFFB8C00) // 研究 / Research
+private val ReasoningMaxColor = Color(0xFFE53935)      // 极致 / Max
+
+/** The colour of the level word for [level]. Theme-derived for OFF/AUTO, fixed mid-tones else. */
+@Composable
+internal fun reasoningLevelColor(level: ReasoningLevel): Color = when (level) {
+    ReasoningLevel.OFF -> MaterialTheme.colorScheme.onSurfaceVariant
+    ReasoningLevel.AUTO -> MaterialTheme.colorScheme.primary
+    ReasoningLevel.LOW -> ReasoningFastColor
+    ReasoningLevel.MEDIUM -> ReasoningBalancedColor
+    ReasoningLevel.HIGH -> ReasoningDeepColor
+    ReasoningLevel.XHIGH -> ReasoningResearchColor
+    ReasoningLevel.MAX -> ReasoningMaxColor
+}
+
 /**
- * Compact thinking-depth control meant to sit at the top of another sheet (the model picker).
- * The standalone [ReasoningPicker] sheet stays as it is for the settings pages.
+ * The depth slider's track: inactive side in surfaceContainerHighest, active side in primary
+ * with a scrolling light band (infinite transition; period shrinks from 3.4s at AUTO to 0.7s
+ * at MAX) plus a halo that breathes with an amplitude scaled by the level. [level] is the
+ * previewed level so the motion reacts while the finger is still on the thumb.
  */
 @Composable
-fun ReasoningLevelControl(
-    reasoningLevel: ReasoningLevel,
-    onUpdateReasoningLevel: (ReasoningLevel) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val currentIndex = levels.indexOf(reasoningLevel).coerceAtLeast(0)
-    var sliderValue by remember { mutableFloatStateOf(currentIndex.toFloat()) }
+internal fun ReasoningSurgeTrack(sliderState: SliderState, level: ReasoningLevel) {
+    val base = MaterialTheme.colorScheme.primary
+    val inactive = MaterialTheme.colorScheme.surfaceContainerHighest
+    val ordinal = levels.indexOf(level).coerceAtLeast(0)
+    val intensity = ordinal / (levelCount - 1).toFloat()
+    val animated = level != ReasoningLevel.OFF
+    val flowPeriodMs = (3400 - (2600 * intensity)).roundToInt().coerceAtLeast(700)
+    val transition = rememberInfiniteTransition(label = "reasoningSurge")
+    val phase by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(flowPeriodMs, easing = LinearEasing)),
+        label = "flow",
+    )
+    val pulse by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            tween((flowPeriodMs / 2).coerceAtLeast(350), easing = FastOutSlowInEasing),
+            RepeatMode.Reverse,
+        ),
+        label = "pulse",
+    )
+    val range = sliderState.valueRange.endInclusive - sliderState.valueRange.start
+    val fraction =
+        if (range > 0f) ((sliderState.value - sliderState.valueRange.start) / range).coerceIn(0f, 1f)
+        else 0f
 
-    LaunchedEffect(currentIndex) {
-        sliderValue = currentIndex.toFloat()
-    }
-
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .padding(bottom = 4.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            ReasoningIcon(reasoningLevel, Modifier.size(16.dp))
-            Text(
-                text = reasoningLevel.label(),
-                style = MaterialTheme.typography.labelLarge,
+    Canvas(modifier = Modifier.fillMaxWidth().height(16.dp)) {
+        val trackHeight = 4.dp.toPx()
+        val y = (size.height - trackHeight) / 2f
+        val radius = CornerRadius(trackHeight / 2f, trackHeight / 2f)
+        drawRoundRect(
+            color = inactive,
+            topLeft = Offset(0f, y),
+            size = Size(size.width, trackHeight),
+            cornerRadius = radius,
+        )
+        val activeWidth = size.width * fraction
+        if (activeWidth <= 0f) return@Canvas
+        if (!animated) {
+            drawRoundRect(
+                color = base.copy(alpha = 0.6f),
+                topLeft = Offset(0f, y),
+                size = Size(activeWidth, trackHeight),
+                cornerRadius = radius,
             )
+            return@Canvas
         }
-        Slider(
-            value = sliderValue,
-            onValueChange = { sliderValue = it },
-            onValueChangeFinished = {
-                val snappedIndex = sliderValue.roundToInt().coerceIn(0, levelCount - 1)
-                sliderValue = snappedIndex.toFloat()
-                onUpdateReasoningLevel(levels[snappedIndex])
-            },
-            valueRange = 0f..(levelCount - 1).toFloat(),
-            steps = levelCount - 2,
-            modifier = Modifier.fillMaxWidth(),
-            thumb = {
-                Box(
-                    modifier = Modifier
-                        .size(20.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.onPrimary)
-                    )
-                }
-            },
-            track = { sliderState ->
-                SliderDefaults.Track(
-                    sliderState = sliderState,
-                    drawStopIndicator = null,
-                    thumbTrackGapSize = 0.dp,
-                )
-            },
+        // Breathing halo behind the active side.
+        drawRoundRect(
+            color = base.copy(alpha = 0.06f + 0.20f * intensity * pulse),
+            topLeft = Offset(0f, y - trackHeight * 0.75f),
+            size = Size(activeWidth, trackHeight * 2.5f),
+            cornerRadius = CornerRadius(trackHeight * 1.25f, trackHeight * 1.25f),
+        )
+        // Flowing band: a repeated primary→dim→primary wave sliding along the track.
+        val period = 140.dp.toPx()
+        val shift = phase * period
+        val brush = Brush.linearGradient(
+            colorStops = arrayOf(
+                0.0f to base,
+                0.45f to base.copy(alpha = 0.45f),
+                0.55f to base.copy(alpha = 0.45f),
+                1.0f to base,
+            ),
+            start = Offset(shift - period, 0f),
+            end = Offset(shift, 0f),
+            tileMode = TileMode.Repeated,
+        )
+        drawRoundRect(
+            brush = brush,
+            topLeft = Offset(0f, y),
+            size = Size(activeWidth, trackHeight),
+            cornerRadius = radius,
         )
     }
 }

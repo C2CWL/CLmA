@@ -7,11 +7,11 @@ package me.rerere.rikkahub.data.ai.tools
  * the user says "how much friction do I want" instead of maintaining a per-tool list and a
  * blanket override separately.
  *
- * - [AUTO]: no friction. Side-effecting tools run without prompting — except the
- *   non-waivable floor ([ToolApprovalDefaults.NO_ALWAYS_ALLOW] + `mcp__*`), which still
- *   asks on every call. ★This differs from the retired YOLO toggle, which sat ABOVE the
- *   floor and suppressed it too. Auto is "stop asking me about ordinary tools", not
- *   "stop asking me about privilege-escalation surfaces".
+ * - [AUTO]: no friction. Side-effecting tools run without prompting — including opaque
+ *   relayed `mcp__*` tools (拍板 2026-10-16: Auto must not nag about MCP, an agent build
+ *   whose MCP tools all ask is not autonomous). The privilege-escalation floor
+ *   ([ToolApprovalDefaults.NO_ALWAYS_ALLOW]) still asks on every call — Auto is "stop asking
+ *   me about ordinary work", not "hand over the keystore".
  * - [SEMI]: the blacklist decides. A tool on the blacklist asks; everything else
  *   auto-approves. This is the fine-grained mode — the user curates which specific tools
  *   need a confirmation.
@@ -19,8 +19,7 @@ package me.rerere.rikkahub.data.ai.tools
  *   chat" grant (so a long agent session isn't drowned in prompts after the first OK) and
  *   `ask_user` in a headless run (nobody to answer). The floor obviously still asks too.
  *
- * Ordering, top to bottom — first match wins (★拍板①: the floor is checked BEFORE the
- * mode, so Auto cannot waive it):
+ * Ordering, top to bottom — first match wins:
  *
  *  1. `ask_user` is a human-input request, not a permission gate: it must pause for the user
  *     wherever there is a surface to ask on, and auto-approve only in a headless run.
@@ -28,10 +27,13 @@ package me.rerere.rikkahub.data.ai.tools
  *     approval channel: asking would hang the turn forever, so everything auto-approves.
  *     The tools that must never run unattended are refused separately as an error envelope
  *     by [HeadlessToolApprovalPolicy].
- *  3. The **hard floor** ([ToolApprovalDefaults.isHardFloor]) — the privilege-escalation set
- *     and every opaque `mcp__*` tool — asks on every call; it is not waivable by any mode.
- *  4. An in-memory **"allow for this chat"** grant suppresses the prompt for this conversation.
- *  5. The **mode** then decides: Auto → approve; Semi → blacklist; Manual → ask.
+ *  3. **Auto** waives opaque relayed `mcp__*` tools. The named privilege-escalation floor
+ *     below is NOT waived: adding MCP servers / installing skills / code eval / keystore
+ *     still confirm every time.
+ *  4. The **hard floor** ([ToolApprovalDefaults.isHardFloor]) asks on every call; no mode
+ *     waives it.
+ *  5. An in-memory **"allow for this chat"** grant suppresses the prompt for this conversation.
+ *  6. The **mode** then decides: Auto → approve; Semi → blacklist; Manual → ask.
  */
 enum class ApprovalMode {
     AUTO,
@@ -61,6 +63,8 @@ object ToolApprovalPolicy {
     ): Boolean {
         if (toolName == ASK_USER_TOOL_NAME) return headless
         if (headless) return true
+        // Auto waives opaque relayed MCP tools (拍板 2026-10-16) but NOT the named floor below.
+        if (mode == ApprovalMode.AUTO && isMcpRelayed) return true
         if (isMcpRelayed || toolName in hardFloor) return false
         if (allowedForChat) return true
         return when (mode) {

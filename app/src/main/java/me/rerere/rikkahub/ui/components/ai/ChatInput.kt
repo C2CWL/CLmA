@@ -521,14 +521,13 @@ private fun ModelReasoningChip(
         state = modelListState,
         onSelect = onUpdateChatModel,
         header = {
-            if (showReasoning) {
-                ReasoningLevelControl(
-                    reasoningLevel = level,
-                    onUpdateReasoningLevel = {
-                        onUpdateAssistant(assistant.copy(reasoningLevel = it))
-                    },
-                )
-            }
+            AgentControlCard(
+                reasoningLevel = level,
+                showReasoning = showReasoning,
+                onUpdateReasoningLevel = {
+                    onUpdateAssistant(assistant.copy(reasoningLevel = it))
+                },
+            )
         },
     )
 }

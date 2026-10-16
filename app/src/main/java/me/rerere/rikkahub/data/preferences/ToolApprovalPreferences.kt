@@ -56,8 +56,9 @@ data class ToolApprovalSnapshot(
  * 1. **Blacklist** — the user's list of tools that must ask before running. Only consulted in
  *    Semi mode; in Auto it is ignored, in Manual every tool asks anyway. Configured from
  *    Settings → Tool approvals. The non-waivable floor
- *    ([me.rerere.rikkahub.data.ai.tools.ToolApprovalDefaults.isHardFloor]) and every opaque
- *    `mcp__*` tool ask regardless of this set and regardless of the mode.
+ *    ([me.rerere.rikkahub.data.ai.tools.ToolApprovalDefaults.NO_ALWAYS_ALLOW]) asks regardless
+ *    of this set and regardless of the mode; opaque relayed `mcp__*` tools ask too, except in
+ *    Auto mode which waives them (拍板 2026-10-16).
  *
  * 2. **Approval mode** — the three-level posture selector ([ApprovalMode]). Replaces the old
  *    single-boolean YOLO toggle. The retired `global_auto_approve_yolo` key is no longer read;
