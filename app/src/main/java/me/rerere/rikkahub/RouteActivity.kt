@@ -130,7 +130,6 @@ import me.rerere.rikkahub.ui.pages.setting.SettingProviderPage
 import me.rerere.rikkahub.ui.pages.setting.SettingSearchDetailPage
 import me.rerere.rikkahub.ui.pages.setting.SettingSearchPage
 import me.rerere.rikkahub.ui.pages.setting.SettingsSearchPage
-import me.rerere.rikkahub.ui.pages.setting.SettingTTSPage
 import me.rerere.rikkahub.ui.pages.setting.SettingSpeechPage
 import me.rerere.rikkahub.ui.pages.setting.SettingSponsorPage
 import me.rerere.rikkahub.ui.pages.setting.SettingSubAgentsPage
@@ -524,9 +523,6 @@ class RouteActivity : ComponentActivity() {
                                 SettingSearchPage()
                             }
 
-                            entry<Screen.SettingTTS> {
-                                SettingTTSPage()
-                            }
                             entry<Screen.SettingSearchDetail> { key ->
                                 val id = Uuid.parse(key.serviceId)
                                 SettingSearchDetailPage(id)
@@ -827,9 +823,6 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data object SettingSearch : Screen
-
-    @Serializable
-    data object SettingTTS : Screen
 
     @Serializable
     data class SettingSearchDetail(val serviceId: String) : Screen

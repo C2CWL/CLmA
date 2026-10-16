@@ -37,8 +37,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.FilterChip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.font.FontWeight
 import me.rerere.rikkahub.data.datastore.SettingsStore
+import me.rerere.rikkahub.data.datastore.Settings
+import me.rerere.rikkahub.ui.components.ui.CardGroup
+import me.rerere.rikkahub.subagent.SubAgentDefaults
 import me.rerere.rikkahub.subagent.SubAgentDispatchProfile
 import me.rerere.rikkahub.subagent.SubAgentDispatchProfileRules
 import androidx.compose.material3.Scaffold
@@ -262,6 +266,12 @@ fun SettingSubAgentsPage(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
+                }
+
+                // Global concurrency ceiling — moved here from the model page: it is a
+                // sub-agent resource limit, so it belongs next to the dispatch profile.
+                item {
+                    GlobalConcurrencyItem(settings = settings)
                 }
 
                 // Live view of this session's sub-agent runs — until now the only signal was a
@@ -1323,5 +1333,75 @@ private fun AgentDefinitionEditSheet(
                 }
             }
         }
+    }
+}
+
+/**
+ * Global (all-assistants) ceiling on concurrently running sub-agents
+ * ([Settings.subAgentGlobalConcurrencyCap]). Clamped on commit to
+ * [SubAgentDefaults.MIN_GLOBAL_CONCURRENCY_CAP]..[SubAgentDefaults.MAX_GLOBAL_CONCURRENCY_CAP].
+ * Same commit-on-focus-loss pattern the field had on the model page.
+ */
+@Composable
+private fun GlobalConcurrencyItem(settings: Settings) {
+    val prefs = koinInject<SettingsStore>()
+    val scope = rememberCoroutineScope()
+    var capInput by remember(settings.subAgentGlobalConcurrencyCap) {
+        mutableStateOf(settings.subAgentGlobalConcurrencyCap.toString())
+    }
+
+    fun commit(value: String) {
+        val normalized = value.toIntOrNull()
+            ?.coerceIn(
+                SubAgentDefaults.MIN_GLOBAL_CONCURRENCY_CAP,
+                SubAgentDefaults.MAX_GLOBAL_CONCURRENCY_CAP,
+            )
+            ?: settings.subAgentGlobalConcurrencyCap
+        capInput = normalized.toString()
+        scope.launch {
+            prefs.update { current ->
+                if (current.subAgentGlobalConcurrencyCap == normalized) {
+                    current
+                } else {
+                    current.copy(subAgentGlobalConcurrencyCap = normalized)
+                }
+            }
+        }
+    }
+
+    CardGroup {
+        item(
+            headlineContent = { Text(stringResource(R.string.setting_sub_agents_global_concurrency)) },
+            supportingContent = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(R.string.setting_sub_agents_global_concurrency_desc))
+                    OutlinedTextField(
+                        value = capInput,
+                        onValueChange = { value ->
+                            capInput = value.filter(Char::isDigit).take(2)
+                        },
+                        singleLine = true,
+                        label = { Text(stringResource(R.string.setting_sub_agents_global_concurrency_input)) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .onFocusChanged { focusState ->
+                                if (!focusState.isFocused) {
+                                    commit(capInput)
+                                }
+                            },
+                        supportingText = {
+                            Text(
+                                stringResource(
+                                    R.string.setting_sub_agents_global_concurrency_hint,
+                                    SubAgentDefaults.MIN_GLOBAL_CONCURRENCY_CAP,
+                                    SubAgentDefaults.MAX_GLOBAL_CONCURRENCY_CAP,
+                                )
+                            )
+                        },
+                    )
+                }
+            },
+        )
     }
 }

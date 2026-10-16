@@ -861,6 +861,7 @@
   <string name="setting_model_page_suggestion_model_desc">用于生成聊天建议的模型。未设置时使用快速模型</string>
   <string name="setting_model_page_suggestion_prompt_vars">变量: 对话内容: {content}, 语言: {locale}</string>
   <string name="setting_model_page_title">模型设置</string>
+  <string name="setting_model_page_generation_limits">生成限制</string>
   <string name="setting_model_page_title_model">标题总结模型</string>
   <string name="setting_model_page_title_model_desc">用于总结对话标题的模型。未设置时使用快速模型</string>
   <string name="setting_model_page_translate_model">翻译模型</string>
@@ -900,7 +901,6 @@
   <string name="setting_page_built_in_tools_search_desc">启用 Google 搜索集成</string>
   <string name="setting_page_built_in_tools_url_context">URL 上下文</string>
   <string name="setting_page_built_in_tools_url_context_desc">启用 URL 内容处理</string>
-  <string name="setting_page_chat_storage">存储管理</string>
   <string name="setting_page_chat_storage_desc">%1$d 个文件，%2$.2f MB</string>
   <string name="setting_page_code_display_settings">代码显示</string>
   <string name="setting_page_color_mode">颜色模式</string>
@@ -913,8 +913,7 @@
   <string name="setting_page_data_backup">数据备份</string>
   <string name="setting_page_data_backup_desc">备份和恢复应用数据</string>
   <string name="setting_page_data_settings">数据设置</string>
-  <string name="setting_page_default_model">默认模型和提示词</string>
-  <string name="setting_page_default_model_desc">设置各个功能的默认模型</string>
+  <string name="setting_page_default_model_desc">各功能的默认模型、提示词模板与生成限制</string>
   <string name="setting_page_display_setting">显示设置</string>
   <string name="setting_page_display_setting_desc">管理显示设置</string>
   <string name="setting_page_documentation">使用文档</string>
@@ -969,7 +968,6 @@
   <string name="setting_theme_page_dynamic_color_hint">动态颜色已开启，请在偏好设置 &gt; 主题中关闭以使用自定义主题。</string>
   <string name="setting_page_tts_service">语音服务</string>
   <string name="setting_page_tts_service_desc">配置语音合成与语音识别服务提供商</string>
-  <string name="setting_page_tts_settings">TTS设置</string>
   <string name="setting_page_web_server">Web服务器</string>
   <string name="setting_page_web_server_address_note">地址说明</string>
   <string name="setting_page_web_server_address_note_desc">局域网地址：使用设备 WiFi IP，同一网络中的其他设备可访问。移动数据网络下不可用。
@@ -1120,7 +1118,6 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="setting_tts_page_speed">语速</string>
   <string name="setting_tts_page_speed_description">语音合成速度 (0.25 - 4.0)</string>
   <string name="setting_tts_page_test_text">你好，这是文字转语音测试。</string>
-  <string name="setting_tts_page_title">语音合成</string>
   <string name="setting_tts_page_voice">语音</string>
   <string name="setting_tts_page_voice_description">用于语音合成的声音</string>
   <string name="setting_tts_page_voice_id">语音 ID</string>
@@ -1172,6 +1169,7 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="skills_page_title">代理技能</string>
   <string name="speech_page_title">语音</string>
   <string name="speech_tab_asr">语音识别</string>
+  <string name="setting_speech_page_playback">播放行为</string>
   <string name="speech_tab_tts">文字转语音</string>
   <string name="stats_page_cached_tokens">缓存节省 Token</string>
   <string name="stats_page_dow_fri">五</string>
@@ -1727,7 +1725,7 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="setting_page_telegram_whitelist">允许的聊天 ID</string>
   <string name="setting_page_telegram_whitelist_desc">用逗号分隔。留空 = 不允许任何人。用 @userinfobot 查找你的 ID。</string>
   <string name="setting_page_tool_approvals">工具授权</string>
-  <string name="setting_page_tool_approvals_desc">需要先审批再运行的工具（黑名单）。</string>
+  <string name="setting_page_tool_approvals_desc">审批模式（自动/半自动/手动）与运行前需询问的工具。</string>
   <string name="setting_page_tool_approvals_empty">黑名单为空 — 没有任何工具需要审批。</string>
   <string name="setting_page_tool_approvals_summary">%1$d 个工具需要审批。</string>
   <string name="setting_page_tool_approvals_header">除非你把工具加入下面的黑名单，否则一切都无需审批直接运行。打开开关即表示该工具运行前需要你确认。</string>
@@ -2028,13 +2026,13 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="setting_model_page_context_compaction_target_desc">以千 Token 为单位设置摘要目标大小。留空时使用当前上下文的 1%（例如上下文为 300k 时使用 3k）。</string>
   <string name="setting_model_page_auto_compaction_keep_tool_calls">保留最近的工具调用</string>
   <string name="setting_model_page_auto_compaction_keep_tool_calls_desc">自动压缩会保留这些工具调用的原始输入和输出。设为0时压缩整个当前上下文。</string>
-  <string name="setting_model_page_response_stream_retries">Response API 流重试次数</string>
-  <string name="setting_model_page_subagent_concurrency">子 agent 全局并发上限</string>
-  <string name="setting_model_page_subagent_concurrency_desc">所有助手同一时刻最多在跑的子 agent 总数（每个助手另有自己的上限）。调高可让批量派发更快，但过高可能触发服务商限流。</string>
-  <string name="setting_model_page_subagent_concurrency_input">全局并发数</string>
-  <string name="setting_model_page_subagent_concurrency_hint">取值 %1$d 到 %2$d。</string>
-  <string name="setting_model_page_response_stream_retries_desc">Response API 流在完成前意外关闭时，自动重试请求此次数。设为 0 可禁用自动重试。</string>
-  <string name="setting_model_page_response_stream_retries_input">最大重试次数</string>
+  <string name="setting_page_preferences_network_stream_retries">流式请求重试次数</string>
+  <string name="setting_sub_agents_global_concurrency">子 agent 全局并发上限</string>
+  <string name="setting_sub_agents_global_concurrency_desc">所有助手同一时刻最多在跑的子 agent 总数（每个助手另有自己的上限）。调高可让批量派发更快，但过高可能触发服务商限流。</string>
+  <string name="setting_sub_agents_global_concurrency_input">全局并发数</string>
+  <string name="setting_sub_agents_global_concurrency_hint">取值 %1$d 到 %2$d。</string>
+  <string name="setting_page_preferences_network_stream_retries_desc">流式响应在完成前意外关闭时，自动重试请求此次数。对所有服务商生效。设为 0 可禁用自动重试。</string>
+  <string name="setting_page_preferences_network_stream_retries_input">最大重试次数</string>
 
   <!-- BrowserAiStripe redesign: outcome-aware, localized action trail -->
   <string name="browser_ai_stripe_stop">停止</string>
@@ -2140,15 +2138,15 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="setting_termux_section_timeouts">超时</string>
   <string name="setting_termux_command_timeout">默认命令超时</string>
   <string name="setting_termux_command_timeout_desc">等待后台 shell 命令返回输出的时长。范围为 5 秒到 600 秒。</string>
-  <string name="setting_termux_turn_budget">单轮总时间预算（所有工具）</string>
-  <string name="setting_termux_turn_budget_desc">单个用户回合内执行工具所能花费的总时间上限。范围为 1 分钟到 720 分钟（12 小时）。</string>
+  <string name="setting_model_page_turn_budget">单轮总时间预算</string>
+  <string name="setting_model_page_turn_budget_desc">单个回合（含模型生成与工具执行）的墙钟总时长上限，超时强制结束。范围 1 分钟到 720 分钟（12 小时）。</string>
   <string name="setting_termux_verify_timeout">冒烟测试验证超时</string>
   <string name="setting_termux_verify_timeout_desc">allow-external-apps echo 冒烟测试的超时时间。范围为 3 秒到 30 秒。</string>
   <string name="setting_termux_unit_seconds">秒</string>
   <string name="setting_termux_unit_minutes">分钟</string>
   <string name="setting_termux_unit_steps">步骤</string>
-  <string name="setting_termux_max_tool_steps">每轮工具步骤数</string>
-  <string name="setting_termux_max_tool_steps_desc">一次回复在被强制结束前最多可连续调用多少次工具。若需执行较长的安装或构建任务，可调高此值。范围为 1 到 1500；上方的回合时间预算仍然适用。</string>
+  <string name="setting_model_page_max_tool_steps">每轮工具步骤数</string>
+  <string name="setting_model_page_max_tool_steps_desc">一次回复在被强制结束前最多可连续调用多少次工具。对所有工具生效（不只 Termux）。若需执行较长的安装或构建任务，可调高此值。范围为 1 到 1500；上方的回合时间预算仍然适用。</string>
   <string name="setting_termux_unit_bytes">字节</string>
   <string name="setting_termux_section_defaults">默认值与限制</string>
   <string name="setting_termux_working_dir">默认工作目录</string>

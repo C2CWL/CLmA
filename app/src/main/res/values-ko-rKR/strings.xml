@@ -772,7 +772,6 @@
   <string name="setting_page_built_in_tools_search_desc">Google 검색 통합 활성화</string>
   <string name="setting_page_built_in_tools_url_context">URL 컨텍스트</string>
   <string name="setting_page_built_in_tools_url_context_desc">URL 콘텐츠 처리 활성화</string>
-  <string name="setting_page_chat_storage">저장 공간 관리</string>
   <string name="setting_page_chat_storage_desc">%1$d개 파일, %2$.2f MB</string>
   <string name="setting_page_code_display_settings">코드 표시</string>
   <string name="setting_page_color_mode">색상 모드</string>
@@ -785,7 +784,6 @@
   <string name="setting_page_data_backup">데이터 백업</string>
   <string name="setting_page_data_backup_desc">앱 데이터 백업 및 복원</string>
   <string name="setting_page_data_settings">데이터 설정</string>
-  <string name="setting_page_default_model">기본 모델 및 프롬프트</string>
   <string name="setting_page_default_model_desc">각 기능의 기본 모델 설정</string>
   <string name="setting_page_display_setting">디스플레이 설정</string>
   <string name="setting_page_display_setting_desc">디스플레이 설정 관리</string>
@@ -841,7 +839,6 @@
   <string name="setting_theme_page_dynamic_color_hint">동적 색상이 활성화되어 있습니다. 사용자 지정 테마를 사용하려면 기본 설정 &gt; 테마에서 비활성화하세요.</string>
   <string name="setting_page_tts_service">음성 서비스</string>
   <string name="setting_page_tts_service_desc">텍스트-음성 및 음성 인식 제공업체 구성</string>
-  <string name="setting_page_tts_settings">TTS 설정</string>
   <string name="setting_page_web_server">웹 서버</string>
   <string name="setting_page_web_server_address_note">주소 메모</string>
   <string name="setting_page_web_server_address_note_desc">LAN 주소: 기기의 WiFi IP를 사용하며, 같은 네트워크에 연결된 다른 기기에서 접근할 수 있습니다. 모바일 데이터에서는 사용할 수 없습니다.
@@ -978,7 +975,6 @@ mDNS 주소: .local 호스트네임을 사용하며, IP를 몰라도 같은 네�
   <string name="setting_tts_page_speed">속도</string>
   <string name="setting_tts_page_speed_description">말하기 속도 (0.25 - 4.0)</string>
   <string name="setting_tts_page_test_text">안녕하세요, 이것은 텍스트-음성 테스트입니다.</string>
-  <string name="setting_tts_page_title">텍스트-음성</string>
   <string name="setting_tts_page_voice">음성</string>
   <string name="setting_tts_page_voice_description">음성 합성에 사용할 음성</string>
   <string name="setting_tts_page_voice_id">음성 ID</string>
@@ -1804,13 +1800,13 @@ mDNS 주소: .local 호스트네임을 사용하며, IP를 몰라도 같은 네�
   <string name="setting_model_page_context_compaction_target_desc">요약 목표 크기를 천 Token 단위로 설정합니다. 비워 두면 현재 컨텍스트의 1%를 사용합니다(컨텍스트가 300k이면 3k).</string>
   <string name="setting_model_page_auto_compaction_keep_tool_calls">최근 도구 호출 유지</string>
   <string name="setting_model_page_auto_compaction_keep_tool_calls_desc">자동 압축은 해당 도구 호출의 원본 입력과 출력을 유지합니다. 0으로 설정하면 현재 컨텍스트 전체를 압축합니다.</string>
-  <string name="setting_model_page_response_stream_retries">Response API 스트림 재시도 횟수</string>
-  <string name="setting_model_page_subagent_concurrency">하위 에이전트 전역 동시 실행 수</string>
-  <string name="setting_model_page_subagent_concurrency_desc">모든 어시스턴트에서 동시에 실행할 수 있는 하위 에이전트의 최대 수입니다. 각 어시스턴트에도 자체 한도가 있습니다. 늘리면 병렬 디스패치가 빨라지지만 너무 많으면 공급자 속도 제한에 걸릴 수 있습니다.</string>
-  <string name="setting_model_page_subagent_concurrency_input">전역 동시 실행 수</string>
-  <string name="setting_model_page_subagent_concurrency_hint">%1$d~%2$d 사이.</string>
-  <string name="setting_model_page_response_stream_retries_desc">Response API 스트림이 완료 전에 끊기면 이 횟수만큼 요청을 자동 재시도합니다. 0으로 설정하면 자동 재시도를 끕니다.</string>
-  <string name="setting_model_page_response_stream_retries_input">최대 재시도 횟수</string>
+  <string name="setting_page_preferences_network_stream_retries">Response API 스트림 재시도 횟수</string>
+  <string name="setting_sub_agents_global_concurrency">하위 에이전트 전역 동시 실행 수</string>
+  <string name="setting_sub_agents_global_concurrency_desc">모든 어시스턴트에서 동시에 실행할 수 있는 하위 에이전트의 최대 수입니다. 각 어시스턴트에도 자체 한도가 있습니다. 늘리면 병렬 디스패치가 빨라지지만 너무 많으면 공급자 속도 제한에 걸릴 수 있습니다.</string>
+  <string name="setting_sub_agents_global_concurrency_input">전역 동시 실행 수</string>
+  <string name="setting_sub_agents_global_concurrency_hint">%1$d~%2$d 사이.</string>
+  <string name="setting_page_preferences_network_stream_retries_desc">Response API 스트림이 완료 전에 끊기면 이 횟수만큼 요청을 자동 재시도합니다. 0으로 설정하면 자동 재시도를 끕니다.</string>
+  <string name="setting_page_preferences_network_stream_retries_input">최대 재시도 횟수</string>
 
   <!-- BrowserAiStripe redesign: outcome-aware, localized action trail -->
   <string name="browser_ai_stripe_stop">중지</string>

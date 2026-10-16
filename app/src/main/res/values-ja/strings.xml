@@ -772,7 +772,6 @@
   <string name="setting_page_built_in_tools_search_desc">Google検索連携を有効化</string>
   <string name="setting_page_built_in_tools_url_context">URLコンテキスト</string>
   <string name="setting_page_built_in_tools_url_context_desc">URLコンテンツ処理を有効化</string>
-  <string name="setting_page_chat_storage">ストレージ管理</string>
   <string name="setting_page_chat_storage_desc">%1$d ファイル、%2$.2f MB</string>
   <string name="setting_page_code_display_settings">コード表示</string>
   <string name="setting_page_color_mode">カラーモード</string>
@@ -785,7 +784,6 @@
   <string name="setting_page_data_backup">データバックアップ</string>
   <string name="setting_page_data_backup_desc">アプリデータのバックアップと復元</string>
   <string name="setting_page_data_settings">データ設定</string>
-  <string name="setting_page_default_model">デフォルトモデルとプロンプト</string>
   <string name="setting_page_default_model_desc">各機能のデフォルトモデルを設定</string>
   <string name="setting_page_display_setting">表示設定</string>
   <string name="setting_page_display_setting_desc">表示設定を管理</string>
@@ -841,7 +839,6 @@
   <string name="setting_theme_page_dynamic_color_hint">ダイナミックカラーが有効です。カスタムテーマを使用するには、設定 &gt; テーマで無効にしてください。</string>
   <string name="setting_page_tts_service">音声サービス</string>
   <string name="setting_page_tts_service_desc">音声合成と音声認識のプロバイダーを設定</string>
-  <string name="setting_page_tts_settings">TTS設定</string>
   <string name="setting_page_web_server">Webサーバー</string>
   <string name="setting_page_web_server_address_note">アドレスメモ</string>
   <string name="setting_page_web_server_address_note_desc">LANアドレス: デバイスのWiFi IPを使用し、同じネットワーク上の他のデバイスからアクセス可能です。モバイルデータでは利用できません。
@@ -978,7 +975,6 @@ mDNSアドレス: .localホスト名を使用し、IPを知らなくても同じ
   <string name="setting_tts_page_speed">速度</string>
   <string name="setting_tts_page_speed_description">音声合成の速度 (0.25 - 4.0)</string>
   <string name="setting_tts_page_test_text">こんにちは、これはテキスト読み上げのテストです。</string>
-  <string name="setting_tts_page_title">テキスト読み上げ</string>
   <string name="setting_tts_page_voice">音声</string>
   <string name="setting_tts_page_voice_description">音声合成に使用する声</string>
   <string name="setting_tts_page_voice_id">音声ID</string>
@@ -1804,13 +1800,13 @@ mDNSアドレス: .localホスト名を使用し、IPを知らなくても同じ
   <string name="setting_model_page_context_compaction_target_desc">要約の目標サイズを千 Token 単位で設定します。空欄の場合は現在のコンテキストの1%を使用します（コンテキストが300kなら3k）。</string>
   <string name="setting_model_page_auto_compaction_keep_tool_calls">最近のツール呼び出しを保持</string>
   <string name="setting_model_page_auto_compaction_keep_tool_calls_desc">自動圧縮ではこれらのツール呼び出しの入力と出力をそのまま保持します。0 にすると、現在のコンテキスト全体を圧縮します。</string>
-  <string name="setting_model_page_response_stream_retries">Response API ストリームの再試行回数</string>
-  <string name="setting_model_page_subagent_concurrency">サブエージェントの全体同時実行数</string>
-  <string name="setting_model_page_subagent_concurrency_desc">全アシスタントで同時に実行できるサブエージェントの最大数です。各アシスタントにも個別の上限があります。増やすと並列ディスパッチが速くなりますが、多すぎるとプロバイダーのレート制限に達することがあります。</string>
-  <string name="setting_model_page_subagent_concurrency_input">全体の同時実行数</string>
-  <string name="setting_model_page_subagent_concurrency_hint">%1$d〜%2$d の範囲。</string>
-  <string name="setting_model_page_response_stream_retries_desc">Response API ストリームが完了前に切断された場合、この回数だけリクエストを自動再試行します。0 にすると自動再試行を無効にします。</string>
-  <string name="setting_model_page_response_stream_retries_input">最大再試行回数</string>
+  <string name="setting_page_preferences_network_stream_retries">Response API ストリームの再試行回数</string>
+  <string name="setting_sub_agents_global_concurrency">サブエージェントの全体同時実行数</string>
+  <string name="setting_sub_agents_global_concurrency_desc">全アシスタントで同時に実行できるサブエージェントの最大数です。各アシスタントにも個別の上限があります。増やすと並列ディスパッチが速くなりますが、多すぎるとプロバイダーのレート制限に達することがあります。</string>
+  <string name="setting_sub_agents_global_concurrency_input">全体の同時実行数</string>
+  <string name="setting_sub_agents_global_concurrency_hint">%1$d〜%2$d の範囲。</string>
+  <string name="setting_page_preferences_network_stream_retries_desc">Response API ストリームが完了前に切断された場合、この回数だけリクエストを自動再試行します。0 にすると自動再試行を無効にします。</string>
+  <string name="setting_page_preferences_network_stream_retries_input">最大再試行回数</string>
 
   <!-- BrowserAiStripe redesign: outcome-aware, localized action trail -->
   <string name="browser_ai_stripe_stop">停止</string>

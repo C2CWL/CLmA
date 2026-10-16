@@ -901,6 +901,7 @@
   <string name="setting_model_page_suggestion_model_desc">Model used to generate conversation suggestions. If not set, uses the fast model</string>
   <string name="setting_model_page_suggestion_prompt_vars">Variables: Conversation content: {content}, Language: {locale}</string>
   <string name="setting_model_page_title">Model Settings</string>
+  <string name="setting_model_page_generation_limits">Generation limits</string>
   <string name="setting_model_page_title_model">Title Summary Model</string>
   <string name="setting_model_page_title_model_desc">Model used to summarize conversation titles. If not set, uses the fast model</string>
   <string name="setting_model_page_translate_model">Translation Model</string>
@@ -940,7 +941,6 @@
   <string name="setting_page_built_in_tools_search_desc">Enable Google Search integration</string>
   <string name="setting_page_built_in_tools_url_context">URL Context</string>
   <string name="setting_page_built_in_tools_url_context_desc">Enable URL content processing</string>
-  <string name="setting_page_chat_storage">Storage Management</string>
   <string name="setting_page_chat_storage_desc">%1$d files, %2$.2f MB</string>
   <string name="setting_page_code_display_settings">Code Display</string>
   <string name="setting_page_color_mode">Color Mode</string>
@@ -953,8 +953,7 @@
   <string name="setting_page_data_backup">Data Backup</string>
   <string name="setting_page_data_backup_desc">Backup and restore app data</string>
   <string name="setting_page_data_settings">Data Settings</string>
-  <string name="setting_page_default_model">Default Model and Prompt</string>
-  <string name="setting_page_default_model_desc">Set default models for each feature</string>
+  <string name="setting_page_default_model_desc">Default models, prompt templates and generation limits for each feature</string>
   <string name="setting_page_display_setting">Display Settings</string>
   <string name="setting_page_display_setting_desc">Manage display settings</string>
   <string name="setting_page_preferences">Preferences</string>
@@ -1039,7 +1038,6 @@
   <string name="setting_theme_page_dynamic_color_hint">Dynamic color is enabled. Disable it in Preferences &gt; Theme to use custom themes.</string>
   <string name="setting_page_tts_service">Speech Services</string>
   <string name="setting_page_tts_service_desc">Configure text-to-speech and speech recognition providers</string>
-  <string name="setting_page_tts_settings">TTS Settings</string>
   <string name="setting_page_web_server">Web Server</string>
   <string name="setting_page_web_server_address_note">Address Notes</string>
   <string name="setting_page_web_server_address_note_desc">LAN Address: Uses device WiFi IP, accessible to other devices on the same network. Unavailable on mobile data.\nLocal Address: Uses localhost, accessible on this device only.\nmDNS Address: Uses .local hostname, accessible by name from other devices on the same network without knowing the IP.</string>
@@ -1190,7 +1188,6 @@
   <string name="setting_tts_page_speed">Speed</string>
   <string name="setting_tts_page_speed_description">Speech speed (0.25 - 4.0)</string>
   <string name="setting_tts_page_test_text">Hello, this is a text-to-speech test.</string>
-  <string name="setting_tts_page_title">Text-to-Speech</string>
   <string name="setting_tts_page_voice">Voice</string>
   <string name="setting_tts_page_voice_description">Voice to use for speech synthesis</string>
   <string name="setting_tts_page_voice_id">Voice ID</string>
@@ -1242,6 +1239,7 @@
   <string name="skills_page_title">Agent Skills</string>
   <string name="speech_page_title">Speech</string>
   <string name="speech_tab_asr">Speech Recognition</string>
+  <string name="setting_speech_page_playback">Playback</string>
   <string name="speech_tab_tts">Text to Speech</string>
   <string name="stats_page_cached_tokens">Cached Tokens</string>
   <string name="stats_page_cache_hit_rate">Cache hit rate</string>
@@ -1377,7 +1375,7 @@
   <string name="setting_page_doctor_copy_report">Copy report</string>
   <string name="setting_page_doctor_report_copied">Diagnostic report copied to clipboard.</string>
   <string name="setting_page_tool_approvals">Tool approvals</string>
-  <string name="setting_page_tool_approvals_desc">Tools that must ask before running (the blacklist).</string>
+  <string name="setting_page_tool_approvals_desc">Approval mode (Auto / Semi / Manual) and the tools that must ask before running.</string>
   <string name="setting_page_tool_approvals_header">Every tool runs without asking unless you add it to the blacklist below. Turn a switch on to require your approval before that tool runs.</string>
   <string name="setting_page_tool_approvals_empty">The blacklist is empty — nothing asks.</string>
   <string name="setting_page_tool_approvals_summary">%1$d tool(s) require approval.</string>
@@ -1878,15 +1876,15 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="setting_termux_section_timeouts">Timeouts</string>
   <string name="setting_termux_command_timeout">Default command timeout</string>
   <string name="setting_termux_command_timeout_desc">How long to wait for a background shell command to return output. Range 5 s to 600 s.</string>
-  <string name="setting_termux_turn_budget">Per-turn wall-clock budget (all tools)</string>
-  <string name="setting_termux_turn_budget_desc">Hard cap on the total time any single user turn can spend executing tools. Range 1 min to 720 min (12 h).</string>
+  <string name="setting_model_page_turn_budget">Per-turn time budget</string>
+  <string name="setting_model_page_turn_budget_desc">Hard cap on the total wall-clock time of one user turn, model generation and tool execution included. Range 1 min to 720 min (12 h).</string>
   <string name="setting_termux_verify_timeout">Verify smoke-test timeout</string>
   <string name="setting_termux_verify_timeout_desc">Timeout for the allow-external-apps echo smoke test. Range 3 s to 30 s.</string>
   <string name="setting_termux_unit_seconds">seconds</string>
   <string name="setting_termux_unit_minutes">minutes</string>
   <string name="setting_termux_unit_steps">steps</string>
-  <string name="setting_termux_max_tool_steps">Tool steps per turn</string>
-  <string name="setting_termux_max_tool_steps_desc">How many tool calls one reply may chain before it is force-ended. Raise this for long install or build tasks. Range 1 to 1500; the turn time budget above still applies.</string>
+  <string name="setting_model_page_max_tool_steps">Tool steps per turn</string>
+  <string name="setting_model_page_max_tool_steps_desc">How many tool calls one reply may chain before it is force-ended. Applies to every tool family, not just Termux. Raise this for long install or build tasks. Range 1 to 1500; the turn time budget above still applies.</string>
   <string name="setting_termux_unit_bytes">bytes</string>
   <string name="setting_termux_section_defaults">Defaults &amp; limits</string>
   <string name="setting_termux_working_dir">Default working directory</string>
@@ -2286,13 +2284,13 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="setting_model_page_context_compaction_target_desc">Set the target summary size in thousands of tokens. Leave blank to use 1% of the active context (for example, 3k with a 300k context).</string>
   <string name="setting_model_page_auto_compaction_keep_tool_calls">Keep recent tool calls</string>
   <string name="setting_model_page_auto_compaction_keep_tool_calls_desc">Automatic compaction keeps their raw input and output. Set 0 to compact the whole active context.</string>
-  <string name="setting_model_page_response_stream_retries">Response stream retries</string>
-  <string name="setting_model_page_subagent_concurrency">Sub-agent concurrency (global)</string>
-  <string name="setting_model_page_subagent_concurrency_desc">Maximum number of sub-agents that may run at once across all assistants. Each assistant also has its own limit. A busy install can raise this, but too many at once may trip provider rate limits.</string>
-  <string name="setting_model_page_subagent_concurrency_input">Concurrent sub-agents</string>
-  <string name="setting_model_page_subagent_concurrency_hint">Between %1$d and %2$d.</string>
-  <string name="setting_model_page_response_stream_retries_desc">When a Response API stream closes before completion, retry the request this many times. Set 0 to disable automatic retries.</string>
-  <string name="setting_model_page_response_stream_retries_input">Maximum retry count</string>
+  <string name="setting_page_preferences_network_stream_retries">Stream retries</string>
+  <string name="setting_sub_agents_global_concurrency">Sub-agent concurrency (global)</string>
+  <string name="setting_sub_agents_global_concurrency_desc">Maximum number of sub-agents that may run at once across all assistants. Each assistant also has its own limit. A busy install can raise this, but too many at once may trip provider rate limits.</string>
+  <string name="setting_sub_agents_global_concurrency_input">Concurrent sub-agents</string>
+  <string name="setting_sub_agents_global_concurrency_hint">Between %1$d and %2$d.</string>
+  <string name="setting_page_preferences_network_stream_retries_desc">When a streaming response closes before completion, retry the request this many times. Applies to all providers, not just the Response API. Set 0 to disable automatic retries.</string>
+  <string name="setting_page_preferences_network_stream_retries_input">Maximum retry count</string>
 
   <!-- Accessibility Strings -->
   <string name="accessibility_hide_password">Hide password</string>

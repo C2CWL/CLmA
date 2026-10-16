@@ -54,7 +54,8 @@ import me.rerere.hugeicons.stroke.ArrowRight01
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.AutoCompactionThresholdMode
 import me.rerere.rikkahub.data.datastore.Settings
-import me.rerere.rikkahub.subagent.SubAgentDefaults
+import me.rerere.rikkahub.ui.pages.setting.termux.SettingTermuxViewModel
+import me.rerere.rikkahub.ui.pages.setting.termux.TimeoutInput
 import me.rerere.rikkahub.ui.components.ai.ModelListSheet
 import me.rerere.rikkahub.ui.components.ai.ReasoningButton
 import me.rerere.rikkahub.ui.components.ai.rememberModelListState
@@ -180,135 +181,45 @@ private fun ModelSettingsPage(settings: Settings, vm: SettingVM, contentPadding:
             AutoCompactionSettingItem(settings = settings, vm = vm)
         }
         item {
-            ResponseStreamRetrySettingItem(settings = settings, vm = vm)
-        }
-        item {
-            SubAgentConcurrencySettingItem(settings = settings, vm = vm)
+            GenerationLimitsSettingItem()
         }
     }
 }
 
+/**
+ * Per-turn generation limits — the wall-clock budget and the tool-step ceiling for one
+ * user turn. These are app-wide (they govern every tool family and the model loop itself,
+ * see [me.rerere.rikkahub.data.ai.limits.ToolRuntimeLimits]); they live on the model page
+ * because they shape generation behaviour, not Termux specifically. Persistence stays in
+ * TermuxPreferences (the pre-existing store), surfaced here through SettingTermuxViewModel.
+ */
 @Composable
-private fun SubAgentConcurrencySettingItem(
-    settings: Settings,
-    vm: SettingVM,
+private fun GenerationLimitsSettingItem(
+    termuxVm: SettingTermuxViewModel = koinViewModel(),
 ) {
-    var capInput by remember(settings.subAgentGlobalConcurrencyCap) {
-        mutableStateOf(settings.subAgentGlobalConcurrencyCap.toString())
-    }
+    val config by termuxVm.config.collectAsStateWithLifecycle()
 
-    fun commit(value: String) {
-        val normalized = value.toIntOrNull()
-            ?.coerceIn(
-                SubAgentDefaults.MIN_GLOBAL_CONCURRENCY_CAP,
-                SubAgentDefaults.MAX_GLOBAL_CONCURRENCY_CAP,
-            )
-            ?: settings.subAgentGlobalConcurrencyCap
-        capInput = normalized.toString()
-        vm.updateSettings { current ->
-            if (current.subAgentGlobalConcurrencyCap == normalized) {
-                current
-            } else {
-                current.copy(subAgentGlobalConcurrencyCap = normalized)
-            }
-        }
-    }
-
-    CardGroup {
+    CardGroup(title = { Text(stringResource(R.string.setting_model_page_generation_limits)) }) {
         item(
-            headlineContent = {
-                Text(stringResource(R.string.setting_model_page_subagent_concurrency))
-            },
-            supportingContent = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(stringResource(R.string.setting_model_page_subagent_concurrency_desc))
-                    OutlinedTextField(
-                        value = capInput,
-                        onValueChange = { value ->
-                            capInput = value.filter(Char::isDigit).take(2)
-                        },
-                        singleLine = true,
-                        label = {
-                            Text(stringResource(R.string.setting_model_page_subagent_concurrency_input))
-                        },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .onFocusChanged { focusState ->
-                                if (!focusState.isFocused) {
-                                    commit(capInput)
-                                }
-                            },
-                        supportingText = {
-                            Text(
-                                stringResource(
-                                    R.string.setting_model_page_subagent_concurrency_hint,
-                                    SubAgentDefaults.MIN_GLOBAL_CONCURRENCY_CAP,
-                                    SubAgentDefaults.MAX_GLOBAL_CONCURRENCY_CAP,
-                                )
-                            )
-                        },
-                    )
-                }
+            headlineContent = { Text(stringResource(R.string.setting_model_page_turn_budget)) },
+            supportingContent = { Text(stringResource(R.string.setting_model_page_turn_budget_desc)) },
+            trailingContent = {
+                TimeoutInput(
+                    currentValue = config.turnBudgetMs / 60_000L,
+                    unitLabel = stringResource(R.string.setting_termux_unit_minutes),
+                    onCommit = termuxVm::setTurnBudgetMinutes,
+                )
             },
         )
-    }
-}
-
-@Composable
-private fun ResponseStreamRetrySettingItem(
-    settings: Settings,
-    vm: SettingVM,
-) {
-    var maxRetries by remember(settings.responseStreamMaxRetries) {
-        mutableStateOf(settings.responseStreamMaxRetries.toString())
-    }
-
-    CardGroup {
         item(
-            headlineContent = {
-                Text(stringResource(R.string.setting_model_page_response_stream_retries))
-            },
-            supportingContent = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(stringResource(R.string.setting_model_page_response_stream_retries_desc))
-                    OutlinedTextField(
-                        value = maxRetries,
-                        onValueChange = { value ->
-                            maxRetries = value.filter(Char::isDigit).take(2)
-                            maxRetries.toIntOrNull()?.let { parsed ->
-                                val normalized = parsed.coerceIn(0, 10)
-                                if (normalized != settings.responseStreamMaxRetries) {
-                                    vm.updateSettings { current ->
-                                        current.copy(responseStreamMaxRetries = normalized)
-                                    }
-                                }
-                            }
-                        },
-                        singleLine = true,
-                        label = {
-                            Text(stringResource(R.string.setting_model_page_response_stream_retries_input))
-                        },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .onFocusChanged { focusState ->
-                                if (!focusState.isFocused) {
-                                    val normalized = maxRetries.toIntOrNull()
-                                        ?.coerceIn(0, 10)
-                                        ?: settings.responseStreamMaxRetries
-                                    maxRetries = normalized.toString()
-                                    vm.updateSettings { current ->
-                                        if (current.responseStreamMaxRetries == normalized) {
-                                            current
-                                        } else {
-                                            current.copy(responseStreamMaxRetries = normalized)
-                                        }
-                                    }
-                                }
-                            },
-                    )
-                }
+            headlineContent = { Text(stringResource(R.string.setting_model_page_max_tool_steps)) },
+            supportingContent = { Text(stringResource(R.string.setting_model_page_max_tool_steps_desc)) },
+            trailingContent = {
+                TimeoutInput(
+                    currentValue = config.maxToolSteps.toLong(),
+                    unitLabel = stringResource(R.string.setting_termux_unit_steps),
+                    onCommit = termuxVm::setMaxToolSteps,
+                )
             },
         )
     }

@@ -772,7 +772,6 @@
   <string name="setting_page_built_in_tools_search_desc">Включить интеграцию с Google Поиском</string>
   <string name="setting_page_built_in_tools_url_context">Контекст URL</string>
   <string name="setting_page_built_in_tools_url_context_desc">Включить обработку содержимого по URL</string>
-  <string name="setting_page_chat_storage">Управление хранилищем</string>
   <string name="setting_page_chat_storage_desc">%1$d файлов, %2$.2f МБ</string>
   <string name="setting_page_code_display_settings">Отображение кода</string>
   <string name="setting_page_color_mode">Цветовая схема</string>
@@ -785,7 +784,6 @@
   <string name="setting_page_data_backup">Резервное копирование данных</string>
   <string name="setting_page_data_backup_desc">Резервное копирование и восстановление данных приложения</string>
   <string name="setting_page_data_settings">Настройки данных</string>
-  <string name="setting_page_default_model">Модель и промпт по умолчанию</string>
   <string name="setting_page_default_model_desc">Установить модели по умолчанию для каждой функции</string>
   <string name="setting_page_display_setting">Настройки отображения</string>
   <string name="setting_page_display_setting_desc">Управление настройками отображения</string>
@@ -841,7 +839,6 @@
   <string name="setting_theme_page_dynamic_color_hint">Динамические цвета включены. Отключите их в разделе Настройки &gt; Тема, чтобы использовать пользовательские темы.</string>
   <string name="setting_page_tts_service">Служба преобразования текста в речь</string>
   <string name="setting_page_tts_service_desc">Настроить поставщиков службы преобразования текста в речь</string>
-  <string name="setting_page_tts_settings">Настройки TTS</string>
   <string name="setting_page_web_server">Веб-сервер</string>
   <string name="setting_page_web_server_address_note">Примечания к адресу</string>
   <string name="setting_page_web_server_address_note_desc">LAN-адрес: использует IP-адрес устройства в Wi-Fi, доступен другим устройствам в той же сети. Недоступен при использовании мобильных данных.
@@ -978,7 +975,6 @@
   <string name="setting_tts_page_speed">Скорость</string>
   <string name="setting_tts_page_speed_description">Скорость речи (0,25–4,0)</string>
   <string name="setting_tts_page_test_text">Здравствуйте, это тест преобразования текста в речь.</string>
-  <string name="setting_tts_page_title">Преобразование текста в речь</string>
   <string name="setting_tts_page_voice">Голос</string>
   <string name="setting_tts_page_voice_description">Голос для синтеза речи</string>
   <string name="setting_tts_page_voice_id">ID голоса</string>
@@ -1804,13 +1800,13 @@
   <string name="setting_model_page_context_compaction_target_desc">Укажите целевой размер сводки в тысячах токенов. Оставьте пустым, чтобы использовать 1% текущего контекста (например, 3k для контекста 300k).</string>
   <string name="setting_model_page_auto_compaction_keep_tool_calls">Сохранять последние вызовы инструментов</string>
   <string name="setting_model_page_auto_compaction_keep_tool_calls_desc">Автоматическое сжатие сохраняет исходные входные данные и результаты этих вызовов. Установите 0, чтобы сжать весь текущий контекст.</string>
-  <string name="setting_model_page_response_stream_retries">Повторные попытки потока Response API</string>
-  <string name="setting_model_page_subagent_concurrency">Глобальный лимит параллельных субагентов</string>
-  <string name="setting_model_page_subagent_concurrency_desc">Максимум субагентов, работающих одновременно у всех ассистентов. У каждого ассистента есть и свой лимит. Больше — быстрее параллельные задачи, но слишком много может упереться в лимиты провайдера.</string>
-  <string name="setting_model_page_subagent_concurrency_input">Параллельных субагентов</string>
-  <string name="setting_model_page_subagent_concurrency_hint">От %1$d до %2$d.</string>
-  <string name="setting_model_page_response_stream_retries_desc">Если поток Response API закрывается до завершения, повторить запрос указанное число раз. Установите 0, чтобы отключить автоматические повторы.</string>
-  <string name="setting_model_page_response_stream_retries_input">Максимальное число повторов</string>
+  <string name="setting_page_preferences_network_stream_retries">Повторные попытки потока Response API</string>
+  <string name="setting_sub_agents_global_concurrency">Глобальный лимит параллельных субагентов</string>
+  <string name="setting_sub_agents_global_concurrency_desc">Максимум субагентов, работающих одновременно у всех ассистентов. У каждого ассистента есть и свой лимит. Больше — быстрее параллельные задачи, но слишком много может упереться в лимиты провайдера.</string>
+  <string name="setting_sub_agents_global_concurrency_input">Параллельных субагентов</string>
+  <string name="setting_sub_agents_global_concurrency_hint">От %1$d до %2$d.</string>
+  <string name="setting_page_preferences_network_stream_retries_desc">Если поток Response API закрывается до завершения, повторить запрос указанное число раз. Установите 0, чтобы отключить автоматические повторы.</string>
+  <string name="setting_page_preferences_network_stream_retries_input">Максимальное число повторов</string>
 
   <!-- BrowserAiStripe redesign: outcome-aware, localized action trail -->
   <string name="browser_ai_stripe_stop">Стоп</string>

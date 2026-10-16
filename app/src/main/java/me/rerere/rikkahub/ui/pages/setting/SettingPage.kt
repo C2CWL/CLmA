@@ -207,7 +207,7 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                         onClick = { navController.navigate(Screen.SettingModels) },
                         leadingContent = { Icon(HugeIcons.AiMagic, null) },
                         supportingContent = { Text(stringResource(R.string.setting_page_default_model_desc)) },
-                        headlineContent = { Text(stringResource(R.string.setting_page_default_model)) },
+                        headlineContent = { Text(stringResource(R.string.setting_model_page_title)) },
                     )
                     item(
                         onClick = { navController.navigate(Screen.SettingProvider) },
@@ -396,7 +396,7 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                                 )
                             }
                         },
-                        headlineContent = { Text(stringResource(R.string.setting_page_chat_storage)) },
+                        headlineContent = { Text(stringResource(R.string.setting_files_page_title)) },
                     )
                 }
             }

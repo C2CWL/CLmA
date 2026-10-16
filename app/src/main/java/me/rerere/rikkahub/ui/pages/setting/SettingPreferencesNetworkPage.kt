@@ -339,6 +339,28 @@ fun SettingPreferencesNetworkPage(vm: SettingVM = koinViewModel()) {
                             }
                         },
                     )
+                    item(
+                        headlineContent = {
+                            Text(stringResource(R.string.setting_page_preferences_network_stream_retries))
+                        },
+                        supportingContent = {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(stringResource(R.string.setting_page_preferences_network_stream_retries_desc))
+                                StreamRetryCountField(
+                                    value = settings.responseStreamMaxRetries,
+                                    onCommit = { retries ->
+                                        vm.updateSettings { current ->
+                                            if (current.responseStreamMaxRetries == retries) {
+                                                current
+                                            } else {
+                                                current.copy(responseStreamMaxRetries = retries)
+                                            }
+                                        }
+                                    },
+                                )
+                            }
+                        },
+                    )
                 }
             }
             item {
@@ -486,6 +508,42 @@ private fun SilentWatchdogSecondsField(
             .fillMaxWidth()
             .onFocusChanged { focusState ->
                 if (!focusState.isFocused) text = value.toString()
+            },
+    )
+}
+
+/**
+ * Numeric field for the stream-retry count (0..10, 0 = disabled). Kept local to this page;
+ * the retries govern every streaming generation regardless of provider type, which is why
+ * the row lives under Network rather than Models.
+ */
+@Composable
+private fun StreamRetryCountField(
+    value: Int,
+    onCommit: (Int) -> Unit,
+) {
+    var text by remember(value) { mutableStateOf(value.toString()) }
+
+    OutlinedTextField(
+        value = text,
+        onValueChange = { new ->
+            text = new.filter { it.isDigit() }.take(2)
+            text.toIntOrNull()?.let { parsed ->
+                val normalized = parsed.coerceIn(0, 10)
+                if (normalized != value) onCommit(normalized)
+            }
+        },
+        singleLine = true,
+        label = { Text(stringResource(R.string.setting_page_preferences_network_stream_retries_input)) },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        modifier = Modifier
+            .fillMaxWidth()
+            .onFocusChanged { focusState ->
+                if (!focusState.isFocused) {
+                    val normalized = text.toIntOrNull()?.coerceIn(0, 10) ?: value
+                    text = normalized.toString()
+                    if (normalized != value) onCommit(normalized)
+                }
             },
     )
 }

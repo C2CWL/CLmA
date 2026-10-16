@@ -50,7 +50,8 @@ import org.koin.androidx.compose.koinViewModel
  *
  *  1. Status — integration indicators with tap actions (Termux installed, RUN_COMMAND
  *     permission request, Open Termux, verify smoke test).
- *  2. Timeouts — command timeout, per-turn budget (all tools), verify smoke-test timeout.
+ *  2. Timeouts — command timeout and verify smoke-test timeout. (The app-wide per-turn
+ *     budget and tool-step ceiling moved to Settings -> Models -> Generation limits.)
  *  3. Defaults & limits — working directory, stdout/stderr caps, apt-wrap toggle.
  *  4. Help — expandable setup instructions for allow-external-apps=true.
  */
@@ -247,28 +248,6 @@ fun SettingTermuxPage(
                     },
                 )
                 item(
-                    headlineContent = { Text(stringResource(R.string.setting_termux_turn_budget)) },
-                    supportingContent = { Text(stringResource(R.string.setting_termux_turn_budget_desc)) },
-                    trailingContent = {
-                        TimeoutInput(
-                            currentValue = config.turnBudgetMs / 60_000L,
-                            unitLabel = stringResource(R.string.setting_termux_unit_minutes),
-                            onCommit = vm::setTurnBudgetMinutes,
-                        )
-                    },
-                )
-                item(
-                    headlineContent = { Text(stringResource(R.string.setting_termux_max_tool_steps)) },
-                    supportingContent = { Text(stringResource(R.string.setting_termux_max_tool_steps_desc)) },
-                    trailingContent = {
-                        TimeoutInput(
-                            currentValue = config.maxToolSteps.toLong(),
-                            unitLabel = stringResource(R.string.setting_termux_unit_steps),
-                            onCommit = vm::setMaxToolSteps,
-                        )
-                    },
-                )
-                item(
                     headlineContent = { Text(stringResource(R.string.setting_termux_verify_timeout)) },
                     supportingContent = { Text(stringResource(R.string.setting_termux_verify_timeout_desc)) },
                     trailingContent = {
@@ -365,9 +344,12 @@ private fun StatusDot(color: StatusColor) {
  * Compact numeric input for a timeout/cap row's trailing slot. Mirrors [TimeoutInput] in
  * [me.rerere.rikkahub.ui.pages.setting.browser.SettingBrowserPage] in shape, but uses
  * .take(6) instead of .take(4) to accommodate the 5-digit stdout/stderr byte caps.
+ *
+ * `internal` (not `private`): the model page's generation-limits group reuses it for the
+ * per-turn budget / tool-step rows, so both pages show the same field for the same value.
  */
 @Composable
-private fun TimeoutInput(
+internal fun TimeoutInput(
     currentValue: Long,
     unitLabel: String,
     onCommit: (Long) -> Unit,

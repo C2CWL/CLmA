@@ -788,7 +788,6 @@
   <string name="setting_page_built_in_tools_url_context_desc">تمكين معالجة محتوى الرابط</string>
   <string name="setting_page_built_in_tools_image_generation">توليد الصور</string>
   <string name="setting_page_built_in_tools_image_generation_desc">تمكين قدرة توليد الصور</string>
-  <string name="setting_page_chat_storage">تخزين الدردشة</string>
   <string name="setting_page_chat_storage_desc">%1$d ملفات، %2$.2f ميغابايت</string>
   <string name="setting_page_code_display_settings">عرض الشيفرة</string>
   <string name="setting_page_color_mode">وضع الألوان</string>
@@ -801,7 +800,6 @@
   <string name="setting_page_data_backup">النسخ الاحتياطي للبيانات</string>
   <string name="setting_page_data_backup_desc">النسخ الاحتياطي لبيانات التطبيق واستعادتها</string>
   <string name="setting_page_data_settings">إعدادات البيانات</string>
-  <string name="setting_page_default_model">النموذج والتوجيه الافتراضيان</string>
   <string name="setting_page_default_model_desc">تعيين نماذج افتراضية لكل ميزة</string>
   <string name="setting_page_display_setting">إعدادات العرض</string>
   <string name="setting_page_display_setting_desc">إدارة إعدادات العرض</string>
@@ -839,7 +837,6 @@
   <string name="setting_page_theme_setting">إعدادات السمة</string>
   <string name="setting_page_tts_service">خدمة تحويل النص إلى كلام</string>
   <string name="setting_page_tts_service_desc">تكوين مزوّدي خدمة تحويل النص إلى كلام</string>
-  <string name="setting_page_tts_settings">إعدادات تحويل النص إلى كلام</string>
   <string name="setting_page_web_server">خادم الويب</string>
   <string name="setting_page_web_server_address_note">ملاحظات العنوان</string>
   <string name="setting_page_web_server_address_note_desc">عنوان الشبكة المحلية: يستخدم IP الـ WiFi للجهاز، يمكن الوصول إليه من الأجهزة الأخرى على نفس الشبكة. غير متاح على بيانات الجوال.\nالعنوان المحلي: يستخدم localhost، يمكن الوصول إليه من هذا الجهاز فقط.\nعنوان mDNS: يستخدم اسم مضيف ‎.local، يمكن الوصول إليه بالاسم من الأجهزة الأخرى على نفس الشبكة دون معرفة الـ IP.</string>
@@ -966,7 +963,6 @@
   <string name="setting_tts_page_speed">السرعة</string>
   <string name="setting_tts_page_speed_description">سرعة الكلام (0.25 - 4.0)</string>
   <string name="setting_tts_page_test_text">مرحبًا، هذا اختبار لتحويل النص إلى كلام.</string>
-  <string name="setting_tts_page_title">تحويل النص إلى كلام</string>
   <string name="setting_tts_page_voice">الصوت</string>
   <string name="setting_tts_page_voice_description">الصوت المُستخدم لتركيب الكلام</string>
   <string name="setting_tts_page_voice_id">معرّف الصوت</string>
@@ -1503,13 +1499,13 @@
   <string name="setting_model_page_context_compaction_target_desc">اضبط حجم الملخص المستهدف بآلاف الرموز (Tokens). اتركه فارغًا لاستخدام 1٪ من السياق الحالي (على سبيل المثال، 3k لسياق حجمه 300k).</string>
   <string name="setting_model_page_auto_compaction_keep_tool_calls">الاحتفاظ بأحدث استدعاءات الأدوات</string>
   <string name="setting_model_page_auto_compaction_keep_tool_calls_desc">يحافظ الضغط التلقائي على الإدخال والنتيجة الأصليين لهذه الاستدعاءات. اضبط القيمة على 0 لضغط السياق الحالي بالكامل.</string>
-  <string name="setting_model_page_response_stream_retries">محاولات إعادة تدفق Response API</string>
-  <string name="setting_model_page_subagent_concurrency">الحد العام للوكلاء الفرعيين المتزامنين</string>
-  <string name="setting_model_page_subagent_concurrency_desc">أقصى عدد من الوكلاء الفرعيين الذين يمكن تشغيلهم في الوقت نفسه عبر كل المساعدين. لكل مساعد حدّه الخاص أيضاً. زيادته تسرّع الإرسال المتوازي، لكن الكثير جداً قد يلامس حدود مزوّد الخدمة.</string>
-  <string name="setting_model_page_subagent_concurrency_input">عدد الوكلاء المتزامنين</string>
-  <string name="setting_model_page_subagent_concurrency_hint">بين %1$d و %2$d.</string>
-  <string name="setting_model_page_response_stream_retries_desc">عند إغلاق تدفق Response API قبل اكتماله، أعد محاولة الطلب بهذا العدد من المرات. اضبطه على 0 لتعطيل إعادة المحاولة التلقائية.</string>
-  <string name="setting_model_page_response_stream_retries_input">الحد الأقصى لعدد المحاولات</string>
+  <string name="setting_page_preferences_network_stream_retries">محاولات إعادة تدفق Response API</string>
+  <string name="setting_sub_agents_global_concurrency">الحد العام للوكلاء الفرعيين المتزامنين</string>
+  <string name="setting_sub_agents_global_concurrency_desc">أقصى عدد من الوكلاء الفرعيين الذين يمكن تشغيلهم في الوقت نفسه عبر كل المساعدين. لكل مساعد حدّه الخاص أيضاً. زيادته تسرّع الإرسال المتوازي، لكن الكثير جداً قد يلامس حدود مزوّد الخدمة.</string>
+  <string name="setting_sub_agents_global_concurrency_input">عدد الوكلاء المتزامنين</string>
+  <string name="setting_sub_agents_global_concurrency_hint">بين %1$d و %2$d.</string>
+  <string name="setting_page_preferences_network_stream_retries_desc">عند إغلاق تدفق Response API قبل اكتماله، أعد محاولة الطلب بهذا العدد من المرات. اضبطه على 0 لتعطيل إعادة المحاولة التلقائية.</string>
+  <string name="setting_page_preferences_network_stream_retries_input">الحد الأقصى لعدد المحاولات</string>
 
   <!-- 100% Full Main Branch Localization Coverage -->
   <string name="backup_page_s3_path_style">نمط المسار (Path Style)</string>
@@ -1716,15 +1712,15 @@
   <string name="setting_termux_section_timeouts">المهلات</string>
   <string name="setting_termux_command_timeout">مهلة الأوامر الإجمالية</string>
   <string name="setting_termux_command_timeout_desc">المدة الزمنية لانتظار إرجاع مخرجات أمر سطر الأوامر في الخلفية. النطاق من 5 ثوانٍ إلى 600 ثانية.</string>
-  <string name="setting_termux_turn_budget">ميزانية وقت الدورة</string>
-  <string name="setting_termux_turn_budget_desc">حد أقصى صارم لإجمالي الوقت الذي يمكن أن يقضيه دور مستخدم واحد في تنفيذ الأدوات. النطاق من دقيقة واحدة إلى 60 دقيقة.</string>
+  <string name="setting_model_page_turn_budget">ميزانية وقت الدورة</string>
+  <string name="setting_model_page_turn_budget_desc">حد أقصى صارم لإجمالي الوقت الذي يمكن أن يقضيه دور مستخدم واحد في تنفيذ الأدوات. النطاق من دقيقة واحدة إلى 60 دقيقة.</string>
   <string name="setting_termux_verify_timeout">مهلة التحقق</string>
   <string name="setting_termux_verify_timeout_desc">مهلة اختبار استجابة أمر الصدى allow-external-apps. النطاق من 3 ثوانٍ إلى 30 ثانية.</string>
   <string name="setting_termux_unit_seconds">ثواني</string>
   <string name="setting_termux_unit_minutes">دقائق</string>
   <string name="setting_termux_unit_steps">خطوات</string>
-  <string name="setting_termux_max_tool_steps">الحد الأقصى لاستدعاءات أدوات سطر الأوامر لكل دورة</string>
-  <string name="setting_termux_max_tool_steps_desc">عدد استدعاءات الأدوات التي يمكن لرد واحد تسلسلها قبل إنهائه إجباريًا. ارفع هذه القيمة لمهام التثبيت أو البناء الطويلة. النطاق من 1 إلى 500؛ مع استمرار سريان ميزانية زمن الدور أعلاه.</string>
+  <string name="setting_model_page_max_tool_steps">الحد الأقصى لاستدعاءات أدوات سطر الأوامر لكل دورة</string>
+  <string name="setting_model_page_max_tool_steps_desc">عدد استدعاءات الأدوات التي يمكن لرد واحد تسلسلها قبل إنهائه إجباريًا. ارفع هذه القيمة لمهام التثبيت أو البناء الطويلة. النطاق من 1 إلى 500؛ مع استمرار سريان ميزانية زمن الدور أعلاه.</string>
   <string name="setting_termux_unit_bytes">بايت</string>
   <string name="setting_termux_section_defaults">القيم الافتراضية</string>
   <string name="setting_termux_working_dir">دليل العمل</string>

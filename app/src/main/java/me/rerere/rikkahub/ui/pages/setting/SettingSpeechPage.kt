@@ -40,6 +40,8 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -48,6 +50,7 @@ import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -66,6 +69,7 @@ import me.rerere.asr.ASRProviderSetting
 import me.rerere.rikkahub.data.datastore.DEFAULT_SYSTEM_TTS_ID
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.ui.components.nav.BackButton
+import me.rerere.rikkahub.ui.components.ui.CardGroup
 import me.rerere.rikkahub.ui.components.ui.AutoAIIcon
 import me.rerere.rikkahub.ui.components.ui.Tag
 import me.rerere.rikkahub.ui.components.ui.TagType
@@ -78,6 +82,7 @@ import me.rerere.tts.provider.TTSProviderSetting
 import org.koin.androidx.compose.koinViewModel
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
+import kotlin.math.roundToInt
 
 @Composable
 fun SettingSpeechPage(vm: SettingVM = koinViewModel()) {
@@ -296,9 +301,11 @@ private fun TTSProviderList(
     modifier: Modifier = Modifier
 ) {
     val lazyListState = rememberLazyListState()
+    // The list owns a non-draggable header (the playback-behaviour card) at index 0, so the
+    // reorder callback's LazyList indices are shifted by one relative to `settings.ttsProviders`.
     val reorderableState = rememberReorderableLazyListState(lazyListState) { from, to ->
         val newProviders = settings.ttsProviders.toMutableList().apply {
-            add(to.index, removeAt(from.index))
+            add(to.index - 1, removeAt(from.index - 1))
         }
         onUpdateSettings(settings.copy(ttsProviders = newProviders))
     }
@@ -311,6 +318,9 @@ private fun TTSProviderList(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         state = lazyListState
     ) {
+        item(key = "playback-behaviour", contentType = "header") {
+            TtsPlaybackBehaviourCard(settings = settings, onUpdateSettings = onUpdateSettings)
+        }
         items(settings.ttsProviders, key = { it.id }) { provider ->
             ReorderableItem(
                 state = reorderableState,
@@ -913,5 +923,90 @@ private fun ASRProviderItem(
                 }
             }
         }
+    }
+}
+
+/**
+ * Playback-behaviour knobs for TTS (default speed, quote/bracket filtering, auto-play after
+ * generation). They used to live under Settings -> Interaction; they belong with the speech
+ * providers because every one of them only affects TTS playback.
+ */
+@Composable
+private fun TtsPlaybackBehaviourCard(
+    settings: Settings,
+    onUpdateSettings: (Settings) -> Unit,
+) {
+    val displaySetting = settings.displaySetting
+    var playbackSpeed by remember(settings.defaultTTSPlaybackSpeed) {
+        mutableFloatStateOf(settings.defaultTTSPlaybackSpeed)
+    }
+
+    CardGroup(
+        modifier = Modifier.padding(bottom = 8.dp),
+        title = { Text(stringResource(R.string.setting_speech_page_playback)) },
+    ) {
+        item(
+            headlineContent = { Text(stringResource(R.string.setting_tts_page_default_playback_speed)) },
+            supportingContent = {
+                Column {
+                    Text(stringResource(R.string.setting_tts_page_default_playback_speed_description))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Slider(
+                            value = playbackSpeed,
+                            onValueChange = {
+                                playbackSpeed = (it * 10).roundToInt() / 10f
+                            },
+                            onValueChangeFinished = {
+                                onUpdateSettings(settings.copy(defaultTTSPlaybackSpeed = playbackSpeed))
+                            },
+                            valueRange = 0.5f..2.0f,
+                            steps = 14,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Text(text = "x${"%.1f".format(playbackSpeed)}")
+                    }
+                }
+            },
+        )
+        item(
+            headlineContent = { Text(stringResource(R.string.setting_display_page_tts_only_read_quoted_title)) },
+            supportingContent = { Text(stringResource(R.string.setting_display_page_tts_only_read_quoted_desc)) },
+            trailingContent = {
+                Switch(
+                    checked = displaySetting.ttsOnlyReadQuoted,
+                    onCheckedChange = {
+                        onUpdateSettings(settings.copy(displaySetting = displaySetting.copy(ttsOnlyReadQuoted = it)))
+                    }
+                )
+            },
+        )
+        item(
+            headlineContent = { Text(stringResource(R.string.setting_display_page_tts_read_outside_brackets_title)) },
+            supportingContent = { Text(stringResource(R.string.setting_display_page_tts_read_outside_brackets_desc)) },
+            trailingContent = {
+                Switch(
+                    checked = displaySetting.ttsOnlyReadOutsideBrackets,
+                    onCheckedChange = {
+                        onUpdateSettings(settings.copy(displaySetting = displaySetting.copy(ttsOnlyReadOutsideBrackets = it)))
+                    }
+                )
+            },
+        )
+        item(
+            headlineContent = { Text(stringResource(R.string.setting_display_page_auto_play_tts_title)) },
+            supportingContent = { Text(stringResource(R.string.setting_display_page_auto_play_tts_desc)) },
+            trailingContent = {
+                Switch(
+                    checked = displaySetting.autoPlayTTSAfterGeneration,
+                    onCheckedChange = {
+                        onUpdateSettings(settings.copy(displaySetting = displaySetting.copy(autoPlayTTSAfterGeneration = it)))
+                    }
+                )
+            },
+        )
     }
 }
