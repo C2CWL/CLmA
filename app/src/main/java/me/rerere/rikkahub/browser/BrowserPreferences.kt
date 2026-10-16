@@ -59,6 +59,19 @@ class BrowserPreferences(private val context: Context) {
         }
     }
 
+    // --- Background browsing preference -----------------------------------------------------
+
+    private val preferBackgroundKey = booleanPreferencesKey("prefer_background")
+
+    /** True when browser_open should run off-screen by default (Settings → Browser toggle). */
+    fun preferBackgroundFlow(): Flow<Boolean> = store.data.map { prefs ->
+        prefs[preferBackgroundKey] ?: false
+    }
+
+    suspend fun setPreferBackground(enabled: Boolean) {
+        store.edit { it[preferBackgroundKey] = enabled }
+    }
+
     init {
         // Push the persisted (or default) timeout values into [BrowserController] — the
         // synchronous runtime source of truth read by every browser tool's withTimeoutOrNull
@@ -76,6 +89,12 @@ class BrowserPreferences(private val context: Context) {
             singleTaskTimeoutFlow()
                 .distinctUntilChanged()
                 .onEach { BrowserController.singleTaskTimeoutMs = it }
+                .collect {}
+        }
+        scope.launch {
+            preferBackgroundFlow()
+                .distinctUntilChanged()
+                .onEach { BrowserController.preferBackground = it }
                 .collect {}
         }
     }

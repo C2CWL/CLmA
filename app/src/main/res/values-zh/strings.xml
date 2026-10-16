@@ -1530,6 +1530,8 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="setting_browser_clear_data_confirm_title">清除浏览数据？</string>
   <string name="setting_browser_clear_data_desc">清除 cookies、本地存储和缓存页面。逐工具的开关会保留。</string>
   <string name="setting_browser_clear_data_done">浏览数据已清除。</string>
+  <string name="setting_browser_prefer_background">后台执行浏览器任务</string>
+  <string name="setting_browser_prefer_background_desc">在屏幕外打开浏览器（虚拟屏或无界面），不抢占前台。虚拟屏需要 Shizuku，否则回退到无界面模式。</string>
   <string name="setting_browser_open">打开浏览器</string>
   <string name="setting_browser_open_desc">将浏览器启动到 about:blank — 适合在让 AI 接管之前先登录一次。</string>
   <string name="setting_browser_per_tool_timeout">单工具超时</string>

@@ -1785,6 +1785,8 @@
   <string name="setting_browser_clear_data_confirm_body">This clears all cookies, local storage, and cached pages. You will need to re-log in to any site the AI was using.</string>
   <string name="setting_browser_clear_data_confirm">Clear</string>
   <string name="setting_browser_clear_data_done">Browsing data cleared.</string>
+  <string name="setting_browser_prefer_background">Run in background</string>
+  <string name="setting_browser_prefer_background_desc">Open the browser off-screen (virtual display or headless) so it does not take over the foreground. Needs Shizuku for the virtual display; falls back to headless otherwise.</string>
   <string name="setting_browser_tools_enabled_title">Tools enabled</string>
   <string name="setting_browser_category_read">Read</string>
   <string name="setting_browser_category_write">Write</string>

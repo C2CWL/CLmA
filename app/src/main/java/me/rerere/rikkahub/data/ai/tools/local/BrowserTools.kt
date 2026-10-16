@@ -24,13 +24,18 @@ import me.rerere.ai.core.InputSchema
 import me.rerere.ai.core.Tool
 import me.rerere.ai.ui.UIMessagePart
 import me.rerere.rikkahub.browser.BrowserAiActionKind
+import me.rerere.rikkahub.browser.BrowserBackgroundHost
 import me.rerere.rikkahub.browser.BrowserController
 import me.rerere.rikkahub.browser.BrowserControllerHandle
 import me.rerere.rikkahub.browser.BrowserDiffHelper
 import me.rerere.rikkahub.browser.BrowserToolDefaults
 import me.rerere.rikkahub.browser.HeadlessBrowserSessionPool
 import me.rerere.rikkahub.browser.ReadabilityRunner.runReadability
+import me.rerere.rikkahub.browser.amCommandSucceeded
 import me.rerere.rikkahub.browser.awaitReadyState
+import me.rerere.rikkahub.browser.backgroundUnavailableEnvelope
+import me.rerere.rikkahub.browser.decideBackgroundHost
+import me.rerere.rikkahub.browser.BackgroundHostKind
 import me.rerere.rikkahub.browser.evaluateJavascriptAsync
 import me.rerere.rikkahub.data.ai.tools.HeadlessConversations
 import me.rerere.rikkahub.data.ai.tools.ToolInvocationContext
@@ -164,15 +169,127 @@ private suspend fun trackJsonAction(
 
 // ---- Read tools ---------------------------------------------------------------------------
 
+/**
+ * Open (or re-enter) the headless browser session for [callerConvId] and navigate to [url].
+ * Extracted from browser_open so the background fallback ([openInBackground]) can reuse the
+ * exact bind/await/stream sequence without duplicating it. Returns the standard
+ * {success, current_url, title, mode} envelope, or a busy envelope.
+ */
+private suspend fun openHeadlessSession(
+    context: Context,
+    url: String,
+    callerConvId: String,
+): JsonObject {
+    // Peek BEFORE allocating: getOrCreate + start() spin up a ~30 MB WebView, which
+    // bindHeadless would then immediately reject if a different live conversation owns the
+    // controller slot — wasting the allocation.
+    if (!BrowserController.canBindHeadless(callerConvId)) {
+        return BrowserController.bindBusyEnvelope()
+    }
+    val session = HeadlessBrowserSessionPool.getOrCreate(context, callerConvId)
+    val webView = withContext(Dispatchers.Main) { session.start(callerConvId) }
+    if (!BrowserController.bindHeadless(callerConvId, webView)) {
+        return BrowserController.bindBusyEnvelope()
+    }
+    BrowserController.startTaskWindow()
+    val result = trackJsonAction(BrowserAiActionKind.OPEN, url) {
+        BrowserControllerHandle.withController {
+            withContext(Dispatchers.Main) { webView.loadUrl(url) }
+            webView.awaitReadyState(8_000L)
+            buildJsonObject {
+                put("success", true)
+                put("current_url", webView.url ?: url)
+                put("title", webView.title.orEmpty())
+                put("mode", "headless")
+            }
+        }
+    }
+    // Stream the landing-page screenshot so the remote user sees we arrived.
+    BrowserController.streamScreenshotIfHeadless("Opened $url")
+    return result
+}
+
+/**
+ * Launch the browser off the user's foreground: on a virtual display (Shizuku `am start
+ * --display`) when available, else a headless session as the universal fallback so a
+ * missing Shizuku never makes background browsing disappear. The result carries a `mode`
+ * field (background_display / headless) so the model knows which substrate landed.
+ */
+private suspend fun openInBackground(
+    context: Context,
+    url: String,
+    callerConvId: String?,
+): JsonObject {
+    val host = decideBackgroundHost(BrowserBackgroundHost.shizukuReady(), callerConvId != null)
+        ?: return backgroundUnavailableEnvelope()
+    return when (host) {
+        BackgroundHostKind.VIRTUAL_DISPLAY -> {
+            val (amResult, displayId) = BrowserBackgroundHost.launch(context, url, callerConvId)
+            if (displayId != null && amCommandSucceeded(amResult) &&
+                BrowserController.awaitBind(5_000L)
+            ) {
+                BrowserController.startTaskWindow()
+                trackJsonAction(BrowserAiActionKind.OPEN, url) {
+                    BrowserControllerHandle.withController {
+                        // URL was passed as EXTRA_INITIAL_URL; the WebView began loading it
+                        // before bind() returned (mirrors the foreground fresh-launch path).
+                        webView.awaitReadyState(8_000L)
+                        buildJsonObject {
+                            put("success", true)
+                            put("current_url", webView.url ?: url)
+                            put("title", webView.title.orEmpty())
+                            put("mode", "background_display")
+                            put("display_id", displayId)
+                            put(
+                                "hint",
+                                "Browser is running off-screen on a virtual display. Call " +
+                                    "browser_screenshot to see the page; " +
+                                    "virtual_display_destroy(display_id=$displayId) when done.",
+                            )
+                        }
+                    }
+                }
+            } else {
+                // VD launch failed — headless is the universal fallback when a conversation
+                // can host it; otherwise report an honest launch failure.
+                if (callerConvId != null) {
+                    openHeadlessSession(context, url, callerConvId)
+                } else {
+                    buildJsonObject {
+                        put("error", "background_launch_failed")
+                        put("detail", "Virtual display launch failed and no conversation for headless fallback.")
+                        put("am_result", amResult.toString())
+                        put("recovery", "Retry browser_open, or set background=false to open in the foreground.")
+                    }
+                }
+            }
+        }
+        BackgroundHostKind.HEADLESS -> openHeadlessSession(context, url, callerConvId!!)
+    }
+}
+
 fun browserOpenTool(context: Context, invocationContext: ToolInvocationContext? = null): Tool = Tool(
     name = BrowserToolDefaults.OPEN,
-    description = "Navigate the in-app browser to a URL. Launches the browser if it isn't open. Returns {success, current_url, title}. Resets the per-task 5-minute timer.$TELEGRAM_HEADLESS_CUE",
+    description = """
+        Navigate the in-app browser to a URL. Launches the browser if it isn't open. Returns
+        {success, current_url, title, mode}. Resets the per-task 5-minute timer.
+
+        Pass background=true (or enable Settings → Browser → "Run in background") to run
+        WITHOUT taking over the user's foreground: the browser opens off-screen on a virtual
+        display (needs Shizuku) or falls back to a headless session. The result's `mode`
+        field reports which substrate landed (foreground / background_display / headless).
+        In background mode call browser_screenshot to see the page.$TELEGRAM_HEADLESS_CUE
+    """.trimIndent().replace("\n", " "),
     parameters = {
         InputSchema.Obj(
             properties = buildJsonObject {
                 put("url", buildJsonObject {
                     put("type", "string")
                     put("description", "The full URL to navigate to (https://...)")
+                })
+                put("background", buildJsonObject {
+                    put("type", "boolean")
+                    put("description", "Optional. Run the browser off-screen so it doesn't take over the foreground. Defaults to the Settings → Browser toggle; headless callers (Telegram/cron/sub-agent) always run off-screen regardless.")
                 })
             },
             required = listOf("url"),
@@ -202,88 +319,66 @@ fun browserOpenTool(context: Context, invocationContext: ToolInvocationContext? 
             }
         } else {
             withTimeoutOrNull(toolTimeoutMs) {
-                // Pass 3 mode picker. If the caller is a Telegram / cron / sub-agent
-                // conversation, run in headless mode — no on-screen Activity, screenshots
-                // streamed to the calling chat after every state-changing tool. Otherwise
-                // fall back to the foreground BrowserActivity (the only tool that can
-                // launch it).
+                // Mode picker. Three cases:
+                //  1. Headless caller (Telegram / cron / sub-agent) → off-screen session,
+                //     screenshots stream to the calling chat.
+                //  2. Foreground caller + background requested (param or Settings toggle)
+                //     → launch off-screen: virtual display (Shizuku) with a headless
+                //     fallback, so a missing Shizuku never makes background browsing vanish.
+                //  3. Otherwise → foreground BrowserActivity (Pass 1+2 behaviour).
                 val callerConvId = invocationContext?.callerConversationId
                 val headless = isHeadlessInvocation(invocationContext)
+                // Explicit param wins; else the user's Settings toggle. Headless callers
+                // already run off-screen, so never redirect them through the VD path.
+                val wantsBackground = !headless &&
+                    (input.jsonObject["background"]?.jsonPrimitive?.booleanOrNull
+                        ?: BrowserController.preferBackground)
 
-                if (headless && callerConvId != null) {
-                    // Peek BEFORE allocating: getOrCreate + start() spin up a ~30 MB WebView,
-                    // which bindHeadless would then immediately reject if a different live
-                    // conversation owns the controller slot — wasting the allocation.
-                    // canBindHeadless mirrors bindHeadless's reject rule without mutating state;
-                    // bindHeadless stays authoritative and re-checks under its lock, so a race
-                    // here costs at most a discarded allocation, never a wrong binding.
-                    if (!BrowserController.canBindHeadless(callerConvId)) {
-                        return@withTimeoutOrNull BrowserController.bindBusyEnvelope()
+                when {
+                    headless && callerConvId != null -> {
+                        openHeadlessSession(context, url, callerConvId)
                     }
-                    // Headless path: get-or-create the per-conv WebView session. The
-                    // lifecycle of the WebView piggybacks on the calling FGS — when the
-                    // FGS dies, the whole pool dies with it. Subsequent tool calls will
-                    // see Mode.Idle and return `browser_session_lost`.
-                    val session = HeadlessBrowserSessionPool.getOrCreate(context, callerConvId)
-                    val webView = withContext(Dispatchers.Main) { session.start(callerConvId) }
-                    // Reject if another conversation already holds the (single, global)
-                    // controller binding — binding a second concurrently would route this
-                    // conv's streamed screenshots into the other chat. Same-conv re-bind is
-                    // always accepted, so the common per-task reuse path is unaffected.
-                    if (!BrowserController.bindHeadless(callerConvId, webView)) {
-                        return@withTimeoutOrNull BrowserController.bindBusyEnvelope()
+                    wantsBackground && !BrowserController.isBound() -> {
+                        openInBackground(context, url, callerConvId)
                     }
-                    BrowserController.startTaskWindow()
-                    val result = trackJsonAction(BrowserAiActionKind.OPEN, url) {
-                        BrowserControllerHandle.withController {
-                            withContext(Dispatchers.Main) { webView.loadUrl(url) }
-                            webView.awaitReadyState(8_000L)
-                            buildJsonObject {
-                                put("success", true)
-                                put("current_url", webView.url ?: url)
-                                put("title", webView.title.orEmpty())
-                            }
-                        }
-                    }
-                    // Stream the landing-page screenshot so the user sees we arrived.
-                    BrowserController.streamScreenshotIfHeadless("Opened $url")
-                    result
-                } else {
-                    // Foreground path (Pass 1+2 behaviour). browser_open is the ONLY tool
-                    // allowed to launch the Activity. Any other tool returning
-                    // browser_not_open is the LLM's signal to call this first.
-                    val wasAlreadyBound = BrowserController.isBound()
-                    if (!wasAlreadyBound) {
-                        context.startActivity(
-                            me.rerere.rikkahub.browser.BrowserActivity.intent(
-                                context,
-                                url,
-                                conversationId = callerConvId,
+                    else -> {
+                        // Foreground path (Pass 1+2 behaviour). Also covers a background
+                        // request when the browser is ALREADY open somewhere — just
+                        // navigate the live WebView rather than relocating its display.
+                        val wasAlreadyBound = BrowserController.isBound()
+                        if (!wasAlreadyBound) {
+                            context.startActivity(
+                                me.rerere.rikkahub.browser.BrowserActivity.intent(
+                                    context,
+                                    url,
+                                    conversationId = callerConvId,
+                                )
                             )
-                        )
-                        if (!BrowserController.awaitBind(5_000L)) {
-                            return@withTimeoutOrNull buildJsonObject {
-                                put("error", "browser_launch_failed")
-                                put("recovery", "Activity did not bind within 5s; retry browser_open or check that the app has overlay permission.")
+                            if (!BrowserController.awaitBind(5_000L)) {
+                                return@withTimeoutOrNull buildJsonObject {
+                                    put("error", "browser_launch_failed")
+                                    put("recovery", "Activity did not bind within 5s; retry browser_open or check that the app has overlay permission.")
+                                }
                             }
                         }
-                    }
-                    // (Re)start the 5-minute task window on every browser_open.
-                    BrowserController.startTaskWindow()
-                    trackJsonAction(BrowserAiActionKind.OPEN, url) {
-                        BrowserControllerHandle.withController {
-                            // When the Activity was just freshly launched, the URL was already
-                            // passed as EXTRA_INITIAL_URL and the WebView began loading it
-                            // before bind() returned. Skip a redundant second loadUrl — it
-                            // would abort the in-flight load and restart from the top.
-                            if (wasAlreadyBound) {
-                                withContext(Dispatchers.Main) { webView.loadUrl(url) }
-                            }
-                            webView.awaitReadyState(8_000L)
-                            buildJsonObject {
-                                put("success", true)
-                                put("current_url", webView.url ?: url)
-                                put("title", webView.title.orEmpty())
+                        // (Re)start the 5-minute task window on every browser_open.
+                        BrowserController.startTaskWindow()
+                        trackJsonAction(BrowserAiActionKind.OPEN, url) {
+                            BrowserControllerHandle.withController {
+                                // When the Activity was just freshly launched, the URL was already
+                                // passed as EXTRA_INITIAL_URL and the WebView began loading it
+                                // before bind() returned. Skip a redundant second loadUrl — it
+                                // would abort the in-flight load and restart from the top.
+                                if (wasAlreadyBound) {
+                                    withContext(Dispatchers.Main) { webView.loadUrl(url) }
+                                }
+                                webView.awaitReadyState(8_000L)
+                                buildJsonObject {
+                                    put("success", true)
+                                    put("current_url", webView.url ?: url)
+                                    put("title", webView.title.orEmpty())
+                                    put("mode", "foreground")
+                                }
                             }
                         }
                     }

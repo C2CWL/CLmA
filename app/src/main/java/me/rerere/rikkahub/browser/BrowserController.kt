@@ -93,6 +93,15 @@ object BrowserController {
      */
     @Volatile
     var perToolTimeoutMs: Long = BrowserToolDefaults.DEFAULT_PER_TOOL_TIMEOUT_MS
+
+    /**
+     * Whether browser_open should default to running in the background (off the user's
+     * foreground display) when the model doesn't explicitly request a mode. Pushed here
+     * from [BrowserPreferences] at app start and on every edit, mirroring the timeout
+     * fields. The model can still override per-call with the `background` parameter.
+     */
+    @Volatile
+    var preferBackground: Boolean = false
     /** Cache subdir for streamed (headless) screenshots — separate from the `browser-shots`
      *  subdir the explicit browser_screenshot tool writes into so the streamer pipe can be
      *  swept independently if it ever grows unbounded. */

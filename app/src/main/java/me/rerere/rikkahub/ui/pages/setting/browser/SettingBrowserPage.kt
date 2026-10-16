@@ -69,6 +69,7 @@ fun SettingBrowserPage(
     val perToolTimeoutMs by vm.perToolTimeoutMs.collectAsStateWithLifecycle()
     val singleTaskTimeoutMs by vm.singleTaskTimeoutMs.collectAsStateWithLifecycle()
     val searchEngineId by vm.searchEngineId.collectAsStateWithLifecycle()
+    val preferBackground by vm.preferBackground.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     var showClearConfirm by remember { mutableStateOf(false) }
@@ -132,6 +133,16 @@ fun SettingBrowserPage(
                     onClick = { showClearConfirm = true },
                     headlineContent = { Text(stringResource(R.string.setting_browser_clear_data)) },
                     supportingContent = { Text(stringResource(R.string.setting_browser_clear_data_desc)) },
+                )
+                item(
+                    headlineContent = { Text(stringResource(R.string.setting_browser_prefer_background)) },
+                    supportingContent = { Text(stringResource(R.string.setting_browser_prefer_background_desc)) },
+                    trailingContent = {
+                        Switch(
+                            checked = preferBackground,
+                            onCheckedChange = vm::setPreferBackground,
+                        )
+                    },
                 )
             }
 

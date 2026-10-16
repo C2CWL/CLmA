@@ -47,12 +47,23 @@ class SettingBrowserViewModel(
         initialValue = BrowserSearchEngines.DEFAULT.id,
     )
 
+    /** Whether browser_open should run off-screen by default (Settings → Browser toggle). */
+    val preferBackground: StateFlow<Boolean> = prefs.preferBackgroundFlow().stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = false,
+    )
+
+    fun setToolEnabled(toolName: String, enabled: Boolean) {
+        viewModelScope.launch { prefs.setToolEnabled(toolName, enabled) }
+    }
+
     fun setSearchEngine(id: String) {
         viewModelScope.launch { prefs.setSearchEngine(id) }
     }
 
-    fun setToolEnabled(toolName: String, enabled: Boolean) {
-        viewModelScope.launch { prefs.setToolEnabled(toolName, enabled) }
+    fun setPreferBackground(enabled: Boolean) {
+        viewModelScope.launch { prefs.setPreferBackground(enabled) }
     }
 
     /** Persist a per-tool timeout given in seconds. Clamping happens in [BrowserPreferences]. */
