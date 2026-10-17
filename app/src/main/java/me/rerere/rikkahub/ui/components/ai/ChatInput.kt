@@ -85,6 +85,7 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.glass.hazeGlass
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.collectLatest
+import me.rerere.ai.core.ReasoningLevel
 import me.rerere.ai.provider.Model
 import me.rerere.ai.provider.ModelAbility
 import me.rerere.ai.provider.ModelType
@@ -138,6 +139,7 @@ fun ChatInput(
     enableSearch: Boolean,
     conversationChatModelId: Uuid? = null,
     onUpdateChatModel: (Model) -> Unit,
+    onUpdateModelReasoningLevel: (Model, ReasoningLevel) -> Unit,
     onUpdateSearchMode: (SearchMode) -> Unit,
     onUpdateSearchService: (Int) -> Unit,
     onMoreClick: () -> Unit,
@@ -331,7 +333,7 @@ fun ChatInput(
                                     conversationChatModelId = conversationChatModelId,
                                     expanded = expanded,
                                     onUpdateChatModel = onUpdateChatModel,
-                                    onUpdateAssistant = onUpdateAssistant,
+                                    onUpdateModelReasoningLevel = onUpdateModelReasoningLevel,
                                 )
                             }
                         },
@@ -442,12 +444,12 @@ private fun ModelReasoningChip(
     conversationChatModelId: Uuid? = null,
     expanded: Boolean,
     onUpdateChatModel: (Model) -> Unit,
-    onUpdateAssistant: (Assistant) -> Unit,
+    onUpdateModelReasoningLevel: (Model, ReasoningLevel) -> Unit,
 ) {
     val effectiveModelId = conversationChatModelId ?: assistant.chatModelId ?: settings.chatModelId
     val model = settings.findModelById(effectiveModelId)
     val showReasoning = model?.abilities?.contains(ModelAbility.REASONING) == true
-    val level = assistant.reasoningLevel
+    val level = model?.reasoningLevel ?: assistant.reasoningLevel
     val modelListState = rememberModelListState(
         modelId = effectiveModelId,
         providers = settings.providers,
@@ -525,7 +527,9 @@ private fun ModelReasoningChip(
                 reasoningLevel = level,
                 showReasoning = showReasoning,
                 onUpdateReasoningLevel = {
-                    onUpdateAssistant(assistant.copy(reasoningLevel = it))
+                    if (model != null) {
+                        onUpdateModelReasoningLevel(model, it)
+                    }
                 },
             )
         },

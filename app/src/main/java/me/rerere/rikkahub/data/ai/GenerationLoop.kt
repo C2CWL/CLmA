@@ -1571,9 +1571,10 @@ class GenerationLoop(
             tools = tools,
             textToolCallParsing = settings.parseTextToolCalls,
             // Per-conversation thinking-depth override (a sub-agent run's `reasoning_level`),
-            // pinned for exactly the run's lifetime; everyone else falls through to the
-            // assistant's own level, unchanged.
+            // pinned for exactly the run's lifetime; otherwise the model's own level, and
+            // finally the assistant's legacy level (migration fallback).
             reasoningLevel = conversationId?.let { ConversationReasoningOverrides.get(it) }
+                ?: model.reasoningLevel
                 ?: assistant.reasoningLevel,
             customHeaders = buildList {
                 addAll(assistant.customHeaders)

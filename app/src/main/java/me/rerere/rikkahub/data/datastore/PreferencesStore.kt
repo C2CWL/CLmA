@@ -906,6 +906,24 @@ class SettingsStore(
         }
     }
 
+    suspend fun updateModelReasoningLevel(modelId: Uuid, reasoningLevel: ReasoningLevel) {
+        update { settings ->
+            settings.copy(
+                providers = settings.providers.map { provider ->
+                    provider.copyProvider(
+                        models = provider.models.map { model ->
+                            if (model.id == modelId) {
+                                model.copy(reasoningLevel = reasoningLevel)
+                            } else {
+                                model
+                            }
+                        }
+                    )
+                }
+            )
+        }
+    }
+
     suspend fun updateAssistantWebSearch(assistantId: Uuid, enabled: Boolean) {
         update { settings ->
             settings.copy(

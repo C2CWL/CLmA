@@ -28,6 +28,7 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import me.rerere.ai.core.MessageRole
+import me.rerere.ai.core.ReasoningLevel
 import me.rerere.ai.provider.Model
 import me.rerere.ai.ui.UIMessage
 import me.rerere.ai.ui.UIMessagePart
@@ -263,6 +264,12 @@ class ChatVM(
             chatService.updateConversationState(_conversationId) { conversation ->
                 conversation.copy(chatModelId = model.id)
             }
+        }
+    }
+
+    fun setModelReasoningLevel(model: Model, reasoningLevel: ReasoningLevel) {
+        viewModelScope.launch {
+            settingsStore.updateModelReasoningLevel(model.id, reasoningLevel)
         }
     }
 

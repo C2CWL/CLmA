@@ -1,7 +1,9 @@
 package me.rerere.ai.provider
 
+import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import me.rerere.ai.core.ReasoningLevel
 import kotlin.uuid.Uuid
 
 @Serializable
@@ -17,6 +19,12 @@ data class Model(
     val abilities: List<ModelAbility> = emptyList(),
     val tools: Set<BuiltInTools> = emptySet(),
     val providerOverwrite: ProviderSetting? = null,
+    /**
+     * Per-model thinking depth. Null falls back to the assistant-level setting
+     * (migration path); once the user adjusts it here, this takes precedence.
+     */
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val reasoningLevel: ReasoningLevel? = null,
     // Optional capability/pricing metadata, populated from OpenRouter's /models endpoint.
     val contextLength: Int? = null,
     val supportedParameters: List<String> = emptyList(),
