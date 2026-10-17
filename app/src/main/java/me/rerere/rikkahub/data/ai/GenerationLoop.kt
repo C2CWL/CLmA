@@ -765,29 +765,22 @@ class GenerationLoop(
                 try {
                     onBeforeModelRequest()
                     // System injections (e.g. a background sub-agent's completion notice)
-                    // ride THIS request only: appended to the request messages, never to the
-                    // loop's `messages` var — so they are never emitted, persisted, rendered,
-                    // or embedded. Drained once here; whatever the model learns from them
-                    // reaches the persistent history through its own reply. This is also what
-                    // makes "don't wait for the turn to end" real: a notice pushed while this
-                    // turn is in flight is seen on the very next loop step.
+                    // are drained here — once per loop step, so an in-flight turn sees a
+                    // notice on its very next request without waiting for the turn to end —
+                    // and handed to generateInternal, which appends them to the request-only
+                    // `internalMessages` (alongside the system prompt and the continuation
+                    // instruction). They must NOT be added to the loop's `messages` var:
+                    // generateInternal writes that list back via onUpdateMessages, and
+                    // anything in it ends up rendered and persisted in the chat page.
                     val injections = conversationId
                         ?.let { ConversationInjections.drain(it) }
                         .orEmpty()
-                    val requestMessages = if (injections.isEmpty()) {
-                        messages
-                    } else {
-                        messages + UIMessage(
-                            role = MessageRole.USER,
-                            parts = listOf(UIMessagePart.Text(injections.joinToString("\n\n"))),
-                            isSynthetic = true,
-                        )
-                    }
                     generateInternal(
                         assistant = assistant,
                         settings = settings,
                         systemAddendum = systemAddendum,
-                        messages = requestMessages,
+                        messages = messages,
+                        injectedNotices = injections,
                         onUpdateMessages = {
                             messages = it.transforms(
                                 transformers = outputTransformers,
@@ -1484,6 +1477,15 @@ class GenerationLoop(
         workspaceCwd: String? = null,
         stepIndex: Int = 0,
         continuationFromPartial: Boolean = false,
+        /**
+         * System notices to append after the conversation messages for THIS request only
+         * (e.g. a background sub-agent's completion). They join `internalMessages` — the
+         * request-only assembly that is never written back via [onUpdateMessages] — as
+         * synthetic user messages, so they reach the model without ever rendering in the
+         * chat page, persisting, or being embedded. Default empty: every existing caller
+         * sends exactly what it sent before.
+         */
+        injectedNotices: List<String> = emptyList(),
     ) {
         val internalMessages = buildList {
             // Conversation-level system prompt override (upstream): when the assistant
@@ -1531,6 +1533,16 @@ class GenerationLoop(
                 add(UIMessage(
                     role = MessageRole.USER,
                     parts = listOf(UIMessagePart.Text(CONTINUATION_INSTRUCTION)),
+                    isSynthetic = true,
+                ))
+            }
+            // System injections ride this request-only assembly for the same reason the
+            // continuation instruction does: the model must see them, the conversation
+            // must not keep them.
+            injectedNotices.forEach { notice ->
+                add(UIMessage(
+                    role = MessageRole.USER,
+                    parts = listOf(UIMessagePart.Text(notice)),
                     isSynthetic = true,
                 ))
             }
