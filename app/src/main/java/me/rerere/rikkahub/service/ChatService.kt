@@ -1860,6 +1860,12 @@ class ChatService(
                 },
                 outputTransformers = outputTransformers,
                 tools = buildList {
+                    // Synchronise the live dispatch profile before tool resolution so
+                    // subagent_dispatch is registered when the profile != NEVER.
+                    // generateText was the missing third call site (fast-path and
+                    // buildToolsForRerun already do this).
+                    me.rerere.rikkahub.subagent.SubAgentDispatchProfileRules
+                        .setLiveDispatchProfile(settings.subAgentDispatchProfile)
                     // P2-04 — the child's own tool surface when this conversation is a sub-agent
                     // run that has one; otherwise this is the resolved assistant itself.
                     val surfaceAssistant = me.rerere.rikkahub.subagent.SubAgentSurface
