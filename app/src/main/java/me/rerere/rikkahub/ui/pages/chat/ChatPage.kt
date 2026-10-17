@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListState
@@ -613,40 +614,71 @@ private fun ChatPageContent(
                         vm.saveConversationAsync()
                     },
                 )
-                // Fade + title bar, drawn over the list: content dissolves as it slides under the
-                // bar, and the glass discs refract whatever passes behind them.
-                // A light-theme photo uses a shorter fade. The old opaque ramp, stacked on the
-                // full-screen veil, is what turned the wallpaper grey.
-                val fade = titleBarFade(
-                    darkTheme = LocalDarkMode.current,
-                    photoShown = chatPhotoShown(
-                        effectiveBackground(
-                            darkTheme = LocalDarkMode.current,
-                            background = assistant.background,
-                            darkBackground = assistant.darkBackground,
-                            lightBackground = assistant.lightBackground,
-                        ),
-                        assistant.useGradientBackground,
+                val darkTheme = LocalDarkMode.current
+                // Fade scrims over the list: content dissolves as it slides under the top bar
+                // (top dissolve) and down into the floating input bar (bottom dissolve), while
+                // the liquid glass controls refract whatever passes behind them.
+                val photoShown = chatPhotoShown(
+                    effectiveBackground(
+                        darkTheme = darkTheme,
+                        background = assistant.background,
+                        darkBackground = assistant.darkBackground,
+                        lightBackground = assistant.lightBackground,
                     ),
+                    assistant.useGradientBackground,
                 )
+                val topFade = titleBarFade(darkTheme = darkTheme, photoShown = photoShown)
+                val bottomFade = bottomBarFade(darkTheme = darkTheme, photoShown = photoShown)
                 val fadeColor = MaterialTheme.colorScheme.background
+
+                // Top dissolve: extends below the title bar so incoming/outgoing messages
+                // fade in/out smoothly instead of clipping abruptly at the bar's bottom edge.
+                val topFadeExtension = 40.dp
+                val topFadeHeight = if (topBarHeightPx > 0) {
+                    topBarHeight + topFadeExtension
+                } else {
+                    innerPadding.calculateTopPadding() + 64.dp + topFadeExtension
+                }
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .fillMaxWidth()
+                        .height(topFadeHeight)
+                        .background(
+                            Brush.verticalGradient(
+                                0f to fadeColor.copy(alpha = topFade.topAlpha),
+                                (if (topBarHeightPx > 0) (topBarHeight / topFadeHeight).coerceIn(0.3f, 0.7f) else 0.5f) to
+                                    fadeColor.copy(alpha = topFade.midAlpha),
+                                1f to Color.Transparent,
+                            )
+                        )
+                )
+
+                // Bottom dissolve: smooth fade-out as messages slide down toward the bottom bar.
+                val bottomBarHeight = innerPadding.calculateBottomPadding()
+                val bottomFadeExtension = 48.dp
+                val bottomFadeHeight = bottomBarHeight + bottomFadeExtension
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .height(bottomFadeHeight)
+                        .background(
+                            Brush.verticalGradient(
+                                0f to Color.Transparent,
+                                (bottomFadeExtension / bottomFadeHeight).coerceIn(0.2f, 0.6f) to
+                                    fadeColor.copy(alpha = bottomFade.midAlpha),
+                                1f to fadeColor.copy(alpha = bottomFade.bottomAlpha),
+                            )
+                        )
+                )
+
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
                         .fillMaxWidth()
                         .onSizeChanged { topBarHeightPx = it.height },
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .matchParentSize()
-                            .background(
-                                Brush.verticalGradient(
-                                    0f to fadeColor.copy(alpha = fade.topAlpha),
-                                    0.5f to fadeColor.copy(alpha = fade.midAlpha),
-                                    1f to fadeColor.copy(alpha = fade.bottomAlpha),
-                                )
-                            )
-                    )
                     TopBar(
                         settings = setting,
                         conversation = conversation,

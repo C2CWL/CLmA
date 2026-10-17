@@ -45,6 +45,23 @@ class WallpaperContrastTest {
         assertEquals(0f, fade.bottomAlpha, 0f)
     }
 
+    @Test fun `bottom fade starts transparent and reaches maximum alpha at screen edge`() {
+        val noPhoto = bottomBarFade(darkTheme = false, photoShown = false)
+        val darkPhoto = bottomBarFade(darkTheme = true, photoShown = true)
+        assertEquals(0f, noPhoto.topAlpha, 0f)
+        assertEquals(0f, darkPhoto.topAlpha, 0f)
+        assertTrue(noPhoto.midAlpha in 0.5f..0.8f)
+        assertTrue(noPhoto.bottomAlpha > 0.9f)
+        assertEquals(noPhoto, darkPhoto)
+    }
+
+    @Test fun `light photo bottom fade keeps a softer veil`() {
+        val lightPhoto = bottomBarFade(darkTheme = false, photoShown = true)
+        assertEquals(0f, lightPhoto.topAlpha, 0f)
+        assertTrue(lightPhoto.midAlpha < 0.5f)
+        assertTrue(lightPhoto.bottomAlpha < 0.8f)
+    }
+
     @Test fun `bare assistant text gets a plate only on a light-theme photo`() {
         assertTrue(assistantTextNeedsPhotoPlate(darkTheme = false, photoShown = true, showAssistantBubble = false))
         assertFalse(assistantTextNeedsPhotoPlate(darkTheme = true, photoShown = true, showAssistantBubble = false))

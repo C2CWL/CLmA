@@ -47,6 +47,16 @@ internal fun titleBarFade(darkTheme: Boolean, photoShown: Boolean): TitleBarFade
         TitleBarFade(topAlpha = 1f, midAlpha = 0.75f, bottomAlpha = 0f)
     }
 
+internal data class BottomBarFade(val topAlpha: Float, val midAlpha: Float, val bottomAlpha: Float)
+
+internal fun bottomBarFade(darkTheme: Boolean, photoShown: Boolean): BottomBarFade =
+    if (!darkTheme && photoShown) {
+        // Gentle dissolve over a custom photo so the light theme does not whitewash the wallpaper.
+        BottomBarFade(topAlpha = 0f, midAlpha = 0.30f, bottomAlpha = 0.72f)
+    } else {
+        BottomBarFade(topAlpha = 0f, midAlpha = 0.65f, bottomAlpha = 0.95f)
+    }
+
 /** Plate behind assistant text that opted out of a bubble. Opaque enough to read. */
 internal const val PHOTO_TEXT_PLATE_ALPHA = 0.92f
 
