@@ -39,6 +39,12 @@ data class SubAgentRun(
     val mediaParts: Int = 0,
     /** The dispatch's `reasoning_level`, echoed for observability; null = inherited. */
     val reasoningLevel: String? = null,
+    /**
+     * How many times the engine retried the generation after a non-cancellation failure.
+     * 0 = succeeded on the first attempt (or was never retried). Reported in [encodeRun]
+     * so the dispatcher can see whether retries were needed.
+     */
+    val retryCount: Int = 0,
 )
 
 @Serializable
@@ -85,6 +91,19 @@ object SubAgentDefaults {
      */
     const val SLOT_WAIT_TIMEOUT_MS = 30_000L
     const val SLOT_RETRY_INTERVAL_MS = 250L
+
+    /**
+     * How many times a sub-agent retries its generation after a non-cancellation failure
+     * (all internal retries + model routing exhausted). Each retry re-runs the generation
+     * via [me.rerere.rikkahub.service.ChatService.regenerateAtMessage], which means each
+     * retry also benefits from model routing — a model that failed is in cooldown, so the
+     * next attempt automatically tries a different favourite model.
+     *
+     * Default 1 (one retry) so a transient network blip does not waste a whole sub-agent run;
+     * 0 preserves the pre-retry behaviour (fail immediately).
+     */
+    const val DEFAULT_RETRY_ON_FAILURE = 1
+    const val MAX_RETRY_ON_FAILURE = 5
 
     /** Default system prompt used when the assistant's per-sub-agent prompt is empty. */
     val DEFAULT_SYSTEM_PROMPT = """
@@ -157,6 +176,17 @@ data class SubAgentRequest(
      * caller uses named arguments, so a new tail field cannot re-bind an older positional one.
      */
     val attachParentMedia: Boolean = false,
+    /**
+     * How many times to retry the generation after a non-cancellation failure (all internal
+     * retries + model routing exhausted). 0 = no retry (fail immediately, the pre-feature
+     * behaviour). Each retry re-runs the generation from the original user message, and each
+     * retry benefits from model routing — a model that failed is in cooldown, so the next
+     * attempt tries a different favourite model.
+     *
+     * Appended last, same rule as [attachParentMedia]: every existing caller uses named
+     * arguments, so a new tail field cannot re-bind an older positional one.
+     */
+    val retryOnFailure: Int = SubAgentDefaults.DEFAULT_RETRY_ON_FAILURE,
 )
 
 /**
@@ -241,6 +271,18 @@ object SubAgentRequestValidator {
                         "; got \"$level\""
                 )
             }
+        }
+        if (request.retryOnFailure < 0) {
+            return Result.Reject(
+                "invalid_retry_on_failure",
+                "retry_on_failure must be at least 0; got ${request.retryOnFailure}"
+            )
+        }
+        if (request.retryOnFailure > SubAgentDefaults.MAX_RETRY_ON_FAILURE) {
+            return Result.Reject(
+                "invalid_retry_on_failure",
+                "retry_on_failure exceeds max ${SubAgentDefaults.MAX_RETRY_ON_FAILURE}; got ${request.retryOnFailure}"
+            )
         }
         return Result.Ok(request.copy(task = task))
     }

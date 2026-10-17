@@ -53,6 +53,7 @@ internal fun encodeRun(run: SubAgentRun, budgetRemaining: Long? = null): JsonObj
     // D3 — how many parent audio/video attachments travelled with this dispatch. Absent
     // means none (the caller did not ask), the same "no value, no key" rule as above.
     if (run.mediaParts > 0) put("media_parts", run.mediaParts)
+    if (run.retryCount > 0) put("retry_count", run.retryCount)
 }
 
 /**

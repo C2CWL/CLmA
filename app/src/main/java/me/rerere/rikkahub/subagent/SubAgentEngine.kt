@@ -11,6 +11,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import me.rerere.ai.core.MessageRole
 import me.rerere.ai.core.ReasoningLevel
 import me.rerere.ai.ui.UIMessagePart
 import me.rerere.rikkahub.AppScope
@@ -672,30 +673,90 @@ class SubAgentEngine(
             }
             // D3 — media first, then the task text, matching the order DashScope's own
             // multimodal examples use.
-            chatService.sendMessage(
-                conv.id,
-                mediaParts + listOf(UIMessagePart.Text(taskWithWrapup)),
-            )
-            // The naive form `withTimeoutOrNull { …first { it == null } }` followed by a
-            // `finished == null` check is BROKEN: `.first { it == null }` returns the matched
-            // value — which IS null on successful completion (the Job? went to null when the
-            // LLM finished). So `finished == null` was true on BOTH timeout AND success, and
-            // every sub-agent looked TIMED_OUT despite actually finishing. Use a Unit sentinel
-            // so the two outcomes are distinguishable.
-            val completed: Unit? = withTimeoutOrNull(request.timeoutSeconds * 1000L) {
-                chatService.getGenerationJobStateFlow(conv.id).first { it == null }
-                Unit
+            //
+            // Retry loop: when the generation fails (non-cancellation, all internal
+            // retries + model routing in ChatService exhausted), the engine retries
+            // by regenerating from the original user message. Each retry benefits
+            // from model routing — a model that failed is in ModelRouter's cooldown,
+            // so the next attempt tries a different favourite model.
+            val errorIdsBefore = chatService.errors.value.map { it.id }.toSet()
+            val firstMessage = mediaParts + listOf(UIMessagePart.Text(taskWithWrapup))
+            chatService.sendMessage(conv.id, firstMessage)
+
+            val deadlineMs = System.currentTimeMillis() + request.timeoutSeconds * 1000L
+            val maxAttempts = 1 + request.retryOnFailure.coerceIn(0, SubAgentDefaults.MAX_RETRY_ON_FAILURE)
+            var attempt = 0
+            var generationFailed = false
+            var failureDetail: String? = null
+
+            while (true) {
+                val remainingMs = deadlineMs - System.currentTimeMillis()
+                if (remainingMs <= 0) {
+                    runCatching { chatService.stopGeneration(conv.id) }
+                        .onFailure { Log.w(TAG, "sub-agent timeout: stopGeneration failed for $runId", it) }
+                    attachRunUsage(runId, conv.id.toString())
+                    markTerminal(runId, SubAgentStatus.TIMED_OUT, "exceeded ${request.timeoutSeconds}-second cap")
+                    notifyParentIfBackground(parentChatId, registry.get(runId))
+                    return
+                }
+                // Use a Unit sentinel: `.first { it == null }` returns null on completion,
+                // which is indistinguishable from timeout's null return without it.
+                val completed: Unit? = withTimeoutOrNull(remainingMs) {
+                    chatService.getGenerationJobStateFlow(conv.id).first { it == null }
+                    Unit
+                }
+                val timedOut = finishSubAgentWait(completed = completed != null) {
+                    runCatching { chatService.stopGeneration(conv.id) }
+                        .onFailure { Log.w(TAG, "sub-agent timeout: stopGeneration failed for $runId", it) }
+                }
+                if (timedOut) {
+                    attachRunUsage(runId, conv.id.toString())
+                    markTerminal(runId, SubAgentStatus.TIMED_OUT, "exceeded ${request.timeoutSeconds}-second cap")
+                    notifyParentIfBackground(parentChatId, registry.get(runId))
+                    return
+                }
+
+                // Detect generation failure: ChatService.handleMessageComplete calls
+                // addError only after ALL internal retries + model routing are exhausted.
+                // So a new error for this conversation means the generation truly failed.
+                val newErrors = chatService.errors.value.filter {
+                    it.conversationId == conv.id && it.id !in errorIdsBefore
+                }
+                if (newErrors.isEmpty()) break // success
+
+                // Generation failed
+                generationFailed = true
+                failureDetail = newErrors.firstOrNull()?.error?.message ?: "generation failed"
+                if (attempt >= maxAttempts - 1) break // no more retries
+
+                // Retry: dismiss the errors so they don't accumulate across attempts,
+                // update the run record, and regenerate from the original user message.
+                newErrors.forEach { chatService.dismissError(it.id) }
+                attempt++
+                registry.update(runId) { it.copy(retryCount = attempt) }
+                Log.i(
+                    TAG,
+                    "sub-agent $runId: retrying (attempt ${attempt + 1}/$maxAttempts) after failure: $failureDetail",
+                )
+                val convState = conversationRepo.getConversationById(conv.id)
+                val userMessage = convState?.currentMessages?.lastOrNull { it.role == MessageRole.USER }
+                if (userMessage == null) break // cannot retry without a user message
+                chatService.regenerateAtMessage(conv.id, userMessage)
             }
-            val timedOut = finishSubAgentWait(completed = completed != null) {
-                runCatching { chatService.stopGeneration(conv.id) }
-                    .onFailure { Log.w(TAG, "sub-agent timeout: stopGeneration failed for $runId", it) }
-            }
-            if (timedOut) {
+
+            if (generationFailed) {
+                // All retries exhausted — mark FAILED (not SUCCEEDED with empty text).
+                val partialText = harvestFinalText(conv.id)
                 attachRunUsage(runId, conv.id.toString())
-                markTerminal(runId, SubAgentStatus.TIMED_OUT, "exceeded ${request.timeoutSeconds}-second cap")
+                markTerminal(
+                    runId,
+                    SubAgentStatus.FAILED,
+                    "$failureDetail (after $attempt retry attempt(s))",
+                )
                 notifyParentIfBackground(parentChatId, registry.get(runId))
                 return
             }
+
             // Harvest the assistant's final text from the conversation. Best-effort —
             // we read the latest persisted state of the conversation and concatenate any
             // text parts from the last assistant message. This mirrors how the

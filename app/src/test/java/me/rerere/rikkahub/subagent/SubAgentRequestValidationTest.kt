@@ -101,4 +101,31 @@ class SubAgentRequestValidationTest {
             SubAgentDefaults.VALID_REASONING_LEVELS,
         )
     }
+
+    @Test fun `retry_on_failure defaults to DEFAULT_RETRY_ON_FAILURE`() {
+        assertEquals(
+            SubAgentDefaults.DEFAULT_RETRY_ON_FAILURE,
+            SubAgentRequest(task = "x").retryOnFailure,
+        )
+    }
+
+    @Test fun `retry_on_failure below 0 rejected`() {
+        val r = SubAgentRequestValidator.validate(SubAgentRequest(task = "x", retryOnFailure = -1))
+        assertEquals("invalid_retry_on_failure", (r as SubAgentRequestValidator.Result.Reject).error)
+    }
+
+    @Test fun `retry_on_failure above max rejected`() {
+        val r = SubAgentRequestValidator.validate(
+            SubAgentRequest(task = "x", retryOnFailure = SubAgentDefaults.MAX_RETRY_ON_FAILURE + 1)
+        )
+        assertEquals("invalid_retry_on_failure", (r as SubAgentRequestValidator.Result.Reject).error)
+    }
+
+    @Test fun `retry_on_failure boundary values accepted`() {
+        for (v in listOf(0, SubAgentDefaults.MAX_RETRY_ON_FAILURE)) {
+            val r = SubAgentRequestValidator.validate(SubAgentRequest(task = "x", retryOnFailure = v))
+            val ok = r as SubAgentRequestValidator.Result.Ok
+            assertEquals(v, ok.request.retryOnFailure)
+        }
+    }
 }

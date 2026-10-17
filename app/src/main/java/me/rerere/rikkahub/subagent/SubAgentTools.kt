@@ -213,6 +213,19 @@ fun subagentDispatchTool(
                                 "multi-step work needs more.",
                         )
                     })
+                    put("retry_on_failure", buildJsonObject {
+                        put("type", "integer")
+                        put(
+                            "description",
+                            "How many times to retry the generation after a non-cancellation " +
+                                "failure (all internal retries + model routing exhausted). " +
+                                "Default ${SubAgentDefaults.DEFAULT_RETRY_ON_FAILURE}, max " +
+                                "${SubAgentDefaults.MAX_RETRY_ON_FAILURE}. Each retry re-runs " +
+                                "from the original task and benefits from model routing (a " +
+                                "failed model enters cooldown, so the next attempt tries a " +
+                                "different favourite model). 0 = fail immediately.",
+                        )
+                    })
                     // T-04: only offered when the assistant has the feature enabled. When it
                     // is off the schema is byte-identical to pre-T-04, so an install that
                     // never turns this on sends exactly the same request as before.
@@ -300,6 +313,8 @@ fun subagentDispatchTool(
                     ?: SubAgentDefaults.DEFAULT_TIMEOUT_SECONDS,
                 maxTrips = params["max_trips"]?.jsonPrimitive?.intOrNull
                     ?: SubAgentDefaults.DEFAULT_MAX_TRIPS,
+                retryOnFailure = params["retry_on_failure"]?.jsonPrimitive?.intOrNull
+                    ?: SubAgentDefaults.DEFAULT_RETRY_ON_FAILURE,
                 label = params["label"]?.jsonPrimitive?.contentOrNull,
                 // T-04: read only if the feature is on, so a stale/rogue `include_recent_turns`
                 // from a caller who never enabled it cannot smuggle parent history into a
