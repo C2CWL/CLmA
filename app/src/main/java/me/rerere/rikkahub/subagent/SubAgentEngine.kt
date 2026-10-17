@@ -11,6 +11,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import me.rerere.ai.core.ReasoningLevel
 import me.rerere.ai.ui.UIMessagePart
 import me.rerere.rikkahub.AppScope
 import me.rerere.rikkahub.data.agentdef.AgentDefinitionRepository
@@ -19,7 +20,9 @@ import me.rerere.rikkahub.data.agentrun.AgentRunKind
 import me.rerere.rikkahub.data.agentrun.AgentRunRepository
 import me.rerere.rikkahub.data.agentrun.AgentRunStatus
 import me.rerere.rikkahub.data.ai.tools.HeadlessConversations
+import me.rerere.rikkahub.data.ai.tools.ConversationInjections
 import me.rerere.rikkahub.data.ai.tools.ConversationSystemAddendum
+import me.rerere.rikkahub.data.ai.limits.ConversationReasoningOverrides
 import me.rerere.rikkahub.data.ai.limits.ConversationToolStepLimits
 import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.usage.OrchestrationBudget
@@ -36,15 +39,6 @@ import me.rerere.rikkahub.service.ChatService
 import kotlin.uuid.Uuid
 
 private const val TAG = "SubAgentEngine"
-
-/**
- * How long [SubAgentEngine.notifyParentIfBackground] waits for the parent conversation to be idle
- * before it posts the completion notice anyway. Was 5 minutes, which made a background sub-agent
- * that finished while the user was mid-turn look like it had hung — the result is only useful once
- * the user sees it, and a busy parent is the common case. A minute is long enough for the usual
- * generation gap and short enough that the notice still feels attached to the work.
- */
-private const val PARENT_NOTIFY_IDLE_WAIT_MS = 60_000L
 
 /**
  * Turn a wait-for-completion outcome into a stop decision, stopping the still-running
@@ -245,6 +239,7 @@ class SubAgentEngine(
             noResult = cleaned.noResult,
             timeoutSeconds = cleaned.timeoutSeconds,
             maxTrips = cleaned.maxTrips,
+            reasoningLevel = cleaned.reasoningLevel,
             status = SubAgentStatus.PENDING,
             startedAtMs = now,
         )
@@ -665,9 +660,16 @@ class SubAgentEngine(
             // and try entry would otherwise strand them):
             //  - the system-prompt addendum assembled above (assistant → expert → dispatch);
             //  - the `max_trips` tool-step cap, which ChatService reads at the generation call
-            //    site — this is what makes the parameter real instead of advisory.
+            //    site — this is what makes the parameter real instead of advisory;
+            //  - the `reasoning_level` thinking-depth override, which GenerationLoop reads when
+            //    building each model request. The validator already guaranteed the value is one
+            //    of VALID_REASONING_LEVELS, so the enum lookup here cannot miss.
             ConversationSystemAddendum.set(conv.id, systemPromptAddendum)
             ConversationToolStepLimits.set(conv.id, request.maxTrips)
+            request.reasoningLevel?.let { raw ->
+                ReasoningLevel.entries.firstOrNull { it.name.equals(raw, ignoreCase = true) }
+                    ?.let { ConversationReasoningOverrides.set(conv.id, it) }
+            }
             // D3 — media first, then the task text, matching the order DashScope's own
             // multimodal examples use.
             chatService.sendMessage(
@@ -721,10 +723,12 @@ class SubAgentEngine(
         } finally {
             HeadlessConversations.unmark(conv.id)
             // Release the per-conversation runtime overrides registered at the top, so a
-            // cancelled / failed / timed-out run cannot leave a stale addendum or step cap
-            // behind. Both clears are unconditional and safe on a never-registered id.
+            // cancelled / failed / timed-out run cannot leave a stale addendum, step cap or
+            // reasoning level behind. All clears are unconditional and safe on a
+            // never-registered id.
             ConversationSystemAddendum.clear(conv.id)
             ConversationToolStepLimits.clear(conv.id)
+            ConversationReasoningOverrides.clear(conv.id)
             // T-09 / (8) + P2-04 — release in the same finally that unmarks the conversation, so a
             // cancelled / failed / timed-out run cannot leave a stale freeze behind. Releasing is
             // unconditional and safe: removing a record that was never written is a no-op.
@@ -768,59 +772,42 @@ class SubAgentEngine(
     }
 
     /**
-     * Wake the parent conversation when a backgrounded sub-agent finishes — the parent's
-     * LLM gets a synthetic user message describing the completion and naturally synthesises
-     * a reply. Without this, the parent has no way to know the sub-agent finished except by
-     * the user manually asking "what happened?".
+     * Deliver a finished BACKGROUND run's outcome to the parent conversation as a system
+     * notification, via [ConversationInjections].
+     *
+     * This used to post a real user message through [ChatService.sendMessage] — visible in the
+     * chat page as a "[Sub-agent …]" bubble, gated by up to a minute of idle waiting, and
+     * costing a whole extra LLM turn just to say "done" (or worse, cancelling the user's
+     * in-flight turn when the wait expired). The injection path instead rides the parent's
+     * NEXT model request: GenerationLoop drains the queue before every request, so a parent
+     * mid-turn sees the notice on its very next loop step — the turn does not have to end
+     * first — and an idle parent carries it along whenever the user next speaks. Nothing is
+     * persisted, rendered, or embedded.
      *
      * Skip rules:
      *  - Foreground runs: dispatch is synchronous (executionJob.join() in dispatch()), so the
-     *    tool result already carries the final state. No wake needed.
+     *    tool result already carries the final state. No notice needed.
+     *  - CANCELLED runs and `noResult` successes: silent on purpose — see shouldNotifyParent.
      *  - Parents in headless mode: would loop / fork weirdly with cron + sub-agent + workflow
-     *    runs. The parent must be a regular interactive (in-app or Telegram-bot) conversation.
+     *    runs, and a headless parent has no user turn to carry the injection anyway.
      *  - parentChatId / runs missing: defensive.
-     *
-     * Cancellation hygiene: ChatService.sendMessage cancels any in-flight generation in the
-     * target conversation. To avoid stomping on a turn the user is engaged with, we wait
-     * up to [PARENT_NOTIFY_IDLE_WAIT_MS] for the parent to be idle before posting. After that we post
-     * anyway — better to interrupt than to silently lose the completion.
      */
-    private suspend fun notifyParentIfBackground(parentChatId: String?, run: SubAgentRun?) {
+    private fun notifyParentIfBackground(parentChatId: String?, run: SubAgentRun?) {
         if (parentChatId == null || run == null || !run.runInBackground) return
         // CANCELLED and noResult successes stay silent on purpose — see shouldNotifyParent.
         if (!shouldNotifyParent(run)) return
         val parentUuid = runCatching { Uuid.parse(parentChatId) }.getOrNull() ?: return
         if (HeadlessConversations.isHeadless(parentUuid)) return
 
-        val message = buildString {
-            appendLine("[Sub-agent ${run.label} — ${run.status.name}]")
-            run.error?.takeIf { it.isNotBlank() }?.let {
-                appendLine("Error: $it")
-            }
-            RunUsageSummaryFactory.line(
-                RunUsageSummary(
-                    calls = run.usageCalls,
-                    inputTokens = run.tokensIn,
-                    outputTokens = run.tokensOut,
-                )
-            )?.let { appendLine(it) }
-            if (!run.noResult) {
-                run.result?.takeIf { it.isNotBlank() }?.let {
-                    appendLine()
-                    append(it)
-                }
-            }
-        }.trimEnd()
-
-        runCatching {
-            withTimeoutOrNull(PARENT_NOTIFY_IDLE_WAIT_MS) {
-                chatService.getGenerationJobStateFlow(parentUuid).first { it == null }
-                Unit
-            }
-            chatService.sendMessage(parentUuid, listOf(UIMessagePart.Text(message)))
-        }.onFailure {
-            Log.w(TAG, "failed to notify parent $parentChatId of subagent completion", it)
-        }
+        val usageLine = RunUsageSummaryFactory.line(
+            RunUsageSummary(
+                calls = run.usageCalls,
+                inputTokens = run.tokensIn,
+                outputTokens = run.tokensOut,
+            )
+        )
+        ConversationInjections.push(parentUuid, SubAgentCompletionNotice.format(run, usageLine))
+        Log.i(TAG, "queued completion notice for sub-agent ${run.id} (${run.status}) into parent $parentChatId")
     }
 
     /**

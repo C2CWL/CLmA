@@ -52,6 +52,8 @@ import me.rerere.ai.ui.limitContext
 import me.rerere.ai.util.HttpException
 import me.rerere.ai.util.redactSecrets
 import me.rerere.rikkahub.data.repository.ConversationRepository
+import me.rerere.rikkahub.data.ai.limits.ConversationReasoningOverrides
+import me.rerere.rikkahub.data.ai.tools.ConversationInjections
 import me.rerere.rikkahub.data.ai.transformers.InputMessageTransformer
 import me.rerere.rikkahub.data.ai.transformers.MessageTransformer
 import me.rerere.rikkahub.data.ai.transformers.OutputMessageTransformer
@@ -762,11 +764,30 @@ class GenerationLoop(
             if (pendingTools.isEmpty()) {
                 try {
                     onBeforeModelRequest()
+                    // System injections (e.g. a background sub-agent's completion notice)
+                    // ride THIS request only: appended to the request messages, never to the
+                    // loop's `messages` var — so they are never emitted, persisted, rendered,
+                    // or embedded. Drained once here; whatever the model learns from them
+                    // reaches the persistent history through its own reply. This is also what
+                    // makes "don't wait for the turn to end" real: a notice pushed while this
+                    // turn is in flight is seen on the very next loop step.
+                    val injections = conversationId
+                        ?.let { ConversationInjections.drain(it) }
+                        .orEmpty()
+                    val requestMessages = if (injections.isEmpty()) {
+                        messages
+                    } else {
+                        messages + UIMessage(
+                            role = MessageRole.USER,
+                            parts = listOf(UIMessagePart.Text(injections.joinToString("\n\n"))),
+                            isSynthetic = true,
+                        )
+                    }
                     generateInternal(
                         assistant = assistant,
                         settings = settings,
                         systemAddendum = systemAddendum,
-                        messages = messages,
+                        messages = requestMessages,
                         onUpdateMessages = {
                             messages = it.transforms(
                                 transformers = outputTransformers,
@@ -1537,7 +1558,11 @@ class GenerationLoop(
             maxStreamRetries = settings.responseStreamMaxRetries,
             tools = tools,
             textToolCallParsing = settings.parseTextToolCalls,
-            reasoningLevel = assistant.reasoningLevel,
+            // Per-conversation thinking-depth override (a sub-agent run's `reasoning_level`),
+            // pinned for exactly the run's lifetime; everyone else falls through to the
+            // assistant's own level, unchanged.
+            reasoningLevel = conversationId?.let { ConversationReasoningOverrides.get(it) }
+                ?: assistant.reasoningLevel,
             customHeaders = buildList {
                 addAll(assistant.customHeaders)
                 addAll(model.customHeaders)

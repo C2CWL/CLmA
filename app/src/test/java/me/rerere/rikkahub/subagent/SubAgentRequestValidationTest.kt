@@ -73,4 +73,32 @@ class SubAgentRequestValidationTest {
         )
         assertTrue(ok is SubAgentRequestValidator.Result.Ok)
     }
+
+    @Test fun `reasoning_level defaults to null`() {
+        assertEquals(null, SubAgentRequest(task = "x").reasoningLevel)
+    }
+
+    @Test fun `every valid reasoning_level is accepted`() {
+        for (level in SubAgentDefaults.VALID_REASONING_LEVELS) {
+            val r = SubAgentRequestValidator.validate(SubAgentRequest(task = "x", reasoningLevel = level))
+            val ok = r as SubAgentRequestValidator.Result.Ok
+            assertEquals(level, ok.request.reasoningLevel)
+        }
+    }
+
+    @Test fun `an unknown reasoning_level is rejected, not coerced`() {
+        val r = SubAgentRequestValidator.validate(SubAgentRequest(task = "x", reasoningLevel = "ultra"))
+        val reject = r as SubAgentRequestValidator.Result.Reject
+        assertEquals("invalid_reasoning_level", reject.error)
+        assertTrue(reject.detail.contains("ultra"))
+    }
+
+    @Test fun `VALID_REASONING_LEVELS stays in sync with the real ReasoningLevel enum`() {
+        // The validator deliberately avoids depending on the :ai module; this assertion is
+        // the drift alarm between the two lists.
+        assertEquals(
+            me.rerere.ai.core.ReasoningLevel.entries.map { it.name.lowercase() },
+            SubAgentDefaults.VALID_REASONING_LEVELS,
+        )
+    }
 }

@@ -1,6 +1,7 @@
 package me.rerere.rikkahub.subagent
 
 import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
@@ -52,8 +53,12 @@ fun subagentDispatchTool(
 
                 Pass a clear, self-contained task — the sub-agent doesn't see your conversation,
                 so restate any context it needs. Pass a short label so the user can recognise
-                the running sub-agent. For long-running work, set run_in_background=true and
-                poll with subagent_get; otherwise foreground (default) blocks until terminal.
+                the running sub-agent. For long-running work, set run_in_background=true: when a
+                background run finishes, its result is delivered to you automatically as a system
+                notification inside this conversation's next model request — it never appears in
+                the chat page, and an in-flight turn sees it on its very next step without
+                waiting for the turn to end. You can still poll with subagent_get. Foreground
+                (default) blocks until terminal.
 
                 Concurrency caps: each assistant has its own (default 3, configurable
                 ${SubAgentDefaults.MIN_PER_ASSISTANT_CAP}-${SubAgentDefaults.MAX_PER_ASSISTANT_CAP}) and there is a
@@ -155,7 +160,35 @@ fun subagentDispatchTool(
                                 "carried. Omit for the default (task text only).",
                         )
                     })
-                    put("run_in_background", buildJsonObject { put("type", "boolean") })
+                    put("run_in_background", buildJsonObject {
+                        put("type", "boolean")
+                        put(
+                            "description",
+                            "When true the dispatch returns immediately and the run executes in " +
+                                "the background; its completion reaches you as a system " +
+                                "notification injected into this conversation's next model " +
+                                "request (never a visible chat message, no idle wait). When " +
+                                "false (default) this tool call blocks until the run is terminal.",
+                        )
+                    })
+                    put("reasoning_level", buildJsonObject {
+                        put("type", "string")
+                        put(
+                            "description",
+                            "Thinking depth for this sub-agent: one of " +
+                                SubAgentDefaults.VALID_REASONING_LEVELS.joinToString(", ") +
+                                ". Omit to inherit the assistant's own reasoning level. Size it " +
+                                "to the task: a lookup rarely needs more than low/off, deep " +
+                                "research may warrant high. Ignored when the run's model does " +
+                                "not support reasoning.",
+                        )
+                        put(
+                            "enum",
+                            buildJsonArray {
+                                SubAgentDefaults.VALID_REASONING_LEVELS.forEach { add(it) }
+                            },
+                        )
+                    })
                     put("no_result", buildJsonObject {
                         put("type", "boolean")
                         put(
@@ -257,6 +290,10 @@ fun subagentDispatchTool(
                 tools = requestedTools,
                 runInBackground = params["run_in_background"]?.jsonPrimitive?.booleanOrNull ?: false,
                 noResult = params["no_result"]?.jsonPrimitive?.booleanOrNull ?: false,
+                // Normalised to lowercase here; the engine's validator rejects unknown values
+                // outright, so a typo can never silently fall back to the assistant default.
+                reasoningLevel = params["reasoning_level"]?.jsonPrimitive?.contentOrNull
+                    ?.trim()?.lowercase()?.takeIf { it.isNotEmpty() },
                 // D3 — opt-in, mirroring the schema above; absent means "task text only".
                 attachParentMedia = params["attach_media"]?.jsonPrimitive?.booleanOrNull ?: false,
                 timeoutSeconds = params["timeout_seconds"]?.jsonPrimitive?.intOrNull

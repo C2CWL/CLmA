@@ -29,6 +29,7 @@ internal fun encodeRun(run: SubAgentRun, budgetRemaining: Long? = null): JsonObj
     put("status", run.status.name)
     put("label", run.label)
     if (run.modelId != null) put("model_id", run.modelId)
+    if (run.reasoningLevel != null) put("reasoning_level", run.reasoningLevel)
     put("run_in_background", run.runInBackground)
     put("timeout_seconds", run.timeoutSeconds)
     put("max_trips", run.maxTrips)

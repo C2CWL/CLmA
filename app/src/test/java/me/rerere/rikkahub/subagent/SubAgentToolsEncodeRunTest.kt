@@ -50,4 +50,10 @@ class SubAgentToolsEncodeRunTest {
         assertFalse(json.containsKey("result"))
         assertFalse(json.containsKey("result_suppressed"))
     }
+
+    @Test fun `reasoning_level echoed only when the dispatch set one`() {
+        assertFalse(encodeRun(makeRun(result = null)).containsKey("reasoning_level"))
+        val json = encodeRun(makeRun(result = null).copy(reasoningLevel = "high"))
+        assertEquals("high", json["reasoning_level"]?.toString()?.trim('"'))
+    }
 }

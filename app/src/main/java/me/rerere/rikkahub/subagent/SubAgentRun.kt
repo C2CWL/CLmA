@@ -37,6 +37,8 @@ data class SubAgentRun(
     val usageCalls: Int = 0,
     /** D3 — how many parent audio/video attachments travelled with this dispatch (0 = none). */
     val mediaParts: Int = 0,
+    /** The dispatch's `reasoning_level`, echoed for observability; null = inherited. */
+    val reasoningLevel: String? = null,
 )
 
 @Serializable
@@ -68,6 +70,14 @@ object SubAgentDefaults {
     const val MIN_PER_ASSISTANT_CAP = 1
     const val MAX_PER_ASSISTANT_CAP = 16
     const val REGISTRY_LRU_CAP = 50
+
+    /**
+     * Accepted values for `subagent_dispatch`'s `reasoning_level` — the lowercase serial names
+     * of `me.rerere.ai.core.ReasoningLevel`, listed here so [SubAgentRequestValidator] stays
+     * free of the :ai module. The local test harness pins this list against the real enum, so
+     * a new level added upstream fails loudly instead of silently being rejected here.
+     */
+    val VALID_REASONING_LEVELS = listOf("off", "auto", "low", "medium", "high", "xhigh", "max")
     /**
      * How long a dispatch waits for a free concurrency slot before refusing. The engine's own doc
      * has always promised "block up to 30s waiting for a slot"; before the bounded wait existed an
@@ -118,6 +128,14 @@ data class SubAgentRequest(
     val noResult: Boolean = false,
     val timeoutSeconds: Int = SubAgentDefaults.DEFAULT_TIMEOUT_SECONDS,
     val maxTrips: Int = SubAgentDefaults.DEFAULT_MAX_TRIPS,
+    /**
+     * Per-run thinking depth: one of [SubAgentDefaults.VALID_REASONING_LEVELS], validated by
+     * [SubAgentRequestValidator]. Null = inherit the assistant's own reasoning level (the
+     * pre-feature behaviour). Applied through
+     * [me.rerere.rikkahub.data.ai.limits.ConversationReasoningOverrides] for exactly the run's
+     * lifetime; providers whose model lacks the reasoning ability ignore it downstream.
+     */
+    val reasoningLevel: String? = null,
     val label: String? = null,
     /**
      * T-04 / (4): references to the CALLER's context. A sub-agent runs in a clean context,
@@ -209,6 +227,18 @@ object SubAgentRequestValidator {
                     "invalid_context_refs",
                     "context_refs.recent_turns must be between 0 and " +
                         "${SubAgentContextDigest.MAX_TURNS}; got $turns"
+                )
+            }
+        }
+        // Reject rather than coerce: a caller that asked for "ultra" should learn the real
+        // vocabulary instead of silently running at the assistant's default depth.
+        request.reasoningLevel?.let { level ->
+            if (level !in SubAgentDefaults.VALID_REASONING_LEVELS) {
+                return Result.Reject(
+                    "invalid_reasoning_level",
+                    "reasoning_level must be one of " +
+                        SubAgentDefaults.VALID_REASONING_LEVELS.joinToString(", ") +
+                        "; got \"$level\""
                 )
             }
         }
