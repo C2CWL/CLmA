@@ -274,6 +274,7 @@ class SettingsStore(
         val FLOATING_BALL_COLOR = stringPreferencesKey("floating_ball_color")
         // Absolute path to a user-picked ball image inside the app's files dir; empty = default glyph.
         val FLOATING_BALL_ICON_PATH = stringPreferencesKey("floating_ball_icon_path")
+        val FLOATING_BALL_STYLE = stringPreferencesKey("floating_ball_style")
 
         // AI logging
         val AI_LOG_LEVEL = stringPreferencesKey("ai_log_level")
@@ -396,6 +397,7 @@ class SettingsStore(
                 preferences[FLOATING_BALL_HIDDEN_ALPHA] = settings.floatingBallHiddenAlpha.coerceIn(10, 100)
                 preferences[FLOATING_BALL_COLOR] = settings.floatingBallColor?.toString() ?: ""
                 preferences[FLOATING_BALL_ICON_PATH] = settings.floatingBallIconPath
+                preferences[FLOATING_BALL_STYLE] = settings.floatingBallStyle.key
                 preferences[AI_LOG_LEVEL] = settings.aiLogLevel.preferenceName
                 preferences[BACKUP_REMINDER_CONFIG] = JsonInstant.encodeToString(settings.backupReminderConfig)
                 preferences[LAUNCH_COUNT] = settings.launchCount
@@ -616,6 +618,7 @@ class SettingsStore(
                 floatingBallHiddenAlpha = preferences[FLOATING_BALL_HIDDEN_ALPHA] ?: 50,
                 floatingBallColor = preferences[FLOATING_BALL_COLOR]?.takeIf { it.isNotBlank() }?.toIntOrNull(),
                 floatingBallIconPath = preferences[FLOATING_BALL_ICON_PATH] ?: "",
+                floatingBallStyle = FloatingBallStyle.fromKey(preferences[FLOATING_BALL_STYLE]),
                 aiLogLevel = AiLogLevel.fromPreference(preferences[AI_LOG_LEVEL]),
                 backupReminderConfig = preferences[BACKUP_REMINDER_CONFIG]?.let { raw ->
                     runCatching { JsonInstant.decodeFromString<BackupReminderConfig>(raw) }.getOrElse {
@@ -1117,6 +1120,8 @@ data class Settings(
      * keeps the built-in themed glyph.
      */
     val floatingBallIconPath: String = "",
+    /** Round halo ball (default, the original look) or the optional status capsule. */
+    val floatingBallStyle: FloatingBallStyle = FloatingBallStyle.ORIGINAL,
     val aiLogLevel: AiLogLevel = AiLogLevel.INFO,
     val backupReminderConfig: BackupReminderConfig = BackupReminderConfig(),
     val launchCount: Int = 0,

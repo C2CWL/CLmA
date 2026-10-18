@@ -44,7 +44,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import me.rerere.rikkahub.FLOATING_BALL_NOTIFICATION_CHANNEL_ID
 import me.rerere.rikkahub.R
+import me.rerere.rikkahub.data.datastore.FloatingBallStyle
 import me.rerere.rikkahub.data.datastore.SettingsStore
+import me.rerere.rikkahub.data.datastore.getCurrentAssistant
+import me.rerere.rikkahub.data.model.Avatar
 import me.rerere.rikkahub.ui.hooks.readStringPreference
 import me.rerere.rikkahub.ui.hooks.writeStringPreference
 import me.rerere.rikkahub.ui.pages.quickchat.QuickChatActivity
@@ -103,6 +106,9 @@ class FloatingBallService : Service(), KoinComponent {
         private const val FALLBACK_BALL_COLOR = 0xFF6750A4.toInt()
 
         private const val IDLE_ANIM_MS = 220L
+
+        /** Capsule bar opacity: nearly solid so text stays readable over any app behind it. */
+        private const val CAPSULE_CONTAINER_ALPHA = 0.94f
 
         /**
          * The quick-chat panel unfolds out of the ball, so the ball must stay put for the first
@@ -209,8 +215,30 @@ class FloatingBallService : Service(), KoinComponent {
 
     private val mainHandler = Handler(Looper.getMainLooper())
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    private var ballView: HaloBallView? = null
+    /** The overlay window's root: the round [HaloBallView], or a [CapsuleBallView]. */
+    private var ballView: View? = null
     private var ballParams: WindowManager.LayoutParams? = null
+
+    /** Non-null only while the status capsule style is on screen. */
+    private val capsuleView: CapsuleBallView? get() = ballView as? CapsuleBallView
+
+    /** The halo artwork, whichever face is up: the ball itself, or the capsule's icon. */
+    private val haloView: HaloBallView? get() = capsuleView?.halo ?: ballView as? HaloBallView
+
+    /** Style the current overlay was built with; a settings change to another style rebuilds it. */
+    private var shownStyle: FloatingBallStyle? = null
+
+    /** Capsule status line: when the running turn started, and how long the last one took. */
+    private var workingSinceMs: Long? = null
+    private var lastTurnMs: Long? = null
+
+    /** Ticks the capsule's timer once a second while a turn runs. */
+    private val capsuleTick = object : Runnable {
+        override fun run() {
+            updateCapsuleTexts()
+            if (working && capsuleView != null) mainHandler.postDelayed(this, 1000L)
+        }
+    }
     private var longPressFired = false
 
     /** True between ACTION_WORKING_ON and ACTION_WORKING_OFF — the driver of the orbit animation. */
@@ -222,7 +250,9 @@ class FloatingBallService : Service(), KoinComponent {
      * redrawing itself 60 times a second.
      */
     private fun syncWorking() {
-        ballView?.setWorking(working && !panelOpen)
+        haloView?.setWorking(working && !panelOpen && capsuleView?.handleMode != true)
+        mainHandler.removeCallbacks(capsuleTick)
+        if (capsuleView != null) capsuleTick.run()
     }
 
     /** Cache so repainting on unrelated settings changes does not re-decode the picked image. */
@@ -270,7 +300,20 @@ class FloatingBallService : Service(), KoinComponent {
         // Theme colour / picked icon can change at any time while the ball is up; repaint live.
         // A no-op until the overlay view exists, and showBall() paints once itself.
         scope.launch {
-            settingsStore.settingsFlow.collect { applyAppearance() }
+            settingsStore.settingsFlow.collect { settings ->
+                if (ballView != null && shownStyle != null && settings.floatingBallStyle != shownStyle) {
+                    // Switching between the round ball and the capsule swaps the whole overlay;
+                    // a turn that is running keeps animating on the new face.
+                    val wasWorking = working
+                    hideBall()
+                    showBall()
+                    working = wasWorking
+                    syncWorking()
+                    scheduleIdle()
+                } else {
+                    applyAppearance()
+                }
+            }
         }
     }
 
@@ -285,6 +328,8 @@ class FloatingBallService : Service(), KoinComponent {
 
             ACTION_PANEL_OPEN -> {
                 panelOpen = true
+                // The user has seen the result now; the capsule goes back to "tap to chat".
+                lastTurnMs = null
                 if (ballView == null) {
                     stopSelf()
                 } else {
@@ -330,6 +375,8 @@ class FloatingBallService : Service(), KoinComponent {
                 if (ballView == null) {
                     stopSelf()
                 } else {
+                    if (!working) workingSinceMs = System.currentTimeMillis()
+                    lastTurnMs = null
                     working = true
                     // The ball is the status light while a turn runs, so it must not tuck itself
                     // away mid-turn. A ball that is already tucked stays tucked (per the agreed
@@ -344,6 +391,8 @@ class FloatingBallService : Service(), KoinComponent {
                 if (ballView == null) {
                     stopSelf()
                 } else {
+                    workingSinceMs?.let { lastTurnMs = System.currentTimeMillis() - it }
+                    workingSinceMs = null
                     working = false
                     syncWorking()
                     scheduleIdle()
@@ -407,11 +456,23 @@ class FloatingBallService : Service(), KoinComponent {
         val wm = getSystemService(Context.WINDOW_SERVICE) as? WindowManager ?: return
         val density = resources.displayMetrics.density
         val size = (BALL_SIZE_DP * density).toInt()
+        val style = settingsStore.settingsFlow.value.floatingBallStyle
 
-        val container = HaloBallView(this).apply {
+        val container: View = when (style) {
+            FloatingBallStyle.ORIGINAL -> HaloBallView(this)
+            FloatingBallStyle.CAPSULE -> CapsuleBallView(this).apply {
+                closeButton.contentDescription = getString(R.string.floating_ball_capsule_hide)
+                closeButton.setOnClickListener {
+                    mainHandler.removeCallbacks(idleRunnable)
+                    setHidden(true)
+                }
+            }
+        }.apply {
             contentDescription = getString(R.string.quick_chat_title)
             isClickable = true
         }
+        // The capsule sizes itself to its text; the round ball is a fixed square.
+        val windowSize = if (style == FloatingBallStyle.CAPSULE) WindowManager.LayoutParams.WRAP_CONTENT else size
 
         val screenWidth = resources.displayMetrics.widthPixels
         val screenHeight = resources.displayMetrics.heightPixels
@@ -427,8 +488,8 @@ class FloatingBallService : Service(), KoinComponent {
         }
 
         val params = WindowManager.LayoutParams(
-            size,
-            size,
+            windowSize,
+            windowSize,
             type,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
                 or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
@@ -448,6 +509,7 @@ class FloatingBallService : Service(), KoinComponent {
         }
         ballView = container
         ballParams = params
+        shownStyle = style
         isShowing = true
         // Paint colour + icon from the current theme / user picks (never hard-coded).
         applyAppearance()
@@ -463,14 +525,18 @@ class FloatingBallService : Service(), KoinComponent {
         val view = ballView ?: return
         ballView = null
         ballParams = null
+        shownStyle = null
         isShowing = false
         working = false
+        mainHandler.removeCallbacks(capsuleTick)
         longPressFired = false
         hidden = false
         _voiceHold.value = false
         loadedIconPath = null
         loadedIconStamp = 0L
         loadedIconBitmap = null
+        avatarKey = null
+        avatarBitmap = null
         mainHandler.removeCallbacks(longPressRunnable)
         mainHandler.removeCallbacks(idleRunnable)
         mainHandler.removeCallbacks(collapseRunnable)
@@ -490,19 +556,95 @@ class FloatingBallService : Service(), KoinComponent {
      * the halo instead. Cheap and idempotent — safe to call on every settings change.
      */
     private fun applyAppearance() {
-        val ball = ballView ?: return
+        val ball = haloView ?: return
         val settings = settingsStore.settingsFlow.value
-        ball.accentColor = settings.floatingBallColor ?: themePrimaryColor()
-        applyBacking(ball)
-        ball.setIcon(
-            settings.floatingBallIconPath
-                .takeIf { it.isNotBlank() }
-                ?.let { loadIcon(it) }
+        val picked = settings.floatingBallIconPath
+            .takeIf { it.isNotBlank() }
+            ?.let { loadIcon(it) }
+        val capsule = capsuleView
+        if (capsule == null) {
+            ball.accentColor = settings.floatingBallColor ?: themePrimaryColor()
+            applyBacking(ball)
+            ball.setIcon(picked)
+            return
+        }
+        // Capsule: theme surface colours for the bar; the icon is the picked ball image, else
+        // the current assistant's avatar, else the plain halo.
+        val scheme = themeScheme()
+        val accent = settings.floatingBallColor ?: scheme?.primary?.toArgb() ?: FALLBACK_BALL_COLOR
+        capsule.applyColors(
+            container = scheme?.surfaceContainerHigh?.copy(alpha = CAPSULE_CONTAINER_ALPHA)?.toArgb()
+                ?: 0xF0FFFFFF.toInt(),
+            outline = scheme?.outlineVariant?.toArgb() ?: 0x33000000,
+            onSurface = scheme?.onSurface?.toArgb() ?: 0xFF1C1B1F.toInt(),
+            onSurfaceVariant = scheme?.onSurfaceVariant?.toArgb() ?: 0xFF49454F.toInt(),
+            accent = accent,
         )
+        // The embedded halo keeps the round ball's themed backing disc and hairline outline.
+        applyBacking(ball)
+        ball.setIcon(picked ?: assistantAvatarIcon(settings.getCurrentAssistant().avatar))
+        updateCapsuleTexts()
     }
 
+    /** Title = current assistant's name; status = ready / working + timer / done + duration. */
+    private fun updateCapsuleTexts() {
+        val capsule = capsuleView ?: return
+        val settings = settingsStore.settingsFlow.value
+        val title = settings.getCurrentAssistant().name.ifBlank { getString(R.string.quick_chat_title) }
+        val status = capsuleStatus(working, workingSinceMs, System.currentTimeMillis(), lastTurnMs)
+        val statusText = when (status.kind) {
+            CapsuleStatus.Kind.READY -> getString(R.string.floating_ball_capsule_status_ready)
+            CapsuleStatus.Kind.WORKING -> status.elapsed
+                ?.let { getString(R.string.floating_ball_capsule_status_working_timer, it) }
+                ?: getString(R.string.floating_ball_capsule_status_working)
+            CapsuleStatus.Kind.DONE -> getString(R.string.floating_ball_capsule_status_done, status.elapsed ?: "")
+        }
+        capsule.setTexts(title, statusText)
+    }
+
+    /** Assistant avatar as a bitmap for the capsule icon: local image or emoji; else none. */
+    private var avatarKey: String? = null
+    private var avatarBitmap: Bitmap? = null
+
+    private fun assistantAvatarIcon(avatar: Avatar): Bitmap? {
+        val key = when (avatar) {
+            is Avatar.Image -> "img:" + avatar.url
+            is Avatar.Emoji -> "emoji:" + avatar.content
+            else -> null
+        }
+        if (key == avatarKey) return avatarBitmap
+        avatarKey = key
+        avatarBitmap = when (avatar) {
+            is Avatar.Image -> avatar.url
+                .removePrefix("file://")
+                .takeIf { it.startsWith("/") }
+                ?.let { decodeIcon(it) }
+            is Avatar.Emoji -> renderEmoji(avatar.content)
+            else -> null
+        }
+        return avatarBitmap
+    }
+
+    private fun renderEmoji(text: String): Bitmap? = runCatching {
+        if (text.isBlank()) return@runCatching null
+        val side = (BALL_SIZE_DP * resources.displayMetrics.density).toInt().coerceAtLeast(1)
+        val bitmap = Bitmap.createBitmap(side, side, Bitmap.Config.ARGB_8888)
+        val canvas = android.graphics.Canvas(bitmap)
+        val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            textSize = side * 0.62f
+            textAlign = android.graphics.Paint.Align.CENTER
+        }
+        val y = side / 2f - (paint.descent() + paint.ascent()) / 2f
+        canvas.drawText(text, side / 2f, y, paint)
+        bitmap
+    }.getOrNull()
+
     /** The app theme's primary colour, honouring dynamic colour / dark mode / custom themes. */
-    private fun themePrimaryColor(): Int = runCatching {
+    private fun themePrimaryColor(): Int =
+        themeScheme()?.primary?.toArgb() ?: FALLBACK_BALL_COLOR
+
+    /** The app theme's colour scheme (dynamic colour / dark mode / custom themes), or null. */
+    private fun themeScheme(): ColorScheme? = runCatching {
         val settings = settingsStore.settingsFlow.value
         val dark = when (colorMode()) {
             ColorMode.SYSTEM ->
@@ -518,8 +660,8 @@ class FloatingBallService : Service(), KoinComponent {
             (findThemeById(settings.themeId, settings.customThemes) ?: findPresetTheme(settings.themeId))
                 .getColorScheme(dark)
         }
-        scheme.primary.toArgb()
-    }.getOrDefault(FALLBACK_BALL_COLOR)
+        scheme
+    }.getOrNull()
 
     /**
      * Resting backing colours from the app theme: translucent surface disc (overlays cannot blur
@@ -660,9 +802,9 @@ class FloatingBallService : Service(), KoinComponent {
         val margin = (8 * density).toInt()
         val screenWidth = resources.displayMetrics.widthPixels
         val screenHeight = resources.displayMetrics.heightPixels
-        val size = view.width.takeIf { it > 0 } ?: params.width
+        val size = overlayWidth(view, params)
         val maxX = (screenWidth - size - margin).coerceAtLeast(margin)
-        val maxY = (screenHeight - size - margin).coerceAtLeast(margin)
+        val maxY = (screenHeight - overlayHeight(view, params) - margin).coerceAtLeast(margin)
 
         params.x = if (params.x + size / 2 < screenWidth / 2) margin else maxX
         params.y = params.y.coerceIn(margin, maxY)
@@ -692,7 +834,7 @@ class FloatingBallService : Service(), KoinComponent {
     /** `"left"`/`"right"` — which edge the ball sits on, so the panel can mirror itself. */
     private fun ballSide(): String {
         val params = ballParams ?: return "right"
-        val size = ballView?.width?.takeIf { it > 0 } ?: params.width
+        val size = ballView?.let { overlayWidth(it, params) } ?: params.width
         val screenWidth = resources.displayMetrics.widthPixels
         return if (params.x + size / 2 >= screenWidth / 2) "right" else "left"
     }
@@ -700,8 +842,24 @@ class FloatingBallService : Service(), KoinComponent {
     /** Vertical centre of the ball, in screen pixels; the panel anchors itself to this. */
     private fun ballCenterY(): Int {
         val params = ballParams ?: return 0
-        val size = ballView?.height?.takeIf { it > 0 } ?: params.height
+        val size = ballView?.let { overlayHeight(it, params) } ?: params.height
         return params.y + size / 2
+    }
+
+    /**
+     * Laid-out size of the overlay, else the window's fixed size (the round ball), else — for the
+     * self-sizing capsule before its first layout pass — a measured size.
+     */
+    private fun overlayWidth(view: View, params: WindowManager.LayoutParams): Int =
+        view.width.takeIf { it > 0 } ?: params.width.takeIf { it > 0 } ?: measureOverlay(view).first
+
+    private fun overlayHeight(view: View, params: WindowManager.LayoutParams): Int =
+        view.height.takeIf { it > 0 } ?: params.height.takeIf { it > 0 } ?: measureOverlay(view).second
+
+    private fun measureOverlay(view: View): Pair<Int, Int> {
+        val spec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+        view.measure(spec, spec)
+        return view.measuredWidth to view.measuredHeight
     }
 
     // ---- Auto tuck (idle) ----
@@ -741,12 +899,17 @@ class FloatingBallService : Service(), KoinComponent {
         val view = ballView ?: return
         val params = ballParams ?: return
         val wm = getSystemService(Context.WINDOW_SERVICE) as? WindowManager ?: return
+        capsuleView?.let { capsule ->
+            tuckCapsule(capsule, params, wm)
+            return
+        }
         val size = view.width.takeIf { it > 0 } ?: params.width
         val screenWidth = resources.displayMetrics.widthPixels
         val onRight = params.x + size / 2 >= screenWidth / 2
         val strip = (TUCKED_STRIP_DP * resources.displayMetrics.density).toInt()
         val targetX = HaloBallLook.tuckedX(onRight, screenWidth, size, strip).toFloat()
-        view.setHandle(on = true, onRight = onRight)
+        // Only the round ball has a handle; the capsule tucks via tuckCapsule() above.
+        (view as? HaloBallView)?.setHandle(on = true, onRight = onRight)
         animateTo(view, params, wm, targetX, hiddenAlpha())
     }
 
@@ -759,6 +922,10 @@ class FloatingBallService : Service(), KoinComponent {
         val view = ballView ?: return
         val params = ballParams ?: return
         val wm = getSystemService(Context.WINDOW_SERVICE) as? WindowManager ?: return
+        capsuleView?.let { capsule ->
+            wakeCapsule(capsule, params, wm)
+            return
+        }
         val density = resources.displayMetrics.density
         val size = view.width.takeIf { it > 0 } ?: params.width
         val screenWidth = resources.displayMetrics.widthPixels
@@ -770,7 +937,7 @@ class FloatingBallService : Service(), KoinComponent {
         val restingX = readStringPreference(PREF_X)?.toIntOrNull()?.coerceIn(margin, maxX)
             ?: if (params.x + size / 2 >= screenWidth / 2) maxX else margin
         // Back to the full ball before it moves, so it slides (or jumps) out whole.
-        view.setHandle(on = false)
+        (view as? HaloBallView)?.setHandle(on = false)
         if (instant) {
             motionAnimator?.cancel()
             view.animate().cancel()
@@ -781,6 +948,45 @@ class FloatingBallService : Service(), KoinComponent {
             animateTo(view, params, wm, restingX.toFloat(), 1f)
         }
         writeStringPreference(PREF_X, restingX.toString())
+        writeStringPreference(PREF_Y, params.y.toString())
+    }
+
+    /**
+     * Capsule tuck: a capsule cut in half would show a sliver of text, so it collapses to a slim
+     * handle flush with the edge it sits on, dimmed like the tucked ball.
+     */
+    private fun tuckCapsule(capsule: CapsuleBallView, params: WindowManager.LayoutParams, wm: WindowManager) {
+        motionAnimator?.cancel()
+        capsule.animate().cancel()
+        val screenWidth = resources.displayMetrics.widthPixels
+        val width = capsule.width.takeIf { it > 0 } ?: capsule.measuredCapsuleWidth()
+        val onRight = params.x + width / 2 >= screenWidth / 2
+        capsule.handleMode = true
+        syncWorking()
+        val handleWidth = (CapsuleBallView.HANDLE_WIDTH_DP * resources.displayMetrics.density).toInt()
+        // The root keeps a shadow inset on every side; push it past the edge so the handle is flush.
+        params.x = if (onRight) screenWidth - handleWidth - capsule.shadowInset else -capsule.shadowInset
+        runCatching { wm.updateViewLayout(capsule, params) }
+        capsule.animate().alpha(hiddenAlpha()).setDuration(IDLE_ANIM_MS).start()
+    }
+
+    /** Capsule wake: back to the full bar at its remembered edge, at full opacity, at once. */
+    private fun wakeCapsule(capsule: CapsuleBallView, params: WindowManager.LayoutParams, wm: WindowManager) {
+        motionAnimator?.cancel()
+        capsule.animate().cancel()
+        val screenWidth = resources.displayMetrics.widthPixels
+        val screenHeight = resources.displayMetrics.heightPixels
+        val margin = (8 * resources.displayMetrics.density).toInt()
+        val onRight = params.x > screenWidth / 2
+        capsule.handleMode = false
+        syncWorking()
+        val width = capsule.measuredCapsuleWidth()
+        val height = capsule.measuredHeight
+        params.x = if (onRight) (screenWidth - width - margin).coerceAtLeast(margin) else margin
+        params.y = params.y.coerceIn(margin, (screenHeight - height - margin).coerceAtLeast(margin))
+        capsule.alpha = 1f
+        runCatching { wm.updateViewLayout(capsule, params) }
+        writeStringPreference(PREF_X, params.x.toString())
         writeStringPreference(PREF_Y, params.y.toString())
     }
 

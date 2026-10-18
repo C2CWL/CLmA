@@ -2125,4 +2125,13 @@
   <string name="table">جدول</string>
   <string name="chat_page_continuing">انقطع الاتصال — يتم متابعة الرد (%1$d/%2$d)</string>
   <string name="chat_page_subagents_running">الوكلاء الفرعيون قيد التشغيل: %1$d · %2$s</string>
+  <string name="setting_floating_ball_style_title">النمط</string>
+  <string name="setting_floating_ball_style_desc">كرة دائرية، أو كبسولة تعرض المساعد وحالة الرد</string>
+  <string name="setting_floating_ball_style_original">الأصلي</string>
+  <string name="setting_floating_ball_style_capsule">كبسولة</string>
+  <string name="floating_ball_capsule_status_ready">انقر للدردشة</string>
+  <string name="floating_ball_capsule_status_working">جارٍ الرد…</string>
+  <string name="floating_ball_capsule_status_working_timer">جارٍ الرد · %1$s</string>
+  <string name="floating_ball_capsule_status_done">تم · %1$s</string>
+  <string name="floating_ball_capsule_hide">إخفاء إلى الحافة</string>
 </resources>

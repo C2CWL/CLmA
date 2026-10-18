@@ -1,5 +1,6 @@
 package me.rerere.rikkahub.ui.pages.setting
 
+import androidx.compose.foundation.BorderStroke
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.AlertDialog
@@ -60,9 +62,11 @@ import kotlinx.coroutines.withContext
 import me.rerere.rikkahub.service.HaloBallLook
 import me.rerere.rikkahub.service.HaloBallView
 import me.rerere.rikkahub.R
+import me.rerere.rikkahub.data.datastore.FloatingBallStyle
 import me.rerere.rikkahub.service.FloatingBallService
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.CardGroup
+import me.rerere.rikkahub.ui.components.ui.Select
 import me.rerere.rikkahub.ui.theme.CustomColors
 import me.rerere.rikkahub.utils.plus
 import org.koin.androidx.compose.koinViewModel
@@ -214,6 +218,35 @@ fun SettingFloatingBallPage(vm: SettingVM = koinViewModel()) {
 
             item {
                 CardGroup(modifier = Modifier.padding(horizontal = 8.dp)) {
+                    item(
+                        headlineContent = {
+                            Text(stringResource(R.string.setting_floating_ball_style_title))
+                        },
+                        supportingContent = {
+                            Text(stringResource(R.string.setting_floating_ball_style_desc))
+                        },
+                        trailingContent = {
+                            Select(
+                                options = FloatingBallStyle.entries,
+                                selectedOption = settings.floatingBallStyle,
+                                onOptionSelected = { style ->
+                                    vm.updateSettings { it.copy(floatingBallStyle = style) }
+                                },
+                                optionToString = {
+                                    stringResource(
+                                        when (it) {
+                                            FloatingBallStyle.ORIGINAL -> R.string.setting_floating_ball_style_original
+                                            FloatingBallStyle.CAPSULE -> R.string.setting_floating_ball_style_capsule
+                                        }
+                                    )
+                                },
+                                // Blend into the card: same container colour, hairline for affordance.
+                                containerColor = CustomColors.listItemColors.containerColor,
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                                modifier = Modifier.width(150.dp),
+                            )
+                        },
+                    )
                     item(
                         onClick = { showIconDialog = true },
                         leadingContent = {

@@ -2385,4 +2385,13 @@
   <string name="setting_ssh_page_error_credential_missing">請填寫密碼或私鑰</string>
   <string name="chat_page_continuing">連線中斷，正在續寫回覆（%1$d/%2$d）</string>
   <string name="chat_page_subagents_running">子 agent %1$d 個執行中 · %2$s</string>
+  <string name="setting_floating_ball_style_title">樣式</string>
+  <string name="setting_floating_ball_style_desc">圓形懸浮球，或顯示助手與回覆狀態的膠囊</string>
+  <string name="setting_floating_ball_style_original">原版</string>
+  <string name="setting_floating_ball_style_capsule">膠囊</string>
+  <string name="floating_ball_capsule_status_ready">點擊開始對話</string>
+  <string name="floating_ball_capsule_status_working">回覆中…</string>
+  <string name="floating_ball_capsule_status_working_timer">回覆中 · %1$s</string>
+  <string name="floating_ball_capsule_status_done">已完成 · %1$s</string>
+  <string name="floating_ball_capsule_hide">收起到邊緣</string>
 </resources>

@@ -2802,4 +2802,13 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="setting_sponsor_alipay_desc">用支付宝扫一扫</string>
   <string name="setting_sponsor_qr_hint">截图保存后，用上面的 App 扫码即可。谢谢支持！</string>
   <string name="setting_sponsor_qr_close">关闭</string>
+  <string name="setting_floating_ball_style_title">样式</string>
+  <string name="setting_floating_ball_style_desc">圆形悬浮球，或显示助手与回复状态的胶囊</string>
+  <string name="setting_floating_ball_style_original">原版</string>
+  <string name="setting_floating_ball_style_capsule">胶囊</string>
+  <string name="floating_ball_capsule_status_ready">点击开始对话</string>
+  <string name="floating_ball_capsule_status_working">回复中…</string>
+  <string name="floating_ball_capsule_status_working_timer">回复中 · %1$s</string>
+  <string name="floating_ball_capsule_status_done">已完成 · %1$s</string>
+  <string name="floating_ball_capsule_hide">收起到边缘</string>
 </resources>
