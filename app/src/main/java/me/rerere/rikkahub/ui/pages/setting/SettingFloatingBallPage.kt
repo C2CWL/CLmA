@@ -57,6 +57,7 @@ import coil3.compose.AsyncImage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import me.rerere.rikkahub.service.HaloBallLook
 import me.rerere.rikkahub.service.HaloBallView
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.service.FloatingBallService
@@ -499,25 +500,37 @@ private fun FloatingBallPreview(
     iconPath: String,
     size: Dp = 36.dp,
 ) {
-    Box(modifier = Modifier.size(size)) {
+    // Mirrors the resting ball: translucent surface disc with a hairline, then the slim ring or
+    // the picked image. (The drop shadow is left out at this size.)
+    val surface = MaterialTheme.colorScheme.surface.copy(alpha = HaloBallLook.BACKING_ALPHA)
+    val outline = MaterialTheme.colorScheme.outlineVariant
+    Box(modifier = Modifier.size(size), contentAlignment = Alignment.Center) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val half = this.size.minDimension / 2f
+            val backing = half * HaloBallLook.BACKING_RADIUS_FRACTION
+            drawCircle(color = surface, radius = backing)
+            drawCircle(color = outline, radius = backing, style = Stroke(width = 1.dp.toPx()))
+            if (iconPath.isBlank()) {
+                drawCircle(
+                    color = color.copy(alpha = HaloBallLook.REST_RING_ALPHA / 255f),
+                    radius = half * HaloBallView.RING_RADIUS_FRACTION,
+                    style = Stroke(
+                        width = half * HaloBallView.STROKE_FRACTION * HaloBallLook.REST_RING_STROKE_SCALE
+                    ),
+                )
+            }
+        }
         if (iconPath.isNotBlank()) {
+            // Same rim as the service: the image fills the ring's outer edge.
+            val iconFraction = HaloBallView.RING_RADIUS_FRACTION + HaloBallView.STROKE_FRACTION / 2f
             AsyncImage(
                 model = File(iconPath),
                 contentDescription = null,
                 modifier = Modifier
-                    .fillMaxSize()
+                    .size(size * iconFraction)
                     .clip(CircleShape),
                 contentScale = ContentScale.Crop,
             )
-        } else {
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val half = this.size.minDimension / 2f
-                drawCircle(
-                    color = color,
-                    radius = half * HaloBallView.RING_RADIUS_FRACTION,
-                    style = Stroke(width = half * HaloBallView.STROKE_FRACTION),
-                )
-            }
         }
     }
 }

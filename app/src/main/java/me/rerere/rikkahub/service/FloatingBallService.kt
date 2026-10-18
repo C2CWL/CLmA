@@ -27,6 +27,7 @@ import android.view.ViewConfiguration
 import android.view.WindowManager
 import android.view.animation.AccelerateInterpolator
 import android.view.animation.OvershootInterpolator
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.ui.graphics.toArgb
@@ -130,8 +131,8 @@ class FloatingBallService : Service(), KoinComponent {
          */
         fun iconFile(context: Context): File = File(context.filesDir, "floating_ball_icon")
 
-        /** How much of the ball stays on screen once it has tucked itself into the edge. */
-        private const val HIDDEN_VISIBLE_FRACTION = 0.5f
+        /** On-screen strip of a tucked ball: just the slim handle and a little touch room. */
+        private const val TUCKED_STRIP_DP = HaloBallLook.HANDLE_STRIP_DP
 
         /** Starts (or re-starts) the ball. Idempotent — a running service just re-shows its view. */
         fun start(context: Context) {
@@ -492,6 +493,7 @@ class FloatingBallService : Service(), KoinComponent {
         val ball = ballView ?: return
         val settings = settingsStore.settingsFlow.value
         ball.accentColor = settings.floatingBallColor ?: themePrimaryColor()
+        applyBacking(ball)
         ball.setIcon(
             settings.floatingBallIconPath
                 .takeIf { it.isNotBlank() }
@@ -518,6 +520,35 @@ class FloatingBallService : Service(), KoinComponent {
         }
         scheme.primary.toArgb()
     }.getOrDefault(FALLBACK_BALL_COLOR)
+
+    /**
+     * Resting backing colours from the app theme: translucent surface disc (overlays cannot blur
+     * the apps behind them) and an outlineVariant hairline. Keeps the view's defaults on failure.
+     */
+    private fun applyBacking(ball: HaloBallView) {
+        val scheme = runCatching { backingScheme() }.getOrNull() ?: return
+        ball.surfaceColor = HaloBallLook.withAlphaFraction(scheme.surface.toArgb(), HaloBallLook.BACKING_ALPHA)
+        ball.outlineColor = scheme.outlineVariant.toArgb()
+    }
+
+    /** Same theme resolution as [themePrimaryColor] (dynamic colour / dark mode / custom themes). */
+    private fun backingScheme(): ColorScheme {
+        val settings = settingsStore.settingsFlow.value
+        val dark = when (colorMode()) {
+            ColorMode.SYSTEM ->
+                (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+                    Configuration.UI_MODE_NIGHT_YES
+
+            ColorMode.LIGHT -> false
+            ColorMode.DARK -> true
+        }
+        return if (settings.dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (dark) dynamicDarkColorScheme(this) else dynamicLightColorScheme(this)
+        } else {
+            (findThemeById(settings.themeId, settings.customThemes) ?: findPresetTheme(settings.themeId))
+                .getColorScheme(dark)
+        }
+    }
 
     private fun colorMode(): ColorMode {
         val raw = readStringPreference(COLOR_MODE_KEY)
@@ -701,7 +732,11 @@ class FloatingBallService : Service(), KoinComponent {
         }
     }
 
-    /** Slides the ball half off the edge it was snapped to and dims it. */
+    /**
+     * Collapses the ball into a slim handle on the edge it was snapped to: all but a thin strip of
+     * the window slides off-screen, the view draws only the handle in that strip, and it dims to
+     * the hidden-opacity setting.
+     */
     private fun tuckIntoEdge() {
         val view = ballView ?: return
         val params = ballParams ?: return
@@ -709,8 +744,9 @@ class FloatingBallService : Service(), KoinComponent {
         val size = view.width.takeIf { it > 0 } ?: params.width
         val screenWidth = resources.displayMetrics.widthPixels
         val onRight = params.x + size / 2 >= screenWidth / 2
-        val visible = (size * HIDDEN_VISIBLE_FRACTION).toInt().coerceAtLeast(1)
-        val targetX = if (onRight) (screenWidth - visible).toFloat() else (visible - size).toFloat()
+        val strip = (TUCKED_STRIP_DP * resources.displayMetrics.density).toInt()
+        val targetX = HaloBallLook.tuckedX(onRight, screenWidth, size, strip).toFloat()
+        view.setHandle(on = true, onRight = onRight)
         animateTo(view, params, wm, targetX, hiddenAlpha())
     }
 
@@ -733,6 +769,8 @@ class FloatingBallService : Service(), KoinComponent {
         params.y = params.y.coerceIn(margin, maxY)
         val restingX = readStringPreference(PREF_X)?.toIntOrNull()?.coerceIn(margin, maxX)
             ?: if (params.x + size / 2 >= screenWidth / 2) maxX else margin
+        // Back to the full ball before it moves, so it slides (or jumps) out whole.
+        view.setHandle(on = false)
         if (instant) {
             motionAnimator?.cancel()
             view.animate().cancel()

@@ -8,6 +8,7 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RadialGradient
 import android.graphics.Rect
+import android.graphics.RectF
 import android.graphics.Shader
 import android.view.Choreographer
 import android.view.View
@@ -20,8 +21,9 @@ import kotlin.random.Random
 /**
  * Artwork for the floating ball.
  *
- * At rest the ball is a **halo**: a ring stroked in the ball's accent colour (the app theme's
- * primary, or the colour the user picked) with a soft bloom around it, and nothing in the middle.
+ * At rest the ball is a **halo** on a backing disc: a translucent theme-surface disc with a hairline
+ * outline and a soft shadow, and on it a slim ring in the ball's accent colour (the app theme's
+ * primary, or the colour the user picked) with a faint bloom.
  *
  * While the agent is working the halo becomes the **orbit**: the ring drops back to a neutral
  * grey track and a bright light dot runs around it, dragging a comet tail of after-images and a
@@ -30,6 +32,8 @@ import kotlin.random.Random
  *
  * A user-picked image, when there is one, keeps its place as the ball: the grey track and the
  * light dot are then drawn around the image's rim instead.
+ *
+ * Tucked against the screen edge the ball becomes a slim **handle** (see [setHandle]).
  *
  * Everything is drawn from the view's own bounds, so the caller only has to size the view.
  */
@@ -48,9 +52,6 @@ internal class HaloBallView(context: Context) : View(context) {
         const val TRACK_GREY = 0xFFB4B8BE.toInt()
         const val TRACK_ALPHA = 120
 
-        /** Peak opacity of the idle halo's bloom, out of 255. */
-        const val HALO_BLOOM_ALPHA = 128
-
         const val DOT_SCALE = 1.15f        // dot radius, in stroke widths
         const val TRAIL_MAX_ALPHA = 195
         const val PARTICLE_MAX_ALPHA = 170
@@ -64,6 +65,8 @@ internal class HaloBallView(context: Context) : View(context) {
     private val ringPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
     private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
     private val bitmapPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { isFilterBitmap = true }
+    private val handleRect = RectF()
+    private val density = context.resources.displayMetrics.density
     private val iconClip = Path()
     private val iconSrc = Rect()
     private val iconDst = Rect()
@@ -75,6 +78,43 @@ internal class HaloBallView(context: Context) : View(context) {
             field = value
             invalidate()
         }
+
+    /** Backing disc colour (theme surface, already translucent). */
+    var surfaceColor: Int = HaloBallLook.withAlphaFraction(Color.WHITE, HaloBallLook.BACKING_ALPHA)
+        set(value) {
+            if (field == value) return
+            field = value
+            invalidate()
+        }
+
+    /** Hairline around the backing disc (theme outlineVariant). */
+    var outlineColor: Int = 0x33000000
+        set(value) {
+            if (field == value) return
+            field = value
+            invalidate()
+        }
+
+    private var handleMode = false
+    private var handleOnRight = true
+
+    /**
+     * Draw only the slim edge handle ([on]) or the whole ball. [onRight] is the screen edge the
+     * tucked window hugs; the service places the window with [HaloBallLook.tuckedX].
+     */
+    fun setHandle(on: Boolean, onRight: Boolean = handleOnRight) {
+        if (handleMode == on && handleOnRight == onRight) return
+        val wasHandle = handleMode
+        handleMode = on
+        handleOnRight = onRight
+        // The orbit is not visible behind a handle, so it pauses there and resumes on wake.
+        if (working && wasHandle && !on && isAttachedToWindow) {
+            lastFrameMs = 0.0
+            Choreographer.getInstance().removeFrameCallback(frameCallback)
+            Choreographer.getInstance().postFrameCallback(frameCallback)
+        }
+        invalidate()
+    }
 
     private var icon: Bitmap? = null
 
@@ -116,7 +156,7 @@ internal class HaloBallView(context: Context) : View(context) {
 
     private val frameCallback = object : Choreographer.FrameCallback {
         override fun doFrame(frameTimeNanos: Long) {
-            if (!working) return
+            if (!working || handleMode) return
             advance(frameTimeNanos / 1_000_000.0)
             invalidate()
             Choreographer.getInstance().postFrameCallback(this)
@@ -200,6 +240,11 @@ internal class HaloBallView(context: Context) : View(context) {
 
     override fun onDraw(canvas: Canvas) {
         val g = geometry() ?: return
+        if (handleMode) {
+            drawHandle(canvas)
+            return
+        }
+        drawBacking(canvas, g)
         val icon = icon
         if (icon != null) drawIcon(canvas, icon, g)
         if (working) {
@@ -211,34 +256,84 @@ internal class HaloBallView(context: Context) : View(context) {
         }
     }
 
-    /** The idle look: a crisp ring with a soft bloom that dies out exactly at the view edge. */
+    /**
+     * The resting backing: a soft shadow, a translucent surface disc and a hairline outline. Drawn
+     * under the working orbit too, so starting a turn does not make the disc blink away; the orbit
+     * itself is drawn exactly as before.
+     */
+    private fun drawBacking(canvas: Canvas, g: Geometry) {
+        val backing = g.r * HaloBallLook.BACKING_RADIUS_FRACTION
+        val offset = g.r * HaloBallLook.SHADOW_OFFSET_FRACTION
+        val shadowR = g.r - offset
+        if (shadowR > 0f) {
+            fillPaint.shader = RadialGradient(
+                g.cx,
+                g.cy + offset,
+                shadowR,
+                intArrayOf(
+                    withAlpha(Color.BLACK, HaloBallLook.SHADOW_ALPHA),
+                    withAlpha(Color.BLACK, HaloBallLook.SHADOW_ALPHA),
+                    withAlpha(Color.BLACK, 0),
+                ),
+                floatArrayOf(0f, ((backing - offset) / shadowR).coerceIn(0f, 1f), 1f),
+                Shader.TileMode.CLAMP,
+            )
+            canvas.drawCircle(g.cx, g.cy + offset, shadowR, fillPaint)
+            fillPaint.shader = null
+        }
+
+        fillPaint.color = surfaceColor
+        canvas.drawCircle(g.cx, g.cy, backing, fillPaint)
+
+        val hairline = HaloBallLook.OUTLINE_WIDTH_DP * density
+        ringPaint.color = outlineColor
+        ringPaint.strokeWidth = hairline
+        canvas.drawCircle(g.cx, g.cy, backing - hairline / 2f, ringPaint)
+    }
+
+    /** The idle look: a slim accent ring with a faint bloom, kept inside the backing disc. */
     private fun drawHalo(canvas: Canvas, g: Geometry) {
-        val inner = (g.ringRadius - g.stroke / 2f).coerceAtLeast(0f)
-        val outer = g.ringRadius + g.stroke / 2f
+        val stroke = g.stroke * HaloBallLook.REST_RING_STROKE_SCALE
+        val backing = g.r * HaloBallLook.BACKING_RADIUS_FRACTION
+        val inner = (g.ringRadius - stroke / 2f).coerceAtLeast(0f)
+        val outer = g.ringRadius + stroke / 2f
         fillPaint.shader = RadialGradient(
             g.cx,
             g.cy,
-            g.r,
+            backing,
             intArrayOf(
                 withAlpha(accentColor, 0),
                 withAlpha(accentColor, 0),
-                withAlpha(accentColor, HALO_BLOOM_ALPHA),
+                withAlpha(accentColor, HaloBallLook.REST_BLOOM_ALPHA),
                 withAlpha(accentColor, 0),
             ),
             floatArrayOf(
                 0f,
-                (inner / g.r).coerceIn(0f, 1f),
-                (outer / g.r).coerceIn(0f, 1f),
+                (inner / backing).coerceIn(0f, 1f),
+                (outer / backing).coerceIn(0f, 1f),
                 1f,
             ),
             Shader.TileMode.CLAMP,
         )
-        canvas.drawCircle(g.cx, g.cy, g.r, fillPaint)
+        canvas.drawCircle(g.cx, g.cy, backing, fillPaint)
         fillPaint.shader = null
 
-        ringPaint.color = accentColor
-        ringPaint.strokeWidth = g.stroke
+        ringPaint.color = withAlpha(accentColor, HaloBallLook.REST_RING_ALPHA)
+        ringPaint.strokeWidth = stroke
         canvas.drawCircle(g.cx, g.cy, g.ringRadius, ringPaint)
+    }
+
+    /** The tucked look: a slim accent pill flush with the screen edge, centred vertically. */
+    private fun drawHandle(canvas: Canvas) {
+        val size = width
+        val handleW = (HaloBallLook.HANDLE_WIDTH_DP * density).toInt().coerceAtLeast(1)
+        val handleH = (HaloBallLook.HANDLE_HEIGHT_DP * density).coerceAtMost(height.toFloat())
+        val strip = (HaloBallLook.HANDLE_STRIP_DP * density).toInt()
+        val left = HaloBallLook.handleLeft(handleOnRight, size, strip, handleW).toFloat()
+        val top = (height - handleH) / 2f
+        handleRect.set(left, top, left + handleW, top + handleH)
+        fillPaint.color = accentColor
+        canvas.drawRoundRect(handleRect, handleW / 2f, handleW / 2f, fillPaint)
     }
 
     /** The halo demoted to a neutral track the dot can run along. */
