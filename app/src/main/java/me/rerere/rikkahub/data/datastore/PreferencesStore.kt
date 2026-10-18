@@ -1197,6 +1197,8 @@ data class DisplaySetting(
     val showUserAvatar: Boolean = true,
     val showAssistantBubble: Boolean = false,
     val bubbleOpacity: Float = 1.0f,
+    // 简洁布局：扁平顶栏 + 两行输入框。默认关，关时与原来完全一致。
+    val cleanLayout: Boolean = false,
     val showModelIcon: Boolean = true,
     val showModelName: Boolean = true,
     val showDateTimeInMessage: Boolean = false,

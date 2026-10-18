@@ -234,9 +234,13 @@ fun ChatInput(
 
     // Collapsed = a one-line pill. It opens into a taller multi-line box as soon as it is focused,
     // carries attachments, or holds a multi-line draft.
-    val expanded = isFocused ||
+    val naturallyExpanded = isFocused ||
         state.messageContent.isNotEmpty() ||
         state.textContent.text.contains('\n')
+    // Clean layout (DisplaySetting.cleanLayout, off by default) keeps the open two-row box all the
+    // time: full-width field on top, tools underneath, "+" moved to the right next to send.
+    val cleanLayout = settings.displaySetting.cleanLayout
+    val expanded = cleanLayout || naturallyExpanded
     // Animate the corner along with the layout change below, so the pill does not snap between
     // its 28dp and 16dp radii while the bar is growing.
     val containerCorner by animateDpAsState(
@@ -281,8 +285,12 @@ fun ChatInput(
                 Column(
                     // Extra inset so the round buttons stay clear of the capsule's edge; the
                     // middle (text) column gives up that space instead.
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                    modifier = if (cleanLayout) {
+                        Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
+                    } else {
+                        Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                    },
+                    verticalArrangement = Arrangement.spacedBy(if (cleanLayout) 6.dp else 2.dp)
                 ) {
                     if (voiceState.phase != VoicePhase.Off) {
                         VoiceModeRow(
@@ -307,6 +315,15 @@ fun ChatInput(
                     // purpose: an if/else moves the field to a different composition slot, and a
                     // moved field is re-created, which drops the focus that had just arrived - the
                     // bar flashed open and shut the moment it was tapped.
+                    val moreButton: @Composable () -> Unit = {
+                        // Attachments / tools / workspace panel (the bar's "drawer").
+                        ActionIconButton(onClick = onMoreClick) {
+                            Icon(
+                                imageVector = HugeIcons.Add01,
+                                contentDescription = stringResource(R.string.more_options)
+                            )
+                        }
+                    }
                     ChatInputBar(
                         expanded = expanded,
                         modifier = Modifier.fillMaxWidth(),
@@ -315,13 +332,7 @@ fun ChatInput(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                             ) {
-                                // Attachments / tools / workspace panel (the bar's "drawer").
-                                ActionIconButton(onClick = onMoreClick) {
-                                    Icon(
-                                        imageVector = HugeIcons.Add01,
-                                        contentDescription = stringResource(R.string.more_options)
-                                    )
-                                }
+                                if (!cleanLayout) moreButton()
 
                                 // Model, with thinking depth on the same entry. The name is capped so a
                                 // long id cannot push the field off the pill; the sheet shows the full one.
@@ -355,7 +366,7 @@ fun ChatInput(
                             ) {
                                 // Full screen only once the bar is open. The collapsed pill has no room,
                                 // and a double-tap on the field would steal word selection.
-                                if (expanded) {
+                                if (naturallyExpanded) {
                                     ActionIconButton(onClick = { isFullScreen = true }) {
                                         Icon(
                                             imageVector = HugeIcons.Fullscreen,
@@ -371,6 +382,8 @@ fun ChatInput(
                                     onUpdateSearchMode = onUpdateSearchMode,
                                     onUpdateSearchService = onUpdateSearchService,
                                 )
+
+                                if (cleanLayout) moreButton()
 
                                 // One slot, two faces: the send arrow while there is something to send, the
                                 // microphone when the draft is empty and speech input is available. While

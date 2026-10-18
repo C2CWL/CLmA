@@ -641,7 +641,11 @@ private fun ChatPageContent(
                     ),
                     assistant.useGradientBackground,
                 )
-                val topFade = titleBarFade(darkTheme = darkTheme, photoShown = photoShown)
+                val topFade = titleBarFade(
+                    darkTheme = darkTheme,
+                    photoShown = photoShown,
+                    cleanLayout = setting.displaySetting.cleanLayout,
+                )
                 val bottomFade = bottomBarFade(darkTheme = darkTheme, photoShown = photoShown)
                 val fadeColor = MaterialTheme.colorScheme.background
 
@@ -693,7 +697,18 @@ private fun ChatPageContent(
                         .fillMaxWidth()
                         .onSizeChanged { topBarHeightPx = it.height },
                 ) {
-                    TopBar(
+                    if (setting.displaySetting.cleanLayout) {
+                        CleanTopBar(
+                            settings = setting,
+                            conversation = conversation,
+                            turnFooters = turnFooters,
+                            drawerState = drawerState,
+                            bigScreen = bigScreen,
+                            previewMode = previewMode,
+                            onClickMenu = { previewMode = !previewMode },
+                            onNewChat = { navigateToChatPage(navController) },
+                        )
+                    } else TopBar(
                         settings = setting,
                         conversation = conversation,
                         turnFooters = turnFooters,
@@ -899,16 +914,14 @@ private fun TopBar(
                         // UsageLedger (turnFooters) is the ground truth (includes all tool loop steps);
                         // fallback to TokenBudgetTracker for legacy or imported conversations without ledger rows.
                         val usedTokens = remember(turnFooters, conversation) {
-                            val ledgerTokens = turnFooters.values.mapNotNull { it.usage }
-                                .sumOf { it.inputTokens + it.outputTokens }
-                            if (ledgerTokens > 0L) {
-                                ledgerTokens
-                            } else {
-                                TokenBudgetTracker.aggregate(conversation).totalTokens
-                            }
+                            conversationUsedTokens(turnFooters, conversation)
                         }
                         Text(
-                            text = "${assistant.name.ifBlank { stringResource(R.string.assistant_page_default_assistant) }} / ${model.displayName} / $usedTokens token",
+                            text = topBarSubtitle(
+                                assistantName = assistant.name.ifBlank { stringResource(R.string.assistant_page_default_assistant) },
+                                modelName = model.displayName,
+                                usedTokens = usedTokens,
+                            ),
                             overflow = TextOverflow.Ellipsis,
                             maxLines = 1,
                             color = LocalContentColor.current.copy(0.65f),

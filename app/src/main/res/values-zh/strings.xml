@@ -789,6 +789,8 @@
   <string name="setting_display_page_show_updates_desc">是否显示应用更新通知</string>
   <string name="setting_display_page_show_updates_title">显示更新</string>
   <string name="setting_display_page_show_user_avatar_desc">是否在聊天消息中显示用户头像</string>
+  <string name="setting_display_page_clean_layout_title">简洁布局</string>
+  <string name="setting_display_page_clean_layout_desc">扁平顶栏，标题下方显示模型名；输入框分两行，工具按钮在输入框下方</string>
   <string name="setting_display_page_show_user_avatar_title">显示用户头像</string>
   <string name="setting_display_page_skip_crop_image_desc">导入图片或拍照后跳过裁剪界面</string>
   <string name="setting_display_page_skip_crop_image_title">跳过图片编辑</string>
