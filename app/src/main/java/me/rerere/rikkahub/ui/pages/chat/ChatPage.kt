@@ -630,6 +630,7 @@ private fun ChatPageContent(
                         background = assistant.background,
                         darkBackground = assistant.darkBackground,
                         lightBackground = assistant.lightBackground,
+                        mode = assistant.backgroundMode,
                     ),
                     assistant.useGradientBackground,
                 )
@@ -843,6 +844,7 @@ private fun TopBar(
                         background = assistant.background,
                         darkBackground = assistant.darkBackground,
                         lightBackground = assistant.lightBackground,
+                        mode = assistant.backgroundMode,
                     ),
                     assistant.useGradientBackground,
                 ),

@@ -59,6 +59,11 @@
   <string name="assistant_page_chaotic">무질서(위험)</string>
   <string name="assistant_page_chat_background">채팅 배경</string>
   <string name="assistant_page_chat_background_desc">어시스턴트 채팅 페이지의 배경 이미지 설정</string>
+  <string name="assistant_page_background_mode">사용할 배경화면</string>
+  <string name="assistant_page_background_mode_auto">테마 따르기</string>
+  <string name="assistant_page_background_mode_general">항상 공통</string>
+  <string name="assistant_page_background_mode_auto_desc">현재 테마에 맞는 다크 / 라이트 배경화면을 사용하고, 설정되지 않은 경우 공통 배경화면을 사용합니다.</string>
+  <string name="assistant_page_background_mode_general_desc">항상 공통 배경화면을 사용합니다. 다크 / 라이트 배경화면은 유지되지만 표시되지 않습니다.</string>
   <string name="assistant_page_chat_model">채팅 모델</string>
   <string name="assistant_page_chat_model_desc">어시스턴트의 기본 채팅 모델 설정. 미설정 시 전역 기본 채팅 모델 사용</string>
   <string name="assistant_page_clone">복제</string>

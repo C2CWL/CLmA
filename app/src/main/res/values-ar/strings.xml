@@ -57,6 +57,11 @@
   <string name="assistant_page_chaotic">فوضوي (خطير)</string>
   <string name="assistant_page_chat_background">خلفية الدردشة</string>
   <string name="assistant_page_chat_background_desc">تعيين صورة خلفية لصفحة دردشة المساعد</string>
+  <string name="assistant_page_background_mode">الخلفية المستخدمة</string>
+  <string name="assistant_page_background_mode_auto">اتباع السمة</string>
+  <string name="assistant_page_background_mode_general">العامة دائمًا</string>
+  <string name="assistant_page_background_mode_auto_desc">تُستخدم الخلفية الداكنة / الفاتحة حسب السمة الحالية، أو الخلفية العامة إذا لم تُعيَّن.</string>
+  <string name="assistant_page_background_mode_general_desc">تُستخدم الخلفية العامة دائمًا. تُحفظ الخلفيات الداكنة / الفاتحة لكن لا تُعرض.</string>
   <string name="assistant_page_chat_model">نموذج الدردشة</string>
   <string name="assistant_page_chat_model_desc">تعيين نموذج الدردشة الافتراضي للمساعد. إذا لم يُعيَّن، فسيُستخدم نموذج الدردشة الافتراضي العام</string>
   <string name="assistant_page_clone">استنساخ</string>

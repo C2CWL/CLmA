@@ -59,6 +59,11 @@
   <string name="assistant_page_chaotic">Хаотичный (Опасный)</string>
   <string name="assistant_page_chat_background">Фон чата</string>
   <string name="assistant_page_chat_background_desc">Установить фоновое изображение для страницы чата с ассистентом</string>
+  <string name="assistant_page_background_mode">Используемые обои</string>
+  <string name="assistant_page_background_mode_auto">По теме</string>
+  <string name="assistant_page_background_mode_general">Всегда общие</string>
+  <string name="assistant_page_background_mode_auto_desc">Используются тёмные / светлые обои для текущей темы, а если они не заданы — общие.</string>
+  <string name="assistant_page_background_mode_general_desc">Всегда используются общие обои. Тёмные / светлые обои сохраняются, но не показываются.</string>
   <string name="assistant_page_chat_model">Модель чата</string>
   <string name="assistant_page_chat_model_desc">Установить модель чата по умолчанию для ассистента. Если не задано, будет использована глобальная модель чата по умолчанию</string>
   <string name="assistant_page_clone">Клонировать</string>

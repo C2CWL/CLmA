@@ -59,6 +59,11 @@
   <string name="assistant_page_chaotic">混亂 (危險)</string>
   <string name="assistant_page_chat_background">聊天背景</string>
   <string name="assistant_page_chat_background_desc">設定助手聊天頁面的背景圖片</string>
+  <string name="assistant_page_background_mode">使用的桌布</string>
+  <string name="assistant_page_background_mode_auto">跟隨主題</string>
+  <string name="assistant_page_background_mode_general">一律通用</string>
+  <string name="assistant_page_background_mode_auto_desc">依目前主題使用深色 / 淺色桌布，該項未設定時使用通用桌布。</string>
+  <string name="assistant_page_background_mode_general_desc">一律使用通用桌布。深色 / 淺色桌布會保留，但不顯示。</string>
   <string name="assistant_page_chat_model">聊天模型</string>
   <string name="assistant_page_chat_model_desc">設定助手的預設聊天模型，如果不設定，則使用全域預設聊天模型</string>
   <string name="assistant_page_clone">複製</string>

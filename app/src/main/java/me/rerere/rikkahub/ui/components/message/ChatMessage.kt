@@ -90,6 +90,7 @@ import me.rerere.rikkahub.R
 import me.rerere.rikkahub.Screen
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.AssistantAffectScope
+import me.rerere.rikkahub.data.model.AssistantBackgroundMode
 import me.rerere.rikkahub.data.model.MessageNode
 import me.rerere.rikkahub.data.usage.TurnFooter
 import me.rerere.rikkahub.data.model.replaceRegexes
@@ -257,6 +258,7 @@ fun ChatMessage(
                     background = assistant?.background,
                     darkBackground = assistant?.darkBackground,
                     lightBackground = assistant?.lightBackground,
+                    mode = assistant?.backgroundMode ?: AssistantBackgroundMode.AUTO,
                 ),
                 assistant?.useGradientBackground == true,
             )
@@ -477,6 +479,7 @@ private fun MessagePartsBlock(
                                             background = assistant?.background,
                                             darkBackground = assistant?.darkBackground,
                                             lightBackground = assistant?.lightBackground,
+                                            mode = assistant?.backgroundMode ?: AssistantBackgroundMode.AUTO,
                                         ),
                                         assistant?.useGradientBackground == true,
                                     ),

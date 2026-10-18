@@ -1,5 +1,7 @@
 package me.rerere.rikkahub.ui.pages.chat
 
+import me.rerere.rikkahub.data.model.AssistantBackgroundMode
+
 /**
  * A custom chat photo sits under theme-coloured UI. The old veil painted
  * `colorScheme.background` at alpha 0.2 → 0.5 across the whole picture.
@@ -17,16 +19,25 @@ internal fun chatPhotoShown(background: String?, useGradientBackground: Boolean)
     background != null && !useGradientBackground
 
 /**
- * Resolve the effective wallpaper for the current theme. A per-theme wallpaper
- * (`darkBackground` / `lightBackground`) overrides the shared `background` when set;
- * null falls back to `background`. Both null → no wallpaper.
+ * Resolve the effective wallpaper for the current theme.
+ *
+ * [AssistantBackgroundMode.AUTO] (default): a per-theme wallpaper (`darkBackground` /
+ * `lightBackground`) overrides the shared `background` when set; null falls back to
+ * `background`. Both null → no wallpaper.
+ *
+ * [AssistantBackgroundMode.GENERAL]: always `background`, even when per-theme ones are set.
  */
 internal fun effectiveBackground(
     darkTheme: Boolean,
     background: String?,
     darkBackground: String?,
     lightBackground: String?,
-): String? = if (darkTheme) darkBackground ?: background else lightBackground ?: background
+    mode: AssistantBackgroundMode = AssistantBackgroundMode.AUTO,
+): String? = when (mode) {
+    AssistantBackgroundMode.GENERAL -> background
+    AssistantBackgroundMode.AUTO ->
+        if (darkTheme) darkBackground ?: background else lightBackground ?: background
+}
 
 internal data class WallpaperScrim(val topAlpha: Float, val bottomAlpha: Float)
 

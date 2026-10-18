@@ -856,6 +856,17 @@ internal fun AssistantBasicContent(
                         )
                     }
                 )
+
+                // Shown whenever any wallpaper is set, so a stored GENERAL can always be switched
+                // back, even after both theme wallpapers were cleared.
+                if (showsBackgroundModeSelector(assistant.background, assistant.darkBackground, assistant.lightBackground)) {
+                    HorizontalDivider()
+                    BackgroundModeSelector(
+                        modifier = Modifier.padding(8.dp),
+                        mode = assistant.backgroundMode,
+                        onModeChange = { onUpdate(assistant.copy(backgroundMode = it)) },
+                    )
+                }
             }
 
             if (!assistant.useGradientBackground && (assistant.background != null || assistant.darkBackground != null || assistant.lightBackground != null)) {

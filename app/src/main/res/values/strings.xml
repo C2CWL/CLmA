@@ -63,6 +63,11 @@
   <string name="assistant_page_chaotic">Chaotic (Dangerous)</string>
   <string name="assistant_page_chat_background">Chat Background</string>
   <string name="assistant_page_chat_background_desc">Set background image for assistant chat page</string>
+  <string name="assistant_page_background_mode">Wallpaper to use</string>
+  <string name="assistant_page_background_mode_auto">Follow theme</string>
+  <string name="assistant_page_background_mode_general">Always common</string>
+  <string name="assistant_page_background_mode_auto_desc">Uses the dark / light wallpaper for the current theme, or the common one when that slot is empty.</string>
+  <string name="assistant_page_background_mode_general_desc">Always uses the common wallpaper. The dark / light wallpapers are kept but not shown.</string>
   <string name="assistant_page_chat_model">Chat Model</string>
   <string name="assistant_page_chat_model_desc">Set the default chat model for the assistant. If not set, the global default chat model will be used</string>
   <string name="assistant_page_clone">Clone</string>

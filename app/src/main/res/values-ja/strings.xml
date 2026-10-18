@@ -59,6 +59,11 @@
   <string name="assistant_page_chaotic">カオス（危険）</string>
   <string name="assistant_page_chat_background">チャット背景</string>
   <string name="assistant_page_chat_background_desc">アシスタントチャットページの背景画像を設定</string>
+  <string name="assistant_page_background_mode">使用する壁紙</string>
+  <string name="assistant_page_background_mode_auto">テーマに従う</string>
+  <string name="assistant_page_background_mode_general">常に共通</string>
+  <string name="assistant_page_background_mode_auto_desc">現在のテーマに応じてダーク / ライトの壁紙を使用し、未設定の場合は共通の壁紙を使用します。</string>
+  <string name="assistant_page_background_mode_general_desc">常に共通の壁紙を使用します。ダーク / ライトの壁紙は保持されますが表示されません。</string>
   <string name="assistant_page_chat_model">チャットモデル</string>
   <string name="assistant_page_chat_model_desc">アシスタントのデフォルトチャットモデルを設定します。設定しない場合は、グローバルデフォルトチャットモデルが使用されます</string>
   <string name="assistant_page_clone">複製</string>

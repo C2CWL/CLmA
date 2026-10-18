@@ -26,6 +26,7 @@ fun AssistantBackground(setting: Settings, modifier: Modifier) {
         background = assistant.background,
         darkBackground = assistant.darkBackground,
         lightBackground = assistant.lightBackground,
+        mode = assistant.backgroundMode,
     )
     if (bg != null) {
         val backgroundColor = MaterialTheme.colorScheme.background
