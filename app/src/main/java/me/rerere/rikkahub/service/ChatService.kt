@@ -129,6 +129,7 @@ import me.rerere.rikkahub.data.datastore.getContextCompactionTargetTokens
 import me.rerere.rikkahub.data.datastore.getCurrentAssistant
 import me.rerere.rikkahub.data.datastore.getCurrentChatModel
 import me.rerere.rikkahub.data.datastore.getEffectiveContextLength
+import me.rerere.rikkahub.data.datastore.resolveChatModel
 import me.rerere.rikkahub.data.files.FilesManager
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.Conversation
@@ -256,6 +257,19 @@ internal fun resolveCompressionModel(settings: Settings): Model? {
         .flatMap { it.models }
         .firstNotNullOfOrNull { it.takeIfUsable() }
 }
+
+/**
+ * The model a generation runs on: a routed fallback ([overrideModelId]) wins for that single
+ * attempt, otherwise [Settings.resolveChatModel] - the same chain the chat page's top bar, model
+ * chip and send guard read, so what they show is what gets called.
+ */
+internal fun resolveGenerationModel(
+    settings: Settings,
+    conversation: Conversation,
+    overrideModelId: Uuid? = null,
+): Model? =
+    overrideModelId?.let { settings.findModelById(it) }
+        ?: settings.resolveChatModel(conversation.chatModelId, conversation.assistantId)
 
 /** Message for the compression failure thrown when [resolveCompressionModel] finds nothing
  *  usable, naming the setting so the resulting error card is actionable. */
@@ -1450,9 +1464,8 @@ class ChatService(
 
                 val settings = settingsStore.settingsFlow.first()
                 val assistant = AssistantResolver.forConversation(settings, conversation.assistantId).assistant
-                val model = settings.findModelById(
-                    conversation.chatModelId ?: assistant.chatModelId ?: settings.chatModelId
-                ) ?: return RerunToolResult.Failure("no chat model selected")
+                val model = resolveGenerationModel(settings, conversation)
+                    ?: return RerunToolResult.Failure("no chat model selected")
 
                 val tools = buildToolsForRerun(assistant, conversationId, conversation, model, settings)
                 val tool = tools.firstOrNull { it.name == toolPart.toolName }
@@ -1637,10 +1650,7 @@ class ChatService(
             conversationAssistantId = initialConversation.assistantId,
             currentAssistantId = settings.assistantId,
         ).assistant
-        val model = overrideModelId?.let { settings.findModelById(it) }
-            ?: settings.findModelById(
-                initialConversation.chatModelId ?: assistant.chatModelId ?: settings.chatModelId
-            )
+        val model = resolveGenerationModel(settings, initialConversation, overrideModelId)
             ?: throw IllegalStateException(
                 "No chat model selected. Pick one in Settings → Default models, or send /model in Telegram."
             )

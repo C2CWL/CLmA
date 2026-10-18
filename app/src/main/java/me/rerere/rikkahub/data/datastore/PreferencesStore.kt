@@ -1273,6 +1273,24 @@ fun Settings.getCurrentChatModel(): Model? {
     return findModelById(this.getCurrentAssistant().chatModelId ?: this.chatModelId)
 }
 
+/**
+ * The chat model a conversation will actually talk to: the conversation's own override, then the
+ * model of the assistant the conversation belongs to, then the global default.
+ *
+ * Unlike [getCurrentChatModel], an id that no longer resolves (model deleted, or re-added under a
+ * fresh UUID) is skipped instead of ending the chain. A dangling assistant default used to make
+ * the send guard report "select a model first" while the picker highlighted the conversation's
+ * perfectly valid override, and picking another model could not clear it, because the picker
+ * writes the conversation override, not the assistant default.
+ */
+fun Settings.resolveChatModel(conversationChatModelId: Uuid?, assistantId: Uuid?): Model? {
+    val assistant = assistantId
+        ?.let { AssistantResolver.forConversation(this, it).assistant }
+        ?: getCurrentAssistant()
+    return listOfNotNull(conversationChatModelId, assistant.chatModelId, chatModelId)
+        .firstNotNullOfOrNull { providers.findModelById(it) }
+}
+
 private const val FALLBACK_CONTEXT_COMPACTION_TARGET_TOKENS = 2_000
 
 /** Returns the configured summary target, defaulting to 1% of the active context. */

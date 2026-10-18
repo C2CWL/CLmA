@@ -101,7 +101,7 @@ import me.rerere.hugeicons.stroke.Zap
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.datastore.getCurrentAssistant
-import me.rerere.rikkahub.data.datastore.findModelById
+import me.rerere.rikkahub.data.datastore.resolveChatModel
 import me.rerere.rikkahub.data.datastore.getQuickMessagesOfAssistant
 import me.rerere.rikkahub.data.files.FilesManager
 import me.rerere.rikkahub.data.model.Assistant
@@ -159,9 +159,7 @@ fun ChatInput(
 ) {
     val toaster = LocalToaster.current
     val assistant = settings.getCurrentAssistant()
-    val effectiveChatModel = settings.findModelById(
-        conversationChatModelId ?: assistant.chatModelId ?: settings.chatModelId
-    )
+    val effectiveChatModel = settings.resolveChatModel(conversationChatModelId, assistant.id)
 
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
@@ -446,8 +444,8 @@ private fun ModelReasoningChip(
     onUpdateChatModel: (Model) -> Unit,
     onUpdateModelReasoningLevel: (Model, ReasoningLevel) -> Unit,
 ) {
-    val effectiveModelId = conversationChatModelId ?: assistant.chatModelId ?: settings.chatModelId
-    val model = settings.findModelById(effectiveModelId)
+    val model = settings.resolveChatModel(conversationChatModelId, assistant.id)
+    val effectiveModelId = model?.id
     val showReasoning = model?.abilities?.contains(ModelAbility.REASONING) == true
     val level = model?.reasoningLevel ?: assistant.reasoningLevel
     val modelListState = rememberModelListState(

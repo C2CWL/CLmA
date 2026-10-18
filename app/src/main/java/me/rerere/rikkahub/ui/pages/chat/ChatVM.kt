@@ -37,7 +37,7 @@ import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.datastore.getCurrentAssistant
-import me.rerere.rikkahub.data.datastore.getCurrentChatModel
+import me.rerere.rikkahub.data.datastore.resolveChatModel
 import me.rerere.rikkahub.data.usage.TurnFooter
 import me.rerere.rikkahub.data.usage.TurnNode
 import me.rerere.rikkahub.data.usage.UsageLedger
@@ -191,10 +191,11 @@ class ChatVM(
         it.getCurrentAssistant().enableWebSearch
     }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
-    // 当前模型
-    val currentChatModel = settings.map { settings ->
-        settings.getCurrentChatModel()
-    }.stateIn(viewModelScope, SharingStarted.Lazily, null)
+    // 当前模型: 与输入栏模型选择器同一条解析链 (对话覆盖 → 对话所属助手 → 全局默认),
+    // 发送拦截据此判断, 不能只看助手/全局默认而漏掉对话覆盖
+    val currentChatModel: StateFlow<Model?> = combine(settings, conversation) { s, conv ->
+        s.resolveChatModel(conv.chatModelId, conv.assistantId)
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     // 错误状态
     val errors: StateFlow<List<ChatError>> = chatService.errors

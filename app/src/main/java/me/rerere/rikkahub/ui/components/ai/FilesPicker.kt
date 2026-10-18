@@ -72,7 +72,7 @@ import me.rerere.rikkahub.data.ai.mcp.McpManager
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.datastore.getEffectiveContextLength
 import me.rerere.rikkahub.data.datastore.getContextCompactionTargetTokens
-import me.rerere.rikkahub.data.datastore.getCurrentChatModel
+import me.rerere.rikkahub.data.datastore.resolveChatModel
 import me.rerere.rikkahub.data.datastore.findProvider
 import me.rerere.rikkahub.data.db.entity.WorkspaceEntity
 import me.rerere.rikkahub.data.model.Assistant
@@ -111,7 +111,7 @@ internal fun FilesPicker(
     onStartVoiceMode: (() -> Unit)? = null,
 ) {
     val settings = LocalSettings.current
-    val currentModel = settings.getCurrentChatModel()
+    val currentModel = settings.resolveChatModel(conversation.chatModelId, conversation.assistantId)
     val provider = currentModel?.findProvider(providers = settings.providers)
     // D3 — the video/audio buttons used to appear only for Google, whose provider hard-codes
     // those two modalities. Now any model that DECLARES the modality gets them; Google stays
@@ -315,7 +315,7 @@ internal fun FilesPicker(
     if (showCompressDialog) {
         CompressContextDialog(
             defaultTargetTokens = settings.getContextCompactionTargetTokens(
-                settings.getEffectiveContextLength(settings.getCurrentChatModel()),
+                settings.getEffectiveContextLength(currentModel),
             ),
             onDismiss = {
             onShowCompressDialogChange(false)
