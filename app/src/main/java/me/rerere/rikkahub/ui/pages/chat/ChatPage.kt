@@ -1,6 +1,7 @@
 package me.rerere.rikkahub.ui.pages.chat
 
 import android.net.Uri
+import android.os.Build
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -65,6 +66,8 @@ import dev.chrisbanes.haze.glass.hazeGlass
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import me.rerere.rikkahub.ui.components.ui.rikkaGlassStyle
+import me.rerere.rikkahub.ui.components.ui.frostedPlate
+import me.rerere.rikkahub.ui.components.ui.frostedPlateSpec
 import me.rerere.rikkahub.ui.theme.LocalDarkMode
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -849,6 +852,10 @@ private fun TopBar(
                     assistant.useGradientBackground,
                 ),
             )
+            // API 31+: a frosted pill, the same full rounding as the glass buttons beside it.
+            // Older devices keep the flat 0.86 plate.
+            val titleFrost = frostedPlateSpec(titleOnPhoto, Build.VERSION.SDK_INT)
+            val titleShape = if (titleFrost != null) RoundedCornerShape(percent = 50) else RoundedCornerShape(12.dp)
             Surface(
                 onClick = {
                     if (conversation.messageNodes.isNotEmpty()) {
@@ -857,18 +864,23 @@ private fun TopBar(
                         toaster.show(editTitleWarning, type = ToastType.Warning)
                     }
                 },
-                shape = RoundedCornerShape(12.dp),
-                color = if (titleOnPhoto) {
+                modifier = if (titleFrost != null) {
+                    Modifier.frostedPlate(hazeState, titleShape, titleFrost)
+                } else {
+                    Modifier
+                },
+                shape = titleShape,
+                color = if (titleOnPhoto && titleFrost == null) {
                     MaterialTheme.colorScheme.surface.copy(alpha = PHOTO_TITLE_PLATE_ALPHA)
                 } else {
                     Color.Transparent
                 },
             ) {
                 Column(
-                    modifier = if (titleOnPhoto) {
-                        Modifier.padding(horizontal = 10.dp, vertical = 2.dp)
-                    } else {
-                        Modifier
+                    modifier = when {
+                        titleFrost != null -> Modifier.padding(horizontal = 14.dp, vertical = 2.dp)
+                        titleOnPhoto -> Modifier.padding(horizontal = 10.dp, vertical = 2.dp)
+                        else -> Modifier
                     },
                 ) {
                     val model = settings.resolveChatModel(conversation.chatModelId, conversation.assistantId)
