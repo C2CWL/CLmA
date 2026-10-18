@@ -429,7 +429,11 @@ private fun ChatPageContent(
         color = MaterialTheme.colorScheme.background,
         modifier = Modifier.fillMaxSize()
     ) {
-        AssistantBackground(setting = setting, modifier = Modifier.hazeSource(hazeState))
+        AssistantBackground(
+            setting = setting,
+            // Keyed so the usage line under replies can blur the wallpaper alone.
+            modifier = Modifier.hazeSource(hazeState, key = CHAT_WALLPAPER_HAZE_KEY),
+        )
         Scaffold(
             // The title bar is drawn inside the content instead (see the overlay below): Scaffold
             // places its content over the top bar, and the conversation has to scroll UNDER the

@@ -84,3 +84,6 @@ internal fun assistantTextNeedsPhotoPlate(
     photoShown: Boolean,
     showAssistantBubble: Boolean,
 ): Boolean = looseTextNeedsPhotoPlate(darkTheme, photoShown) && !showAssistantBubble
+
+/** Haze source key of the chat wallpaper, so the usage line blurs only the photo, not messages. */
+internal const val CHAT_WALLPAPER_HAZE_KEY = "chat_wallpaper"

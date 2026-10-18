@@ -76,6 +76,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import me.rerere.ai.core.MessageRole
 import me.rerere.ai.provider.Model
 import me.rerere.ai.ui.ToolApprovalState
+import dev.chrisbanes.haze.HazeState
 import me.rerere.ai.ui.UIMessage
 import me.rerere.ai.ui.UIMessageAnnotation
 import me.rerere.ai.ui.UIMessagePart
@@ -149,6 +150,8 @@ fun ChatMessage(
     onToolAnswer: ((toolCallId: String, answer: String) -> Unit)? = null,
     onRerunTool: (suspend (toolCallId: String) -> me.rerere.rikkahub.service.ChatService.RerunToolResult)? = null,
     turnFooter: TurnFooter? = null,
+    // Chat page haze state; the usage line blurs the wallpaper source under its pill.
+    hazeState: HazeState? = null,
 ) {
     // node.selectIndex can be stale (e.g. after a branch/message was removed) or the
     // node can be empty; degrade to the last message, or render nothing, instead of
@@ -262,7 +265,12 @@ fun ChatMessage(
                 ),
                 assistant?.useGradientBackground == true,
             )
-            ChatMessageNerdLine(message = message, turnFooter = turnFooter, photoShown = photoShown)
+            ChatMessageNerdLine(
+                message = message,
+                turnFooter = turnFooter,
+                photoShown = photoShown,
+                hazeState = hazeState,
+            )
         }
 
     }

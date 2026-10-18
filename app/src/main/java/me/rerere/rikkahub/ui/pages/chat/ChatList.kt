@@ -361,6 +361,7 @@ private fun ChatListNormal(
                             node = node,
                             displayMessage = group.displayMessage,
                             turnFooter = turnFooters[group.displayMessage.id.toString()],
+                            hazeState = hazeState,
                             model = node.currentMessage.modelId?.let(modelById::get),
                             assistant = assistant,
                             loading = loading && node.id == lastMessageNodeId,
