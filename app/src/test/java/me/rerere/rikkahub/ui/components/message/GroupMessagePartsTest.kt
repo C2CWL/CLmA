@@ -1,5 +1,8 @@
 package me.rerere.rikkahub.ui.components.message
 
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonObject
 import me.rerere.ai.ui.UIMessagePart
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -106,6 +109,62 @@ class GroupMessagePartsTest {
         assertEquals(2, result.size)
         assertTrue(result[0] is MessagePartBlock.ContentBlock)
         assertTrue(result[1] is MessagePartBlock.ThinkingBlock)
+    }
+
+    @Test
+    fun `blank text parts between tools do not split the step group`() {
+        val result = listOf(
+            tool("call-1"),
+            tool("call-2"),
+            text(""),
+            tool("call-3"),
+            tool("call-4"),
+            text(" \n"),
+            tool("call-5"),
+        ).groupMessageParts()
+
+        assertEquals(1, result.size)
+        val block = result[0] as MessagePartBlock.ThinkingBlock
+        assertEquals(5, block.steps.size)
+        assertTrue(block.steps.all { it is ThinkingStep.ToolStep })
+    }
+
+    @Test
+    fun `content after a skipped blank text keeps its original index`() {
+        val result = listOf(
+            tool("call-1"),
+            text(""),
+            tool("call-2"),
+            text("answer"),
+        ).groupMessageParts()
+
+        assertEquals(2, result.size)
+        assertEquals(2, (result[0] as MessagePartBlock.ThinkingBlock).steps.size)
+        val content = result[1] as MessagePartBlock.ContentBlock
+        assertEquals(text("answer"), content.part)
+        assertEquals(3, content.index)
+    }
+
+    @Test
+    fun `trailing blank text produces no content block`() {
+        val result = listOf(reasoning("think"), tool("call-1"), text("")).groupMessageParts()
+
+        assertEquals(1, result.size)
+        assertTrue(result[0] is MessagePartBlock.ThinkingBlock)
+    }
+
+    @Test
+    fun `blank text carrying a webview card is still rendered`() {
+        val card = UIMessagePart.Text(
+            text = "",
+            metadata = buildJsonObject {
+                putJsonObject("rikkahub.webview") { put("url", "https://example.com") }
+            },
+        )
+        val result = listOf(tool("call-1"), card, tool("call-2")).groupMessageParts()
+
+        assertEquals(3, result.size)
+        assertEquals(card, (result[1] as MessagePartBlock.ContentBlock).part)
     }
 
     @Test

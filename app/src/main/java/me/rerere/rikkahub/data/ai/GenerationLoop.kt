@@ -1615,8 +1615,9 @@ class GenerationLoop(
                     } else {
                         continuationRequestMessages(internalMessages, messages)
                     }
+                    val attemptStartMessages = messages
                     try {
-                    val streamChunkHandler = StreamChunkHandler(model)
+                    var streamChunkHandler = StreamChunkHandler(model)
                     // Stream-idle watchdog: lets the chat say "still working" vs "wedged"
                     // instead of counting seconds with no explanation (see StreamIdleNotifier).
                     val idleNotifier = StreamIdleNotifier()
@@ -1721,6 +1722,15 @@ class GenerationLoop(
                                         // check reflects this attempt, not a chunk seen in an earlier one.
                                         receivedAnyChunk = false
                                         idleNotifier.onAttemptStart()
+                                        // Drop the empty parts the failed attempt's Start markers left
+                                        // behind, and the handler's id->index map that points at them.
+                                        messages = messagesForStreamRetry(
+                                            current = messages,
+                                            attemptStart = attemptStartMessages,
+                                            receivedMeaningfulOutput = receivedMeaningfulOutput,
+                                        )
+                                        streamChunkHandler = StreamChunkHandler(model)
+                                        onUpdateMessages(messages)
                                         val delayMs = generationStreamRetryDelayMs(retryAttempt)
                                         processingStatus.value = retryStatusText(
                                             context = context,
