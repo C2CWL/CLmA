@@ -515,6 +515,7 @@ class SettingsStore(
                         preferences[SUB_AGENT_DISPATCH_PROFILE] ?: ""
                     )
                 }.getOrDefault(SubAgentDispatchProfile.NEVER),
+                dynamicColor = preferences[DYNAMIC_COLOR] != false,
                 themeId = preferences[THEME_ID] ?: PresetThemes[0].id,
                 customThemes = preferences[CUSTOM_THEMES]?.let { raw ->
                     runCatching { JsonInstant.decodeFromString<List<CustomTheme>>(raw) }.getOrElse {
