@@ -662,6 +662,12 @@
   <string name="setting_display_page_enable_message_generation_haptic_effect_title">メッセージ生成時の触覚効果</string>
   <string name="setting_display_page_font_size_preview">午前4時、海棠の花がまだ眠っていないのを見た。私はよくこうして、誰もいない夜にひとり目を覚まし、思う——もし今この瞬間、誰かが私のことを思っていてくれたなら、それだけでいい。</string>
   <string name="setting_display_page_font_size_title">チャットフォントサイズ</string>
+  <string name="setting_display_page_ui_font_family_title">UI フォント</string>
+  <string name="setting_display_page_ui_font_family_desc">チャットメッセージ以外のアプリ UI に使うフォントです。チャットメッセージは引き続きチャットフォントを使います。</string>
+  <string name="setting_display_page_ui_custom_font_title">カスタム UI フォント</string>
+  <string name="setting_display_page_ui_font_scale_title">UI フォントサイズ</string>
+  <string name="setting_display_page_ui_font_scale_desc">アプリ全体の文字サイズを拡大・縮小します（システムのフォントサイズに上乗せ）。システムのフォントサイズと合わせて最大 200% までです。レイアウトの余白は変わりません。</string>
+  <string name="setting_display_page_ui_font_scale_preview">このサイズのサンプルテキスト</string>
   <string name="setting_display_page_live_update_notification">ライブアップデート通知</string>
   <string name="setting_display_page_live_update_notification_desc">メッセージ生成中のリアルタイム通知アップデートを表示（Android 15以降）</string>
   <string name="setting_display_page_message_jumper_position_desc">メッセージジャンパーを左側に移動</string>

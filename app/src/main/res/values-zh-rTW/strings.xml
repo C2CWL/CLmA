@@ -665,6 +665,12 @@
   <string name="setting_display_page_enable_message_generation_haptic_effect_title">訊息生成觸覺回饋</string>
   <string name="setting_display_page_font_size_preview">凌晨四點鐘，看到海棠花未眠。我常常這樣，在無人的夜裡獨自醒著，想，若有人此刻也在想我，那就好了。</string>
   <string name="setting_display_page_font_size_title">聊天字體大小</string>
+  <string name="setting_display_page_ui_font_family_title">介面字型</string>
+  <string name="setting_display_page_ui_font_family_desc">用於聊天訊息以外的應用程式介面。聊天訊息仍使用聊天字型。</string>
+  <string name="setting_display_page_ui_custom_font_title">自訂介面字型</string>
+  <string name="setting_display_page_ui_font_scale_title">介面字型大小</string>
+  <string name="setting_display_page_ui_font_scale_desc">縮放整個應用程式的文字（在系統字型大小基礎上），與系統字型大小疊加後最高為 200%。不改變版面間距。</string>
+  <string name="setting_display_page_ui_font_scale_preview">此大小的範例文字</string>
   <string name="setting_display_page_live_update_notification">即時更新通知</string>
   <string name="setting_display_page_live_update_notification_desc">在訊息產生期間顯示即時通知更新（Android 15+）</string>
   <string name="setting_display_page_message_jumper_position_desc">將訊息跳轉按鈕移至左側</string>

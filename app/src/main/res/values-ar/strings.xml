@@ -684,6 +684,12 @@
   <string name="setting_display_page_enable_message_generation_haptic_effect_title">اهتزاز توليد الرسائل</string>
   <string name="setting_display_page_font_size_preview">في الرابعة صباحًا، رأيت أزهار البيغونيا لا تزال مستيقظة. كثيرًا ما أكون هكذا — مستلقيًا مستيقظًا وحدي في الليل الهادئ، أفكّر: لو أن أحدًا يفكّر فيّ في هذه اللحظة، لكان ذلك رائعًا.</string>
   <string name="setting_display_page_font_size_title">حجم خط الدردشة</string>
+  <string name="setting_display_page_ui_font_family_title">خط الواجهة</string>
+  <string name="setting_display_page_ui_font_family_desc">الخط المستخدم في واجهة التطبيق خارج رسائل الدردشة. تستمر رسائل الدردشة في استخدام خط الدردشة.</string>
+  <string name="setting_display_page_ui_custom_font_title">خط واجهة مخصص</string>
+  <string name="setting_display_page_ui_font_scale_title">حجم خط الواجهة</string>
+  <string name="setting_display_page_ui_font_scale_desc">يغيّر حجم النص في التطبيق بالكامل (فوق حجم خط النظام). الحد الأقصى مع حجم خط النظام هو 200%. لا تتغير مسافات التخطيط.</string>
+  <string name="setting_display_page_ui_font_scale_preview">نص تجريبي بهذا الحجم</string>
   <string name="setting_display_page_live_update_notification">إشعار التحديث المباشر</string>
   <string name="setting_display_page_live_update_notification_desc">عرض تحديثات إشعار في الوقت الفعلي أثناء توليد الرسالة (Android 15+)</string>
   <string name="setting_display_page_message_jumper_position_desc">نقل أداة الانتقال بين الرسائل إلى الجانب الأيسر</string>
