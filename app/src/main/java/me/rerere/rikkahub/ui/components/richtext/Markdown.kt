@@ -616,7 +616,7 @@ private fun MarkdownNode(
         }
 
         MarkdownTokenTypes.TEXT -> {
-            val text = node.getTextInNode(content)
+            val text = HtmlEntities.decode(node.getTextInNode(content))
             Text(
                 text = text,
                 modifier = modifier,
@@ -1015,7 +1015,9 @@ private fun AnnotatedString.Builder.appendMarkdownNodeContent(
         }
 
         node is LeafASTNode -> {
-            val text = node.getTextInNode(content).let {
+            val raw = node.getTextInNode(content)
+            // Entities name characters only in plain TEXT; CODE_SPAN is rendered as a whole node below and stays literal.
+            val text = (if (node.type == MarkdownTokenTypes.TEXT) HtmlEntities.decode(raw) else raw).let {
                 if (trim) {
                     it.trim()
                 } else {
