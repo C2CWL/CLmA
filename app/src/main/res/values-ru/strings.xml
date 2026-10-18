@@ -226,6 +226,7 @@
   <string name="cancel_edit">Отменить редактирование</string>
   <string name="chain_of_thought_collapse">Свернуть</string>
   <string name="chain_of_thought_show_more_steps">Показать ещё %d шагов</string>
+  <string name="chain_of_thought_collapsed_steps">Выполнено шагов: %d</string>
   <string name="chat_input_placeholder">Общайтесь с ИИ</string>
   <string name="chat_input_unsupported_file_type">Неподдерживаемый тип файла: %s</string>
   <string name="chat_input_file_read_failed">Не удалось прочитать файл: %s</string>
@@ -629,6 +630,9 @@
   <string name="setting_display_page_amoled_dark_mode_title">AMOLED-тёмная тема</string>
   <string name="setting_display_page_auto_collapse_thinking_desc">Автоматически сворачивать блок мышления после его завершения</string>
   <string name="setting_display_page_auto_collapse_thinking_title">Автоматически сворачивать мысли</string>
+  <string name="setting_display_page_thinking_steps_visible_desc">Сколько последних шагов мышления и инструментов остаётся видимым в свёрнутой группе. 0 — только однострочный заголовок</string>
+  <string name="setting_display_page_thinking_steps_visible_title">Видимые шаги в свёрнутой группе</string>
+  <string name="setting_display_page_thinking_steps_visible_all">Все</string>
   <string name="setting_display_page_auto_play_tts_desc">Автоматически воспроизводить TTS после завершения генерации ответа ассистента</string>
   <string name="setting_display_page_auto_play_tts_title">Автовоспроизведение TTS после генерации</string>
   <string name="setting_display_page_chat_font_family_default">По умолчанию</string>

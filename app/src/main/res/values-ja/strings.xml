@@ -226,6 +226,7 @@
   <string name="cancel_edit">編集をキャンセル</string>
   <string name="chain_of_thought_collapse">折りたたむ</string>
   <string name="chain_of_thought_show_more_steps">あと %d ステップを表示</string>
+  <string name="chain_of_thought_collapsed_steps">%d ステップを実行済み</string>
   <string name="chat_input_placeholder">AIとチャットするメッセージを入力</string>
   <string name="chat_input_unsupported_file_type">サポートされていないファイルタイプ: %s</string>
   <string name="chat_input_file_read_failed">ファイルの読み取りに失敗しました: %s</string>
@@ -629,6 +630,9 @@
   <string name="setting_display_page_amoled_dark_mode_title">AMOLED ダークモード</string>
   <string name="setting_display_page_auto_collapse_thinking_desc">思考が完了したら思考内容を自動的に折りたたむ</string>
   <string name="setting_display_page_auto_collapse_thinking_title">思考を自動折りたたむ</string>
+  <string name="setting_display_page_thinking_steps_visible_desc">思考／ツールのステップグループを折りたたんだときに表示する直近のステップ数。0 の場合は 1 行の見出しのみ表示</string>
+  <string name="setting_display_page_thinking_steps_visible_title">折りたたみ時に表示するステップ数</string>
+  <string name="setting_display_page_thinking_steps_visible_all">すべて</string>
   <string name="setting_display_page_auto_play_tts_desc">アシスタントのメッセージ生成完了後にTTSを自動再生</string>
   <string name="setting_display_page_auto_play_tts_title">生成後にTTSを自動再生</string>
   <string name="setting_display_page_chat_font_family_default">デフォルト</string>

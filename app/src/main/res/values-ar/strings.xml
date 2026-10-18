@@ -308,6 +308,7 @@
   <string name="cancel_edit">إلغاء التعديل</string>
   <string name="chain_of_thought_collapse">طي</string>
   <string name="chain_of_thought_show_more_steps">عرض %d خطوات إضافية</string>
+  <string name="chain_of_thought_collapsed_steps">تم تنفيذ %d خطوات</string>
   <string name="chat_input_placeholder">دردِش مع الذكاء الاصطناعي</string>
   <string name="chat_input_unsupported_file_type">نوع ملف غير مدعوم: %s</string>
   <string name="chat_message_add_favorite">إضافة إلى المفضلة</string>
@@ -651,6 +652,9 @@
   <string name="setting_display_page_amoled_dark_mode_title">الوضع الداكن AMOLED</string>
   <string name="setting_display_page_auto_collapse_thinking_desc">طي محتوى التفكير تلقائيًا بعد اكتمال التفكير</string>
   <string name="setting_display_page_auto_collapse_thinking_title">طي التفكير تلقائيًا</string>
+  <string name="setting_display_page_thinking_steps_visible_desc">عدد آخر خطوات التفكير والأدوات التي تبقى ظاهرة عند طي مجموعة الخطوات. 0 يعرض عنوانًا من سطر واحد فقط</string>
+  <string name="setting_display_page_thinking_steps_visible_title">الخطوات الظاهرة في المجموعة المطوية</string>
+  <string name="setting_display_page_thinking_steps_visible_all">الكل</string>
   <string name="setting_display_page_auto_play_tts_desc">تشغيل تحويل النص إلى كلام تلقائيًا بعد اكتمال توليد رسالة المساعد</string>
   <string name="setting_display_page_auto_play_tts_title">تشغيل تحويل النص إلى كلام تلقائيًا بعد التوليد</string>
   <string name="setting_display_page_chat_font_family_default">افتراضي</string>

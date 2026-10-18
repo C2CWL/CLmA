@@ -61,7 +61,7 @@ private val LocalCardColor = staticCompositionLocalOf { Color.White }
  * @param modifier 外层卡片的修饰符
  * @param cardColors 卡片配色
  * @param steps 需要渲染的步骤数据列表
- * @param collapsedVisibleCount 折叠时保留可见的尾部步骤数
+ * @param collapsedVisibleCount 折叠时保留可见的尾部步骤数；为 0 时折叠态只剩一行“已执行 N 步”
  * @param collapsedAdaptiveWidth 是否在折叠态下使用内容自适应宽度
  * @param content 每个步骤的具体 UI，由 [ChainOfThoughtScope] 提供步骤构建能力
  */
@@ -141,6 +141,8 @@ fun <T> ChainOfThought(
                             modifier = Modifier.padding(start = 8.dp),
                             text = if (expanded) {
                                 stringResource(R.string.chain_of_thought_collapse)
+                            } else if (collapsedVisibleCount <= 0) {
+                                stringResource(R.string.chain_of_thought_collapsed_steps, steps.size)
                             } else {
                                 stringResource(
                                     R.string.chain_of_thought_show_more_steps,
@@ -155,7 +157,8 @@ fun <T> ChainOfThought(
 
                 val lineColor = MaterialTheme.colorScheme.outlineVariant
                 val scope = remember { ChainOfThoughtScopeImpl() }
-                Box(
+                // 全部折叠时没有可见步骤，不画时间线（空 Box 高度为 0，线会画成反向的一截）
+                if (visibleSteps.isNotEmpty()) Box(
                     modifier = Modifier.drawBehind {
                         val x = 12.dp.toPx()
                         val offsetPx = 18.dp.toPx()

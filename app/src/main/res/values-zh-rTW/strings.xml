@@ -226,6 +226,7 @@
   <string name="cancel_edit">取消編輯</string>
   <string name="chain_of_thought_collapse">收合</string>
   <string name="chain_of_thought_show_more_steps">顯示更多 %d 個步驟</string>
+  <string name="chain_of_thought_collapsed_steps">已執行 %d 個步驟</string>
   <string name="chat_input_placeholder">輸入訊息與AI聊天</string>
   <string name="chat_input_unsupported_file_type">不支援的檔案類型：%s</string>
   <string name="chat_input_attachment_too_large">%1$s 過大——上限為 %2$d MB</string>
@@ -632,6 +633,9 @@
   <string name="setting_display_page_amoled_dark_mode_title">AMOLED 暗色模式</string>
   <string name="setting_display_page_auto_collapse_thinking_desc">思考完成自動折疊思考內容</string>
   <string name="setting_display_page_auto_collapse_thinking_title">自動折疊思考</string>
+  <string name="setting_display_page_thinking_steps_visible_desc">思考／工具步驟組收合時保留最後幾個步驟可見，0 為只顯示一行標題</string>
+  <string name="setting_display_page_thinking_steps_visible_title">收合時顯示的步驟數</string>
+  <string name="setting_display_page_thinking_steps_visible_all">全部</string>
   <string name="setting_display_page_auto_play_tts_desc">助理訊息產生完成後自動播放語音</string>
   <string name="setting_display_page_auto_play_tts_title">產生後自動播放 TTS</string>
   <string name="setting_display_page_chat_font_family_default">預設</string>

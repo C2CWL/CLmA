@@ -48,6 +48,10 @@ import me.rerere.rikkahub.data.datastore.ChatFontFamily
 import me.rerere.rikkahub.data.datastore.DisplaySetting
 import me.rerere.rikkahub.data.files.FileFolders
 import me.rerere.rikkahub.data.files.FileUtils
+import me.rerere.rikkahub.ui.components.message.THINKING_STEPS_VISIBLE_ALL
+import me.rerere.rikkahub.ui.components.message.THINKING_STEPS_VISIBLE_MAX
+import me.rerere.rikkahub.ui.components.message.thinkingStepsVisibleFromSlider
+import me.rerere.rikkahub.ui.components.message.thinkingStepsVisibleToSlider
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.richtext.MarkdownBlock
 import me.rerere.rikkahub.ui.components.ui.CardGroup
@@ -244,6 +248,43 @@ fun SettingPreferencesUIPage(vm: SettingVM = koinViewModel()) {
                                 }
                             )
                         },
+                    )
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_thinking_steps_visible_title)) },
+                        supportingContent = {
+                            Column {
+                                Text(stringResource(R.string.setting_display_page_thinking_steps_visible_desc))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    // 0..MAX 是步数，最上面多一档 MAX+1 =“全部”
+                                    Slider(
+                                        value = thinkingStepsVisibleToSlider(
+                                            displaySetting.thinkingStepsVisibleCount
+                                        ).toFloat(),
+                                        onValueChange = {
+                                            updateDisplaySetting(
+                                                displaySetting.copy(
+                                                    thinkingStepsVisibleCount = thinkingStepsVisibleFromSlider(it.roundToInt())
+                                                )
+                                            )
+                                        },
+                                        valueRange = 0f..(THINKING_STEPS_VISIBLE_MAX + 1).toFloat(),
+                                        steps = THINKING_STEPS_VISIBLE_MAX,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    Text(
+                                        text = if (displaySetting.thinkingStepsVisibleCount == THINKING_STEPS_VISIBLE_ALL) {
+                                            stringResource(R.string.setting_display_page_thinking_steps_visible_all)
+                                        } else {
+                                            "${displaySetting.thinkingStepsVisibleCount.coerceIn(0, THINKING_STEPS_VISIBLE_MAX)}"
+                                        }
+                                    )
+                                }
+                            }
+                        }
                     )
                     item(
                         headlineContent = { Text(stringResource(R.string.setting_display_page_chat_font_family_title)) },

@@ -1203,6 +1203,8 @@ data class DisplaySetting(
     val showTokenUsage: Boolean = true,
     val showThinkingContent: Boolean = true,
     val autoCloseThinking: Boolean = true,
+    // 思考/工具步骤组折叠时尾部保留几步，0 = 只显示一行标题。默认 2 即原来的行为。
+    val thinkingStepsVisibleCount: Int = 2,
     val updateCheckDisabledUntilEpochMillis: Long = 0L,
     val showMessageJumper: Boolean = true,
     val messageJumperOnLeft: Boolean = false,

@@ -266,6 +266,7 @@
   <string name="cancel_edit">Cancel Edit</string>
   <string name="chain_of_thought_collapse">Collapse</string>
   <string name="chain_of_thought_show_more_steps">Show %d more steps</string>
+  <string name="chain_of_thought_collapsed_steps">Ran %d steps</string>
   <string name="chat_input_placeholder">Chat with AI</string>
   <string name="chat_input_hint_1">Say something…</string>
   <string name="chat_input_hint_2">Where do we start?</string>
@@ -756,6 +757,9 @@
   <string name="setting_display_page_amoled_dark_mode_title">AMOLED Dark Mode</string>
   <string name="setting_display_page_auto_collapse_thinking_desc">Automatically collapse thinking content after thinking is complete</string>
   <string name="setting_display_page_auto_collapse_thinking_title">Auto Collapse Thinking</string>
+  <string name="setting_display_page_thinking_steps_visible_desc">How many of the latest thinking / tool steps stay visible when a step group is collapsed. 0 shows only a one-line header</string>
+  <string name="setting_display_page_thinking_steps_visible_title">Visible steps in collapsed groups</string>
+  <string name="setting_display_page_thinking_steps_visible_all">All</string>
   <string name="setting_display_page_auto_play_tts_desc">Automatically play TTS after assistant message generation completes</string>
   <string name="setting_display_page_auto_play_tts_title">Auto-play TTS After Generation</string>
   <string name="setting_display_page_chat_font_family_default">Default</string>
