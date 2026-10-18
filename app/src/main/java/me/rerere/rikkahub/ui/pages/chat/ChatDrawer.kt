@@ -226,6 +226,7 @@ fun ChatDrawerContent(
                 background = drawerAssistant.background,
                 darkBackground = drawerAssistant.darkBackground,
                 lightBackground = drawerAssistant.lightBackground,
+                mode = drawerAssistant.backgroundMode,
             ),
             drawerAssistant.useGradientBackground,
         ),
