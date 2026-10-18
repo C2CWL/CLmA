@@ -728,6 +728,14 @@
   <string name="setting_display_page_tts_only_read_quoted_title">قراءة المحتوى المقتبس فقط في تحويل النص إلى كلام</string>
   <string name="setting_display_page_use_app_icon_style_loading_indicator_desc">استخدام أيقونة التطبيق المتحركة بدلًا من مؤشر التحميل الدائري الافتراضي</string>
   <string name="setting_display_page_use_app_icon_style_loading_indicator_title">استخدام مؤشر تحميل بنمط أيقونة التطبيق</string>
+  <string name="setting_display_page_loading_indicator_style_title">نمط مؤشر التحميل</string>
+  <string name="setting_display_page_loading_indicator_style_desc">ما يظهر أسفل رسالتك أثناء تفكير المساعد</string>
+  <string name="setting_display_page_loading_indicator_style_default">افتراضي</string>
+  <string name="setting_display_page_loading_indicator_style_app_icon">أيقونة التطبيق</string>
+  <string name="setting_display_page_loading_indicator_style_shimmer">وميض</string>
+  <string name="chat_loading_sparkle_replying">جارٍ الرد</string>
+  <string name="setting_display_page_loading_indicator_style_sparkle">بريق</string>
+  <string name="chat_loading_shimmer_thinking">جارٍ التفكير…</string>
   <string name="setting_display_page_volume_key_scroll_desc">تمرير الصفحات بمفاتيح الصوت، مثالي لشاشات الحبر الإلكتروني</string>
   <string name="setting_display_page_volume_key_scroll_ratio">مقدار التمرير</string>
   <string name="setting_display_page_volume_key_scroll_title">تمرير الصفحة بمفتاح الصوت</string>

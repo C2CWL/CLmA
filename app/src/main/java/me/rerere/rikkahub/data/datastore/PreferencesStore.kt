@@ -1199,6 +1199,8 @@ data class DisplaySetting(
     val userAvatar: Avatar = Avatar.Dummy,
     val userNickname: String = "",
     val useAppIconStyleLoadingIndicator: Boolean = true,
+    /** Null = not chosen yet: follow [useAppIconStyleLoadingIndicator] (see resolveLoadingIndicatorStyle). */
+    val loadingIndicatorStyle: LoadingIndicatorStyle? = null,
     val showUserAvatar: Boolean = true,
     val showAssistantBubble: Boolean = false,
     val bubbleOpacity: Float = 1.0f,

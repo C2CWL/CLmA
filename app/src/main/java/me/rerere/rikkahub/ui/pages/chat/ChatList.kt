@@ -100,7 +100,7 @@ import me.rerere.rikkahub.ui.components.message.ChatMessage
 import me.rerere.rikkahub.ui.components.ui.bounceOverscroll
 import me.rerere.rikkahub.ui.components.ui.ErrorCardsDisplay
 import me.rerere.rikkahub.ui.components.ui.ListSelectableItem
-import me.rerere.rikkahub.ui.components.ui.RabbitLoadingIndicator
+import me.rerere.rikkahub.ui.components.ui.ChatLoadingIndicator
 import me.rerere.rikkahub.ui.components.ui.Tooltip
 import me.rerere.rikkahub.ui.hooks.ImeLazyListAutoScroller
 import me.rerere.rikkahub.ui.theme.ChatFontProvider
@@ -417,24 +417,7 @@ private fun ChatListNormal(
 
             if (loading) {
                 item(LoadingIndicatorKey) {
-                    Row(
-                        modifier = Modifier.padding(8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        RabbitLoadingIndicator(
-                            modifier = Modifier.size(28.dp)
-                        )
-                        AnimatedVisibility(
-                            visible = processingStatus != null,
-                        ) {
-                            Text(
-                                text = processingStatus ?: "",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
+                    ChatLoadingIndicator(processingStatus = processingStatus)
                 }
             }
 

@@ -1,5 +1,7 @@
 package me.rerere.rikkahub.ui.pages.setting
 
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -32,8 +34,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.DisplaySetting
+import me.rerere.rikkahub.data.datastore.LoadingIndicatorStyle
+import me.rerere.rikkahub.data.datastore.effectiveLoadingIndicatorStyle
+import me.rerere.rikkahub.data.datastore.withLoadingIndicatorStyle
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.CardGroup
+import me.rerere.rikkahub.ui.components.ui.Select
 import me.rerere.rikkahub.ui.hooks.rememberSharedPreferenceBoolean
 import me.rerere.rikkahub.ui.theme.CustomColors
 import me.rerere.rikkahub.utils.plus
@@ -141,16 +147,31 @@ fun SettingPreferencesGeneralPage(vm: SettingVM = koinViewModel()) {
                         },
                     )
                     item(
-                        headlineContent = { Text(stringResource(R.string.setting_display_page_use_app_icon_style_loading_indicator_title)) },
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_loading_indicator_style_title)) },
                         supportingContent = {
-                            Text(stringResource(R.string.setting_display_page_use_app_icon_style_loading_indicator_desc))
+                            Text(stringResource(R.string.setting_display_page_loading_indicator_style_desc))
                         },
                         trailingContent = {
-                            Switch(
-                                checked = displaySetting.useAppIconStyleLoadingIndicator,
-                                onCheckedChange = {
-                                    updateDisplaySetting(displaySetting.copy(useAppIconStyleLoadingIndicator = it))
-                                }
+                            Select(
+                                options = LoadingIndicatorStyle.entries,
+                                selectedOption = displaySetting.effectiveLoadingIndicatorStyle,
+                                onOptionSelected = {
+                                    updateDisplaySetting(displaySetting.withLoadingIndicatorStyle(it))
+                                },
+                                optionToString = {
+                                    stringResource(
+                                        when (it) {
+                                            LoadingIndicatorStyle.DEFAULT -> R.string.setting_display_page_loading_indicator_style_default
+                                            LoadingIndicatorStyle.APP_ICON -> R.string.setting_display_page_loading_indicator_style_app_icon
+                                            LoadingIndicatorStyle.SHIMMER -> R.string.setting_display_page_loading_indicator_style_shimmer
+                                            LoadingIndicatorStyle.SPARKLE -> R.string.setting_display_page_loading_indicator_style_sparkle
+                                        }
+                                    )
+                                },
+                                // Blend into the card: same container colour, hairline for affordance.
+                                containerColor = CustomColors.listItemColors.containerColor,
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                                modifier = Modifier.width(150.dp),
                             )
                         },
                     )
