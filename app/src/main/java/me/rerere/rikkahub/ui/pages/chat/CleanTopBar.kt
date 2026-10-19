@@ -35,7 +35,6 @@ import me.rerere.hugeicons.stroke.Menu03
 import me.rerere.hugeicons.stroke.MessageAdd01
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.Settings
-import me.rerere.rikkahub.data.datastore.getCurrentAssistant
 import me.rerere.rikkahub.data.datastore.resolveChatModel
 import me.rerere.rikkahub.data.model.Conversation
 import me.rerere.rikkahub.data.usage.TurnFooter
@@ -46,9 +45,9 @@ import org.koin.androidx.compose.koinViewModel
  * "Clean layout" top bar (DisplaySetting.cleanLayout, off by default).
  *
  * Flat: no title plate, no glass discs behind the buttons. The conversation title is one line
- * and, like the regular bar, a small grey subtitle under it reads "assistant / model / N tokens"
+ * and, like the regular bar, a small grey subtitle under it reads "model / N tokens"
  * (same token aggregation as the regular bar, see [conversationUsedTokens]). Only the
- * "assistant / model" part may ellipsize; the token count is its own text and always shows,
+ * model name may ellipsize; the token count is its own text and always shows,
  * compacted per locale ([cleanTopBarTokenText]). Taps do the same as the regular bar: the title
  * renames, the buttons open the drawer, toggle the preview list and start a new chat. The
  * buttons are a size smaller than the regular bar's ([CLEAN_TOP_BAR_BUTTON_DP] touch,
@@ -91,7 +90,6 @@ internal fun CleanTopBar(
             }
         },
         title = {
-            val assistant = settings.getCurrentAssistant()
             val model = settings.resolveChatModel(conversation.chatModelId, conversation.assistantId)
             Column(
                 modifier = Modifier
@@ -117,10 +115,9 @@ internal fun CleanTopBar(
                     val locale = LocalConfiguration.current.locales[0]
                     val style = MaterialTheme.typography.labelSmall
                     val color = MaterialTheme.colorScheme.onSurfaceVariant
-                    val assistantName = assistant.name.ifBlank { stringResource(R.string.assistant_page_default_assistant) }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = "$assistantName / ${model.displayName}",
+                            text = model.displayName,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             style = style,
