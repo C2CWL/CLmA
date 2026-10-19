@@ -126,6 +126,7 @@ import me.rerere.rikkahub.utils.SoundEffectPlayer
 import org.koin.compose.koinInject
 import me.rerere.rikkahub.ui.pages.chat.VoicePhase
 import me.rerere.rikkahub.ui.pages.chat.VoiceSessionState
+import me.rerere.rikkahub.ui.theme.LocalDarkMode
 import kotlin.math.roundToInt
 import kotlin.uuid.Uuid
 
@@ -242,13 +243,31 @@ fun ChatInput(
     val cleanLayout = settings.displaySetting.cleanLayout
     val expanded = cleanLayout || naturallyExpanded
     // Animate the corner along with the layout change below, so the pill does not snap between
-    // its 28dp and 16dp radii while the bar is growing.
+    // its 28dp and 16dp radii while the bar is growing. Clean layout is always open and uses a
+    // smaller, flatter 14dp card.
     val containerCorner by animateDpAsState(
-        targetValue = if (expanded) 16.dp else 28.dp,
+        targetValue = when {
+            cleanLayout -> 14.dp
+            expanded -> 16.dp
+            else -> 28.dp
+        },
         animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
         label = "chatInputCorner",
     )
     val containerShape = RoundedCornerShape(containerCorner)
+    // Clean layout: a flat solid card with a hairline instead of the glass (Kelivo-style). Keyed
+    // off the app's own dark mode, not the system one.
+    val darkTheme = LocalDarkMode.current
+    val cleanCardColor = if (darkTheme) {
+        Color.White.copy(alpha = 0.05f)
+    } else {
+        MaterialTheme.colorScheme.surfaceContainerLowest
+    }
+    val cleanCardOutline = if (darkTheme) {
+        Color.White.copy(alpha = 0.12f)
+    } else {
+        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+    }
 
     Surface(
         color = Color.Transparent,
@@ -257,7 +276,7 @@ fun ChatInput(
             modifier = modifier
                 .imePadding()
                 .navigationBarsPadding()
-                .padding(horizontal = 24.dp)
+                .padding(horizontal = if (cleanLayout) 12.dp else 24.dp)
                 .padding(bottom = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -270,17 +289,26 @@ fun ChatInput(
             )
             // Fixed glass — the bar is the app's primary control surface, so it keeps the glass
             // material regardless of the blur preference (same recipe as the drawer's cards).
+            // Clean layout swaps only the chrome for a flat card; the content below is the same
+            // composition either way, so nothing inside is re-created.
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(containerShape)
-                    .hazeGlass(
-                        input = HazeInput.Sources(hazeState),
-                        style = rikkaGlassStyle(containerShape, blurRadius = 12.dp, depth = 0.4f),
+                    .then(
+                        if (cleanLayout) {
+                            Modifier
+                        } else {
+                            Modifier.hazeGlass(
+                                input = HazeInput.Sources(hazeState),
+                                style = rikkaGlassStyle(containerShape, blurRadius = 12.dp, depth = 0.4f),
+                            )
+                        }
                     ),
                 shape = containerShape,
                 tonalElevation = 0.dp,
-                color = Color.Transparent,
+                color = if (cleanLayout) cleanCardColor else Color.Transparent,
+                border = if (cleanLayout) BorderStroke(1.dp, cleanCardOutline) else null,
             ) {
                 Column(
                     // Extra inset so the round buttons stay clear of the capsule's edge; the
@@ -324,6 +352,15 @@ fun ChatInput(
                             )
                         }
                     }
+                    val searchButton: @Composable () -> Unit = {
+                        SearchPickerButton(
+                            enableSearch = enableSearch,
+                            settings = settings,
+                            model = effectiveChatModel,
+                            onUpdateSearchMode = onUpdateSearchMode,
+                            onUpdateSearchService = onUpdateSearchService,
+                        )
+                    }
                     ChatInputBar(
                         expanded = expanded,
                         modifier = Modifier.fillMaxWidth(),
@@ -344,6 +381,9 @@ fun ChatInput(
                                     onUpdateChatModel = onUpdateChatModel,
                                     onUpdateModelReasoningLevel = onUpdateModelReasoningLevel,
                                 )
+
+                                // Clean layout groups the tools on the left: model, then search.
+                                if (cleanLayout) searchButton()
                             }
                         },
                         center = {
@@ -375,13 +415,7 @@ fun ChatInput(
                                     }
                                 }
 
-                                SearchPickerButton(
-                                    enableSearch = enableSearch,
-                                    settings = settings,
-                                    model = effectiveChatModel,
-                                    onUpdateSearchMode = onUpdateSearchMode,
-                                    onUpdateSearchService = onUpdateSearchService,
-                                )
+                                if (!cleanLayout) searchButton()
 
                                 if (cleanLayout) moreButton()
 
