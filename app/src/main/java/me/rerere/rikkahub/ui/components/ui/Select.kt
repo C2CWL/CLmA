@@ -1,5 +1,6 @@
 package me.rerere.rikkahub.ui.components.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -30,6 +31,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -49,7 +51,13 @@ fun <T> Select(
     optionToString: @Composable (T) -> String = { it.toString() },
     optionLeading: @Composable ((T) -> Unit)? = null,
     leading: @Composable () -> Unit = {},
-    trailing: @Composable () -> Unit = {}
+    trailing: @Composable () -> Unit = {},
+    /**
+     * Box colour. Null (default) keeps the tinted pill used across settings; pass the surrounding
+     * card's container colour to let the box blend in (usually together with a subtle [border]).
+     */
+    containerColor: Color? = null,
+    border: BorderStroke? = null,
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -59,7 +67,9 @@ fun <T> Select(
         onExpandedChange = { expanded = it }
     ) {
         Surface(
-            tonalElevation = 4.dp,
+            color = containerColor ?: MaterialTheme.colorScheme.surface,
+            tonalElevation = if (containerColor == null) 4.dp else 0.dp,
+            border = border,
             shape = RoundedCornerShape(50),
             modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
         ) {

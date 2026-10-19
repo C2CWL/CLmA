@@ -59,6 +59,11 @@
   <string name="assistant_page_chaotic">무질서(위험)</string>
   <string name="assistant_page_chat_background">채팅 배경</string>
   <string name="assistant_page_chat_background_desc">어시스턴트 채팅 페이지의 배경 이미지 설정</string>
+  <string name="assistant_page_background_mode">사용할 배경화면</string>
+  <string name="assistant_page_background_mode_auto">테마 따르기</string>
+  <string name="assistant_page_background_mode_general">항상 공통</string>
+  <string name="assistant_page_background_mode_auto_desc">현재 테마에 맞는 다크 / 라이트 배경화면을 사용하고, 설정되지 않은 경우 공통 배경화면을 사용합니다.</string>
+  <string name="assistant_page_background_mode_general_desc">항상 공통 배경화면을 사용합니다. 다크 / 라이트 배경화면은 유지되지만 표시되지 않습니다.</string>
   <string name="assistant_page_chat_model">채팅 모델</string>
   <string name="assistant_page_chat_model_desc">어시스턴트의 기본 채팅 모델 설정. 미설정 시 전역 기본 채팅 모델 사용</string>
   <string name="assistant_page_clone">복제</string>
@@ -226,6 +231,7 @@
   <string name="cancel_edit">편집 취소</string>
   <string name="chain_of_thought_collapse">접기</string>
   <string name="chain_of_thought_show_more_steps">%d단계 더 보기</string>
+  <string name="chain_of_thought_collapsed_steps">%d단계 실행됨</string>
   <string name="chat_input_placeholder">AI와 채팅하기</string>
   <string name="chat_input_unsupported_file_type">지원되지 않는 파일 형식: %s</string>
   <string name="chat_input_file_read_failed">파일 읽기 실패: %s</string>
@@ -629,6 +635,9 @@
   <string name="setting_display_page_amoled_dark_mode_title">AMOLED 다크 모드</string>
   <string name="setting_display_page_auto_collapse_thinking_desc">사고 완료 후 자동으로 사고 내용 접기</string>
   <string name="setting_display_page_auto_collapse_thinking_title">사고 자동 접기</string>
+  <string name="setting_display_page_thinking_steps_visible_desc">사고/도구 단계 그룹을 접었을 때 표시할 최근 단계 수입니다. 0이면 한 줄 제목만 표시합니다</string>
+  <string name="setting_display_page_thinking_steps_visible_title">접었을 때 표시할 단계 수</string>
+  <string name="setting_display_page_thinking_steps_visible_all">전체</string>
   <string name="setting_display_page_auto_play_tts_desc">어시스턴트 메시지 생성 완료 후 TTS 자동 재생</string>
   <string name="setting_display_page_auto_play_tts_title">생성 후 TTS 자동 재생</string>
   <string name="setting_display_page_chat_font_family_default">기본</string>
@@ -653,6 +662,12 @@
   <string name="setting_display_page_enable_message_generation_haptic_effect_title">메시지 생성 진동 효과 활성화</string>
   <string name="setting_display_page_font_size_preview">새벽 네 시, 해당화가 잠들지 않은 것을 보았다. 나는 자주 이렇게, 아무도 없는 밤에 홀로 깨어, 생각한다 — 지금 이 순간 누군가도 나를 생각하고 있다면, 그것으로 충분하다.</string>
   <string name="setting_display_page_font_size_title">채팅 글꼴 크기</string>
+  <string name="setting_display_page_ui_font_family_title">UI 글꼴</string>
+  <string name="setting_display_page_ui_font_family_desc">채팅 메시지를 제외한 앱 UI에 사용할 글꼴입니다. 채팅 메시지는 계속 채팅 글꼴을 사용합니다.</string>
+  <string name="setting_display_page_ui_custom_font_title">사용자 지정 UI 글꼴</string>
+  <string name="setting_display_page_ui_font_scale_title">UI 글꼴 크기</string>
+  <string name="setting_display_page_ui_font_scale_desc">앱 전체의 글자 크기를 조절합니다(시스템 글꼴 크기에 추가 적용). 시스템 글꼴 크기와 합쳐 최대 200%까지입니다. 레이아웃 간격은 바뀌지 않습니다.</string>
+  <string name="setting_display_page_ui_font_scale_preview">이 크기의 예시 텍스트</string>
   <string name="setting_display_page_live_update_notification">실시간 업데이트 알림</string>
   <string name="setting_display_page_live_update_notification_desc">메시지 생성 중 실시간 알림 업데이트 표시 (Android 15+)</string>
   <string name="setting_display_page_message_jumper_position_desc">메시지 점퍼를 왼쪽으로 이동</string>
@@ -681,6 +696,8 @@
   <string name="setting_display_page_show_updates_desc">앱 업데이트 알림을 표시할지 여부</string>
   <string name="setting_display_page_show_updates_title">업데이트 표시</string>
   <string name="setting_display_page_show_user_avatar_desc">채팅 메시지에 사용자 아바타를 표시할지 여부</string>
+  <string name="setting_display_page_clean_layout_title">간결한 레이아웃</string>
+  <string name="setting_display_page_clean_layout_desc">평평한 상단 바에 제목 아래 모델 이름을 표시하고, 입력창을 두 줄로 나눠 도구 버튼을 입력창 아래에 둡니다</string>
   <string name="setting_display_page_show_user_avatar_title">사용자 아바타 표시</string>
   <string name="setting_display_page_skip_crop_image_desc">이미지를 가져오거나 사진을 찍은 후 자르기 화면 건너뛰기</string>
   <string name="setting_display_page_skip_crop_image_title">이미지 편집 건너뛰기</string>
@@ -689,6 +706,14 @@
   <string name="setting_display_page_tts_only_read_quoted_title">TTS가 인용 콘텐츠만 읽기</string>
   <string name="setting_display_page_use_app_icon_style_loading_indicator_desc">기본 원형 로딩 표시기 대신 앱 아이콘 애니메이션을 사용합니다</string>
   <string name="setting_display_page_use_app_icon_style_loading_indicator_title">앱 아이콘 스타일 로딩 표시기 사용</string>
+  <string name="setting_display_page_loading_indicator_style_title">로딩 표시기 스타일</string>
+  <string name="setting_display_page_loading_indicator_style_desc">어시스턴트가 생각하거나 생성하는 동안 메시지 아래에 표시되는 애니메이션</string>
+  <string name="setting_display_page_loading_indicator_style_default">기본</string>
+  <string name="setting_display_page_loading_indicator_style_app_icon">앱 아이콘</string>
+  <string name="setting_display_page_loading_indicator_style_shimmer">시머</string>
+  <string name="chat_loading_sparkle_replying">응답 중</string>
+  <string name="setting_display_page_loading_indicator_style_sparkle">반짝임</string>
+  <string name="chat_loading_shimmer_thinking">생각 중…</string>
   <string name="setting_display_page_volume_key_scroll_desc">볼륨 키로 페이지를 스크롤합니다. 전자 잉크 화면에 적합합니다.</string>
   <string name="setting_display_page_volume_key_scroll_ratio">스크롤 양</string>
   <string name="setting_display_page_volume_key_scroll_title">볼륨 키 페이지 스크롤</string>
@@ -1923,4 +1948,17 @@ mDNS 주소: .local 호스트네임을 사용하며, IP를 몰라도 같은 네�
   <string name="workspace_detail_settings_save_failed">설정 저장에 실패했습니다.</string>
   <string name="chat_page_continuing">연결이 끊겼습니다 — 응답을 이어서 작성 중 (%1$d/%2$d)</string>
   <string name="chat_page_subagents_running">하위 에이전트 %1$d개 실행 중 · %2$s</string>
+  <string name="setting_floating_ball_style_title">스타일</string>
+  <string name="setting_floating_ball_style_desc">둥근 볼 또는 어시스턴트와 응답 상태를 보여 주는 캡슐</string>
+  <string name="setting_floating_ball_style_original">기본</string>
+  <string name="setting_floating_ball_style_capsule">캡슐</string>
+  <string name="setting_floating_ball_tuck_style_title">숨김 스타일</string>
+  <string name="setting_floating_ball_tuck_style_desc">둥근 볼이 대기 중 화면 가장자리로 숨는 방식</string>
+  <string name="setting_floating_ball_tuck_style_handle">얇은 핸들</string>
+  <string name="setting_floating_ball_tuck_style_half_ball">반쪽 볼</string>
+  <string name="floating_ball_capsule_status_ready">탭하여 채팅</string>
+  <string name="floating_ball_capsule_status_working">응답 중…</string>
+  <string name="floating_ball_capsule_status_working_timer">응답 중 · %1$s</string>
+  <string name="floating_ball_capsule_status_done">완료 · %1$s</string>
+  <string name="floating_ball_capsule_hide">가장자리로 숨기기</string>
 </resources>

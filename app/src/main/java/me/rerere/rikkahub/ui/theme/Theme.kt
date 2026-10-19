@@ -18,6 +18,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import kotlinx.serialization.Serializable
@@ -97,14 +98,20 @@ fun RikkahubTheme(
         }
     }
 
+    // Both off by default: the typography is unchanged and the font scale multiplier is 1.0.
+    val typography = rememberAppTypography(settings.displaySetting)
+    val (appDensity, baseFontScale) = rememberAppDensity(settings.displaySetting)
+
     CompositionLocalProvider(
         LocalDarkMode provides darkTheme,
         LocalExtendColors provides extendColors,
-        LocalOverscrollFactory provides null
+        LocalOverscrollFactory provides null,
+        LocalDensity provides appDensity,
+        LocalBaseFontScale provides baseFontScale,
     ) {
         MaterialExpressiveTheme(
             colorScheme = colorSchemeConverted,
-            typography = Typography,
+            typography = typography,
             content = content,
             motionScheme = MotionScheme.expressive()
         )

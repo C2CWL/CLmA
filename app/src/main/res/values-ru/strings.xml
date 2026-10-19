@@ -59,6 +59,11 @@
   <string name="assistant_page_chaotic">Хаотичный (Опасный)</string>
   <string name="assistant_page_chat_background">Фон чата</string>
   <string name="assistant_page_chat_background_desc">Установить фоновое изображение для страницы чата с ассистентом</string>
+  <string name="assistant_page_background_mode">Используемые обои</string>
+  <string name="assistant_page_background_mode_auto">По теме</string>
+  <string name="assistant_page_background_mode_general">Всегда общие</string>
+  <string name="assistant_page_background_mode_auto_desc">Используются тёмные / светлые обои для текущей темы, а если они не заданы — общие.</string>
+  <string name="assistant_page_background_mode_general_desc">Всегда используются общие обои. Тёмные / светлые обои сохраняются, но не показываются.</string>
   <string name="assistant_page_chat_model">Модель чата</string>
   <string name="assistant_page_chat_model_desc">Установить модель чата по умолчанию для ассистента. Если не задано, будет использована глобальная модель чата по умолчанию</string>
   <string name="assistant_page_clone">Клонировать</string>
@@ -226,6 +231,7 @@
   <string name="cancel_edit">Отменить редактирование</string>
   <string name="chain_of_thought_collapse">Свернуть</string>
   <string name="chain_of_thought_show_more_steps">Показать ещё %d шагов</string>
+  <string name="chain_of_thought_collapsed_steps">Выполнено шагов: %d</string>
   <string name="chat_input_placeholder">Общайтесь с ИИ</string>
   <string name="chat_input_unsupported_file_type">Неподдерживаемый тип файла: %s</string>
   <string name="chat_input_file_read_failed">Не удалось прочитать файл: %s</string>
@@ -629,6 +635,9 @@
   <string name="setting_display_page_amoled_dark_mode_title">AMOLED-тёмная тема</string>
   <string name="setting_display_page_auto_collapse_thinking_desc">Автоматически сворачивать блок мышления после его завершения</string>
   <string name="setting_display_page_auto_collapse_thinking_title">Автоматически сворачивать мысли</string>
+  <string name="setting_display_page_thinking_steps_visible_desc">Сколько последних шагов мышления и инструментов остаётся видимым в свёрнутой группе. 0 — только однострочный заголовок</string>
+  <string name="setting_display_page_thinking_steps_visible_title">Видимые шаги в свёрнутой группе</string>
+  <string name="setting_display_page_thinking_steps_visible_all">Все</string>
   <string name="setting_display_page_auto_play_tts_desc">Автоматически воспроизводить TTS после завершения генерации ответа ассистента</string>
   <string name="setting_display_page_auto_play_tts_title">Автовоспроизведение TTS после генерации</string>
   <string name="setting_display_page_chat_font_family_default">По умолчанию</string>
@@ -653,6 +662,12 @@
   <string name="setting_display_page_enable_message_generation_haptic_effect_title">Тактильный эффект при генерации сообщения</string>
   <string name="setting_display_page_font_size_preview">Это **пример** текста чата</string>
   <string name="setting_display_page_font_size_title">Размер шрифта чата</string>
+  <string name="setting_display_page_ui_font_family_title">Шрифт интерфейса</string>
+  <string name="setting_display_page_ui_font_family_desc">Шрифт интерфейса приложения вне сообщений чата. Сообщения чата по-прежнему используют шрифт чата.</string>
+  <string name="setting_display_page_ui_custom_font_title">Пользовательский шрифт интерфейса</string>
+  <string name="setting_display_page_ui_font_scale_title">Размер шрифта интерфейса</string>
+  <string name="setting_display_page_ui_font_scale_desc">Масштабирует текст во всём приложении (поверх системного размера шрифта). Вместе с системным размером не более 200%. Отступы макета не меняются.</string>
+  <string name="setting_display_page_ui_font_scale_preview">Пример текста этого размера</string>
   <string name="setting_display_page_live_update_notification">Уведомление об обновлении в реальном времени</string>
   <string name="setting_display_page_live_update_notification_desc">Показывать уведомления об обновлениях в реальном времени во время генерации сообщений (Android 15+)</string>
   <string name="setting_display_page_message_jumper_position_desc">Переместить переходчик сообщений влево</string>
@@ -681,6 +696,8 @@
   <string name="setting_display_page_show_updates_desc">Отображать ли уведомления об обновлениях приложения</string>
   <string name="setting_display_page_show_updates_title">Показывать обновления</string>
   <string name="setting_display_page_show_user_avatar_desc">Отображать аватар пользователя в сообщениях чата</string>
+  <string name="setting_display_page_clean_layout_title">Простой макет</string>
+  <string name="setting_display_page_clean_layout_desc">Плоская верхняя панель с названием модели под заголовком и двухстрочное поле ввода с кнопками инструментов под ним</string>
   <string name="setting_display_page_show_user_avatar_title">Показывать аватар пользователя</string>
   <string name="setting_display_page_skip_crop_image_desc">Пропустить обрезку после импорта изображений или съёмки</string>
   <string name="setting_display_page_skip_crop_image_title">Пропустить редактирование изображения</string>
@@ -689,6 +706,14 @@
   <string name="setting_display_page_tts_only_read_quoted_title">TTS читать только цитированный контент</string>
   <string name="setting_display_page_use_app_icon_style_loading_indicator_desc">Использовать анимированный значок приложения вместо стандартного круглого индикатора загрузки</string>
   <string name="setting_display_page_use_app_icon_style_loading_indicator_title">Использовать индикатор загрузки в стиле значка приложения</string>
+  <string name="setting_display_page_loading_indicator_style_title">Стиль индикатора загрузки</string>
+  <string name="setting_display_page_loading_indicator_style_desc">Что показывается под вашим сообщением, пока ассистент думает</string>
+  <string name="setting_display_page_loading_indicator_style_default">Стандартный</string>
+  <string name="setting_display_page_loading_indicator_style_app_icon">Значок приложения</string>
+  <string name="setting_display_page_loading_indicator_style_shimmer">Переливание</string>
+  <string name="chat_loading_sparkle_replying">Отвечаю</string>
+  <string name="setting_display_page_loading_indicator_style_sparkle">Искры</string>
+  <string name="chat_loading_shimmer_thinking">Думаю…</string>
   <string name="setting_display_page_volume_key_scroll_desc">Прокрутка страниц клавишами громкости, идеально для экранов электронных чернил</string>
   <string name="setting_display_page_volume_key_scroll_ratio">Величина прокрутки</string>
   <string name="setting_display_page_volume_key_scroll_title">Прокрутка страниц клавишами громкости</string>
@@ -1923,4 +1948,17 @@
   <string name="workspace_detail_settings_save_failed">Не удалось сохранить настройки</string>
   <string name="chat_page_continuing">Соединение потеряно — продолжаю ответ (%1$d/%2$d)</string>
   <string name="chat_page_subagents_running">Субагентов выполняется: %1$d · %2$s</string>
+  <string name="setting_floating_ball_style_title">Стиль</string>
+  <string name="setting_floating_ball_style_desc">Круглый шар или капсула с ассистентом и статусом ответа</string>
+  <string name="setting_floating_ball_style_original">Оригинал</string>
+  <string name="setting_floating_ball_style_capsule">Капсула</string>
+  <string name="setting_floating_ball_tuck_style_title">Стиль скрытия</string>
+  <string name="setting_floating_ball_tuck_style_desc">Как круглый шар прячется у края экрана в простое</string>
+  <string name="setting_floating_ball_tuck_style_handle">Тонкая ручка</string>
+  <string name="setting_floating_ball_tuck_style_half_ball">Половина шара</string>
+  <string name="floating_ball_capsule_status_ready">Нажмите, чтобы начать чат</string>
+  <string name="floating_ball_capsule_status_working">Отвечает…</string>
+  <string name="floating_ball_capsule_status_working_timer">Отвечает · %1$s</string>
+  <string name="floating_ball_capsule_status_done">Готово · %1$s</string>
+  <string name="floating_ball_capsule_hide">Спрятать к краю</string>
 </resources>

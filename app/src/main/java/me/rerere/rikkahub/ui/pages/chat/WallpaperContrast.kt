@@ -1,5 +1,7 @@
 package me.rerere.rikkahub.ui.pages.chat
 
+import me.rerere.rikkahub.data.model.AssistantBackgroundMode
+
 /**
  * A custom chat photo sits under theme-coloured UI. The old veil painted
  * `colorScheme.background` at alpha 0.2 → 0.5 across the whole picture.
@@ -17,16 +19,25 @@ internal fun chatPhotoShown(background: String?, useGradientBackground: Boolean)
     background != null && !useGradientBackground
 
 /**
- * Resolve the effective wallpaper for the current theme. A per-theme wallpaper
- * (`darkBackground` / `lightBackground`) overrides the shared `background` when set;
- * null falls back to `background`. Both null → no wallpaper.
+ * Resolve the effective wallpaper for the current theme.
+ *
+ * [AssistantBackgroundMode.AUTO] (default): a per-theme wallpaper (`darkBackground` /
+ * `lightBackground`) overrides the shared `background` when set; null falls back to
+ * `background`. Both null → no wallpaper.
+ *
+ * [AssistantBackgroundMode.GENERAL]: always `background`, even when per-theme ones are set.
  */
 internal fun effectiveBackground(
     darkTheme: Boolean,
     background: String?,
     darkBackground: String?,
     lightBackground: String?,
-): String? = if (darkTheme) darkBackground ?: background else lightBackground ?: background
+    mode: AssistantBackgroundMode = AssistantBackgroundMode.AUTO,
+): String? = when (mode) {
+    AssistantBackgroundMode.GENERAL -> background
+    AssistantBackgroundMode.AUTO ->
+        if (darkTheme) darkBackground ?: background else lightBackground ?: background
+}
 
 internal data class WallpaperScrim(val topAlpha: Float, val bottomAlpha: Float)
 
@@ -37,8 +48,11 @@ internal fun wallpaperScrim(darkTheme: Boolean): WallpaperScrim =
 
 internal data class TitleBarFade(val topAlpha: Float, val midAlpha: Float, val bottomAlpha: Float)
 
-internal fun titleBarFade(darkTheme: Boolean, photoShown: Boolean): TitleBarFade =
-    if (!darkTheme && photoShown) {
+internal fun titleBarFade(darkTheme: Boolean, photoShown: Boolean, cleanLayout: Boolean = false): TitleBarFade =
+    if (!darkTheme && photoShown && cleanLayout) {
+        // Clean layout has no title plate, so the fade alone carries the title over the photo.
+        TitleBarFade(topAlpha = 0.92f, midAlpha = 0.62f, bottomAlpha = 0f)
+    } else if (!darkTheme && photoShown) {
         // Status-bar icons are dark in the light theme, so the very top stays mostly
         // covered. The title has its own plate, and the picture is clear by the bottom
         // edge of the bar.
@@ -73,3 +87,6 @@ internal fun assistantTextNeedsPhotoPlate(
     photoShown: Boolean,
     showAssistantBubble: Boolean,
 ): Boolean = looseTextNeedsPhotoPlate(darkTheme, photoShown) && !showAssistantBubble
+
+/** Haze source key of the chat wallpaper, so the usage line blurs only the photo, not messages. */
+internal const val CHAT_WALLPAPER_HAZE_KEY = "chat_wallpaper"

@@ -31,6 +31,7 @@ sealed interface MessagePartBlock {
 /**
  * 将 parts 分组成 ThinkingBlock 和 ContentBlock
  * 连续的 Reasoning、客户端 Tool 和 ServerTool 会被分组到一个 ThinkingBlock 中
+ * 空白 Text 会被跳过，不会把一组步骤切开
  */
 fun List<UIMessagePart>.groupMessageParts(): List<MessagePartBlock> {
     val result = mutableListOf<MessagePartBlock>()
@@ -58,6 +59,8 @@ fun List<UIMessagePart>.groupMessageParts(): List<MessagePartBlock> {
             }
 
             else -> {
+                // 空白 Text 不渲染，也不打断当前这组思考步骤（见 isVisuallyBlank）
+                if (part is UIMessagePart.Text && part.isVisuallyBlank()) return@fastForEachIndexed
                 flushThinkingSteps()
                 result.add(MessagePartBlock.ContentBlock(part, index))
             }

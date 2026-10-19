@@ -101,7 +101,7 @@ import me.rerere.hugeicons.stroke.Zap
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.datastore.getCurrentAssistant
-import me.rerere.rikkahub.data.datastore.findModelById
+import me.rerere.rikkahub.data.datastore.resolveChatModel
 import me.rerere.rikkahub.data.datastore.getQuickMessagesOfAssistant
 import me.rerere.rikkahub.data.files.FilesManager
 import me.rerere.rikkahub.data.model.Assistant
@@ -126,6 +126,7 @@ import me.rerere.rikkahub.utils.SoundEffectPlayer
 import org.koin.compose.koinInject
 import me.rerere.rikkahub.ui.pages.chat.VoicePhase
 import me.rerere.rikkahub.ui.pages.chat.VoiceSessionState
+import me.rerere.rikkahub.ui.theme.LocalDarkMode
 import kotlin.math.roundToInt
 import kotlin.uuid.Uuid
 
@@ -159,9 +160,7 @@ fun ChatInput(
 ) {
     val toaster = LocalToaster.current
     val assistant = settings.getCurrentAssistant()
-    val effectiveChatModel = settings.findModelById(
-        conversationChatModelId ?: assistant.chatModelId ?: settings.chatModelId
-    )
+    val effectiveChatModel = settings.resolveChatModel(conversationChatModelId, assistant.id)
 
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
@@ -236,17 +235,39 @@ fun ChatInput(
 
     // Collapsed = a one-line pill. It opens into a taller multi-line box as soon as it is focused,
     // carries attachments, or holds a multi-line draft.
-    val expanded = isFocused ||
+    val naturallyExpanded = isFocused ||
         state.messageContent.isNotEmpty() ||
         state.textContent.text.contains('\n')
+    // Clean layout (DisplaySetting.cleanLayout, off by default) keeps the open two-row box all the
+    // time: full-width field on top, tools underneath, "+" moved to the right next to send.
+    val cleanLayout = settings.displaySetting.cleanLayout
+    val expanded = cleanLayout || naturallyExpanded
     // Animate the corner along with the layout change below, so the pill does not snap between
-    // its 28dp and 16dp radii while the bar is growing.
+    // its 28dp and 16dp radii while the bar is growing. Clean layout is always open and uses a
+    // smaller, flatter 14dp card.
     val containerCorner by animateDpAsState(
-        targetValue = if (expanded) 16.dp else 28.dp,
+        targetValue = when {
+            cleanLayout -> 14.dp
+            expanded -> 16.dp
+            else -> 28.dp
+        },
         animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
         label = "chatInputCorner",
     )
     val containerShape = RoundedCornerShape(containerCorner)
+    // Clean layout: a flat solid card with a hairline instead of the glass (Kelivo-style). Keyed
+    // off the app's own dark mode, not the system one.
+    val darkTheme = LocalDarkMode.current
+    val cleanCardColor = if (darkTheme) {
+        Color.White.copy(alpha = 0.05f)
+    } else {
+        MaterialTheme.colorScheme.surfaceContainerLowest
+    }
+    val cleanCardOutline = if (darkTheme) {
+        Color.White.copy(alpha = 0.12f)
+    } else {
+        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+    }
 
     Surface(
         color = Color.Transparent,
@@ -255,7 +276,7 @@ fun ChatInput(
             modifier = modifier
                 .imePadding()
                 .navigationBarsPadding()
-                .padding(horizontal = 24.dp)
+                .padding(horizontal = if (cleanLayout) 12.dp else 24.dp)
                 .padding(bottom = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -268,23 +289,36 @@ fun ChatInput(
             )
             // Fixed glass — the bar is the app's primary control surface, so it keeps the glass
             // material regardless of the blur preference (same recipe as the drawer's cards).
+            // Clean layout swaps only the chrome for a flat card; the content below is the same
+            // composition either way, so nothing inside is re-created.
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(containerShape)
-                    .hazeGlass(
-                        input = HazeInput.Sources(hazeState),
-                        style = rikkaGlassStyle(containerShape, blurRadius = 12.dp, depth = 0.4f),
+                    .then(
+                        if (cleanLayout) {
+                            Modifier
+                        } else {
+                            Modifier.hazeGlass(
+                                input = HazeInput.Sources(hazeState),
+                                style = rikkaGlassStyle(containerShape, blurRadius = 12.dp, depth = 0.4f),
+                            )
+                        }
                     ),
                 shape = containerShape,
                 tonalElevation = 0.dp,
-                color = Color.Transparent,
+                color = if (cleanLayout) cleanCardColor else Color.Transparent,
+                border = if (cleanLayout) BorderStroke(1.dp, cleanCardOutline) else null,
             ) {
                 Column(
                     // Extra inset so the round buttons stay clear of the capsule's edge; the
                     // middle (text) column gives up that space instead.
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                    modifier = if (cleanLayout) {
+                        Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
+                    } else {
+                        Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                    },
+                    verticalArrangement = Arrangement.spacedBy(if (cleanLayout) 6.dp else 2.dp)
                 ) {
                     if (voiceState.phase != VoicePhase.Off) {
                         VoiceModeRow(
@@ -309,6 +343,24 @@ fun ChatInput(
                     // purpose: an if/else moves the field to a different composition slot, and a
                     // moved field is re-created, which drops the focus that had just arrived - the
                     // bar flashed open and shut the moment it was tapped.
+                    val moreButton: @Composable () -> Unit = {
+                        // Attachments / tools / workspace panel (the bar's "drawer").
+                        ActionIconButton(onClick = onMoreClick) {
+                            Icon(
+                                imageVector = HugeIcons.Add01,
+                                contentDescription = stringResource(R.string.more_options)
+                            )
+                        }
+                    }
+                    val searchButton: @Composable () -> Unit = {
+                        SearchPickerButton(
+                            enableSearch = enableSearch,
+                            settings = settings,
+                            model = effectiveChatModel,
+                            onUpdateSearchMode = onUpdateSearchMode,
+                            onUpdateSearchService = onUpdateSearchService,
+                        )
+                    }
                     ChatInputBar(
                         expanded = expanded,
                         modifier = Modifier.fillMaxWidth(),
@@ -317,13 +369,7 @@ fun ChatInput(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                             ) {
-                                // Attachments / tools / workspace panel (the bar's "drawer").
-                                ActionIconButton(onClick = onMoreClick) {
-                                    Icon(
-                                        imageVector = HugeIcons.Add01,
-                                        contentDescription = stringResource(R.string.more_options)
-                                    )
-                                }
+                                if (!cleanLayout) moreButton()
 
                                 // Model, with thinking depth on the same entry. The name is capped so a
                                 // long id cannot push the field off the pill; the sheet shows the full one.
@@ -335,6 +381,9 @@ fun ChatInput(
                                     onUpdateChatModel = onUpdateChatModel,
                                     onUpdateModelReasoningLevel = onUpdateModelReasoningLevel,
                                 )
+
+                                // Clean layout groups the tools on the left: model, then search.
+                                if (cleanLayout) searchButton()
                             }
                         },
                         center = {
@@ -357,7 +406,7 @@ fun ChatInput(
                             ) {
                                 // Full screen only once the bar is open. The collapsed pill has no room,
                                 // and a double-tap on the field would steal word selection.
-                                if (expanded) {
+                                if (naturallyExpanded) {
                                     ActionIconButton(onClick = { isFullScreen = true }) {
                                         Icon(
                                             imageVector = HugeIcons.Fullscreen,
@@ -366,13 +415,9 @@ fun ChatInput(
                                     }
                                 }
 
-                                SearchPickerButton(
-                                    enableSearch = enableSearch,
-                                    settings = settings,
-                                    model = effectiveChatModel,
-                                    onUpdateSearchMode = onUpdateSearchMode,
-                                    onUpdateSearchService = onUpdateSearchService,
-                                )
+                                if (!cleanLayout) searchButton()
+
+                                if (cleanLayout) moreButton()
 
                                 // One slot, two faces: the send arrow while there is something to send, the
                                 // microphone when the draft is empty and speech input is available. While
@@ -446,8 +491,8 @@ private fun ModelReasoningChip(
     onUpdateChatModel: (Model) -> Unit,
     onUpdateModelReasoningLevel: (Model, ReasoningLevel) -> Unit,
 ) {
-    val effectiveModelId = conversationChatModelId ?: assistant.chatModelId ?: settings.chatModelId
-    val model = settings.findModelById(effectiveModelId)
+    val model = settings.resolveChatModel(conversationChatModelId, assistant.id)
+    val effectiveModelId = model?.id
     val showReasoning = model?.abilities?.contains(ModelAbility.REASONING) == true
     val level = model?.reasoningLevel ?: assistant.reasoningLevel
     val modelListState = rememberModelListState(

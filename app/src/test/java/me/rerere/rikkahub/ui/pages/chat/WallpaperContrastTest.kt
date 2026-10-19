@@ -1,7 +1,9 @@
 package me.rerere.rikkahub.ui.pages.chat
 
+import me.rerere.rikkahub.data.model.AssistantBackgroundMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -97,5 +99,24 @@ class WallpaperContrastTest {
     @Test fun `per-theme wallpaper overrides common even when common is null`() {
         assertEquals("dark.jpg", effectiveBackground(true, null, "dark.jpg", null))
         assertEquals("light.jpg", effectiveBackground(false, null, null, "light.jpg"))
+    }
+
+    @Test fun `auto mode is the default and keeps the per-theme override`() {
+        assertEquals("dark.jpg", effectiveBackground(true, "common.jpg", "dark.jpg", "light.jpg"))
+        assertEquals(
+            "light.jpg",
+            effectiveBackground(false, "common.jpg", "dark.jpg", "light.jpg", AssistantBackgroundMode.AUTO),
+        )
+        assertEquals(
+            "common.jpg",
+            effectiveBackground(false, "common.jpg", "dark.jpg", null, AssistantBackgroundMode.AUTO),
+        )
+    }
+
+    @Test fun `general mode always uses the common wallpaper`() {
+        val mode = AssistantBackgroundMode.GENERAL
+        assertEquals("common.jpg", effectiveBackground(true, "common.jpg", "dark.jpg", "light.jpg", mode))
+        assertEquals("common.jpg", effectiveBackground(false, "common.jpg", "dark.jpg", "light.jpg", mode))
+        assertNull(effectiveBackground(true, null, "dark.jpg", "light.jpg", mode))
     }
 }

@@ -48,17 +48,27 @@ import me.rerere.rikkahub.data.datastore.ChatFontFamily
 import me.rerere.rikkahub.data.datastore.DisplaySetting
 import me.rerere.rikkahub.data.files.FileFolders
 import me.rerere.rikkahub.data.files.FileUtils
+import me.rerere.rikkahub.ui.components.message.THINKING_STEPS_VISIBLE_ALL
+import me.rerere.rikkahub.ui.components.message.THINKING_STEPS_VISIBLE_MAX
+import me.rerere.rikkahub.ui.components.message.thinkingStepsVisibleFromSlider
+import me.rerere.rikkahub.ui.components.message.thinkingStepsVisibleToSlider
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.richtext.MarkdownBlock
 import me.rerere.rikkahub.ui.components.ui.CardGroup
+import me.rerere.rikkahub.ui.components.ui.PercentSlider
 import me.rerere.rikkahub.ui.components.ui.Select
 import me.rerere.rikkahub.ui.context.LocalToaster
 import me.rerere.rikkahub.ui.theme.CustomColors
+import me.rerere.rikkahub.ui.theme.FontScale
 import me.rerere.rikkahub.ui.theme.rememberChatFontFamily
+import me.rerere.rikkahub.ui.theme.resolveUiFontFamily
 import me.rerere.rikkahub.utils.plus
 import org.koin.androidx.compose.koinViewModel
 import java.io.File
 import kotlin.math.roundToInt
+import androidx.compose.ui.platform.LocalDensity
+import me.rerere.rikkahub.ui.theme.LocalBaseFontScale
+import androidx.compose.material3.MaterialTheme
 
 @Composable
 fun SettingPreferencesUIPage(vm: SettingVM = koinViewModel()) {
@@ -68,6 +78,9 @@ fun SettingPreferencesUIPage(vm: SettingVM = koinViewModel()) {
     val toaster = LocalToaster.current
     val scope = rememberCoroutineScope()
     val chatFontFamily = rememberChatFontFamily(displaySetting)
+    val uiFontFamily = remember(displaySetting.uiFontFamily, displaySetting.uiCustomFontPath) {
+        displaySetting.resolveUiFontFamily(context)
+    }
 
     fun updateDisplaySetting(setting: DisplaySetting) {
         displaySetting = setting
@@ -83,7 +96,7 @@ fun SettingPreferencesUIPage(vm: SettingVM = koinViewModel()) {
         scope.launch {
             runCatching {
                 withContext(Dispatchers.IO) {
-                    importCustomChatFontInternal(context, uri)
+                    importCustomChatFontInternal(context, uri, CHAT_FONT_PREFIX)
                 }
             }.onSuccess { importedFont ->
                 updateDisplaySetting(
@@ -91,6 +104,30 @@ fun SettingPreferencesUIPage(vm: SettingVM = koinViewModel()) {
                         chatFontFamily = ChatFontFamily.CUSTOM,
                         chatCustomFontPath = importedFont.relativePath,
                         chatCustomFontName = importedFont.displayName,
+                    )
+                )
+                toaster.show(importSuccessMsg, type = ToastType.Success)
+            }.onFailure { error ->
+                toaster.show(importFailedMsg.format(error.message.orEmpty()), type = ToastType.Error)
+            }
+        }
+    }
+
+    val uiFontPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        scope.launch {
+            runCatching {
+                withContext(Dispatchers.IO) {
+                    importCustomChatFontInternal(context, uri, UI_FONT_PREFIX)
+                }
+            }.onSuccess { importedFont ->
+                updateDisplaySetting(
+                    displaySetting.copy(
+                        uiFontFamily = ChatFontFamily.CUSTOM,
+                        uiCustomFontPath = importedFont.relativePath,
+                        uiCustomFontName = importedFont.displayName,
                     )
                 )
                 toaster.show(importSuccessMsg, type = ToastType.Success)
@@ -128,6 +165,18 @@ fun SettingPreferencesUIPage(vm: SettingVM = koinViewModel()) {
                     modifier = Modifier.padding(horizontal = 8.dp),
                     title = { Text(stringResource(R.string.setting_page_message_display_settings)) },
                 ) {
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_clean_layout_title)) },
+                        supportingContent = { Text(stringResource(R.string.setting_display_page_clean_layout_desc)) },
+                        trailingContent = {
+                            Switch(
+                                checked = displaySetting.cleanLayout,
+                                onCheckedChange = {
+                                    updateDisplaySetting(displaySetting.copy(cleanLayout = it))
+                                }
+                            )
+                        },
+                    )
                     item(
                         headlineContent = { Text(stringResource(R.string.setting_display_page_show_user_avatar_title)) },
                         supportingContent = { Text(stringResource(R.string.setting_display_page_show_user_avatar_desc)) },
@@ -246,6 +295,43 @@ fun SettingPreferencesUIPage(vm: SettingVM = koinViewModel()) {
                         },
                     )
                     item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_thinking_steps_visible_title)) },
+                        supportingContent = {
+                            Column {
+                                Text(stringResource(R.string.setting_display_page_thinking_steps_visible_desc))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    // 0..MAX 是步数，最上面多一档 MAX+1 =“全部”
+                                    Slider(
+                                        value = thinkingStepsVisibleToSlider(
+                                            displaySetting.thinkingStepsVisibleCount
+                                        ).toFloat(),
+                                        onValueChange = {
+                                            updateDisplaySetting(
+                                                displaySetting.copy(
+                                                    thinkingStepsVisibleCount = thinkingStepsVisibleFromSlider(it.roundToInt())
+                                                )
+                                            )
+                                        },
+                                        valueRange = 0f..(THINKING_STEPS_VISIBLE_MAX + 1).toFloat(),
+                                        steps = THINKING_STEPS_VISIBLE_MAX,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    Text(
+                                        text = if (displaySetting.thinkingStepsVisibleCount == THINKING_STEPS_VISIBLE_ALL) {
+                                            stringResource(R.string.setting_display_page_thinking_steps_visible_all)
+                                        } else {
+                                            "${displaySetting.thinkingStepsVisibleCount.coerceIn(0, THINKING_STEPS_VISIBLE_MAX)}"
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    )
+                    item(
                         headlineContent = { Text(stringResource(R.string.setting_display_page_chat_font_family_title)) },
                         supportingContent = {
                             Select(
@@ -319,33 +405,133 @@ fun SettingPreferencesUIPage(vm: SettingVM = koinViewModel()) {
                         }
                     )
                     item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_ui_font_family_title)) },
+                        supportingContent = {
+                            Column {
+                                Text(stringResource(R.string.setting_display_page_ui_font_family_desc))
+                                Select(
+                                    options = ChatFontFamily.entries,
+                                    selectedOption = displaySetting.uiFontFamily,
+                                    onOptionSelected = { family ->
+                                        if (family == ChatFontFamily.CUSTOM && displaySetting.uiCustomFontPath.isBlank()) {
+                                            uiFontPickerLauncher.launch(CustomFontMimeTypesUI)
+                                        } else {
+                                            updateDisplaySetting(displaySetting.copy(uiFontFamily = family))
+                                        }
+                                    },
+                                    modifier = Modifier
+                                        .padding(top = 4.dp)
+                                        .fillMaxWidth(),
+                                    optionToString = { it.labelUI() },
+                                    optionLeading = { family ->
+                                        Text(
+                                            text = "Aa",
+                                            fontFamily = family.toFontFamilyUI(uiFontFamily),
+                                        )
+                                    }
+                                )
+                            }
+                        }
+                    )
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_ui_custom_font_title)) },
+                        supportingContent = {
+                            Text(
+                                if (displaySetting.uiCustomFontName.isNotBlank()) {
+                                    displaySetting.uiCustomFontName
+                                } else {
+                                    stringResource(R.string.setting_display_page_custom_font_not_imported)
+                                }
+                            )
+                        },
+                        trailingContent = {
+                            Row {
+                                IconButton(
+                                    onClick = { uiFontPickerLauncher.launch(CustomFontMimeTypesUI) }
+                                ) {
+                                    Icon(
+                                        HugeIcons.FileImport,
+                                        contentDescription = stringResource(
+                                            R.string.setting_display_page_custom_font_import
+                                        )
+                                    )
+                                }
+                                if (displaySetting.uiCustomFontPath.isNotBlank()) {
+                                    IconButton(
+                                        onClick = {
+                                            deleteCustomChatFontInternal(context, displaySetting.uiCustomFontPath)
+                                            updateDisplaySetting(
+                                                displaySetting.copy(
+                                                    uiFontFamily = ChatFontFamily.DEFAULT,
+                                                    uiCustomFontPath = "",
+                                                    uiCustomFontName = "",
+                                                )
+                                            )
+                                        }
+                                    ) {
+                                        Icon(
+                                            HugeIcons.Delete02,
+                                            contentDescription = stringResource(
+                                                R.string.setting_display_page_custom_font_remove
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    )
+                    item(
                         headlineContent = { Text(stringResource(R.string.setting_display_page_font_size_title)) },
                         supportingContent = {
                             Column {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                ) {
-                                    Slider(
-                                        value = displaySetting.fontSizeRatio,
-                                        onValueChange = {
-                                            updateDisplaySetting(displaySetting.copy(fontSizeRatio = it))
-                                        },
-                                        valueRange = 0.5f..2f,
-                                        steps = 11,
-                                        modifier = Modifier.weight(1f)
+                                PercentSlider(
+                                    value = displaySetting.fontSizeRatio,
+                                    onValueChange = {
+                                        updateDisplaySetting(displaySetting.copy(fontSizeRatio = it))
+                                    },
+                                    valueRange = FontScale.CHAT_RANGE,
+                                    title = stringResource(R.string.setting_display_page_font_size_title),
+                                ) { ratio ->
+                                    // Follows the thumb while dragging; the setting is saved on release.
+                                    MarkdownBlock(
+                                        content = stringResource(R.string.setting_display_page_font_size_preview),
+                                        style = LocalTextStyle.current.copy(
+                                            fontSize = LocalTextStyle.current.fontSize * ratio,
+                                            lineHeight = LocalTextStyle.current.lineHeight * ratio,
+                                            fontFamily = chatFontFamily
+                                        )
                                     )
-                                    Text(text = "${(displaySetting.fontSizeRatio * 100).toInt()}%")
                                 }
-                                MarkdownBlock(
-                                    content = stringResource(R.string.setting_display_page_font_size_preview),
-                                    style = LocalTextStyle.current.copy(
-                                        fontSize = LocalTextStyle.current.fontSize * displaySetting.fontSizeRatio,
-                                        lineHeight = LocalTextStyle.current.lineHeight * displaySetting.fontSizeRatio,
-                                        fontFamily = chatFontFamily
+                            }
+                        }
+                    )
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_ui_font_scale_title)) },
+                        supportingContent = {
+                            Column {
+                                Text(stringResource(R.string.setting_display_page_ui_font_scale_desc))
+                                PercentSlider(
+                                    value = FontScale.uiScale(displaySetting.uiFontScale),
+                                    onValueChange = {
+                                        updateDisplaySetting(displaySetting.copy(uiFontScale = it))
+                                    },
+                                    valueRange = FontScale.UI_RANGE,
+                                    title = stringResource(R.string.setting_display_page_ui_font_scale_title),
+                                ) { candidate ->
+                                    // The app already renders at the saved scale; scale the sample
+                                    // by candidate/current so it shows the size the thumb points at.
+                                    val currentScale = LocalDensity.current.fontScale
+                                    val systemScale = LocalBaseFontScale.current ?: currentScale
+                                    val ratio = FontScale.previewRatio(systemScale, currentScale, candidate)
+                                    val sample = MaterialTheme.typography.bodyMedium
+                                    Text(
+                                        text = stringResource(R.string.setting_display_page_ui_font_scale_preview),
+                                        style = sample.copy(
+                                            fontSize = sample.fontSize * ratio,
+                                            lineHeight = sample.lineHeight * ratio,
+                                        ),
                                     )
-                                )
+                                }
                             }
                         }
                     )
@@ -430,15 +616,20 @@ private fun ChatFontFamily.toFontFamilyUI(customFontFamily: FontFamily): FontFam
     ChatFontFamily.CUSTOM -> customFontFamily
 }
 
-private fun importCustomChatFontInternal(context: Context, uri: Uri): ImportedChatFontUI {
+// Chat and UI fonts are stored side by side in fonts/ (archived by the FONTS backup item) and
+// never replace each other: each import only swaps files with its own prefix.
+private const val CHAT_FONT_PREFIX = "chat_font"
+private const val UI_FONT_PREFIX = "ui_font"
+
+private fun importCustomChatFontInternal(context: Context, uri: Uri, prefix: String): ImportedChatFontUI {
     val displayName = FileUtils.getFileNameFromUri(context, uri)?.takeIf { it.isNotBlank() } ?: "custom_font"
     val extension = displayName.substringAfterLast('.', "")
         .lowercase()
         .takeIf { it in CustomFontExtensionsUI }
         ?: "ttf"
     val fontDir = File(context.filesDir, FileFolders.FONTS).apply { mkdirs() }
-    val targetFile = File(fontDir, "chat_font.${System.currentTimeMillis()}.$extension")
-    val tempFile = File(fontDir, "chat_font_import.tmp")
+    val targetFile = File(fontDir, "$prefix.${System.currentTimeMillis()}.$extension")
+    val tempFile = File(fontDir, "${prefix}_import.tmp")
 
     try {
         tempFile.delete()
@@ -454,7 +645,7 @@ private fun importCustomChatFontInternal(context: Context, uri: Uri): ImportedCh
             throw IllegalArgumentException(error.message ?: "Invalid font file", error)
         }
 
-        replaceCustomChatFontInternal(fontDir, tempFile, targetFile)
+        replaceCustomChatFontInternal(fontDir, tempFile, targetFile, prefix)
     } catch (error: Throwable) {
         tempFile.delete()
         throw error
@@ -465,9 +656,9 @@ private fun importCustomChatFontInternal(context: Context, uri: Uri): ImportedCh
     return ImportedChatFontUI(relativePath = relativePath, displayName = displayName)
 }
 
-private fun replaceCustomChatFontInternal(fontDir: File, tempFile: File, targetFile: File) {
+private fun replaceCustomChatFontInternal(fontDir: File, tempFile: File, targetFile: File, prefix: String) {
     val existingFiles = fontDir.listFiles { file ->
-        file.isFile && file.name.startsWith("chat_font.") && file != tempFile
+        file.isFile && file.name.startsWith("$prefix.") && file != tempFile
     }?.toList().orEmpty()
     val backups = existingFiles.map { file ->
         file to File(fontDir, "previous_${file.name}").also { it.delete() }

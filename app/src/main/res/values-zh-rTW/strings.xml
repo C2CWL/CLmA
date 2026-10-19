@@ -59,6 +59,11 @@
   <string name="assistant_page_chaotic">混亂 (危險)</string>
   <string name="assistant_page_chat_background">聊天背景</string>
   <string name="assistant_page_chat_background_desc">設定助手聊天頁面的背景圖片</string>
+  <string name="assistant_page_background_mode">使用的桌布</string>
+  <string name="assistant_page_background_mode_auto">跟隨主題</string>
+  <string name="assistant_page_background_mode_general">一律通用</string>
+  <string name="assistant_page_background_mode_auto_desc">依目前主題使用深色 / 淺色桌布，該項未設定時使用通用桌布。</string>
+  <string name="assistant_page_background_mode_general_desc">一律使用通用桌布。深色 / 淺色桌布會保留，但不顯示。</string>
   <string name="assistant_page_chat_model">聊天模型</string>
   <string name="assistant_page_chat_model_desc">設定助手的預設聊天模型，如果不設定，則使用全域預設聊天模型</string>
   <string name="assistant_page_clone">複製</string>
@@ -226,6 +231,7 @@
   <string name="cancel_edit">取消編輯</string>
   <string name="chain_of_thought_collapse">收合</string>
   <string name="chain_of_thought_show_more_steps">顯示更多 %d 個步驟</string>
+  <string name="chain_of_thought_collapsed_steps">已執行 %d 個步驟</string>
   <string name="chat_input_placeholder">輸入訊息與AI聊天</string>
   <string name="chat_input_unsupported_file_type">不支援的檔案類型：%s</string>
   <string name="chat_input_attachment_too_large">%1$s 過大——上限為 %2$d MB</string>
@@ -632,6 +638,9 @@
   <string name="setting_display_page_amoled_dark_mode_title">AMOLED 暗色模式</string>
   <string name="setting_display_page_auto_collapse_thinking_desc">思考完成自動折疊思考內容</string>
   <string name="setting_display_page_auto_collapse_thinking_title">自動折疊思考</string>
+  <string name="setting_display_page_thinking_steps_visible_desc">思考／工具步驟組收合時保留最後幾個步驟可見，0 為只顯示一行標題</string>
+  <string name="setting_display_page_thinking_steps_visible_title">收合時顯示的步驟數</string>
+  <string name="setting_display_page_thinking_steps_visible_all">全部</string>
   <string name="setting_display_page_auto_play_tts_desc">助理訊息產生完成後自動播放語音</string>
   <string name="setting_display_page_auto_play_tts_title">產生後自動播放 TTS</string>
   <string name="setting_display_page_chat_font_family_default">預設</string>
@@ -656,6 +665,12 @@
   <string name="setting_display_page_enable_message_generation_haptic_effect_title">訊息生成觸覺回饋</string>
   <string name="setting_display_page_font_size_preview">凌晨四點鐘，看到海棠花未眠。我常常這樣，在無人的夜裡獨自醒著，想，若有人此刻也在想我，那就好了。</string>
   <string name="setting_display_page_font_size_title">聊天字體大小</string>
+  <string name="setting_display_page_ui_font_family_title">介面字型</string>
+  <string name="setting_display_page_ui_font_family_desc">用於聊天訊息以外的應用程式介面。聊天訊息仍使用聊天字型。</string>
+  <string name="setting_display_page_ui_custom_font_title">自訂介面字型</string>
+  <string name="setting_display_page_ui_font_scale_title">介面字型大小</string>
+  <string name="setting_display_page_ui_font_scale_desc">縮放整個應用程式的文字（在系統字型大小基礎上），與系統字型大小疊加後最高為 200%。不改變版面間距。</string>
+  <string name="setting_display_page_ui_font_scale_preview">此大小的範例文字</string>
   <string name="setting_display_page_live_update_notification">即時更新通知</string>
   <string name="setting_display_page_live_update_notification_desc">在訊息產生期間顯示即時通知更新（Android 15+）</string>
   <string name="setting_display_page_message_jumper_position_desc">將訊息跳轉按鈕移至左側</string>
@@ -684,6 +699,8 @@
   <string name="setting_display_page_show_updates_desc">是否顯示應用更新通知</string>
   <string name="setting_display_page_show_updates_title">顯示更新</string>
   <string name="setting_display_page_show_user_avatar_desc">是否在聊天消息中顯示用戶頭像</string>
+  <string name="setting_display_page_clean_layout_title">簡潔版面</string>
+  <string name="setting_display_page_clean_layout_desc">扁平頂欄，標題下方顯示模型名稱；輸入框分兩行，工具按鈕在輸入框下方</string>
   <string name="setting_display_page_show_user_avatar_title">顯示用戶頭像</string>
   <string name="setting_display_page_skip_crop_image_desc">匯入圖片或拍照後跳過裁剪介面</string>
   <string name="setting_display_page_skip_crop_image_title">跳過圖片編輯</string>
@@ -692,6 +709,14 @@
   <string name="setting_display_page_tts_only_read_quoted_title">僅朗讀引用的 TTS 內容</string>
   <string name="setting_display_page_use_app_icon_style_loading_indicator_desc">使用應用程式圖示動畫取代預設的圓形載入指示器</string>
   <string name="setting_display_page_use_app_icon_style_loading_indicator_title">使用 APP 圖示風格的載入指示器</string>
+  <string name="setting_display_page_loading_indicator_style_title">載入指示器樣式</string>
+  <string name="setting_display_page_loading_indicator_style_desc">助手思考或生成時，在你的訊息下方顯示的動畫</string>
+  <string name="setting_display_page_loading_indicator_style_default">預設</string>
+  <string name="setting_display_page_loading_indicator_style_app_icon">應用程式圖示</string>
+  <string name="setting_display_page_loading_indicator_style_shimmer">流光</string>
+  <string name="chat_loading_sparkle_replying">回覆中</string>
+  <string name="setting_display_page_loading_indicator_style_sparkle">流光星芒</string>
+  <string name="chat_loading_shimmer_thinking">思考中…</string>
   <string name="setting_display_page_volume_key_scroll_desc">使用音量鍵捲動頁面，適合電子墨水螢幕</string>
   <string name="setting_display_page_volume_key_scroll_ratio">捲動幅度</string>
   <string name="setting_display_page_volume_key_scroll_title">音量鍵翻頁</string>
@@ -2368,4 +2393,17 @@
   <string name="setting_ssh_page_error_credential_missing">請填寫密碼或私鑰</string>
   <string name="chat_page_continuing">連線中斷，正在續寫回覆（%1$d/%2$d）</string>
   <string name="chat_page_subagents_running">子 agent %1$d 個執行中 · %2$s</string>
+  <string name="setting_floating_ball_style_title">樣式</string>
+  <string name="setting_floating_ball_style_desc">圓形懸浮球，或顯示助手與回覆狀態的膠囊</string>
+  <string name="setting_floating_ball_style_original">原版</string>
+  <string name="setting_floating_ball_style_capsule">膠囊</string>
+  <string name="setting_floating_ball_tuck_style_title">收起樣式</string>
+  <string name="setting_floating_ball_tuck_style_desc">圓形懸浮球閒置時如何收到螢幕邊緣</string>
+  <string name="setting_floating_ball_tuck_style_handle">細條</string>
+  <string name="setting_floating_ball_tuck_style_half_ball">半球</string>
+  <string name="floating_ball_capsule_status_ready">點擊開始對話</string>
+  <string name="floating_ball_capsule_status_working">回覆中…</string>
+  <string name="floating_ball_capsule_status_working_timer">回覆中 · %1$s</string>
+  <string name="floating_ball_capsule_status_done">已完成 · %1$s</string>
+  <string name="floating_ball_capsule_hide">收起到邊緣</string>
 </resources>

@@ -1,6 +1,7 @@
 package me.rerere.rikkahub.ui.pages.chat
 
 import android.net.Uri
+import android.os.Build
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -65,6 +66,8 @@ import dev.chrisbanes.haze.glass.hazeGlass
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import me.rerere.rikkahub.ui.components.ui.rikkaGlassStyle
+import me.rerere.rikkahub.ui.components.ui.frostedPlate
+import me.rerere.rikkahub.ui.components.ui.frostedPlateSpec
 import me.rerere.rikkahub.ui.theme.LocalDarkMode
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -84,8 +87,8 @@ import me.rerere.rikkahub.data.usage.TurnFooter
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.datastore.findProvider
 import me.rerere.rikkahub.data.datastore.getCurrentAssistant
-import me.rerere.rikkahub.data.datastore.getCurrentChatModel
 import me.rerere.rikkahub.data.datastore.getSelectedASRProvider
+import me.rerere.rikkahub.data.datastore.resolveChatModel
 import me.rerere.rikkahub.data.files.FilesManager
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.Conversation
@@ -368,7 +371,7 @@ private fun ChatPageContent(
         onAttachmentAdded = { showFilesSheet = false },
     )
     val allowAudioVideoAttachments =
-        setting.getCurrentChatModel()?.findProvider(setting.providers) is ProviderSetting.Google
+        currentChatModel?.findProvider(setting.providers) is ProviderSetting.Google
 
     val completionProviders = remember(assistant.workspaceId, conversation.workspaceCwd, workspaceRepository) {
         assistant.workspaceId?.let { workspaceId ->
@@ -385,7 +388,7 @@ private fun ChatPageContent(
     // Model and search live on the input bar (model chip, search icon). The handlers stay here.
     val onUpdateSearchMode: (SearchMode) -> Unit = { mode ->
         val current = setting.getCurrentAssistant()
-        val model = setting.getCurrentChatModel()
+        val model = currentChatModel
         vm.updateSettings(
             setting.copy(
                 assistants = setting.assistants.map { assistant ->
@@ -426,7 +429,11 @@ private fun ChatPageContent(
         color = MaterialTheme.colorScheme.background,
         modifier = Modifier.fillMaxSize()
     ) {
-        AssistantBackground(setting = setting, modifier = Modifier.hazeSource(hazeState))
+        AssistantBackground(
+            setting = setting,
+            // Keyed so the usage line under replies can blur the wallpaper alone.
+            modifier = Modifier.hazeSource(hazeState, key = CHAT_WALLPAPER_HAZE_KEY),
+        )
         Scaffold(
             // The title bar is drawn inside the content instead (see the overlay below): Scaffold
             // places its content over the top bar, and the conversation has to scroll UNDER the
@@ -453,6 +460,9 @@ private fun ChatPageContent(
                         vm.stopGeneration()
                     },
                     onSendClick = {
+                        // Settings.dummy() is still standing in for the real settings: nothing
+                        // resolves yet, so do nothing (the draft stays) rather than misreport.
+                        if (setting.init) return@ChatInput
                         if (currentChatModel == null) {
                             toaster.show(
                                 context.getString(R.string.chat_select_model_first),
@@ -627,10 +637,15 @@ private fun ChatPageContent(
                         background = assistant.background,
                         darkBackground = assistant.darkBackground,
                         lightBackground = assistant.lightBackground,
+                        mode = assistant.backgroundMode,
                     ),
                     assistant.useGradientBackground,
                 )
-                val topFade = titleBarFade(darkTheme = darkTheme, photoShown = photoShown)
+                val topFade = titleBarFade(
+                    darkTheme = darkTheme,
+                    photoShown = photoShown,
+                    cleanLayout = setting.displaySetting.cleanLayout,
+                )
                 val bottomFade = bottomBarFade(darkTheme = darkTheme, photoShown = photoShown)
                 val fadeColor = MaterialTheme.colorScheme.background
 
@@ -682,7 +697,18 @@ private fun ChatPageContent(
                         .fillMaxWidth()
                         .onSizeChanged { topBarHeightPx = it.height },
                 ) {
-                    TopBar(
+                    if (setting.displaySetting.cleanLayout) {
+                        CleanTopBar(
+                            settings = setting,
+                            conversation = conversation,
+                            turnFooters = turnFooters,
+                            drawerState = drawerState,
+                            bigScreen = bigScreen,
+                            previewMode = previewMode,
+                            onClickMenu = { previewMode = !previewMode },
+                            onNewChat = { navigateToChatPage(navController) },
+                        )
+                    } else TopBar(
                         settings = setting,
                         conversation = conversation,
                         turnFooters = turnFooters,
@@ -840,10 +866,15 @@ private fun TopBar(
                         background = assistant.background,
                         darkBackground = assistant.darkBackground,
                         lightBackground = assistant.lightBackground,
+                        mode = assistant.backgroundMode,
                     ),
                     assistant.useGradientBackground,
                 ),
             )
+            // API 31+: a frosted pill, the same full rounding as the glass buttons beside it.
+            // Older devices keep the flat 0.86 plate.
+            val titleFrost = frostedPlateSpec(titleOnPhoto, Build.VERSION.SDK_INT)
+            val titleShape = if (titleFrost != null) RoundedCornerShape(percent = 50) else RoundedCornerShape(12.dp)
             Surface(
                 onClick = {
                     if (conversation.messageNodes.isNotEmpty()) {
@@ -852,21 +883,26 @@ private fun TopBar(
                         toaster.show(editTitleWarning, type = ToastType.Warning)
                     }
                 },
-                shape = RoundedCornerShape(12.dp),
-                color = if (titleOnPhoto) {
+                modifier = if (titleFrost != null) {
+                    Modifier.frostedPlate(hazeState, titleShape, titleFrost)
+                } else {
+                    Modifier
+                },
+                shape = titleShape,
+                color = if (titleOnPhoto && titleFrost == null) {
                     MaterialTheme.colorScheme.surface.copy(alpha = PHOTO_TITLE_PLATE_ALPHA)
                 } else {
                     Color.Transparent
                 },
             ) {
                 Column(
-                    modifier = if (titleOnPhoto) {
-                        Modifier.padding(horizontal = 10.dp, vertical = 2.dp)
-                    } else {
-                        Modifier
+                    modifier = when {
+                        titleFrost != null -> Modifier.padding(horizontal = 14.dp, vertical = 2.dp)
+                        titleOnPhoto -> Modifier.padding(horizontal = 10.dp, vertical = 2.dp)
+                        else -> Modifier
                     },
                 ) {
-                    val model = settings.getCurrentChatModel()
+                    val model = settings.resolveChatModel(conversation.chatModelId, conversation.assistantId)
                     Text(
                         text = conversation.title.ifBlank { stringResource(R.string.chat_page_new_chat) },
                         maxLines = 1,
@@ -878,16 +914,14 @@ private fun TopBar(
                         // UsageLedger (turnFooters) is the ground truth (includes all tool loop steps);
                         // fallback to TokenBudgetTracker for legacy or imported conversations without ledger rows.
                         val usedTokens = remember(turnFooters, conversation) {
-                            val ledgerTokens = turnFooters.values.mapNotNull { it.usage }
-                                .sumOf { it.inputTokens + it.outputTokens }
-                            if (ledgerTokens > 0L) {
-                                ledgerTokens
-                            } else {
-                                TokenBudgetTracker.aggregate(conversation).totalTokens
-                            }
+                            conversationUsedTokens(turnFooters, conversation)
                         }
                         Text(
-                            text = "${assistant.name.ifBlank { stringResource(R.string.assistant_page_default_assistant) }} / ${model.displayName} / $usedTokens token",
+                            text = topBarSubtitle(
+                                assistantName = assistant.name.ifBlank { stringResource(R.string.assistant_page_default_assistant) },
+                                modelName = model.displayName,
+                                usedTokens = usedTokens,
+                            ),
                             overflow = TextOverflow.Ellipsis,
                             maxLines = 1,
                             color = LocalContentColor.current.copy(0.65f),

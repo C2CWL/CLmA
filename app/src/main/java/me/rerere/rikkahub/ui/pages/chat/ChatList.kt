@@ -93,6 +93,7 @@ import me.rerere.ai.ui.UIMessage
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.ai.AssistantResolver
+import me.rerere.rikkahub.data.model.AssistantBackgroundMode
 import me.rerere.rikkahub.data.model.Conversation
 import me.rerere.rikkahub.data.model.MessageNode
 import me.rerere.rikkahub.service.ChatError
@@ -100,10 +101,11 @@ import me.rerere.rikkahub.ui.components.message.ChatMessage
 import me.rerere.rikkahub.ui.components.ui.bounceOverscroll
 import me.rerere.rikkahub.ui.components.ui.ErrorCardsDisplay
 import me.rerere.rikkahub.ui.components.ui.ListSelectableItem
-import me.rerere.rikkahub.ui.components.ui.RabbitLoadingIndicator
+import me.rerere.rikkahub.ui.components.ui.ChatLoadingIndicator
 import me.rerere.rikkahub.ui.components.ui.Tooltip
 import me.rerere.rikkahub.ui.hooks.ImeLazyListAutoScroller
 import me.rerere.rikkahub.ui.theme.ChatFontProvider
+import me.rerere.rikkahub.ui.theme.LocalDarkMode
 import me.rerere.rikkahub.utils.plus
 import kotlin.uuid.Uuid
 
@@ -361,6 +363,7 @@ private fun ChatListNormal(
                             node = node,
                             displayMessage = group.displayMessage,
                             turnFooter = turnFooters[group.displayMessage.id.toString()],
+                            hazeState = hazeState,
                             model = node.currentMessage.modelId?.let(modelById::get),
                             assistant = assistant,
                             loading = loading && node.id == lastMessageNodeId,
@@ -416,24 +419,22 @@ private fun ChatListNormal(
 
             if (loading) {
                 item(LoadingIndicatorKey) {
-                    Row(
-                        modifier = Modifier.padding(8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        RabbitLoadingIndicator(
-                            modifier = Modifier.size(28.dp)
-                        )
-                        AnimatedVisibility(
-                            visible = processingStatus != null,
-                        ) {
-                            Text(
-                                text = processingStatus ?: "",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
+                    // Same wallpaper test as the message's usage line: plate only over a photo.
+                    val photoShown = chatPhotoShown(
+                        effectiveBackground(
+                            darkTheme = LocalDarkMode.current,
+                            background = assistant?.background,
+                            darkBackground = assistant?.darkBackground,
+                            lightBackground = assistant?.lightBackground,
+                            mode = assistant?.backgroundMode ?: AssistantBackgroundMode.AUTO,
+                        ),
+                        assistant?.useGradientBackground == true,
+                    )
+                    ChatLoadingIndicator(
+                        processingStatus = processingStatus,
+                        photoShown = photoShown,
+                        hazeState = hazeState,
+                    )
                 }
             }
 

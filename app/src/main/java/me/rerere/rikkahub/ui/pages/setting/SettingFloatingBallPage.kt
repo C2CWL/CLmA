@@ -1,5 +1,6 @@
 package me.rerere.rikkahub.ui.pages.setting
 
+import androidx.compose.foundation.BorderStroke
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.AlertDialog
@@ -57,11 +59,16 @@ import coil3.compose.AsyncImage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import me.rerere.rikkahub.service.HaloBallLook
 import me.rerere.rikkahub.service.HaloBallView
 import me.rerere.rikkahub.R
+import me.rerere.rikkahub.data.datastore.FloatingBallStyle
+import me.rerere.rikkahub.data.datastore.FloatingBallTuckStyle
+import me.rerere.rikkahub.service.FloatingBallIconFiles
 import me.rerere.rikkahub.service.FloatingBallService
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.CardGroup
+import me.rerere.rikkahub.ui.components.ui.Select
 import me.rerere.rikkahub.ui.theme.CustomColors
 import me.rerere.rikkahub.utils.plus
 import org.koin.androidx.compose.koinViewModel
@@ -119,16 +126,19 @@ fun SettingFloatingBallPage(vm: SettingVM = koinViewModel()) {
     ) { uri: Uri? ->
         uri ?: return@rememberLauncherForActivityResult
         scope.launch {
-            val target = FloatingBallService.iconFile(context)
+            // A new file name per pick: the path itself changes, so the settings flow emits and
+            // the running ball reloads the picture (the same path would be de-duplicated away).
+            val target = FloatingBallService.newIconFile(context)
             val copied = withContext(Dispatchers.IO) {
                 runCatching {
                     context.contentResolver.openInputStream(uri)?.use { input ->
                         target.outputStream().use { output -> input.copyTo(output) }
                     } ?: error("Cannot open $uri")
-                }.isSuccess
+                }.onFailure { runCatching { target.delete() } }.isSuccess
             }
             if (copied) {
                 vm.updateSettings { it.copy(floatingBallIconPath = target.absolutePath) }
+                withContext(Dispatchers.IO) { FloatingBallIconFiles.deleteStale(context.filesDir, keep = target) }
             }
         }
     }
@@ -213,6 +223,67 @@ fun SettingFloatingBallPage(vm: SettingVM = koinViewModel()) {
 
             item {
                 CardGroup(modifier = Modifier.padding(horizontal = 8.dp)) {
+                    item(
+                        headlineContent = {
+                            Text(stringResource(R.string.setting_floating_ball_style_title))
+                        },
+                        supportingContent = {
+                            Text(stringResource(R.string.setting_floating_ball_style_desc))
+                        },
+                        trailingContent = {
+                            Select(
+                                options = FloatingBallStyle.entries,
+                                selectedOption = settings.floatingBallStyle,
+                                onOptionSelected = { style ->
+                                    vm.updateSettings { it.copy(floatingBallStyle = style) }
+                                },
+                                optionToString = {
+                                    stringResource(
+                                        when (it) {
+                                            FloatingBallStyle.ORIGINAL -> R.string.setting_floating_ball_style_original
+                                            FloatingBallStyle.CAPSULE -> R.string.setting_floating_ball_style_capsule
+                                        }
+                                    )
+                                },
+                                // Blend into the card: same container colour, hairline for affordance.
+                                containerColor = CustomColors.listItemColors.containerColor,
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                                modifier = Modifier.width(150.dp),
+                            )
+                        },
+                    )
+                    // The capsule always tucks into its handle (half a capsule would show a cut-off
+                    // sliver of text), so the choice only exists for the round ball.
+                    if (settings.floatingBallStyle == FloatingBallStyle.ORIGINAL) {
+                        item(
+                            headlineContent = {
+                                Text(stringResource(R.string.setting_floating_ball_tuck_style_title))
+                            },
+                            supportingContent = {
+                                Text(stringResource(R.string.setting_floating_ball_tuck_style_desc))
+                            },
+                            trailingContent = {
+                                Select(
+                                    options = FloatingBallTuckStyle.entries,
+                                    selectedOption = settings.floatingBallTuckStyle,
+                                    onOptionSelected = { tuck ->
+                                        vm.updateSettings { it.copy(floatingBallTuckStyle = tuck) }
+                                    },
+                                    optionToString = {
+                                        stringResource(
+                                            when (it) {
+                                                FloatingBallTuckStyle.HANDLE -> R.string.setting_floating_ball_tuck_style_handle
+                                                FloatingBallTuckStyle.HALF_BALL -> R.string.setting_floating_ball_tuck_style_half_ball
+                                            }
+                                        )
+                                    },
+                                    containerColor = CustomColors.listItemColors.containerColor,
+                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                                    modifier = Modifier.width(150.dp),
+                                )
+                            },
+                        )
+                    }
                     item(
                         onClick = { showIconDialog = true },
                         leadingContent = {
@@ -368,10 +439,11 @@ fun SettingFloatingBallPage(vm: SettingVM = koinViewModel()) {
                         Button(
                             onClick = {
                                 showIconDialog = false
-                                val target = FloatingBallService.iconFile(context)
                                 scope.launch {
-                                    withContext(Dispatchers.IO) { runCatching { target.delete() } }
                                     vm.updateSettings { it.copy(floatingBallIconPath = "") }
+                                    withContext(Dispatchers.IO) {
+                                        FloatingBallIconFiles.deleteStale(context.filesDir, keep = null)
+                                    }
                                 }
                             },
                             modifier = Modifier.fillMaxWidth(),
@@ -499,25 +571,37 @@ private fun FloatingBallPreview(
     iconPath: String,
     size: Dp = 36.dp,
 ) {
-    Box(modifier = Modifier.size(size)) {
+    // Mirrors the resting ball: translucent surface disc with a hairline, then the slim ring or
+    // the picked image. (The drop shadow is left out at this size.)
+    val surface = MaterialTheme.colorScheme.surface.copy(alpha = HaloBallLook.BACKING_ALPHA)
+    val outline = MaterialTheme.colorScheme.outlineVariant
+    Box(modifier = Modifier.size(size), contentAlignment = Alignment.Center) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val half = this.size.minDimension / 2f
+            val backing = half * HaloBallLook.BACKING_RADIUS_FRACTION
+            drawCircle(color = surface, radius = backing)
+            drawCircle(color = outline, radius = backing, style = Stroke(width = 1.dp.toPx()))
+            if (iconPath.isBlank()) {
+                drawCircle(
+                    color = color.copy(alpha = HaloBallLook.REST_RING_ALPHA / 255f),
+                    radius = half * HaloBallView.RING_RADIUS_FRACTION,
+                    style = Stroke(
+                        width = half * HaloBallView.STROKE_FRACTION * HaloBallLook.REST_RING_STROKE_SCALE
+                    ),
+                )
+            }
+        }
         if (iconPath.isNotBlank()) {
+            // Same rim as the service: the image fills the ring's outer edge.
+            val iconFraction = HaloBallView.RING_RADIUS_FRACTION + HaloBallView.STROKE_FRACTION / 2f
             AsyncImage(
                 model = File(iconPath),
                 contentDescription = null,
                 modifier = Modifier
-                    .fillMaxSize()
+                    .size(size * iconFraction)
                     .clip(CircleShape),
                 contentScale = ContentScale.Crop,
             )
-        } else {
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val half = this.size.minDimension / 2f
-                drawCircle(
-                    color = color,
-                    radius = half * HaloBallView.RING_RADIUS_FRACTION,
-                    style = Stroke(width = half * HaloBallView.STROKE_FRACTION),
-                )
-            }
         }
     }
 }

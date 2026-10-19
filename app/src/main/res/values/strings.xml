@@ -63,6 +63,11 @@
   <string name="assistant_page_chaotic">Chaotic (Dangerous)</string>
   <string name="assistant_page_chat_background">Chat Background</string>
   <string name="assistant_page_chat_background_desc">Set background image for assistant chat page</string>
+  <string name="assistant_page_background_mode">Wallpaper to use</string>
+  <string name="assistant_page_background_mode_auto">Follow theme</string>
+  <string name="assistant_page_background_mode_general">Always common</string>
+  <string name="assistant_page_background_mode_auto_desc">Uses the dark / light wallpaper for the current theme, or the common one when that slot is empty.</string>
+  <string name="assistant_page_background_mode_general_desc">Always uses the common wallpaper. The dark / light wallpapers are kept but not shown.</string>
   <string name="assistant_page_chat_model">Chat Model</string>
   <string name="assistant_page_chat_model_desc">Set the default chat model for the assistant. If not set, the global default chat model will be used</string>
   <string name="assistant_page_clone">Clone</string>
@@ -266,6 +271,7 @@
   <string name="cancel_edit">Cancel Edit</string>
   <string name="chain_of_thought_collapse">Collapse</string>
   <string name="chain_of_thought_show_more_steps">Show %d more steps</string>
+  <string name="chain_of_thought_collapsed_steps">Ran %d steps</string>
   <string name="chat_input_placeholder">Chat with AI</string>
   <string name="chat_input_hint_1">Say something…</string>
   <string name="chat_input_hint_2">Where do we start?</string>
@@ -756,6 +762,9 @@
   <string name="setting_display_page_amoled_dark_mode_title">AMOLED Dark Mode</string>
   <string name="setting_display_page_auto_collapse_thinking_desc">Automatically collapse thinking content after thinking is complete</string>
   <string name="setting_display_page_auto_collapse_thinking_title">Auto Collapse Thinking</string>
+  <string name="setting_display_page_thinking_steps_visible_desc">How many of the latest thinking / tool steps stay visible when a step group is collapsed. 0 shows only a one-line header</string>
+  <string name="setting_display_page_thinking_steps_visible_title">Visible steps in collapsed groups</string>
+  <string name="setting_display_page_thinking_steps_visible_all">All</string>
   <string name="setting_display_page_auto_play_tts_desc">Automatically play TTS after assistant message generation completes</string>
   <string name="setting_display_page_auto_play_tts_title">Auto-play TTS After Generation</string>
   <string name="setting_display_page_chat_font_family_default">Default</string>
@@ -787,6 +796,12 @@
   <string name="setting_display_page_enable_message_generation_haptic_effect_title">Message Generation Haptic Effect</string>
   <string name="setting_display_page_font_size_preview">At four in the morning, I saw the begonia flowers still awake. I am often like this — lying awake alone in the quiet night, thinking: if someone is thinking of me at this moment, that would be wonderful.</string>
   <string name="setting_display_page_font_size_title">Chat Font Size</string>
+  <string name="setting_display_page_ui_font_family_title">UI Font</string>
+  <string name="setting_display_page_ui_font_family_desc">Font for the app interface outside chat messages. Chat messages keep using the chat font.</string>
+  <string name="setting_display_page_ui_custom_font_title">Custom UI Font</string>
+  <string name="setting_display_page_ui_font_scale_title">UI Font Size</string>
+  <string name="setting_display_page_ui_font_scale_desc">Scales text across the whole app (on top of the system font size). Combined with the system font size it is capped at 200%. Layout spacing is unchanged.</string>
+  <string name="setting_display_page_ui_font_scale_preview">Sample text at this size</string>
   <string name="setting_display_page_live_update_notification">Live Update Notification</string>
   <string name="setting_display_page_live_update_notification_desc">Show real-time notification updates during message generation (Android 15+)</string>
   <string name="setting_display_page_message_jumper_position_desc">Move  Message Jumper to left side</string>
@@ -817,6 +832,8 @@
   <string name="setting_display_page_show_updates_desc">Whether to display app update notifications</string>
   <string name="setting_display_page_show_updates_title">Show Updates</string>
   <string name="setting_display_page_show_user_avatar_desc">Whether to display user avatar in chat messages</string>
+  <string name="setting_display_page_clean_layout_title">Clean layout</string>
+  <string name="setting_display_page_clean_layout_desc">Flat top bar with the model name under the title, and a two-row input box with the tools below the text field</string>
   <string name="setting_display_page_show_user_avatar_title">Show User Avatar</string>
   <string name="setting_display_page_skip_crop_image_desc">Skip crop interface after importing images or taking photos</string>
   <string name="setting_display_page_skip_crop_image_title">Skip Image Editing</string>
@@ -827,6 +844,14 @@
   <string name="setting_display_page_tts_read_outside_brackets_title">TTS Skip Bracketed Content</string>
   <string name="setting_display_page_use_app_icon_style_loading_indicator_desc">Use the animated app icon instead of the default circular loading indicator</string>
   <string name="setting_display_page_use_app_icon_style_loading_indicator_title">Use App Icon-Style Loading Indicator</string>
+  <string name="setting_display_page_loading_indicator_style_title">Loading indicator style</string>
+  <string name="setting_display_page_loading_indicator_style_desc">What shows under your message while the assistant is thinking</string>
+  <string name="setting_display_page_loading_indicator_style_default">Default</string>
+  <string name="setting_display_page_loading_indicator_style_app_icon">App icon</string>
+  <string name="setting_display_page_loading_indicator_style_shimmer">Shimmer</string>
+  <string name="chat_loading_sparkle_replying">Replying</string>
+  <string name="setting_display_page_loading_indicator_style_sparkle">Sparkle</string>
+  <string name="chat_loading_shimmer_thinking">Thinking…</string>
   <string name="setting_display_page_bounce_overscroll_desc">Bounce effect when scrolling past the edge of the chat list</string>
   <string name="setting_display_page_bounce_overscroll_title">Bounce Overscroll</string>
   <string name="setting_display_page_volume_key_scroll_desc">Scroll pages with volume keys, ideal for e-ink screens</string>
@@ -3069,4 +3094,17 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="setting_sponsor_alipay_desc">Scan the QR code with Alipay</string>
   <string name="setting_sponsor_qr_hint">Screenshot this code, then scan it in the app above. Thank you!</string>
   <string name="setting_sponsor_qr_close">Close</string>
+  <string name="setting_floating_ball_style_title">Style</string>
+  <string name="setting_floating_ball_style_desc">Round ball, or a capsule that shows the assistant and reply status</string>
+  <string name="setting_floating_ball_style_original">Original</string>
+  <string name="setting_floating_ball_style_capsule">Capsule</string>
+  <string name="setting_floating_ball_tuck_style_title">Tuck style</string>
+  <string name="setting_floating_ball_tuck_style_desc">How the round ball hides at the screen edge when idle</string>
+  <string name="setting_floating_ball_tuck_style_handle">Slim handle</string>
+  <string name="setting_floating_ball_tuck_style_half_ball">Half ball</string>
+  <string name="floating_ball_capsule_status_ready">Tap to chat</string>
+  <string name="floating_ball_capsule_status_working">Replying…</string>
+  <string name="floating_ball_capsule_status_working_timer">Replying · %1$s</string>
+  <string name="floating_ball_capsule_status_done">Done · %1$s</string>
+  <string name="floating_ball_capsule_hide">Hide to edge</string>
 </resources>

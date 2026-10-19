@@ -57,6 +57,11 @@
   <string name="assistant_page_chaotic">فوضوي (خطير)</string>
   <string name="assistant_page_chat_background">خلفية الدردشة</string>
   <string name="assistant_page_chat_background_desc">تعيين صورة خلفية لصفحة دردشة المساعد</string>
+  <string name="assistant_page_background_mode">الخلفية المستخدمة</string>
+  <string name="assistant_page_background_mode_auto">اتباع السمة</string>
+  <string name="assistant_page_background_mode_general">العامة دائمًا</string>
+  <string name="assistant_page_background_mode_auto_desc">تُستخدم الخلفية الداكنة / الفاتحة حسب السمة الحالية، أو الخلفية العامة إذا لم تُعيَّن.</string>
+  <string name="assistant_page_background_mode_general_desc">تُستخدم الخلفية العامة دائمًا. تُحفظ الخلفيات الداكنة / الفاتحة لكن لا تُعرض.</string>
   <string name="assistant_page_chat_model">نموذج الدردشة</string>
   <string name="assistant_page_chat_model_desc">تعيين نموذج الدردشة الافتراضي للمساعد. إذا لم يُعيَّن، فسيُستخدم نموذج الدردشة الافتراضي العام</string>
   <string name="assistant_page_clone">استنساخ</string>
@@ -308,6 +313,7 @@
   <string name="cancel_edit">إلغاء التعديل</string>
   <string name="chain_of_thought_collapse">طي</string>
   <string name="chain_of_thought_show_more_steps">عرض %d خطوات إضافية</string>
+  <string name="chain_of_thought_collapsed_steps">تم تنفيذ %d خطوات</string>
   <string name="chat_input_placeholder">دردِش مع الذكاء الاصطناعي</string>
   <string name="chat_input_unsupported_file_type">نوع ملف غير مدعوم: %s</string>
   <string name="chat_message_add_favorite">إضافة إلى المفضلة</string>
@@ -651,6 +657,9 @@
   <string name="setting_display_page_amoled_dark_mode_title">الوضع الداكن AMOLED</string>
   <string name="setting_display_page_auto_collapse_thinking_desc">طي محتوى التفكير تلقائيًا بعد اكتمال التفكير</string>
   <string name="setting_display_page_auto_collapse_thinking_title">طي التفكير تلقائيًا</string>
+  <string name="setting_display_page_thinking_steps_visible_desc">عدد آخر خطوات التفكير والأدوات التي تبقى ظاهرة عند طي مجموعة الخطوات. 0 يعرض عنوانًا من سطر واحد فقط</string>
+  <string name="setting_display_page_thinking_steps_visible_title">الخطوات الظاهرة في المجموعة المطوية</string>
+  <string name="setting_display_page_thinking_steps_visible_all">الكل</string>
   <string name="setting_display_page_auto_play_tts_desc">تشغيل تحويل النص إلى كلام تلقائيًا بعد اكتمال توليد رسالة المساعد</string>
   <string name="setting_display_page_auto_play_tts_title">تشغيل تحويل النص إلى كلام تلقائيًا بعد التوليد</string>
   <string name="setting_display_page_chat_font_family_default">افتراضي</string>
@@ -675,6 +684,12 @@
   <string name="setting_display_page_enable_message_generation_haptic_effect_title">اهتزاز توليد الرسائل</string>
   <string name="setting_display_page_font_size_preview">في الرابعة صباحًا، رأيت أزهار البيغونيا لا تزال مستيقظة. كثيرًا ما أكون هكذا — مستلقيًا مستيقظًا وحدي في الليل الهادئ، أفكّر: لو أن أحدًا يفكّر فيّ في هذه اللحظة، لكان ذلك رائعًا.</string>
   <string name="setting_display_page_font_size_title">حجم خط الدردشة</string>
+  <string name="setting_display_page_ui_font_family_title">خط الواجهة</string>
+  <string name="setting_display_page_ui_font_family_desc">الخط المستخدم في واجهة التطبيق خارج رسائل الدردشة. تستمر رسائل الدردشة في استخدام خط الدردشة.</string>
+  <string name="setting_display_page_ui_custom_font_title">خط واجهة مخصص</string>
+  <string name="setting_display_page_ui_font_scale_title">حجم خط الواجهة</string>
+  <string name="setting_display_page_ui_font_scale_desc">يغيّر حجم النص في التطبيق بالكامل (فوق حجم خط النظام). الحد الأقصى مع حجم خط النظام هو 200%. لا تتغير مسافات التخطيط.</string>
+  <string name="setting_display_page_ui_font_scale_preview">نص تجريبي بهذا الحجم</string>
   <string name="setting_display_page_live_update_notification">إشعار التحديث المباشر</string>
   <string name="setting_display_page_live_update_notification_desc">عرض تحديثات إشعار في الوقت الفعلي أثناء توليد الرسالة (Android 15+)</string>
   <string name="setting_display_page_message_jumper_position_desc">نقل أداة الانتقال بين الرسائل إلى الجانب الأيسر</string>
@@ -703,6 +718,8 @@
   <string name="setting_display_page_show_updates_desc">ما إذا كانت إشعارات تحديث التطبيق ستُعرض</string>
   <string name="setting_display_page_show_updates_title">عرض التحديثات</string>
   <string name="setting_display_page_show_user_avatar_desc">ما إذا كانت صورة المستخدم ستُعرض في رسائل الدردشة</string>
+  <string name="setting_display_page_clean_layout_title">تخطيط بسيط</string>
+  <string name="setting_display_page_clean_layout_desc">شريط علوي مسطح مع اسم النموذج أسفل العنوان، وحقل إدخال من سطرين تظهر أزرار الأدوات أسفله</string>
   <string name="setting_display_page_show_user_avatar_title">عرض صورة المستخدم</string>
   <string name="setting_display_page_skip_crop_image_desc">تخطي واجهة الاقتصاص بعد استيراد الصور أو التقاطها</string>
   <string name="setting_display_page_skip_crop_image_title">تخطي تعديل الصورة</string>
@@ -711,6 +728,14 @@
   <string name="setting_display_page_tts_only_read_quoted_title">قراءة المحتوى المقتبس فقط في تحويل النص إلى كلام</string>
   <string name="setting_display_page_use_app_icon_style_loading_indicator_desc">استخدام أيقونة التطبيق المتحركة بدلًا من مؤشر التحميل الدائري الافتراضي</string>
   <string name="setting_display_page_use_app_icon_style_loading_indicator_title">استخدام مؤشر تحميل بنمط أيقونة التطبيق</string>
+  <string name="setting_display_page_loading_indicator_style_title">نمط مؤشر التحميل</string>
+  <string name="setting_display_page_loading_indicator_style_desc">ما يظهر أسفل رسالتك أثناء تفكير المساعد</string>
+  <string name="setting_display_page_loading_indicator_style_default">افتراضي</string>
+  <string name="setting_display_page_loading_indicator_style_app_icon">أيقونة التطبيق</string>
+  <string name="setting_display_page_loading_indicator_style_shimmer">وميض</string>
+  <string name="chat_loading_sparkle_replying">جارٍ الرد</string>
+  <string name="setting_display_page_loading_indicator_style_sparkle">بريق</string>
+  <string name="chat_loading_shimmer_thinking">جارٍ التفكير…</string>
   <string name="setting_display_page_volume_key_scroll_desc">تمرير الصفحات بمفاتيح الصوت، مثالي لشاشات الحبر الإلكتروني</string>
   <string name="setting_display_page_volume_key_scroll_ratio">مقدار التمرير</string>
   <string name="setting_display_page_volume_key_scroll_title">تمرير الصفحة بمفتاح الصوت</string>
@@ -2108,4 +2133,17 @@
   <string name="table">جدول</string>
   <string name="chat_page_continuing">انقطع الاتصال — يتم متابعة الرد (%1$d/%2$d)</string>
   <string name="chat_page_subagents_running">الوكلاء الفرعيون قيد التشغيل: %1$d · %2$s</string>
+  <string name="setting_floating_ball_style_title">النمط</string>
+  <string name="setting_floating_ball_style_desc">كرة دائرية، أو كبسولة تعرض المساعد وحالة الرد</string>
+  <string name="setting_floating_ball_style_original">الأصلي</string>
+  <string name="setting_floating_ball_style_capsule">كبسولة</string>
+  <string name="setting_floating_ball_tuck_style_title">نمط الإخفاء</string>
+  <string name="setting_floating_ball_tuck_style_desc">كيف تختبئ الكرة الدائرية عند حافة الشاشة أثناء الخمول</string>
+  <string name="setting_floating_ball_tuck_style_handle">مقبض رفيع</string>
+  <string name="setting_floating_ball_tuck_style_half_ball">نصف كرة</string>
+  <string name="floating_ball_capsule_status_ready">انقر للدردشة</string>
+  <string name="floating_ball_capsule_status_working">جارٍ الرد…</string>
+  <string name="floating_ball_capsule_status_working_timer">جارٍ الرد · %1$s</string>
+  <string name="floating_ball_capsule_status_done">تم · %1$s</string>
+  <string name="floating_ball_capsule_hide">إخفاء إلى الحافة</string>
 </resources>

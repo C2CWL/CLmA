@@ -54,6 +54,9 @@ data class Assistant(
     val darkBackground: String? = null, // 深色主题壁纸, null 时回退到 background
     @EncodeDefault(EncodeDefault.Mode.NEVER)
     val lightBackground: String? = null, // 浅色主题壁纸, null 时回退到 background
+    // Which slot wins. AUTO is the original rule (per-theme slot, else [background]).
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val backgroundMode: AssistantBackgroundMode = AssistantBackgroundMode.AUTO,
     val modeInjectionIds: Set<Uuid> = emptySet(),      // 关联的模式注入 ID
     val lorebookIds: Set<Uuid> = emptySet(),            // 关联的 Lorebook ID
     val enabledSkills: Set<String> = emptySet(),        // 启用的 skill 名称列表
@@ -172,6 +175,19 @@ data class AssistantMemory(
     val id: Int,
     val content: String = "",
 )
+
+/**
+ * How the chat wallpaper is picked from [Assistant.background] and the per-theme
+ * [Assistant.darkBackground] / [Assistant.lightBackground].
+ */
+@Serializable
+enum class AssistantBackgroundMode {
+    /** Per-theme wallpaper when set, else the common one (the original behaviour). */
+    AUTO,
+
+    /** Always the common wallpaper; the per-theme slots are kept but ignored. */
+    GENERAL,
+}
 
 @Serializable
 enum class AssistantAffectScope {

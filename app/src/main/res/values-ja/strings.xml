@@ -59,6 +59,11 @@
   <string name="assistant_page_chaotic">カオス（危険）</string>
   <string name="assistant_page_chat_background">チャット背景</string>
   <string name="assistant_page_chat_background_desc">アシスタントチャットページの背景画像を設定</string>
+  <string name="assistant_page_background_mode">使用する壁紙</string>
+  <string name="assistant_page_background_mode_auto">テーマに従う</string>
+  <string name="assistant_page_background_mode_general">常に共通</string>
+  <string name="assistant_page_background_mode_auto_desc">現在のテーマに応じてダーク / ライトの壁紙を使用し、未設定の場合は共通の壁紙を使用します。</string>
+  <string name="assistant_page_background_mode_general_desc">常に共通の壁紙を使用します。ダーク / ライトの壁紙は保持されますが表示されません。</string>
   <string name="assistant_page_chat_model">チャットモデル</string>
   <string name="assistant_page_chat_model_desc">アシスタントのデフォルトチャットモデルを設定します。設定しない場合は、グローバルデフォルトチャットモデルが使用されます</string>
   <string name="assistant_page_clone">複製</string>
@@ -226,6 +231,7 @@
   <string name="cancel_edit">編集をキャンセル</string>
   <string name="chain_of_thought_collapse">折りたたむ</string>
   <string name="chain_of_thought_show_more_steps">あと %d ステップを表示</string>
+  <string name="chain_of_thought_collapsed_steps">%d ステップを実行済み</string>
   <string name="chat_input_placeholder">AIとチャットするメッセージを入力</string>
   <string name="chat_input_unsupported_file_type">サポートされていないファイルタイプ: %s</string>
   <string name="chat_input_file_read_failed">ファイルの読み取りに失敗しました: %s</string>
@@ -629,6 +635,9 @@
   <string name="setting_display_page_amoled_dark_mode_title">AMOLED ダークモード</string>
   <string name="setting_display_page_auto_collapse_thinking_desc">思考が完了したら思考内容を自動的に折りたたむ</string>
   <string name="setting_display_page_auto_collapse_thinking_title">思考を自動折りたたむ</string>
+  <string name="setting_display_page_thinking_steps_visible_desc">思考／ツールのステップグループを折りたたんだときに表示する直近のステップ数。0 の場合は 1 行の見出しのみ表示</string>
+  <string name="setting_display_page_thinking_steps_visible_title">折りたたみ時に表示するステップ数</string>
+  <string name="setting_display_page_thinking_steps_visible_all">すべて</string>
   <string name="setting_display_page_auto_play_tts_desc">アシスタントのメッセージ生成完了後にTTSを自動再生</string>
   <string name="setting_display_page_auto_play_tts_title">生成後にTTSを自動再生</string>
   <string name="setting_display_page_chat_font_family_default">デフォルト</string>
@@ -653,6 +662,12 @@
   <string name="setting_display_page_enable_message_generation_haptic_effect_title">メッセージ生成時の触覚効果</string>
   <string name="setting_display_page_font_size_preview">午前4時、海棠の花がまだ眠っていないのを見た。私はよくこうして、誰もいない夜にひとり目を覚まし、思う——もし今この瞬間、誰かが私のことを思っていてくれたなら、それだけでいい。</string>
   <string name="setting_display_page_font_size_title">チャットフォントサイズ</string>
+  <string name="setting_display_page_ui_font_family_title">UI フォント</string>
+  <string name="setting_display_page_ui_font_family_desc">チャットメッセージ以外のアプリ UI に使うフォントです。チャットメッセージは引き続きチャットフォントを使います。</string>
+  <string name="setting_display_page_ui_custom_font_title">カスタム UI フォント</string>
+  <string name="setting_display_page_ui_font_scale_title">UI フォントサイズ</string>
+  <string name="setting_display_page_ui_font_scale_desc">アプリ全体の文字サイズを拡大・縮小します（システムのフォントサイズに上乗せ）。システムのフォントサイズと合わせて最大 200% までです。レイアウトの余白は変わりません。</string>
+  <string name="setting_display_page_ui_font_scale_preview">このサイズのサンプルテキスト</string>
   <string name="setting_display_page_live_update_notification">ライブアップデート通知</string>
   <string name="setting_display_page_live_update_notification_desc">メッセージ生成中のリアルタイム通知アップデートを表示（Android 15以降）</string>
   <string name="setting_display_page_message_jumper_position_desc">メッセージジャンパーを左側に移動</string>
@@ -681,6 +696,8 @@
   <string name="setting_display_page_show_updates_desc">アプリのアップデート通知を表示するかどうか</string>
   <string name="setting_display_page_show_updates_title">アップデートを表示</string>
   <string name="setting_display_page_show_user_avatar_desc">チャットメッセージにユーザーアバターを表示するかどうか</string>
+  <string name="setting_display_page_clean_layout_title">シンプルレイアウト</string>
+  <string name="setting_display_page_clean_layout_desc">フラットなトップバーでタイトルの下にモデル名を表示し、入力欄は2行でツールボタンを入力欄の下に配置します</string>
   <string name="setting_display_page_show_user_avatar_title">ユーザーアバターを表示</string>
   <string name="setting_display_page_skip_crop_image_desc">画像をインポートするか写真を撮影した後、クロップ画面をスキップ</string>
   <string name="setting_display_page_skip_crop_image_title">画像編集をスキップ</string>
@@ -689,6 +706,14 @@
   <string name="setting_display_page_tts_only_read_quoted_title">引用部分のみTTSで読み上げ</string>
   <string name="setting_display_page_use_app_icon_style_loading_indicator_desc">デフォルトの円形読み込みインジケーターの代わりに、アプリアイコンのアニメーションを使用します</string>
   <string name="setting_display_page_use_app_icon_style_loading_indicator_title">アプリアイコン風の読み込みインジケーターを使用</string>
+  <string name="setting_display_page_loading_indicator_style_title">読み込みインジケーターのスタイル</string>
+  <string name="setting_display_page_loading_indicator_style_desc">アシスタントが考え中・生成中にメッセージの下に表示されるアニメーション</string>
+  <string name="setting_display_page_loading_indicator_style_default">デフォルト</string>
+  <string name="setting_display_page_loading_indicator_style_app_icon">アプリアイコン</string>
+  <string name="setting_display_page_loading_indicator_style_shimmer">シマー</string>
+  <string name="chat_loading_sparkle_replying">応答中</string>
+  <string name="setting_display_page_loading_indicator_style_sparkle">きらめき</string>
+  <string name="chat_loading_shimmer_thinking">考え中…</string>
   <string name="setting_display_page_volume_key_scroll_desc">音量キーでページをスクロール、電子ペーパー画面に最適</string>
   <string name="setting_display_page_volume_key_scroll_ratio">スクロロール量</string>
   <string name="setting_display_page_volume_key_scroll_title">音量キーでページスクロール</string>
@@ -1923,4 +1948,17 @@ mDNSアドレス: .localホスト名を使用し、IPを知らなくても同じ
   <string name="workspace_detail_settings_save_failed">設定の保存に失敗しました</string>
   <string name="chat_page_continuing">接続が切れました — 返信の続きを生成中（%1$d/%2$d）</string>
   <string name="chat_page_subagents_running">サブエージェント %1$d 件実行中 · %2$s</string>
+  <string name="setting_floating_ball_style_title">スタイル</string>
+  <string name="setting_floating_ball_style_desc">丸いボール、またはアシスタントと応答状況を表示するカプセル</string>
+  <string name="setting_floating_ball_style_original">オリジナル</string>
+  <string name="setting_floating_ball_style_capsule">カプセル</string>
+  <string name="setting_floating_ball_tuck_style_title">収納スタイル</string>
+  <string name="setting_floating_ball_tuck_style_desc">丸いボールが待機中に画面端へ隠れる方法</string>
+  <string name="setting_floating_ball_tuck_style_handle">細いハンドル</string>
+  <string name="setting_floating_ball_tuck_style_half_ball">半分のボール</string>
+  <string name="floating_ball_capsule_status_ready">タップしてチャット</string>
+  <string name="floating_ball_capsule_status_working">応答中…</string>
+  <string name="floating_ball_capsule_status_working_timer">応答中 · %1$s</string>
+  <string name="floating_ball_capsule_status_done">完了 · %1$s</string>
+  <string name="floating_ball_capsule_hide">端にしまう</string>
 </resources>

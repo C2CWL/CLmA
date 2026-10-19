@@ -76,6 +76,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import me.rerere.ai.core.MessageRole
 import me.rerere.ai.provider.Model
 import me.rerere.ai.ui.ToolApprovalState
+import dev.chrisbanes.haze.HazeState
 import me.rerere.ai.ui.UIMessage
 import me.rerere.ai.ui.UIMessageAnnotation
 import me.rerere.ai.ui.UIMessagePart
@@ -90,6 +91,7 @@ import me.rerere.rikkahub.R
 import me.rerere.rikkahub.Screen
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.AssistantAffectScope
+import me.rerere.rikkahub.data.model.AssistantBackgroundMode
 import me.rerere.rikkahub.data.model.MessageNode
 import me.rerere.rikkahub.data.usage.TurnFooter
 import me.rerere.rikkahub.data.model.replaceRegexes
@@ -148,6 +150,8 @@ fun ChatMessage(
     onToolAnswer: ((toolCallId: String, answer: String) -> Unit)? = null,
     onRerunTool: (suspend (toolCallId: String) -> me.rerere.rikkahub.service.ChatService.RerunToolResult)? = null,
     turnFooter: TurnFooter? = null,
+    // Chat page haze state; the usage line blurs the wallpaper source under its pill.
+    hazeState: HazeState? = null,
 ) {
     // node.selectIndex can be stale (e.g. after a branch/message was removed) or the
     // node can be empty; degrade to the last message, or render nothing, instead of
@@ -217,6 +221,19 @@ fun ChatMessage(
             }
         }
 
+        // Photo wallpaper behind this message (in-app dark mode picks the light / dark image):
+        // the action row and the usage line then sit on a plate.
+        val photoShown = chatPhotoShown(
+            effectiveBackground(
+                darkTheme = LocalDarkMode.current,
+                background = assistant?.background,
+                darkBackground = assistant?.darkBackground,
+                lightBackground = assistant?.lightBackground,
+                mode = assistant?.backgroundMode ?: AssistantBackgroundMode.AUTO,
+            ),
+            assistant?.useGradientBackground == true,
+        )
+
         val showActions = if (lastMessage) {
             !loading
         } else {
@@ -240,7 +257,9 @@ fun ChatMessage(
                         showActionsSheet = true
                     },
                     onTranslate = onTranslate,
-                    onClearTranslation = onClearTranslation
+                    onClearTranslation = onClearTranslation,
+                    photoShown = photoShown,
+                    hazeState = hazeState,
                 )
             }
         }
@@ -251,16 +270,12 @@ fun ChatMessage(
         )
 
         ProvideTextStyle(textStyle) {
-            val photoShown = chatPhotoShown(
-                effectiveBackground(
-                    darkTheme = LocalDarkMode.current,
-                    background = assistant?.background,
-                    darkBackground = assistant?.darkBackground,
-                    lightBackground = assistant?.lightBackground,
-                ),
-                assistant?.useGradientBackground == true,
+            ChatMessageNerdLine(
+                message = message,
+                turnFooter = turnFooter,
+                photoShown = photoShown,
+                hazeState = hazeState,
             )
-            ChatMessageNerdLine(message = message, turnFooter = turnFooter, photoShown = photoShown)
         }
 
     }
@@ -392,6 +407,10 @@ private fun MessagePartsBlock(
                     ChainOfThought(
                         modifier = Modifier.animateContentSize(),
                         steps = block.steps,
+                        collapsedVisibleCount = thinkingStepsCollapsedVisibleCount(
+                            setting = settings.displaySetting.thinkingStepsVisibleCount,
+                            isStreamingTail = loading && block === groupedParts.lastOrNull(),
+                        ),
                         collapsedAdaptiveWidth = isReasoningOnlyBlock,
                         forceExpanded = hasPendingApproval,
                         cardColors = CardDefaults.cardColors(
@@ -473,6 +492,7 @@ private fun MessagePartsBlock(
                                             background = assistant?.background,
                                             darkBackground = assistant?.darkBackground,
                                             lightBackground = assistant?.lightBackground,
+                                            mode = assistant?.backgroundMode ?: AssistantBackgroundMode.AUTO,
                                         ),
                                         assistant?.useGradientBackground == true,
                                     ),

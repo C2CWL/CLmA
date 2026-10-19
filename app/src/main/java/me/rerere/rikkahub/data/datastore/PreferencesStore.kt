@@ -274,6 +274,8 @@ class SettingsStore(
         val FLOATING_BALL_COLOR = stringPreferencesKey("floating_ball_color")
         // Absolute path to a user-picked ball image inside the app's files dir; empty = default glyph.
         val FLOATING_BALL_ICON_PATH = stringPreferencesKey("floating_ball_icon_path")
+        val FLOATING_BALL_STYLE = stringPreferencesKey("floating_ball_style")
+        val FLOATING_BALL_TUCK_STYLE = stringPreferencesKey("floating_ball_tuck_style")
 
         // AI logging
         val AI_LOG_LEVEL = stringPreferencesKey("ai_log_level")
@@ -396,6 +398,8 @@ class SettingsStore(
                 preferences[FLOATING_BALL_HIDDEN_ALPHA] = settings.floatingBallHiddenAlpha.coerceIn(10, 100)
                 preferences[FLOATING_BALL_COLOR] = settings.floatingBallColor?.toString() ?: ""
                 preferences[FLOATING_BALL_ICON_PATH] = settings.floatingBallIconPath
+                preferences[FLOATING_BALL_STYLE] = settings.floatingBallStyle.key
+                preferences[FLOATING_BALL_TUCK_STYLE] = settings.floatingBallTuckStyle.key
                 preferences[AI_LOG_LEVEL] = settings.aiLogLevel.preferenceName
                 preferences[BACKUP_REMINDER_CONFIG] = JsonInstant.encodeToString(settings.backupReminderConfig)
                 preferences[LAUNCH_COUNT] = settings.launchCount
@@ -515,6 +519,7 @@ class SettingsStore(
                         preferences[SUB_AGENT_DISPATCH_PROFILE] ?: ""
                     )
                 }.getOrDefault(SubAgentDispatchProfile.NEVER),
+                dynamicColor = preferences[DYNAMIC_COLOR] != false,
                 themeId = preferences[THEME_ID] ?: PresetThemes[0].id,
                 customThemes = preferences[CUSTOM_THEMES]?.let { raw ->
                     runCatching { JsonInstant.decodeFromString<List<CustomTheme>>(raw) }.getOrElse {
@@ -615,6 +620,8 @@ class SettingsStore(
                 floatingBallHiddenAlpha = preferences[FLOATING_BALL_HIDDEN_ALPHA] ?: 50,
                 floatingBallColor = preferences[FLOATING_BALL_COLOR]?.takeIf { it.isNotBlank() }?.toIntOrNull(),
                 floatingBallIconPath = preferences[FLOATING_BALL_ICON_PATH] ?: "",
+                floatingBallStyle = FloatingBallStyle.fromKey(preferences[FLOATING_BALL_STYLE]),
+                floatingBallTuckStyle = FloatingBallTuckStyle.fromKey(preferences[FLOATING_BALL_TUCK_STYLE]),
                 aiLogLevel = AiLogLevel.fromPreference(preferences[AI_LOG_LEVEL]),
                 backupReminderConfig = preferences[BACKUP_REMINDER_CONFIG]?.let { raw ->
                     runCatching { JsonInstant.decodeFromString<BackupReminderConfig>(raw) }.getOrElse {
@@ -1116,6 +1123,10 @@ data class Settings(
      * keeps the built-in themed glyph.
      */
     val floatingBallIconPath: String = "",
+    /** Round halo ball (default, the original look) or the optional status capsule. */
+    val floatingBallStyle: FloatingBallStyle = FloatingBallStyle.ORIGINAL,
+    /** Round ball only: slim edge handle (default, as before) or the ball half off-screen. */
+    val floatingBallTuckStyle: FloatingBallTuckStyle = FloatingBallTuckStyle.HANDLE,
     val aiLogLevel: AiLogLevel = AiLogLevel.INFO,
     val backupReminderConfig: BackupReminderConfig = BackupReminderConfig(),
     val launchCount: Int = 0,
@@ -1193,15 +1204,21 @@ data class DisplaySetting(
     val userAvatar: Avatar = Avatar.Dummy,
     val userNickname: String = "",
     val useAppIconStyleLoadingIndicator: Boolean = true,
+    /** Null = not chosen yet: follow [useAppIconStyleLoadingIndicator] (see resolveLoadingIndicatorStyle). */
+    val loadingIndicatorStyle: LoadingIndicatorStyle? = null,
     val showUserAvatar: Boolean = true,
     val showAssistantBubble: Boolean = false,
     val bubbleOpacity: Float = 1.0f,
+    // 简洁布局：扁平顶栏 + 两行输入框。默认关，关时与原来完全一致。
+    val cleanLayout: Boolean = false,
     val showModelIcon: Boolean = true,
     val showModelName: Boolean = true,
     val showDateTimeInMessage: Boolean = false,
     val showTokenUsage: Boolean = true,
     val showThinkingContent: Boolean = true,
     val autoCloseThinking: Boolean = true,
+    // 思考/工具步骤组折叠时尾部保留几步，0 = 只显示一行标题。默认 2 即原来的行为。
+    val thinkingStepsVisibleCount: Int = 2,
     val updateCheckDisabledUntilEpochMillis: Long = 0L,
     val showMessageJumper: Boolean = true,
     val messageJumperOnLeft: Boolean = false,
@@ -1225,6 +1242,13 @@ data class DisplaySetting(
     val chatFontFamily: ChatFontFamily = ChatFontFamily.DEFAULT,
     val chatCustomFontPath: String = "",
     val chatCustomFontName: String = "",
+    // App-wide UI font, independent of the chat font (which keeps applying to chat content).
+    // DEFAULT = system font = previous behaviour. A custom file lives in fonts/ui_font.* (backed up with fonts/).
+    val uiFontFamily: ChatFontFamily = ChatFontFamily.DEFAULT,
+    val uiCustomFontPath: String = "",
+    val uiCustomFontName: String = "",
+    // App-wide UI text scale (multiplies the system font scale); 1.0 = unchanged. See FontScale.
+    val uiFontScale: Float = 1.0f,
     val enableVolumeKeyScroll: Boolean = false,
     val volumeKeyScrollRatio: Float = 1.0f,
     val enableBounceOverscroll: Boolean = true,
@@ -1270,6 +1294,24 @@ fun List<ProviderSetting>.findModelById(uuid: Uuid): Model? {
 
 fun Settings.getCurrentChatModel(): Model? {
     return findModelById(this.getCurrentAssistant().chatModelId ?: this.chatModelId)
+}
+
+/**
+ * The chat model a conversation will actually talk to: the conversation's own override, then the
+ * model of the assistant the conversation belongs to, then the global default.
+ *
+ * Unlike [getCurrentChatModel], an id that no longer resolves (model deleted, or re-added under a
+ * fresh UUID) is skipped instead of ending the chain. A dangling assistant default used to make
+ * the send guard report "select a model first" while the picker highlighted the conversation's
+ * perfectly valid override, and picking another model could not clear it, because the picker
+ * writes the conversation override, not the assistant default.
+ */
+fun Settings.resolveChatModel(conversationChatModelId: Uuid?, assistantId: Uuid?): Model? {
+    val assistant = assistantId
+        ?.let { AssistantResolver.forConversation(this, it).assistant }
+        ?: getCurrentAssistant()
+    return listOfNotNull(conversationChatModelId, assistant.chatModelId, chatModelId)
+        .firstNotNullOfOrNull { providers.findModelById(it) }
 }
 
 private const val FALLBACK_CONTEXT_COMPACTION_TARGET_TOKENS = 2_000

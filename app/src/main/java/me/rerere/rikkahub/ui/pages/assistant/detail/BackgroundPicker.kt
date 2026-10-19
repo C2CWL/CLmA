@@ -3,6 +3,7 @@ package me.rerere.rikkahub.ui.pages.assistant.detail
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -31,14 +33,28 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import me.rerere.rikkahub.R
+import me.rerere.rikkahub.data.model.AssistantBackgroundMode
 import me.rerere.rikkahub.data.files.FilesManager
 import me.rerere.rikkahub.ui.components.ui.FormItem
+import me.rerere.rikkahub.ui.components.ui.Select
+import me.rerere.rikkahub.ui.theme.CustomColors
 import org.koin.compose.koinInject
 
 /** Which wallpaper slot the user is editing. */
 enum class BackgroundSlot {
     COMMON, DARK, LIGHT
 }
+
+/**
+ * Whether the AUTO / GENERAL wallpaper-mode selector is shown: whenever any wallpaper slot is
+ * set. Tying it to the theme slots alone would hide a stored GENERAL with no way back once both
+ * theme wallpapers are cleared (the mode outlives them).
+ */
+internal fun showsBackgroundModeSelector(
+    background: String?,
+    darkBackground: String?,
+    lightBackground: String?,
+): Boolean = background != null || darkBackground != null || lightBackground != null
 
 @Composable
 fun BackgroundPicker(
@@ -261,4 +277,51 @@ fun BackgroundPicker(
             }
         )
     }
+}
+
+/**
+ * Which wallpaper the chat uses once per-theme ones exist: follow the theme (per-theme
+ * slot, else common — the default), or always the common one.
+ */
+@Composable
+fun BackgroundModeSelector(
+    modifier: Modifier = Modifier,
+    mode: AssistantBackgroundMode,
+    onModeChange: (AssistantBackgroundMode) -> Unit,
+) {
+    FormItem(
+        modifier = modifier,
+        label = {
+            Text(stringResource(R.string.assistant_page_background_mode))
+        },
+        description = {
+            Text(
+                stringResource(
+                    when (mode) {
+                        AssistantBackgroundMode.AUTO -> R.string.assistant_page_background_mode_auto_desc
+                        AssistantBackgroundMode.GENERAL -> R.string.assistant_page_background_mode_general_desc
+                    }
+                )
+            )
+        },
+        tail = {
+            // Same dropdown as Theme → Color mode, blended into the surrounding card.
+            Select(
+                options = AssistantBackgroundMode.entries,
+                selectedOption = mode,
+                onOptionSelected = onModeChange,
+                optionToString = {
+                    stringResource(
+                        when (it) {
+                            AssistantBackgroundMode.AUTO -> R.string.assistant_page_background_mode_auto
+                            AssistantBackgroundMode.GENERAL -> R.string.assistant_page_background_mode_general
+                        }
+                    )
+                },
+                containerColor = CustomColors.cardColorsOnSurfaceContainer.containerColor,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                modifier = Modifier.width(150.dp),
+            )
+        },
+    )
 }
