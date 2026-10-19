@@ -42,9 +42,8 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -136,16 +135,7 @@ private const val PANEL_SCALE_FROM = 0.86f
 /** Corner radius of the panel itself — soft enough to read as a floating pane, not a card. */
 private val PANEL_SHAPE = RoundedCornerShape(28.dp)
 
-/**
- * How much of the panel's own surface colour survives when the OS is blurring behind us.
- * Deliberately below 1: the app underneath shows through softened, so the panel reads as frosted
- * glass rather than an opaque slab. Without that blur the same alpha would just wash the panel out
- * over a busy app, so [PANEL_SURFACE_ALPHA_OPAQUE] takes over — see `blurredBackdrop`.
- */
-private const val PANEL_SURFACE_ALPHA = 0.86f
-
-/** Colour alpha used when there is no backdrop blur to lean on: nearly opaque, still not flat. */
-private const val PANEL_SURFACE_ALPHA_OPAQUE = 0.97f
+// Panel tint/alpha per theme and the round button chrome live in QuickChatPanelStyle.kt.
 
 /**
  * Reuse the conversation the user was last in; fall back to a fresh one on first use. The main
@@ -340,9 +330,11 @@ fun QuickChatPanel(
     // on the left edge therefore puts the header buttons, the composer's mic/send and the two
     // shortcut icons all on the left; a right-edge ball mirrors the lot.
     val controlSize = 40.dp
+    val panelStyle = rememberQuickChatPanelStyle(blurredBackdrop)
     val controlIcon = 20.dp
     val newButton: @Composable () -> Unit = {
-        IconButton(
+        PanelRoundButton(
+            style = panelStyle,
             onClick = {
                 asrState.stop()
                 input = ""
@@ -358,7 +350,8 @@ fun QuickChatPanel(
         }
     }
     val openFullButton: @Composable () -> Unit = {
-        IconButton(
+        PanelRoundButton(
+            style = panelStyle,
             onClick = {
                 val intent = Intent(context, RouteActivity::class.java).apply {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or
@@ -380,7 +373,11 @@ fun QuickChatPanel(
         }
     }
     val closeButton: @Composable () -> Unit = {
-        IconButton(onClick = { requestClose() }, modifier = Modifier.size(controlSize)) {
+        PanelRoundButton(
+            onClick = { requestClose() },
+            style = panelStyle,
+            modifier = Modifier.size(controlSize),
+        ) {
             Icon(
                 imageVector = HugeIcons.Cancel01,
                 contentDescription = stringResource(R.string.quick_chat_close),
@@ -389,7 +386,8 @@ fun QuickChatPanel(
         }
     }
     val voiceButton: @Composable () -> Unit = {
-        IconButton(
+        PanelRoundButton(
+            style = panelStyle,
             onClick = { if (asr.isRecording) asrState.stop() else startVoice() },
             modifier = Modifier.size(controlSize),
         ) {
@@ -404,7 +402,8 @@ fun QuickChatPanel(
     }
     val sendButton: @Composable () -> Unit = {
         if (isGenerating) {
-            IconButton(
+            PanelRoundButton(
+                style = panelStyle,
                 onClick = { scope.launch { chatService.stopGeneration(conversationId) } },
                 modifier = Modifier.size(controlSize),
             ) {
@@ -415,9 +414,11 @@ fun QuickChatPanel(
                 )
             }
         } else {
-            FilledIconButton(
+            PanelRoundButton(
                 onClick = { submit(input, false) },
+                style = panelStyle,
                 enabled = input.isNotBlank(),
+                accent = true,
                 modifier = Modifier.size(controlSize),
             ) {
                 Icon(
@@ -431,8 +432,10 @@ fun QuickChatPanel(
     // The two shortcuts that used to own a full-width row of their own. As compact icons inside
     // the composer cluster they cost no vertical space at all, and they still mirror with it.
     val screenButton: @Composable () -> Unit = {
-        IconButton(
+        PanelRoundButton(
             onClick = { submit(screenPrompt, closeAfterSend = true) },
+            style = panelStyle,
+            accent = true,
             modifier = Modifier.size(controlSize),
         ) {
             Icon(
@@ -443,8 +446,9 @@ fun QuickChatPanel(
         }
     }
     val readAloudButton: @Composable () -> Unit = {
-        IconButton(
+        PanelRoundButton(
             onClick = { toggleReadAloud() },
+            style = panelStyle,
             enabled = ttsSpeaking || latestAssistantText.isNotBlank(),
             modifier = Modifier.size(controlSize),
         ) {
@@ -536,13 +540,8 @@ fun QuickChatPanel(
             // Translucent on purpose: QuickChatActivity's window requests a background blur, so
             // what shows through here is a softened copy of the app underneath — the panel reads
             // as a pane of frosted glass hovering over it instead of an opaque slab of colour.
-            color = MaterialTheme.colorScheme.surface.copy(
-                alpha = if (blurredBackdrop) PANEL_SURFACE_ALPHA else PANEL_SURFACE_ALPHA_OPAQUE,
-            ),
-            border = BorderStroke(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
-            ),
+            color = panelStyle.panel,
+            border = BorderStroke(width = 1.dp, color = panelStyle.hairline),
             tonalElevation = 0.dp,
         ) {
             Column(
@@ -601,6 +600,7 @@ fun QuickChatPanel(
                         closeButton()
                     }
                 }
+                HorizontalDivider(thickness = 1.dp, color = panelStyle.hairline)
 
                 LazyColumn(
                     state = listState,
@@ -652,6 +652,7 @@ fun QuickChatPanel(
                         onValueChange = { input = it },
                         onSend = { submit(input, false) },
                         hint = stringResource(R.string.quick_chat_input_hint),
+                        style = panelStyle,
                         modifier = Modifier.weight(1f),
                     )
                     if (!mirror) {
@@ -691,12 +692,16 @@ private fun InputCapsule(
     onValueChange: (String) -> Unit,
     onSend: () -> Unit,
     hint: String,
+    style: QuickChatPanelStyle,
     modifier: Modifier = Modifier,
 ) {
     Surface(
         modifier = modifier.heightIn(min = 40.dp),
         shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.75f),
+        // A raised, slightly lighter capsule with the panel's hairline, so the input reads as its
+        // own card on the glass instead of a darker hole in it.
+        color = style.input,
+        border = BorderStroke(width = 1.dp, color = style.hairline),
     ) {
         Box(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
