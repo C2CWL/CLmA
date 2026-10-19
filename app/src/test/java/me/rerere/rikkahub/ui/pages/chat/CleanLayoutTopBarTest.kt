@@ -8,7 +8,9 @@ class CleanLayoutTopBarTest {
 
     @Test
     fun `subtitle keeps assistant model and token count`() {
-        assertEquals("Rikka / GPT / 1234 token", topBarSubtitle("Rikka", "GPT", 1234L))
+        assertEquals("Rikka / GPT / 1234 tokens", topBarSubtitle("Rikka", "GPT", 1234L))
+        assertEquals("Rikka / GPT / 1 token", topBarSubtitle("Rikka", "GPT", 1L))
+        assertEquals("Rikka / GPT / 0 tokens", topBarSubtitle("Rikka", "GPT", 0L))
     }
 
     @Test
