@@ -2,6 +2,7 @@ package me.rerere.rikkahub.ui.pages.chat
 
 import android.os.Build
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -97,7 +98,6 @@ import me.rerere.rikkahub.ui.components.ui.AssistantAvatar
 import me.rerere.rikkahub.ui.components.ui.UIAvatar
 import me.rerere.rikkahub.ui.components.ui.UpdateCard
 import me.rerere.rikkahub.ui.components.ui.frostedPlate
-import me.rerere.rikkahub.ui.components.ui.frostedPlateSpec
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import me.rerere.rikkahub.ui.context.LocalToaster
@@ -219,7 +219,8 @@ fun ChatDrawerContent(
     // 聊天页显示照片壁纸时（API 31+），抽屉里的卡片改成磨砂：模糊背后的页面再叠一层半透明色，
     // 不再是不透明白块。没有壁纸或系统不支持模糊时保持原样。
     val drawerAssistant = settings.getCurrentAssistant()
-    val drawerFrost = frostedPlateSpec(
+    // 叠色比全局磨砂更淡（见 DrawerFrost.kt），卡片与面板融为一体，靠细描边区分。
+    val drawerFrost = drawerFrostedPlateSpec(
         photoShown = chatPhotoShown(
             effectiveBackground(
                 darkTheme = LocalDarkMode.current,
@@ -231,7 +232,13 @@ fun ChatDrawerContent(
             drawerAssistant.useGradientBackground,
         ),
         sdkInt = Build.VERSION.SDK_INT,
+        darkTheme = LocalDarkMode.current,
     )
+    val drawerFrostBorder = if (drawerFrost != null) {
+        BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = DRAWER_FROST_OUTLINE_ALPHA))
+    } else {
+        null
+    }
     // 上方功能区：玻璃卡片，固定悬浮在抽屉顶部；对话列表从其下方滚过并被折射虚化。
     val topBarShape = RoundedCornerShape(20.dp)
     val drawerTopArea: @Composable () -> Unit = {
@@ -270,7 +277,7 @@ fun ChatDrawerContent(
                         if (drawerFrost != null) {
                             Modifier.frostedPlate(
                                 hazeState, topBarShape, drawerFrost,
-                                tint = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                tint = MaterialTheme.colorScheme.surface,
                             )
                         } else {
                             Modifier.shadow(4.dp, topBarShape, clip = false)
@@ -278,6 +285,7 @@ fun ChatDrawerContent(
                     ),
                 shape = topBarShape,
                 color = if (drawerFrost != null) Color.Transparent else MaterialTheme.colorScheme.surfaceContainerHigh,
+                border = drawerFrostBorder,
                 tonalElevation = 0.dp,
             ) {
                 Column(
@@ -430,7 +438,7 @@ fun ChatDrawerContent(
                                 if (drawerFrost != null) {
                                     Modifier.frostedPlate(
                                         hazeState, bottomBarShape, drawerFrost,
-                                        tint = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                        tint = MaterialTheme.colorScheme.surface,
                                     )
                                 } else {
                                     Modifier.shadow(4.dp, bottomBarShape, clip = false)
@@ -438,6 +446,7 @@ fun ChatDrawerContent(
                             ),
                         shape = bottomBarShape,
                         color = if (drawerFrost != null) Color.Transparent else MaterialTheme.colorScheme.surfaceContainerHigh,
+                        border = drawerFrostBorder,
                         tonalElevation = 0.dp,
                     ) {
                         Column(
