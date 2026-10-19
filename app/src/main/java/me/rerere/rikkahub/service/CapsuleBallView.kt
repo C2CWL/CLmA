@@ -93,22 +93,49 @@ internal class CapsuleBallView(context: Context) : FrameLayout(context) {
         addView(closeButton, LinearLayout.LayoutParams(dp(CLOSE_DP), dp(CLOSE_DP)))
     }
 
-    private val handleBackground = GradientDrawable().apply {
-        shape = GradientDrawable.RECTANGLE
-        cornerRadius = dp(HANDLE_WIDTH_DP).toFloat() / 2f
-    }
+    private var handleAccent: Int = 0xFF6750A4.toInt()
+    private val handlePainter = EdgeHandlePainter(density)
 
-    private val handle = View(context).apply {
-        background = handleBackground
+    /**
+     * The tucked handle: a [HANDLE_TOUCH_DP]-wide touch strip that only paints a
+     * [HANDLE_WIDTH_DP]-wide pill against the screen edge it sits on ([handleOnRight]), showing
+     * [handleSignal] like the round ball's handle.
+     */
+    private val handle = object : View(context) {
+        override fun onDraw(canvas: Canvas) {
+            val pill = dp(HANDLE_WIDTH_DP).coerceAtMost(width)
+            val left = if (handleOnRight) width - pill else 0
+            val animating = handlePainter.draw(
+                canvas, left.toFloat(), 0f, pill.toFloat(), height.toFloat(), handleAccent, handleSignal,
+            )
+            if (animating) postInvalidateOnAnimation()
+        }
+    }.apply {
         visibility = GONE
     }
+
+    /** What the tucked handle signals (running turn / unseen finished reply). */
+    var handleSignal: HaloBallLook.HandleSignal = HaloBallLook.HandleSignal.IDLE
+        set(value) {
+            if (field == value) return
+            field = value
+            handle.invalidate()
+        }
+
+    /** Screen edge the tucked handle hugs; its pill is drawn on that side of the touch strip. */
+    var handleOnRight: Boolean = true
+        set(value) {
+            if (field == value) return
+            field = value
+            handle.invalidate()
+        }
 
     init {
         clipToPadding = false
         clipChildren = false
         setPadding(shadowInset, shadowInset, shadowInset, shadowInset)
         addView(bar, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT))
-        addView(handle, LayoutParams(dp(HANDLE_WIDTH_DP), dp(HANDLE_HEIGHT_DP)))
+        addView(handle, LayoutParams(dp(HANDLE_TOUCH_DP), dp(HANDLE_HEIGHT_DP)))
     }
 
     /** Colours resolved by the service from the app theme (never hard-coded here). */
@@ -118,7 +145,8 @@ internal class CapsuleBallView(context: Context) : FrameLayout(context) {
         title.setTextColor(onSurface)
         status.setTextColor(onSurfaceVariant)
         closeButton.glyphColor = onSurfaceVariant
-        handleBackground.setColor(accent)
+        handleAccent = accent
+        handle.invalidate()
         halo.accentColor = accent
     }
 
@@ -176,7 +204,11 @@ internal class CapsuleBallView(context: Context) : FrameLayout(context) {
         const val ICON_DP = 36f
         const val CLOSE_DP = 28f
         const val TITLE_MAX_WIDTH_DP = 150f
-        const val HANDLE_WIDTH_DP = 6f
+        /** Visible pill width; same as the round ball's handle. */
+        const val HANDLE_WIDTH_DP = HaloBallLook.HANDLE_WIDTH_DP
         const val HANDLE_HEIGHT_DP = 44f
+
+        /** On-screen touch strip of the tucked handle, wide enough to grab and drag out. */
+        const val HANDLE_TOUCH_DP = HaloBallLook.HANDLE_STRIP_DP
     }
 }

@@ -1952,6 +1952,10 @@ mDNS 주소: .local 호스트네임을 사용하며, IP를 몰라도 같은 네�
   <string name="setting_floating_ball_style_desc">둥근 볼 또는 어시스턴트와 응답 상태를 보여 주는 캡슐</string>
   <string name="setting_floating_ball_style_original">기본</string>
   <string name="setting_floating_ball_style_capsule">캡슐</string>
+  <string name="setting_floating_ball_tuck_style_title">숨김 스타일</string>
+  <string name="setting_floating_ball_tuck_style_desc">둥근 볼이 대기 중 화면 가장자리로 숨는 방식</string>
+  <string name="setting_floating_ball_tuck_style_handle">얇은 핸들</string>
+  <string name="setting_floating_ball_tuck_style_half_ball">반쪽 볼</string>
   <string name="floating_ball_capsule_status_ready">탭하여 채팅</string>
   <string name="floating_ball_capsule_status_working">응답 중…</string>
   <string name="floating_ball_capsule_status_working_timer">응답 중 · %1$s</string>

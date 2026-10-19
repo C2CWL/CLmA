@@ -1952,6 +1952,10 @@
   <string name="setting_floating_ball_style_desc">Круглый шар или капсула с ассистентом и статусом ответа</string>
   <string name="setting_floating_ball_style_original">Оригинал</string>
   <string name="setting_floating_ball_style_capsule">Капсула</string>
+  <string name="setting_floating_ball_tuck_style_title">Стиль скрытия</string>
+  <string name="setting_floating_ball_tuck_style_desc">Как круглый шар прячется у края экрана в простое</string>
+  <string name="setting_floating_ball_tuck_style_handle">Тонкая ручка</string>
+  <string name="setting_floating_ball_tuck_style_half_ball">Половина шара</string>
   <string name="floating_ball_capsule_status_ready">Нажмите, чтобы начать чат</string>
   <string name="floating_ball_capsule_status_working">Отвечает…</string>
   <string name="floating_ball_capsule_status_working_timer">Отвечает · %1$s</string>

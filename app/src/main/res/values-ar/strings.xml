@@ -2137,6 +2137,10 @@
   <string name="setting_floating_ball_style_desc">كرة دائرية، أو كبسولة تعرض المساعد وحالة الرد</string>
   <string name="setting_floating_ball_style_original">الأصلي</string>
   <string name="setting_floating_ball_style_capsule">كبسولة</string>
+  <string name="setting_floating_ball_tuck_style_title">نمط الإخفاء</string>
+  <string name="setting_floating_ball_tuck_style_desc">كيف تختبئ الكرة الدائرية عند حافة الشاشة أثناء الخمول</string>
+  <string name="setting_floating_ball_tuck_style_handle">مقبض رفيع</string>
+  <string name="setting_floating_ball_tuck_style_half_ball">نصف كرة</string>
   <string name="floating_ball_capsule_status_ready">انقر للدردشة</string>
   <string name="floating_ball_capsule_status_working">جارٍ الرد…</string>
   <string name="floating_ball_capsule_status_working_timer">جارٍ الرد · %1$s</string>

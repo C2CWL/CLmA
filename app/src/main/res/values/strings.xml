@@ -3098,6 +3098,10 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="setting_floating_ball_style_desc">Round ball, or a capsule that shows the assistant and reply status</string>
   <string name="setting_floating_ball_style_original">Original</string>
   <string name="setting_floating_ball_style_capsule">Capsule</string>
+  <string name="setting_floating_ball_tuck_style_title">Tuck style</string>
+  <string name="setting_floating_ball_tuck_style_desc">How the round ball hides at the screen edge when idle</string>
+  <string name="setting_floating_ball_tuck_style_handle">Slim handle</string>
+  <string name="setting_floating_ball_tuck_style_half_ball">Half ball</string>
   <string name="floating_ball_capsule_status_ready">Tap to chat</string>
   <string name="floating_ball_capsule_status_working">Replying…</string>
   <string name="floating_ball_capsule_status_working_timer">Replying · %1$s</string>

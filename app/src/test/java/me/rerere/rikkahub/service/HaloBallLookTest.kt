@@ -51,6 +51,11 @@ class HaloBallLookTest {
     @Test
     fun `handle fits inside the tucked strip`() {
         assertTrue(HaloBallLook.HANDLE_WIDTH_DP < HaloBallLook.HANDLE_STRIP_DP)
+        // A thumb-sized strip to grab and drag out, but not more than half the 56dp ball.
+        assertTrue(HaloBallLook.HANDLE_STRIP_DP in 28f..32f)
+        assertTrue(HaloBallLook.HANDLE_WIDTH_DP in 9f..10f)
+        assertEquals(HaloBallLook.HANDLE_WIDTH_DP, CapsuleBallView.HANDLE_WIDTH_DP)
+        assertEquals(HaloBallLook.HANDLE_STRIP_DP, CapsuleBallView.HANDLE_TOUCH_DP)
         assertTrue(HaloBallLook.BACKING_RADIUS_FRACTION < 1f)
         assertTrue(HaloBallLook.BACKING_RADIUS_FRACTION > HaloBallView.RING_RADIUS_FRACTION + HaloBallView.STROKE_FRACTION / 2f)
     }

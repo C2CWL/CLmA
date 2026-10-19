@@ -1952,6 +1952,10 @@ mDNSアドレス: .localホスト名を使用し、IPを知らなくても同じ
   <string name="setting_floating_ball_style_desc">丸いボール、またはアシスタントと応答状況を表示するカプセル</string>
   <string name="setting_floating_ball_style_original">オリジナル</string>
   <string name="setting_floating_ball_style_capsule">カプセル</string>
+  <string name="setting_floating_ball_tuck_style_title">収納スタイル</string>
+  <string name="setting_floating_ball_tuck_style_desc">丸いボールが待機中に画面端へ隠れる方法</string>
+  <string name="setting_floating_ball_tuck_style_handle">細いハンドル</string>
+  <string name="setting_floating_ball_tuck_style_half_ball">半分のボール</string>
   <string name="floating_ball_capsule_status_ready">タップしてチャット</string>
   <string name="floating_ball_capsule_status_working">応答中…</string>
   <string name="floating_ball_capsule_status_working_timer">応答中 · %1$s</string>

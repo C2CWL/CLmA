@@ -2397,6 +2397,10 @@
   <string name="setting_floating_ball_style_desc">圓形懸浮球，或顯示助手與回覆狀態的膠囊</string>
   <string name="setting_floating_ball_style_original">原版</string>
   <string name="setting_floating_ball_style_capsule">膠囊</string>
+  <string name="setting_floating_ball_tuck_style_title">收起樣式</string>
+  <string name="setting_floating_ball_tuck_style_desc">圓形懸浮球閒置時如何收到螢幕邊緣</string>
+  <string name="setting_floating_ball_tuck_style_handle">細條</string>
+  <string name="setting_floating_ball_tuck_style_half_ball">半球</string>
   <string name="floating_ball_capsule_status_ready">點擊開始對話</string>
   <string name="floating_ball_capsule_status_working">回覆中…</string>
   <string name="floating_ball_capsule_status_working_timer">回覆中 · %1$s</string>

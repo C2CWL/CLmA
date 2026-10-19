@@ -8,7 +8,6 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RadialGradient
 import android.graphics.Rect
-import android.graphics.RectF
 import android.graphics.Shader
 import android.view.Choreographer
 import android.view.View
@@ -50,6 +49,10 @@ internal class HaloBallView(context: Context) : View(context) {
 
         /** Track colour while working — the halo, dimmed to a neutral grey. */
         const val TRACK_GREY = 0xFFB4B8BE.toInt()
+
+        /** Half-tucked "reply finished" dot radius, in stroke widths, and its backing rim in dp. */
+        const val DONE_MARKER_SCALE = 1.1f
+        const val DONE_MARKER_RIM_DP = 1.5f
         const val TRACK_ALPHA = 120
 
         const val DOT_SCALE = 1.15f        // dot radius, in stroke widths
@@ -65,7 +68,6 @@ internal class HaloBallView(context: Context) : View(context) {
     private val ringPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
     private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
     private val bitmapPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { isFilterBitmap = true }
-    private val handleRect = RectF()
     private val density = context.resources.displayMetrics.density
     private val iconClip = Path()
     private val iconSrc = Rect()
@@ -97,6 +99,27 @@ internal class HaloBallView(context: Context) : View(context) {
 
     private var handleMode = false
     private var handleOnRight = true
+    private val handlePainter = EdgeHandlePainter(density)
+
+    /** What the tucked handle signals (running turn / unseen finished reply); see [EdgeHandlePainter]. */
+    var handleSignal: HaloBallLook.HandleSignal = HaloBallLook.HandleSignal.IDLE
+        set(value) {
+            if (field == value) return
+            field = value
+            if (handleMode || halfTuckedOnRight != null) invalidate()
+        }
+
+    /**
+     * Non-null while the whole ball is tucked half off-screen (the half-ball tuck style), true
+     * when it hugs the right edge. The ball keeps its full look, orbit included; an unseen
+     * finished reply ([handleSignal] DONE) adds an accent marker on the visible half.
+     */
+    var halfTuckedOnRight: Boolean? = null
+        set(value) {
+            if (field == value) return
+            field = value
+            invalidate()
+        }
 
     /**
      * Draw only the slim edge handle ([on]) or the whole ball. [onRight] is the screen edge the
@@ -254,6 +277,25 @@ internal class HaloBallView(context: Context) : View(context) {
         } else if (icon == null) {
             drawHalo(canvas, g)
         }
+        val tuckedOnRight = halfTuckedOnRight
+        if (tuckedOnRight != null && handleSignal == HaloBallLook.HandleSignal.DONE) {
+            drawDoneMarker(canvas, g, tuckedOnRight)
+        }
+    }
+
+    /**
+     * "A reply is waiting" on a half-tucked ball: a solid accent dot on the ring, on the visible
+     * half, ringed in the backing colour so it reads over the ring or a picked image.
+     */
+    private fun drawDoneMarker(canvas: Canvas, g: Geometry, onRight: Boolean) {
+        val (dx, dy) = HaloBallLook.doneMarkerDirection(onRight)
+        val x = g.cx + dx * g.ringRadius
+        val y = g.cy + dy * g.ringRadius
+        val radius = g.stroke * DONE_MARKER_SCALE
+        fillPaint.color = withAlpha(surfaceColor, 255)
+        canvas.drawCircle(x, y, radius + DONE_MARKER_RIM_DP * density, fillPaint)
+        fillPaint.color = withAlpha(accentColor, 255)
+        canvas.drawCircle(x, y, radius, fillPaint)
     }
 
     /**
@@ -323,7 +365,10 @@ internal class HaloBallView(context: Context) : View(context) {
         canvas.drawCircle(g.cx, g.cy, g.ringRadius, ringPaint)
     }
 
-    /** The tucked look: a slim accent pill flush with the screen edge, centred vertically. */
+    /**
+     * The tucked look: a slim pill flush with the screen edge, centred vertically, showing
+     * [handleSignal] (accent when idle).
+     */
     private fun drawHandle(canvas: Canvas) {
         val size = width
         val handleW = (HaloBallLook.HANDLE_WIDTH_DP * density).toInt().coerceAtLeast(1)
@@ -331,9 +376,8 @@ internal class HaloBallView(context: Context) : View(context) {
         val strip = (HaloBallLook.HANDLE_STRIP_DP * density).toInt()
         val left = HaloBallLook.handleLeft(handleOnRight, size, strip, handleW).toFloat()
         val top = (height - handleH) / 2f
-        handleRect.set(left, top, left + handleW, top + handleH)
-        fillPaint.color = accentColor
-        canvas.drawRoundRect(handleRect, handleW / 2f, handleW / 2f, fillPaint)
+        val animating = handlePainter.draw(canvas, left, top, handleW.toFloat(), handleH, accentColor, handleSignal)
+        if (animating) postInvalidateOnAnimation()
     }
 
     /** The halo demoted to a neutral track the dot can run along. */

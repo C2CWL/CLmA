@@ -2814,6 +2814,10 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="setting_floating_ball_style_desc">圆形悬浮球，或显示助手与回复状态的胶囊</string>
   <string name="setting_floating_ball_style_original">原版</string>
   <string name="setting_floating_ball_style_capsule">胶囊</string>
+  <string name="setting_floating_ball_tuck_style_title">收起样式</string>
+  <string name="setting_floating_ball_tuck_style_desc">圆形悬浮球闲置时如何收到屏幕边缘</string>
+  <string name="setting_floating_ball_tuck_style_handle">细条</string>
+  <string name="setting_floating_ball_tuck_style_half_ball">半球</string>
   <string name="floating_ball_capsule_status_ready">点击开始对话</string>
   <string name="floating_ball_capsule_status_working">回复中…</string>
   <string name="floating_ball_capsule_status_working_timer">回复中 · %1$s</string>
