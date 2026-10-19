@@ -1,8 +1,12 @@
 package me.rerere.rikkahub.data.ai.mcp
 
+import io.modelcontextprotocol.kotlin.sdk.types.McpJson
+import io.modelcontextprotocol.kotlin.sdk.types.Tool
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
 import me.rerere.ai.core.InputSchema
 import org.junit.Assert.assertEquals
@@ -149,5 +153,28 @@ class McpToolSchemaTest {
 
         assertEquals(json("""{"trigger": {"description": "kept"}, "remote": {}}"""), result)
         assertFalse(result.toString().contains("\$ref"))
+    }
+
+    @Test
+    fun `tool with a type array in outputSchema parses and converts`() {
+        // GitHub remote MCP (protocol 2026-07-28) declares nullable output roots such as ["object","null"]
+        val tool = McpJson.decodeFromString(
+            Tool.serializer(),
+            """
+            {
+              "name": "add_issue_comment",
+              "inputSchema": {"type": "object", "properties": {"body": {"type": "string"}}, "required": ["body"]},
+              "outputSchema": {"type": ["object", "null"], "oneOf": [{"type": "null"}, {"type": "object"}]}
+            }
+            """
+        )
+
+        assertEquals(
+            JsonArray(listOf(JsonPrimitive("object"), JsonPrimitive("null"))),
+            tool.outputSchema?.type,
+        )
+        val schema = tool.inputSchema.toSchema() as InputSchema.Obj
+        assertEquals(json("""{"body":{"type":"string"}}"""), schema.properties)
+        assertEquals(listOf("body"), schema.required)
     }
 }
