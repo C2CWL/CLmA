@@ -1,6 +1,8 @@
 package me.rerere.rikkahub.ui.components.message
 
+import android.os.Build
 import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -12,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -34,6 +37,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.delay
 import kotlinx.datetime.toJavaLocalDateTime
 import me.rerere.ai.core.MessageRole
@@ -56,7 +60,9 @@ import me.rerere.hugeicons.stroke.VolumeHigh
 import me.rerere.hugeicons.stroke.WebDesign01
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.model.MessageNode
+import me.rerere.rikkahub.ui.components.ui.FrostedPlateSpec
 import me.rerere.rikkahub.ui.components.ui.RikkaConfirmDialog
+import me.rerere.rikkahub.ui.components.ui.frostedPlate
 import me.rerere.rikkahub.ui.context.LocalSettings
 import me.rerere.rikkahub.ui.context.LocalTTSState
 import me.rerere.rikkahub.utils.copyMessageToClipboard
@@ -75,6 +81,8 @@ fun ColumnScope.ChatMessageActionButtons(
     onOpenActionSheet: () -> Unit,
     onTranslate: ((UIMessage, Locale) -> Unit)? = null,
     onClearTranslation: (UIMessage) -> Unit = {},
+    photoShown: Boolean = false,
+    hazeState: HazeState? = null,
 ) {
     val context = LocalContext.current
     val settings = LocalSettings.current
@@ -89,11 +97,33 @@ fun ColumnScope.ChatMessageActionButtons(
         }
     }
 
+    // Over a photo wallpaper the row sits on the usage line's plate, in onSurface ink.
+    val style = messageActionsStyle(photoShown, sdkInt = Build.VERSION.SDK_INT, hasHazeState = hazeState != null)
+    val ink = if (style.onSurfaceInk) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
+    val plateShape = RoundedCornerShape(16.dp)
+    val frost = style.frost
+    val plateAlpha = style.plateAlpha
+    val plateModifier = when {
+        frost != null && hazeState != null -> Modifier.frostedPlate(
+            hazeState = hazeState,
+            shape = plateShape,
+            spec = FrostedPlateSpec(tintAlpha = frost.tintAlpha, blurRadiusDp = frost.blurRadiusDp),
+            selection = WallpaperOnlySelection,
+        )
+
+        plateAlpha != null -> Modifier
+            .clip(plateShape)
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = plateAlpha))
+
+        else -> Modifier
+    }
+
     FlowRow(
+        modifier = plateModifier,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         itemVerticalAlignment = Alignment.CenterVertically,
     ) {
-        val actionIconColor = MaterialTheme.colorScheme.onSurfaceVariant
+        val actionIconColor = ink.copy(alpha = style.iconAlpha)
 
         Icon(
             imageVector = HugeIcons.Copy01,
@@ -198,6 +228,7 @@ fun ColumnScope.ChatMessageActionButtons(
 
         ChatMessageBranchSelector(
             node = node,
+            color = actionIconColor,
             onUpdate = onUpdate,
         )
 
@@ -205,8 +236,10 @@ fun ColumnScope.ChatMessageActionButtons(
             Text(
                 text = message.createdAt.toJavaLocalDateTime().toMessageTimeString(),
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                color = ink.copy(alpha = style.timeAlpha),
                 maxLines = 1,
+                // The icons bring their own 8dp padding; the time needs it only against a plate edge.
+                modifier = if (style.plated) Modifier.padding(end = 10.dp) else Modifier,
             )
         }
     }

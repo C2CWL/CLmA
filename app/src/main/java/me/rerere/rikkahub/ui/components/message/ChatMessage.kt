@@ -221,6 +221,19 @@ fun ChatMessage(
             }
         }
 
+        // Photo wallpaper behind this message (in-app dark mode picks the light / dark image):
+        // the action row and the usage line then sit on a plate.
+        val photoShown = chatPhotoShown(
+            effectiveBackground(
+                darkTheme = LocalDarkMode.current,
+                background = assistant?.background,
+                darkBackground = assistant?.darkBackground,
+                lightBackground = assistant?.lightBackground,
+                mode = assistant?.backgroundMode ?: AssistantBackgroundMode.AUTO,
+            ),
+            assistant?.useGradientBackground == true,
+        )
+
         val showActions = if (lastMessage) {
             !loading
         } else {
@@ -244,7 +257,9 @@ fun ChatMessage(
                         showActionsSheet = true
                     },
                     onTranslate = onTranslate,
-                    onClearTranslation = onClearTranslation
+                    onClearTranslation = onClearTranslation,
+                    photoShown = photoShown,
+                    hazeState = hazeState,
                 )
             }
         }
@@ -255,16 +270,6 @@ fun ChatMessage(
         )
 
         ProvideTextStyle(textStyle) {
-            val photoShown = chatPhotoShown(
-                effectiveBackground(
-                    darkTheme = LocalDarkMode.current,
-                    background = assistant?.background,
-                    darkBackground = assistant?.darkBackground,
-                    lightBackground = assistant?.lightBackground,
-                    mode = assistant?.backgroundMode ?: AssistantBackgroundMode.AUTO,
-                ),
-                assistant?.useGradientBackground == true,
-            )
             ChatMessageNerdLine(
                 message = message,
                 turnFooter = turnFooter,

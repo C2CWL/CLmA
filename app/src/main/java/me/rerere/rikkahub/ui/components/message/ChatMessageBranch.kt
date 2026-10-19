@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
@@ -29,6 +30,7 @@ import me.rerere.rikkahub.data.model.MessageNode
 fun ChatMessageBranchSelector(
     node: MessageNode,
     modifier: Modifier = Modifier,
+    color: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     onUpdate: (MessageNode) -> Unit,
 ) {
     Row(
@@ -37,7 +39,7 @@ fun ChatMessageBranchSelector(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         if (node.messages.size > 1) {
-            val actionColor = MaterialTheme.colorScheme.onSurfaceVariant
+            val actionColor = color
 
             Icon(
                 imageVector = HugeIcons.ArrowLeft01,
