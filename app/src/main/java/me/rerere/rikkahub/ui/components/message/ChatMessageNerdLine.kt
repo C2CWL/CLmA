@@ -111,7 +111,7 @@ fun ChatMessageNerdLine(
  * this line; selecting it would blur other messages and feed the effect into itself.
  * Kept as one instance so [HazeInput.Sources] stays equal across recompositions.
  */
-private val WallpaperOnlySelection: HazeSourceSelection =
+internal val WallpaperOnlySelection: HazeSourceSelection =
     HazeSourceSelection.All.where { it.key == CHAT_WALLPAPER_HAZE_KEY }
 
 // Generation cost is often a tiny fraction of a cent, so a fixed decimal count would show

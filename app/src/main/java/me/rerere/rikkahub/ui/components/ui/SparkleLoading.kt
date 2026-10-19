@@ -94,22 +94,17 @@ internal fun sparkleDotLift(phase: Float, index: Int): Float {
 /** Radius multiplier of the rounded pentagon at polar angle [theta] (radians, shape frame). */
 internal fun sparklePentagon(theta: Float): Float = 0.93f + 0.07f * cos(5f * theta)
 
-/** Muted, eye-friendly palette for dark themes: cyan, blue, violet, pink, peach. */
-private val DarkPalette = listOf(
+/**
+ * Muted, eye-friendly palette: cyan, blue, violet, pink, peach. Shared by light and dark themes so
+ * the indicator looks the same everywhere; light themes only get a little more opacity on the
+ * glow and comet (see [SparkleLook.dark]) so the soft colours do not wash out on white.
+ */
+private val SparklePalette = listOf(
     Color(0xFF6EA8B4),
     Color(0xFF708EBE),
     Color(0xFF8E80BA),
     Color(0xFFB27A9E),
     Color(0xFFBA9278),
-)
-
-/** Vivid, saturated palette (same hues) that stands out on light themes. */
-private val LightPalette = listOf(
-    Color(0xFF00C4E6),
-    Color(0xFF286EFF),
-    Color(0xFF8246FA),
-    Color(0xFFF032A0),
-    Color(0xFFFF823C),
 )
 
 private class SparkleLook(
@@ -126,9 +121,11 @@ private fun rememberSparkleLook(): SparkleLook {
     val dark = scheme.background.luminance() < 0.5f
     return SparkleLook(
         dark = dark,
-        palette = if (dark) DarkPalette else LightPalette,
+        palette = SparklePalette,
         disc = scheme.surface.copy(alpha = if (dark) 0.30f else 0.45f),
-        star = if (dark) Color(0xFFC8CEDE) else Color(0xFF8246FA),
+        // Soft white stars vanish on a light background, so there they take the palette's own
+        // violet instead of a vivid one.
+        star = if (dark) Color(0xFFC8CEDE) else SparklePalette[2],
     )
 }
 
@@ -302,7 +299,7 @@ private fun DrawScope.drawSparkleIcon(look: SparkleLook, t: Float, shape: Path, 
         brush = Brush.radialGradient(
             0f to Color.Transparent,
             0.55f to Color.Transparent,
-            1f to Color.Black.copy(alpha = if (look.dark) 0.22f else 0.16f),
+            1f to Color.Black.copy(alpha = 0.22f),
             center = Offset(c.x - r * 0.35f, c.y - r * 0.35f),
             radius = r * 1.9f,
         ),
@@ -310,7 +307,7 @@ private fun DrawScope.drawSparkleIcon(look: SparkleLook, t: Float, shape: Path, 
     drawPath(
         path = shape,
         brush = Brush.radialGradient(
-            0f to Color.White.copy(alpha = if (look.dark) 0.28f else 0.45f),
+            0f to Color.White.copy(alpha = 0.28f),
             1f to Color.Transparent,
             center = Offset(c.x - r * 0.33f, c.y - r * 0.38f),
             radius = r * 0.55f,
@@ -319,7 +316,7 @@ private fun DrawScope.drawSparkleIcon(look: SparkleLook, t: Float, shape: Path, 
     val gloss = Offset(c.x - r * 0.20f, c.y - r * 0.28f)
     drawCircle(
         brush = Brush.radialGradient(
-            0f to Color.White.copy(alpha = if (look.dark) 0.30f else 0.55f),
+            0f to Color.White.copy(alpha = 0.30f),
             1f to Color.Transparent,
             center = gloss,
             radius = r * 0.20f,
@@ -335,7 +332,7 @@ private fun DrawScope.drawSparkleIcon(look: SparkleLook, t: Float, shape: Path, 
         if (tw <= 0.05f) continue
         val a = angle + spin
         drawCircle(
-            Color.White.copy(alpha = tw * if (look.dark) 0.6f else 0.95f),
+            Color.White.copy(alpha = tw * 0.6f),
             radius = glintR,
             center = Offset(c.x + cos(a) * r * dist, c.y + sin(a) * r * dist),
         )
@@ -351,7 +348,7 @@ private fun DrawScope.drawSparkleIcon(look: SparkleLook, t: Float, shape: Path, 
     )
     val headDeg = -360f * SPARKLE_COMET_CYCLES * t
     val cometPhase = (t * SPARKLE_COMET_CYCLES) % 1f
-    val head = lerp(paletteAt(look.palette, cometPhase), Color.White, if (look.dark) 0.12f else 0.25f)
+    val head = lerp(paletteAt(look.palette, cometPhase), Color.White, 0.12f)
     val topLeft = Offset(c.x - ringRadius, c.y - ringRadius)
     val arc = Size(ringRadius * 2f, ringRadius * 2f)
     rotate(degrees = headDeg, pivot = c) {

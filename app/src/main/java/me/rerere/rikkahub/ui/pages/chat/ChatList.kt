@@ -93,6 +93,7 @@ import me.rerere.ai.ui.UIMessage
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.ai.AssistantResolver
+import me.rerere.rikkahub.data.model.AssistantBackgroundMode
 import me.rerere.rikkahub.data.model.Conversation
 import me.rerere.rikkahub.data.model.MessageNode
 import me.rerere.rikkahub.service.ChatError
@@ -104,6 +105,7 @@ import me.rerere.rikkahub.ui.components.ui.ChatLoadingIndicator
 import me.rerere.rikkahub.ui.components.ui.Tooltip
 import me.rerere.rikkahub.ui.hooks.ImeLazyListAutoScroller
 import me.rerere.rikkahub.ui.theme.ChatFontProvider
+import me.rerere.rikkahub.ui.theme.LocalDarkMode
 import me.rerere.rikkahub.utils.plus
 import kotlin.uuid.Uuid
 
@@ -417,7 +419,22 @@ private fun ChatListNormal(
 
             if (loading) {
                 item(LoadingIndicatorKey) {
-                    ChatLoadingIndicator(processingStatus = processingStatus)
+                    // Same wallpaper test as the message's usage line: plate only over a photo.
+                    val photoShown = chatPhotoShown(
+                        effectiveBackground(
+                            darkTheme = LocalDarkMode.current,
+                            background = assistant?.background,
+                            darkBackground = assistant?.darkBackground,
+                            lightBackground = assistant?.lightBackground,
+                            mode = assistant?.backgroundMode ?: AssistantBackgroundMode.AUTO,
+                        ),
+                        assistant?.useGradientBackground == true,
+                    )
+                    ChatLoadingIndicator(
+                        processingStatus = processingStatus,
+                        photoShown = photoShown,
+                        hazeState = hazeState,
+                    )
                 }
             }
 
