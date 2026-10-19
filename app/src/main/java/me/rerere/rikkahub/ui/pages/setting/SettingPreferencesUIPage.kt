@@ -177,6 +177,20 @@ fun SettingPreferencesUIPage(vm: SettingVM = koinViewModel()) {
                             )
                         },
                     )
+                    if (displaySetting.cleanLayout) {
+                        item(
+                            headlineContent = { Text(stringResource(R.string.setting_display_page_clean_layout_glass_title)) },
+                            supportingContent = { Text(stringResource(R.string.setting_display_page_clean_layout_glass_desc)) },
+                            trailingContent = {
+                                Switch(
+                                    checked = displaySetting.cleanLayoutGlass,
+                                    onCheckedChange = {
+                                        updateDisplaySetting(displaySetting.copy(cleanLayoutGlass = it))
+                                    }
+                                )
+                            },
+                        )
+                    }
                     item(
                         headlineContent = { Text(stringResource(R.string.setting_display_page_show_user_avatar_title)) },
                         supportingContent = { Text(stringResource(R.string.setting_display_page_show_user_avatar_desc)) },

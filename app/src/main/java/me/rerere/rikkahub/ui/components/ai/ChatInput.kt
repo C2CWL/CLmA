@@ -241,6 +241,7 @@ fun ChatInput(
     // Clean layout (DisplaySetting.cleanLayout, off by default) keeps the open two-row box all the
     // time: full-width field on top, tools underneath, "+" moved to the right next to send.
     val cleanLayout = settings.displaySetting.cleanLayout
+    val useGlass = !cleanLayout || settings.displaySetting.cleanLayoutGlass
     val expanded = cleanLayout || naturallyExpanded
     // Animate the corner along with the layout change below, so the pill does not snap between
     // its 28dp and 16dp radii while the bar is growing. Clean layout is always open and uses a
@@ -255,8 +256,7 @@ fun ChatInput(
         label = "chatInputCorner",
     )
     val containerShape = RoundedCornerShape(containerCorner)
-    // Clean layout: a flat solid card with a hairline instead of the glass (Kelivo-style). Keyed
-    // off the app's own dark mode, not the system one.
+    // Clean layout non-glass branch: a flat solid card with a hairline (Kelivo-style).
     val darkTheme = LocalDarkMode.current
     val cleanCardColor = if (darkTheme) {
         Color.White.copy(alpha = 0.05f)
@@ -289,26 +289,28 @@ fun ChatInput(
             )
             // Fixed glass — the bar is the app's primary control surface, so it keeps the glass
             // material regardless of the blur preference (same recipe as the drawer's cards).
-            // Clean layout swaps only the chrome for a flat card; the content below is the same
-            // composition either way, so nothing inside is re-created.
+            // Fixed glass — the bar is the app's primary control surface, so it keeps the glass
+            // material regardless of the blur preference (same recipe as the drawer's cards).
+            // Clean layout keeps its 14dp flat card geometry, and can toggle between liquid
+            // glass and a flat solid card via DisplaySetting.cleanLayoutGlass.
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(containerShape)
                     .then(
-                        if (cleanLayout) {
-                            Modifier
-                        } else {
+                        if (useGlass) {
                             Modifier.hazeGlass(
                                 input = HazeInput.Sources(hazeState),
                                 style = rikkaGlassStyle(containerShape, blurRadius = 12.dp, depth = 0.4f),
                             )
+                        } else {
+                            Modifier
                         }
                     ),
                 shape = containerShape,
                 tonalElevation = 0.dp,
-                color = if (cleanLayout) cleanCardColor else Color.Transparent,
-                border = if (cleanLayout) BorderStroke(1.dp, cleanCardOutline) else null,
+                color = if (useGlass) Color.Transparent else cleanCardColor,
+                border = if (useGlass) null else BorderStroke(1.dp, cleanCardOutline),
             ) {
                 Column(
                     // Extra inset so the round buttons stay clear of the capsule's edge; the

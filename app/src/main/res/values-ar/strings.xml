@@ -720,6 +720,8 @@
   <string name="setting_display_page_show_user_avatar_desc">ما إذا كانت صورة المستخدم ستُعرض في رسائل الدردشة</string>
   <string name="setting_display_page_clean_layout_title">تخطيط بسيط</string>
   <string name="setting_display_page_clean_layout_desc">شريط علوي مسطح مع اسم النموذج أسفل العنوان، وحقل إدخال من سطرين تظهر أزرار الأدوات أسفله</string>
+  <string name="setting_display_page_clean_layout_glass_title">الزجاج السائل لشريط الإدخال</string>
+  <string name="setting_display_page_clean_layout_glass_desc">استخدام مادة الزجاج السائل لشريط الإدخال في التخطيط البسيط؛ عند التعطيل يتم استخدام بطاقة مسطحة مصمتة</string>
   <string name="setting_display_page_show_user_avatar_title">عرض صورة المستخدم</string>
   <string name="setting_display_page_skip_crop_image_desc">تخطي واجهة الاقتصاص بعد استيراد الصور أو التقاطها</string>
   <string name="setting_display_page_skip_crop_image_title">تخطي تعديل الصورة</string>

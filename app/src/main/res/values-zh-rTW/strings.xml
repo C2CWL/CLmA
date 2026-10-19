@@ -701,6 +701,8 @@
   <string name="setting_display_page_show_user_avatar_desc">是否在聊天消息中顯示用戶頭像</string>
   <string name="setting_display_page_clean_layout_title">簡潔版面</string>
   <string name="setting_display_page_clean_layout_desc">扁平頂欄，標題下方顯示模型名稱；輸入框分兩行，工具按鈕在輸入框下方</string>
+  <string name="setting_display_page_clean_layout_glass_title">輸入框液態玻璃</string>
+  <string name="setting_display_page_clean_layout_glass_desc">在簡潔版面下為輸入框啟用液態玻璃質感；關閉後為扁平單色卡片</string>
   <string name="setting_display_page_show_user_avatar_title">顯示用戶頭像</string>
   <string name="setting_display_page_skip_crop_image_desc">匯入圖片或拍照後跳過裁剪介面</string>
   <string name="setting_display_page_skip_crop_image_title">跳過圖片編輯</string>
