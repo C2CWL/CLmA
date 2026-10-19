@@ -48,7 +48,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -56,7 +55,6 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -422,7 +420,8 @@ private fun ChatPageContent(
         vm.setConversationChatModel(model)
     }
     val onUpdateSearchService: (Int) -> Unit = { index ->
-        vm.updateSettings(setting.copy(searchServiceSelected = index))\n    }
+        vm.updateSettings(setting.copy(searchServiceSelected = index))
+    }
 
     TTSAutoPlay(vm = vm, setting = setting, conversation = conversation)
 
@@ -917,18 +916,18 @@ private fun TopBar(
                         val usedTokens = remember(turnFooters, conversation) {
                             conversationUsedTokens(turnFooters, conversation)
                         }
-                        // One Text ellipsizes from the end, so a long assistant or model name
-                        // clips the count ("0 t..."). Same split as CleanTopBar: only the name may
-                        // ellipsize. Custom measure, not weight, so the frosted pill still hugs the
-                        // text instead of stretching to the title slot.
-                        TopBarSubtitleLine(
-                            assistantName = assistant.name.ifBlank { stringResource(R.string.assistant_page_default_assistant) },
-                            modelName = model.displayName,
-                            usedTokens = usedTokens,
+                        Text(
+                            text = topBarSubtitle(
+                                assistantName = assistant.name.ifBlank { stringResource(R.string.assistant_page_default_assistant) },
+                                modelName = model.displayName,
+                                usedTokens = usedTokens,
+                            ),
+                            overflow = TextOverflow.Ellipsis,
+                            maxLines = 1,
                             color = LocalContentColor.current.copy(0.65f),
                             style = MaterialTheme.typography.labelSmall.copy(
                                 fontSize = 8.sp,
-                            ),
+                            )
                         )
                     }
                 }
@@ -986,68 +985,6 @@ private fun GlassTopBarButton(
             contentAlignment = Alignment.Center,
         ) {
             content()
-        }
-    }
-}
-
-/**
- * Regular-bar subtitle: "assistant / model" plus " / N tokens".
- *
- * A single [Text] with [TextOverflow.Ellipsis] clips the end, so a long assistant or model
- * name turns the count into "0 t...". The token suffix is measured first and always placed;
- * only the name gets the remaining width. The layout reports the sum of the two, not the
- * incoming max width, so the frosted title pill keeps hugging the text. A weighted
- * Row would stretch that pill to the title slot.
- */
-@Composable
-private fun TopBarSubtitleLine(
-    assistantName: String,
-    modelName: String,
-    usedTokens: Long,
-    color: Color,
-    style: TextStyle,
-    modifier: Modifier = Modifier,
-) {
-    Layout(
-        modifier = modifier,
-        content = {
-            Text(
-                text = topBarSubtitleName(assistantName, modelName),
-                maxLines = 1,
-                softWrap = false,
-                overflow = TextOverflow.Ellipsis,
-                color = color,
-                style = style,
-            )
-            Text(
-                text = topBarTokenSuffix(usedTokens),
-                maxLines = 1,
-                softWrap = false,
-                // Last resort only: the suffix is given the full width first, so this clips
-                // solely when " / N tokens" itself is wider than the title slot.
-                overflow = TextOverflow.Ellipsis,
-                color = color,
-                style = style,
-            )
-        },
-    ) { measurables, constraints ->
-        val loose = constraints.copy(minWidth = 0, minHeight = 0)
-        val token = measurables[1].measure(loose.copy(maxWidth = constraints.maxWidth))
-        val nameMax = if (constraints.hasBoundedWidth) {
-            (constraints.maxWidth - token.width).coerceAtLeast(0)
-        } else {
-            constraints.maxWidth
-        }
-        val name = measurables[0].measure(loose.copy(maxWidth = nameMax))
-        val width = (name.width + token.width).coerceAtLeast(constraints.minWidth).let { raw ->
-            if (constraints.hasBoundedWidth) raw.coerceAtMost(constraints.maxWidth) else raw
-        }
-        val height = maxOf(name.height, token.height).coerceAtLeast(constraints.minHeight).let { raw ->
-            if (constraints.hasBoundedHeight) raw.coerceAtMost(constraints.maxHeight) else raw
-        }
-        layout(width, height) {
-            name.placeRelative(0, (height - name.height) / 2)
-            token.placeRelative(name.width, (height - token.height) / 2)
         }
     }
 }
