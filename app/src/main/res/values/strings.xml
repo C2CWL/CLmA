@@ -849,6 +849,8 @@
   <string name="setting_display_page_clean_layout_opacity_desc">0% is fully clear, 100% is the material\'s default strength</string>
   <string name="setting_display_page_clean_layout_top_opacity_title">Header panel opacity</string>
   <string name="setting_display_page_clean_layout_bottom_opacity_title">Input panel opacity</string>
+  <string name="setting_display_page_drawer_capsules_title">Drawer capsules</string>
+  <string name="setting_display_page_drawer_capsules_desc">Drop the two floating cards at the top and bottom of the drawer: identity, shortcuts, folders and bottom actions become small capsules sitting on the frosted panel. Turn off to get the two cards back</string>
   <string name="setting_display_page_show_user_avatar_title">Show User Avatar</string>
   <string name="setting_display_page_skip_crop_image_desc">Skip crop interface after importing images or taking photos</string>
   <string name="setting_display_page_skip_crop_image_title">Skip Image Editing</string>

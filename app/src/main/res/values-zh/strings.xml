@@ -812,6 +812,8 @@
   <string name="setting_display_page_clean_layout_opacity_desc">0% 完全透明，100% 为材质默认浓度</string>
   <string name="setting_display_page_clean_layout_top_opacity_title">顶栏不透明度</string>
   <string name="setting_display_page_clean_layout_bottom_opacity_title">输入框不透明度</string>
+  <string name="setting_display_page_drawer_capsules_title">抽屉胶囊</string>
+  <string name="setting_display_page_drawer_capsules_desc">抽屉顶部与底部不再用两张浮岛卡片，身份、入口、文件夹和底部动作各自是小胶囊，直接落在磨砂面板上；关闭后回到原来的两张卡片</string>
   <string name="setting_display_page_show_user_avatar_title">显示用户头像</string>
   <string name="setting_display_page_skip_crop_image_desc">导入图片或拍照后跳过裁剪界面</string>
   <string name="setting_display_page_skip_crop_image_title">跳过图片编辑</string>
