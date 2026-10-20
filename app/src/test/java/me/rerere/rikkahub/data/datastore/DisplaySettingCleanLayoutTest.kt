@@ -1,6 +1,7 @@
 package me.rerere.rikkahub.data.datastore
 
 import me.rerere.rikkahub.utils.JsonInstant
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -51,5 +52,30 @@ class DisplaySettingCleanLayoutTest {
         val decoded = JsonInstant.decodeFromString<DisplaySetting>(json)
         assertTrue(decoded.cleanLayout)
         assertFalse(decoded.cleanLayoutGlass)
+    }
+
+    @Test
+    fun `panel opacity defaults to the full material strength`() {
+        val setting = DisplaySetting()
+        assertEquals(1f, setting.cleanLayoutTopOpacity, 0f)
+        assertEquals(1f, setting.cleanLayoutBottomOpacity, 0f)
+    }
+
+    @Test
+    fun `stored settings without panel opacity read back as full strength`() {
+        val legacy = """{"cleanLayout":true,"cleanLayoutGlass":true}"""
+        val decoded = JsonInstant.decodeFromString<DisplaySetting>(legacy)
+        assertEquals(1f, decoded.cleanLayoutTopOpacity, 0f)
+        assertEquals(1f, decoded.cleanLayoutBottomOpacity, 0f)
+    }
+
+    @Test
+    fun `panel opacity round-trips`() {
+        val json = JsonInstant.encodeToString(
+            DisplaySetting(cleanLayout = true, cleanLayoutTopOpacity = 0.4f, cleanLayoutBottomOpacity = 0f)
+        )
+        val decoded = JsonInstant.decodeFromString<DisplaySetting>(json)
+        assertEquals(0.4f, decoded.cleanLayoutTopOpacity, 0f)
+        assertEquals(0f, decoded.cleanLayoutBottomOpacity, 0f)
     }
 }

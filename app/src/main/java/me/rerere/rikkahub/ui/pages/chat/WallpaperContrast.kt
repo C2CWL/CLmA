@@ -48,11 +48,8 @@ internal fun wallpaperScrim(darkTheme: Boolean): WallpaperScrim =
 
 internal data class TitleBarFade(val topAlpha: Float, val midAlpha: Float, val bottomAlpha: Float)
 
-internal fun titleBarFade(darkTheme: Boolean, photoShown: Boolean, cleanLayout: Boolean = false): TitleBarFade =
-    if (!darkTheme && photoShown && cleanLayout) {
-        // Clean layout has no title plate, so the fade alone carries the title over the photo.
-        TitleBarFade(topAlpha = 0.98f, midAlpha = 0.88f, bottomAlpha = 0f)
-    } else if (!darkTheme && photoShown) {
+internal fun titleBarFade(darkTheme: Boolean, photoShown: Boolean): TitleBarFade =
+    if (!darkTheme && photoShown) {
         // Status-bar icons are dark in the light theme, so the very top stays mostly
         // covered. The title has its own plate, and the picture is clear by the bottom
         // edge of the bar.

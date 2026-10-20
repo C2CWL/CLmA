@@ -1213,6 +1213,10 @@ data class DisplaySetting(
     val cleanLayout: Boolean = false,
     // 简洁布局输入框液态玻璃材质。关时为扁平单色卡片。默认开。
     val cleanLayoutGlass: Boolean = true,
+    // 简洁布局顶栏面板浓度：0 = 完全透明（只剩描边），1 = 材质默认浓度。默认 1。
+    val cleanLayoutTopOpacity: Float = 1f,
+    // 简洁布局输入框面板浓度，语义同 cleanLayoutTopOpacity。
+    val cleanLayoutBottomOpacity: Float = 1f,
     // 抽屉上下功能区：开 = 没有底板，控件直接落在磨砂抽屉上，身份行/入口/文件夹/底部动作
     // 各自是小胶囊，列表在控件所在的那一段渐隐；关 = 原来的上下两张浮岛卡片。默认开。
     val drawerCapsules: Boolean = true,

@@ -114,6 +114,8 @@ import me.rerere.rikkahub.ui.components.ai.completion.ChatCompletionList
 import me.rerere.rikkahub.ui.components.ai.completion.ChatCompletionProvider
 import me.rerere.rikkahub.ui.components.ui.AutoAIIconFill
 import me.rerere.rikkahub.ui.components.ui.KeepScreenOn
+import me.rerere.rikkahub.ui.components.ui.cleanPanelFill
+import me.rerere.rikkahub.ui.components.ui.cleanPanelOutline
 import me.rerere.rikkahub.ui.components.ui.permission.PermissionManager
 import me.rerere.rikkahub.ui.components.ui.permission.PermissionRecordAudio
 import me.rerere.rikkahub.ui.components.ui.permission.rememberPermissionState
@@ -265,18 +267,14 @@ fun ChatInput(
         label = "chatInputCorner",
     )
     val containerShape = RoundedCornerShape(containerCorner)
-    // Clean layout non-glass branch: a flat solid card with a hairline (Kelivo-style).
+    // Clean layout non-glass branch: a flat card with a hairline (Kelivo-style). Fill and rim come
+    // from the shared clean-panel helpers, so the header above is made of exactly the same pair.
+    // The opacity slider scales both materials: the flat fill directly, the glass tint through
+    // rikkaGlassStyle's tintStrength (0 = clear, 1 = the recipe's own tint).
     val darkTheme = LocalDarkMode.current
-    val cleanCardColor = if (darkTheme) {
-        Color.White.copy(alpha = 0.05f)
-    } else {
-        MaterialTheme.colorScheme.surfaceContainerLowest
-    }
-    val cleanCardOutline = if (darkTheme) {
-        Color.White.copy(alpha = 0.12f)
-    } else {
-        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
-    }
+    val cleanOpacity = if (cleanLayout) settings.displaySetting.cleanLayoutBottomOpacity else 1f
+    val cleanCardColor = cleanPanelFill(cleanOpacity)
+    val cleanCardOutline = cleanPanelOutline(darkTheme)
 
     Surface(
         color = Color.Transparent,
@@ -310,7 +308,12 @@ fun ChatInput(
                         if (useGlass) {
                             Modifier.hazeGlass(
                                 input = HazeInput.Sources(hazeState),
-                                style = rikkaGlassStyle(containerShape, blurRadius = 12.dp, depth = 0.4f),
+                                style = rikkaGlassStyle(
+                                    containerShape,
+                                    blurRadius = 12.dp,
+                                    depth = 0.4f,
+                                    tintStrength = cleanOpacity,
+                                ),
                             )
                         } else {
                             Modifier

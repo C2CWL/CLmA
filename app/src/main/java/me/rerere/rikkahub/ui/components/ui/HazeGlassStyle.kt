@@ -29,12 +29,17 @@ fun rikkaGlassStyle(
     containerShape: RoundedCornerShape,
     blurRadius: Dp = 20.dp,
     depth: Float = 0.5f,
+    // Scales the glass's own tint, 1 = the recipe above. 0 keeps the blur and the rim but
+    // leaves the backdrop untinted, which is how the clean layout's opacity slider reaches
+    // "fully clear". Everything else passes the default and is unchanged.
+    tintStrength: Float = 1f,
 ): GlassStyle {
     val base = MaterialTheme.colorScheme.surfaceContainer
     val appearance = glassAppearance(darkTheme = LocalDarkMode.current)
+    val strength = tintStrength.coerceIn(0f, 1f)
     return GlassStyle.Material3(
-        containerColor = base.copy(alpha = 0.26f),
-        tint = base.copy(alpha = 0.16f),
+        containerColor = base.copy(alpha = 0.26f * strength),
+        tint = base.copy(alpha = 0.16f * strength),
     ) {
         optics(
             GlassDefaults.optics.copy(
