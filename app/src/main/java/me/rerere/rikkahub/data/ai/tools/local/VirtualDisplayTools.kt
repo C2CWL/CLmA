@@ -144,6 +144,7 @@ fun virtualDisplayListTool(): Tool = Tool(
                             put("width", info.width)
                             put("height", info.height)
                             put("density", info.densityDpi)
+                            put("flags", info.flags)
                         })
                     }
                 }

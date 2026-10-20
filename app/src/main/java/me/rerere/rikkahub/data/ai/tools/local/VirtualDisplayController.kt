@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
 import android.media.ImageReader
+import android.os.Build
 import android.util.Log
 import android.view.Surface
 
@@ -17,6 +18,13 @@ import android.view.Surface
  * `AccessibilityService.takeScreenshot(displayId)` returns `ERROR_TAKE_SCREENSHOT_INVALID_DISPLAY`
  * for any display other than `Display.DEFAULT_DISPLAY` — a platform limitation verified by CTS).
  *
+ * Displays are created with [PREFERRED_FLAGS] (PUBLIC + TRUSTED + SUPPORTS_TOUCH) so that the
+ * accessibility service can see the windows on them and touch/launch requests are allowed.
+ * A plain `flags = 0` display is private to this process: the a11y service then reports
+ * `no_window_on_display` for it. If the platform refuses the flags (SecurityException /
+ * IllegalArgumentException on some OEM builds), creation falls back to `flags = 0` so the
+ * feature keeps working in blind mode; the flags actually used are reported by [list].
+ *
  * Input injection and app launching on the virtual display require shell privileges and go
  * through Shizuku (`input -d <id>`, `am start --display <id>`) — see [VirtualDisplayTools].
  *
@@ -26,6 +34,31 @@ import android.view.Surface
 object VirtualDisplayController {
 
     private const val TAG = "VirtualDisplayCtrl"
+
+    /**
+     * Flags requested for every display this controller creates.
+     *
+     * - `PUBLIC` (1, public API): the display is visible to other processes. Without it the
+     *   accessibility service never receives its windows, which is exactly the
+     *   `no_window_on_display` failure.
+     * - `SUPPORTS_TOUCH` (1 << 6, `@hide` in AOSP): the display accepts touch input.
+     * - `TRUSTED` (1 << 10, `@hide`, API 33+): activities that require a trusted display may
+     *   run here.
+     *
+     * The two `@hide` constants are written as literals because they are not part of the
+     * public SDK (`DisplayManager` only exposes PUBLIC/PRESENTATION/SECURE/OWN_CONTENT_ONLY/
+     * AUTO_MIRROR). They are stable AOSP values — see `DisplayManager.VIRTUAL_DISPLAY_FLAG_*`.
+     */
+    private val PREFERRED_FLAGS: Int
+        get() = DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC or
+            FLAG_SUPPORTS_TOUCH or
+            (if (Build.VERSION.SDK_INT >= 33) FLAG_TRUSTED else 0)
+
+    /** `DisplayManager.VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH` — hidden in the public SDK. */
+    private const val FLAG_SUPPORTS_TOUCH = 1 shl 6
+
+    /** `DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED` — hidden in the public SDK, API 33+. */
+    private const val FLAG_TRUSTED = 1 shl 10
 
     /** Displays created by this controller, keyed by display id. */
     private val displays = mutableMapOf<Int, DisplayEntry>()
@@ -41,6 +74,8 @@ object VirtualDisplayController {
         val width: Int,
         val height: Int,
         val densityDpi: Int,
+        /** Flags the display was actually created with (0 when the platform refused [PREFERRED_FLAGS]). */
+        val flags: Int,
     )
 
     /**
@@ -62,10 +97,10 @@ object VirtualDisplayController {
             val dm = context.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
             val imageReader = ImageReader.newInstance(alignedW, alignedH, 0x2 /* PixelFormat.RGBA_8888 */, 2)
             val surface = imageReader.surface
-            val display = createVirtualDisplay(dm, name, alignedW, alignedH, densityDpi, surface)
+            val (display, flags) = createWithFallback(dm, name, alignedW, alignedH, densityDpi, surface)
             val id = display.display.displayId
-            displays[id] = DisplayEntry(display, imageReader, name, alignedW, alignedH, densityDpi)
-            Log.i(TAG, "Created virtual display id=$id ${alignedW}x${alignedH} density=$densityDpi")
+            displays[id] = DisplayEntry(display, imageReader, name, alignedW, alignedH, densityDpi, flags)
+            Log.i(TAG, "Created virtual display id=$id ${alignedW}x${alignedH} density=$densityDpi flags=$flags")
             Result.Ok(id)
         } catch (t: Throwable) {
             Log.e(TAG, "createVirtualDisplay failed", t)
@@ -101,6 +136,7 @@ object VirtualDisplayController {
                 width = e.width,
                 height = e.height,
                 densityDpi = e.densityDpi,
+                flags = e.flags,
             )
         }
     }
@@ -147,6 +183,30 @@ object VirtualDisplayController {
         }
     }
 
+    /**
+     * Creates the display with [PREFERRED_FLAGS], falling back to `flags = 0` when the platform
+     * rejects them. Returns the display and the flags actually used.
+     */
+    private fun createWithFallback(
+        dm: DisplayManager,
+        name: String,
+        width: Int,
+        height: Int,
+        densityDpi: Int,
+        surface: Surface,
+    ): Pair<VirtualDisplay, Int> {
+        val preferred = PREFERRED_FLAGS
+        return try {
+            createVirtualDisplay(dm, name, width, height, densityDpi, surface, preferred) to preferred
+        } catch (t: Throwable) {
+            // Some OEM builds reject PUBLIC/TRUSTED for app-created displays. Losing the flags
+            // only costs a11y visibility — the display itself still works, so fall back rather
+            // than failing the whole tool call.
+            Log.w(TAG, "createVirtualDisplay(flags=$preferred) rejected, retrying with flags=0", t)
+            createVirtualDisplay(dm, name, width, height, densityDpi, surface, 0) to 0
+        }
+    }
+
     private fun createVirtualDisplay(
         dm: DisplayManager,
         name: String,
@@ -154,16 +214,18 @@ object VirtualDisplayController {
         height: Int,
         densityDpi: Int,
         surface: Surface,
+        flags: Int,
     ): VirtualDisplay {
-        return if (android.os.Build.VERSION.SDK_INT >= 33) {
+        return if (Build.VERSION.SDK_INT >= 33) {
             val config = android.hardware.display.VirtualDisplayConfig.Builder(name, width, height, densityDpi)
                 .setSurface(surface)
+                .setFlags(flags)
                 .build()
             dm.createVirtualDisplay(config)
                 ?: throw RuntimeException("createVirtualDisplay returned null")
         } else {
             @Suppress("DEPRECATION")
-            dm.createVirtualDisplay(name, width, height, densityDpi, surface, 0)
+            dm.createVirtualDisplay(name, width, height, densityDpi, surface, flags)
                 ?: throw RuntimeException("createVirtualDisplay returned null")
         }
     }
@@ -174,6 +236,8 @@ object VirtualDisplayController {
         val width: Int,
         val height: Int,
         val densityDpi: Int,
+        /** Flags the display was created with; 0 means the preferred flags were refused. */
+        val flags: Int,
     )
 
     sealed class Result<out T> {
