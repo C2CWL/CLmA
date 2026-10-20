@@ -69,7 +69,7 @@ private const val TAG = "FloatingBallService"
  * A tiny circular overlay (TYPE_APPLICATION_OVERLAY) that survives across apps so the user can
  * reach the agent without leaving what they are doing:
  *  - tap    → [ORIGINAL] open [QuickChatActivity]; [CAPSULE] bring the main app to the front
- *  - long   → open the quick-chat panel with voice input already recording (both styles)
+ *  - long   → [ORIGINAL] hold-to-talk quick chat; [CAPSULE] open the quick-chat panel (no voice arm)
  *  - drag   → move it; it settles on an edge with side hysteresis and remembers where it was
  *
  * While a generation turn runs the ball is also the "agent is working" light: its halo turns grey
@@ -316,9 +316,14 @@ class FloatingBallService : Service(), KoinComponent {
         // Only fire if the finger is still down and we have not turned this into a drag.
         if (ballView != null) {
             longPressFired = true
-            // Hold-to-talk: the panel records while the finger is down and stops when it lifts.
-            _voiceHold.value = true
-            openQuickChat(voice = true)
+            if (shownStyle == FloatingBallStyle.CAPSULE) {
+                // Capsule: long-press opens the floating quick-chat panel (tap already goes to the app).
+                openQuickChat(voice = false)
+            } else {
+                // Round ball: hold-to-talk — panel records while the finger is down and stops on lift.
+                _voiceHold.value = true
+                openQuickChat(voice = true)
+            }
         }
     }
 
@@ -840,10 +845,13 @@ class FloatingBallService : Service(), KoinComponent {
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                     mainHandler.removeCallbacks(longPressRunnable)
                     if (longPressFired) {
-                        // Finger up: hold-to-talk ends and the recorder stops. Only now may the ball
-                        // fold away into the panel — it was kept visible so it could keep the touch.
-                        _voiceHold.value = false
-                        if (panelOpen) mainHandler.post { collapseBall() }
+                        // Round-ball hold-to-talk: finger up ends recording. Capsule long-press only
+                        // opened the panel (no voice arm), so there is nothing to release here.
+                        if (_voiceHold.value) {
+                            _voiceHold.value = false
+                            // Ball was kept visible under the finger so the touch survived; fold now.
+                            if (panelOpen) mainHandler.post { collapseBall() }
+                        }
                     }
                     // A cancelled gesture (e.g. taken by the system) is never a tap: it must not open
                     // the panel/app. A drag still settles on an edge, and a ball woken by the touch stays out.
@@ -893,8 +901,8 @@ class FloatingBallService : Service(), KoinComponent {
 
     /**
      * Single tap on the awake overlay: the round ball still opens the half-screen quick-chat
-     * panel; the status capsule jumps straight back into the main app (long-press still opens
-     * voice quick-chat for both).
+     * panel; the status capsule jumps straight back into the main app. Capsule long-press is
+     * what opens the floating chat panel instead.
      */
     private fun onBallTap() {
         if (shownStyle == FloatingBallStyle.CAPSULE) openApp()
