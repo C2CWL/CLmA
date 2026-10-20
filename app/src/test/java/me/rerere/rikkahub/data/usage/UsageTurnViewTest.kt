@@ -331,6 +331,29 @@ class UsageTurnViewTest {
     }
 
     @Test
+    fun `an interrupted half carries its usage into the final reply`() {
+        val nodes = listOf(
+            TurnNode("u1", MessageRole.USER, 1_000L, null),
+            // 被插话打断的前半：没有 finalize，finishedAt 保持 null。
+            TurnNode("a1", MessageRole.ASSISTANT, 1_200L, null),
+            TurnNode("u2", MessageRole.USER, 5_000L, null),
+            TurnNode("a2", MessageRole.ASSISTANT, 5_200L, 9_000L),
+        )
+        val records = listOf(
+            row("m1", 1_500L, input = 10, output = 4),
+            row("m2", 5_500L, input = 20, output = 8),
+        )
+
+        val footers = UsageTurnViewFactory.footersFor(nodes, records)
+
+        assertFalse(footers.containsKey("a1"))
+        val footer = footers.getValue("a2")
+        assertEquals(30L, footer.usage!!.inputTokens)
+        assertEquals(12L, footer.usage.outputTokens)
+        assertEquals(2, footer.usage.callCount)
+    }
+
+    @Test
     fun `a node with no rows that is not running gets no footer`() {
         val nodes = listOf(
             TurnNode("u1", MessageRole.USER, 1_000L, null),

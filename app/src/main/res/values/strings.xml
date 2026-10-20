@@ -798,6 +798,8 @@
   <string name="setting_display_page_custom_font_title">Custom Font</string>
   <string name="setting_display_page_enable_auto_scroll_desc">Automatically scroll to the bottom when AI is generating content</string>
   <string name="setting_display_page_enable_auto_scroll_title">Auto Scroll</string>
+  <string name="setting_display_page_enable_interject_desc">Send a message into the current turn instead of queueing it until the reply finishes</string>
+  <string name="setting_display_page_enable_interject_title">Interject while generating</string>
   <string name="setting_display_page_enable_blur_effect_desc">Enable blur effect on chat input bar</string>
   <string name="setting_display_page_enable_blur_effect_title">Enable Blur Effect</string>
   <string name="setting_display_page_enable_latex_rendering_desc">Render mathematical expressions and formulas using LaTeX syntax</string>

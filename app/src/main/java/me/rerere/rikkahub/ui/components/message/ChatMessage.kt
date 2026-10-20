@@ -235,10 +235,12 @@ fun ChatMessage(
             assistant?.useGradientBackground == true,
         )
 
+        // 被插话打断的前半保持 finishedAt == null：它“话还没说完”，不出操作栏，
+        // 避免在同一个回合中间出现“这条回复已结束”的视觉断裂。
         val showActions = if (lastMessage) {
             !loading
         } else {
-            message.parts.isEmptyUIMessage().not()
+            message.parts.isEmptyUIMessage().not() && message.finishedAt != null
         }
 
         AnimatedVisibility(

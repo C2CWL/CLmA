@@ -243,6 +243,9 @@ object UsageTurnViewFactory {
         val usageByMessage = map(windowsFor(nodes.map { it.messageId to it.createdAtMs }), records)
         val result = LinkedHashMap<String, TurnFooter>()
         var lastUserStartMs: Long? = null
+        // 被插话打断、尚未 finalize 的前半：不单独出 footer，usage 结转到下一条，
+        // 最后一条显示整轮合并后的 tokens/耗时。
+        var carriedUsage: TurnUsageView? = null
         for (node in nodes) {
             if (node.role == MessageRole.USER) {
                 lastUserStartMs = node.createdAtMs
@@ -251,13 +254,40 @@ object UsageTurnViewFactory {
             val running = node.messageId == liveMessageId
             val usage = usageByMessage[node.messageId]
             if (usage == null && !running) continue
+            if (!running && node.finishedAtMs == null) {
+                carriedUsage = merge(carriedUsage, usage)
+                continue
+            }
             result[node.messageId] = TurnFooter(
-                usage = usage,
+                usage = merge(carriedUsage, usage),
                 startedAtMs = lastUserStartMs ?: node.createdAtMs,
                 finishedAtMs = if (running) null else node.finishedAtMs,
                 running = running,
             )
+            carriedUsage = null
         }
         return result
     }
+
+    /** 合并两段 turn usage（插话打断时前半结转到后半）。null 视为空。 */
+    fun merge(a: TurnUsageView?, b: TurnUsageView?): TurnUsageView? {
+        if (a == null) return b
+        if (b == null) return a
+        return TurnUsageView(
+            calls = a.calls + b.calls,
+            inputTokens = a.inputTokens + b.inputTokens,
+            outputTokens = a.outputTokens + b.outputTokens,
+            cacheHitTokens = a.cacheHitTokens + b.cacheHitTokens,
+            cachePromptTokens = a.cachePromptTokens + b.cachePromptTokens,
+            cacheReported = a.cacheReported || b.cacheReported,
+            providerCostUsd = sumNullable(a.providerCostUsd, b.providerCostUsd),
+            costMicros = sumNullable(a.costMicros, b.costMicros),
+        )
+    }
+
+    private fun sumNullable(a: Double?, b: Double?): Double? =
+        if (a == null) b else if (b == null) a else a + b
+
+    private fun sumNullable(a: Long?, b: Long?): Long? =
+        if (a == null) b else if (b == null) a else a + b
 }

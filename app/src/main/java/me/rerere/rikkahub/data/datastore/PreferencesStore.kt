@@ -1248,6 +1248,8 @@ data class DisplaySetting(
     val pasteLongTextThreshold: Int = 1000,
     val sendOnEnter: Boolean = false,
     val enableAutoScroll: Boolean = true,
+    // 生成中发送消息 = 插话（并入当前回合）。关闭后回到排队，等本轮结束再发。
+    val enableInterject: Boolean = true,
     val enableLatexRendering: Boolean = true,
     val enableBlurEffect: Boolean = false,
     val chatFontFamily: ChatFontFamily = ChatFontFamily.DEFAULT,

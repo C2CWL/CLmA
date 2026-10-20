@@ -515,19 +515,21 @@ private fun ChatPageContent(
                         }
                         inputState.clearInput()
                     },
-                    onInterjectClick = {
-                        // 生成中插话：并入当前回合，而不是排队等本轮结束。
-                        // 竞态下（生成刚好结束）保留草稿并提示，不静默吞掉输入。
-                        if (vm.interjectMessage(inputState.getContents())) {
-                            inputState.clearInput()
-                            scope.launch {
-                                delay(100.milliseconds)
-                                chatListState.requestScrollToItem(conversation.currentMessages.size + 5)
+                    onInterjectClick = if (setting.displaySetting.enableInterject) {
+                        {
+                            // 生成中插话：并入当前回合，而不是排队等本轮结束。
+                            // 竞态下（生成刚好结束）保留草稿并提示，不静默吞掉输入。
+                            if (vm.interjectMessage(inputState.getContents())) {
+                                inputState.clearInput()
+                                scope.launch {
+                                    delay(100.milliseconds)
+                                    chatListState.requestScrollToItem(conversation.currentMessages.size + 5)
+                                }
+                            } else {
+                                toaster.show(context.getString(R.string.chat_interject_unavailable))
                             }
-                        } else {
-                            toaster.show(context.getString(R.string.chat_interject_unavailable))
                         }
-                    },
+                    } else null,
                     onUpdateAssistant = {
                         vm.updateSettings(
                             setting.copy(
