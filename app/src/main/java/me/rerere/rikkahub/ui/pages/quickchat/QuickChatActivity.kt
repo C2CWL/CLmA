@@ -185,6 +185,14 @@ class QuickChatActivity : ComponentActivity() {
         readPanelExtras(intent)
     }
 
+    override fun onStop() {
+        super.onStop()
+        if (!isChangingConfigurations) {
+            FloatingBallService.notifyPanel(this, open = false)
+            finish()
+        }
+    }
+
     override fun onDestroy() {
         FloatingBallService.notifyPanel(this, open = false)
         super.onDestroy()

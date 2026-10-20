@@ -353,6 +353,11 @@ class FloatingBallService : Service(), KoinComponent {
                         settings.floatingBallTuckStyle != tuckedStyle
                     ) {
                         tuckIntoEdge()
+                    } else if (hidden) {
+                        refreshTuckedAlpha()
+                    }
+                    if (!hidden) {
+                        scheduleIdle()
                     }
                 }
             }
@@ -580,6 +585,7 @@ class FloatingBallService : Service(), KoinComponent {
         isShowing = false
         working = false
         unseenDone = false
+        lastTurnMs = null
         tuckedStyle = null
         mainHandler.removeCallbacks(capsuleTick)
         longPressFired = false
