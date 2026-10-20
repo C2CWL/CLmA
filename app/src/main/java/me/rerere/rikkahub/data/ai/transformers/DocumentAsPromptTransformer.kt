@@ -10,6 +10,7 @@ import me.rerere.document.DocxParser
 import me.rerere.document.EpubParser
 import me.rerere.document.PdfParser
 import me.rerere.document.PptxParser
+import me.rerere.rikkahub.utils.isAllowedFileType
 import java.io.File
 
 object DocumentAsPromptTransformer : InputMessageTransformer {
@@ -92,7 +93,16 @@ object DocumentAsPromptTransformer : InputMessageTransformer {
                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document" -> parseDocxAsText(file)
                 "application/vnd.openxmlformats-officedocument.presentationml.presentation" -> parsePptxAsText(file)
                 "application/epub+zip" -> parseEpubAsText(file)
-                else -> file.readText()
+                else -> {
+                    // Binary uploads (apk/zip/bin/…) stay on disk under /upload; do not dump
+                    // mojibake into the prompt. Text-like types are still inlined.
+                    if (isAllowedFileType(document.fileName, document.mime)) {
+                        file.readText()
+                    } else {
+                        val size = file.length()
+                        "[binary file, $size bytes — content not inlined; use workspace tools on the path above]"
+                    }
+                }
             }
         }.getOrElse {
             "[ERROR, failed to read file: ${document.fileName}]"

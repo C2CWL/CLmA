@@ -111,7 +111,10 @@ import me.rerere.rikkahub.subagent.SubAgentRegistry
 import me.rerere.rikkahub.subagent.SubAgentRun
 import me.rerere.rikkahub.subagent.SubAgentStatus
 import me.rerere.rikkahub.utils.base64Decode
+import me.rerere.rikkahub.utils.classifyChatAttachment
+import me.rerere.rikkahub.utils.guessMimeFromFileName
 import me.rerere.rikkahub.utils.navigateToChatPage
+import me.rerere.rikkahub.utils.toMessagePart
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
@@ -197,19 +200,41 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null) {
     // 初始化输入状态（处理传入的 files 和 text 参数）
     LaunchedEffect(files, text) {
         if (files.isNotEmpty()) {
+            // Pair each source URI with its copied local file. createChatFilesByContents may
+            // skip failures, so zip by successful copies in order rather than assuming 1:1.
             val localFiles = filesManager.createChatFilesByContents(files)
-            val contentTypes = files.mapNotNull { file ->
-                filesManager.getFileMimeType(file)
-            }
             val parts = buildList {
-                localFiles.forEachIndexed { index, file ->
-                    val type = contentTypes.getOrNull(index)
-                    if (type?.startsWith("image/") == true) {
-                        add(UIMessagePart.Image(url = file.toString()))
-                    } else if (type?.startsWith("video/") == true) {
-                        add(UIMessagePart.Video(url = file.toString()))
-                    } else if (type?.startsWith("audio/") == true) {
-                        add(UIMessagePart.Audio(url = file.toString()))
+                // Best-effort: walk sources and locals in parallel when counts match; otherwise
+                // classify each local file from its on-disk name.
+                if (localFiles.size == files.size) {
+                    localFiles.forEachIndexed { index, local ->
+                        val source = files[index]
+                        val fileName = filesManager.getFileNameFromUri(source)
+                            ?: local.lastPathSegment
+                            ?: "file"
+                        val mime = filesManager.getFileMimeType(source)
+                            ?: guessMimeFromFileName(fileName)
+                            ?: "application/octet-stream"
+                        add(
+                            classifyChatAttachment(fileName, mime).toMessagePart(
+                                localUri = local.toString(),
+                                fileName = fileName,
+                                mime = mime,
+                            )
+                        )
+                    }
+                } else {
+                    localFiles.forEach { local ->
+                        val fileName = local.lastPathSegment ?: "file"
+                        val mime = guessMimeFromFileName(fileName)
+                            ?: "application/octet-stream"
+                        add(
+                            classifyChatAttachment(fileName, mime).toMessagePart(
+                                localUri = local.toString(),
+                                fileName = fileName,
+                                mime = mime,
+                            )
+                        )
                     }
                 }
             }
