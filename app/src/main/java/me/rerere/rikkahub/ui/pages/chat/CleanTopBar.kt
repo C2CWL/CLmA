@@ -1,9 +1,11 @@
 package me.rerere.rikkahub.ui.pages.chat
 
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.DrawerState
@@ -11,6 +13,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -20,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -27,6 +31,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.dokar.sonner.ToastType
+import dev.chrisbanes.haze.HazeInput
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.glass.hazeGlass
 import kotlinx.coroutines.launch
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Cancel01
@@ -38,7 +45,12 @@ import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.datastore.resolveChatModel
 import me.rerere.rikkahub.data.model.Conversation
 import me.rerere.rikkahub.data.usage.TurnFooter
+import me.rerere.rikkahub.ui.components.ui.cleanHeaderShape
+import me.rerere.rikkahub.ui.components.ui.cleanPanelFill
+import me.rerere.rikkahub.ui.components.ui.cleanPanelOutline
+import me.rerere.rikkahub.ui.components.ui.rikkaGlassStyle
 import me.rerere.rikkahub.ui.context.LocalToaster
+import me.rerere.rikkahub.ui.theme.LocalDarkMode
 import org.koin.androidx.compose.koinViewModel
 
 /**
@@ -157,6 +169,54 @@ internal fun CleanTopBar(
                 }
             }
         },
+    )
+}
+
+/**
+ * Panel behind [CleanTopBar] (DisplaySetting.cleanLayout).
+ *
+ * The clean bar used to float on a full-width fade that had no edge of its own, which read as a
+ * white haze laid over the photo. It is a panel now: flush with the screen edges, only the bottom
+ * corners rounded, and a fill the user can dial (DisplaySetting.cleanLayoutTopOpacity). Same
+ * material as the composer card below — glass when DisplaySetting.cleanLayoutGlass is on (the
+ * glass carries its own rim, so no hairline is added), a flat fill with a hairline otherwise — so
+ * the two ends of the screen read as one pair. The fade is gone: content scrolling under a panel
+ * needs no dissolve, and the dissolve is exactly what looked wrong.
+ */
+@Composable
+internal fun CleanTopBarPanel(
+    settings: Settings,
+    hazeState: HazeState,
+    content: @Composable () -> Unit,
+) {
+    val darkTheme = LocalDarkMode.current
+    val glass = settings.displaySetting.cleanLayoutGlass
+    val opacity = settings.displaySetting.cleanLayoutTopOpacity
+    val shape = cleanHeaderShape()
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .then(
+                if (glass) {
+                    Modifier.hazeGlass(
+                        input = HazeInput.Sources(hazeState),
+                        style = rikkaGlassStyle(
+                            shape,
+                            blurRadius = 12.dp,
+                            depth = 0.4f,
+                            tintStrength = opacity,
+                        ),
+                    )
+                } else {
+                    Modifier
+                }
+            ),
+        shape = shape,
+        tonalElevation = 0.dp,
+        color = if (glass) Color.Transparent else cleanPanelFill(opacity),
+        border = if (glass) null else BorderStroke(1.dp, cleanPanelOutline(darkTheme)),
+        content = content,
     )
 }
 

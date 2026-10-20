@@ -670,33 +670,38 @@ private fun ChatPageContent(
                 val topFade = titleBarFade(
                     darkTheme = darkTheme,
                     photoShown = photoShown,
-                    cleanLayout = setting.displaySetting.cleanLayout,
                 )
                 val bottomFade = bottomBarFade(darkTheme = darkTheme, photoShown = photoShown)
                 val fadeColor = MaterialTheme.colorScheme.background
+                val cleanLayout = setting.displaySetting.cleanLayout
 
                 // Top dissolve: extends below the title bar so incoming/outgoing messages
                 // fade in/out smoothly instead of clipping abruptly at the bar's bottom edge.
+                // The clean layout has a real panel up there (CleanTopBarPanel) with an edge and a
+                // fill of its own, so it needs no dissolve — and the dissolve was the white haze
+                // that made the top look wrong over a photo.
                 val topFadeExtension = 40.dp
                 val topFadeHeight = if (topBarHeightPx > 0) {
                     topBarHeight + topFadeExtension
                 } else {
                     innerPadding.calculateTopPadding() + 64.dp + topFadeExtension
                 }
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .fillMaxWidth()
-                        .height(topFadeHeight)
-                        .background(
-                            Brush.verticalGradient(
-                                0f to fadeColor.copy(alpha = topFade.topAlpha),
-                                (if (topBarHeightPx > 0) (topBarHeight / topFadeHeight).coerceIn(0.3f, 0.7f) else 0.5f) to
-                                    fadeColor.copy(alpha = topFade.midAlpha),
-                                1f to Color.Transparent,
+                if (!cleanLayout) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .fillMaxWidth()
+                            .height(topFadeHeight)
+                            .background(
+                                Brush.verticalGradient(
+                                    0f to fadeColor.copy(alpha = topFade.topAlpha),
+                                    (if (topBarHeightPx > 0) (topBarHeight / topFadeHeight).coerceIn(0.3f, 0.7f) else 0.5f) to
+                                        fadeColor.copy(alpha = topFade.midAlpha),
+                                    1f to Color.Transparent,
+                                )
                             )
-                        )
-                )
+                    )
+                }
 
                 // Bottom dissolve: smooth fade-out as messages slide down toward the bottom bar.
                 val bottomBarHeight = innerPadding.calculateBottomPadding()
@@ -724,16 +729,18 @@ private fun ChatPageContent(
                         .onSizeChanged { topBarHeightPx = it.height },
                 ) {
                     if (setting.displaySetting.cleanLayout) {
-                        CleanTopBar(
-                            settings = setting,
-                            conversation = conversation,
-                            turnFooters = turnFooters,
-                            drawerState = drawerState,
-                            bigScreen = bigScreen,
-                            previewMode = previewMode,
-                            onClickMenu = { previewMode = !previewMode },
-                            onNewChat = { navigateToChatPage(navController) },
-                        )
+                        CleanTopBarPanel(settings = setting, hazeState = hazeState) {
+                            CleanTopBar(
+                                settings = setting,
+                                conversation = conversation,
+                                turnFooters = turnFooters,
+                                drawerState = drawerState,
+                                bigScreen = bigScreen,
+                                previewMode = previewMode,
+                                onClickMenu = { previewMode = !previewMode },
+                                onNewChat = { navigateToChatPage(navController) },
+                            )
+                        }
                     } else TopBar(
                         settings = setting,
                         conversation = conversation,

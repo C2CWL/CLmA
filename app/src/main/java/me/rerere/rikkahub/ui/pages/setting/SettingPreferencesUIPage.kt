@@ -193,6 +193,38 @@ fun SettingPreferencesUIPage(vm: SettingVM = koinViewModel()) {
                                 )
                             },
                         )
+                        item(
+                            headlineContent = { Text(stringResource(R.string.setting_display_page_clean_layout_top_opacity_title)) },
+                            supportingContent = {
+                                Column {
+                                    Text(stringResource(R.string.setting_display_page_clean_layout_opacity_desc))
+                                    PercentSlider(
+                                        value = displaySetting.cleanLayoutTopOpacity,
+                                        onValueChange = {
+                                            updateDisplaySetting(displaySetting.copy(cleanLayoutTopOpacity = it))
+                                        },
+                                        valueRange = 0f..1f,
+                                        title = stringResource(R.string.setting_display_page_clean_layout_top_opacity_title),
+                                    )
+                                }
+                            },
+                        )
+                        item(
+                            headlineContent = { Text(stringResource(R.string.setting_display_page_clean_layout_bottom_opacity_title)) },
+                            supportingContent = {
+                                Column {
+                                    Text(stringResource(R.string.setting_display_page_clean_layout_opacity_desc))
+                                    PercentSlider(
+                                        value = displaySetting.cleanLayoutBottomOpacity,
+                                        onValueChange = {
+                                            updateDisplaySetting(displaySetting.copy(cleanLayoutBottomOpacity = it))
+                                        },
+                                        valueRange = 0f..1f,
+                                        title = stringResource(R.string.setting_display_page_clean_layout_bottom_opacity_title),
+                                    )
+                                }
+                            },
+                        )
                     }
                     item(
                         headlineContent = { Text(stringResource(R.string.setting_display_page_show_user_avatar_title)) },

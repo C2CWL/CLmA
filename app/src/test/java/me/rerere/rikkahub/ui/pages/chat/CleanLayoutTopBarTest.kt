@@ -1,5 +1,6 @@
 package me.rerere.rikkahub.ui.pages.chat
 
+import me.rerere.rikkahub.ui.components.ui.cleanPanelAlpha
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -40,22 +41,13 @@ class CleanLayoutTopBarTest {
     }
 
     @Test
-    fun `clean layout raises the top fade on a light photo`() {
-        val regular = titleBarFade(darkTheme = false, photoShown = true)
-        val clean = titleBarFade(darkTheme = false, photoShown = true, cleanLayout = true)
-        assertTrue(clean.topAlpha > regular.topAlpha)
-        assertTrue(clean.midAlpha > regular.midAlpha)
-        assertEquals(0f, clean.bottomAlpha, 0f)
-    }
-
-    @Test
-    fun `clean layout leaves every other case unchanged`() {
-        for (dark in listOf(true, false)) for (photo in listOf(true, false)) {
-            if (!dark && photo) continue
-            assertEquals(
-                titleBarFade(darkTheme = dark, photoShown = photo),
-                titleBarFade(darkTheme = dark, photoShown = photo, cleanLayout = true),
-            )
-        }
+    fun `clean layout panels clamp their strength`() {
+        // 0 = fully clear, 1 = the material's default strength; stored values outside that range
+        // (older settings, bad imports) must not produce an out-of-gamut alpha.
+        assertEquals(0f, cleanPanelAlpha(0f), 0f)
+        assertEquals(1f, cleanPanelAlpha(1f), 0f)
+        assertEquals(0.4f, cleanPanelAlpha(0.4f), 0f)
+        assertEquals(0f, cleanPanelAlpha(-0.3f), 0f)
+        assertEquals(1f, cleanPanelAlpha(2f), 0f)
     }
 }
