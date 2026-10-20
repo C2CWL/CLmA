@@ -1,6 +1,7 @@
 package me.rerere.rikkahub.data.ai.tools.local
 
 import android.content.Context
+import kotlinx.coroutines.delay
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
@@ -22,6 +23,10 @@ private const val SHELL_TIMEOUT_MS = 10_000
 /** Wraps a Shizuku exec result into a tool result (list of UIMessagePart.Text). */
 private fun shizukuResultToParts(result: JsonObject): List<UIMessagePart.Text> =
     listOf(UIMessagePart.Text(result.toString()))
+
+/** Captured stdout of a Shizuku exec result, or "" when the call failed before running. */
+private fun JsonObject.stdoutOf(): String =
+    this["stdout"]?.jsonPrimitive?.contentOrNull ?: ""
 
 // --- tool definitions --------------------------------------------------------------------
 
@@ -156,8 +161,11 @@ fun virtualDisplayLaunchTool(context: Context): Tool = Tool(
     name = "virtual_display_launch",
     description = """
         Launch an app on a virtual display. Requires Shizuku (shell UID) to run `am start
-        --display`. Use the package_name from list_installed_apps; optionally specify an
-        activity for a specific screen.
+        --display`. Use the package_name from list_installed_apps; activity is optional — when
+        omitted the app's launcher activity is resolved. The task is always started as a new
+        task, so the display actually renders: if the app is already running on another
+        display it is force-stopped first (unsaved state is lost) and the result carries
+        force_stopped=true.
     """.trimIndent().replace("\n", " "),
     parameters = {
         InputSchema.Obj(
@@ -172,7 +180,7 @@ fun virtualDisplayLaunchTool(context: Context): Tool = Tool(
                 })
                 put("activity", buildJsonObject {
                     put("type", "string")
-                    put("description", "Optional activity class name to launch a specific screen")
+                    put("description", "Optional activity class name to launch a specific screen (e.g. .MainActivity). Omit to use the launcher activity.")
                 })
             },
             required = listOf("display_id", "package_name")
@@ -187,6 +195,22 @@ fun virtualDisplayLaunchTool(context: Context): Tool = Tool(
                 buildJsonObject { put("error", "display_id and package_name are required") }.toString()
             ))
         }
+        if (!isValidPackageName(pkg)) {
+            return@Tool listOf(UIMessagePart.Text(
+                buildJsonObject {
+                    put("error", "invalid_package_name")
+                    put("detail", "Expected a package name like com.example.app, got: $pkg")
+                }.toString()
+            ))
+        }
+        if (!isValidActivityName(activity)) {
+            return@Tool listOf(UIMessagePart.Text(
+                buildJsonObject {
+                    put("error", "invalid_activity")
+                    put("detail", "Expected an activity class name like .MainActivity or com.example.app.MainActivity, got: $activity")
+                }.toString()
+            ))
+        }
         if (!VirtualDisplayController.contains(displayId)) {
             return@Tool listOf(UIMessagePart.Text(
                 buildJsonObject {
@@ -196,8 +220,29 @@ fun virtualDisplayLaunchTool(context: Context): Tool = Tool(
             ))
         }
         val cmd = buildLaunchCommand(displayId, pkg, activity)
-        val result = ShizukuManager.exec(context, cmd, SHELL_TIMEOUT_MS)
-        shizukuResultToParts(result)
+        var result = ShizukuManager.exec(context, cmd, SHELL_TIMEOUT_MS)
+        var forceStopped = false
+        // The app already had a task on another display: `am` delivered the intent to that
+        // instance and the task lands on the virtual display paused / not visible, so it never
+        // renders and the a11y tree is empty. force-stop + retry is the only reliable fix.
+        if (wasDeliveredToRunningInstance(result.stdoutOf())) {
+            ShizukuManager.exec(context, buildForceStopCommand(pkg), SHELL_TIMEOUT_MS)
+            delay(400)
+            result = ShizukuManager.exec(context, cmd, SHELL_TIMEOUT_MS)
+            forceStopped = true
+        }
+        val merged = buildJsonObject {
+            result.forEach { (key, value) -> put(key, value) }
+            if (forceStopped) {
+                put("force_stopped", true)
+                put(
+                    "note",
+                    "The app was already running on another display; it was force-stopped so a " +
+                        "fresh task could start on display $displayId. Unsaved state in that app is lost."
+                )
+            }
+        }
+        shizukuResultToParts(merged)
     }
 )
 

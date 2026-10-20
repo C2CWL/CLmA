@@ -1,6 +1,7 @@
 package me.rerere.rikkahub.data.ai.tools.local
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -64,18 +65,105 @@ class VirtualDisplayToolsTest {
     // --- buildLaunchCommand ------------------------------------------------------------
 
     @Test
-    fun `launch command without activity`() {
+    fun `launch command without activity resolves launcher intent`() {
+        // `-n <pkg>` is not a valid component ("Bad component name"), so a package-only
+        // launch must use an implicit MAIN/LAUNCHER intent scoped to the package.
         val cmd = buildLaunchCommand(42, "com.android.chrome", null)
-        assertEquals("am start --display 42 -n com.android.chrome", cmd)
+        assertEquals(
+            "am start --display 42 -f 0x18000000 " +
+                "-a android.intent.action.MAIN -c android.intent.category.LAUNCHER " +
+                "-p com.android.chrome",
+            cmd,
+        )
     }
 
     @Test
     fun `launch command with activity`() {
         val cmd = buildLaunchCommand(1, "com.example.app", "com.example.app.MainActivity")
         assertEquals(
-            "am start --display 1 -n com.example.app/com.example.app.MainActivity",
+            "am start --display 1 -f 0x18000000 -n com.example.app/com.example.app.MainActivity",
             cmd,
         )
+    }
+
+    @Test
+    fun `launch command with relative activity`() {
+        val cmd = buildLaunchCommand(7, "com.example.app", ".MainActivity")
+        assertEquals(
+            "am start --display 7 -f 0x18000000 -n com.example.app/.MainActivity",
+            cmd,
+        )
+    }
+
+    @Test
+    fun `launch command always carries new-task and multiple-task flags`() {
+        // --display is only honoured for a *new* task; without MULTIPLE_TASK the intent is
+        // delivered to the app's existing instance and the task ends up on the virtual
+        // display paused / not visible.
+        assertTrue(buildLaunchCommand(3, "com.example.app", null).contains("-f 0x18000000"))
+        assertTrue(buildLaunchCommand(3, "com.example.app", ".Main").contains("-f 0x18000000"))
+    }
+
+    // --- launch retry helpers -----------------------------------------------------------
+
+    @Test
+    fun `delivered-to-running-instance is detected`() {
+        val out = "Starting: Intent { cmp=a/b }\n" +
+            "Warning: Activity not started, intent has been delivered to currently " +
+            "running top-most instance.\n"
+        assertTrue(wasDeliveredToRunningInstance(out))
+    }
+
+    @Test
+    fun `delivered-to-running-instance shorter variant is detected`() {
+        assertTrue(wasDeliveredToRunningInstance("intent has been delivered to top-most instance"))
+    }
+
+    @Test
+    fun `successful start is not treated as delivered-to-running-instance`() {
+        assertFalse(wasDeliveredToRunningInstance("Starting: Intent { cmp=a/b }\n"))
+    }
+
+    @Test
+    fun `unresolvable intent is not treated as delivered-to-running-instance`() {
+        // "Activity not started, unable to resolve Intent" is a different failure — retrying
+        // after force-stop would not help, so it must not trigger the retry path.
+        val out = "Error: Activity not started, unable to resolve Intent { act=MAIN pkg=x }\n"
+        assertFalse(wasDeliveredToRunningInstance(out))
+    }
+
+    @Test
+    fun `force stop command format`() {
+        assertEquals("am force-stop com.example.app", buildForceStopCommand("com.example.app"))
+    }
+
+    // --- parameter validation -----------------------------------------------------------
+
+    @Test
+    fun `valid package names are accepted`() {
+        assertTrue(isValidPackageName("com.android.settings"))
+        assertTrue(isValidPackageName("excp.rikkahub.debug"))
+        assertTrue(isValidPackageName("a"))
+    }
+
+    @Test
+    fun `package names with shell metacharacters are rejected`() {
+        assertFalse(isValidPackageName("com.foo; rm -rf /"))
+        assertFalse(isValidPackageName("com.foo && reboot"))
+        assertFalse(isValidPackageName("com.foo bar"))
+        assertFalse(isValidPackageName("com.foo\$(id)"))
+        assertFalse(isValidPackageName(""))
+        assertFalse(isValidPackageName(null))
+    }
+
+    @Test
+    fun `activity names are validated`() {
+        assertTrue(isValidActivityName(null))
+        assertTrue(isValidActivityName(".MainActivity"))
+        assertTrue(isValidActivityName("com.example.app.MainActivity"))
+        assertTrue(isValidActivityName("com.example.app.MainActivity\$Inner"))
+        assertFalse(isValidActivityName("pkg/Act"))
+        assertFalse(isValidActivityName("Main; rm -rf /"))
     }
 
     // --- buildTapCommand ----------------------------------------------------------------
