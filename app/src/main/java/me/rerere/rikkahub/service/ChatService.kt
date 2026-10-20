@@ -2119,7 +2119,7 @@ class ChatService(
                         } else {
                             currentConversation.updateCurrentMessages(chunk.messages)
                         }
-                        updateConversation(conversationId, updatedConversation)
+                        updateConversation(conversationId, updatedConversation, checkFiles = false)
                         markStreamingPersistence(conversationId)
                         persistStreamingStateIfDue(conversationId)
 
@@ -3497,10 +3497,17 @@ class ChatService(
 
     // ---- 对话状态更新 ----
 
-    private fun updateConversation(conversationId: Uuid, conversation: Conversation) {
+    private fun updateConversation(
+        conversationId: Uuid,
+        conversation: Conversation,
+        checkFiles: Boolean = true,
+    ) {
         if (conversation.id != conversationId) return
         val session = getOrCreateSession(conversationId)
-        checkFilesDelete(conversation, session.state.value)
+        // 流式热路径（每个 token 一次）跳过附件扫描：chunk 只追加/更新当前消息，
+        // 不会移除附件，而 checkFilesDelete 要遍历全部消息的 parts 才能算出差集。
+        // 用户编辑、删除、收藏走 updateConversationState，那里的扫描原样保留。
+        if (checkFiles) checkFilesDelete(conversation, session.state.value)
         session.state.value = conversation
     }
 

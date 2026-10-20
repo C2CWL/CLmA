@@ -62,33 +62,44 @@ data class Conversation(
 
     fun updateCurrentMessages(messages: List<UIMessage>): Conversation {
         val newNodes = this.messageNodes.toMutableList()
+        var changed = false
 
         messages.forEachIndexed { index, message ->
-            val node = newNodes
-                .getOrElse(index) { message.toMessageNode() }
+            val node = if (index <= newNodes.lastIndex) {
+                newNodes[index]
+            } else {
+                message.toMessageNode().also {
+                    newNodes.add(it)
+                    changed = true
+                }
+            }
+
+            val existingIndex = node.messages.indexOfFirst { it.id == message.id }
+            // 流式热路径：StreamChunkHandler 只对最后一条消息 copy，前面消息的引用不变。
+            // 引用相同时复用 node，避免每个 token 把整条历史重新复制一遍 —— 复制会让
+            // 每个可见 item 的参数都变，整页跟着重组。
+            if (existingIndex >= 0 && node.messages[existingIndex] === message) {
+                return@forEachIndexed
+            }
 
             val newMessages = node.messages.toMutableList()
             var newMessageIndex = node.selectIndex
-            if (newMessages.any { it.id == message.id }) {
-                newMessages[newMessages.indexOfFirst { it.id == message.id }] = message
+            if (existingIndex >= 0) {
+                newMessages[existingIndex] = message
             } else {
                 newMessages.add(message)
                 newMessageIndex = newMessages.lastIndex
             }
 
-            val newNode = node.copy(
+            newNodes[index] = node.copy(
                 messages = newMessages,
                 selectIndex = newMessageIndex
             )
-
-            // 更新newNodes
-            if (index > newNodes.lastIndex) {
-                newNodes.add(newNode)
-            } else {
-                newNodes[index] = newNode
-            }
+            changed = true
         }
 
+        // 没有任何节点变化时返回同一个实例：StateFlow 用引用相等短路，不会触发重组。
+        if (!changed) return this
         return this.copy(
             messageNodes = newNodes
         )

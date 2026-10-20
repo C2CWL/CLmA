@@ -514,7 +514,9 @@ private fun MessagePartsBlock(
                                 )
                                 if (settings.displaySetting.showAssistantBubble || onPhoto) {
                                     Surface(
-                                        modifier = Modifier.animateContentSize(),
+                                        // 流式期间关掉高度动画：内容每个 token 都在长，
+                                        // 动画每帧都要重测+插值，和自动跟随滚动抢帧。
+                                        modifier = if (loading) Modifier else Modifier.animateContentSize(),
                                         shape = RoundedCornerShape(16.dp),
                                         color = if (settings.displaySetting.showAssistantBubble) {
                                             MaterialTheme.colorScheme.surfaceContainerHigh.copy(
@@ -543,8 +545,8 @@ private fun MessagePartsBlock(
                                             visual = true,
                                         ),
                                         onClickCitation = handleClickCitation,
-                                        modifier = Modifier
-                                            .animateContentSize()
+                                        // 同上：流式中不做高度动画，结束后恢复。
+                                        modifier = if (loading) Modifier else Modifier.animateContentSize()
                                     )
                                 }
                             }
