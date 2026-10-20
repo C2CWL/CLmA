@@ -672,18 +672,19 @@ fun ChatDrawerContent(
     if (showMoveToFolderSheet) {
         val doMove: (Uuid?) -> Unit = { folderId ->
             val ids = if (batchMove) selectedIds.toList() else listOfNotNull(conversationToMoveFolder?.id)
-            if (ids.isEmpty()) return@doMove
-            if (batchMove) {
-                drawerVm.moveConversationsToFolder(ids, folderId)
-            } else {
-                drawerVm.moveConversationToFolder(ids.first(), folderId)
-            }
-            scope.launch {
-                folderSheetState.hide()
-                showMoveToFolderSheet = false
-                conversationToMoveFolder = null
-                if (batchMove) exitSelection()
-                conversations.refresh()
+            if (ids.isNotEmpty()) {
+                if (batchMove) {
+                    drawerVm.moveConversationsToFolder(ids, folderId)
+                } else {
+                    drawerVm.moveConversationToFolder(ids.first(), folderId)
+                }
+                scope.launch {
+                    folderSheetState.hide()
+                    showMoveToFolderSheet = false
+                    conversationToMoveFolder = null
+                    if (batchMove) exitSelection()
+                    conversations.refresh()
+                }
             }
         }
         ModalBottomSheet(
