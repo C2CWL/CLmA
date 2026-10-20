@@ -70,6 +70,27 @@ class DisplaySettingCleanLayoutTest {
     }
 
     @Test
+    fun `panel size defaults and reads back from older settings`() {
+        val setting = DisplaySetting()
+        assertEquals(48f, setting.cleanLayoutTopHeight, 0f)
+        assertEquals(6f, setting.cleanLayoutBottomPadding, 0f)
+        val legacy = """{"cleanLayout":true}"""
+        val decoded = JsonInstant.decodeFromString<DisplaySetting>(legacy)
+        assertEquals(48f, decoded.cleanLayoutTopHeight, 0f)
+        assertEquals(6f, decoded.cleanLayoutBottomPadding, 0f)
+    }
+
+    @Test
+    fun `panel size round-trips`() {
+        val json = JsonInstant.encodeToString(
+            DisplaySetting(cleanLayout = true, cleanLayoutTopHeight = 56f, cleanLayoutBottomPadding = 4f)
+        )
+        val decoded = JsonInstant.decodeFromString<DisplaySetting>(json)
+        assertEquals(56f, decoded.cleanLayoutTopHeight, 0f)
+        assertEquals(4f, decoded.cleanLayoutBottomPadding, 0f)
+    }
+
+    @Test
     fun `panel opacity round-trips`() {
         val json = JsonInstant.encodeToString(
             DisplaySetting(cleanLayout = true, cleanLayoutTopOpacity = 0.4f, cleanLayoutBottomOpacity = 0f)

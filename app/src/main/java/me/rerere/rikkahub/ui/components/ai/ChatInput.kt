@@ -328,7 +328,12 @@ fun ChatInput(
                     // Extra inset so the round buttons stay clear of the capsule's edge; the
                     // middle (text) column gives up that space instead.
                     modifier = if (cleanLayout) {
-                        Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
+                        // Vertical inset is the user's call (DisplaySetting.cleanLayoutBottomPadding,
+                        // 4..10dp). It only grows the card; the field and the buttons keep their place.
+                        Modifier.padding(
+                            horizontal = 14.dp,
+                            vertical = settings.displaySetting.cleanLayoutBottomPadding.dp,
+                        )
                     } else {
                         Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
                     },

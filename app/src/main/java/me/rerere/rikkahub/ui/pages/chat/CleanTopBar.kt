@@ -84,6 +84,9 @@ internal fun CleanTopBar(
     val editTitleWarning = stringResource(R.string.chat_page_edit_title_warning)
 
     TopAppBar(
+        // Shorter than the 64dp default so the panel takes less of the photo. The status-bar inset
+        // is applied by the bar itself and is not part of this height, so a punch-hole stays clear.
+        expandedHeight = settings.displaySetting.cleanLayoutTopHeight.dp,
         colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
         navigationIcon = {
             if (!bigScreen) {
