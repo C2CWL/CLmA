@@ -950,7 +950,7 @@ class GenerationLoop(
                 }
                 if (steered) {
                     // 插话打断：最后一条 assistant 若没有任何内容就丢掉，避免空气泡；
-                    // 有内容则保留为已完成的半截回复。
+                    // 有内容则保留为“话说到一半”的半截回复（不 finalize，不出操作栏）。
                     messages = messages.trimSteeredTail()
                 }
                 if (messages.lastOrNull()?.role == MessageRole.ASSISTANT) {
@@ -961,17 +961,19 @@ class GenerationLoop(
                         assistant = assistant,
                         settings = settings
                     )
-                    messages = messages.onGenerationFinish(
-                        transformers = outputTransformers,
-                        context = context,
-                        model = model,
-                        assistant = assistant,
-                        settings = settings
-                    )
-                    messages = messages.slice(0 until messages.lastIndex) + messages.last().copy(
-                        finishedAt = Clock.System.now()
-                            .toLocalDateTime(TimeZone.currentSystemDefault())
-                    )
+                    if (!steered) {
+                        messages = messages.onGenerationFinish(
+                            transformers = outputTransformers,
+                            context = context,
+                            model = model,
+                            assistant = assistant,
+                            settings = settings
+                        )
+                        messages = messages.slice(0 until messages.lastIndex) + messages.last().copy(
+                            finishedAt = Clock.System.now()
+                                .toLocalDateTime(TimeZone.currentSystemDefault())
+                        )
+                    }
                     emit(GenerationChunk.Messages(messages))
                 }
 

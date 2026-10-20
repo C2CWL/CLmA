@@ -761,6 +761,8 @@
   <string name="setting_display_page_custom_font_title">自定义字体</string>
   <string name="setting_display_page_enable_auto_scroll_desc">AI生成内容时自动滚动到底部</string>
   <string name="setting_display_page_enable_auto_scroll_title">自动滚动</string>
+  <string name="setting_display_page_enable_interject_desc">生成中发送的消息并入当前回合，而不是排队等待本轮结束</string>
+  <string name="setting_display_page_enable_interject_title">生成中插话</string>
   <string name="setting_display_page_enable_blur_effect_desc">在聊天输入栏启用模糊效果</string>
   <string name="setting_display_page_enable_blur_effect_title">启用模糊效果</string>
   <string name="setting_display_page_enable_latex_rendering_desc">使用 LaTeX 语法渲染数学表达式和公式</string>

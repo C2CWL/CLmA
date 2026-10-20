@@ -147,6 +147,18 @@ fun SettingPreferencesGeneralPage(vm: SettingVM = koinViewModel()) {
                         },
                     )
                     item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_enable_interject_title)) },
+                        supportingContent = { Text(stringResource(R.string.setting_display_page_enable_interject_desc)) },
+                        trailingContent = {
+                            Switch(
+                                checked = displaySetting.enableInterject,
+                                onCheckedChange = {
+                                    updateDisplaySetting(displaySetting.copy(enableInterject = it))
+                                }
+                            )
+                        },
+                    )
+                    item(
                         headlineContent = { Text(stringResource(R.string.setting_display_page_loading_indicator_style_title)) },
                         supportingContent = {
                             Text(stringResource(R.string.setting_display_page_loading_indicator_style_desc))
