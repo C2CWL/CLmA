@@ -210,6 +210,44 @@ fun SettingPreferencesUIPage(vm: SettingVM = koinViewModel()) {
                             },
                         )
                         item(
+                            headlineContent = { Text(stringResource(R.string.setting_display_page_clean_layout_top_height_title)) },
+                            supportingContent = {
+                                Column {
+                                    Text(stringResource(R.string.setting_display_page_clean_layout_top_height_desc))
+                                    Slider(
+                                        value = displaySetting.cleanLayoutTopHeight,
+                                        onValueChange = {
+                                            updateDisplaySetting(displaySetting.copy(cleanLayoutTopHeight = it))
+                                        },
+                                        valueRange = 40f..72f,
+                                        steps = 31,
+                                    )
+                                }
+                            },
+                            trailingContent = {
+                                Text("${displaySetting.cleanLayoutTopHeight.roundToInt()} dp")
+                            },
+                        )
+                        item(
+                            headlineContent = { Text(stringResource(R.string.setting_display_page_clean_layout_bottom_padding_title)) },
+                            supportingContent = {
+                                Column {
+                                    Text(stringResource(R.string.setting_display_page_clean_layout_bottom_padding_desc))
+                                    Slider(
+                                        value = displaySetting.cleanLayoutBottomPadding,
+                                        onValueChange = {
+                                            updateDisplaySetting(displaySetting.copy(cleanLayoutBottomPadding = it))
+                                        },
+                                        valueRange = 4f..10f,
+                                        steps = 5,
+                                    )
+                                }
+                            },
+                            trailingContent = {
+                                Text("${displaySetting.cleanLayoutBottomPadding.roundToInt()} dp")
+                            },
+                        )
+                        item(
                             headlineContent = { Text(stringResource(R.string.setting_display_page_clean_layout_bottom_opacity_title)) },
                             supportingContent = {
                                 Column {
