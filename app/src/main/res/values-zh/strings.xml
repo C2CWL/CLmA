@@ -792,6 +792,8 @@
   <string name="setting_display_page_show_assistant_bubble_title">显示助手消息气泡</string>
   <string name="setting_display_page_show_datetime_in_message_desc">在每条消息下方显示日期和时间</string>
   <string name="setting_display_page_show_datetime_in_message_title">在消息中显示日期和时间</string>
+  <string name="setting_display_page_show_message_end_time_desc">回复完成或中断后，显示结束时间，而不是首字时间</string>
+  <string name="setting_display_page_show_message_end_time_title">优先显示结束/中断时间</string>
   <string name="setting_display_page_show_line_numbers_desc">在代码块中显示行号</string>
   <string name="setting_display_page_show_line_numbers_title">显示行号</string>
   <string name="setting_display_page_show_message_jumper_desc">在滚动聊天列表时，在右侧显示快速跳转按钮</string>

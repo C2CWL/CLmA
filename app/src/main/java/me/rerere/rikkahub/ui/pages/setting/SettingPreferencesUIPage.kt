@@ -319,6 +319,20 @@ fun SettingPreferencesUIPage(vm: SettingVM = koinViewModel()) {
                             )
                         },
                     )
+                    if (displaySetting.showDateTimeInMessage) {
+                        item(
+                            headlineContent = { Text(stringResource(R.string.setting_display_page_show_message_end_time_title)) },
+                            supportingContent = { Text(stringResource(R.string.setting_display_page_show_message_end_time_desc)) },
+                            trailingContent = {
+                                Switch(
+                                    checked = displaySetting.showMessageEndTime,
+                                    onCheckedChange = {
+                                        updateDisplaySetting(displaySetting.copy(showMessageEndTime = it))
+                                    }
+                                )
+                            },
+                        )
+                    }
                     item(
                         headlineContent = { Text(stringResource(R.string.setting_display_page_show_token_usage_title)) },
                         supportingContent = { Text(stringResource(R.string.setting_display_page_show_token_usage_desc)) },

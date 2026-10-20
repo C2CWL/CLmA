@@ -44,6 +44,7 @@ import me.rerere.ai.core.MessageRole
 import me.rerere.ai.provider.Model
 import me.rerere.ai.ui.UIMessage
 import me.rerere.ai.ui.UIMessagePart
+import kotlinx.datetime.LocalDateTime
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Copy01
 import me.rerere.hugeicons.stroke.Delete01
@@ -233,8 +234,13 @@ fun ColumnScope.ChatMessageActionButtons(
         )
 
         if (settings.displaySetting.showDateTimeInMessage) {
+            // Streaming: createdAt ≈ first-token time. After finish/stop: finishedAt when the
+            // "prefer end time" switch is on (default), else keep the old always-createdAt look.
+            val displayAt = message.displayTimestamp(
+                preferEndTime = settings.displaySetting.showMessageEndTime,
+            )
             Text(
-                text = message.createdAt.toJavaLocalDateTime().toMessageTimeString(),
+                text = displayAt.toJavaLocalDateTime().toMessageTimeString(),
                 style = MaterialTheme.typography.labelSmall,
                 color = ink.copy(alpha = style.timeAlpha),
                 maxLines = 1,
@@ -502,9 +508,13 @@ fun ChatMessageActionsSheet(
                 }
             }
 
-            // Message Info
+            // Message Info — sheet always lists createdAt; when a finish/interrupt stamp exists,
+            // show it too so the detail view keeps both ends of the turn.
             ProvideTextStyle(MaterialTheme.typography.labelSmall) {
                 Text(message.createdAt.toJavaLocalDateTime().toLocalString())
+                message.finishedAt?.let { finished ->
+                    Text(finished.toJavaLocalDateTime().toLocalString())
+                }
                 if (model != null) {
                     Text(model.displayName)
                 }
@@ -512,3 +522,12 @@ fun ChatMessageActionsSheet(
         }
     }
 }
+
+/**
+ * Compact message timestamp for the action row.
+ *
+ * - While streaming (`finishedAt == null`): always [UIMessage.createdAt] (first-token time).
+ * - After finish/stop: [UIMessage.finishedAt] when [preferEndTime] is on, else [UIMessage.createdAt].
+ */
+private fun UIMessage.displayTimestamp(preferEndTime: Boolean): LocalDateTime =
+    if (preferEndTime) finishedAt ?: createdAt else createdAt

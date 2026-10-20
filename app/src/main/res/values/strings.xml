@@ -829,6 +829,8 @@
   <string name="setting_display_page_show_assistant_bubble_title">Show Assistant Message Bubble</string>
   <string name="setting_display_page_show_datetime_in_message_desc">Show date and time below each message</string>
   <string name="setting_display_page_show_datetime_in_message_title">Show Date and Time in Message</string>
+  <string name="setting_display_page_show_message_end_time_desc">After a reply finishes or is stopped, show the end time instead of the first-token time</string>
+  <string name="setting_display_page_show_message_end_time_title">Prefer End / Interrupt Time</string>
   <string name="setting_display_page_show_line_numbers_desc">Display line numbers in code blocks</string>
   <string name="setting_display_page_show_line_numbers_title">Show Line Numbers</string>
   <string name="setting_display_page_show_message_jumper_desc">Display quick jump buttons on the right when scrolling the chat list</string>
