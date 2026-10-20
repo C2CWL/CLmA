@@ -3477,6 +3477,77 @@ class ChatService(
     }
 
     /**
+     * 批量移动会话到文件夹（folderId 为 null 表示移出到未归类）。
+     * 与 [moveConversationToFolder] 相同：先同步活跃 session 内存态，再批量落库，
+     * 避免后续整对象保存把 folder_id 覆盖回旧值。
+     */
+    suspend fun moveConversationsToFolder(conversationIds: Collection<Uuid>, folderId: Uuid?) {
+        val ids = conversationIds.distinct()
+        if (ids.isEmpty()) return
+        ids.forEach { conversationId ->
+            if (sessions.containsKey(conversationId)) {
+                updateConversationState(conversationId) { it.copy(folderId = folderId) }
+            }
+        }
+        conversationRepo.updateConversationsFolderId(ids, folderId)
+    }
+
+    /**
+     * 批量把会话移到另一个助手。
+     *
+     * 文件夹是按助手划分的，换助手后旧文件夹在新助手下不可见，所以一并清空 folderId
+     * （与单条移动一致）。活跃 session 先同步内存态，避免整对象保存把 assistantId 写回去。
+     * 同时清掉「本对话允许」的工具授权：新助手能用到的工具面可能完全不同。
+     */
+    suspend fun moveConversationsToAssistant(conversationIds: Collection<Uuid>, targetAssistantId: Uuid) {
+        val ids = conversationIds.distinct()
+        if (ids.isEmpty()) return
+        ids.forEach { conversationId ->
+            if (sessions.containsKey(conversationId)) {
+                updateConversationState(conversationId) {
+                    it.copy(assistantId = targetAssistantId, folderId = null)
+                }
+            }
+        }
+        ids.forEach { conversationId ->
+            val full = conversationRepo.getConversationById(conversationId) ?: return@forEach
+            me.rerere.rikkahub.data.ai.tools.ToolApprovalAllowList.clearChat(conversationId)
+            conversationRepo.updateConversation(
+                full.copy(assistantId = targetAssistantId, folderId = null)
+            )
+        }
+    }
+
+    /**
+     * 已删除会话的墓碑。进程内有效：阻止生成收尾、生命周期刷盘把刚删掉的会话又 insert 回来。
+     * 进程重启后 session 本来就是空的，不需要持久化。
+     */
+    private val deletedConversationIds = ConcurrentHashMap.newKeySet<Uuid>()
+
+    /**
+     * 批量删除会话。先记墓碑并停掉生成，再丢掉内存 session，最后在持久化锁里删库，
+     * 避免进行中的 save 把行写回来。文件和搜索索引走 [ConversationRepository.deleteConversation]。
+     */
+    suspend fun deleteConversations(conversationIds: Collection<Uuid>) {
+        val ids = conversationIds.distinct()
+        if (ids.isEmpty()) return
+        deletedConversationIds.addAll(ids)
+        ids.forEach { id ->
+            if (sessions[id]?.isGenerating == true) {
+                runCatching { stopGeneration(id) }
+                    .onFailure { Log.w(TAG, "stop before batch delete failed for $id", it) }
+            }
+            dropSession(id)
+        }
+        ids.forEach { id ->
+            persistenceMutexFor(id).withLock {
+                val conversation = conversationRepo.getConversationById(id) ?: return@withLock
+                conversationRepo.deleteConversation(conversation)
+            }
+        }
+    }
+
+    /**
      * 重命名会话。若该会话当前有活跃 session，先同步内存态再落库：
      * 否则仅改数据库标题，内存里那份 Conversation 仍是旧标题，
      * 后续任意 saveConversation(id, state.value) 会用整对象把标题覆盖回旧值，导致重命名丢失。
@@ -3592,6 +3663,7 @@ class ChatService(
         conversation: Conversation,
         updateSearchIndex: Boolean = true,
     ): Boolean {
+        if (conversation.id in deletedConversationIds) return false
         val exists = conversationRepo.existsConversationById(conversation.id)
         if (!exists && conversation.title.isBlank() && conversation.messageNodes.isEmpty()) {
             return false // 新会话且为空时不保存

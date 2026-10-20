@@ -2003,6 +2003,11 @@
   <string name="assistant_page_local_tools_calendar_desc">السماح للذكاء الاصطناعي بالاستعلام عن أحداث التقويم وإنشائها</string>
   <string name="chat_message_tool_calendar_query">الاستعلام عن أحداث التقويم</string>
   <string name="chat_message_tool_calendar_create">إنشاء حدث: %1$s</string>
+  <string name="chat_page_multi_select">تحديد متعدد</string>
+  <string name="chat_page_selected_count">المحدد: %1$d</string>
+  <string name="chat_page_exit_multi_select">إلغاء</string>
+  <string name="chat_page_delete_selected_title">حذف المحادثات المحددة؟</string>
+  <string name="chat_page_delete_selected_confirm">سيتم حذف %1$d من المحادثات المحددة، ولا يمكن التراجع. سيتم إيقاف المحادثات التي ما زالت تُولَّد أولاً.</string>
   <string name="chat_page_move_to_folder">نقل إلى مجلد</string>
   <string name="chat_page_remove_from_folder">إزالة من المجلد</string>
   <string name="chat_page_create_folder">مجلد جديد</string>

@@ -7,9 +7,11 @@ import me.rerere.hugeicons.stroke.Pin
 import me.rerere.hugeicons.stroke.PinOff
 import me.rerere.hugeicons.stroke.Delete01
 import me.rerere.hugeicons.stroke.PencilEdit01
+import me.rerere.hugeicons.stroke.Tick02
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -30,7 +32,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -44,6 +45,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -53,7 +55,6 @@ import androidx.paging.compose.itemKey
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.model.Conversation
 import me.rerere.rikkahub.ui.theme.extendColors
-import me.rerere.rikkahub.utils.toLocalString
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.Locale
@@ -81,12 +82,16 @@ fun ConversationList(
     listState: LazyListState,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(0.dp),
+    selectionMode: Boolean = false,
+    selectedIds: Set<Uuid> = emptySet(),
     onClick: (Conversation) -> Unit = {},
     onDelete: (Conversation) -> Unit = {},
     onRename: (Conversation) -> Unit = {},
     onPin: (Conversation) -> Unit = {},
     onMoveToAssistant: (Conversation) -> Unit = {},
-    onMoveToFolder: (Conversation) -> Unit = {}
+    onMoveToFolder: (Conversation) -> Unit = {},
+    onToggleSelect: (Conversation) -> Unit = {},
+    onEnterSelection: (Conversation) -> Unit = {},
 ) {
     var hasScrolledToCurrent by remember(current.id) { mutableStateOf(false) }
 
@@ -158,12 +163,16 @@ fun ConversationList(
                         conversation = item.conversation,
                         selected = item.conversation.id == current.id,
                         loading = item.conversation.id in conversationJobs,
+                        selectionMode = selectionMode,
+                        checked = item.conversation.id in selectedIds,
                         onClick = onClick,
                         onDelete = onDelete,
                         onRename = onRename,
                         onPin = onPin,
                         onMoveToAssistant = onMoveToAssistant,
                         onMoveToFolder = onMoveToFolder,
+                        onToggleSelect = onToggleSelect,
+                        onEnterSelection = onEnterSelection,
                         modifier = Modifier.animateItem()
                     )
                 }
@@ -227,18 +236,23 @@ private fun ConversationItem(
     conversation: Conversation,
     selected: Boolean,
     loading: Boolean,
+    selectionMode: Boolean,
+    checked: Boolean,
     modifier: Modifier = Modifier,
     onDelete: (Conversation) -> Unit = {},
     onRename: (Conversation) -> Unit = {},
     onPin: (Conversation) -> Unit = {},
     onMoveToAssistant: (Conversation) -> Unit = {},
     onMoveToFolder: (Conversation) -> Unit = {},
+    onToggleSelect: (Conversation) -> Unit = {},
+    onEnterSelection: (Conversation) -> Unit = {},
     onClick: (Conversation) -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val focusManager = LocalFocusManager.current
     val itemShape = RoundedCornerShape(12.dp)
-    val backgroundColor = if (selected) {
+    val highlight = if (selectionMode) checked else selected
+    val backgroundColor = if (highlight) {
         MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
     } else {
         Color.Transparent
@@ -258,17 +272,30 @@ private fun ConversationItem(
     var showDropdownMenu by remember {
         mutableStateOf(false)
     }
+    // 退出多选后关闭可能残留的菜单
+    LaunchedEffect(selectionMode) {
+        if (selectionMode) showDropdownMenu = false
+    }
     Box(
         modifier = modifier
             .clip(itemShape)
             .combinedClickable(
                 interactionSource = interactionSource,
                 indication = LocalIndication.current,
-                onClick = { onClick(conversation) },
+                onClick = {
+                    if (selectionMode) {
+                        onToggleSelect(conversation)
+                    } else {
+                        onClick(conversation)
+                    }
+                },
                 onLongClick = {
-                    // Also clear chat input focus when the drawer is permanently visible.
                     focusManager.clearFocus(force = true)
-                    showDropdownMenu = true
+                    if (selectionMode) {
+                        onToggleSelect(conversation)
+                    } else {
+                        showDropdownMenu = true
+                    }
                 }
             )
             .background(backgroundColor),
@@ -280,29 +307,33 @@ private fun ConversationItem(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            // 选中指示竖条（未选中时透明占位，保证各条目文字起始基线严格对齐）
-            Box(
-                modifier = Modifier
-                    .size(width = 3.dp, height = 16.dp)
-                    .clip(CircleShape)
-                    .background(if (selected) MaterialTheme.colorScheme.primary else Color.Transparent)
-            )
+            if (selectionMode) {
+                SelectionCheckmark(checked = checked)
+            } else {
+                // 选中指示竖条（未选中时透明占位，保证各条目文字起始基线严格对齐）
+                Box(
+                    modifier = Modifier
+                        .size(width = 3.dp, height = 16.dp)
+                        .clip(CircleShape)
+                        .background(if (selected) MaterialTheme.colorScheme.primary else Color.Transparent)
+                )
+            }
 
             Text(
                 text = conversation.title.ifBlank { stringResource(id = R.string.chat_page_new_message) },
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                color = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
+                fontWeight = if (highlight) FontWeight.SemiBold else FontWeight.Normal,
+                color = if (highlight) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f)
             )
 
-            // 时间标签
+            // 时间戳
             Text(
                 text = timeText,
                 style = MaterialTheme.typography.labelSmall,
-                color = if (selected) {
+                color = if (highlight) {
                     MaterialTheme.colorScheme.primary
                 } else {
                     MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
@@ -331,80 +362,123 @@ private fun ConversationItem(
                         }
                 )
             }
-            DropdownMenu(
-                expanded = showDropdownMenu,
-                onDismissRequest = { showDropdownMenu = false },
-            ) {
-                DropdownMenuItem(
-                    text = {
-                        Text(
-                            if (conversation.isPinned) stringResource(R.string.unpin_chat) else stringResource(R.string.pin_chat)
-                        )
-                    },
-                    onClick = {
-                        onPin(conversation)
-                        showDropdownMenu = false
-                    },
-                    leadingIcon = {
-                        Icon(
-                            if (conversation.isPinned) HugeIcons.PinOff else HugeIcons.Pin,
-                            null
-                        )
-                    }
-                )
+            if (!selectionMode) {
+                DropdownMenu(
+                    expanded = showDropdownMenu,
+                    onDismissRequest = { showDropdownMenu = false },
+                ) {
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                if (conversation.isPinned) stringResource(R.string.unpin_chat) else stringResource(R.string.pin_chat)
+                            )
+                        },
+                        onClick = {
+                            onPin(conversation)
+                            showDropdownMenu = false
+                        },
+                        leadingIcon = {
+                            Icon(
+                                if (conversation.isPinned) HugeIcons.PinOff else HugeIcons.Pin,
+                                null
+                            )
+                        }
+                    )
 
-                DropdownMenuItem(
-                    text = {
-                        Text(stringResource(id = R.string.chat_page_rename_chat))
-                    },
-                    onClick = {
-                        onRename(conversation)
-                        showDropdownMenu = false
-                    },
-                    leadingIcon = {
-                        Icon(HugeIcons.PencilEdit01, null)
-                    }
-                )
+                    DropdownMenuItem(
+                        text = {
+                            Text(stringResource(id = R.string.chat_page_rename_chat))
+                        },
+                        onClick = {
+                            onRename(conversation)
+                            showDropdownMenu = false
+                        },
+                        leadingIcon = {
+                            Icon(HugeIcons.PencilEdit01, null)
+                        }
+                    )
 
-                DropdownMenuItem(
-                    text = {
-                        Text(stringResource(R.string.chat_page_move_to_assistant))
-                    },
-                    onClick = {
-                        onMoveToAssistant(conversation)
-                        showDropdownMenu = false
-                    },
-                    leadingIcon = {
-                        Icon(HugeIcons.Forward02, null)
-                    }
-                )
+                    DropdownMenuItem(
+                        text = {
+                            Text(stringResource(R.string.chat_page_move_to_assistant))
+                        },
+                        onClick = {
+                            onMoveToAssistant(conversation)
+                            showDropdownMenu = false
+                        },
+                        leadingIcon = {
+                            Icon(HugeIcons.Forward02, null)
+                        }
+                    )
 
-                DropdownMenuItem(
-                    text = {
-                        Text(stringResource(R.string.chat_page_move_to_folder))
-                    },
-                    onClick = {
-                        onMoveToFolder(conversation)
-                        showDropdownMenu = false
-                    },
-                    leadingIcon = {
-                        Icon(HugeIcons.Folder01, null)
-                    }
-                )
+                    DropdownMenuItem(
+                        text = {
+                            Text(stringResource(R.string.chat_page_move_to_folder))
+                        },
+                        onClick = {
+                            onMoveToFolder(conversation)
+                            showDropdownMenu = false
+                        },
+                        leadingIcon = {
+                            Icon(HugeIcons.Folder01, null)
+                        }
+                    )
 
-                DropdownMenuItem(
-                    text = {
-                        Text(stringResource(id = R.string.chat_page_delete))
-                    },
-                    onClick = {
-                        onDelete(conversation)
-                        showDropdownMenu = false
-                    },
-                    leadingIcon = {
-                        Icon(HugeIcons.Delete01, null)
-                    }
-                )
+                    DropdownMenuItem(
+                        text = {
+                            Text(stringResource(R.string.chat_page_multi_select))
+                        },
+                        onClick = {
+                            onEnterSelection(conversation)
+                            showDropdownMenu = false
+                        },
+                        leadingIcon = {
+                            Icon(HugeIcons.Tick02, null)
+                        }
+                    )
+
+                    DropdownMenuItem(
+                        text = {
+                            Text(stringResource(id = R.string.chat_page_delete))
+                        },
+                        onClick = {
+                            onDelete(conversation)
+                            showDropdownMenu = false
+                        },
+                        leadingIcon = {
+                            Icon(HugeIcons.Delete01, null)
+                        }
+                    )
+                }
             }
+        }
+    }
+}
+
+@Composable
+private fun SelectionCheckmark(checked: Boolean) {
+    val borderColor = if (checked) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.outline.copy(alpha = 0.55f)
+    }
+    val fill = if (checked) MaterialTheme.colorScheme.primary else Color.Transparent
+    Box(
+        modifier = Modifier
+            .size(18.dp)
+            .clip(RoundedCornerShape(5.dp))
+            .border(1.5.dp, borderColor, RoundedCornerShape(5.dp))
+            .background(fill)
+            .semantics { this.selected = checked },
+        contentAlignment = Alignment.Center,
+    ) {
+        if (checked) {
+            Icon(
+                imageVector = HugeIcons.Tick02,
+                contentDescription = null,
+                modifier = Modifier.size(12.dp),
+                tint = MaterialTheme.colorScheme.onPrimary,
+            )
         }
     }
 }

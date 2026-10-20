@@ -503,6 +503,19 @@ class ConversationRepository(
     }
 
     /**
+     * 批量更新会话的文件夹归属，folderId 为 null 表示移出文件夹（未归类）。
+     */
+    suspend fun updateConversationsFolderId(conversationIds: Collection<Uuid>, folderId: Uuid?) {
+        val ids = conversationIds.map { it.toString() }.distinct()
+        if (ids.isEmpty()) return
+        val folder = folderId?.toString() ?: ""
+        // SQLite 默认最多 999 个绑定变量；folderId 占 1 个，按 500 分批避免大批量 IN 失败。
+        ids.chunked(500).forEach { chunk ->
+            conversationDAO.updateFolderIdBatch(ids = chunk, folderId = folder)
+        }
+    }
+
+    /**
      * 单列更新会话标题。刻意不走 [updateConversation]：抽屉列表项来自
      * [LightConversationEntity] 投影，messageNodes 为空，若传入 updateConversation
      * 会把消息节点全部删除重建，等于清空聊天记录。

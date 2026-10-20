@@ -247,6 +247,81 @@ class ChatDrawerVM(
         }
     }
 
+    fun moveConversationsToFolder(conversationIds: Collection<Uuid>, folderId: Uuid?) {
+        if (conversationIds.isEmpty()) return
+        viewModelScope.launch {
+            chatService.moveConversationsToFolder(conversationIds, folderId)
+        }
+    }
+
+    /** 批量移动到其他助手。返回 Job，便于 UI 在完成后刷新列表。 */
+    fun moveConversationsToAssistant(
+        conversationIds: Collection<Uuid>,
+        targetAssistantId: Uuid,
+    ): kotlinx.coroutines.Job {
+        val ids = conversationIds.distinct()
+        return viewModelScope.launch {
+            if (ids.isEmpty()) return@launch
+            chatService.moveConversationsToAssistant(ids, targetAssistantId)
+        }
+    }
+
+    /** 当前会话被移走后，把设置里的当前助手切过去，和单条移动的行为一致。 */
+    fun switchAssistant(assistantId: Uuid) {
+        viewModelScope.launch {
+            settingsStore.updateAssistant(assistantId)
+        }
+    }
+
+    /** 批量删除。返回 Job，便于确认框在完成后退出多选并刷新列表。 */
+    fun deleteConversations(conversationIds: Collection<Uuid>): kotlinx.coroutines.Job {
+        val ids = conversationIds.distinct()
+        return viewModelScope.launch {
+            if (ids.isEmpty()) return@launch
+            chatService.deleteConversations(ids)
+        }
+    }
+
+    /**
+     * 抽屉多选是否进行中。ChatPage 的返回键比抽屉内容更晚注册，必须读这个标志，
+     * 否则返回会直接关掉抽屉而不是退出多选。
+     */
+    private val _multiSelectActive = MutableStateFlow(false)
+    val multiSelectActive: StateFlow<Boolean> = _multiSelectActive.asStateFlow()
+
+    private val _exitMultiSelectTick = MutableStateFlow(0)
+    val exitMultiSelectTick: StateFlow<Int> = _exitMultiSelectTick.asStateFlow()
+
+    fun setMultiSelectActive(active: Boolean) {
+        _multiSelectActive.value = active
+    }
+
+    /** 由外层返回键调用；抽屉收集 [exitMultiSelectTick] 后清掉本地选中态。 */
+    fun requestExitMultiSelect() {
+        _exitMultiSelectTick.value = _exitMultiSelectTick.value + 1
+    }
+
+    /**
+     * 新建文件夹并将所选会话移入，然后切到该文件夹，方便确认归档结果。
+     * 返回 [kotlinx.coroutines.Job] 便于 UI 在完成后 refresh / 退出多选。
+     */
+    fun createFolderAndMoveConversations(
+        name: String,
+        conversationIds: Collection<Uuid>,
+        archive: Boolean = false,
+    ): kotlinx.coroutines.Job {
+        val trimmed = name.trim()
+        val ids = conversationIds.distinct()
+        return viewModelScope.launch {
+            if (trimmed.isEmpty() || ids.isEmpty()) return@launch
+            val assistantId = assistantIdFlow.first()
+            val folder = folderRepo.createFolder(assistantId, trimmed)
+            if (archive) setArchiveFolder(assistantId, folder.id)
+            chatService.moveConversationsToFolder(ids, folder.id)
+            selectFolder(folder.id)
+        }
+    }
+
     fun requestRenameConversation(conversation: Conversation) {
         _conversationToRename.value = conversation
     }

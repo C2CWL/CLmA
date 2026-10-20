@@ -2,6 +2,7 @@ package me.rerere.rikkahub.ui.pages.chat
 
 import android.os.Build
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -25,6 +26,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
@@ -41,6 +43,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -181,6 +184,43 @@ fun ChatDrawerContent(
     var conversationToMoveFolder by remember { mutableStateOf<Conversation?>(null) }
     val folderSheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden)
     var showCreateFolderDialog by remember { mutableStateOf(false) }
+    // 多选：长按菜单进入；底部栏批量移动到已有文件夹，或新建文件夹后直接移入。
+    var selectionMode by remember { mutableStateOf(false) }
+    var selectedIds by remember { mutableStateOf(emptySet<Uuid>()) }
+    var batchMove by remember { mutableStateOf(false) }
+    var showDeleteSelectedDialog by remember { mutableStateOf(false) }
+    fun exitSelection() {
+        selectionMode = false
+        selectedIds = emptySet()
+        batchMove = false
+        showDeleteSelectedDialog = false
+        drawerVm.setMultiSelectActive(false)
+    }
+    fun enterSelection(conversation: Conversation) {
+        selectionMode = true
+        selectedIds = setOf(conversation.id)
+        drawerVm.setMultiSelectActive(true)
+    }
+    fun toggleSelected(conversation: Conversation) {
+        selectedIds = if (conversation.id in selectedIds) {
+            selectedIds - conversation.id
+        } else {
+            selectedIds + conversation.id
+        }
+    }
+    // 大屏永久抽屉没有外层「关闭抽屉」返回键，这里直接退出多选。
+    // 手机上 ChatPage 的返回键注册更晚，会改走 drawerVm.requestExitMultiSelect()。
+    BackHandler(enabled = selectionMode) { exitSelection() }
+    val exitMultiSelectTick by drawerVm.exitMultiSelectTick.collectAsStateWithLifecycle()
+    LaunchedEffect(exitMultiSelectTick) {
+        if (exitMultiSelectTick != 0) exitSelection()
+    }
+    DisposableEffect(Unit) {
+        onDispose { drawerVm.setMultiSelectActive(false) }
+    }
+    LaunchedEffect(selectedFolderId, settings.assistantId) {
+        if (selectionMode) exitSelection()
+    }
     var folderToRename by remember { mutableStateOf<Folder?>(null) }
     var folderToDelete by remember { mutableStateOf<Folder?>(null) }
     // 与顶部标题点击共享，见 ChatDrawerVM.conversationToRename
@@ -351,7 +391,11 @@ fun ChatDrawerContent(
                 folders = folders,
                 selectedFolderId = selectedFolderId,
                 onSelect = { drawerVm.selectFolder(it) },
-                onCreate = { showCreateFolderDialog = true },
+                onCreate = {
+                    // 文件夹条上的「新建」是普通建夹，不能沿用多选里的批量移入标志。
+                    batchMove = false
+                    showCreateFolderDialog = true
+                },
                 onRename = { folderToRename = it },
                 onDelete = { folderToDelete = it },
             )
@@ -403,12 +447,18 @@ fun ChatDrawerContent(
                 },
                 onMoveToAssistant = {
                     conversationToMove = it
+                    batchMove = false
                     showMoveToAssistantSheet = true
                 },
                 onMoveToFolder = {
                     conversationToMoveFolder = it
+                    batchMove = false
                     showMoveToFolderSheet = true
-                }
+                },
+                selectionMode = selectionMode,
+                selectedIds = selectedIds,
+                onToggleSelect = { toggleSelected(it) },
+                onEnterSelection = { enterSelection(it) },
             )
 
                 // 上方功能区：固定悬浮在抽屉顶部，对话列表从其下方滚过时被玻璃折射虚化。
@@ -453,6 +503,35 @@ fun ChatDrawerContent(
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
+            if (selectionMode) {
+                SelectionActionBar(
+                    count = selectedIds.size,
+                    onCancel = { exitSelection() },
+                    onDelete = {
+                        if (selectedIds.isNotEmpty()) showDeleteSelectedDialog = true
+                    },
+                    onMove = {
+                        if (selectedIds.isNotEmpty()) {
+                            batchMove = true
+                            conversationToMoveFolder = null
+                            showMoveToFolderSheet = true
+                        }
+                    },
+                    onCreateAndMove = {
+                        if (selectedIds.isNotEmpty()) {
+                            batchMove = true
+                            showCreateFolderDialog = true
+                        }
+                    },
+                    onMoveToAssistant = {
+                        if (selectedIds.isNotEmpty()) {
+                            batchMove = true
+                            conversationToMove = null
+                            showMoveToAssistantSheet = true
+                        }
+                    },
+                )
+            } else {
             // 助手选择器
             AssistantPicker(
                 settings = settings,
@@ -551,6 +630,7 @@ fun ChatDrawerContent(
                     onClick = { navController.navigate(Screen.Setting) },
                 )
             }
+            }
                         }
                     }
                 }
@@ -596,15 +676,21 @@ fun ChatDrawerContent(
         )
     }
 
-    // 移动到文件夹 Bottom Sheet
+    // 移动到文件夹 Bottom Sheet（单条或批量）
     if (showMoveToFolderSheet) {
         val doMove: (Uuid?) -> Unit = { folderId ->
-            conversationToMoveFolder?.let { conversation ->
-                drawerVm.moveConversationToFolder(conversation.id, folderId)
+            val ids = if (batchMove) selectedIds.toList() else listOfNotNull(conversationToMoveFolder?.id)
+            if (ids.isNotEmpty()) {
+                if (batchMove) {
+                    drawerVm.moveConversationsToFolder(ids, folderId)
+                } else {
+                    drawerVm.moveConversationToFolder(ids.first(), folderId)
+                }
                 scope.launch {
                     folderSheetState.hide()
                     showMoveToFolderSheet = false
                     conversationToMoveFolder = null
+                    if (batchMove) exitSelection()
                     conversations.refresh()
                 }
             }
@@ -613,6 +699,7 @@ fun ChatDrawerContent(
             onDismissRequest = {
                 showMoveToFolderSheet = false
                 conversationToMoveFolder = null
+                batchMove = false
             },
             sheetState = folderSheetState
         ) {
@@ -626,8 +713,14 @@ fun ChatDrawerContent(
                 Text(
                     text = stringResource(R.string.chat_page_move_to_folder),
                     style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.padding(bottom = 8.dp)
                 )
+                if (batchMove) {
+                    Text(
+                        text = stringResource(R.string.chat_page_selected_count, selectedIds.size),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
 
                 // 移出文件夹（未归类）
                 Surface(
@@ -697,9 +790,25 @@ fun ChatDrawerContent(
     if (showCreateFolderDialog) {
         var name by remember { mutableStateOf("") }
         var archive by remember { mutableStateOf(false) }
+        var submitting by remember { mutableStateOf(false) }
         AlertDialog(
-            onDismissRequest = { showCreateFolderDialog = false },
-            title = { Text(stringResource(R.string.chat_page_create_folder)) },
+            onDismissRequest = {
+                if (submitting) return@AlertDialog
+                showCreateFolderDialog = false
+                batchMove = false
+            },
+            title = {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(stringResource(R.string.chat_page_create_folder))
+                    if (batchMove) {
+                        Text(
+                            text = stringResource(R.string.chat_page_selected_count, selectedIds.size),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            },
             text = {
                 Column {
                     OutlinedTextField(
@@ -727,14 +836,37 @@ fun ChatDrawerContent(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        drawerVm.createFolder(name, archive)
-                        showCreateFolderDialog = false
+                        if (submitting) return@TextButton
+                        if (batchMove && selectedIds.isNotEmpty()) {
+                            submitting = true
+                            val ids = selectedIds.toList()
+                            scope.launch {
+                                try {
+                                    drawerVm.createFolderAndMoveConversations(name, ids, archive).join()
+                                    showCreateFolderDialog = false
+                                    exitSelection()
+                                    conversations.refresh()
+                                } finally {
+                                    submitting = false
+                                }
+                            }
+                        } else {
+                            drawerVm.createFolder(name, archive)
+                            showCreateFolderDialog = false
+                        }
                     },
-                    enabled = name.isNotBlank()
+                    enabled = name.isNotBlank() && !submitting
                 ) { Text(stringResource(R.string.chat_page_save)) }
             },
             dismissButton = {
-                TextButton(onClick = { showCreateFolderDialog = false }) {
+                TextButton(
+                    onClick = {
+                        if (submitting) return@TextButton
+                        showCreateFolderDialog = false
+                        batchMove = false
+                    },
+                    enabled = !submitting,
+                ) {
                     Text(stringResource(R.string.chat_page_cancel))
                 }
             }
@@ -828,6 +960,51 @@ fun ChatDrawerContent(
         )
     }
 
+    // 批量删除确认
+    if (showDeleteSelectedDialog) {
+        var submitting by remember { mutableStateOf(false) }
+        AlertDialog(
+            onDismissRequest = {
+                if (!submitting) showDeleteSelectedDialog = false
+            },
+            title = { Text(stringResource(R.string.chat_page_delete_selected_title)) },
+            text = {
+                Text(stringResource(R.string.chat_page_delete_selected_confirm, selectedIds.size))
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (submitting || selectedIds.isEmpty()) return@TextButton
+                        submitting = true
+                        val ids = selectedIds.toList()
+                        val deletingCurrent = current.id in ids
+                        scope.launch {
+                            try {
+                                drawerVm.deleteConversations(ids).join()
+                                showDeleteSelectedDialog = false
+                                exitSelection()
+                                conversations.refresh()
+                                if (deletingCurrent) navigateToChatPage(navController)
+                            } finally {
+                                submitting = false
+                            }
+                        }
+                    },
+                    enabled = selectedIds.isNotEmpty() && !submitting,
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error,
+                    ),
+                ) { Text(stringResource(R.string.chat_page_delete)) }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { if (!submitting) showDeleteSelectedDialog = false },
+                    enabled = !submitting,
+                ) { Text(stringResource(R.string.chat_page_cancel)) }
+            },
+        )
+    }
+
     // 删除文件夹确认
     folderToDelete?.let { folder ->
         AlertDialog(
@@ -860,12 +1037,19 @@ fun ChatDrawerContent(
         )
     }
 
-    // 移动到助手 Bottom Sheet
+    // 移动到助手 Bottom Sheet（单条或批量）
     if (showMoveToAssistantSheet) {
+        val currentAssistantId = if (batchMove) {
+            // 批量时来源可能跨助手，用当前打开的会话做高亮参考
+            current.assistantId
+        } else {
+            conversationToMove?.assistantId
+        }
         ModalBottomSheet(
             onDismissRequest = {
                 showMoveToAssistantSheet = false
                 conversationToMove = null
+                batchMove = false
             },
             sheetState = bottomSheetState
         ) {
@@ -879,8 +1063,14 @@ fun ChatDrawerContent(
                 Text(
                     text = stringResource(R.string.chat_page_move_to_assistant),
                     style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.padding(bottom = 8.dp)
                 )
+                if (batchMove) {
+                    Text(
+                        text = stringResource(R.string.chat_page_selected_count, selectedIds.size),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
 
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -888,20 +1078,136 @@ fun ChatDrawerContent(
                     items(settings.assistants, key = { it.id }) { assistant ->
                         AssistantItem(
                             assistant = assistant,
-                            isCurrentAssistant = assistant.id == conversationToMove?.assistantId,
+                            isCurrentAssistant = assistant.id == currentAssistantId,
                             onClick = {
-                                conversationToMove?.let { conversation ->
-                                    vm.moveConversationToAssistant(conversation, assistant.id)
-                                    scope.launch {
-                                        bottomSheetState.hide()
-                                        showMoveToAssistantSheet = false
-                                        conversationToMove = null
+                                if (batchMove) {
+                                    val ids = selectedIds.toList()
+                                    if (ids.isNotEmpty()) {
+                                        val movedCurrent = current.id in ids
+                                        scope.launch {
+                                            drawerVm.moveConversationsToAssistant(ids, assistant.id).join()
+                                            // 当前会话被移走时切到目标助手，和单条移动一致
+                                            if (movedCurrent) drawerVm.switchAssistant(assistant.id)
+                                            bottomSheetState.hide()
+                                            showMoveToAssistantSheet = false
+                                            conversationToMove = null
+                                            exitSelection()
+                                            conversations.refresh()
+                                        }
+                                    }
+                                } else {
+                                    conversationToMove?.let { conversation ->
+                                        vm.moveConversationToAssistant(conversation, assistant.id)
+                                        scope.launch {
+                                            bottomSheetState.hide()
+                                            showMoveToAssistantSheet = false
+                                            conversationToMove = null
+                                        }
                                     }
                                 }
                             }
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SelectionActionBar(
+    count: Int,
+    onCancel: () -> Unit,
+    onDelete: () -> Unit,
+    onMove: () -> Unit,
+    onCreateAndMove: () -> Unit,
+    onMoveToAssistant: () -> Unit,
+) {
+    val canAct = count > 0
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            TextButton(onClick = onCancel) {
+                Text(stringResource(R.string.chat_page_exit_multi_select))
+            }
+            Text(
+                text = stringResource(R.string.chat_page_selected_count, count),
+                style = MaterialTheme.typography.labelLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            TextButton(
+                onClick = onDelete,
+                enabled = canAct,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.error,
+                ),
+            ) {
+                Icon(HugeIcons.Delete01, null, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(4.dp))
+                Text(
+                    text = stringResource(R.string.chat_page_delete),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // 三个动作等宽排一行，字号降到 labelMedium，窄抽屉里也能放下完整文案。
+            TextButton(
+                onClick = onMove,
+                enabled = canAct,
+                modifier = Modifier.weight(1f),
+                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
+            ) {
+                Icon(HugeIcons.Folder01, null, modifier = Modifier.size(14.dp))
+                Spacer(Modifier.width(3.dp))
+                Text(
+                    text = stringResource(R.string.chat_page_move_to_folder),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.labelMedium,
+                )
+            }
+            TextButton(
+                onClick = onCreateAndMove,
+                enabled = canAct,
+                modifier = Modifier.weight(1f),
+                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
+            ) {
+                Icon(HugeIcons.FolderAdd, null, modifier = Modifier.size(14.dp))
+                Spacer(Modifier.width(3.dp))
+                Text(
+                    text = stringResource(R.string.chat_page_create_folder),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.labelMedium,
+                )
+            }
+            TextButton(
+                onClick = onMoveToAssistant,
+                enabled = canAct,
+                modifier = Modifier.weight(1f),
+                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
+            ) {
+                Icon(HugeIcons.LookTop, null, modifier = Modifier.size(14.dp))
+                Spacer(Modifier.width(3.dp))
+                Text(
+                    text = stringResource(R.string.chat_page_move_to_assistant),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.labelMedium,
+                )
             }
         }
     }

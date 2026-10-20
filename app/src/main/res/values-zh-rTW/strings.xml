@@ -1832,6 +1832,11 @@
   <string name="assistant_page_local_tools_calendar_desc">讓AI查詢和建立行事曆事件</string>
   <string name="chat_message_tool_calendar_query">查詢日曆事件</string>
   <string name="chat_message_tool_calendar_create">建立事件: %1$s</string>
+  <string name="chat_page_multi_select">多選</string>
+  <string name="chat_page_selected_count">已選擇：%1$d</string>
+  <string name="chat_page_exit_multi_select">取消</string>
+  <string name="chat_page_delete_selected_title">刪除所選對話？</string>
+  <string name="chat_page_delete_selected_confirm">將刪除 %1$d 個對話，無法復原。正在生成的對話會先停止。</string>
   <string name="chat_page_move_to_folder">移至資料夾</string>
   <string name="chat_page_remove_from_folder">從資料夾移除</string>
   <string name="chat_page_create_folder">新資料夾</string>
