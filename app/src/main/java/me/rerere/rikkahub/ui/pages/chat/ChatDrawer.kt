@@ -26,6 +26,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
@@ -187,10 +188,12 @@ fun ChatDrawerContent(
     var selectionMode by remember { mutableStateOf(false) }
     var selectedIds by remember { mutableStateOf(emptySet<Uuid>()) }
     var batchMove by remember { mutableStateOf(false) }
+    var showDeleteSelectedDialog by remember { mutableStateOf(false) }
     fun exitSelection() {
         selectionMode = false
         selectedIds = emptySet()
         batchMove = false
+        showDeleteSelectedDialog = false
         drawerVm.setMultiSelectActive(false)
     }
     fun enterSelection(conversation: Conversation) {
@@ -503,6 +506,9 @@ fun ChatDrawerContent(
                 SelectionActionBar(
                     count = selectedIds.size,
                     onCancel = { exitSelection() },
+                    onDelete = {
+                        if (selectedIds.isNotEmpty()) showDeleteSelectedDialog = true
+                    },
                     onMove = {
                         if (selectedIds.isNotEmpty()) {
                             batchMove = true
@@ -945,6 +951,51 @@ fun ChatDrawerContent(
         )
     }
 
+    // 批量删除确认
+    if (showDeleteSelectedDialog) {
+        var submitting by remember { mutableStateOf(false) }
+        AlertDialog(
+            onDismissRequest = {
+                if (!submitting) showDeleteSelectedDialog = false
+            },
+            title = { Text(stringResource(R.string.chat_page_delete_selected_title)) },
+            text = {
+                Text(stringResource(R.string.chat_page_delete_selected_confirm, selectedIds.size))
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (submitting || selectedIds.isEmpty()) return@TextButton
+                        submitting = true
+                        val ids = selectedIds.toList()
+                        val deletingCurrent = current.id in ids
+                        scope.launch {
+                            try {
+                                drawerVm.deleteConversations(ids).join()
+                                showDeleteSelectedDialog = false
+                                exitSelection()
+                                conversations.refresh()
+                                if (deletingCurrent) navigateToChatPage(navController)
+                            } finally {
+                                submitting = false
+                            }
+                        }
+                    },
+                    enabled = selectedIds.isNotEmpty() && !submitting,
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error,
+                    ),
+                ) { Text(stringResource(R.string.chat_page_delete)) }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { if (!submitting) showDeleteSelectedDialog = false },
+                    enabled = !submitting,
+                ) { Text(stringResource(R.string.chat_page_cancel)) }
+            },
+        )
+    }
+
     // 删除文件夹确认
     folderToDelete?.let { folder ->
         AlertDialog(
@@ -1028,6 +1079,7 @@ fun ChatDrawerContent(
 private fun SelectionActionBar(
     count: Int,
     onCancel: () -> Unit,
+    onDelete: () -> Unit,
     onMove: () -> Unit,
     onCreateAndMove: () -> Unit,
 ) {
@@ -1050,6 +1102,21 @@ private fun SelectionActionBar(
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
             )
+            TextButton(
+                onClick = onDelete,
+                enabled = canAct,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.error,
+                ),
+            ) {
+                Icon(HugeIcons.Delete01, null, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(4.dp))
+                Text(
+                    text = stringResource(R.string.chat_page_delete),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
         Row(
             modifier = Modifier.fillMaxWidth(),

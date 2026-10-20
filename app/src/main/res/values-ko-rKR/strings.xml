@@ -1798,6 +1798,8 @@ mDNS 주소: .local 호스트네임을 사용하며, IP를 몰라도 같은 네�
   <string name="chat_page_multi_select">다중 선택</string>
   <string name="chat_page_selected_count">선택됨: %1$d</string>
   <string name="chat_page_exit_multi_select">취소</string>
+  <string name="chat_page_delete_selected_title">선택한 대화를 삭제할까요?</string>
+  <string name="chat_page_delete_selected_confirm">선택한 대화 %1$d개를 삭제합니다. 되돌릴 수 없습니다. 생성 중인 대화는 먼저 중지됩니다.</string>
   <string name="chat_page_move_to_folder">폴더로 이동</string>
   <string name="chat_page_remove_from_folder">폴더에서 제거</string>
   <string name="chat_page_create_folder">새 폴더</string>

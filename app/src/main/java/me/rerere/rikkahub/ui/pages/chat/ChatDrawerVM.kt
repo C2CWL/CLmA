@@ -254,6 +254,15 @@ class ChatDrawerVM(
         }
     }
 
+    /** 批量删除。返回 Job，便于确认框在完成后退出多选并刷新列表。 */
+    fun deleteConversations(conversationIds: Collection<Uuid>): kotlinx.coroutines.Job {
+        val ids = conversationIds.distinct()
+        return viewModelScope.launch {
+            if (ids.isEmpty()) return@launch
+            chatService.deleteConversations(ids)
+        }
+    }
+
     /**
      * 抽屉多选是否进行中。ChatPage 的返回键比抽屉内容更晚注册，必须读这个标志，
      * 否则返回会直接关掉抽屉而不是退出多选。

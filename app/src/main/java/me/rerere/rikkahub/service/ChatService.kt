@@ -3493,6 +3493,35 @@ class ChatService(
     }
 
     /**
+     * 已删除会话的墓碑。进程内有效：阻止生成收尾、生命周期刷盘把刚删掉的会话又 insert 回来。
+     * 进程重启后 session 本来就是空的，不需要持久化。
+     */
+    private val deletedConversationIds = ConcurrentHashMap.newKeySet<Uuid>()
+
+    /**
+     * 批量删除会话。先记墓碑并停掉生成，再丢掉内存 session，最后在持久化锁里删库，
+     * 避免进行中的 save 把行写回来。文件和搜索索引走 [ConversationRepository.deleteConversation]。
+     */
+    suspend fun deleteConversations(conversationIds: Collection<Uuid>) {
+        val ids = conversationIds.distinct()
+        if (ids.isEmpty()) return
+        deletedConversationIds.addAll(ids)
+        ids.forEach { id ->
+            if (sessions[id]?.isGenerating == true) {
+                runCatching { stopGeneration(id) }
+                    .onFailure { Log.w(TAG, "stop before batch delete failed for $id", it) }
+            }
+            dropSession(id)
+        }
+        ids.forEach { id ->
+            persistenceMutexFor(id).withLock {
+                val conversation = conversationRepo.getConversationById(id) ?: return@withLock
+                conversationRepo.deleteConversation(conversation)
+            }
+        }
+    }
+
+    /**
      * 重命名会话。若该会话当前有活跃 session，先同步内存态再落库：
      * 否则仅改数据库标题，内存里那份 Conversation 仍是旧标题，
      * 后续任意 saveConversation(id, state.value) 会用整对象把标题覆盖回旧值，导致重命名丢失。
@@ -3608,6 +3637,7 @@ class ChatService(
         conversation: Conversation,
         updateSearchIndex: Boolean = true,
     ): Boolean {
+        if (conversation.id in deletedConversationIds) return false
         val exists = conversationRepo.existsConversationById(conversation.id)
         if (!exists && conversation.title.isBlank() && conversation.messageNodes.isEmpty()) {
             return false // 新会话且为空时不保存

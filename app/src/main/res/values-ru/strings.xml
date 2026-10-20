@@ -1798,6 +1798,8 @@
   <string name="chat_page_multi_select">Выбрать несколько</string>
   <string name="chat_page_selected_count">Выбрано: %1$d</string>
   <string name="chat_page_exit_multi_select">Отмена</string>
+  <string name="chat_page_delete_selected_title">Удалить выбранные чаты?</string>
+  <string name="chat_page_delete_selected_confirm">Удалить выбранные чаты (%1$d)? Это нельзя отменить. Идущая генерация будет остановлена.</string>
   <string name="chat_page_move_to_folder">Переместить в папку</string>
   <string name="chat_page_remove_from_folder">Убрать из папки</string>
   <string name="chat_page_create_folder">Новая папка</string>
