@@ -1029,8 +1029,6 @@
   <string name="setting_page_preferences_network_stall_timeout">Mid-reply silence timeout</string>
   <string name="setting_page_preferences_network_stall_timeout_desc">Once a streamed reply has started, if nothing arrives for this many seconds it is treated as stalled: a partial answer is continued, otherwise the reply is restarted. Every chunk resets the clock, so a slow but alive model is never cut off. 0 disables the watchdog.</string>
   <string name="setting_page_preferences_network_seconds_range">%1$d seconds max (0 disables)</string>
-  <string name="setting_page_documentation">Documentation</string>
-  <string name="setting_page_documentation_desc">View app usage instructions and help documentation</string>
   <string name="setting_page_dynamic_color">Dynamic Color</string>
   <string name="setting_page_dynamic_color_desc">Generate the app theme colors dynamically from your wallpaper</string>
   <string name="setting_page_extensions">Extensions</string>
