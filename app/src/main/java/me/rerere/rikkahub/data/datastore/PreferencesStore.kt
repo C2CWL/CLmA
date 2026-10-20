@@ -1221,6 +1221,8 @@ data class DisplaySetting(
     val autoCloseThinking: Boolean = true,
     // 思考/工具步骤组折叠时尾部保留几步，0 = 只显示一行标题。默认 2 即原来的行为。
     val thinkingStepsVisibleCount: Int = 2,
+    // 工具调用样式。默认经典时间线；旧设置没有该字段时也读回经典。
+    val toolCallStyle: ToolCallStyle = ToolCallStyle.CLASSIC,
     val updateCheckDisabledUntilEpochMillis: Long = 0L,
     val showMessageJumper: Boolean = true,
     val messageJumperOnLeft: Boolean = false,
