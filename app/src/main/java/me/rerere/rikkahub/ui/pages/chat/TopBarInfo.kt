@@ -24,9 +24,25 @@ internal fun conversationUsedTokens(turnFooters: Map<String, TurnFooter>, conver
 internal fun usedTokensOrFallback(ledgerTokens: Long, fallback: () -> Long): Long =
     if (ledgerTokens > 0L) ledgerTokens else fallback()
 
-/** "Assistant / Model / N tokens", the subtitle line of the regular chat top bar. */
+/** The part of the regular subtitle that may ellipsize: "Assistant / Model". */
+internal fun topBarSubtitleName(assistantName: String, modelName: String): String =
+    "$assistantName / $modelName"
+
+/**
+ * The part of the regular subtitle that must stay whole: " / N token(s)".
+ * The regular bar draws this as its own text so ellipsis on the name cannot clip the count.
+ * Unlike [cleanTopBarTokenText], this keeps the raw number — the regular bar's existing format.
+ */
+internal fun topBarTokenSuffix(usedTokens: Long): String =
+    " / $usedTokens ${tokenUnit(usedTokens)}"
+
+/**
+ * "Assistant / Model / N tokens", the subtitle line of the regular chat top bar.
+ * Equal to [topBarSubtitleName] + [topBarTokenSuffix]. The bar renders those two pieces
+ * separately so a long assistant or model name cannot ellipsize the count away.
+ */
 internal fun topBarSubtitle(assistantName: String, modelName: String, usedTokens: Long): String =
-    "$assistantName / $modelName / $usedTokens ${tokenUnit(usedTokens)}"
+    topBarSubtitleName(assistantName, modelName) + topBarTokenSuffix(usedTokens)
 
 /**
  * The unit word after a token count: "token" for exactly one, "tokens" otherwise (0, 2, and

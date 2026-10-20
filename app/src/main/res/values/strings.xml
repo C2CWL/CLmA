@@ -834,6 +834,8 @@
   <string name="setting_display_page_show_user_avatar_desc">Whether to display user avatar in chat messages</string>
   <string name="setting_display_page_clean_layout_title">Clean layout</string>
   <string name="setting_display_page_clean_layout_desc">Flat top bar with the model name under the title, and a two-row input box with the tools below the text field</string>
+  <string name="setting_display_page_clean_layout_glass_title">Input bar liquid glass</string>
+  <string name="setting_display_page_clean_layout_glass_desc">Use liquid glass material for the clean layout input bar; when disabled, a flat solid card is used</string>
   <string name="setting_display_page_show_user_avatar_title">Show User Avatar</string>
   <string name="setting_display_page_skip_crop_image_desc">Skip crop interface after importing images or taking photos</string>
   <string name="setting_display_page_skip_crop_image_title">Skip Image Editing</string>

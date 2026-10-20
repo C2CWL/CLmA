@@ -30,4 +30,26 @@ class DisplaySettingCleanLayoutTest {
         assertTrue(json.contains("\"cleanLayout\":true"))
         assertTrue(JsonInstant.decodeFromString<DisplaySetting>(json).cleanLayout)
     }
+
+    @Test
+    fun `clean layout glass defaults to true`() {
+        assertTrue(DisplaySetting().cleanLayoutGlass)
+    }
+
+    @Test
+    fun `stored settings without cleanLayoutGlass read back as true`() {
+        val legacy = """{"cleanLayout":true}"""
+        val decoded = JsonInstant.decodeFromString<DisplaySetting>(legacy)
+        assertTrue(decoded.cleanLayout)
+        assertTrue(decoded.cleanLayoutGlass)
+    }
+
+    @Test
+    fun `toggling clean layout glass round-trips`() {
+        val json = JsonInstant.encodeToString(DisplaySetting(cleanLayout = true, cleanLayoutGlass = false))
+        assertTrue(json.contains("\"cleanLayoutGlass\":false"))
+        val decoded = JsonInstant.decodeFromString<DisplaySetting>(json)
+        assertTrue(decoded.cleanLayout)
+        assertFalse(decoded.cleanLayoutGlass)
+    }
 }

@@ -1211,6 +1211,8 @@ data class DisplaySetting(
     val bubbleOpacity: Float = 1.0f,
     // 简洁布局：扁平顶栏 + 两行输入框。默认关，关时与原来完全一致。
     val cleanLayout: Boolean = false,
+    // 简洁布局输入框液态玻璃材质。关时为扁平单色卡片。默认开。
+    val cleanLayoutGlass: Boolean = true,
     val showModelIcon: Boolean = true,
     val showModelName: Boolean = true,
     val showDateTimeInMessage: Boolean = false,

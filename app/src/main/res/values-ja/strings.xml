@@ -698,6 +698,8 @@
   <string name="setting_display_page_show_user_avatar_desc">チャットメッセージにユーザーアバターを表示するかどうか</string>
   <string name="setting_display_page_clean_layout_title">シンプルレイアウト</string>
   <string name="setting_display_page_clean_layout_desc">フラットなトップバーでタイトルの下にモデル名を表示し、入力欄は2行でツールボタンを入力欄の下に配置します</string>
+  <string name="setting_display_page_clean_layout_glass_title">入力欄のリキッドグラス</string>
+  <string name="setting_display_page_clean_layout_glass_desc">シンプルレイアウトの入力欄にリキッドグラス素材を使用します。無効時はフラットな単色カードになります</string>
   <string name="setting_display_page_show_user_avatar_title">ユーザーアバターを表示</string>
   <string name="setting_display_page_skip_crop_image_desc">画像をインポートするか写真を撮影した後、クロップ画面をスキップ</string>
   <string name="setting_display_page_skip_crop_image_title">画像編集をスキップ</string>
