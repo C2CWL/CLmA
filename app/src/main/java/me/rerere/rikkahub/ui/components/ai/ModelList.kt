@@ -54,10 +54,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastAny
 import androidx.compose.ui.util.fastFilter
@@ -761,19 +758,8 @@ private fun ModelItem(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
-                    // 模型名后面带上所属提供商，收藏区不显示分组标题时也能一眼看出模型来源
                     Text(
-                        text = buildAnnotatedString {
-                            append(model.displayName)
-                            if (providerSetting.name.isNotBlank()) {
-                                append(" | ")
-                                withStyle(
-                                    SpanStyle(color = LocalContentColor.current.copy(alpha = 0.6f))
-                                ) {
-                                    append(providerSetting.name)
-                                }
-                            }
-                        },
+                        text = model.displayName,
                         style = MaterialTheme.typography.titleSmall,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -790,6 +776,18 @@ private fun ModelItem(
                         ModelModalityTag(model = model)
 
                         ModelAbilityTag(model = model)
+
+                        // 提供商跟在标签流末尾：随标签自动换行，不会和模型名抢同一行被截断
+                        if (providerSetting.name.isNotBlank()) {
+                            Text(
+                                text = "· ${providerSetting.name}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = LocalContentColor.current.copy(alpha = 0.6f),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.align(Alignment.CenterVertically),
+                            )
+                        }
                     }
                 }
                 tail()
