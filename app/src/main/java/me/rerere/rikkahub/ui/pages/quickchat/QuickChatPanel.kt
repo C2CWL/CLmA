@@ -101,6 +101,7 @@ import me.rerere.rikkahub.service.FloatingBallService
 import me.rerere.rikkahub.ui.components.message.MessagePartBlock
 import me.rerere.rikkahub.ui.components.message.ThinkingStep
 import me.rerere.rikkahub.ui.components.message.groupMessageParts
+import me.rerere.rikkahub.ui.context.LocalSettings
 import me.rerere.rikkahub.ui.components.richtext.MarkdownBlock
 import me.rerere.rikkahub.ui.components.ui.AssistantAvatar
 import me.rerere.rikkahub.ui.hooks.readStringPreference
@@ -744,10 +745,13 @@ private fun InputCapsule(
 @Composable
 private fun MessageBlock(message: UIMessage, bubbleMaxWidth: Dp) {
     val isUser = message.role == MessageRole.USER
+    val foldProcessNarration = LocalSettings.current.displaySetting.foldProcessNarration
     // Key on the parts list itself: a key of `size + last-part hash` misses in-place edits to any
     // part that is not the tail (see ChatMessage), which renders a stale snapshot that only
     // catches up when the tail happens to change.
-    val blocks = remember(message.parts) { message.parts.groupMessageParts() }
+    val blocks = remember(message.parts, foldProcessNarration) {
+        message.parts.groupMessageParts(foldProcessNarration = foldProcessNarration)
+    }
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -818,19 +822,25 @@ private fun ThinkingChip(steps: List<ThinkingStep>) {
             is ThinkingStep.ToolStep -> it.tool.toolName
             is ThinkingStep.ServerToolStep -> it.tool.toolName
             is ThinkingStep.ReasoningStep -> null
+            is ThinkingStep.NarrationStep -> null
         }
     }
     val reasonings = steps.filterIsInstance<ThinkingStep.ReasoningStep>()
         .map { it.reasoning.reasoning.trim() }
         .filter { it.isNotEmpty() }
+    val narrations = steps.filterIsInstance<ThinkingStep.NarrationStep>()
+        .map { it.text.text.trim() }
+        .filter { it.isNotEmpty() }
     val hasTools = tools.isNotEmpty()
     val label = when {
         hasTools -> stringResource(R.string.quick_chat_segment_tools, tools.size)
         reasonings.isNotEmpty() -> stringResource(R.string.quick_chat_segment_thinking)
+        narrations.isNotEmpty() -> stringResource(R.string.quick_chat_segment_thinking)
         else -> return
     }
     val detail = buildString {
         reasonings.forEach { append(it).append("\n\n") }
+        narrations.forEach { append(it).append("\n\n") }
         tools.forEach { append("\u2022 ").append(it).append('\n') }
     }.trim()
     Surface(

@@ -88,6 +88,7 @@ import me.rerere.rikkahub.data.datastore.findModelById
 import me.rerere.rikkahub.data.model.Conversation
 import me.rerere.rikkahub.ui.components.message.MessagePartBlock
 import me.rerere.rikkahub.ui.components.message.ThinkingStep
+import me.rerere.rikkahub.ui.components.message.ChatMessageNarrationStep
 import me.rerere.rikkahub.ui.components.message.ChatMessageServerToolStep
 import me.rerere.rikkahub.ui.components.message.groupMessageParts
 import me.rerere.rikkahub.ui.components.message.stepIcon
@@ -546,7 +547,10 @@ private fun ExportedChatMessage(
     }
     // Key on the parts list itself: a key of `size + last-part hash` misses in-place edits to any
     // part that is not the tail (see ChatMessage), which renders a stale snapshot of the message.
-    val groupedParts = remember(message.parts) { message.parts.groupMessageParts() }
+    val foldProcessNarration = settings.displaySetting.foldProcessNarration
+    val groupedParts = remember(message.parts, foldProcessNarration) {
+        message.parts.groupMessageParts(foldProcessNarration = foldProcessNarration)
+    }
     val messageContent: @Composable () -> Unit = {
         Column(
             modifier = Modifier
@@ -561,7 +565,9 @@ private fun ExportedChatMessage(
                         if (block.steps.isNotEmpty()) {
                             val toolCallStyle = settings.displaySetting.toolCallStyle
                             val capsuleToolOnly = toolCallStyle == ToolCallStyle.CAPSULE &&
-                                block.steps.none { it is ThinkingStep.ReasoningStep }
+                                block.steps.all {
+                                    it is ThinkingStep.ToolStep || it is ThinkingStep.ServerToolStep
+                                }
                             ChainOfThought(
                                 steps = block.steps,
                                 collapsedVisibleCount = block.steps.size,
@@ -593,6 +599,13 @@ private fun ExportedChatMessage(
 
                                     is ThinkingStep.ServerToolStep -> {
                                         ChatMessageServerToolStep(tool = step.tool)
+                                    }
+
+                                    is ThinkingStep.NarrationStep -> {
+                                        ChatMessageNarrationStep(
+                                            text = step.text,
+                                            assistant = null,
+                                        )
                                     }
                                 }
                             }

@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -42,6 +43,7 @@ import me.rerere.ai.provider.Model
 import me.rerere.ai.ui.UIMessagePart
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Idea01
+import me.rerere.hugeicons.stroke.Message01
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.AssistantAffectScope
@@ -273,6 +275,80 @@ private fun ReasoningTitle(title: String) {
             modifier = Modifier
                 .padding(horizontal = 4.dp)
                 .shimmer(true),
+        )
+    }
+}
+
+
+/**
+ * 过程旁白：夹在工具/思考轮次之间的短说明，并进 CoT 时间线，不当正式回答气泡。
+ *
+ * 短文本直接铺在步骤标题行；偏长时标题只留首行摘要，点开看全文（Markdown）。
+ */
+@Composable
+fun ChainOfThoughtScope.ChatMessageNarrationStep(
+    text: UIMessagePart.Text,
+    assistant: Assistant?,
+) {
+    val chatFontFamily = LocalTextStyle.current.fontFamily
+    val body = remember(text.text, assistant) {
+        text.text.replaceRegexes(
+            assistant = assistant,
+            scope = AssistantAffectScope.ASSISTANT,
+            visual = true,
+        ).trim()
+    }
+    if (body.isEmpty()) return
+
+    val preview = remember(body) {
+        body.lineSequence().firstOrNull { it.isNotBlank() }?.trim().orEmpty()
+            .ifEmpty { body.take(48) }
+    }
+    // 大约两行以上或明显长于预览时，才做成可展开，避免每句旁白都带箭头。
+    val expandable = body.length > 96 || body != preview
+
+    val icon = @Composable {
+        Icon(
+            imageVector = HugeIcons.Message01,
+            contentDescription = null,
+            modifier = Modifier.size(16.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+
+    if (expandable) {
+        var expanded by remember(text) { mutableStateOf(false) }
+        ControlledChainOfThoughtStep(
+            expanded = expanded,
+            onExpandedChange = { expanded = it },
+            icon = icon,
+            label = {
+                Text(
+                    text = preview,
+                    style = MaterialTheme.typography.bodySmall.copy(fontFamily = chatFontFamily),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            },
+            content = {
+                MarkdownBlock(
+                    content = body,
+                    style = MaterialTheme.typography.bodySmall.copy(fontFamily = chatFontFamily),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            },
+        )
+    } else {
+        ChainOfThoughtStep(
+            icon = icon,
+            label = {
+                Text(
+                    text = body,
+                    style = MaterialTheme.typography.bodySmall.copy(fontFamily = chatFontFamily),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            },
         )
     }
 }

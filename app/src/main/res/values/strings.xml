@@ -771,6 +771,8 @@
   <string name="setting_display_page_thinking_steps_visible_desc">How many of the latest thinking / tool steps stay visible when a step group is collapsed. 0 shows only a one-line header</string>
   <string name="setting_display_page_thinking_steps_visible_title">Visible steps in collapsed groups</string>
   <string name="setting_display_page_thinking_steps_visible_all">All</string>
+  <string name="setting_display_page_fold_process_narration_title">Fold process notes into steps</string>
+  <string name="setting_display_page_fold_process_narration_desc">Merge the assistant\'s in-between notes (text between tool / thinking rounds) into the step card, so the final answer stays clean. Turn off to keep the old interleaved layout</string>
   <string name="setting_display_page_tool_call_style_title">Tool call style</string>
   <string name="setting_display_page_tool_call_style_desc">Classic keeps the timeline. Capsule shows search and page tools as compact action chips</string>
   <string name="setting_display_page_tool_call_style_classic">Classic</string>
