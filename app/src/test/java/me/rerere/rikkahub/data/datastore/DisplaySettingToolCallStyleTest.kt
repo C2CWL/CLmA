@@ -48,6 +48,8 @@ class DisplaySettingToolCallStyleTest {
         assertEquals("example.com", capsuleArgumentLabel("https://www.example.com/a/b", preferHost = true))
         assertEquals("not a url", capsuleArgumentLabel("not a url", preferHost = true))
         assertNull(capsuleArgumentLabel("  ", preferHost = false))
-        assertEquals("123456789…", capsuleArgumentLabel("1234567890", preferHost = false, max = 10))
+        // Exactly at the limit still fits, so it is left alone.
+        assertEquals("1234567890", capsuleArgumentLabel("1234567890", preferHost = false, max = 10))
+        assertEquals("123456789…", capsuleArgumentLabel("12345678901", preferHost = false, max = 10))
     }
 }
