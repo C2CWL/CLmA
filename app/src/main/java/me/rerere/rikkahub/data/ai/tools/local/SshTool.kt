@@ -531,17 +531,22 @@ internal fun runOnSession(session: Session, command: String, timeoutMs: Int, std
 
 /**
  * One-shot SSH exec — for hosts the user doesn't want to save (anonymous / ad-hoc / one-time).
- * For frequently-used hosts, prefer save_ssh_host + ssh_exec_saved which is shorter for the LLM
- * to call and avoids leaking credentials into chat history on every call.
+ * Prefer vault refs (`password_secret` / `private_key_secret` / `stdin_secret` from
+ * `request_secret`) so credentials never enter chat history. For frequent hosts use
+ * save_ssh_host + ssh_exec_saved.
  */
-fun sshExecTool(context: Context): Tool = Tool(
+fun sshExecTool(
+    context: Context,
+    secrets: me.rerere.rikkahub.data.secrets.AgentSecretsStore,
+): Tool = Tool(
     name = "ssh_exec",
     description = """
         Connect to a remote host via SSH and run a single shell command. Returns stdout, stderr,
-        and exit code. For destructive or system-level commands you should explicitly confirm
-        with the user before invoking. Pass either password OR private_key for authentication.
-        For hosts you'll use repeatedly, prefer save_ssh_host + ssh_exec_saved instead so
-        credentials don't appear in chat history every time.
+        and exit code. Prefer password_secret / private_key_secret / passphrase_secret /
+        stdin_secret (vault names from request_secret) over plaintext so secrets never enter
+        chat history. For hosts you'll use repeatedly, prefer save_ssh_host + ssh_exec_saved.
+        For destructive or system-level commands you should explicitly confirm with the user
+        before invoking.
     """.trimIndent().replace("\n", " "),
     parameters = {
         InputSchema.Obj(
@@ -549,15 +554,49 @@ fun sshExecTool(context: Context): Tool = Tool(
                 put("host", buildJsonObject { put("type", "string"); put("description", "Hostname or IP address") })
                 put("port", buildJsonObject { put("type", "integer"); put("description", "SSH port, default 22") })
                 put("user", buildJsonObject { put("type", "string"); put("description", "SSH username") })
-                put("password", buildJsonObject { put("type", "string"); put("description", "Password (use only if no private_key)") })
-                put("private_key", buildJsonObject { put("type", "string"); put("description", "Full PEM/OpenSSH private key contents") })
-                put("passphrase", buildJsonObject { put("type", "string"); put("description", "Optional passphrase for the private key") })
+                put("password_secret", buildJsonObject {
+                    put("type", "string")
+                    put("description", "Vault name for the password (from request_secret). Preferred over password.")
+                })
+                put("private_key_secret", buildJsonObject {
+                    put("type", "string")
+                    put("description", "Vault name for the private key PEM. Preferred over private_key.")
+                })
+                put("passphrase_secret", buildJsonObject {
+                    put("type", "string")
+                    put("description", "Vault name for the key passphrase. Preferred over passphrase.")
+                })
+                put("password", buildJsonObject {
+                    put("type", "string")
+                    put("description", "DEPRECATED plaintext password — use password_secret + request_secret")
+                })
+                put("private_key", buildJsonObject {
+                    put("type", "string")
+                    put("description", "DEPRECATED plaintext PEM — use private_key_secret")
+                })
+                put("passphrase", buildJsonObject {
+                    put("type", "string")
+                    put("description", "DEPRECATED plaintext passphrase — use passphrase_secret")
+                })
                 put("command", buildJsonObject { put("type", "string"); put("description", "Shell command to run on the remote host") })
-                put("stdin", buildJsonObject { put("type", "string"); put("description", "Optional data piped to the command's stdin (then EOF). Quote-free way to write a file (command=\"cat > /path\") or feed input; omit to send an immediate EOF.") })
-                put("background", buildJsonObject { put("type", "boolean"); put("description", "If true, launch the command fully detached (nohup, streams redirected) and return immediately with its PID instead of waiting. Use for servers/long jobs that would otherwise block until timeout. Default false.") })
-                put("timeout_seconds", buildJsonObject { put("type", "integer"); put("description", "Total timeout including connect+exec, default 30, max 300") })
+                put("stdin_secret", buildJsonObject {
+                    put("type", "string")
+                    put("description", "Vault name whose value is piped to stdin (preferred for passwords)")
+                })
+                put("stdin", buildJsonObject {
+                    put("type", "string")
+                    put("description", "Optional non-secret data piped to stdin. Prefer stdin_secret for passwords/tokens.")
+                })
+                put("background", buildJsonObject {
+                    put("type", "boolean")
+                    put("description", "If true, launch detached (nohup). Default false. Incompatible with stdin/stdin_secret.")
+                })
+                put("timeout_seconds", buildJsonObject {
+                    put("type", "integer")
+                    put("description", "Total timeout including connect+exec, default 30, max 300")
+                })
             },
-            required = listOf("host", "user", "command")
+            required = listOf("host", "user", "command"),
         )
     },
     execute = {
@@ -566,30 +605,66 @@ fun sshExecTool(context: Context): Tool = Tool(
         val user = p["user"]?.jsonPrimitive?.contentOrNull ?: error("user is required")
         val command = p["command"]?.jsonPrimitive?.contentOrNull ?: error("command is required")
         val port = p["port"]?.jsonPrimitive?.intOrNull ?: 22
-        val stdin = p["stdin"]?.jsonPrimitive?.contentOrNull
+        val stdin = resolveSecretOrPlain(
+            secrets,
+            refName = p["stdin_secret"]?.jsonPrimitive?.contentOrNull,
+            plain = p["stdin"]?.jsonPrimitive?.contentOrNull,
+            field = "stdin",
+        ).getOrElse { return@Tool secretError(it) }
         val background = p["background"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: false
+        val password = resolveSecretOrPlain(
+            secrets,
+            refName = p["password_secret"]?.jsonPrimitive?.contentOrNull,
+            plain = p["password"]?.jsonPrimitive?.contentOrNull,
+            field = "password",
+        ).getOrElse { return@Tool secretError(it) }
+        val privateKey = resolveSecretOrPlain(
+            secrets,
+            refName = p["private_key_secret"]?.jsonPrimitive?.contentOrNull,
+            plain = p["private_key"]?.jsonPrimitive?.contentOrNull,
+            field = "private_key",
+        ).getOrElse { return@Tool secretError(it) }
+        val passphrase = resolveSecretOrPlain(
+            secrets,
+            refName = p["passphrase_secret"]?.jsonPrimitive?.contentOrNull,
+            plain = p["passphrase"]?.jsonPrimitive?.contentOrNull,
+            field = "passphrase",
+        ).getOrElse { return@Tool secretError(it) }
         val auth = SshAuth(
-            password = p["password"]?.jsonPrimitive?.contentOrNull,
-            privateKey = p["private_key"]?.jsonPrimitive?.contentOrNull,
-            passphrase = p["passphrase"]?.jsonPrimitive?.contentOrNull,
+            password = password,
+            privateKey = privateKey,
+            passphrase = passphrase,
         )
         val timeoutSec = (p["timeout_seconds"]?.jsonPrimitive?.intOrNull ?: 30).coerceIn(1, 300)
         if (!auth.isUsable()) {
-            return@Tool listOf(UIMessagePart.Text(
-                buildJsonObject { put("error", "must provide password or private_key") }.toString()
-            ))
+            return@Tool listOf(
+                UIMessagePart.Text(
+                    buildJsonObject {
+                        put("error", "missing_credentials")
+                        put(
+                            "detail",
+                            "Provide password_secret or private_key_secret (call request_secret first), " +
+                                "or legacy password/private_key.",
+                        )
+                    }.toString(),
+                ),
+            )
         }
         if (background && stdin != null) {
-            return@Tool listOf(UIMessagePart.Text(
-                buildJsonObject { put("error", "stdin and background are mutually exclusive (a detached command reads from /dev/null)") }.toString()
-            ))
+            return@Tool listOf(
+                UIMessagePart.Text(
+                    buildJsonObject {
+                        put("error", "stdin and background are mutually exclusive (a detached command reads from /dev/null)")
+                    }.toString(),
+                ),
+            )
         }
         val effectiveCommand = if (background) wrapDetachedCommand(command) else command
         val payload = runCancellableSshOp(timeoutSec * 1000L) { sessionRef ->
             execOneShot(context, host, port, user, auth, effectiveCommand, timeoutSec * 1000, sessionRef, stdin)
         }
         listOf(UIMessagePart.Text(payload.toString()))
-    }
+    },
 )
 
 /**

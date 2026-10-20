@@ -1093,9 +1093,11 @@ class GenerationLoop(
                     }
 
                     is ToolApprovalState.Answered -> {
-                        // Tool was answered by user (e.g., ask_user tool)
+                        // Tool was answered by user (e.g., ask_user / request_secret).
+                        // Scrub secret-shaped keys from the stored tool input as well.
                         val answer = (tool.approvalState as ToolApprovalState.Answered).answer
                         executedTools += tool.copy(
+                            input = redactSecrets(tool.inputAsJson()).toString(),
                             output = listOf(
                                 UIMessagePart.Text(answer)
                             )
@@ -1366,7 +1368,11 @@ class GenerationLoop(
                             // model can pull the full payload on demand instead of burning
                             // the context window.
                             val hasShellAccess = toolsInternal.any { it.name == "workspace_shell" }
+                            // Persist a redacted copy of tool args so password/private_key never
+                            // stay in conversation history (and thus never re-enter the next
+                            // provider request even if a code path forgets to redact on encode).
                             executedTools += markedTool.copy(
+                                input = redactSecrets(markedTool.inputAsJson()).toString(),
                                 output = maybeTruncateToolOutput(
                                     toolCallId = tool.toolCallId,
                                     output = result,

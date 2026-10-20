@@ -21,8 +21,9 @@ package me.rerere.rikkahub.data.ai.tools
  *
  * Ordering, top to bottom — first match wins:
  *
- *  1. `ask_user` is a human-input request, not a permission gate: it must pause for the user
- *     wherever there is a surface to ask on, and auto-approve only in a headless run.
+ *  1. `ask_user` / `request_secret` are human-input requests, not permission gates: they must
+ *     pause for the user wherever there is a surface to ask on, and auto-approve only in a
+ *     headless run (where they degrade to an unavailable envelope).
  *  2. A **headless** conversation (cron / sub-agent / workflow / external automation) has no
  *     approval channel: asking would hang the turn forever, so everything auto-approves.
  *     The tools that must never run unattended are refused separately as an error envelope
@@ -43,8 +44,14 @@ enum class ApprovalMode {
 
 object ToolApprovalPolicy {
 
-    /** The one local tool that is a request for input rather than a capability. */
+    /** Local tools that request human input rather than a capability grant. */
     const val ASK_USER_TOOL_NAME: String = "ask_user"
+    const val REQUEST_SECRET_TOOL_NAME: String = "request_secret"
+
+    private val HUMAN_INPUT_TOOLS: Set<String> = setOf(
+        ASK_USER_TOOL_NAME,
+        REQUEST_SECRET_TOOL_NAME,
+    )
 
     /**
      * True when [toolName] may run without prompting.
@@ -61,7 +68,7 @@ object ToolApprovalPolicy {
         hardFloor: Set<String> = ToolApprovalDefaults.NO_ALWAYS_ALLOW,
         isMcpRelayed: Boolean = toolName.startsWith(ToolApprovalDefaults.MCP_TOOL_PREFIX),
     ): Boolean {
-        if (toolName == ASK_USER_TOOL_NAME) return headless
+        if (toolName in HUMAN_INPUT_TOOLS) return headless
         if (headless) return true
         // Auto waives opaque relayed MCP tools (拍板 2026-10-16) but NOT the named floor below.
         if (mode == ApprovalMode.AUTO && isMcpRelayed) return true

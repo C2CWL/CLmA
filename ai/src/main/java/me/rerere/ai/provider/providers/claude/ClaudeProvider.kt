@@ -827,7 +827,8 @@ class ClaudeProvider(private val client: OkHttpClient, context: Context? = null)
         put("type", "tool_use")
         put("id", toolCallId)
         put("name", toolName)
-        put("input", inputAsJson())
+        // redactSecrets: password / private_key / token 等不得回灌给云端模型。
+        put("input", me.rerere.ai.util.redactSecrets(inputAsJson()))
     }
 
     private fun UIMessagePart.Tool.toToolResultBlock() = buildJsonObject {

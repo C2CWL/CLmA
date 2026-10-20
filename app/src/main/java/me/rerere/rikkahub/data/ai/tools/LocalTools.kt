@@ -95,11 +95,16 @@ import me.rerere.rikkahub.data.ai.tools.local.telegramSetCommandsTool
 import me.rerere.rikkahub.data.ai.tools.local.telegramSetDefaultChatTool
 import me.rerere.rikkahub.data.ai.tools.local.telegramSetTokenTool
 import me.rerere.rikkahub.data.ai.tools.local.telegramStatusTool
+import me.rerere.rikkahub.data.ai.tools.local.requestSecretTool
 import me.rerere.rikkahub.data.ai.tools.local.saveSshHostTool
+import me.rerere.rikkahub.data.ai.tools.local.secretDeleteTool
+import me.rerere.rikkahub.data.ai.tools.local.secretListTool
 import me.rerere.rikkahub.data.ai.tools.local.sshDownloadTool
 import me.rerere.rikkahub.data.ai.tools.local.sshExecSavedTool
 import me.rerere.rikkahub.data.ai.tools.local.sshExecTool
 import me.rerere.rikkahub.data.ai.tools.local.sshUploadTool
+import me.rerere.rikkahub.data.ai.tools.local.REQUEST_SECRET_TOOL_NAME
+import me.rerere.rikkahub.data.secrets.AgentSecretsStore
 import me.rerere.rikkahub.data.ai.tools.local.writeTextFileTool
 import me.rerere.rikkahub.data.ai.tools.local.showImageTool
 import me.rerere.rikkahub.data.ai.tools.local.openFileTool
@@ -154,6 +159,11 @@ sealed class LocalToolOption {
     @Serializable
     @SerialName("ask_user")
     data object AskUser : LocalToolOption()
+
+    /** On-device secret vault + secure input (`request_secret` / `secret_list` / `secret_delete`). */
+    @Serializable
+    @SerialName("secrets")
+    data object Secrets : LocalToolOption()
 
     @Serializable @SerialName("battery")        data object Battery        : LocalToolOption()
 
@@ -360,6 +370,7 @@ class LocalTools(
     private val cronJobScheduler: me.rerere.rikkahub.service.CronJobScheduler,
     private val settingsStore: me.rerere.rikkahub.data.datastore.SettingsStore,
     private val sshHostRepository: me.rerere.rikkahub.data.repository.SshHostRepository,
+    private val agentSecretsStore: AgentSecretsStore,
     private val telegramBotPreferences: me.rerere.rikkahub.data.telegram.TelegramBotPreferences,
     private val telegramBotClient: me.rerere.rikkahub.data.telegram.TelegramBotClient,
     private val notificationListenerPreferences: me.rerere.rikkahub.data.notifications.NotificationListenerPreferences,
@@ -770,6 +781,11 @@ class LocalTools(
         if (options.contains(LocalToolOption.AskUser)) {
             tools.add(askUserTool)
         }
+        if (options.contains(LocalToolOption.Secrets)) {
+            tools.add(requestSecretTool())
+            tools.add(secretListTool(agentSecretsStore))
+            tools.add(secretDeleteTool(agentSecretsStore))
+        }
         if (options.contains(LocalToolOption.Battery)) {
             tools.add(batteryTool(context))
         }
@@ -860,11 +876,11 @@ class LocalTools(
             tools.add(fingerprintTool(context, biometricResultBuffer))
         }
         if (options.contains(LocalToolOption.Ssh)) {
-            tools.add(sshExecTool(context))
-            tools.add(saveSshHostTool(sshHostRepository))
+            tools.add(sshExecTool(context, agentSecretsStore))
+            tools.add(saveSshHostTool(sshHostRepository, agentSecretsStore))
             tools.add(listSshHostsTool(sshHostRepository))
             tools.add(deleteSshHostTool(sshHostRepository))
-            tools.add(sshExecSavedTool(context, sshHostRepository))
+            tools.add(sshExecSavedTool(context, sshHostRepository, agentSecretsStore))
             tools.add(sshUploadTool(context, sshHostRepository))
             tools.add(sshDownloadTool(context, sshHostRepository))
             tools.add(forgetSshHostKeyTool(context))
@@ -1206,15 +1222,18 @@ class LocalTools(
         // decided there, from the user's blacklist plus the non-waivable floor; the default
         // (empty blacklist) is that nothing asks.
         //
-        // `ask_user` is the one exception: it is a request for input rather than a capability,
-        // so it runs directly and pauses on its own card / clarify flow.
+        // `ask_user` / `request_secret` are human-input requests rather than capabilities:
+        // they keep their own needsApproval and pause on dedicated cards.
         // P2-02 - drop the names the assistant opted out of, IN PLACE: workflow_create was
         // built above with a knownToolNamesProvider closure over this very list, so it must
         // not advertise a tool that is no longer on the surface. An empty set mutates nothing.
         LocalToolFilter.removeDisabled(tools, LocalToolFilter.applicableDisabledNames(disabledToolNames))
 
         return tools.map { t ->
-            val withApproval = if (t.name == ToolApprovalPolicy.ASK_USER_TOOL_NAME) {
+            val withApproval = if (
+                t.name == ToolApprovalPolicy.ASK_USER_TOOL_NAME ||
+                t.name == REQUEST_SECRET_TOOL_NAME
+            ) {
                 t
             } else {
                 t.copy(needsApproval = { true })

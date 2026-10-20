@@ -147,6 +147,7 @@ val appModule = module {
     // T-07: named secrets a workflow action can reference as {{secret:NAME}} — keystore-backed
     // so the token never has to live inside the (plaintext, model-visible) workflow JSON.
     single { me.rerere.rikkahub.workflow.secrets.WorkflowSecretsStore(get()) }
+    single { me.rerere.rikkahub.data.secrets.AgentSecretsStore(get()) }
 
     // Phase 12: Workflows
     single {
@@ -192,6 +193,7 @@ val appModule = module {
             cronJobScheduler = get(),
             settingsStore = get(),
             sshHostRepository = get(),
+            agentSecretsStore = get(),
             telegramBotPreferences = get(),
             telegramBotClient = get(),
             notificationListenerPreferences = get(),

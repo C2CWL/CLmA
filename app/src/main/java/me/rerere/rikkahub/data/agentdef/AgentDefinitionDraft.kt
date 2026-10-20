@@ -284,6 +284,7 @@ object LocalToolGroups {
         LocalToolOption.Clipboard,
         LocalToolOption.Tts,
         LocalToolOption.AskUser,
+        LocalToolOption.Secrets,
         LocalToolOption.Battery,
         LocalToolOption.UsageLedger,
         LocalToolOption.AudioInfo,
