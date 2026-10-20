@@ -648,6 +648,8 @@
   <string name="setting_display_page_thinking_steps_visible_title">收合時顯示的步驟數</string>
   <string name="setting_display_page_thinking_steps_visible_all">全部</string>
   <string name="setting_display_page_tool_call_style_title">工具呼叫樣式</string>
+  <string name="setting_display_page_fold_process_narration_title">過程旁白併入步驟</string>
+  <string name="setting_display_page_fold_process_narration_desc">把工具/思考輪次之間的說明文字收進步驟卡片，正文只留最終回答。關閉則恢復旁白與步驟穿插的舊佈局</string>
   <string name="setting_display_page_tool_call_style_desc">經典樣式保留時間軸。膠囊樣式把搜尋和網頁工具顯示為精簡的動作標籤</string>
   <string name="setting_display_page_tool_call_style_classic">經典</string>
   <string name="setting_display_page_tool_call_style_capsule">膠囊</string>

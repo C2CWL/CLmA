@@ -1230,6 +1230,9 @@ data class DisplaySetting(
     val thinkingStepsVisibleCount: Int = 2,
     // 工具调用样式。默认经典时间线；旧设置没有该字段时也读回经典。
     val toolCallStyle: ToolCallStyle = ToolCallStyle.CLASSIC,
+    // 把夹在工具/思考轮次之间的过程旁白并进思考链，避免拆成多张「再显示 N 步」和正文穿插。
+    // 默认开；关掉则恢复旧的旁白当正文、步骤组被切开的布局。
+    val foldProcessNarration: Boolean = true,
     val updateCheckDisabledUntilEpochMillis: Long = 0L,
     val showMessageJumper: Boolean = true,
     val messageJumperOnLeft: Boolean = false,

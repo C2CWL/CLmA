@@ -12,6 +12,9 @@ import org.junit.Test
  * Unit tests for [groupMessageParts] — the pure helper that splits a message's
  * part list into renderable blocks (consecutive Reasoning/Tool parts collapse
  * into a single ThinkingBlock, everything else becomes a ContentBlock).
+ *
+ * When [foldProcessNarration] is on, non-final Text between tool/reasoning
+ * rounds becomes [ThinkingStep.NarrationStep] inside the same thinking block.
  */
 class GroupMessagePartsTest {
 
@@ -165,6 +168,88 @@ class GroupMessagePartsTest {
 
         assertEquals(3, result.size)
         assertEquals(card, (result[1] as MessagePartBlock.ContentBlock).part)
+    }
+
+    @Test
+    fun `fold off keeps default split when narration sits between tools`() {
+        val result = listOf(
+            tool("a"),
+            text("checking…"),
+            tool("b"),
+            text("final"),
+        ).groupMessageParts(foldProcessNarration = false)
+
+        assertEquals(4, result.size)
+        assertTrue(result[0] is MessagePartBlock.ThinkingBlock)
+        assertTrue(result[1] is MessagePartBlock.ContentBlock)
+        assertTrue(result[2] is MessagePartBlock.ThinkingBlock)
+        assertTrue(result[3] is MessagePartBlock.ContentBlock)
+    }
+
+    @Test
+    fun `fold on merges process narration into one thinking block`() {
+        val result = listOf(
+            text("intro plan"),
+            tool("a"),
+            text("checking…"),
+            reasoning("hmm"),
+            tool("b"),
+            text("final answer"),
+        ).groupMessageParts(foldProcessNarration = true)
+
+        assertEquals(2, result.size)
+        val thinking = result[0] as MessagePartBlock.ThinkingBlock
+        assertEquals(5, thinking.steps.size)
+        assertTrue(thinking.steps[0] is ThinkingStep.NarrationStep)
+        assertEquals(0, (thinking.steps[0] as ThinkingStep.NarrationStep).index)
+        assertTrue(thinking.steps[1] is ThinkingStep.ToolStep)
+        assertTrue(thinking.steps[2] is ThinkingStep.NarrationStep)
+        assertEquals("checking…", (thinking.steps[2] as ThinkingStep.NarrationStep).text.text)
+        assertTrue(thinking.steps[3] is ThinkingStep.ReasoningStep)
+        assertTrue(thinking.steps[4] is ThinkingStep.ToolStep)
+        val content = result[1] as MessagePartBlock.ContentBlock
+        assertEquals(text("final answer"), content.part)
+        assertEquals(5, content.index)
+    }
+
+    @Test
+    fun `fold on leaves pure text messages as content`() {
+        val result = listOf(text("hello"), text("world")).groupMessageParts(foldProcessNarration = true)
+        assertEquals(2, result.size)
+        assertTrue(result.all { it is MessagePartBlock.ContentBlock })
+    }
+
+    @Test
+    fun `fold on still keeps webview cards as content even between tools`() {
+        val card = UIMessagePart.Text(
+            text = "open",
+            metadata = buildJsonObject {
+                putJsonObject("rikkahub.webview") { put("url", "https://example.com") }
+            },
+        )
+        val result = listOf(tool("a"), card, tool("b"), text("done"))
+            .groupMessageParts(foldProcessNarration = true)
+
+        // card flushes, so two thinking blocks around the card content
+        assertEquals(4, result.size)
+        assertTrue(result[0] is MessagePartBlock.ThinkingBlock)
+        assertEquals(card, (result[1] as MessagePartBlock.ContentBlock).part)
+        assertTrue(result[2] is MessagePartBlock.ThinkingBlock)
+        assertEquals(text("done"), (result[3] as MessagePartBlock.ContentBlock).part)
+    }
+
+    @Test
+    fun `fold on keeps multiple trailing text parts as content`() {
+        val result = listOf(
+            tool("a"),
+            text("answer part 1"),
+            text("answer part 2"),
+        ).groupMessageParts(foldProcessNarration = true)
+
+        assertEquals(3, result.size)
+        assertTrue(result[0] is MessagePartBlock.ThinkingBlock)
+        assertEquals(text("answer part 1"), (result[1] as MessagePartBlock.ContentBlock).part)
+        assertEquals(text("answer part 2"), (result[2] as MessagePartBlock.ContentBlock).part)
     }
 
     @Test

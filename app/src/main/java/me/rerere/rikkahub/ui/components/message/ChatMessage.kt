@@ -391,17 +391,22 @@ private fun MessagePartsBlock(
     // `remember(parts)` compares structurally, which is cheap here: these are data classes, and
     // the bulk of a streaming part is one string whose length differs on every delta, so the
     // comparison short-circuits without walking the text.
-    val groupedParts = remember(parts) { parts.groupMessageParts() }
+    val foldProcessNarration = settings.displaySetting.foldProcessNarration
+    val groupedParts = remember(parts, foldProcessNarration) {
+        parts.groupMessageParts(foldProcessNarration = foldProcessNarration)
+    }
     groupedParts.fastForEach { block ->
         when (block) {
             is MessagePartBlock.ThinkingBlock -> {
                 if (block.steps.isNotEmpty()) {
                     val isReasoningOnlyBlock = block.steps.fastAll { it is ThinkingStep.ReasoningStep }
                     val toolCallStyle = settings.displaySetting.toolCallStyle
-                    // Capsule drops the timeline only for a tool-only group. A group that
-                    // also contains reasoning keeps the classic line and icon mask.
+                    // Capsule drops the timeline only for a pure tool/server-tool group.
+                    // Reasoning or process narration keeps the classic line and icon mask.
                     val capsuleToolOnly = toolCallStyle == ToolCallStyle.CAPSULE &&
-                        block.steps.fastAll { it !is ThinkingStep.ReasoningStep }
+                        block.steps.fastAll {
+                            it is ThinkingStep.ToolStep || it is ThinkingStep.ServerToolStep
+                        }
                     // Force-expand whenever any tool step is awaiting approval. Without
                     // this, on 3+ pending tool calls only the last 2 rows are visible
                     // and the first sits hidden behind the "show more" arrow — easy to
@@ -460,6 +465,15 @@ private fun MessagePartsBlock(
                             is ThinkingStep.ServerToolStep -> {
                                 key(step.tool.toolCallId.ifBlank { step.hashCode().toString() }) {
                                     ChatMessageServerToolStep(tool = step.tool)
+                                }
+                            }
+
+                            is ThinkingStep.NarrationStep -> {
+                                key("narration-${step.index}") {
+                                    ChatMessageNarrationStep(
+                                        text = step.text,
+                                        assistant = assistant,
+                                    )
                                 }
                             }
                         }

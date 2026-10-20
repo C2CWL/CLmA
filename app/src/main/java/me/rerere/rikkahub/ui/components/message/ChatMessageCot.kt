@@ -4,7 +4,7 @@ import androidx.compose.ui.util.fastForEachIndexed
 import me.rerere.ai.ui.UIMessagePart
 
 /**
- * 思考步骤类型，用于分组 Reasoning、客户端 Tool 和 ServerTool
+ * 思考步骤类型，用于分组 Reasoning、客户端 Tool、ServerTool，以及（可选）过程旁白 Text。
  */
 sealed interface ThinkingStep {
     data class ReasoningStep(
@@ -18,6 +18,20 @@ sealed interface ThinkingStep {
     data class ServerToolStep(
         val tool: UIMessagePart.ServerTool,
     ) : ThinkingStep
+
+    /**
+     * 夹在工具/思考轮次之间的过程旁白。
+     *
+     * 只在 [groupMessageParts] 开启 [foldProcessNarration] 时产生：后面还跟有
+     * Reasoning/Tool/ServerTool 的普通 Text 不再拆成正文气泡，而是并进同一条思考链，
+     * 避免「再显示 N 步」卡片和旁白正文来回穿插。
+     *
+     * [index] 是该 Text 在原始 parts 里的下标，给 Compose key 用。
+     */
+    data class NarrationStep(
+        val text: UIMessagePart.Text,
+        val index: Int,
+    ) : ThinkingStep
 }
 
 /**
@@ -29,11 +43,19 @@ sealed interface MessagePartBlock {
 }
 
 /**
- * 将 parts 分组成 ThinkingBlock 和 ContentBlock
- * 连续的 Reasoning、客户端 Tool 和 ServerTool 会被分组到一个 ThinkingBlock 中
- * 空白 Text 会被跳过，不会把一组步骤切开
+ * 将 parts 分组成 ThinkingBlock 和 ContentBlock。
+ *
+ * 连续的 Reasoning、客户端 Tool 和 ServerTool 会被分组到一个 ThinkingBlock 中；
+ * 空白 Text 会被跳过，不会把一组步骤切开。
+ *
+ * @param foldProcessNarration 为 true 时，若某段非空 Text 后面还跟有思考/工具 part，
+ * 则把它收成 [ThinkingStep.NarrationStep] 留在当前思考链里，而不是 flush 成正文。
+ * 最后一轮思考/工具之后的 Text（真正回答）仍是 ContentBlock。带 `rikkahub.webview`
+ * 的 Text 始终当正文卡片，不并进思考链。
  */
-fun List<UIMessagePart>.groupMessageParts(): List<MessagePartBlock> {
+fun List<UIMessagePart>.groupMessageParts(
+    foldProcessNarration: Boolean = false,
+): List<MessagePartBlock> {
     val result = mutableListOf<MessagePartBlock>()
     var currentThinkingSteps = mutableListOf<ThinkingStep>()
 
@@ -42,6 +64,21 @@ fun List<UIMessagePart>.groupMessageParts(): List<MessagePartBlock> {
             result.add(MessagePartBlock.ThinkingBlock(currentThinkingSteps.toList()))
             currentThinkingSteps = mutableListOf()
         }
+    }
+
+    // 开启折叠旁白时，预先找到「最后一次思考/工具」的下标：
+    // 它之前的普通 Text 都是过程旁白；它之后的 Text 才是正文回答。
+    val lastThinkingIndex = if (foldProcessNarration) {
+        indices.lastOrNull { idx ->
+            when (this[idx]) {
+                is UIMessagePart.Reasoning,
+                is UIMessagePart.Tool,
+                is UIMessagePart.ServerTool -> true
+                else -> false
+            }
+        } ?: -1
+    } else {
+        -1
     }
 
     this.fastForEachIndexed { index, part ->
@@ -61,8 +98,20 @@ fun List<UIMessagePart>.groupMessageParts(): List<MessagePartBlock> {
             else -> {
                 // 空白 Text 不渲染，也不打断当前这组思考步骤（见 isVisuallyBlank）
                 if (part is UIMessagePart.Text && part.isVisuallyBlank()) return@fastForEachIndexed
-                flushThinkingSteps()
-                result.add(MessagePartBlock.ContentBlock(part, index))
+
+                val foldAsNarration = foldProcessNarration &&
+                    part is UIMessagePart.Text &&
+                    index < lastThinkingIndex &&
+                    part.metadata?.containsKey("rikkahub.webview") != true
+
+                if (foldAsNarration) {
+                    currentThinkingSteps.add(
+                        ThinkingStep.NarrationStep(text = part, index = index),
+                    )
+                } else {
+                    flushThinkingSteps()
+                    result.add(MessagePartBlock.ContentBlock(part, index))
+                }
             }
         }
     }

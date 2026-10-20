@@ -356,6 +356,18 @@ fun SettingPreferencesUIPage(vm: SettingVM = koinViewModel()) {
                         },
                     )
                     item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_fold_process_narration_title)) },
+                        supportingContent = { Text(stringResource(R.string.setting_display_page_fold_process_narration_desc)) },
+                        trailingContent = {
+                            Switch(
+                                checked = displaySetting.foldProcessNarration,
+                                onCheckedChange = {
+                                    updateDisplaySetting(displaySetting.copy(foldProcessNarration = it))
+                                }
+                            )
+                        },
+                    )
+                    item(
                         headlineContent = { Text(stringResource(R.string.setting_display_page_thinking_steps_visible_title)) },
                         supportingContent = {
                             Column {
