@@ -254,6 +254,25 @@ class ChatDrawerVM(
         }
     }
 
+    /** 批量移动到其他助手。返回 Job，便于 UI 在完成后刷新列表。 */
+    fun moveConversationsToAssistant(
+        conversationIds: Collection<Uuid>,
+        targetAssistantId: Uuid,
+    ): kotlinx.coroutines.Job {
+        val ids = conversationIds.distinct()
+        return viewModelScope.launch {
+            if (ids.isEmpty()) return@launch
+            chatService.moveConversationsToAssistant(ids, targetAssistantId)
+        }
+    }
+
+    /** 当前会话被移走后，把设置里的当前助手切过去，和单条移动的行为一致。 */
+    fun switchAssistant(assistantId: Uuid) {
+        viewModelScope.launch {
+            settingsStore.updateAssistant(assistantId)
+        }
+    }
+
     /** 批量删除。返回 Job，便于确认框在完成后退出多选并刷新列表。 */
     fun deleteConversations(conversationIds: Collection<Uuid>): kotlinx.coroutines.Job {
         val ids = conversationIds.distinct()

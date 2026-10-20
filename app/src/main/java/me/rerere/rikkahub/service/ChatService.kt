@@ -3493,6 +3493,32 @@ class ChatService(
     }
 
     /**
+     * 批量把会话移到另一个助手。
+     *
+     * 文件夹是按助手划分的，换助手后旧文件夹在新助手下不可见，所以一并清空 folderId
+     * （与单条移动一致）。活跃 session 先同步内存态，避免整对象保存把 assistantId 写回去。
+     * 同时清掉「本对话允许」的工具授权：新助手能用到的工具面可能完全不同。
+     */
+    suspend fun moveConversationsToAssistant(conversationIds: Collection<Uuid>, targetAssistantId: Uuid) {
+        val ids = conversationIds.distinct()
+        if (ids.isEmpty()) return
+        ids.forEach { conversationId ->
+            if (sessions.containsKey(conversationId)) {
+                updateConversationState(conversationId) {
+                    it.copy(assistantId = targetAssistantId, folderId = null)
+                }
+            }
+        }
+        ids.forEach { conversationId ->
+            val full = conversationRepo.getConversationById(conversationId) ?: return@forEach
+            me.rerere.rikkahub.data.ai.tools.ToolApprovalAllowList.clearChat(conversationId)
+            conversationRepo.updateConversation(
+                full.copy(assistantId = targetAssistantId, folderId = null)
+            )
+        }
+    }
+
+    /**
      * 已删除会话的墓碑。进程内有效：阻止生成收尾、生命周期刷盘把刚删掉的会话又 insert 回来。
      * 进程重启后 session 本来就是空的，不需要持久化。
      */

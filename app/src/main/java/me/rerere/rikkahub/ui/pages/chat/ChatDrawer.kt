@@ -447,6 +447,7 @@ fun ChatDrawerContent(
                 },
                 onMoveToAssistant = {
                     conversationToMove = it
+                    batchMove = false
                     showMoveToAssistantSheet = true
                 },
                 onMoveToFolder = {
@@ -520,6 +521,13 @@ fun ChatDrawerContent(
                         if (selectedIds.isNotEmpty()) {
                             batchMove = true
                             showCreateFolderDialog = true
+                        }
+                    },
+                    onMoveToAssistant = {
+                        if (selectedIds.isNotEmpty()) {
+                            batchMove = true
+                            conversationToMove = null
+                            showMoveToAssistantSheet = true
                         }
                     },
                 )
@@ -1029,12 +1037,19 @@ fun ChatDrawerContent(
         )
     }
 
-    // 移动到助手 Bottom Sheet
+    // 移动到助手 Bottom Sheet（单条或批量）
     if (showMoveToAssistantSheet) {
+        val currentAssistantId = if (batchMove) {
+            // 批量时来源可能跨助手，用当前打开的会话做高亮参考
+            current.assistantId
+        } else {
+            conversationToMove?.assistantId
+        }
         ModalBottomSheet(
             onDismissRequest = {
                 showMoveToAssistantSheet = false
                 conversationToMove = null
+                batchMove = false
             },
             sheetState = bottomSheetState
         ) {
@@ -1048,8 +1063,14 @@ fun ChatDrawerContent(
                 Text(
                     text = stringResource(R.string.chat_page_move_to_assistant),
                     style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.padding(bottom = 8.dp)
                 )
+                if (batchMove) {
+                    Text(
+                        text = stringResource(R.string.chat_page_selected_count, selectedIds.size),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
 
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -1057,14 +1078,31 @@ fun ChatDrawerContent(
                     items(settings.assistants, key = { it.id }) { assistant ->
                         AssistantItem(
                             assistant = assistant,
-                            isCurrentAssistant = assistant.id == conversationToMove?.assistantId,
+                            isCurrentAssistant = assistant.id == currentAssistantId,
                             onClick = {
-                                conversationToMove?.let { conversation ->
-                                    vm.moveConversationToAssistant(conversation, assistant.id)
-                                    scope.launch {
-                                        bottomSheetState.hide()
-                                        showMoveToAssistantSheet = false
-                                        conversationToMove = null
+                                if (batchMove) {
+                                    val ids = selectedIds.toList()
+                                    if (ids.isNotEmpty()) {
+                                        val movedCurrent = current.id in ids
+                                        scope.launch {
+                                            drawerVm.moveConversationsToAssistant(ids, assistant.id).join()
+                                            // 当前会话被移走时切到目标助手，和单条移动一致
+                                            if (movedCurrent) drawerVm.switchAssistant(assistant.id)
+                                            bottomSheetState.hide()
+                                            showMoveToAssistantSheet = false
+                                            conversationToMove = null
+                                            exitSelection()
+                                            conversations.refresh()
+                                        }
+                                    }
+                                } else {
+                                    conversationToMove?.let { conversation ->
+                                        vm.moveConversationToAssistant(conversation, assistant.id)
+                                        scope.launch {
+                                            bottomSheetState.hide()
+                                            showMoveToAssistantSheet = false
+                                            conversationToMove = null
+                                        }
                                     }
                                 }
                             }
@@ -1083,6 +1121,7 @@ private fun SelectionActionBar(
     onDelete: () -> Unit,
     onMove: () -> Unit,
     onCreateAndMove: () -> Unit,
+    onMoveToAssistant: () -> Unit,
 ) {
     val canAct = count > 0
     Column(
@@ -1121,37 +1160,53 @@ private fun SelectionActionBar(
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            // 三个动作等宽排一行，字号降到 labelMedium，窄抽屉里也能放下完整文案。
             TextButton(
                 onClick = onMove,
                 enabled = canAct,
                 modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
+                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
             ) {
-                Icon(HugeIcons.Folder01, null, modifier = Modifier.size(16.dp))
-                Spacer(Modifier.width(4.dp))
+                Icon(HugeIcons.Folder01, null, modifier = Modifier.size(14.dp))
+                Spacer(Modifier.width(3.dp))
                 Text(
                     text = stringResource(R.string.chat_page_move_to_folder),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.labelLarge,
+                    style = MaterialTheme.typography.labelMedium,
                 )
             }
             TextButton(
                 onClick = onCreateAndMove,
                 enabled = canAct,
                 modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
+                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
             ) {
-                Icon(HugeIcons.FolderAdd, null, modifier = Modifier.size(16.dp))
-                Spacer(Modifier.width(4.dp))
+                Icon(HugeIcons.FolderAdd, null, modifier = Modifier.size(14.dp))
+                Spacer(Modifier.width(3.dp))
                 Text(
                     text = stringResource(R.string.chat_page_create_folder),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.labelLarge,
+                    style = MaterialTheme.typography.labelMedium,
+                )
+            }
+            TextButton(
+                onClick = onMoveToAssistant,
+                enabled = canAct,
+                modifier = Modifier.weight(1f),
+                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
+            ) {
+                Icon(HugeIcons.LookTop, null, modifier = Modifier.size(14.dp))
+                Spacer(Modifier.width(3.dp))
+                Text(
+                    text = stringResource(R.string.chat_page_move_to_assistant),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.labelMedium,
                 )
             }
         }
