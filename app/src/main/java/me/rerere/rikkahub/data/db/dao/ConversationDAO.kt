@@ -88,6 +88,10 @@ interface ConversationDAO {
     @Query("UPDATE conversationentity SET folder_id = :folderId WHERE id = :id")
     suspend fun updateFolderId(id: String, folderId: String)
 
+    /** Batch update folder_id for multiple conversations (empty [ids] is a no-op at the call site). */
+    @Query("UPDATE conversationentity SET folder_id = :folderId WHERE id IN (:ids)")
+    suspend fun updateFolderIdBatch(ids: List<String>, folderId: String)
+
     @Query("UPDATE conversationentity SET title = :title WHERE id = :id")
     suspend fun updateTitle(id: String, title: String)
 

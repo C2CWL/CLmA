@@ -3477,6 +3477,22 @@ class ChatService(
     }
 
     /**
+     * 批量移动会话到文件夹（folderId 为 null 表示移出到未归类）。
+     * 与 [moveConversationToFolder] 相同：先同步活跃 session 内存态，再批量落库，
+     * 避免后续整对象保存把 folder_id 覆盖回旧值。
+     */
+    suspend fun moveConversationsToFolder(conversationIds: Collection<Uuid>, folderId: Uuid?) {
+        val ids = conversationIds.distinct()
+        if (ids.isEmpty()) return
+        ids.forEach { conversationId ->
+            if (sessions.containsKey(conversationId)) {
+                updateConversationState(conversationId) { it.copy(folderId = folderId) }
+            }
+        }
+        conversationRepo.updateConversationsFolderId(ids, folderId)
+    }
+
+    /**
      * 重命名会话。若该会话当前有活跃 session，先同步内存态再落库：
      * 否则仅改数据库标题，内存里那份 Conversation 仍是旧标题，
      * 后续任意 saveConversation(id, state.value) 会用整对象把标题覆盖回旧值，导致重命名丢失。

@@ -2296,6 +2296,9 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="assistant_page_local_tools_calendar_desc">Let the AI query and create calendar events</string>
   <string name="chat_message_tool_calendar_query">Query calendar events</string>
   <string name="chat_message_tool_calendar_create">Create event: %1$s</string>
+  <string name="chat_page_multi_select">Select Multiple</string>
+  <string name="chat_page_selected_count">Selected: %1$d</string>
+  <string name="chat_page_exit_multi_select">Cancel</string>
   <string name="chat_page_move_to_folder">Move to Folder</string>
   <string name="chat_page_remove_from_folder">Remove from Folder</string>
   <string name="chat_page_create_folder">New Folder</string>
