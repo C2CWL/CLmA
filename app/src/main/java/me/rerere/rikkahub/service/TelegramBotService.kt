@@ -887,6 +887,34 @@ class TelegramBotService : Service() {
                         scope.launch { startClarify(m.chatId, convId, tool) }
                         continue
                     }
+                    // request_secret needs the in-app secure-input card (masked field + vault
+                    // write). Telegram cannot collect secrets without putting them in chat
+                    // history, so answer with an unavailable envelope and tell the user.
+                    if (tool.toolName == "request_secret") {
+                        scope.launch {
+                            chatService.handleToolApproval(
+                                conversationId = convId,
+                                toolCallId = tool.toolCallId,
+                                approved = false,
+                                answer = buildJsonObject {
+                                    put("error", "request_secret_unavailable")
+                                    put(
+                                        "detail",
+                                        "Secure input is only available in the app. Open the conversation on the phone, store the secret there, then retry with the vault name (password_secret / stdin_secret / …).",
+                                    )
+                                }.toString(),
+                                toolName = tool.toolName,
+                            )
+                            try {
+                                client.sendMessage(
+                                    m.chatId,
+                                    "🔐 <b>Secure input</b> needs the in-app card. Open the chat on your phone to store the secret, then retry.",
+                                    parseMode = PARSE_MODE_HTML,
+                                )
+                            } catch (_: Throwable) {}
+                        }
+                        continue
+                    }
                     // Retry circuit breaker: if the same tool has already returned an
                     // error envelope >=3 times in this turn, auto-deny the next call
                     // instead of asking the user to approve another doomed retry. The

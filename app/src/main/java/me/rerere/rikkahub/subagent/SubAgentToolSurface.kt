@@ -113,6 +113,7 @@ object SubAgentToolSurface {
      * envelope rather than blocking; the older "it blocks in headless" theory was wrong.)
      */
     const val ASK_USER_TOOL_NAME: String = "ask_user"
+    const val REQUEST_SECRET_TOOL_NAME: String = "request_secret"
 
     /**
      * Why a tool may not be handed to a sub-agent, or null when it is fine. The strings match the
@@ -122,6 +123,7 @@ object SubAgentToolSurface {
     fun denialReason(toolName: String): String? = when {
         toolName.startsWith(INTERNAL_TOOL_PREFIX) -> "tool_unavailable_headless"
         toolName == ASK_USER_TOOL_NAME -> "tool_unavailable_headless"
+        toolName == REQUEST_SECRET_TOOL_NAME -> "tool_unavailable_headless"
         toolName in UI_BOUND_TOOL_NAMES -> "tool_unavailable_headless"
         toolName in ToolApprovalDefaults.NO_ALWAYS_ALLOW -> "tool_not_authorized"
         toolName in PRIVACY_SENSITIVE_TOOL_NAMES -> "tool_not_authorized"

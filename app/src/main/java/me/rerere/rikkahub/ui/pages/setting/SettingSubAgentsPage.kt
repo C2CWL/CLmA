@@ -797,6 +797,7 @@ internal fun localToolTitleRes(option: LocalToolOption): Int = when (option) {
         LocalToolOption.Clipboard -> R.string.assistant_page_local_tools_clipboard_title
         LocalToolOption.Tts -> R.string.assistant_page_local_tools_tts_title
         LocalToolOption.AskUser -> R.string.assistant_page_local_tools_ask_user_title
+        LocalToolOption.Secrets -> R.string.assistant_page_local_tools_secrets_title
         LocalToolOption.Battery -> R.string.assistant_page_local_tools_battery_title
         LocalToolOption.UsageLedger -> R.string.assistant_page_local_tools_usage_ledger_title
         LocalToolOption.AudioInfo -> R.string.assistant_page_local_tools_audio_info_title

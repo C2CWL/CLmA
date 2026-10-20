@@ -38,6 +38,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.dokar.sonner.ToastType
@@ -50,6 +52,7 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
 import me.rerere.ai.ui.ToolApprovalState
 import me.rerere.ai.ui.UIMessagePart
 import me.rerere.common.http.jsonObjectOrNull
@@ -60,7 +63,9 @@ import me.rerere.hugeicons.stroke.Refresh03
 import me.rerere.hugeicons.stroke.Tick01
 import me.rerere.hugeicons.stroke.Tools
 import me.rerere.rikkahub.R
+import me.rerere.rikkahub.data.ai.tools.local.REQUEST_SECRET_TOOL_NAME
 import me.rerere.rikkahub.data.datastore.ToolCallStyle
+import me.rerere.rikkahub.data.secrets.AgentSecretsStore
 import me.rerere.rikkahub.ui.components.message.tools.ToolUIContext
 import me.rerere.rikkahub.ui.components.message.tools.ToolUIRegistry
 import me.rerere.rikkahub.ui.components.message.tools.ToolResultImage
@@ -71,11 +76,12 @@ import me.rerere.rikkahub.ui.context.LocalToaster
 import me.rerere.rikkahub.ui.modifier.shimmer
 import me.rerere.rikkahub.utils.JsonInstant
 import me.rerere.rikkahub.utils.jsonPrimitiveOrNull
+import org.koin.compose.koinInject
 
 // Per-tool icon/title/summary/preview rendering now lives in ToolUIRegistry
 // (see message/tools/BuiltinToolUIs.kt). This file only keeps the cross-cutting
-// approval-card UI and the interactive ask_user flow, plus the small JSON helper
-// they rely on.
+// approval-card UI and the interactive ask_user / request_secret flows, plus the
+// small JSON helper they rely on.
 private fun JsonElement?.getStringContent(key: String): String? =
     this?.jsonObjectOrNull?.get(key)?.jsonPrimitiveOrNull?.contentOrNull
 
@@ -151,9 +157,13 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
     // workspace_shell：后面的思考或正文已经开始。null 表示用户还没手动拨过展开状态。
     collapseInlineOutput: Boolean = false,
 ) {
-    // ask_user 是交互式问答流程, 不走注册式渲染框架
+    // ask_user / request_secret 是交互式输入流程, 不走注册式渲染框架
     if (tool.toolName == ASK_USER_TOOL_NAME) {
         AskUserToolStep(tool = tool, loading = loading, onToolAnswer = onToolAnswer)
+        return
+    }
+    if (tool.toolName == REQUEST_SECRET_TOOL_NAME) {
+        RequestSecretToolStep(tool = tool, loading = loading, onToolAnswer = onToolAnswer)
         return
     }
 
@@ -741,6 +751,214 @@ private data class AskUserQuestion(
     val options: List<String>,
     val selectionType: String = "text", // "text" | "single" | "multi"
 )
+
+/**
+ * Secure input card for [REQUEST_SECRET_TOOL_NAME].
+ *
+ * The plaintext is written straight into [AgentSecretsStore] and never appears in
+ * [ToolApprovalState.Answered] / chat history / the LLM cloud. Only `{stored,name,kind}`
+ * is returned as the tool answer.
+ */
+@Composable
+private fun ChainOfThoughtScope.RequestSecretToolStep(
+    tool: UIMessagePart.Tool,
+    loading: Boolean,
+    onToolAnswer: ((toolCallId: String, answer: String) -> Unit)?,
+) {
+    val secretsStore: AgentSecretsStore = koinInject()
+    val isPending = tool.isPending
+    val isAnswered = tool.approvalState is ToolApprovalState.Answered
+    val arguments = tool.inputAsJson().jsonObject
+    val name = arguments["name"]?.jsonPrimitive?.contentOrNull.orEmpty()
+    val prompt = arguments["prompt"]?.jsonPrimitive?.contentOrNull
+        ?.takeIf { it.isNotBlank() }
+        ?: stringResource(R.string.chat_message_tool_request_secret_default_prompt, name.ifBlank { "…" })
+    val kind = arguments["kind"]?.jsonPrimitive?.contentOrNull ?: "password"
+    val isPrivateKey = kind == "private_key"
+
+    var value by remember(tool.toolCallId) { mutableStateOf("") }
+    var confirm by remember(tool.toolCallId) { mutableStateOf("") }
+    var showPlain by remember(tool.toolCallId) { mutableStateOf(false) }
+    var errorText by remember(tool.toolCallId) { mutableStateOf<String?>(null) }
+    var expanded by remember { mutableStateOf(true) }
+    val capsule = LocalToolCallStyle.current == ToolCallStyle.CAPSULE
+    val nameValid = remember(name) {
+        name.isNotBlank() && Regex("""[A-Za-z0-9_]{1,64}""").matches(name)
+    }
+
+    ControlledChainOfThoughtStep(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+        icon = {
+            if (loading) {
+                DotLoading(size = if (capsule) 12.dp else 10.dp)
+            } else {
+                Icon(
+                    imageVector = HugeIcons.Tools,
+                    contentDescription = null,
+                    modifier = Modifier.size(if (capsule) 18.dp else 16.dp),
+                    tint = if (capsule) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        LocalContentColor.current.copy(alpha = 0.7f)
+                    },
+                )
+            }
+        },
+        label = {
+            Text(
+                text = stringResource(R.string.chat_message_tool_request_secret_title),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = if (capsule) FontWeight.Medium else null,
+                color = if (capsule) {
+                    MaterialTheme.colorScheme.onSurface
+                } else {
+                    MaterialTheme.colorScheme.secondary
+                },
+                modifier = Modifier.shimmer(isLoading = loading),
+                maxLines = if (capsule) 1 else 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
+        content = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(
+                    text = prompt,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = stringResource(R.string.chat_message_tool_request_secret_name_label, name.ifBlank { "—" }),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = stringResource(R.string.chat_message_tool_request_secret_hint),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
+                if (isPending && onToolAnswer != null) {
+                    OutlinedTextField(
+                        value = value,
+                        onValueChange = {
+                            value = it
+                            errorText = null
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        textStyle = MaterialTheme.typography.bodySmall,
+                        singleLine = !isPrivateKey,
+                        minLines = if (isPrivateKey) 4 else 1,
+                        maxLines = if (isPrivateKey) 12 else 1,
+                        visualTransformation = if (showPlain || isPrivateKey) {
+                            VisualTransformation.None
+                        } else {
+                            PasswordVisualTransformation()
+                        },
+                        label = {
+                            Text(stringResource(R.string.chat_message_tool_request_secret_value_label))
+                        },
+                    )
+                    if (!isPrivateKey) {
+                        OutlinedTextField(
+                            value = confirm,
+                            onValueChange = {
+                                confirm = it
+                                errorText = null
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            textStyle = MaterialTheme.typography.bodySmall,
+                            singleLine = true,
+                            visualTransformation = if (showPlain) {
+                                VisualTransformation.None
+                            } else {
+                                PasswordVisualTransformation()
+                            },
+                            label = {
+                                Text(stringResource(R.string.chat_message_tool_request_secret_confirm_label))
+                            },
+                        )
+                    }
+                    TextButton(onClick = { showPlain = !showPlain }) {
+                        Text(
+                            text = stringResource(
+                                if (showPlain) {
+                                    R.string.chat_message_tool_request_secret_hide
+                                } else {
+                                    R.string.chat_message_tool_request_secret_show
+                                },
+                            ),
+                        )
+                    }
+                    errorText?.let {
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                    FilledTonalButton(
+                        onClick = {
+                            when {
+                                !nameValid -> {
+                                    errorText = "Invalid vault name"
+                                }
+                                value.isEmpty() -> {
+                                    errorText = "Value required"
+                                }
+                                !isPrivateKey && value != confirm -> {
+                                    errorText = "Values do not match"
+                                }
+                                else -> {
+                                    val ok = secretsStore.set(name, value)
+                                    // Clear local plaintext immediately.
+                                    value = ""
+                                    confirm = ""
+                                    if (!ok) {
+                                        errorText = "Failed to store secret"
+                                        return@FilledTonalButton
+                                    }
+                                    val answerPayload = buildJsonObject {
+                                        put("stored", true)
+                                        put("name", name)
+                                        put("kind", kind)
+                                    }
+                                    onToolAnswer(tool.toolCallId, answerPayload.toString())
+                                }
+                            }
+                        },
+                        enabled = nameValid && value.isNotEmpty() && (isPrivateKey || confirm.isNotEmpty()),
+                        modifier = Modifier.align(Alignment.End),
+                    ) {
+                        Icon(
+                            imageVector = HugeIcons.Tick01,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                        )
+                        Text(
+                            text = stringResource(R.string.chat_message_tool_request_secret_store),
+                            modifier = Modifier.padding(start = 4.dp),
+                        )
+                    }
+                } else if (isAnswered) {
+                    val answeredState = tool.approvalState as ToolApprovalState.Answered
+                    val storedName = runCatching {
+                        JsonInstant.parseToJsonElement(answeredState.answer)
+                            .jsonObject["name"]?.jsonPrimitive?.contentOrNull
+                    }.getOrNull() ?: name
+                    Text(
+                        text = stringResource(R.string.chat_message_tool_request_secret_stored, storedName),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
+        },
+    )
+}
 
 @Composable
 private fun ToolDenyReasonDialog(

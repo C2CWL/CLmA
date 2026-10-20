@@ -69,6 +69,8 @@ object ToolApprovalDefaults {
         "ssh_forget_host_key",
         "save_ssh_host",
         "delete_ssh_host",
+        // Agent vault mutations (request_secret is a human-input pause, not listed here)
+        "secret_delete",
 
         // Accounting writes
         "usage_set_prices",  // replaces the whole model price table; every later cost depends on it

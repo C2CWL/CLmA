@@ -142,7 +142,7 @@ class ToolApprovalPolicyTest {
         assertTrue(decide("read_file", headless = true, mode = ApprovalMode.MANUAL))
     }
 
-    // --- ask_user ---
+    // --- ask_user / request_secret (human-input tools) ---
 
     @Test
     fun `ask_user asks when not headless`() {
@@ -153,5 +153,18 @@ class ToolApprovalPolicyTest {
     @Test
     fun `ask_user auto-approves when headless`() {
         assertTrue(decide("ask_user", headless = true))
+    }
+
+    @Test
+    fun `request_secret asks when not headless`() {
+        assertFalse(decide("request_secret", mode = ApprovalMode.AUTO))
+        assertFalse(decide("request_secret", mode = ApprovalMode.MANUAL))
+        assertFalse(decide("request_secret", mode = ApprovalMode.SEMI))
+    }
+
+    @Test
+    fun `request_secret auto-approves when headless`() {
+        // Headless then hits the tool body which returns request_secret_unavailable.
+        assertTrue(decide("request_secret", headless = true))
     }
 }

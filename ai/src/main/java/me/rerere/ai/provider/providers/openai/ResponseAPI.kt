@@ -620,8 +620,9 @@ class ResponseAPI(
                             put("type", "function_call")
                             put("call_id", tool.toolCallId)
                             put("name", tool.toolName)
-                            // 使用 inputAsJson() 归一化，避免流式中断导致的残缺 JSON 被发送
-                            put("arguments", tool.inputAsJson().toString())
+                            // 使用 inputAsJson() 归一化，避免流式中断导致的残缺 JSON 被发送。
+                            // redactSecrets: password / private_key / token 等不得回灌给云端模型。
+                            put("arguments", me.rerere.ai.util.redactSecrets(tool.inputAsJson()).toString())
                         })
                     }
                     group.tools.forEach { tool ->

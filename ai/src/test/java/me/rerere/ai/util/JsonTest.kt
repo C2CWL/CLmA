@@ -163,4 +163,27 @@ class JsonTest {
 
         assertEquals(body, redacted)
     }
+
+    @Test
+    fun `redactSecrets should mask SSH password and private_key tool args`() {
+        val args = buildJsonObject {
+            put("host", "10.0.0.1")
+            put("user", "root")
+            put("password", "s3cret-pass")
+            put("private_key", "-----BEGIN OPENSSH PRIVATE KEY-----")
+            put("passphrase", "key-pass")
+            put("password_secret", "ssh_vps_pass")
+            put("command", "uptime")
+        }
+
+        val redacted = redactSecrets(args) as JsonObject
+
+        assertEquals("10.0.0.1", redacted["host"]?.toString()?.trim('"'))
+        assertEquals("uptime", redacted["command"]?.toString()?.trim('"'))
+        assertEquals("\"***\"", redacted["password"].toString())
+        assertEquals("\"***\"", redacted["private_key"].toString())
+        assertEquals("\"***\"", redacted["passphrase"].toString())
+        // vault *names* must stay visible so the model can reuse them later
+        assertEquals("ssh_vps_pass", redacted["password_secret"]?.toString()?.trim('"'))
+    }
 }

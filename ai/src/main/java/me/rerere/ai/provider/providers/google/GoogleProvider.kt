@@ -906,7 +906,8 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
                 put("id", toolCallId)
             }
             put("name", toolName)
-            put("args", inputAsJson())
+            // redactSecrets: password / private_key / token 等不得回灌给云端模型。
+            put("args", me.rerere.ai.util.redactSecrets(inputAsJson()))
             put("id", toolCallId)
         })
         metadataAs<GoogleThoughtMetadata>()?.thoughtSignature?.let {
