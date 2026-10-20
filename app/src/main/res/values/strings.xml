@@ -3135,7 +3135,7 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="setting_sponsor_qr_hint">Screenshot this code, then scan it in the app above. Thank you!</string>
   <string name="setting_sponsor_qr_close">Close</string>
   <string name="setting_floating_ball_style_title">Style</string>
-  <string name="setting_floating_ball_style_desc">Round ball, or a capsule that shows the assistant and reply status</string>
+  <string name="setting_floating_ball_style_desc">Round ball with the classic quick-chat panel, or a status capsule with its own modern quick-chat chrome (not switchable separately)</string>
   <string name="setting_floating_ball_style_original">Original</string>
   <string name="setting_floating_ball_style_capsule">Capsule</string>
   <string name="setting_floating_ball_tuck_style_title">Tuck style</string>
