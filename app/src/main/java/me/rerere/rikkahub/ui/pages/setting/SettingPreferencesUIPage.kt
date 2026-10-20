@@ -195,6 +195,18 @@ fun SettingPreferencesUIPage(vm: SettingVM = koinViewModel()) {
                         )
                     }
                     item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_drawer_capsules_title)) },
+                        supportingContent = { Text(stringResource(R.string.setting_display_page_drawer_capsules_desc)) },
+                        trailingContent = {
+                            Switch(
+                                checked = displaySetting.drawerCapsules,
+                                onCheckedChange = {
+                                    updateDisplaySetting(displaySetting.copy(drawerCapsules = it))
+                                }
+                            )
+                        },
+                    )
+                    item(
                         headlineContent = { Text(stringResource(R.string.setting_display_page_show_user_avatar_title)) },
                         supportingContent = { Text(stringResource(R.string.setting_display_page_show_user_avatar_desc)) },
                         trailingContent = {
