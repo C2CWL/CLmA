@@ -147,6 +147,9 @@ fun ChatInput(
     onCancelClick: () -> Unit,
     onSendClick: () -> Unit,
     onLongSendClick: () -> Unit,
+    // 生成中且输入框非空时的发送动作（插话）。为 null 时退回 onSendClick（排队），
+    // 保证未接入插话的调用方行为不变。
+    onInterjectClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     completionProviders: List<ChatCompletionProvider> = emptyList(),
     messageQueue: MessageQueueState = MessageQueueState(),
@@ -173,7 +176,13 @@ fun ChatInput(
     fun sendMessage() {
         focusManager.clearFocus(force = true)
         keyboardController?.hide()
-        if (loading && state.isEmpty()) onCancelClick() else onSendClick()
+        val interject = onInterjectClick
+        when {
+            loading && state.isEmpty() -> onCancelClick()
+            // 生成中且有内容：插话（并入当前回合），而不是排进 MessageQueue。
+            loading && interject != null -> interject()
+            else -> onSendClick()
+        }
     }
 
     fun sendMessageWithoutAnswer() {

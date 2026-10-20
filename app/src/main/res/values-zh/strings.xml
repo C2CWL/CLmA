@@ -2840,4 +2840,5 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="floating_ball_capsule_status_working_timer">回复中 · %1$s</string>
   <string name="floating_ball_capsule_status_done">已完成 · %1$s</string>
   <string name="floating_ball_capsule_hide">收起到边缘</string>
+  <string name="chat_interject_unavailable">生成已结束，请重新发送</string>
 </resources>
