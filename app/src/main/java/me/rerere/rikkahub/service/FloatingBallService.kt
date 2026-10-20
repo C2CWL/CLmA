@@ -68,9 +68,9 @@ private const val TAG = "FloatingBallService"
  *
  * A tiny circular overlay (TYPE_APPLICATION_OVERLAY) that survives across apps so the user can
  * reach the agent without leaving what they are doing:
- *  - tap    → open [QuickChatActivity], a half-screen quick-chat panel
- *  - long   → open the same panel with voice input already recording
- *  - drag   → move it; it snaps to the nearest horizontal edge and remembers where it was
+ *  - tap    → [ORIGINAL] open [QuickChatActivity]; [CAPSULE] bring the main app to the front
+ *  - long   → open the quick-chat panel with voice input already recording (both styles)
+ *  - drag   → move it; it settles on an edge with side hysteresis and remembers where it was
  *
  * While a generation turn runs the ball is also the "agent is working" light: its halo turns grey
  * and a light dot orbits it (see [HaloBallView]). That replaces [AgentOverlay]'s top-of-screen
@@ -792,6 +792,8 @@ class FloatingBallService : Service(), KoinComponent {
         var startY = 0
         var dragging = false
         var startedHidden = false
+        /** Side at finger-down (after any wake); snap hysteresis prefers this side. */
+        var dragStartedOnRight = true
 
         view.setOnTouchListener { _, event ->
             when (event.actionMasked) {
@@ -800,13 +802,16 @@ class FloatingBallService : Service(), KoinComponent {
                     mainHandler.removeCallbacks(idleRunnable)
                     // A tucked-away ball is woken by the touch itself, but the touch is no longer
                     // swallowed: it can be dragged out of the edge straight away. It only *opens
-                    // the panel* on the next tap, so the "tap once to wake" rule still holds.
+                    // the panel / app* on the next tap, so the "tap once to wake" rule still holds.
                     startedHidden = hidden
                     if (hidden) setHidden(false, instant = true)
                     downRawX = event.rawX
                     downRawY = event.rawY
                     startX = params.x
                     startY = params.y
+                    val downWidth = overlayWidth(view, params)
+                    val screenWidth = resources.displayMetrics.widthPixels
+                    dragStartedOnRight = params.x + downWidth / 2f >= screenWidth / 2f
                     dragging = false
                     longPressFired = false
                     mainHandler.removeCallbacks(longPressRunnable)
@@ -841,11 +846,11 @@ class FloatingBallService : Service(), KoinComponent {
                         if (panelOpen) mainHandler.post { collapseBall() }
                     }
                     // A cancelled gesture (e.g. taken by the system) is never a tap: it must not open
-                    // the panel. A drag still settles on an edge, and a ball woken by the touch stays out.
+                    // the panel/app. A drag still settles on an edge, and a ball woken by the touch stays out.
                     val cancelled = event.actionMasked == MotionEvent.ACTION_CANCEL
                     when {
-                        dragging -> snapToEdge(wm, view, params)
-                        !cancelled && !longPressFired && !startedHidden -> openQuickChat(voice = false)
+                        dragging -> snapToEdge(wm, view, params, startedOnRight = dragStartedOnRight)
+                        !cancelled && !longPressFired && !startedHidden -> onBallTap()
                     }
                     startedHidden = false
                     dragging = false
@@ -859,7 +864,12 @@ class FloatingBallService : Service(), KoinComponent {
     }
 
     @SuppressLint("RtlHardcoded")
-    private fun snapToEdge(wm: WindowManager, view: View, params: WindowManager.LayoutParams) {
+    private fun snapToEdge(
+        wm: WindowManager,
+        view: View,
+        params: WindowManager.LayoutParams,
+        startedOnRight: Boolean? = null,
+    ) {
         val density = resources.displayMetrics.density
         val margin = (8 * density).toInt()
         val screenWidth = resources.displayMetrics.widthPixels
@@ -868,11 +878,38 @@ class FloatingBallService : Service(), KoinComponent {
         val maxX = (screenWidth - size - margin).coerceAtLeast(margin)
         val maxY = (screenHeight - overlayHeight(view, params) - margin).coerceAtLeast(margin)
 
-        params.x = if (params.x + size / 2 < screenWidth / 2) margin else maxX
+        val centerX = params.x + size / 2f
+        val onRight = FloatingBallGesture.settleOnRight(
+            centerX = centerX,
+            screenWidth = screenWidth,
+            startedOnRight = startedOnRight ?: (centerX >= screenWidth / 2f),
+        )
+        params.x = if (onRight) maxX else margin
         params.y = params.y.coerceIn(margin, maxY)
         runCatching { wm.updateViewLayout(view, params) }
         writeStringPreference(PREF_X, params.x.toString())
         writeStringPreference(PREF_Y, params.y.toString())
+    }
+
+    /**
+     * Single tap on the awake overlay: the round ball still opens the half-screen quick-chat
+     * panel; the status capsule jumps straight back into the main app (long-press still opens
+     * voice quick-chat for both).
+     */
+    private fun onBallTap() {
+        if (shownStyle == FloatingBallStyle.CAPSULE) openApp()
+        else openQuickChat(voice = false)
+    }
+
+    private fun openApp() {
+        try {
+            val intent = packageManager.getLaunchIntentForPackage(packageName)?.apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+            } ?: return
+            startActivity(intent)
+        } catch (t: Throwable) {
+            Log.w(TAG, "openApp failed", t)
+        }
     }
 
     private fun openQuickChat(voice: Boolean) {
@@ -1075,23 +1112,32 @@ class FloatingBallService : Service(), KoinComponent {
         motionAnimator?.cancel()
         capsule.animate().cancel()
         val screenWidth = resources.displayMetrics.widthPixels
+        val screenHeight = resources.displayMetrics.heightPixels
+        val density = resources.displayMetrics.density
+        val margin = (8 * density).toInt()
         val width = capsule.width.takeIf { it > 0 } ?: capsule.measuredCapsuleWidth()
+        val oldHeight = capsule.height.takeIf { it > 0 } ?: measureOverlay(capsule).second
+        val oldY = params.y
         val onRight = params.x + width / 2 >= screenWidth / 2
         capsule.handleOnRight = onRight
         capsule.handleMode = true
         syncWorking()
-        val density = resources.displayMetrics.density
         // The handle's touch strip is wider than the visible pill, which is drawn flush with the edge.
         val strip = (CapsuleBallView.HANDLE_TOUCH_DP * density).toInt()
+        val handleHeight = (CapsuleBallView.HANDLE_HEIGHT_DP * density).toInt() + 2 * capsule.shadowInset
         // The root keeps a shadow inset on every side; push it past the edge so the handle is flush.
         params.x = if (onRight) screenWidth - strip - capsule.shadowInset else -capsule.shadowInset
+        // Keep the vertical centre so collapsing to the short handle does not jump on screen.
+        val maxY = (screenHeight - handleHeight - margin).coerceAtLeast(margin)
+        params.y = FloatingBallGesture.topPreservingCenter(oldY, oldHeight, handleHeight)
+            .coerceIn(margin, maxY)
         runCatching { wm.updateViewLayout(capsule, params) }
         capsule.animate().alpha(tuckedAlpha()).setDuration(IDLE_ANIM_MS).start()
         // Sizes from the handle layout: the view is only re-laid out on the next frame.
         setEdgeGestureExclusion(
             capsule,
             width = strip + 2 * capsule.shadowInset,
-            height = (CapsuleBallView.HANDLE_HEIGHT_DP * density).toInt() + 2 * capsule.shadowInset,
+            height = handleHeight,
         )
     }
 
@@ -1106,13 +1152,21 @@ class FloatingBallService : Service(), KoinComponent {
         val screenWidth = resources.displayMetrics.widthPixels
         val screenHeight = resources.displayMetrics.heightPixels
         val margin = (8 * resources.displayMetrics.density).toInt()
+        val oldHeight = capsule.height.takeIf { it > 0 }
+            ?: ((CapsuleBallView.HANDLE_HEIGHT_DP * resources.displayMetrics.density).toInt()
+                + 2 * capsule.shadowInset)
+        val oldY = params.y
         val onRight = params.x > screenWidth / 2
         capsule.handleMode = false
         syncWorking()
         val width = capsule.measuredCapsuleWidth()
-        val height = capsule.measuredHeight
+        // Re-measure after leaving handle mode so height matches the full bar, not the slim strip.
+        val height = measureOverlay(capsule).second.coerceAtLeast(1)
         params.x = if (onRight) (screenWidth - width - margin).coerceAtLeast(margin) else margin
-        params.y = params.y.coerceIn(margin, (screenHeight - height - margin).coerceAtLeast(margin))
+        val maxY = (screenHeight - height - margin).coerceAtLeast(margin)
+        // Expand about the same centre as the handle so wake does not read as a downward jerk.
+        params.y = FloatingBallGesture.topPreservingCenter(oldY, oldHeight, height)
+            .coerceIn(margin, maxY)
         capsule.alpha = 1f
         runCatching { wm.updateViewLayout(capsule, params) }
         writeStringPreference(PREF_X, params.x.toString())
