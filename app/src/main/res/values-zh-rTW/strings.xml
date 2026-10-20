@@ -653,6 +653,10 @@
   <string name="setting_display_page_tool_call_style_desc">經典樣式保留時間軸。膠囊樣式把搜尋和網頁工具顯示為精簡的動作標籤</string>
   <string name="setting_display_page_tool_call_style_classic">經典</string>
   <string name="setting_display_page_tool_call_style_capsule">膠囊</string>
+  <string name="setting_display_page_popup_menu_style_title">彈出選單樣式</string>
+  <string name="setting_display_page_popup_menu_style_desc">表現力：圓角分組選單 + 彈性動畫。經典：系統預設平面選單</string>
+  <string name="setting_display_page_popup_menu_style_classic">經典</string>
+  <string name="setting_display_page_popup_menu_style_expressive">表現力</string>
   <string name="setting_display_page_auto_play_tts_desc">助理訊息產生完成後自動播放語音</string>
   <string name="setting_display_page_auto_play_tts_title">產生後自動播放 TTS</string>
   <string name="setting_display_page_chat_font_family_default">預設</string>
@@ -846,6 +850,9 @@
   <string name="setting_page_mcp">MCP</string>
   <string name="setting_page_mcp_desc">配置MCP伺服器</string>
   <string name="setting_page_message_display_settings">訊息顯示</string>
+  <string name="setting_page_layout_display_settings">版面</string>
+  <string name="setting_page_thinking_tools_settings">思考與工具</string>
+  <string name="setting_page_font_display_settings">字型</string>
   <string name="setting_page_model_and_services">模型與服務</string>
   <string name="setting_page_no_share_app">找不到分享應用</string>
   <string name="setting_page_providers">提供商</string>

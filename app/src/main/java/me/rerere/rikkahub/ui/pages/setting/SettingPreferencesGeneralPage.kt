@@ -14,7 +14,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -39,6 +38,10 @@ import me.rerere.rikkahub.data.datastore.effectiveLoadingIndicatorStyle
 import me.rerere.rikkahub.data.datastore.withLoadingIndicatorStyle
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.CardGroup
+import me.rerere.rikkahub.ui.components.ui.PercentSlider
+import me.rerere.rikkahub.ui.components.ui.SettingSlider
+import me.rerere.rikkahub.ui.components.ui.parseIntInRange
+import me.rerere.rikkahub.ui.components.ui.snapToInt
 import me.rerere.rikkahub.ui.components.ui.Select
 import me.rerere.rikkahub.ui.hooks.rememberSharedPreferenceBoolean
 import me.rerere.rikkahub.ui.theme.CustomColors
@@ -280,22 +283,14 @@ fun SettingPreferencesGeneralPage(vm: SettingVM = koinViewModel()) {
                         item(
                             headlineContent = { Text(stringResource(R.string.setting_display_page_volume_key_scroll_ratio)) },
                             supportingContent = {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                ) {
-                                    Slider(
-                                        value = displaySetting.volumeKeyScrollRatio,
-                                        onValueChange = {
-                                            updateDisplaySetting(displaySetting.copy(volumeKeyScrollRatio = it))
-                                        },
-                                        valueRange = 0.25f..1.0f,
-                                        steps = 2,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                    Text(text = "${(displaySetting.volumeKeyScrollRatio * 100).toInt()}%")
-                                }
+                                PercentSlider(
+                                    value = displaySetting.volumeKeyScrollRatio,
+                                    onValueChange = {
+                                        updateDisplaySetting(displaySetting.copy(volumeKeyScrollRatio = it))
+                                    },
+                                    valueRange = 0.25f..1.0f,
+                                    title = stringResource(R.string.setting_display_page_volume_key_scroll_ratio),
+                                )
                             }
                         )
                     }

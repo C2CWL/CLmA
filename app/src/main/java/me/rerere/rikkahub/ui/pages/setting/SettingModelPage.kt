@@ -21,7 +21,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.Slider
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -61,6 +60,9 @@ import me.rerere.rikkahub.ui.components.ai.ReasoningButton
 import me.rerere.rikkahub.ui.components.ai.rememberModelListState
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.CardGroup
+import me.rerere.rikkahub.ui.components.ui.SettingSlider
+import me.rerere.rikkahub.ui.components.ui.parseIntInRange
+import me.rerere.rikkahub.ui.components.ui.snapToInt
 import me.rerere.rikkahub.ui.theme.CustomColors
 import me.rerere.rikkahub.utils.plus
 import org.koin.androidx.compose.koinViewModel
@@ -292,29 +294,22 @@ private fun AutoCompactionSettingItem(
                             }
                         }
                         if (settings.autoCompactionThresholdMode == AutoCompactionThresholdMode.PERCENT) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            ) {
-                                Slider(
-                                    value = threshold,
-                                    onValueChange = { value ->
-                                        threshold = (value / 5f).toInt().times(5).toFloat()
-                                    },
-                                    onValueChangeFinished = {
-                                        vm.updateSettings { current ->
-                                            current.copy(
-                                                autoCompactionThresholdPercent = threshold.toInt()
-                                            )
-                                        }
-                                    },
-                                    valueRange = 5f..95f,
-                                    steps = 17,
-                                    modifier = Modifier.weight(1f),
-                                )
-                                Text("${threshold.toInt()}%")
-                            }
+                            SettingSlider(
+                                value = threshold,
+                                onValueChange = { value ->
+                                    val snapped = ((value / 5f).toInt() * 5).toFloat().coerceIn(5f, 95f)
+                                    threshold = snapped
+                                    vm.updateSettings { current ->
+                                        current.copy(autoCompactionThresholdPercent = snapped.toInt())
+                                    }
+                                },
+                                valueRange = 5f..95f,
+                                title = stringResource(R.string.setting_model_page_auto_compaction_threshold),
+                                valueLabel = { "${it.toInt()}%" },
+                                parseInput = { parseIntInRange(it, 5f..95f) },
+                                snap = { raw -> ((raw / 5f).toInt() * 5).toFloat().coerceIn(5f, 95f) },
+                                rangeHint = "5% – 95%",
+                            )
                         } else {
                             OutlinedTextField(
                                 value = tokenThreshold,

@@ -27,7 +27,6 @@ import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -62,6 +61,9 @@ import kotlinx.coroutines.withContext
 import me.rerere.rikkahub.service.HaloBallLook
 import me.rerere.rikkahub.service.HaloBallView
 import me.rerere.rikkahub.R
+import me.rerere.rikkahub.ui.components.ui.SettingSlider
+import me.rerere.rikkahub.ui.components.ui.parseIntInRange
+import me.rerere.rikkahub.ui.components.ui.snapToInt
 import me.rerere.rikkahub.data.datastore.FloatingBallStyle
 import me.rerere.rikkahub.data.datastore.FloatingBallTuckStyle
 import me.rerere.rikkahub.service.FloatingBallIconFiles
@@ -389,16 +391,20 @@ fun SettingFloatingBallPage(vm: SettingVM = koinViewModel()) {
                         supportingContent = {
                             Column {
                                 Text(stringResource(R.string.setting_floating_ball_alpha_desc))
-                                Slider(
+                                SettingSlider(
                                     value = alphaDraft,
-                                    onValueChange = { alphaDraft = it },
-                                    onValueChangeFinished = {
-                                        vm.updateSettings {
-                                            it.copy(floatingBallHiddenAlpha = alphaDraft.roundToInt())
+                                    onValueChange = {
+                                        alphaDraft = it
+                                        vm.updateSettings { s ->
+                                            s.copy(floatingBallHiddenAlpha = it.roundToInt())
                                         }
                                     },
                                     valueRange = 20f..100f,
-                                    steps = 7,
+                                    title = stringResource(R.string.setting_floating_ball_alpha_title),
+                                    valueLabel = { "${it.roundToInt()}%" },
+                                    parseInput = { parseIntInRange(it, 20f..100f) },
+                                    snap = { snapToInt(it, 20f..100f) },
+                                    rangeHint = "20% – 100%",
                                 )
                             }
                         },

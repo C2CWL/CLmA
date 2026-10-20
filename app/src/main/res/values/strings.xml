@@ -789,6 +789,10 @@
   <string name="setting_display_page_tool_call_style_desc">Classic keeps the timeline. Capsule shows search and page tools as compact action chips</string>
   <string name="setting_display_page_tool_call_style_classic">Classic</string>
   <string name="setting_display_page_tool_call_style_capsule">Capsule</string>
+  <string name="setting_display_page_popup_menu_style_title">Popup menu style</string>
+  <string name="setting_display_page_popup_menu_style_desc">Expressive uses rounded grouped menus with spring motion. Classic keeps the flat stock menu</string>
+  <string name="setting_display_page_popup_menu_style_classic">Classic</string>
+  <string name="setting_display_page_popup_menu_style_expressive">Expressive</string>
   <string name="setting_display_page_auto_play_tts_desc">Automatically play TTS after assistant message generation completes</string>
   <string name="setting_display_page_auto_play_tts_title">Auto-play TTS After Generation</string>
   <string name="setting_display_page_chat_font_family_default">Default</string>
@@ -1052,6 +1056,9 @@
   <string name="setting_page_mcp">MCP</string>
   <string name="setting_page_mcp_desc">Configure MCP Servers</string>
   <string name="setting_page_message_display_settings">Message Display</string>
+  <string name="setting_page_layout_display_settings">Layout</string>
+  <string name="setting_page_thinking_tools_settings">Thinking &amp; tools</string>
+  <string name="setting_page_font_display_settings">Fonts</string>
   <string name="setting_page_model_and_services">Models &amp; Services</string>
   <string name="setting_page_no_share_app">No sharing app found</string>
   <string name="setting_page_providers">Providers</string>

@@ -752,6 +752,10 @@
   <string name="setting_display_page_tool_call_style_desc">经典样式保留时间线。胶囊样式把搜索和网页工具显示为紧凑的动作标签</string>
   <string name="setting_display_page_tool_call_style_classic">经典</string>
   <string name="setting_display_page_tool_call_style_capsule">胶囊</string>
+  <string name="setting_display_page_popup_menu_style_title">弹出菜单样式</string>
+  <string name="setting_display_page_popup_menu_style_desc">表现力：圆角分组菜单 + 弹性动画。经典：系统默认平面菜单</string>
+  <string name="setting_display_page_popup_menu_style_classic">经典</string>
+  <string name="setting_display_page_popup_menu_style_expressive">表现力</string>
   <string name="setting_display_page_auto_play_tts_desc">助手消息生成完成后自动播放TTS</string>
   <string name="setting_display_page_auto_play_tts_title">生成后自动播放TTS</string>
   <string name="setting_display_page_chat_font_family_default">默认</string>
@@ -987,6 +991,9 @@
   <string name="setting_page_mcp">MCP</string>
   <string name="setting_page_mcp_desc">配置MCP服务器</string>
   <string name="setting_page_message_display_settings">消息显示</string>
+  <string name="setting_page_layout_display_settings">布局</string>
+  <string name="setting_page_thinking_tools_settings">思考与工具</string>
+  <string name="setting_page_font_display_settings">字体</string>
   <string name="setting_page_model_and_services">模型与服务</string>
   <string name="setting_page_no_share_app">找不到分享应用</string>
   <string name="setting_page_providers">提供商</string>

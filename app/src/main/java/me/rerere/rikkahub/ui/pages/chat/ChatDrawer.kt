@@ -31,8 +31,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -88,6 +86,8 @@ import me.rerere.hugeicons.stroke.Settings03
 import me.rerere.hugeicons.stroke.Sparkles
 import me.rerere.hugeicons.stroke.TransactionHistory
 import me.rerere.rikkahub.R
+import me.rerere.rikkahub.ui.components.ui.AppDropdownMenu
+import me.rerere.rikkahub.ui.components.ui.AppMenuEntry
 import me.rerere.rikkahub.Screen
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.datastore.getCurrentAssistant
@@ -627,35 +627,27 @@ fun ChatDrawerContent(
                                 contentDescription = stringResource(R.string.menu),
                                 onClick = { showMenuPopup = true },
                             )
-                            DropdownMenu(
+                            AppDropdownMenu(
                                 expanded = showMenuPopup,
-                                onDismissRequest = { showMenuPopup = false }
-                            ) {
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.chat_page_menu_ai_translator)) },
-                                    leadingIcon = { Icon(HugeIcons.LanguageCircle, null) },
-                                    onClick = {
-                                        showMenuPopup = false
-                                        navController.navigate(Screen.Translator)
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.chat_page_menu_image_generation)) },
-                                    leadingIcon = { Icon(HugeIcons.Image02, null) },
-                                    onClick = {
-                                        showMenuPopup = false
-                                        navController.navigate(Screen.ImageGen)
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.chat_page_menu_video_generation)) },
-                                    leadingIcon = { Icon(HugeIcons.Video01, null) },
-                                    onClick = {
-                                        showMenuPopup = false
-                                        navController.navigate(Screen.VideoGen)
-                                    }
-                                )
-                            }
+                                onDismissRequest = { showMenuPopup = false },
+                                items = listOf(
+                                    AppMenuEntry(
+                                        text = stringResource(R.string.chat_page_menu_ai_translator),
+                                        icon = HugeIcons.LanguageCircle,
+                                        onClick = { navController.navigate(Screen.Translator) },
+                                    ),
+                                    AppMenuEntry(
+                                        text = stringResource(R.string.chat_page_menu_image_generation),
+                                        icon = HugeIcons.Image02,
+                                        onClick = { navController.navigate(Screen.ImageGen) },
+                                    ),
+                                    AppMenuEntry(
+                                        text = stringResource(R.string.chat_page_menu_video_generation),
+                                        icon = HugeIcons.Video01,
+                                        onClick = { navController.navigate(Screen.VideoGen) },
+                                    ),
+                                ),
+                            )
                         }
 
                         DrawerAction(
@@ -1494,31 +1486,31 @@ private fun FolderBar(
                     onClick = { onSelect(folder.id) },
                     onLongClick = { menuExpanded = true },
                 )
-                DropdownMenu(
-                    expanded = menuExpanded,
-                    onDismissRequest = { menuExpanded = false },
-                ) {
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.chat_page_rename)) },
-                        leadingIcon = { Icon(HugeIcons.PencilEdit01, null) },
-                        onClick = {
-                            onRename(folder)
-                            menuExpanded = false
-                        }
+                // P2-23 (D7) - the sub-agent archive folder cannot be deleted while it
+                // holds conversations; the option is absent rather than failing on tap.
+                val folderItems = buildList {
+                    add(
+                        AppMenuEntry(
+                            text = stringResource(R.string.chat_page_rename),
+                            icon = HugeIcons.PencilEdit01,
+                            onClick = { onRename(folder) },
+                        )
                     )
-                    // P2-23 (D7) - the sub-agent archive folder cannot be deleted while it
-                    // holds conversations; the option is absent rather than failing on tap.
                     if (folder.id != protectedFolderId) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.chat_page_delete)) },
-                            leadingIcon = { Icon(HugeIcons.Delete01, null) },
-                            onClick = {
-                                onDelete(folder)
-                                menuExpanded = false
-                            }
+                        add(
+                            AppMenuEntry(
+                                text = stringResource(R.string.chat_page_delete),
+                                icon = HugeIcons.Delete01,
+                                onClick = { onDelete(folder) },
+                            )
                         )
                     }
                 }
+                AppDropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false },
+                    items = folderItems,
+                )
             }
         }
         item {

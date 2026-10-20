@@ -28,8 +28,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeFlexibleTopAppBar
@@ -40,7 +38,6 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -69,7 +66,10 @@ import me.rerere.asr.ASRProviderSetting
 import me.rerere.rikkahub.data.datastore.DEFAULT_SYSTEM_TTS_ID
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.ui.components.nav.BackButton
+import me.rerere.rikkahub.ui.components.ui.AppDropdownMenu
+import me.rerere.rikkahub.ui.components.ui.AppMenuEntry
 import me.rerere.rikkahub.ui.components.ui.CardGroup
+import me.rerere.rikkahub.ui.components.ui.SettingSlider
 import me.rerere.rikkahub.ui.components.ui.AutoAIIcon
 import me.rerere.rikkahub.ui.components.ui.Tag
 import me.rerere.rikkahub.ui.components.ui.TagType
@@ -541,59 +541,54 @@ private fun AddASRProviderButton(onAdd: (ASRProviderSetting) -> Unit) {
         ) {
             Icon(HugeIcons.Add01, stringResource(R.string.setting_asr_page_add_provider))
         }
-        DropdownMenu(
+        AppDropdownMenu(
             expanded = showTypeMenu,
-            onDismissRequest = { showTypeMenu = false }
-        ) {
-            DropdownMenuItem(
-                text = { Text("OpenAI Realtime") },
-                onClick = {
-                    currentProvider = ASRProviderSetting.OpenAIRealtime()
-                    showTypeMenu = false
-                    showBottomSheet = true
-                }
-            )
-            DropdownMenuItem(
-                text = { Text("DashScope") },
-                onClick = {
-                    currentProvider = ASRProviderSetting.DashScope()
-                    showTypeMenu = false
-                    showBottomSheet = true
-                }
-            )
-            DropdownMenuItem(
-                text = { Text("Volcengine") },
-                onClick = {
-                    currentProvider = ASRProviderSetting.Volcengine()
-                    showTypeMenu = false
-                    showBottomSheet = true
-                }
-            )
-            DropdownMenuItem(
-                text = { Text("MiMo") },
-                onClick = {
-                    currentProvider = ASRProviderSetting.MiMo()
-                    showTypeMenu = false
-                    showBottomSheet = true
-                }
-            )
-            DropdownMenuItem(
-                text = { Text("Step") },
-                onClick = {
-                    currentProvider = ASRProviderSetting.Step()
-                    showTypeMenu = false
-                    showBottomSheet = true
-                }
-            )
-            DropdownMenuItem(
-                text = { Text("DashScope Streaming") },
-                onClick = {
-                    currentProvider = ASRProviderSetting.DashScopeStreaming()
-                    showTypeMenu = false
-                    showBottomSheet = true
-                }
-            )
-        }
+            onDismissRequest = { showTypeMenu = false },
+            items = listOf(
+                AppMenuEntry(
+                    text = "OpenAI Realtime",
+                    onClick = {
+                        currentProvider = ASRProviderSetting.OpenAIRealtime()
+                        showBottomSheet = true
+                    },
+                ),
+                AppMenuEntry(
+                    text = "DashScope",
+                    onClick = {
+                        currentProvider = ASRProviderSetting.DashScope()
+                        showBottomSheet = true
+                    },
+                ),
+                AppMenuEntry(
+                    text = "Volcengine",
+                    onClick = {
+                        currentProvider = ASRProviderSetting.Volcengine()
+                        showBottomSheet = true
+                    },
+                ),
+                AppMenuEntry(
+                    text = "MiMo",
+                    onClick = {
+                        currentProvider = ASRProviderSetting.MiMo()
+                        showBottomSheet = true
+                    },
+                ),
+                AppMenuEntry(
+                    text = "Step",
+                    onClick = {
+                        currentProvider = ASRProviderSetting.Step()
+                        showBottomSheet = true
+                    },
+                ),
+                AppMenuEntry(
+                    text = "DashScope Streaming",
+                    onClick = {
+                        currentProvider = ASRProviderSetting.DashScopeStreaming()
+                        showBottomSheet = true
+                    },
+                ),
+            ),
+        )
     }
 
     if (showBottomSheet) {
@@ -774,32 +769,23 @@ private fun TTSProviderItem(
                         imageVector = HugeIcons.Tools,
                         contentDescription = stringResource(R.string.setting_tts_page_more_options_content_description)
                     )
-                    DropdownMenu(
+                    AppDropdownMenu(
                         expanded = showDropdownMenu,
-                        onDismissRequest = { showDropdownMenu = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.edit)) },
-                            onClick = {
-                                showDropdownMenu = false
-                                onEdit()
-                            },
-                            leadingIcon = {
-                                Icon(HugeIcons.PencilEdit01, contentDescription = null)
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.delete)) },
-                            onClick = {
-                                showDropdownMenu = false
-                                onDelete()
-                            },
-                            leadingIcon = {
-                                Icon(HugeIcons.Delete01, contentDescription = null)
-                            },
-                            enabled = provider.id != DEFAULT_SYSTEM_TTS_ID
-                        )
-                    }
+                        onDismissRequest = { showDropdownMenu = false },
+                        items = listOf(
+                            AppMenuEntry(
+                                text = stringResource(R.string.edit),
+                                icon = HugeIcons.PencilEdit01,
+                                onClick = { onEdit() },
+                            ),
+                            AppMenuEntry(
+                                text = stringResource(R.string.delete),
+                                icon = HugeIcons.Delete01,
+                                enabled = provider.id != DEFAULT_SYSTEM_TTS_ID,
+                                onClick = { onDelete() },
+                            ),
+                        ),
+                    )
                 }
             }
         }
@@ -895,31 +881,22 @@ private fun ASRProviderItem(
                         imageVector = HugeIcons.Tools,
                         contentDescription = stringResource(R.string.setting_tts_page_more_options_content_description)
                     )
-                    DropdownMenu(
+                    AppDropdownMenu(
                         expanded = showDropdownMenu,
-                        onDismissRequest = { showDropdownMenu = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.edit)) },
-                            onClick = {
-                                showDropdownMenu = false
-                                onEdit()
-                            },
-                            leadingIcon = {
-                                Icon(HugeIcons.PencilEdit01, contentDescription = null)
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.delete)) },
-                            onClick = {
-                                showDropdownMenu = false
-                                onDelete()
-                            },
-                            leadingIcon = {
-                                Icon(HugeIcons.Delete01, contentDescription = null)
-                            }
-                        )
-                    }
+                        onDismissRequest = { showDropdownMenu = false },
+                        items = listOf(
+                            AppMenuEntry(
+                                text = stringResource(R.string.edit),
+                                icon = HugeIcons.PencilEdit01,
+                                onClick = { onEdit() },
+                            ),
+                            AppMenuEntry(
+                                text = stringResource(R.string.delete),
+                                icon = HugeIcons.Delete01,
+                                onClick = { onDelete() },
+                            ),
+                        ),
+                    )
                 }
             }
         }
@@ -950,25 +927,23 @@ private fun TtsPlaybackBehaviourCard(
             supportingContent = {
                 Column {
                     Text(stringResource(R.string.setting_tts_page_default_playback_speed_description))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Slider(
-                            value = playbackSpeed,
-                            onValueChange = {
-                                playbackSpeed = (it * 10).roundToInt() / 10f
-                            },
-                            onValueChangeFinished = {
-                                onUpdateSettings(settings.copy(defaultTTSPlaybackSpeed = playbackSpeed))
-                            },
-                            valueRange = 0.5f..2.0f,
-                            steps = 14,
-                            modifier = Modifier.weight(1f),
-                        )
-                        Text(text = "x${"%.1f".format(playbackSpeed)}")
-                    }
+                    SettingSlider(
+                        value = playbackSpeed,
+                        onValueChange = {
+                            val snapped = (it * 10).roundToInt() / 10f
+                            playbackSpeed = snapped
+                            onUpdateSettings(settings.copy(defaultTTSPlaybackSpeed = snapped))
+                        },
+                        valueRange = 0.5f..2.0f,
+                        title = stringResource(R.string.setting_tts_page_default_playback_speed),
+                        valueLabel = { "x${"%.1f".format(it)}" },
+                        parseInput = { raw ->
+                            raw.trim().removePrefix("x").removePrefix("X").toFloatOrNull()
+                                ?.coerceIn(0.5f, 2.0f)
+                        },
+                        snap = { (it * 10).roundToInt() / 10f },
+                        rangeHint = "x0.5 – x2.0",
+                    )
                 }
             },
         )

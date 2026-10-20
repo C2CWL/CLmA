@@ -53,13 +53,15 @@ fun SettingsSearchPage(vm: SettingVM = koinViewModel()) {
     val filtered = remember(entries, query) {
         val q = query.trim()
         if (q.isEmpty()) {
-            entries
+            // Empty query: hub pages only — nested rows would drown the list.
+            entries.filter { it.parentTitleRes == null }
         } else {
             entries.filter { entry ->
                 context.getString(entry.titleRes).contains(q, ignoreCase = true) ||
                     entry.descriptionRes?.let { context.getString(it).contains(q, ignoreCase = true) } == true ||
                     entry.altTitles.any { context.getString(it).contains(q, ignoreCase = true) } ||
-                    context.getString(entry.groupRes).contains(q, ignoreCase = true)
+                    context.getString(entry.groupRes).contains(q, ignoreCase = true) ||
+                    entry.parentTitleRes?.let { context.getString(it).contains(q, ignoreCase = true) } == true
             }
         }
     }
@@ -113,9 +115,16 @@ fun SettingsSearchPage(vm: SettingVM = koinViewModel()) {
                         item {
                             CardGroup {
                                 filtered.forEach { entry ->
+                                    val groupLabel = stringResource(entry.groupRes)
+                                    val parentLabel = entry.parentTitleRes?.let { stringResource(it) }
+                                    val overline = if (parentLabel != null) {
+                                        "$groupLabel · $parentLabel"
+                                    } else {
+                                        groupLabel
+                                    }
                                     item(
                                         onClick = { navController.navigate(entry.route) },
-                                        overlineContent = { Text(stringResource(entry.groupRes)) },
+                                        overlineContent = { Text(overline) },
                                         headlineContent = { Text(stringResource(entry.titleRes)) },
                                         supportingContent = entry.descriptionRes?.let { desc ->
                                             { Text(stringResource(desc)) }
