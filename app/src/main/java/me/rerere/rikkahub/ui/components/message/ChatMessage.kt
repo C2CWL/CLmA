@@ -89,6 +89,7 @@ import me.rerere.hugeicons.stroke.MusicNote03
 import me.rerere.hugeicons.stroke.Video01
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.Screen
+import me.rerere.rikkahub.data.datastore.ToolCallStyle
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.AssistantAffectScope
 import me.rerere.rikkahub.data.model.AssistantBackgroundMode
@@ -396,6 +397,11 @@ private fun MessagePartsBlock(
             is MessagePartBlock.ThinkingBlock -> {
                 if (block.steps.isNotEmpty()) {
                     val isReasoningOnlyBlock = block.steps.fastAll { it is ThinkingStep.ReasoningStep }
+                    val toolCallStyle = settings.displaySetting.toolCallStyle
+                    // Capsule drops the timeline only for a tool-only group. A group that
+                    // also contains reasoning keeps the classic line and icon mask.
+                    val capsuleToolOnly = toolCallStyle == ToolCallStyle.CAPSULE &&
+                        block.steps.fastAll { it !is ThinkingStep.ReasoningStep }
                     // Force-expand whenever any tool step is awaiting approval. Without
                     // this, on 3+ pending tool calls only the last 2 rows are visible
                     // and the first sits hidden behind the "show more" arrow — easy to
@@ -413,8 +419,16 @@ private fun MessagePartsBlock(
                         ),
                         collapsedAdaptiveWidth = isReasoningOnlyBlock,
                         forceExpanded = hasPendingApproval,
+                        showTimeline = !capsuleToolOnly,
+                        maskIcons = !capsuleToolOnly,
+                        shape = RoundedCornerShape(if (capsuleToolOnly) 20.dp else 16.dp),
+                        toolCallStyle = toolCallStyle,
                         cardColors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = settings.displaySetting.bubbleOpacity),
+                            containerColor = if (capsuleToolOnly) {
+                                MaterialTheme.colorScheme.surfaceContainer
+                            } else {
+                                MaterialTheme.colorScheme.surfaceContainerHigh
+                            }.copy(alpha = settings.displaySetting.bubbleOpacity),
                         ),
                     ) { step ->
                         when (step) {

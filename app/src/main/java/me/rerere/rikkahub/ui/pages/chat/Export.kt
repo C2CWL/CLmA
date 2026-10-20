@@ -7,8 +7,8 @@ import android.widget.Toast
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Book02
 import me.rerere.hugeicons.stroke.Book04
-import me.rerere.hugeicons.stroke.Earth
 import me.rerere.hugeicons.stroke.File02
+import me.rerere.hugeicons.stroke.GlobalSearch
 import me.rerere.hugeicons.stroke.Image02
 import me.rerere.hugeicons.stroke.Search01
 import me.rerere.hugeicons.stroke.Wrench01
@@ -54,6 +54,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
@@ -82,17 +83,21 @@ import me.rerere.ai.util.encodeBase64
 import me.rerere.common.android.appTempFolder
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.Settings
+import me.rerere.rikkahub.data.datastore.ToolCallStyle
 import me.rerere.rikkahub.data.datastore.findModelById
 import me.rerere.rikkahub.data.model.Conversation
 import me.rerere.rikkahub.ui.components.message.MessagePartBlock
 import me.rerere.rikkahub.ui.components.message.ThinkingStep
 import me.rerere.rikkahub.ui.components.message.ChatMessageServerToolStep
 import me.rerere.rikkahub.ui.components.message.groupMessageParts
+import me.rerere.rikkahub.ui.components.message.stepIcon
+import me.rerere.rikkahub.ui.components.message.stepTitle
 import me.rerere.rikkahub.ui.components.richtext.MarkdownBlock
 import me.rerere.rikkahub.ui.components.ui.AutoAIIcon
 import me.rerere.rikkahub.ui.components.ui.BitmapComposer
 import me.rerere.rikkahub.ui.components.ui.ChainOfThought
 import me.rerere.rikkahub.ui.components.ui.ChainOfThoughtScope
+import me.rerere.rikkahub.ui.components.ui.LocalToolCallStyle
 import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.context.LocalSettings
 import com.dokar.sonner.rememberToasterState
@@ -554,9 +559,23 @@ private fun ExportedChatMessage(
                 when (block) {
                     is MessagePartBlock.ThinkingBlock -> {
                         if (block.steps.isNotEmpty()) {
+                            val toolCallStyle = settings.displaySetting.toolCallStyle
+                            val capsuleToolOnly = toolCallStyle == ToolCallStyle.CAPSULE &&
+                                block.steps.none { it is ThinkingStep.ReasoningStep }
                             ChainOfThought(
                                 steps = block.steps,
-                                collapsedVisibleCount = block.steps.size
+                                collapsedVisibleCount = block.steps.size,
+                                showTimeline = !capsuleToolOnly,
+                                maskIcons = !capsuleToolOnly,
+                                shape = RoundedCornerShape(if (capsuleToolOnly) 20.dp else 16.dp),
+                                toolCallStyle = toolCallStyle,
+                                cardColors = CardDefaults.cardColors(
+                                    containerColor = if (capsuleToolOnly) {
+                                        MaterialTheme.colorScheme.surfaceContainer
+                                    } else {
+                                        MaterialTheme.colorScheme.surfaceContainerHigh
+                                    },
+                                ),
                             ) { step ->
                                 when (step) {
                                     is ThinkingStep.ReasoningStep -> {
@@ -717,10 +736,13 @@ private fun ChainOfThoughtScope.ExportedReasoningStep(
 private fun ChainOfThoughtScope.ExportedToolStep(
     tool: UIMessagePart.Tool
 ) {
-    val memoryAction = runCatching {
-        tool.inputAsJson().jsonObject["action"]?.jsonPrimitiveOrNull?.contentOrNull
-    }.getOrNull()
-    val title = when (tool.toolName) {
+    val arguments = runCatching { tool.inputAsJson().jsonObject }.getOrNull()
+    val memoryAction = arguments?.get("action")?.jsonPrimitiveOrNull?.contentOrNull
+    val query = arguments?.get("query")?.jsonPrimitiveOrNull?.contentOrNull
+    val url = arguments?.get("url")?.jsonPrimitiveOrNull?.contentOrNull
+    val toolCallStyle = LocalToolCallStyle.current
+    val capsule = toolCallStyle == ToolCallStyle.CAPSULE
+    val classicTitle = when (tool.toolName) {
         "memory_tool" -> when (memoryAction) {
             "create" -> stringResource(R.string.chat_message_tool_create_memory)
             "edit" -> stringResource(R.string.chat_message_tool_edit_memory)
@@ -728,43 +750,50 @@ private fun ChainOfThoughtScope.ExportedToolStep(
             else -> stringResource(R.string.chat_message_tool_call_generic, tool.toolName)
         }
 
-        "search_web" -> {
-            val query = runCatching {
-                tool.inputAsJson().jsonObject["query"]?.jsonPrimitiveOrNull?.contentOrNull ?: ""
-            }.getOrDefault("")
-            stringResource(R.string.chat_message_tool_search_web, query)
-        }
+        "search_web" -> stringResource(R.string.chat_message_tool_search_web, query.orEmpty())
 
         "scrape_web" -> stringResource(R.string.chat_message_tool_scrape_web)
         else -> stringResource(R.string.chat_message_tool_call_generic, tool.toolName)
+    }
+    val title = toolCallStyle.stepTitle(tool.toolName, classicTitle, query, url)
+    val classicIcon = when (tool.toolName) {
+        "memory_tool" -> when (memoryAction) {
+            "create", "edit" -> HugeIcons.Book04
+            "delete" -> HugeIcons.Book02
+            else -> HugeIcons.Wrench01
+        }
+
+        "search_web" -> HugeIcons.Search01
+        // Replaces the plain Earth glyph. Capsule swaps this for Browser via stepIcon.
+        "scrape_web" -> HugeIcons.GlobalSearch
+        else -> HugeIcons.Wrench01
     }
     ControlledChainOfThoughtStep(
         expanded = true,
         onExpandedChange = {},
         icon = {
             Icon(
-                imageVector = when (tool.toolName) {
-                    "memory_tool" -> when (memoryAction) {
-                        "create", "edit" -> HugeIcons.Book04
-                        "delete" -> HugeIcons.Book02
-                        else -> HugeIcons.Wrench01
-                    }
-
-                    "search_web" -> HugeIcons.Search01
-                    "scrape_web" -> HugeIcons.Earth
-                    else -> HugeIcons.Wrench01
-                },
+                imageVector = toolCallStyle.stepIcon(tool.toolName, classicIcon),
                 contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.secondary
+                modifier = Modifier.size(if (capsule) 18.dp else 16.dp),
+                tint = if (capsule) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.secondary
+                }
             )
         },
         label = {
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.secondary,
-                maxLines = 2,
+                fontWeight = if (capsule) FontWeight.Medium else null,
+                color = if (capsule) {
+                    MaterialTheme.colorScheme.onSurface
+                } else {
+                    MaterialTheme.colorScheme.secondary
+                },
+                maxLines = if (capsule) 1 else 2,
                 overflow = TextOverflow.Ellipsis,
             )
         },

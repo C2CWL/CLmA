@@ -350,6 +350,12 @@
   <string name="chat_message_tool_search_prefix">بحث: %1$s</string>
   <string name="chat_message_tool_search_results_count">%1$d نتائج</string>
   <string name="chat_message_tool_search_web">بحث في الويب: %1$s</string>
+  <string name="chat_message_tool_search_capsule">بحث عن %1$s</string>
+  <string name="chat_message_tool_search_capsule_empty">بحث في الويب</string>
+  <string name="chat_message_tool_read_page_capsule">قرأ %1$s</string>
+  <string name="chat_message_tool_read_page_capsule_empty">قرأ صفحة</string>
+  <string name="chat_message_tool_fetch_page_capsule">جلب %1$s</string>
+  <string name="chat_message_tool_fetch_page_capsule_empty">جلب صفحة</string>
   <string name="chat_message_tool_submit">إرسال</string>
   <string name="chat_page_cancel">إلغاء</string>
   <string name="chat_page_clear_all_errors">مسح الكل</string>
@@ -660,6 +666,10 @@
   <string name="setting_display_page_thinking_steps_visible_desc">عدد آخر خطوات التفكير والأدوات التي تبقى ظاهرة عند طي مجموعة الخطوات. 0 يعرض عنوانًا من سطر واحد فقط</string>
   <string name="setting_display_page_thinking_steps_visible_title">الخطوات الظاهرة في المجموعة المطوية</string>
   <string name="setting_display_page_thinking_steps_visible_all">الكل</string>
+  <string name="setting_display_page_tool_call_style_title">نمط استدعاء الأدوات</string>
+  <string name="setting_display_page_tool_call_style_desc">النمط الكلاسيكي يبقي الخط الزمني. نمط الكبسولة يعرض البحث والصفحات كشرائح إجراءات مختصرة</string>
+  <string name="setting_display_page_tool_call_style_classic">كلاسيكي</string>
+  <string name="setting_display_page_tool_call_style_capsule">كبسولة</string>
   <string name="setting_display_page_auto_play_tts_desc">تشغيل تحويل النص إلى كلام تلقائيًا بعد اكتمال توليد رسالة المساعد</string>
   <string name="setting_display_page_auto_play_tts_title">تشغيل تحويل النص إلى كلام تلقائيًا بعد التوليد</string>
   <string name="setting_display_page_chat_font_family_default">افتراضي</string>

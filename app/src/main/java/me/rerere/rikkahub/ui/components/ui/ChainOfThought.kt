@@ -35,6 +35,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -47,8 +48,18 @@ import me.rerere.hugeicons.stroke.ArrowUp01
 import me.rerere.hugeicons.stroke.Search01
 import me.rerere.hugeicons.stroke.Sparkles
 import me.rerere.rikkahub.R
+import me.rerere.rikkahub.data.datastore.ToolCallStyle
 
 private val LocalCardColor = staticCompositionLocalOf { Color.White }
+
+/** Active tool-call style. Classic unless a caller opts into capsule. */
+val LocalToolCallStyle = staticCompositionLocalOf { ToolCallStyle.CLASSIC }
+
+/**
+ * Whether step icons sit on the opaque disc that hides the timeline.
+ * Capsule tool-only groups turn this off; mixed reasoning groups keep it.
+ */
+val LocalChainMaskIcons = staticCompositionLocalOf { true }
 
 /**
  * 以时间线/步骤卡片的形式展示一组思考过程。
@@ -75,6 +86,10 @@ fun <T> ChainOfThought(
     collapsedVisibleCount: Int = 2,
     collapsedAdaptiveWidth: Boolean = false,
     forceExpanded: Boolean = false,
+    showTimeline: Boolean = true,
+    maskIcons: Boolean = true,
+    shape: Shape = RoundedCornerShape(16.dp),
+    toolCallStyle: ToolCallStyle = ToolCallStyle.CLASSIC,
     content: @Composable ChainOfThoughtScope.(T) -> Unit
 ) {
     var userExpanded by remember { mutableStateOf(false) }
@@ -87,12 +102,14 @@ fun <T> ChainOfThought(
     val shouldFillCollapseControlWidth = expanded || !collapsedAdaptiveWidth
 
     CompositionLocalProvider(
-        LocalCardColor provides cardColors.containerColor
+        LocalCardColor provides cardColors.containerColor,
+        LocalToolCallStyle provides toolCallStyle,
+        LocalChainMaskIcons provides maskIcons,
     ) {
         Card(
             modifier = modifier,
             colors = cardColors,
-            shape = RoundedCornerShape(16.dp),
+            shape = shape,
         ) {
             Column(
                 modifier = Modifier
@@ -158,8 +175,8 @@ fun <T> ChainOfThought(
                 val lineColor = MaterialTheme.colorScheme.outlineVariant
                 val scope = remember { ChainOfThoughtScopeImpl() }
                 // 全部折叠时没有可见步骤，不画时间线（空 Box 高度为 0，线会画成反向的一截）
-                if (visibleSteps.isNotEmpty()) Box(
-                    modifier = Modifier.drawBehind {
+                val timelineModifier = if (showTimeline) {
+                    Modifier.drawBehind {
                         val x = 12.dp.toPx()
                         val offsetPx = 18.dp.toPx()
                         drawLine(
@@ -169,6 +186,11 @@ fun <T> ChainOfThought(
                             strokeWidth = 1.dp.toPx()
                         )
                     }
+                } else {
+                    Modifier
+                }
+                if (visibleSteps.isNotEmpty()) Box(
+                    modifier = timelineModifier
                 ) {
                     Column {
                         visibleSteps.fastForEach { step ->
@@ -337,32 +359,23 @@ private class ChainOfThoughtScopeImpl : ChainOfThoughtScope {
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                // Icon（不透明背景遮住背后的连线）
+                // Icon. The disc hides the timeline; capsule tool-only groups skip it
+                // and draw the glyph at the size the step itself requested.
                 Box(
                     modifier = Modifier.width(24.dp),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(20.dp)
-                            .background(LocalCardColor.current),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        if (icon != null) {
-                            Box(
-                                modifier = Modifier.size(14.dp),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                icon()
-                            }
-                        } else {
-                            Box(
-                                modifier = Modifier
-                                    .size(8.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.onSurfaceVariant)
-                            )
+                    if (LocalChainMaskIcons.current) {
+                        Box(
+                            modifier = Modifier
+                                .size(20.dp)
+                                .background(LocalCardColor.current),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            ChainOfThoughtStepIcon(icon)
                         }
+                    } else if (icon != null) {
+                        icon()
                     }
                 }
 
@@ -419,6 +432,25 @@ private class ChainOfThoughtScopeImpl : ChainOfThoughtScope {
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun ChainOfThoughtStepIcon(icon: (@Composable () -> Unit)?) {
+    if (icon != null) {
+        Box(
+            modifier = Modifier.size(14.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            icon()
+        }
+    } else {
+        Box(
+            modifier = Modifier
+                .size(8.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.onSurfaceVariant)
+        )
     }
 }
 

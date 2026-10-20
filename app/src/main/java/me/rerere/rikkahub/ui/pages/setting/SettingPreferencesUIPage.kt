@@ -5,6 +5,7 @@ import android.graphics.Typeface
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -46,6 +48,7 @@ import me.rerere.hugeicons.stroke.FileImport
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.ChatFontFamily
 import me.rerere.rikkahub.data.datastore.DisplaySetting
+import me.rerere.rikkahub.data.datastore.ToolCallStyle
 import me.rerere.rikkahub.data.files.FileFolders
 import me.rerere.rikkahub.data.files.FileUtils
 import me.rerere.rikkahub.ui.components.message.THINKING_STEPS_VISIBLE_ALL
@@ -330,6 +333,32 @@ fun SettingPreferencesUIPage(vm: SettingVM = koinViewModel()) {
                                 }
                             }
                         }
+                    )
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_tool_call_style_title)) },
+                        supportingContent = {
+                            Text(stringResource(R.string.setting_display_page_tool_call_style_desc))
+                        },
+                        trailingContent = {
+                            Select(
+                                options = ToolCallStyle.entries,
+                                selectedOption = displaySetting.toolCallStyle,
+                                onOptionSelected = {
+                                    updateDisplaySetting(displaySetting.copy(toolCallStyle = it))
+                                },
+                                optionToString = {
+                                    stringResource(
+                                        when (it) {
+                                            ToolCallStyle.CLASSIC -> R.string.setting_display_page_tool_call_style_classic
+                                            ToolCallStyle.CAPSULE -> R.string.setting_display_page_tool_call_style_capsule
+                                        }
+                                    )
+                                },
+                                containerColor = CustomColors.listItemColors.containerColor,
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                                modifier = Modifier.width(150.dp),
+                            )
+                        },
                     )
                     item(
                         headlineContent = { Text(stringResource(R.string.setting_display_page_chat_font_family_title)) },

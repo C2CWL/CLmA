@@ -281,6 +281,12 @@
   <string name="chat_message_tool_search_prefix">搜索: %1$s</string>
   <string name="chat_message_tool_search_results_count">共 %1$d 条结果</string>
   <string name="chat_message_tool_search_web">搜索网页: %1$s</string>
+  <string name="chat_message_tool_search_capsule">搜索了 %1$s</string>
+  <string name="chat_message_tool_search_capsule_empty">搜索了网页</string>
+  <string name="chat_message_tool_read_page_capsule">阅读了 %1$s</string>
+  <string name="chat_message_tool_read_page_capsule_empty">阅读了网页</string>
+  <string name="chat_message_tool_fetch_page_capsule">获取了 %1$s</string>
+  <string name="chat_message_tool_fetch_page_capsule_empty">获取了网页</string>
   <string name="chat_message_tool_submit">提交</string>
   <string name="chat_page_cancel">取消</string>
   <string name="chat_page_check_fast_model_settings">检查快速模型设置</string>
@@ -728,6 +734,10 @@
   <string name="setting_display_page_thinking_steps_visible_desc">思考/工具步骤组折叠时保留最后几步可见，0 为只显示一行标题</string>
   <string name="setting_display_page_thinking_steps_visible_title">折叠时显示的步骤数</string>
   <string name="setting_display_page_thinking_steps_visible_all">全部</string>
+  <string name="setting_display_page_tool_call_style_title">工具调用样式</string>
+  <string name="setting_display_page_tool_call_style_desc">经典样式保留时间线。胶囊样式把搜索和网页工具显示为紧凑的动作标签</string>
+  <string name="setting_display_page_tool_call_style_classic">经典</string>
+  <string name="setting_display_page_tool_call_style_capsule">胶囊</string>
   <string name="setting_display_page_auto_play_tts_desc">助手消息生成完成后自动播放TTS</string>
   <string name="setting_display_page_auto_play_tts_title">生成后自动播放TTS</string>
   <string name="setting_display_page_chat_font_family_default">默认</string>

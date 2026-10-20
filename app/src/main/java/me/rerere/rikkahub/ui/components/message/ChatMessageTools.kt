@@ -37,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.dokar.sonner.ToastType
@@ -59,11 +60,13 @@ import me.rerere.hugeicons.stroke.Refresh03
 import me.rerere.hugeicons.stroke.Tick01
 import me.rerere.hugeicons.stroke.Tools
 import me.rerere.rikkahub.R
+import me.rerere.rikkahub.data.datastore.ToolCallStyle
 import me.rerere.rikkahub.ui.components.message.tools.ToolUIContext
 import me.rerere.rikkahub.ui.components.message.tools.ToolUIRegistry
 import me.rerere.rikkahub.ui.components.message.tools.ToolResultImage
 import me.rerere.rikkahub.ui.components.ui.ChainOfThoughtScope
 import me.rerere.rikkahub.ui.components.ui.DotLoading
+import me.rerere.rikkahub.ui.components.ui.LocalToolCallStyle
 import me.rerere.rikkahub.ui.context.LocalToaster
 import me.rerere.rikkahub.ui.modifier.shimmer
 import me.rerere.rikkahub.utils.JsonInstant
@@ -81,16 +84,21 @@ private const val ASK_USER_TOOL_NAME = "ask_user"
 @Composable
 fun ChainOfThoughtScope.ChatMessageServerToolStep(tool: UIMessagePart.ServerTool) {
     val loading = !tool.isFinished
+    val capsule = LocalToolCallStyle.current == ToolCallStyle.CAPSULE
     ChainOfThoughtStep(
         icon = {
             if (loading) {
-                DotLoading(size = 10.dp)
+                DotLoading(size = if (capsule) 12.dp else 10.dp)
             } else {
                 Icon(
                     imageVector = HugeIcons.Tools,
                     contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = LocalContentColor.current.copy(alpha = 0.7f),
+                    modifier = Modifier.size(if (capsule) 18.dp else 16.dp),
+                    tint = if (capsule) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        LocalContentColor.current.copy(alpha = 0.7f)
+                    },
                 )
             }
         },
@@ -98,9 +106,14 @@ fun ChainOfThoughtScope.ChatMessageServerToolStep(tool: UIMessagePart.ServerTool
             Text(
                 text = stringResource(R.string.chat_message_tool_call_generic, tool.toolName),
                 style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.secondary,
+                fontWeight = if (capsule) FontWeight.Medium else null,
+                color = if (capsule) {
+                    MaterialTheme.colorScheme.onSurface
+                } else {
+                    MaterialTheme.colorScheme.secondary
+                },
                 modifier = Modifier.shimmer(isLoading = loading),
-                maxLines = 2,
+                maxLines = if (capsule) 1 else 2,
                 overflow = TextOverflow.Ellipsis,
             )
         },
@@ -160,8 +173,8 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
     // 其它工具保持旧行为（默认展开）。历史消息第一次组合时后面已经有正文，直接以收起开始，
     // 不会先闪开再合上。正在生成时这一步先以展开进入组合，等后面的 part 出现才收，
     // 父卡片的 animateContentSize 把收起播出来。
+    // 胶囊样式反过来：内联摘要默认收起，审批中 / 已拒绝 / 图片 / WebView 需要看见，强制展开。
     var userExpanded by remember { mutableStateOf<Boolean?>(null) }
-    val expanded = userExpanded ?: !collapseInlineOutput
     val isPending = tool.isPending
     val isDenied = tool.approvalState is ToolApprovalState.Denied
     val images = tool.output.filterIsInstance<UIMessagePart.Image>()
@@ -171,6 +184,14 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
     // here so skill webview cards (virtual-piano, interactive-map, text-spinner, …) render.
     val webviewParts = tool.output.filterIsInstance<UIMessagePart.Text>()
         .filter { it.hasSkillWebviewMeta() }
+    val toolCallStyle = LocalToolCallStyle.current
+    val capsule = toolCallStyle == ToolCallStyle.CAPSULE
+    val capsuleForceOpen = isPending || isDenied || images.isNotEmpty() || webviewParts.isNotEmpty()
+    val expanded = userExpanded ?: when {
+        capsule && capsuleForceOpen -> true
+        capsule -> false
+        else -> !collapseInlineOutput
+    }
 
     // Summary detection is delegated to the registered renderer; image output, webview
     // cards, and denial reasons are common to all tools.
@@ -182,24 +203,38 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
         icon = {
             if (loading) {
                 DotLoading(
-                    size = 10.dp
+                    size = if (capsule) 12.dp else 10.dp
                 )
             } else {
                 Icon(
-                    imageVector = renderer.icon(context),
+                    imageVector = toolCallStyle.stepIcon(tool.toolName, renderer.icon(context)),
                     contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = LocalContentColor.current.copy(alpha = 0.7f)
+                    modifier = Modifier.size(if (capsule) 18.dp else 16.dp),
+                    tint = if (capsule) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        LocalContentColor.current.copy(alpha = 0.7f)
+                    }
                 )
             }
         },
         label = {
             Text(
-                text = renderer.title(context),
+                text = toolCallStyle.stepTitle(
+                    toolName = tool.toolName,
+                    classicTitle = renderer.title(context),
+                    query = context.arguments.getStringContent("query"),
+                    url = context.arguments.getStringContent("url"),
+                ),
                 style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.secondary,
+                fontWeight = if (capsule) FontWeight.Medium else null,
+                color = if (capsule) {
+                    MaterialTheme.colorScheme.onSurface
+                } else {
+                    MaterialTheme.colorScheme.secondary
+                },
                 modifier = Modifier.shimmer(isLoading = loading),
-                maxLines = 2,
+                maxLines = if (capsule) 1 else 2,
                 overflow = TextOverflow.Ellipsis,
             )
         },
@@ -539,20 +574,26 @@ private fun ChainOfThoughtScope.AskUserToolStep(
 
     val firstQuestion = questions.firstOrNull()?.question ?: "..."
 
+    // 问答表单始终默认展开，胶囊样式也不收起。
     var expanded by remember { mutableStateOf(true) }
+    val capsule = LocalToolCallStyle.current == ToolCallStyle.CAPSULE
 
     ControlledChainOfThoughtStep(
         expanded = expanded,
         onExpandedChange = { expanded = it },
         icon = {
             if (loading) {
-                DotLoading(size = 10.dp)
+                DotLoading(size = if (capsule) 12.dp else 10.dp)
             } else {
                 Icon(
                     imageVector = HugeIcons.BubbleChatQuestion,
                     contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = LocalContentColor.current.copy(alpha = 0.7f)
+                    modifier = Modifier.size(if (capsule) 18.dp else 16.dp),
+                    tint = if (capsule) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        LocalContentColor.current.copy(alpha = 0.7f)
+                    }
                 )
             }
         },
@@ -563,9 +604,14 @@ private fun ChainOfThoughtScope.AskUserToolStep(
                     questions.size
                 ),
                 style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.secondary,
+                fontWeight = if (capsule) FontWeight.Medium else null,
+                color = if (capsule) {
+                    MaterialTheme.colorScheme.onSurface
+                } else {
+                    MaterialTheme.colorScheme.secondary
+                },
                 modifier = Modifier.shimmer(isLoading = loading),
-                maxLines = 2,
+                maxLines = if (capsule) 1 else 2,
                 overflow = TextOverflow.Ellipsis,
             )
         },

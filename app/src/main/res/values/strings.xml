@@ -310,6 +310,12 @@
   <string name="chat_message_tool_search_prefix">Search: %1$s</string>
   <string name="chat_message_tool_search_results_count">%1$d results</string>
   <string name="chat_message_tool_search_web">Search web: %1$s</string>
+  <string name="chat_message_tool_search_capsule">Searched %1$s</string>
+  <string name="chat_message_tool_search_capsule_empty">Searched the web</string>
+  <string name="chat_message_tool_read_page_capsule">Read %1$s</string>
+  <string name="chat_message_tool_read_page_capsule_empty">Read a page</string>
+  <string name="chat_message_tool_fetch_page_capsule">Fetched %1$s</string>
+  <string name="chat_message_tool_fetch_page_capsule_empty">Fetched a page</string>
   <string name="chat_message_tool_submit">Submit</string>
   <string name="chat_page_cancel">Cancel</string>
   <string name="chat_page_check_fast_model_settings">Check fast model settings</string>
@@ -765,6 +771,10 @@
   <string name="setting_display_page_thinking_steps_visible_desc">How many of the latest thinking / tool steps stay visible when a step group is collapsed. 0 shows only a one-line header</string>
   <string name="setting_display_page_thinking_steps_visible_title">Visible steps in collapsed groups</string>
   <string name="setting_display_page_thinking_steps_visible_all">All</string>
+  <string name="setting_display_page_tool_call_style_title">Tool call style</string>
+  <string name="setting_display_page_tool_call_style_desc">Classic keeps the timeline. Capsule shows search and page tools as compact action chips</string>
+  <string name="setting_display_page_tool_call_style_classic">Classic</string>
+  <string name="setting_display_page_tool_call_style_capsule">Capsule</string>
   <string name="setting_display_page_auto_play_tts_desc">Automatically play TTS after assistant message generation completes</string>
   <string name="setting_display_page_auto_play_tts_title">Auto-play TTS After Generation</string>
   <string name="setting_display_page_chat_font_family_default">Default</string>
