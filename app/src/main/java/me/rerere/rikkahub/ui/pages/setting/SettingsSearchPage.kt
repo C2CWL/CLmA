@@ -119,17 +119,21 @@ fun SettingsSearchPage(vm: SettingVM = koinViewModel()) {
                     ) {
                         item {
                             CardGroup {
+                                // CardGroupScope.item is a plain builder — stringResource must
+                                // live inside the @Composable content lambdas, not the forEach body.
                                 filtered.forEach { entry ->
-                                    val groupLabel = stringResource(entry.groupRes)
-                                    val parentLabel = entry.parentTitleRes?.let { stringResource(it) }
-                                    val overline = if (parentLabel != null) {
-                                        "$groupLabel · $parentLabel"
-                                    } else {
-                                        groupLabel
-                                    }
                                     item(
                                         onClick = { navController.navigate(entry.route) },
-                                        overlineContent = { Text(overline) },
+                                        overlineContent = {
+                                            val groupLabel = stringResource(entry.groupRes)
+                                            val parentLabel = entry.parentTitleRes?.let { stringResource(it) }
+                                            val overline = if (parentLabel != null) {
+                                                "$groupLabel · $parentLabel"
+                                            } else {
+                                                groupLabel
+                                            }
+                                            Text(overline)
+                                        },
                                         headlineContent = { Text(stringResource(entry.titleRes)) },
                                         supportingContent = entry.descriptionRes?.let { desc ->
                                             { Text(stringResource(desc)) }

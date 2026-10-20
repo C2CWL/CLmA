@@ -46,9 +46,8 @@ fun AppDropdownMenu(
     groups: List<List<AppMenuEntry>>,
     modifier: Modifier = Modifier,
 ) {
-    val style = runCatching {
-        LocalSettings.current.displaySetting.popupMenuStyle
-    }.getOrDefault(PopupMenuStyle.EXPRESSIVE)
+    // LocalSettings.current is @Composable — cannot wrap in runCatching.
+    val style = LocalSettings.current.displaySetting.popupMenuStyle
 
     when (style) {
         PopupMenuStyle.EXPRESSIVE -> ExpressiveMenu(

@@ -100,9 +100,8 @@ fun <T> Select(
                 )
             }
         }
-        val popupStyle = runCatching {
-            LocalSettings.current.displaySetting.popupMenuStyle
-        }.getOrDefault(PopupMenuStyle.EXPRESSIVE)
+        // LocalSettings.current is @Composable — cannot wrap in runCatching.
+        val popupStyle = LocalSettings.current.displaySetting.popupMenuStyle
         val expressive = popupStyle == PopupMenuStyle.EXPRESSIVE
         ExposedDropdownMenu(
             expanded = expanded,
