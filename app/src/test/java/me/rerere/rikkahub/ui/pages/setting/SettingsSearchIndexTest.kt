@@ -59,8 +59,8 @@ class SettingsSearchIndexTest {
     }
 
     @Test
-    fun `every row belongs to one of the seven hub groups`() {
-        val groups = setOf(
+    fun `every row belongs to a known hub group`() {
+        val classicGroups = setOf(
             R.string.setting_page_group_appearance,
             R.string.setting_page_group_models,
             R.string.setting_page_group_assistant,
@@ -68,12 +68,26 @@ class SettingsSearchIndexTest {
             R.string.setting_page_group_connections,
             R.string.setting_page_group_data,
             R.string.setting_page_group_about,
-            // The developer-only row reuses the settings page title as its group.
             R.string.settings,
         )
-        settingsSearchIndex(developerMode = true).forEach { entry ->
-            assertTrue("unexpected group for ${entry.route}", groups.contains(entry.groupRes))
-        }
+        val reorganizedGroups = setOf(
+            R.string.setting_page_group_appearance_reorg,
+            R.string.setting_page_group_models_reorg,
+            R.string.setting_page_group_assistant,
+            R.string.setting_page_group_device,
+            R.string.setting_page_group_connections_reorg,
+            R.string.setting_page_group_data,
+            R.string.setting_page_group_about,
+            R.string.settings,
+        )
+        settingsSearchIndex(developerMode = true, hubStyle = me.rerere.rikkahub.data.datastore.SettingsHubStyle.CLASSIC)
+            .forEach { entry ->
+                assertTrue("unexpected classic group for ${entry.route}", classicGroups.contains(entry.groupRes))
+            }
+        settingsSearchIndex(developerMode = true, hubStyle = me.rerere.rikkahub.data.datastore.SettingsHubStyle.REORGANIZED)
+            .forEach { entry ->
+                assertTrue("unexpected reorganized group for ${entry.route}", reorganizedGroups.contains(entry.groupRes))
+            }
     }
 
     @Test
@@ -94,13 +108,46 @@ class SettingsSearchIndexTest {
 
     @Test
     fun `nested ui rows point at the ui preferences page`() {
-        val nested = settingsSearchIndex(developerMode = false)
-            .filter { it.route == Screen.SettingPreferencesUI && it.parentTitleRes != null }
-        assertTrue(nested.size > 10)
-        assertTrue(nested.any { it.titleRes == R.string.setting_display_page_popup_menu_style_title })
-        nested.forEach { entry ->
+        val classicNested = settingsSearchIndex(
+            developerMode = false,
+            hubStyle = me.rerere.rikkahub.data.datastore.SettingsHubStyle.CLASSIC,
+        ).filter { it.route == Screen.SettingPreferencesUI && it.parentTitleRes != null }
+        assertTrue(classicNested.size > 10)
+        assertTrue(classicNested.any { it.titleRes == R.string.setting_display_page_popup_menu_style_title })
+        assertTrue(classicNested.any { it.titleRes == R.string.setting_page_settings_hub_style_title })
+        classicNested.forEach { entry ->
             assertEquals(R.string.setting_page_preferences_ui, entry.parentTitleRes)
         }
+
+        val reorgNested = settingsSearchIndex(
+            developerMode = false,
+            hubStyle = me.rerere.rikkahub.data.datastore.SettingsHubStyle.REORGANIZED,
+        ).filter { it.route == Screen.SettingPreferencesUI && it.parentTitleRes != null }
+        reorgNested.forEach { entry ->
+            assertEquals(R.string.setting_page_hub_chat_display, entry.parentTitleRes)
+        }
+    }
+
+    @Test
+    fun `classic and reorganized hubs share the same routes`() {
+        fun hubRoutes(style: me.rerere.rikkahub.data.datastore.SettingsHubStyle) =
+            settingsSearchIndex(developerMode = false, hubStyle = style)
+                .filter { it.parentTitleRes == null }
+                .map { it.route }
+                .toSet()
+        assertEquals(
+            hubRoutes(me.rerere.rikkahub.data.datastore.SettingsHubStyle.CLASSIC),
+            hubRoutes(me.rerere.rikkahub.data.datastore.SettingsHubStyle.REORGANIZED),
+        )
+    }
+
+    @Test
+    fun `reorganized moves network under connections group`() {
+        val entry = settingsSearchIndex(
+            developerMode = false,
+            hubStyle = me.rerere.rikkahub.data.datastore.SettingsHubStyle.REORGANIZED,
+        ).single { it.route == Screen.SettingPreferencesNetwork && it.parentTitleRes == null }
+        assertEquals(R.string.setting_page_group_connections_reorg, entry.groupRes)
     }
 
     @Test

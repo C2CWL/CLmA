@@ -974,6 +974,30 @@
   <string name="setting_model_page_translate_model_desc">The model used for translation features</string>
   <string name="setting_model_page_translate_prompt_vars">Variables: Source text: {source_text}, Target language: {target_lang}</string>
   <string name="setting_page_group_appearance">Appearance &amp; interaction</string>
+
+  <string name="setting_page_hub_chat_display">Chat display</string>
+  <string name="setting_page_hub_chat_display_desc">Layout, bubbles, thinking steps, fonts, code blocks</string>
+  <string name="setting_page_hub_chat_actions">Chat actions</string>
+  <string name="setting_page_hub_chat_actions_desc">Send, scroll, paste, haptics, loading indicator</string>
+  <string name="setting_page_hub_app_alerts">App alerts</string>
+  <string name="setting_page_hub_app_alerts_desc">Update reminders and generation notifications</string>
+  <string name="setting_page_hub_notif_access">Notification access</string>
+  <string name="setting_page_hub_notif_access_desc">Read system notifications and Telegram auto-forward whitelist</string>
+  <string name="setting_page_hub_network_desc">Proxy, User-Agent, retries and stream timeouts</string>
+  <string name="setting_page_group_appearance_reorg">Look &amp; chat</string>
+  <string name="setting_page_group_models_reorg">Models &amp; speech</string>
+  <string name="setting_page_group_connections_reorg">Network &amp; connections</string>
+  <string name="setting_page_ui_style_section">UI style</string>
+  <string name="setting_page_settings_hub_style_title">Settings layout</string>
+  <string name="setting_page_settings_hub_style_desc">Reorganized uses clearer names and puts network under connections. Classic keeps the previous hub layout</string>
+  <string name="setting_page_settings_hub_style_classic">Classic</string>
+  <string name="setting_page_settings_hub_style_reorganized">Reorganized</string>
+
+  <string name="setting_page_general_group_conversation">Conversation</string>
+  <string name="setting_page_general_group_navigation">Scrolling &amp; navigation</string>
+  <string name="setting_page_general_group_feedback">Feedback</string>
+  <string name="setting_page_general_group_input_media">Input &amp; media</string>
+  <string name="setting_page_general_group_advanced">Advanced</string>
   <string name="setting_page_group_models">Models &amp; AI</string>
   <string name="setting_page_group_assistant">Assistant &amp; automation</string>
   <string name="setting_page_group_device">Device &amp; permissions</string>

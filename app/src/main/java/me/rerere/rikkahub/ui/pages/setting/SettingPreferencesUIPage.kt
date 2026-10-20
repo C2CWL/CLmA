@@ -48,6 +48,7 @@ import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.ChatFontFamily
 import me.rerere.rikkahub.data.datastore.DisplaySetting
 import me.rerere.rikkahub.data.datastore.PopupMenuStyle
+import me.rerere.rikkahub.data.datastore.SettingsHubStyle
 import me.rerere.rikkahub.data.datastore.ToolCallStyle
 import me.rerere.rikkahub.data.files.FileFolders
 import me.rerere.rikkahub.data.files.FileUtils
@@ -166,6 +167,66 @@ fun SettingPreferencesUIPage(vm: SettingVM = koinViewModel()) {
             contentPadding = contentPadding + PaddingValues(8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            item {
+                CardGroup(
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    title = { Text(stringResource(R.string.setting_page_ui_style_section)) },
+                ) {
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_page_settings_hub_style_title)) },
+                        supportingContent = {
+                            Text(stringResource(R.string.setting_page_settings_hub_style_desc))
+                        },
+                        trailingContent = {
+                            Select(
+                                options = SettingsHubStyle.entries,
+                                selectedOption = displaySetting.settingsHubStyle,
+                                onOptionSelected = {
+                                    updateDisplaySetting(displaySetting.copy(settingsHubStyle = it))
+                                },
+                                optionToString = {
+                                    stringResource(
+                                        when (it) {
+                                            SettingsHubStyle.CLASSIC -> R.string.setting_page_settings_hub_style_classic
+                                            SettingsHubStyle.REORGANIZED -> R.string.setting_page_settings_hub_style_reorganized
+                                        }
+                                    )
+                                },
+                                containerColor = CustomColors.listItemColors.containerColor,
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                                modifier = Modifier.width(150.dp),
+                            )
+                        },
+                    )
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_popup_menu_style_title)) },
+                        supportingContent = {
+                            Text(stringResource(R.string.setting_display_page_popup_menu_style_desc))
+                        },
+                        trailingContent = {
+                            Select(
+                                options = PopupMenuStyle.entries,
+                                selectedOption = displaySetting.popupMenuStyle,
+                                onOptionSelected = {
+                                    updateDisplaySetting(displaySetting.copy(popupMenuStyle = it))
+                                },
+                                optionToString = {
+                                    stringResource(
+                                        when (it) {
+                                            PopupMenuStyle.CLASSIC -> R.string.setting_display_page_popup_menu_style_classic
+                                            PopupMenuStyle.EXPRESSIVE -> R.string.setting_display_page_popup_menu_style_expressive
+                                        }
+                                    )
+                                },
+                                containerColor = CustomColors.listItemColors.containerColor,
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                                modifier = Modifier.width(150.dp),
+                            )
+                        },
+                    )
+                }
+            }
+
             item {
                 CardGroup(
                     modifier = Modifier.padding(horizontal = 8.dp),
@@ -474,32 +535,6 @@ fun SettingPreferencesUIPage(vm: SettingVM = koinViewModel()) {
                                         when (it) {
                                             ToolCallStyle.CLASSIC -> R.string.setting_display_page_tool_call_style_classic
                                             ToolCallStyle.CAPSULE -> R.string.setting_display_page_tool_call_style_capsule
-                                        }
-                                    )
-                                },
-                                containerColor = CustomColors.listItemColors.containerColor,
-                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                                modifier = Modifier.width(150.dp),
-                            )
-                        },
-                    )
-                    item(
-                        headlineContent = { Text(stringResource(R.string.setting_display_page_popup_menu_style_title)) },
-                        supportingContent = {
-                            Text(stringResource(R.string.setting_display_page_popup_menu_style_desc))
-                        },
-                        trailingContent = {
-                            Select(
-                                options = PopupMenuStyle.entries,
-                                selectedOption = displaySetting.popupMenuStyle,
-                                onOptionSelected = {
-                                    updateDisplaySetting(displaySetting.copy(popupMenuStyle = it))
-                                },
-                                optionToString = {
-                                    stringResource(
-                                        when (it) {
-                                            PopupMenuStyle.CLASSIC -> R.string.setting_display_page_popup_menu_style_classic
-                                            PopupMenuStyle.EXPRESSIVE -> R.string.setting_display_page_popup_menu_style_expressive
                                         }
                                     )
                                 },

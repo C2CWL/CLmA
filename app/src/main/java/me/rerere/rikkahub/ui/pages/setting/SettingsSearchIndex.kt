@@ -29,24 +29,13 @@ data class SettingsSearchEntry(
  * Static mirror of hub rows in [SettingPage] plus nested items from secondary pages.
  * Nested rows share the parent [Screen] route — uniqueness is (route, titleRes, parentTitleRes).
  */
-fun settingsSearchIndex(developerMode: Boolean): List<SettingsSearchEntry> {
+fun settingsSearchIndex(
+    developerMode: Boolean,
+    hubStyle: me.rerere.rikkahub.data.datastore.SettingsHubStyle =
+        me.rerere.rikkahub.data.datastore.SettingsHubStyle.REORGANIZED,
+): List<SettingsSearchEntry> {
     val entries = mutableListOf<SettingsSearchEntry>()
 
-    fun hub(
-        @StringRes title: Int,
-        @StringRes desc: Int?,
-        @StringRes group: Int,
-        route: Screen,
-        @StringRes vararg alts: Int,
-    ) {
-        entries += SettingsSearchEntry(
-            titleRes = title,
-            descriptionRes = desc,
-            groupRes = group,
-            route = route,
-            altTitles = alts.toList(),
-        )
-    }
 
     fun nested(
         @StringRes parent: Int,
@@ -66,43 +55,47 @@ fun settingsSearchIndex(developerMode: Boolean): List<SettingsSearchEntry> {
         )
     }
 
-    val appearance = R.string.setting_page_group_appearance
-    val models = R.string.setting_page_group_models
-    val assistant = R.string.setting_page_group_assistant
-    val device = R.string.setting_page_group_device
-    val connections = R.string.setting_page_group_connections
-    val data = R.string.setting_page_group_data
-    val about = R.string.setting_page_group_about
-
-    // ── Hub: Appearance ──────────────────────────────────────────────
-    hub(
-        R.string.setting_page_preferences_theme,
-        R.string.setting_page_preferences_theme_desc,
-        appearance,
-        Screen.SettingPreferencesTheme,
-        R.string.setting_page_color_mode,
-    )
-    hub(
-        R.string.setting_page_preferences_ui,
-        R.string.setting_page_preferences_ui_desc,
-        appearance,
-        Screen.SettingPreferencesUI,
-    )
-    hub(
-        R.string.setting_page_preferences_general,
-        R.string.setting_page_preferences_general_desc,
-        appearance,
-        Screen.SettingPreferencesGeneral,
-    )
-    hub(
-        R.string.setting_page_preferences_notification,
-        R.string.setting_page_preferences_notification_desc,
-        appearance,
-        Screen.SettingPreferencesNotification,
-    )
+    // ── Hub rows from catalog (classic / reorganized labels + grouping) ──
+    for ((def, copy, groupRes) in settingsHubSearchRows(hubStyle)) {
+        val route = def.route ?: continue
+        val alts = buildList {
+            // Always searchable by both classic and reorganized titles when they differ.
+            val other = def.copyFor(
+                when (hubStyle) {
+                    me.rerere.rikkahub.data.datastore.SettingsHubStyle.CLASSIC ->
+                        me.rerere.rikkahub.data.datastore.SettingsHubStyle.REORGANIZED
+                    me.rerere.rikkahub.data.datastore.SettingsHubStyle.REORGANIZED ->
+                        me.rerere.rikkahub.data.datastore.SettingsHubStyle.CLASSIC
+                }
+            )
+            if (other.titleRes != copy.titleRes) add(other.titleRes)
+            if (route == Screen.SettingPreferencesTheme) add(R.string.setting_page_color_mode)
+            if (route == Screen.SettingSpeech) add(R.string.speech_page_title)
+        }
+        entries += SettingsSearchEntry(
+            titleRes = copy.titleRes,
+            descriptionRes = copy.descriptionRes,
+            groupRes = groupRes,
+            route = route,
+            altTitles = alts,
+        )
+    }
 
     // Nested: UI / display
-    val uiParent = R.string.setting_page_preferences_ui
+    val appearance = when (hubStyle) {
+        me.rerere.rikkahub.data.datastore.SettingsHubStyle.CLASSIC -> R.string.setting_page_group_appearance
+        me.rerere.rikkahub.data.datastore.SettingsHubStyle.REORGANIZED -> R.string.setting_page_group_appearance_reorg
+    }
+    val models = when (hubStyle) {
+        me.rerere.rikkahub.data.datastore.SettingsHubStyle.CLASSIC -> R.string.setting_page_group_models
+        me.rerere.rikkahub.data.datastore.SettingsHubStyle.REORGANIZED -> R.string.setting_page_group_models_reorg
+    }
+    val device = R.string.setting_page_group_device
+
+    val uiParent = when (hubStyle) {
+        me.rerere.rikkahub.data.datastore.SettingsHubStyle.CLASSIC -> R.string.setting_page_preferences_ui
+        me.rerere.rikkahub.data.datastore.SettingsHubStyle.REORGANIZED -> R.string.setting_page_hub_chat_display
+    }
     val uiRoute = Screen.SettingPreferencesUI
     nested(uiParent, uiRoute, appearance, R.string.setting_display_page_clean_layout_title, R.string.setting_display_page_clean_layout_desc)
     nested(uiParent, uiRoute, appearance, R.string.setting_display_page_clean_layout_glass_title, R.string.setting_display_page_clean_layout_glass_desc)
@@ -124,6 +117,7 @@ fun settingsSearchIndex(developerMode: Boolean): List<SettingsSearchEntry> {
     nested(uiParent, uiRoute, appearance, R.string.setting_display_page_thinking_steps_visible_title, R.string.setting_display_page_thinking_steps_visible_desc)
     nested(uiParent, uiRoute, appearance, R.string.setting_display_page_tool_call_style_title, R.string.setting_display_page_tool_call_style_desc, R.string.setting_display_page_tool_call_style_capsule, R.string.setting_display_page_tool_call_style_classic)
     nested(uiParent, uiRoute, appearance, R.string.setting_display_page_popup_menu_style_title, R.string.setting_display_page_popup_menu_style_desc, R.string.setting_display_page_popup_menu_style_classic, R.string.setting_display_page_popup_menu_style_expressive)
+    nested(uiParent, uiRoute, appearance, R.string.setting_page_settings_hub_style_title, R.string.setting_page_settings_hub_style_desc, R.string.setting_page_settings_hub_style_classic, R.string.setting_page_settings_hub_style_reorganized)
     nested(uiParent, uiRoute, appearance, R.string.setting_display_page_chat_font_family_title)
     nested(uiParent, uiRoute, appearance, R.string.setting_display_page_custom_font_title)
     nested(uiParent, uiRoute, appearance, R.string.setting_display_page_ui_font_family_title, R.string.setting_display_page_ui_font_family_desc)
@@ -135,7 +129,10 @@ fun settingsSearchIndex(developerMode: Boolean): List<SettingsSearchEntry> {
     nested(uiParent, uiRoute, appearance, R.string.setting_display_page_show_line_numbers_title, R.string.setting_display_page_show_line_numbers_desc)
 
     // Nested: General interaction
-    val genParent = R.string.setting_page_preferences_general
+    val genParent = when (hubStyle) {
+        me.rerere.rikkahub.data.datastore.SettingsHubStyle.CLASSIC -> R.string.setting_page_preferences_general
+        me.rerere.rikkahub.data.datastore.SettingsHubStyle.REORGANIZED -> R.string.setting_page_hub_chat_actions
+    }
     val genRoute = Screen.SettingPreferencesGeneral
     nested(genParent, genRoute, appearance, R.string.setting_display_page_create_new_conversation_on_start_title, R.string.setting_display_page_create_new_conversation_on_start_desc)
     nested(genParent, genRoute, appearance, R.string.setting_display_page_send_on_enter_title, R.string.setting_display_page_send_on_enter_desc)
@@ -160,61 +157,29 @@ fun settingsSearchIndex(developerMode: Boolean): List<SettingsSearchEntry> {
     nested(themeParent, Screen.SettingPreferencesTheme, appearance, R.string.setting_display_page_amoled_dark_mode_title, R.string.setting_display_page_amoled_dark_mode_desc)
 
     // Nested: Notification prefs
-    val notifParent = R.string.setting_page_preferences_notification
+    val notifParent = when (hubStyle) {
+        me.rerere.rikkahub.data.datastore.SettingsHubStyle.CLASSIC -> R.string.setting_page_preferences_notification
+        me.rerere.rikkahub.data.datastore.SettingsHubStyle.REORGANIZED -> R.string.setting_page_hub_app_alerts
+    }
     nested(notifParent, Screen.SettingPreferencesNotification, appearance, R.string.setting_display_page_notification_message_generated, R.string.setting_display_page_notification_message_generated_desc)
     nested(notifParent, Screen.SettingPreferencesNotification, appearance, R.string.setting_display_page_live_update_notification, R.string.setting_display_page_live_update_notification_desc)
-
-    // ── Hub: Models ──────────────────────────────────────────────────
-    hub(R.string.setting_model_page_title, R.string.setting_page_default_model_desc, models, Screen.SettingModels)
-    hub(R.string.setting_page_providers, R.string.setting_page_providers_desc, models, Screen.SettingProvider)
-    hub(R.string.setting_page_search_service, R.string.setting_page_search_service_desc, models, Screen.SettingSearch)
-    hub(R.string.speech_page_title, R.string.setting_page_tts_service_desc, models, Screen.SettingSpeech)
-    hub(R.string.setting_page_preferences_network, R.string.setting_page_preferences_network_desc, models, Screen.SettingPreferencesNetwork)
 
     val speechParent = R.string.speech_page_title
     nested(speechParent, Screen.SettingSpeech, models, R.string.setting_display_page_auto_play_tts_title, R.string.setting_display_page_auto_play_tts_desc)
     nested(speechParent, Screen.SettingSpeech, models, R.string.setting_display_page_tts_only_read_quoted_title, R.string.setting_display_page_tts_only_read_quoted_desc)
     nested(speechParent, Screen.SettingSpeech, models, R.string.setting_display_page_tts_read_outside_brackets_title, R.string.setting_display_page_tts_read_outside_brackets_desc)
 
-    // ── Hub: Assistant ───────────────────────────────────────────────
-    hub(R.string.assistant_page_title, R.string.setting_page_assistant_desc, assistant, Screen.Assistant)
-    hub(R.string.setting_page_extensions, R.string.setting_page_extensions_desc, assistant, Screen.Extensions)
-    hub(R.string.setting_page_sub_agents, R.string.setting_page_sub_agents_desc, assistant, Screen.SettingSubAgents)
-    hub(R.string.setting_page_mcp, R.string.setting_page_mcp_desc, assistant, Screen.SettingMcp)
-    hub(R.string.setting_page_workflows, R.string.setting_page_workflows_desc, assistant, Screen.SettingWorkflows)
-    hub(R.string.setting_page_scheduled_jobs, R.string.setting_page_scheduled_jobs_desc, assistant, Screen.SettingScheduledJobs)
-    hub(R.string.setting_page_tool_approvals, R.string.setting_page_tool_approvals_desc, assistant, Screen.SettingToolApprovals)
-
-    // ── Hub: Device ──────────────────────────────────────────────────
-    hub(R.string.setting_page_accessibility, R.string.setting_page_accessibility_desc, device, Screen.SettingAccessibility)
-    hub(R.string.setting_floating_ball_page_title, R.string.setting_page_floating_ball_desc, device, Screen.SettingFloatingBall)
-    hub(R.string.setting_page_notifications, R.string.setting_page_notifications_desc, device, Screen.SettingNotifications)
-    hub(R.string.setting_page_permissions, R.string.setting_page_permissions_desc, device, Screen.SettingPermissions)
-    hub(R.string.setting_page_shizuku, R.string.setting_page_shizuku_desc, device, Screen.SettingShizuku)
-    hub(R.string.setting_page_termux, R.string.setting_page_termux_desc, device, Screen.SettingTermux)
-
     val ballParent = R.string.setting_floating_ball_page_title
     nested(ballParent, Screen.SettingFloatingBall, device, R.string.setting_floating_ball_idle_title, R.string.setting_floating_ball_idle_desc)
     nested(ballParent, Screen.SettingFloatingBall, device, R.string.setting_floating_ball_alpha_title, R.string.setting_floating_ball_alpha_desc)
 
-    // ── Hub: Connections ─────────────────────────────────────────────
-    hub(R.string.setting_page_ssh, R.string.setting_page_ssh_desc, connections, Screen.SettingSsh)
-    hub(R.string.setting_page_web_server, R.string.setting_page_web_server_desc, connections, Screen.SettingWeb)
-    hub(R.string.setting_page_telegram, R.string.setting_page_telegram_desc, connections, Screen.SettingTelegram)
-    hub(R.string.setting_page_browser, R.string.setting_page_browser_desc, connections, Screen.SettingBrowser)
-
-    // ── Hub: Data ────────────────────────────────────────────────────
-    hub(R.string.backup_page_title, R.string.setting_page_data_backup_desc, data, Screen.Backup)
-    hub(R.string.setting_files_page_title, R.string.setting_page_chat_storage_desc, data, Screen.SettingFiles)
-
-    // ── Hub: About ───────────────────────────────────────────────────
-    hub(R.string.setting_page_doctor, R.string.setting_page_doctor_desc, about, Screen.SettingDoctor)
-    hub(R.string.setting_page_request_logs, R.string.setting_page_request_logs_desc, about, Screen.Log)
-    hub(R.string.setting_page_about, R.string.setting_page_about_desc, about, Screen.SettingAbout)
-    hub(R.string.setting_page_sponsor, R.string.setting_page_sponsor_desc, about, Screen.SettingSponsor)
-
     if (developerMode) {
-        hub(R.string.accessibility_developer_options, null, R.string.settings, Screen.Developer)
+        entries += SettingsSearchEntry(
+            titleRes = R.string.accessibility_developer_options,
+            descriptionRes = null,
+            groupRes = R.string.settings,
+            route = Screen.Developer,
+        )
     }
 
     return entries

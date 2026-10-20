@@ -88,6 +88,7 @@ fun SettingPreferencesGeneralPage(vm: SettingVM = koinViewModel()) {
                 )
                 CardGroup(
                     modifier = Modifier.padding(horizontal = 8.dp),
+                    title = { Text(stringResource(R.string.setting_page_general_group_conversation)) },
                 ) {
                     item(
                         headlineContent = { Text(stringResource(R.string.setting_display_page_create_new_conversation_on_start_title)) },
@@ -111,6 +112,54 @@ fun SettingPreferencesGeneralPage(vm: SettingVM = koinViewModel()) {
                             )
                         },
                     )
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_enable_interject_title)) },
+                        supportingContent = { Text(stringResource(R.string.setting_display_page_enable_interject_desc)) },
+                        trailingContent = {
+                            Switch(
+                                checked = displaySetting.enableInterject,
+                                onCheckedChange = {
+                                    updateDisplaySetting(displaySetting.copy(enableInterject = it))
+                                }
+                            )
+                        },
+                    )
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_loading_indicator_style_title)) },
+                        supportingContent = {
+                            Text(stringResource(R.string.setting_display_page_loading_indicator_style_desc))
+                        },
+                        trailingContent = {
+                            Select(
+                                options = LoadingIndicatorStyle.entries,
+                                selectedOption = displaySetting.effectiveLoadingIndicatorStyle,
+                                onOptionSelected = {
+                                    updateDisplaySetting(displaySetting.withLoadingIndicatorStyle(it))
+                                },
+                                optionToString = {
+                                    stringResource(
+                                        when (it) {
+                                            LoadingIndicatorStyle.DEFAULT -> R.string.setting_display_page_loading_indicator_style_default
+                                            LoadingIndicatorStyle.APP_ICON -> R.string.setting_display_page_loading_indicator_style_app_icon
+                                            LoadingIndicatorStyle.SHIMMER -> R.string.setting_display_page_loading_indicator_style_shimmer
+                                            LoadingIndicatorStyle.SPARKLE -> R.string.setting_display_page_loading_indicator_style_sparkle
+                                        }
+                                    )
+                                },
+                                containerColor = CustomColors.listItemColors.containerColor,
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                                modifier = Modifier.width(150.dp),
+                            )
+                        },
+                    )
+                }
+            }
+
+            item {
+                CardGroup(
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    title = { Text(stringResource(R.string.setting_page_general_group_navigation)) },
+                ) {
                     item(
                         headlineContent = { Text(stringResource(R.string.setting_display_page_show_message_jumper_title)) },
                         supportingContent = { Text(stringResource(R.string.setting_display_page_show_message_jumper_desc)) },
@@ -150,46 +199,52 @@ fun SettingPreferencesGeneralPage(vm: SettingVM = koinViewModel()) {
                         },
                     )
                     item(
-                        headlineContent = { Text(stringResource(R.string.setting_display_page_enable_interject_title)) },
-                        supportingContent = { Text(stringResource(R.string.setting_display_page_enable_interject_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_volume_key_scroll_title)) },
+                        supportingContent = { Text(stringResource(R.string.setting_display_page_volume_key_scroll_desc)) },
                         trailingContent = {
                             Switch(
-                                checked = displaySetting.enableInterject,
+                                checked = displaySetting.enableVolumeKeyScroll,
                                 onCheckedChange = {
-                                    updateDisplaySetting(displaySetting.copy(enableInterject = it))
+                                    updateDisplaySetting(displaySetting.copy(enableVolumeKeyScroll = it))
                                 }
                             )
                         },
                     )
+                    if (displaySetting.enableVolumeKeyScroll) {
+                        item(
+                            headlineContent = { Text(stringResource(R.string.setting_display_page_volume_key_scroll_ratio)) },
+                            supportingContent = {
+                                PercentSlider(
+                                    value = displaySetting.volumeKeyScrollRatio,
+                                    onValueChange = {
+                                        updateDisplaySetting(displaySetting.copy(volumeKeyScrollRatio = it))
+                                    },
+                                    valueRange = 0.25f..1.0f,
+                                    title = stringResource(R.string.setting_display_page_volume_key_scroll_ratio),
+                                )
+                            }
+                        )
+                    }
                     item(
-                        headlineContent = { Text(stringResource(R.string.setting_display_page_loading_indicator_style_title)) },
-                        supportingContent = {
-                            Text(stringResource(R.string.setting_display_page_loading_indicator_style_desc))
-                        },
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_bounce_overscroll_title)) },
+                        supportingContent = { Text(stringResource(R.string.setting_display_page_bounce_overscroll_desc)) },
                         trailingContent = {
-                            Select(
-                                options = LoadingIndicatorStyle.entries,
-                                selectedOption = displaySetting.effectiveLoadingIndicatorStyle,
-                                onOptionSelected = {
-                                    updateDisplaySetting(displaySetting.withLoadingIndicatorStyle(it))
-                                },
-                                optionToString = {
-                                    stringResource(
-                                        when (it) {
-                                            LoadingIndicatorStyle.DEFAULT -> R.string.setting_display_page_loading_indicator_style_default
-                                            LoadingIndicatorStyle.APP_ICON -> R.string.setting_display_page_loading_indicator_style_app_icon
-                                            LoadingIndicatorStyle.SHIMMER -> R.string.setting_display_page_loading_indicator_style_shimmer
-                                            LoadingIndicatorStyle.SPARKLE -> R.string.setting_display_page_loading_indicator_style_sparkle
-                                        }
-                                    )
-                                },
-                                // Blend into the card: same container colour, hairline for affordance.
-                                containerColor = CustomColors.listItemColors.containerColor,
-                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                                modifier = Modifier.width(150.dp),
+                            Switch(
+                                checked = displaySetting.enableBounceOverscroll,
+                                onCheckedChange = {
+                                    updateDisplaySetting(displaySetting.copy(enableBounceOverscroll = it))
+                                }
                             )
                         },
                     )
+                }
+            }
+
+            item {
+                CardGroup(
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    title = { Text(stringResource(R.string.setting_page_general_group_feedback)) },
+                ) {
                     item(
                         headlineContent = { Text(stringResource(R.string.setting_display_page_enable_blur_effect_title)) },
                         supportingContent = { Text(stringResource(R.string.setting_display_page_enable_blur_effect_desc)) },
@@ -214,6 +269,14 @@ fun SettingPreferencesGeneralPage(vm: SettingVM = koinViewModel()) {
                             )
                         },
                     )
+                }
+            }
+
+            item {
+                CardGroup(
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    title = { Text(stringResource(R.string.setting_page_general_group_input_media)) },
+                ) {
                     item(
                         headlineContent = { Text(stringResource(R.string.setting_display_page_skip_crop_image_title)) },
                         supportingContent = { Text(stringResource(R.string.setting_display_page_skip_crop_image_desc)) },
@@ -267,45 +330,14 @@ fun SettingPreferencesGeneralPage(vm: SettingVM = koinViewModel()) {
                             },
                         )
                     }
-                    item(
-                        headlineContent = { Text(stringResource(R.string.setting_display_page_volume_key_scroll_title)) },
-                        supportingContent = { Text(stringResource(R.string.setting_display_page_volume_key_scroll_desc)) },
-                        trailingContent = {
-                            Switch(
-                                checked = displaySetting.enableVolumeKeyScroll,
-                                onCheckedChange = {
-                                    updateDisplaySetting(displaySetting.copy(enableVolumeKeyScroll = it))
-                                }
-                            )
-                        },
-                    )
-                    if (displaySetting.enableVolumeKeyScroll) {
-                        item(
-                            headlineContent = { Text(stringResource(R.string.setting_display_page_volume_key_scroll_ratio)) },
-                            supportingContent = {
-                                PercentSlider(
-                                    value = displaySetting.volumeKeyScrollRatio,
-                                    onValueChange = {
-                                        updateDisplaySetting(displaySetting.copy(volumeKeyScrollRatio = it))
-                                    },
-                                    valueRange = 0.25f..1.0f,
-                                    title = stringResource(R.string.setting_display_page_volume_key_scroll_ratio),
-                                )
-                            }
-                        )
-                    }
-                    item(
-                        headlineContent = { Text(stringResource(R.string.setting_display_page_bounce_overscroll_title)) },
-                        supportingContent = { Text(stringResource(R.string.setting_display_page_bounce_overscroll_desc)) },
-                        trailingContent = {
-                            Switch(
-                                checked = displaySetting.enableBounceOverscroll,
-                                onCheckedChange = {
-                                    updateDisplaySetting(displaySetting.copy(enableBounceOverscroll = it))
-                                }
-                            )
-                        },
-                    )
+                }
+            }
+
+            item {
+                CardGroup(
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    title = { Text(stringResource(R.string.setting_page_general_group_advanced)) },
+                ) {
                     item(
                         headlineContent = { Text(stringResource(R.string.setting_display_page_parse_text_tool_calls_title)) },
                         supportingContent = { Text(stringResource(R.string.setting_display_page_parse_text_tool_calls_desc)) },

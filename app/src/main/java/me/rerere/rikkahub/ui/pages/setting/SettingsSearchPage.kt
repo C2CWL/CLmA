@@ -49,7 +49,12 @@ fun SettingsSearchPage(vm: SettingVM = koinViewModel()) {
         focusRequester.requestFocus()
     }
 
-    val entries = remember(settings.developerMode) { settingsSearchIndex(settings.developerMode) }
+    val entries = remember(settings.developerMode, settings.displaySetting.settingsHubStyle) {
+        settingsSearchIndex(
+            developerMode = settings.developerMode,
+            hubStyle = settings.displaySetting.settingsHubStyle,
+        )
+    }
     val filtered = remember(entries, query) {
         val q = query.trim()
         if (q.isEmpty()) {
