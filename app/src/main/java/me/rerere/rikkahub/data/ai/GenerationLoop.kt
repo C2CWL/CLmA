@@ -612,6 +612,36 @@ internal fun resumableToolsIncludingUnexecutedAuto(
         (tool.approvalState is ToolApprovalState.Auto && !tool.isExecuted && tool.executionStartedAt == null)
 }
 
+/**
+ * 用户插话打断当前 step 的内部信号。
+ *
+ * **不能**继承 [CancellationException]：取消路径会把它当成用户点了停止，从而走
+ * stopGeneration 的收尾逻辑，插话就变成了"结束本轮"。
+ */
+private class SteerInterrupt : RuntimeException("interrupted by user steer") {
+    override fun fillInStackTrace(): Throwable = this
+}
+
+/**
+ * 插话打断后的消息整理：最后一条 assistant 消息若没有任何内容（空文本、空推理），
+ * 把 parts 清空——UI 的 isEmptyUIMessage 会跳过它，provider 也会丢弃空 assistant。
+ *
+ * 注意**不能** dropLast：ChatService 的 updateCurrentMessages 只更新/追加节点、从不删除，
+ * 删掉一条会让后续 messages 与 messageNodes 的 index 对应整体错位（插话消息会被写进
+ * 上一条 assistant 的版本列表里）。保留一个空壳节点是唯一安全的做法。
+ *
+ * 半截工具调用不会解析成 Tool part（StreamChunkHandler 只在 JSON 完整时产出），
+ * 所以这里不需要额外过滤工具。
+ */
+internal fun List<UIMessage>.trimSteeredTail(): List<UIMessage> {
+    val last = lastOrNull() ?: return this
+    if (last.role != MessageRole.ASSISTANT) return this
+    val hasContent = last.parts.any { part ->
+        part !is UIMessagePart.Text || part.text.isNotBlank()
+    }
+    return if (hasContent) this else dropLast(1) + last.copy(parts = emptyList())
+}
+
 class GenerationLoop(
     private val context: Context,
     private val providerManager: ProviderManager,
@@ -642,6 +672,12 @@ class GenerationLoop(
         // result. ChatService uses this to reassert the foreground service before a background
         // continuation opens a new socket.
         onBeforeModelRequest: suspend () -> Unit = {},
+        // 用户插话（steer）：生成中投递的新用户消息。hasPendingSteer 在每个 stream chunk
+        // 到达时检查，用于立刻收尾当前 step；drainSteerMessages 只在即将发起模型请求前
+        // 调用（见 pendingTools.isEmpty 分支），返回的消息会并入 messages 并 emit，
+        // 因此既进入请求上下文，也作为真实用户消息落盘。
+        hasPendingSteer: () -> Boolean = { false },
+        drainSteerMessages: () -> List<UIMessage> = { emptyList() },
         // Returns true when the loop may run [toolName] without flipping it to Pending.
         // ChatService injects a closure over the user's blacklist + the YOLO toggle + the
         // non-waivable floor + the in-memory "allow for this chat" grants (see
@@ -762,8 +798,28 @@ class GenerationLoop(
 
             // Skip generation if we have approved/denied tool calls to handle
             if (pendingTools.isEmpty()) {
+                // 本 step 是否被用户插话打断：决定收尾后继续下一 step 还是走工具分支。
+                var steered = false
                 try {
                     onBeforeModelRequest()
+                    // 用户插话：并入当前回合。位置必须在 pendingTools 判定之后 ——
+                    // 放到循环顶部会把 messages 末尾变成 USER，已批准的待执行工具
+                    // 会被 pendingTools 判定跳过。
+                    val steers = drainSteerMessages()
+                    if (steers.isNotEmpty()) {
+                        messages = messages + steers
+                        emit(
+                            GenerationChunk.Messages(
+                                messages.visualTransforms(
+                                    transformers = outputTransformers,
+                                    context = context,
+                                    model = model,
+                                    assistant = assistant,
+                                    settings = settings
+                                )
+                            )
+                        )
+                    }
                     // System injections (e.g. a background sub-agent's completion notice)
                     // are drained here — once per loop step, so an in-flight turn sees a
                     // notice on its very next request without waiting for the turn to end —
@@ -775,12 +831,13 @@ class GenerationLoop(
                     val injections = conversationId
                         ?.let { ConversationInjections.drain(it) }
                         .orEmpty()
-                    generateInternal(
+                    steered = generateInternal(
                         assistant = assistant,
                         settings = settings,
                         systemAddendum = systemAddendum,
                         messages = messages,
                         injectedNotices = injections,
+                        hasPendingSteer = hasPendingSteer,
                         onUpdateMessages = {
                             messages = it.transforms(
                                 transformers = outputTransformers,
@@ -891,25 +948,37 @@ class GenerationLoop(
                     }
                     throw t
                 }
-                messages = messages.visualTransforms(
-                    transformers = outputTransformers,
-                    context = context,
-                    model = model,
-                    assistant = assistant,
-                    settings = settings
-                )
-                messages = messages.onGenerationFinish(
-                    transformers = outputTransformers,
-                    context = context,
-                    model = model,
-                    assistant = assistant,
-                    settings = settings
-                )
-                messages = messages.slice(0 until messages.lastIndex) + messages.last().copy(
-                    finishedAt = Clock.System.now()
-                        .toLocalDateTime(TimeZone.currentSystemDefault())
-                )
-                emit(GenerationChunk.Messages(messages))
+                if (steered) {
+                    // 插话打断：最后一条 assistant 若没有任何内容就丢掉，避免空气泡；
+                    // 有内容则保留为已完成的半截回复。
+                    messages = messages.trimSteeredTail()
+                }
+                if (messages.lastOrNull()?.role == MessageRole.ASSISTANT) {
+                    messages = messages.visualTransforms(
+                        transformers = outputTransformers,
+                        context = context,
+                        model = model,
+                        assistant = assistant,
+                        settings = settings
+                    )
+                    messages = messages.onGenerationFinish(
+                        transformers = outputTransformers,
+                        context = context,
+                        model = model,
+                        assistant = assistant,
+                        settings = settings
+                    )
+                    messages = messages.slice(0 until messages.lastIndex) + messages.last().copy(
+                        finishedAt = Clock.System.now()
+                            .toLocalDateTime(TimeZone.currentSystemDefault())
+                    )
+                    emit(GenerationChunk.Messages(messages))
+                }
+
+                if (steered) {
+                    // 插话已入队：跳过本 step 的工具分支，下一 step 会 drain 并重新请求。
+                    continue
+                }
 
                 val toolCalls = messages.last().getTools().filter { !it.isExecuted }
                 if (toolCalls.isEmpty()) {
@@ -1486,7 +1555,11 @@ class GenerationLoop(
          * sends exactly what it sent before.
          */
         injectedNotices: List<String> = emptyList(),
-    ) {
+        // 每个 stream chunk 到达时检查是否有待处理的用户插话（见 generateText 的同名参数）。
+        hasPendingSteer: () -> Boolean = { false },
+    ): Boolean {
+        // 本 step 是否被用户插话打断（SteerInterrupt）。调用方据此决定是否继续下一 step。
+        var steered = false
         val internalMessages = buildList {
             // Conversation-level system prompt override (upstream): when the assistant
             // allows it and the conversation supplies one, it replaces the assistant prompt.
@@ -1748,6 +1821,9 @@ class GenerationLoop(
                                     }
                                     shouldRetry
                                 }.collect {
+                                    // 用户插话：立刻结束当前 step，让下一 step 带着新指令重新请求。
+                                    // 已流出的文本由 catch 分支正常收尾后保留。
+                                    if (hasPendingSteer()) throw SteerInterrupt()
                                     receivedAnyChunk = true
                                     val meaningful = isMeaningfulStreamChunk(it)
                                     if (meaningful) {
@@ -1768,6 +1844,11 @@ class GenerationLoop(
                         // plain reply never ends (and a tool-call reply never reaches the tool).
                         break
                     } catch (failure: Throwable) {
+                        if (failure is SteerInterrupt) {
+                            Log.i(TAG, "streamText: step #$stepIndex interrupted by user steer")
+                            steered = true
+                            break
+                        }
                         // Only a plain-text partial can be continued; a half-streamed tool call
                         // would produce a dangling call and no result, which providers reject.
                         val partial = messages.lastOrNull()
@@ -1855,6 +1936,7 @@ class GenerationLoop(
         } finally {
             processingStatus.value = null
         }
+        return steered
     }
 
     /**

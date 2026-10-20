@@ -964,6 +964,49 @@ class ChatService(
         }
     }
 
+    /**
+     * 生成中插话：把用户消息并入**当前回合**的下一次模型请求，而不是排到本轮结束之后。
+     *
+     * 与 [sendMessage] 的区别：生成中 [sendMessage] 会进入 MessageQueue，必须等整个
+     * turn 结束才派发；插话由 GenerationLoop 在下一次模型请求前消费，模型能立刻看到
+     * 新指令并调整方向。
+     *
+     * @return true 已暂存，将在下一个安全点并入；false 当前没有进行中的生成（空闲或
+     * 正在等待工具审批），调用方应保留草稿并提示用户。
+     */
+    fun interjectMessage(conversationId: Uuid, content: List<UIMessagePart>): Boolean {
+        if (content.isEmptyInputMessage()) return false
+        val session = getOrCreateSession(conversationId)
+        // 空闲或只剩待审批工具时没有可插话的回合：交给调用方提示，不静默吞掉输入。
+        if (!session.isGenerating) return false
+        // 同步入队：调用方拿到 true 时消息一定已经在队列里，不会出现
+        // “返回成功但异步入队失败、草稿已清空”的窗口。
+        val settings = settingsStore.settingsFlow.value
+        val conversation = session.state.value
+        val assistant = AssistantResolver.forConversation(
+            assistants = settings.assistants,
+            conversationAssistantId = conversation.assistantId,
+            currentAssistantId = settings.assistantId,
+        ).assistant
+        val parts = try {
+            preprocessUserInputParts(content, assistant)
+        } catch (e: Exception) {
+            // 预处理（正则替换等）失败：返回 false 让调用方保留草稿。
+            Log.w(TAG, "interjectMessage preprocess failed", e)
+            addError(
+                error = e,
+                conversationId = conversationId,
+                title = context.getString(R.string.error_title_send_message),
+            )
+            return false
+        }
+        ConversationSteers.push(
+            conversationId = conversationId,
+            message = UIMessage(role = MessageRole.USER, parts = parts),
+        )
+        return true
+    }
+
     /** Enqueue immediately; the result belongs to this item even after edits or later turns. */
     fun enqueueVoiceMessage(conversationId: Uuid, text: String): Deferred<String?> {
         val session = getOrCreateSession(conversationId)
@@ -1849,6 +1892,12 @@ class ChatService(
                 onBeforeModelRequest = {
                     awaitForegroundWorkReady()
                 },
+                // 插话：生成期间由 ChatInput 直接投递到 ConversationSteers。
+                // hasPendingSteer 在每收到一个 chunk 时检查，用于提前结束当前 step；
+                // drainSteerMessages 只在真正要发起下一次模型请求前调用（见 GenerationLoop），
+                // 避免在工具恢复路径上把待执行的工具挤掉。
+                hasPendingSteer = { ConversationSteers.pendingCount(conversationId) > 0 },
+                drainSteerMessages = { ConversationSteers.drain(conversationId) },
                 messages = messagesForGeneration,
                 assistant = assistant,
                 conversationId = conversationId,
@@ -2000,6 +2049,16 @@ class ChatService(
                 }.let { me.rerere.rikkahub.subagent.SubAgentSurface.apply(conversationId, it) },
                 continuationFromPartial = continuationFromPartial,
             ).onCompletion { completionCause ->
+                // 本轮结束时仍有未消费的插话（通常是最后一个 chunk 之后才到）：
+                // 正常结束就转成普通排队消息，onGenerationFinished 会自动派发，不丢输入；
+                // 被取消（用户停止 / 任务被替换）则丢弃，与 stopGeneration 的语义一致。
+                if (completionCause == null) {
+                    ConversationSteers.drain(conversationId).forEach { leftover ->
+                        getOrCreateSession(conversationId).messageQueue.enqueue(leftover.parts)
+                    }
+                } else {
+                    ConversationSteers.clear(conversationId)
+                }
                 // 取消 Live Update 通知
                 cancelLiveUpdateNotification(conversationId)
 
@@ -3905,6 +3964,8 @@ class ChatService(
 
     // 停止当前会话生成任务（不清理会话缓存）
     suspend fun stopGeneration(conversationId: Uuid) {
+        // 用户主动停止：未消费的插话一并丢弃，避免下一轮突然冒出来。
+        ConversationSteers.clear(conversationId)
         // Cancel BEFORE the mutex so the cancelled coroutines can drain their own writes
         // (which may try to acquire the same mutex via their save path). Also pause the
         // message queue so nothing auto-dispatches into the conversation we're stopping.

@@ -302,6 +302,17 @@ class ChatVM(
         chatService.sendMessage(_conversationId, content, answer)
     }
 
+    /**
+     * 生成中插话：并入当前回合的下一次模型请求。
+     *
+     * @return true 已暂存；false 当前没有进行中的生成，调用方保留草稿并提示。
+     */
+    fun interjectMessage(content: List<UIMessagePart>): Boolean {
+        if (content.isEmptyInputMessage()) return false
+
+        return chatService.interjectMessage(_conversationId, content)
+    }
+
     fun handleMessageEdit(parts: List<UIMessagePart>, messageId: Uuid) {
         if (parts.isEmptyInputMessage()) return
 

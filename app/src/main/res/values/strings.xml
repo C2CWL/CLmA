@@ -3107,4 +3107,5 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="floating_ball_capsule_status_working_timer">Replying · %1$s</string>
   <string name="floating_ball_capsule_status_done">Done · %1$s</string>
   <string name="floating_ball_capsule_hide">Hide to edge</string>
+  <string name="chat_interject_unavailable">Generation already finished — send it as a normal message</string>
 </resources>
