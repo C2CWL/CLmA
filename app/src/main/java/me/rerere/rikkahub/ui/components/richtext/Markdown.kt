@@ -85,10 +85,12 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
 import androidx.core.net.toUri
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -236,6 +238,7 @@ private fun parseMarkdown(content: String): MarkdownParseResult {
     return MarkdownParseResult(preprocessed, astTree, astTree.containsHtml())
 }
 
+@OptIn(FlowPreview::class)
 @Composable
 fun MarkdownBlock(
     content: String,
@@ -251,6 +254,11 @@ fun MarkdownBlock(
     LaunchedEffect(Unit) {
         snapshotFlow { updatedContent }
             .distinctUntilChanged()
+            // 流式输出每个 token 都会推一次新文本，全量重解析 AST 是这条链路上最贵的
+            // CPU 活（长回复、多对话并行时直接体现为发热与掉帧）。80ms 的窗口把每秒
+            // 几十次解析合并成约 12 次；sample 只在窗口内有新值时才发射，窗口末尾
+            // 发射的也是最新值，所以尾部内容最多晚 80ms 渲染，不会丢字。
+            .sample(80)
             .mapLatest { parseMarkdown(it) }
             .catch { exception -> Log.e(TAG, "MarkdownBlock: failed to parse markdown", exception) }
             .flowOn(Dispatchers.Default)

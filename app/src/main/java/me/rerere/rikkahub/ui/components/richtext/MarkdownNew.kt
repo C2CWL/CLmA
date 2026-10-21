@@ -68,10 +68,12 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
 import androidx.core.graphics.toColorInt
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.sample
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Tick01
 import me.rerere.rikkahub.ui.components.table.DataTable
@@ -124,6 +126,7 @@ private fun generateMarkdownHtml(content: String): String {
 
 // ---- Main composable ----
 
+@OptIn(FlowPreview::class)
 @Composable
 fun MarkdownNew(
     content: String,
@@ -141,6 +144,9 @@ fun MarkdownNew(
     LaunchedEffect(Unit) {
         snapshotFlow { updatedContent }
             .distinctUntilChanged()
+            // 与 MarkdownBlock 同理：流式时把高频的「Markdown → HTML」全量重写合并到
+            // 80ms 一次，尾部值仍然会发射，只是最多晚 80ms 渲染。
+            .sample(80)
             .mapLatest { generateMarkdownHtml(it) }
             .catch { Log.e(TAG, "MarkdownNew: failed to generate markdown HTML", it) }
             .flowOn(Dispatchers.Default)
