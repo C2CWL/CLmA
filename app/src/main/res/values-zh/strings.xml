@@ -102,6 +102,7 @@
   <string name="chat_message_tool_request_secret_hide">隐藏</string>
   <string name="chat_message_tool_request_secret_store">安全保存</string>
   <string name="chat_message_tool_request_secret_stored">已保存为 %1$s（不显示明文）</string>
+  <string name="chat_message_tool_request_secret_overwrite">将覆盖现有值</string>
   <string name="assistant_page_local_tools_clipboard_desc">读取或写入设备剪贴板中的纯文本</string>
   <string name="assistant_page_local_tools_clipboard_title">剪贴板</string>
   <string name="assistant_page_local_tools_javascript_engine_desc">使用 QuickJS 引擎执行 JavaScript 代码，进行计算和脚本处理</string>
@@ -2707,6 +2708,19 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <!-- P2-32 ssh hosts page -->
   <string name="setting_page_ssh">SSH 主机</string>
   <string name="setting_page_ssh_desc">管理已保存的主机，供 ssh_exec_saved、ssh_upload、ssh_download 按名称使用。</string>
+  <string name="setting_page_secrets">安全密钥库</string>
+  <string name="setting_page_secrets_desc">request_secret / password_secret 背后的本机密钥库，密钥值不会离开本机。</string>
+  <string name="setting_secrets_page_title">安全密钥库</string>
+  <string name="setting_secrets_page_list">库内条目</string>
+  <string name="setting_secrets_page_empty">还没有保存的密钥</string>
+  <string name="setting_secrets_page_empty_hint">密钥通过对话中的安全输入卡片（request_secret）添加。</string>
+  <string name="setting_secrets_page_value_hidden">值已隐藏 — 仅加密保存在本机</string>
+  <string name="setting_secrets_page_delete">删除</string>
+  <string name="setting_secrets_page_deleted">已删除密钥</string>
+  <string name="setting_secrets_page_delete_confirm_title">删除「%1$s」？</string>
+  <string name="setting_secrets_page_delete_confirm_body">该密钥值将从本机移除。引用它的工具会失败，直到你重新输入。</string>
+  <string name="setting_secrets_page_about_title">工作原理</string>
+  <string name="setting_secrets_page_about_body">密钥使用 Android Keystore 加密，不会出现在对话历史中，也不会离开设备。助手通过名称引用（password_secret / stdin_secret 等），执行时在本机解析。</string>
   <string name="setting_ssh_page_title">SSH 主机</string>
   <string name="setting_ssh_page_hosts">已保存主机</string>
   <string name="setting_ssh_page_empty">还没有保存的主机</string>
