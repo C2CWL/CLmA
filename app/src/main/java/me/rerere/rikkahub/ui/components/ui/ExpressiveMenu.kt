@@ -32,15 +32,17 @@ data class AppMenuEntry(
 )
 
 /**
- * App-wide popup menu. Follows [PopupMenuStyle]:
+ * App-wide popup menu, grouped variant. Follows [PopupMenuStyle]:
  * - [PopupMenuStyle.EXPRESSIVE]: M3 Expressive popup + grouped item shapes (spring scale).
  * - [PopupMenuStyle.CLASSIC]: stock [DropdownMenu].
  *
- * [groups] is a list of sections; empty groups are skipped. Pass a single list for a
- * flat menu.
+ * [groups] is a list of sections; empty groups are skipped.
+ *
+ * Named `AppGroupedDropdownMenu` (not an overload of [AppDropdownMenu]) because
+ * `List<List<AppMenuEntry>>` and `List<AppMenuEntry>` erase to the same JVM signature.
  */
 @Composable
-fun AppDropdownMenu(
+fun AppGroupedDropdownMenu(
     expanded: Boolean,
     onDismissRequest: () -> Unit,
     groups: List<List<AppMenuEntry>>,
@@ -73,7 +75,7 @@ fun AppDropdownMenu(
     items: List<AppMenuEntry>,
     modifier: Modifier = Modifier,
 ) {
-    AppDropdownMenu(
+    AppGroupedDropdownMenu(
         expanded = expanded,
         onDismissRequest = onDismissRequest,
         groups = listOf(items),
