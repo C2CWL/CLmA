@@ -247,9 +247,8 @@ fun settingsSearchIndex(
     nested(speechParent, Screen.SettingSpeech, models, R.string.setting_display_page_tts_only_read_quoted_title, R.string.setting_display_page_tts_only_read_quoted_desc)
     nested(speechParent, Screen.SettingSpeech, models, R.string.setting_display_page_tts_read_outside_brackets_title, R.string.setting_display_page_tts_read_outside_brackets_desc)
 
-    val ballParent = R.string.setting_floating_ball_page_title
-    nested(ballParent, Screen.SettingFloatingBall, device, R.string.setting_floating_ball_idle_title, R.string.setting_floating_ball_idle_desc)
-    nested(ballParent, Screen.SettingFloatingBall, device, R.string.setting_floating_ball_alpha_title, R.string.setting_floating_ball_alpha_desc)
+    val edgeBarParent = R.string.setting_floating_ball_page_title
+    nested(edgeBarParent, Screen.SettingFloatingBall, device, R.string.setting_floating_ball_color_title, R.string.setting_floating_ball_preview_desc)
 
     if (developerMode) {
         entries += SettingsSearchEntry(
