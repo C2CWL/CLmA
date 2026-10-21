@@ -1,6 +1,7 @@
 package me.rerere.rikkahub.data.ai
 
 import me.rerere.common.android.LogEntry
+import me.rerere.common.android.LogLevel
 import me.rerere.common.android.Logging
 import okhttp3.Interceptor
 import okhttp3.Response
@@ -8,19 +9,21 @@ import okio.Buffer
 
 class RequestLoggingInterceptor : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
-        if (!Logging.isRequestLoggingEnabled()) {
-            return chain.proceed(chain.request())
-        }
+        // Even with request logging off we still capture the request when it fails: the whole
+        // point of opening the Logs screen is usually "this call broke", and a silent switch
+        // means the evidence is gone by the time the user looks.
+        val loggingEnabled = Logging.isRequestLoggingEnabled()
 
         val request = chain.request()
         val startTime = System.currentTimeMillis()
 
         val requestHeaders = request.headers.toMap()
-        val requestBody = request.body?.let { body ->
+        // Bodies carry prompts and tool output; only keep them when the user opted in.
+        val requestBody = if (loggingEnabled) request.body?.let { body ->
             val buffer = Buffer()
             body.writeTo(buffer)
             buffer.readUtf8()
-        }
+        } else null
 
         val response: Response
         var error: String? = null
@@ -36,8 +39,10 @@ class RequestLoggingInterceptor : Interceptor {
                     method = request.method,
                     requestHeaders = requestHeaders,
                     requestBody = requestBody,
-                    error = error
-                )
+                    error = error,
+                    level = LogLevel.ERROR,
+                ),
+                force = true,
             )
             throw e
         }
@@ -45,6 +50,7 @@ class RequestLoggingInterceptor : Interceptor {
         val durationMs = System.currentTimeMillis() - startTime
         val responseHeaders = response.headers.toMap()
 
+        val failed = response.code >= 400
         Logging.logRequest(
             LogEntry.RequestLog(
                 tag = "HTTP",
@@ -55,8 +61,10 @@ class RequestLoggingInterceptor : Interceptor {
                 responseCode = response.code,
                 responseHeaders = responseHeaders,
                 durationMs = durationMs,
-                error = error
-            )
+                error = error,
+                level = if (failed) LogLevel.ERROR else LogLevel.INFO,
+            ),
+            force = failed,
         )
 
         return response
@@ -64,7 +72,11 @@ class RequestLoggingInterceptor : Interceptor {
 
     private fun okhttp3.Headers.toMap(): Map<String, String> {
         return names().associateWith { name ->
-            if (name.equals("Proxy-Authorization", ignoreCase = true)) {
+            if (name.equals("Proxy-Authorization", ignoreCase = true) ||
+                name.equals("Authorization", ignoreCase = true) ||
+                name.equals("x-api-key", ignoreCase = true) ||
+                name.equals("api-key", ignoreCase = true)
+            ) {
                 "██"
             } else {
                 get(name) ?: ""
