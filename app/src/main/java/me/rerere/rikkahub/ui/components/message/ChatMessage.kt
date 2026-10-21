@@ -240,10 +240,13 @@ fun ChatMessage(
 
         // 被插话打断的前半保持 finishedAt == null：它“话还没说完”，不出操作栏，
         // 避免在同一个回合中间出现“这条回复已结束”的视觉断裂。
+        // 用户消息的 finishedAt 恒为 null（发出时不写），不能按同一条件隐藏，
+        // 否则历史里的用户消息会丢整条操作栏（复制/重生成/编辑）。
         val showActions = if (lastMessage) {
             !loading
         } else {
-            message.parts.isEmptyUIMessage().not() && message.finishedAt != null
+            message.parts.isEmptyUIMessage().not() &&
+                (message.role == MessageRole.USER || message.finishedAt != null)
         }
 
         AnimatedVisibility(
@@ -268,6 +271,16 @@ fun ChatMessage(
                     hazeState = hazeState,
                 )
             }
+        }
+
+        // 时间戳独立于操作栏渲染：操作栏隐藏时（插话打断的前半、流式中）也能显示。
+        // 空消息（流式首 token 之前）不显示。
+        if (message.parts.isEmptyUIMessage().not()) {
+            ChatMessageTimestamp(
+                message = actionMessage,
+                photoShown = photoShown,
+                hazeState = hazeState,
+            )
         }
 
         EditedFilesList(
