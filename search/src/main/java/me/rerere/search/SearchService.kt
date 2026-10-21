@@ -310,13 +310,6 @@ sealed class SearchServiceOptions {
         val summary: Boolean = true,
     ) : SearchServiceOptions()
 
-    @Serializable
-    @SerialName("rikkahub")
-    data class RikkaHubOptions(
-        override val id: Uuid = Uuid.random(),
-        val apiKey: String = "",
-        val depth: String = "standard",
-    ) : SearchServiceOptions()
 
     @Serializable
     @SerialName("grok")
