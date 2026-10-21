@@ -29,9 +29,12 @@ fun rikkaGlassStyle(
     containerShape: RoundedCornerShape,
     blurRadius: Dp = 20.dp,
     depth: Float = 0.5f,
-    // Scales the glass's own tint, 1 = the recipe above. 0 keeps the blur and the rim but
-    // leaves the backdrop untinted, which is how the clean layout's opacity slider reaches
-    // "fully clear". Everything else passes the default and is unchanged.
+    // Strength of the whole material, 1 = the recipe above, 0 = nothing but the backdrop.
+    //
+    // It used to scale the tint alone, which is why the clean layout's opacity slider looked
+    // dead: at 0% the tint went away but a 12dp blur, its refraction and its specular rim stayed,
+    // so the panel still read as a frosted slab. Everything that draws now scales with it.
+    // Every other caller passes the default and is unchanged.
     tintStrength: Float = 1f,
 ): GlassStyle {
     val base = MaterialTheme.colorScheme.surfaceContainer
@@ -43,21 +46,23 @@ fun rikkaGlassStyle(
     ) {
         optics(
             GlassDefaults.optics.copy(
-                blurRadius = OpticalSizeValue.Fixed(blurRadius),
+                // Blur, refraction and dispersion are part of the material's opacity: leaving them
+                // at full size is what made a 0% panel still look frosted.
+                blurRadius = OpticalSizeValue.Fixed(blurRadius * strength),
                 depth = OpticalSizeValue.Fixed(depth),
-                refractionStrength = 0.65f,
+                refractionStrength = 0.65f * strength,
                 refractionHeightFraction = 0.22f,
-                refractionDisplacement = 18.dp,
-                refractionDetailIntensity = 0.60f,
+                refractionDisplacement = 18.dp * strength,
+                refractionDetailIntensity = 0.60f * strength,
                 refractionFoldStrength = 0f,
                 refractionProfile = RefractionProfile.Surface,
             )
         )
         surfaceProfile(SurfaceProfile.Squircle)
-        specularIntensity(0.48f)
+        specularIntensity(0.48f * strength)
         specularExponent(32f)
-        chromaticAberrationStrength(0.16f)
-        edgeShadow(Color.Black.copy(alpha = 0.08f))
+        chromaticAberrationStrength(0.16f * strength)
+        edgeShadow(Color.Black.copy(alpha = 0.08f * strength))
         // Haze starts every glass style from its built-in light or dark response, picked from the
         // *system* night mode (LocalConfiguration.uiMode). Overwrite those values from the app theme,
         // otherwise a light app on a dark phone gets greyed-out glass (and the reverse).

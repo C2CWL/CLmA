@@ -1219,7 +1219,7 @@ data class DisplaySetting(
     val cleanLayoutBottomOpacity: Float = 1f,
     // 简洁布局顶栏高度（dp）。默认 48，比 TopAppBar 的 64 矮一截；下限 40 保住两行文字，上限 72。
     val cleanLayoutTopHeight: Float = 48f,
-    // 简洁布局输入框上下内边距（dp）。默认 6，比原来的 8 矮一点；下限 4 不贴边，上限 10。
+    // 简洁布局输入框上下内边距（dp）。默认 6；0..24 由 CleanPanel 的常量给出，见那边的说明。
     val cleanLayoutBottomPadding: Float = 6f,
     // 抽屉上下功能区：开 = 没有底板，控件直接落在磨砂抽屉上，身份行/入口/文件夹/底部动作
     // 各自是小胶囊，列表在控件所在的那一段渐隐；关 = 原来的上下两张浮岛卡片。默认开。

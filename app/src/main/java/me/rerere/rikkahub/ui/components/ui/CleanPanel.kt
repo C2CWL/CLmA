@@ -25,6 +25,16 @@ internal fun cleanHeaderShape(): RoundedCornerShape = RoundedCornerShape(
 internal fun cleanPanelAlpha(opacity: Float): Float = opacity.coerceIn(0f, 1f)
 
 /**
+ * Range of the composer's vertical inset (DisplaySetting.cleanLayoutBottomPadding), in dp.
+ *
+ * The card is dominated by the field's own 56dp height, so the old 4..10 window could move it by
+ * 12dp at most and 4dp away from the default 6dp was invisible - the slider read as dead. 0..24
+ * still keeps the text off the card's edge at the low end and can visibly shorten or grow the box.
+ */
+internal const val CleanInputPaddingMinDp = 0f
+internal const val CleanInputPaddingMaxDp = 24f
+
+/**
  * Fill of a panel in the flat (non-glass) material.
  *
  * [opacity] is the user's panel strength: 0 = fully clear, 1 = a solid card. The base is the
