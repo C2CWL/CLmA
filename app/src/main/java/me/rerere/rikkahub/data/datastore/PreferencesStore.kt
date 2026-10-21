@@ -188,6 +188,7 @@ class SettingsStore(
         val FAST_MODEL_REASONING_LEVEL = stringPreferencesKey("fast_model_reasoning_level")
         val TRANSLATE_MODEL = stringPreferencesKey("translate_model")
         val ENABLE_SUGGESTION = booleanPreferencesKey("enable_suggestion")
+        val ERROR_CARD_AUTO_DISMISS = booleanPreferencesKey("error_card_auto_dismiss")
         val IMAGE_GENERATION_MODEL = stringPreferencesKey("image_generation_model")
         val VIDEO_GENERATION_MODEL = stringPreferencesKey("video_generation_model")
         val TITLE_PROMPT = stringPreferencesKey("title_prompt")
@@ -316,6 +317,7 @@ class SettingsStore(
                 preferences[FAST_MODEL_REASONING_LEVEL] = settings.fastModelReasoningLevel.name
                 preferences[TRANSLATE_MODEL] = settings.translateModeId.toString()
                 preferences[ENABLE_SUGGESTION] = settings.enableSuggestion
+                preferences[ERROR_CARD_AUTO_DISMISS] = settings.errorCardAutoDismiss
                 preferences[IMAGE_GENERATION_MODEL] = settings.imageGenerationModelId.toString()
                 preferences[VIDEO_GENERATION_MODEL] = settings.videoGenerationModelId.toString()
                 preferences[TITLE_PROMPT] = settings.titlePrompt
@@ -437,6 +439,7 @@ class SettingsStore(
                 translateModeId = preferences[TRANSLATE_MODEL]?.let { runCatching { Uuid.parse(it) }.getOrNull() }
                     ?: DEFAULT_AUTO_MODEL_ID,
                 enableSuggestion = preferences[ENABLE_SUGGESTION] != false,
+                errorCardAutoDismiss = preferences[ERROR_CARD_AUTO_DISMISS] == true,
                 imageGenerationModelId = preferences[IMAGE_GENERATION_MODEL]?.let { runCatching { Uuid.parse(it) }.getOrNull() } ?: Uuid.random(),
                 videoGenerationModelId = preferences[VIDEO_GENERATION_MODEL]?.let { runCatching { Uuid.parse(it) }.getOrNull() } ?: Uuid.random(),
                 titlePrompt = preferences[TITLE_PROMPT] ?: DEFAULT_TITLE_PROMPT,
@@ -1128,6 +1131,11 @@ data class Settings(
     /** Round ball only: slim edge handle (default, as before) or the ball half off-screen. */
     val floatingBallTuckStyle: FloatingBallTuckStyle = FloatingBallTuckStyle.HANDLE,
     val aiLogLevel: AiLogLevel = AiLogLevel.INFO,
+    /**
+     * Hide error cards after 5 seconds. Off by default: the card carries the explanation a
+     * non-technical user needs, and 5s is not enough to read it.
+     */
+    val errorCardAutoDismiss: Boolean = false,
     val backupReminderConfig: BackupReminderConfig = BackupReminderConfig(),
     val launchCount: Int = 0,
 ) {
