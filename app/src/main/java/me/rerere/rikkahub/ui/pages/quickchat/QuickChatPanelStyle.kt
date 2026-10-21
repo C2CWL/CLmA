@@ -47,28 +47,40 @@ private const val PANEL_ALPHA_BLURRED_LIGHT = 0.78f
  */
 private const val PANEL_ALPHA_OPAQUE = 0.95f
 
+/**
+ * @param capsule When true (floating-ball capsule style), use the denser glass recipe that
+ *   pairs with the status capsule — slightly clearer hairlines and a more raised input so the
+ *   panel does not read as the same frosted slab the original ball opens.
+ */
 @Composable
-internal fun rememberQuickChatPanelStyle(blurredBackdrop: Boolean): QuickChatPanelStyle {
+internal fun rememberQuickChatPanelStyle(
+    blurredBackdrop: Boolean,
+    capsule: Boolean = false,
+): QuickChatPanelStyle {
     val dark = LocalDarkMode.current
     val scheme = MaterialTheme.colorScheme
     val panelAlpha = when {
-        !blurredBackdrop -> PANEL_ALPHA_OPAQUE
-        dark -> PANEL_ALPHA_BLURRED_DARK
-        else -> PANEL_ALPHA_BLURRED_LIGHT
+        !blurredBackdrop -> if (capsule) 0.97f else PANEL_ALPHA_OPAQUE
+        dark -> if (capsule) 0.78f else PANEL_ALPHA_BLURRED_DARK
+        else -> if (capsule) 0.84f else PANEL_ALPHA_BLURRED_LIGHT
     }
     return if (dark) {
         QuickChatPanelStyle(
             panel = scheme.surface.copy(alpha = panelAlpha),
-            hairline = Color.White.copy(alpha = 0.12f),
-            button = Color.White.copy(alpha = 0.08f),
-            input = Color.White.copy(alpha = 0.07f),
+            hairline = Color.White.copy(alpha = if (capsule) 0.16f else 0.12f),
+            button = Color.White.copy(alpha = if (capsule) 0.10f else 0.08f),
+            input = Color.White.copy(alpha = if (capsule) 0.10f else 0.07f),
         )
     } else {
         QuickChatPanelStyle(
             panel = scheme.surface.copy(alpha = panelAlpha),
-            hairline = scheme.onSurface.copy(alpha = 0.10f),
-            button = scheme.onSurface.copy(alpha = 0.05f),
-            input = scheme.surfaceContainerLowest.copy(alpha = 0.72f),
+            hairline = scheme.onSurface.copy(alpha = if (capsule) 0.12f else 0.10f),
+            button = scheme.onSurface.copy(alpha = if (capsule) 0.06f else 0.05f),
+            input = if (capsule) {
+                scheme.surfaceContainerLowest.copy(alpha = 0.88f)
+            } else {
+                scheme.surfaceContainerLowest.copy(alpha = 0.72f)
+            },
         )
     }
 }

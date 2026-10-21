@@ -61,6 +61,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -93,6 +94,7 @@ import me.rerere.hugeicons.stroke.VolumeHigh
 import me.rerere.hugeicons.stroke.Wrench01
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.RouteActivity
+import me.rerere.rikkahub.data.datastore.FloatingBallStyle
 import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.datastore.getAssistantById
 import me.rerere.rikkahub.data.datastore.getSelectedASRProvider
@@ -135,6 +137,9 @@ private const val PANEL_SCALE_FROM = 0.86f
 
 /** Corner radius of the panel itself — soft enough to read as a floating pane, not a card. */
 private val PANEL_SHAPE = RoundedCornerShape(28.dp)
+
+/** Capsule-ball companion panel: a touch tighter radius so it pairs with the status bar. */
+private val CAPSULE_PANEL_SHAPE = RoundedCornerShape(22.dp)
 
 // Panel tint/alpha per theme and the round button chrome live in QuickChatPanelStyle.kt.
 
@@ -326,13 +331,18 @@ fun QuickChatPanel(
     }
 
     // --- controls ---------------------------------------------------------------------------
+    // Capsule floating-ball style locks in the modern chrome (no separate QuickChat theme picker):
+    // slimmer header, send-inside input, soft assistant bubbles. Original ball keeps the classic
+    // round-button cluster so the two styles stay visually distinct.
+    val capsuleChrome = settings.floatingBallStyle == FloatingBallStyle.CAPSULE
     // Every control is its own lambda and mirroring is an explicit re-order of whole clusters
     // (never an RTL layout direction, which would also right-align the text field). A ball parked
     // on the left edge therefore puts the header buttons, the composer's mic/send and the two
     // shortcut icons all on the left; a right-edge ball mirrors the lot.
-    val controlSize = 40.dp
-    val panelStyle = rememberQuickChatPanelStyle(blurredBackdrop)
-    val controlIcon = 20.dp
+    val controlSize = if (capsuleChrome) 36.dp else 40.dp
+    val panelStyle = rememberQuickChatPanelStyle(blurredBackdrop, capsule = capsuleChrome)
+    val panelShape = if (capsuleChrome) CAPSULE_PANEL_SHAPE else PANEL_SHAPE
+    val controlIcon = if (capsuleChrome) 18.dp else 20.dp
     val newButton: @Composable () -> Unit = {
         PanelRoundButton(
             style = panelStyle,
@@ -515,8 +525,8 @@ fun QuickChatPanel(
                 // Lift the panel off the app behind it. A soft shadow does that on its own, so the
                 // surface itself can stay translucent and let the (blurred) backdrop through.
                 .shadow(
-                    elevation = 24.dp,
-                    shape = PANEL_SHAPE,
+                    elevation = if (capsuleChrome) 20.dp else 24.dp,
+                    shape = panelShape,
                     clip = false,
                     ambientColor = Color.Black.copy(alpha = 0.22f),
                     spotColor = Color.Black.copy(alpha = 0.28f),
@@ -537,7 +547,7 @@ fun QuickChatPanel(
                     indication = null,
                     onClick = {},
                 ),
-            shape = PANEL_SHAPE,
+            shape = panelShape,
             // Translucent on purpose: QuickChatActivity's window requests a background blur, so
             // what shows through here is a softened copy of the app underneath — the panel reads
             // as a pane of frosted glass hovering over it instead of an opaque slab of colour.
@@ -545,17 +555,19 @@ fun QuickChatPanel(
             border = BorderStroke(width = 1.dp, color = panelStyle.hairline),
             tonalElevation = 0.dp,
         ) {
+            val assistant = settings.getAssistantById(conversation.assistantId)
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(
-                        start = 12.dp,
-                        end = 12.dp,
-                        top = topInset + 8.dp,
-                        bottom = 8.dp,
+                        start = if (capsuleChrome) 14.dp else 12.dp,
+                        end = if (capsuleChrome) 14.dp else 12.dp,
+                        top = topInset + if (capsuleChrome) 10.dp else 8.dp,
+                        bottom = if (capsuleChrome) 10.dp else 8.dp,
                     ),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(if (capsuleChrome) 8.dp else 6.dp),
             ) {
+                // ---- Header ----
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -565,34 +577,41 @@ fun QuickChatPanel(
                         openFullButton()
                         newButton()
                     }
-                    val assistant = settings.getAssistantById(conversation.assistantId)
                     if (assistant != null) {
                         AssistantAvatar(
                             assistant = assistant,
-                            modifier = Modifier.size(30.dp),
+                            modifier = Modifier.size(if (capsuleChrome) 26.dp else 30.dp),
                         )
-                        Spacer(Modifier.width(8.dp))
+                        Spacer(Modifier.width(if (capsuleChrome) 10.dp else 8.dp))
                     }
-                    Column(modifier = Modifier.weight(1f)) {
+                    if (capsuleChrome) {
+                        // Single-line identity: the capsule already shows status outside; the
+                        // panel header only needs who you are talking to.
                         Text(
-                            // The assistant leads the header — never an uploaded avatar on its own
-                            // (AssistantAvatar falls back to its model's brand icon) — with the
-                            // conversation title dropping to a quieter second line, so a glance
-                            // tells you who you are talking to.
                             text = assistant?.name?.ifBlank { null } ?: fallbackTitle,
                             style = MaterialTheme.typography.titleSmall,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f),
                         )
-                        val subtitle = conversation.title.ifBlank { null }
-                        if (subtitle != null) {
+                    } else {
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = subtitle,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                text = assistant?.name?.ifBlank { null } ?: fallbackTitle,
+                                style = MaterialTheme.typography.titleSmall,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
+                            val subtitle = conversation.title.ifBlank { null }
+                            if (subtitle != null) {
+                                Text(
+                                    text = subtitle,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
                         }
                     }
                     if (!mirror) {
@@ -601,30 +620,40 @@ fun QuickChatPanel(
                         closeButton()
                     }
                 }
-                HorizontalDivider(thickness = 1.dp, color = panelStyle.hairline)
+                if (!capsuleChrome) {
+                    HorizontalDivider(thickness = 1.dp, color = panelStyle.hairline)
+                }
 
+                // ---- Messages ----
                 LazyColumn(
                     state = listState,
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(if (capsuleChrome) 12.dp else 10.dp),
                 ) {
                     if (messages.isEmpty()) {
                         item {
-                            Text(
-                                text = stringResource(R.string.quick_chat_empty),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 24.dp),
-                            )
+                            if (capsuleChrome) {
+                                CapsuleEmptyState(
+                                    onTakeover = { submit(screenPrompt, closeAfterSend = true) },
+                                    style = panelStyle,
+                                )
+                            } else {
+                                Text(
+                                    text = stringResource(R.string.quick_chat_empty),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 24.dp),
+                                )
+                            }
                         }
                     }
                     items(messages, key = { it.id.toString() }) { message ->
-                        MessageBlock(message, bubbleMaxWidth)
+                        MessageBlock(message, bubbleMaxWidth, modern = capsuleChrome)
                     }
                 }
 
@@ -634,33 +663,61 @@ fun QuickChatPanel(
                     StatusRow(text = processingStatus.orEmpty())
                 }
 
-                // One composer row carries everything: the two shortcuts and mic/send sit in a
-                // tight cluster on the ball's side of the capsule, so the panel no longer spends a
-                // whole 40dp band on two full-width buttons.
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.Bottom,
-                    horizontalArrangement = Arrangement.spacedBy(2.dp),
-                ) {
-                    if (mirror) {
-                        screenButton()
-                        readAloudButton()
-                        voiceButton()
-                        sendButton()
-                    }
-                    InputCapsule(
+                // ---- Composer ----
+                if (capsuleChrome) {
+                    // Modern: input owns the row; send/stop lives inside it; mic on the leading
+                    // edge. TTS + screen takeover sit as quiet text chips underneath so the
+                    // thumb row is not a pile of four equal circles.
+                    CapsuleInputRow(
                         value = input,
                         onValueChange = { input = it },
                         onSend = { submit(input, false) },
+                        onStop = { scope.launch { chatService.stopGeneration(conversationId) } },
+                        onVoice = { if (asr.isRecording) asrState.stop() else startVoice() },
+                        isRecording = asr.isRecording,
+                        isGenerating = isGenerating,
+                        canSend = input.isNotBlank(),
                         hint = stringResource(R.string.quick_chat_input_hint),
                         style = panelStyle,
-                        modifier = Modifier.weight(1f),
+                        mirror = mirror,
+                        modifier = Modifier.fillMaxWidth(),
                     )
-                    if (!mirror) {
-                        sendButton()
-                        voiceButton()
-                        readAloudButton()
-                        screenButton()
+                    CapsuleActionChips(
+                        onReadAloud = { toggleReadAloud() },
+                        onTakeover = { submit(screenPrompt, closeAfterSend = true) },
+                        ttsSpeaking = ttsSpeaking,
+                        readEnabled = ttsSpeaking || latestAssistantText.isNotBlank(),
+                        style = panelStyle,
+                        mirror = mirror,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                } else {
+                    // Classic: two shortcuts and mic/send sit in a tight cluster on the ball's side.
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.Bottom,
+                        horizontalArrangement = Arrangement.spacedBy(2.dp),
+                    ) {
+                        if (mirror) {
+                            screenButton()
+                            readAloudButton()
+                            voiceButton()
+                            sendButton()
+                        }
+                        InputCapsule(
+                            value = input,
+                            onValueChange = { input = it },
+                            onSend = { submit(input, false) },
+                            hint = stringResource(R.string.quick_chat_input_hint),
+                            style = panelStyle,
+                            modifier = Modifier.weight(1f),
+                        )
+                        if (!mirror) {
+                            sendButton()
+                            voiceButton()
+                            readAloudButton()
+                            screenButton()
+                        }
                     }
                 }
             }
@@ -743,7 +800,7 @@ private fun InputCapsule(
  * themselves in a one-line pop-up.
  */
 @Composable
-private fun MessageBlock(message: UIMessage, bubbleMaxWidth: Dp) {
+private fun MessageBlock(message: UIMessage, bubbleMaxWidth: Dp, modern: Boolean = false) {
     val isUser = message.role == MessageRole.USER
     val foldProcessNarration = LocalSettings.current.displaySetting.foldProcessNarration
     // Key on the parts list itself: a key of `size + last-part hash` misses in-place edits to any
@@ -754,7 +811,7 @@ private fun MessageBlock(message: UIMessage, bubbleMaxWidth: Dp) {
     }
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(if (modern) 8.dp else 6.dp),
         horizontalAlignment = if (isUser) Alignment.End else Alignment.Start,
     ) {
         blocks.forEach { block ->
@@ -765,7 +822,11 @@ private fun MessageBlock(message: UIMessage, bubbleMaxWidth: Dp) {
                     is UIMessagePart.Text -> {
                         val text = part.text.trim()
                         if (text.isNotEmpty()) {
-                            if (isUser) UserBubble(text, bubbleMaxWidth) else AssistantText(text)
+                            if (isUser) {
+                                UserBubble(text, bubbleMaxWidth, modern = modern)
+                            } else {
+                                AssistantText(text, modern = modern, maxWidth = bubbleMaxWidth)
+                            }
                         }
                     }
 
@@ -776,35 +837,72 @@ private fun MessageBlock(message: UIMessage, bubbleMaxWidth: Dp) {
     }
 }
 
-/** Assistant prose, rendered as Markdown straight on the panel — no bubble to shrink the width. */
+/**
+ * Assistant prose. Classic chrome lays Markdown straight on the glass; capsule chrome wraps it in
+ * a soft bubble so replies match the user side and do not dissolve into the frosted panel.
+ */
 @Composable
-private fun AssistantText(text: String) {
-    MarkdownBlock(
-        content = text,
-        modifier = Modifier.fillMaxWidth(),
-        style = MaterialTheme.typography.bodyMedium.copy(
-            fontSize = 15.sp,
-            lineHeight = 22.sp,
-        ),
+private fun AssistantText(text: String, modern: Boolean = false, maxWidth: Dp = Dp.Unspecified) {
+    val bodyStyle = MaterialTheme.typography.bodyMedium.copy(
+        fontSize = if (modern) 14.5.sp else 15.sp,
+        lineHeight = if (modern) 21.sp else 22.sp,
     )
+    if (!modern) {
+        MarkdownBlock(
+            content = text,
+            modifier = Modifier.fillMaxWidth(),
+            style = bodyStyle,
+        )
+        return
+    }
+    Surface(
+        modifier = if (maxWidth != Dp.Unspecified) Modifier.widthIn(max = maxWidth) else Modifier,
+        shape = RoundedCornerShape(
+            topStart = 6.dp,
+            topEnd = 18.dp,
+            bottomStart = 18.dp,
+            bottomEnd = 18.dp,
+        ),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.92f),
+    ) {
+        MarkdownBlock(
+            content = text,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+            style = bodyStyle,
+        )
+    }
 }
 
 @Composable
-private fun UserBubble(text: String, maxWidth: Dp) {
+private fun UserBubble(text: String, maxWidth: Dp, modern: Boolean = false) {
+    val scheme = MaterialTheme.colorScheme
     Surface(
         // Wrap the content rather than always filling the row: a short message stays a small pill
         // and only a genuinely long one grows to the cap.
         modifier = Modifier.widthIn(max = maxWidth),
-        shape = RoundedCornerShape(18.dp),
-        color = MaterialTheme.colorScheme.primaryContainer,
+        shape = if (modern) {
+            RoundedCornerShape(
+                topStart = 18.dp,
+                topEnd = 6.dp,
+                bottomStart = 18.dp,
+                bottomEnd = 18.dp,
+            )
+        } else {
+            RoundedCornerShape(18.dp)
+        },
+        color = if (modern) scheme.primary else scheme.primaryContainer,
     ) {
         Text(
             text = text,
             style = MaterialTheme.typography.bodyMedium.copy(
-                fontSize = 15.sp,
-                lineHeight = 21.sp,
+                fontSize = if (modern) 14.5.sp else 15.sp,
+                lineHeight = if (modern) 20.sp else 21.sp,
             ),
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp),
+            color = if (modern) scheme.onPrimary else scheme.onPrimaryContainer,
+            modifier = Modifier.padding(
+                horizontal = if (modern) 12.dp else 14.dp,
+                vertical = if (modern) 8.dp else 9.dp,
+            ),
         )
     }
 }
@@ -898,5 +996,262 @@ private fun SegmentChip(label: String) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
         )
+    }
+}
+
+// ---- Capsule chrome (locked to FloatingBallStyle.CAPSULE) ------------------------------------
+
+/** Empty history for the capsule panel: short copy + one takeover chip as the obvious first action. */
+@Composable
+private fun CapsuleEmptyState(
+    onTakeover: () -> Unit,
+    style: QuickChatPanelStyle,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 28.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.quick_chat_empty),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+        Surface(
+            shape = RoundedCornerShape(999.dp),
+            color = style.button,
+            border = BorderStroke(1.dp, style.hairline),
+            modifier = Modifier.clickable(onClick = onTakeover),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+            ) {
+                Icon(
+                    imageVector = HugeIcons.LookTop,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Text(
+                    text = stringResource(R.string.quick_chat_look_screen),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 8.dp),
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Capsule composer: one raised field with mic on the outer edge (toward the ball) and send/stop
+ * on the inner edge — no free-floating circle cluster beside it.
+ *
+ * Ball on the right (`mirror = false`): `[mic][ input ][send]`
+ * Ball on the left  (`mirror = true`):  `[send][ input ][mic]`
+ */
+@Composable
+private fun CapsuleInputRow(
+    value: String,
+    onValueChange: (String) -> Unit,
+    onSend: () -> Unit,
+    onStop: () -> Unit,
+    onVoice: () -> Unit,
+    isRecording: Boolean,
+    isGenerating: Boolean,
+    canSend: Boolean,
+    hint: String,
+    style: QuickChatPanelStyle,
+    mirror: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val scheme = MaterialTheme.colorScheme
+    Surface(
+        modifier = modifier.heightIn(min = 44.dp),
+        shape = RoundedCornerShape(22.dp),
+        color = style.input,
+        border = BorderStroke(1.dp, style.hairline),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.Bottom,
+        ) {
+            val mic: @Composable () -> Unit = {
+                PanelRoundButton(
+                    onClick = onVoice,
+                    style = style,
+                    modifier = Modifier.size(36.dp),
+                ) {
+                    Icon(
+                        imageVector = if (isRecording) HugeIcons.Stop else HugeIcons.Mic01,
+                        contentDescription = stringResource(R.string.quick_chat_voice),
+                        modifier = Modifier.size(18.dp),
+                        tint = if (isRecording) scheme.error else LocalContentColor.current,
+                    )
+                }
+            }
+            val action: @Composable () -> Unit = {
+                if (isGenerating) {
+                    PanelRoundButton(
+                        onClick = onStop,
+                        style = style,
+                        modifier = Modifier.size(36.dp),
+                    ) {
+                        Icon(
+                            imageVector = HugeIcons.Stop,
+                            contentDescription = stringResource(R.string.quick_chat_stop),
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
+                } else {
+                    PanelRoundButton(
+                        onClick = onSend,
+                        style = style,
+                        enabled = canSend,
+                        accent = true,
+                        modifier = Modifier.size(36.dp),
+                    ) {
+                        Icon(
+                            imageVector = HugeIcons.ArrowUp01,
+                            contentDescription = stringResource(R.string.quick_chat_send),
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
+                }
+            }
+            // Outer edge (ball side) gets the mic; inner edge gets send/stop.
+            if (mirror) action() else mic()
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 8.dp, vertical = 8.dp),
+                contentAlignment = Alignment.CenterStart,
+            ) {
+                if (value.isEmpty()) {
+                    Text(
+                        text = hint,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = scheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                BasicTextField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(color = scheme.onSurface),
+                    maxLines = 4,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                    keyboardActions = KeyboardActions(onSend = { if (canSend) onSend() }),
+                )
+            }
+            if (mirror) mic() else action()
+        }
+    }
+}
+
+/** Quiet text chips under the capsule input: read-aloud and agent takeover. */
+@Composable
+private fun CapsuleActionChips(
+    onReadAloud: () -> Unit,
+    onTakeover: () -> Unit,
+    ttsSpeaking: Boolean,
+    readEnabled: Boolean,
+    style: QuickChatPanelStyle,
+    mirror: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val readLabel = stringResource(
+        if (ttsSpeaking) R.string.quick_chat_tts_stop else R.string.quick_chat_tts_read,
+    )
+    val takeoverLabel = stringResource(R.string.quick_chat_look_screen)
+    val readIcon = if (ttsSpeaking) HugeIcons.Stop else HugeIcons.VolumeHigh
+    Row(
+        modifier = modifier,
+        horizontalArrangement = if (mirror) Arrangement.Start else Arrangement.End,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (mirror) {
+            CapsuleTextChip(
+                label = readLabel,
+                icon = readIcon,
+                enabled = readEnabled,
+                onClick = onReadAloud,
+                style = style,
+            )
+            Spacer(Modifier.width(8.dp))
+            CapsuleTextChip(
+                label = takeoverLabel,
+                icon = HugeIcons.LookTop,
+                enabled = true,
+                onClick = onTakeover,
+                style = style,
+                accent = true,
+            )
+        } else {
+            CapsuleTextChip(
+                label = takeoverLabel,
+                icon = HugeIcons.LookTop,
+                enabled = true,
+                onClick = onTakeover,
+                style = style,
+                accent = true,
+            )
+            Spacer(Modifier.width(8.dp))
+            CapsuleTextChip(
+                label = readLabel,
+                icon = readIcon,
+                enabled = readEnabled,
+                onClick = onReadAloud,
+                style = style,
+            )
+        }
+    }
+}
+
+@Composable
+private fun CapsuleTextChip(
+    label: String,
+    icon: ImageVector,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    style: QuickChatPanelStyle,
+    accent: Boolean = false,
+) {
+    val scheme = MaterialTheme.colorScheme
+    val content = when {
+        !enabled -> scheme.onSurface.copy(alpha = 0.38f)
+        accent -> scheme.primary
+        else -> scheme.onSurfaceVariant
+    }
+    Surface(
+        shape = RoundedCornerShape(999.dp),
+        color = style.button,
+        border = BorderStroke(1.dp, style.hairline),
+        modifier = Modifier.clickable(enabled = enabled, onClick = onClick),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(14.dp),
+                tint = content,
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                color = content,
+                maxLines = 1,
+                modifier = Modifier.padding(start = 6.dp),
+            )
+        }
     }
 }
