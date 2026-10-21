@@ -91,6 +91,7 @@ import me.rerere.rikkahub.ui.components.message.ThinkingStep
 import me.rerere.rikkahub.ui.components.message.ChatMessageNarrationStep
 import me.rerere.rikkahub.ui.components.message.ChatMessageServerToolStep
 import me.rerere.rikkahub.ui.components.message.groupMessageParts
+import me.rerere.rikkahub.ui.components.message.CapsuleToolIconSize
 import me.rerere.rikkahub.ui.components.message.stepIcon
 import me.rerere.rikkahub.ui.components.message.stepTitle
 import me.rerere.rikkahub.ui.components.richtext.MarkdownBlock
@@ -777,7 +778,7 @@ private fun ChainOfThoughtScope.ExportedToolStep(
         }
 
         "search_web" -> HugeIcons.Search01
-        // Replaces the plain Earth glyph. Capsule swaps this for Browser via stepIcon.
+        // Capsule mode replaces these via the full capsule icon pack in stepIcon.
         "scrape_web" -> HugeIcons.GlobalSearch
         else -> HugeIcons.Wrench01
     }
@@ -788,7 +789,7 @@ private fun ChainOfThoughtScope.ExportedToolStep(
             Icon(
                 imageVector = toolCallStyle.stepIcon(tool.toolName, classicIcon),
                 contentDescription = null,
-                modifier = Modifier.size(if (capsule) 18.dp else 16.dp),
+                modifier = Modifier.size(if (capsule) CapsuleToolIconSize else 16.dp),
                 tint = if (capsule) {
                     MaterialTheme.colorScheme.primary
                 } else {

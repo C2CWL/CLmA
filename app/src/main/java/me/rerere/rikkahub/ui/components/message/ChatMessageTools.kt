@@ -97,9 +97,13 @@ fun ChainOfThoughtScope.ChatMessageServerToolStep(tool: UIMessagePart.ServerTool
                 DotLoading(size = if (capsule) 12.dp else 10.dp)
             } else {
                 Icon(
-                    imageVector = HugeIcons.Tools,
+                    imageVector = if (capsule) {
+                        capsuleToolIcon(tool.toolName.ifBlank { "server_tool" })
+                    } else {
+                        HugeIcons.Tools
+                    },
                     contentDescription = null,
-                    modifier = Modifier.size(if (capsule) 18.dp else 16.dp),
+                    modifier = Modifier.size(if (capsule) CapsuleToolIconSize else 16.dp),
                     tint = if (capsule) {
                         MaterialTheme.colorScheme.primary
                     } else {
@@ -219,7 +223,7 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
                 Icon(
                     imageVector = toolCallStyle.stepIcon(tool.toolName, renderer.icon(context)),
                     contentDescription = null,
-                    modifier = Modifier.size(if (capsule) 18.dp else 16.dp),
+                    modifier = Modifier.size(if (capsule) CapsuleToolIconSize else 16.dp),
                     tint = if (capsule) {
                         MaterialTheme.colorScheme.primary
                     } else {
@@ -598,7 +602,7 @@ private fun ChainOfThoughtScope.AskUserToolStep(
                 Icon(
                     imageVector = HugeIcons.BubbleChatQuestion,
                     contentDescription = null,
-                    modifier = Modifier.size(if (capsule) 18.dp else 16.dp),
+                    modifier = Modifier.size(if (capsule) CapsuleToolIconSize else 16.dp),
                     tint = if (capsule) {
                         MaterialTheme.colorScheme.primary
                     } else {
@@ -794,9 +798,13 @@ private fun ChainOfThoughtScope.RequestSecretToolStep(
                 DotLoading(size = if (capsule) 12.dp else 10.dp)
             } else {
                 Icon(
-                    imageVector = HugeIcons.Tools,
+                    imageVector = if (capsule) {
+                        capsuleToolIcon(REQUEST_SECRET_TOOL_NAME)
+                    } else {
+                        HugeIcons.Tools
+                    },
                     contentDescription = null,
-                    modifier = Modifier.size(if (capsule) 18.dp else 16.dp),
+                    modifier = Modifier.size(if (capsule) CapsuleToolIconSize else 16.dp),
                     tint = if (capsule) {
                         MaterialTheme.colorScheme.primary
                     } else {
