@@ -99,7 +99,10 @@ private fun rememberReasoningState(reasoning: UIMessagePart.Reasoning): Pair<Rea
         if (loading) {
             if (!state.expandState.expanded && settings.displaySetting.showThinkingContent)
                 state.expandState = ReasoningCardState.Preview
-            scrollState.animateScrollTo(scrollState.maxValue)
+            // 流式期间每个 delta 都调用：用 animateScrollTo 会在每次新 token 到来时取消
+            // 上一个动画协程再起一个新的，动画帧与列表自动跟随滚动抢同一帧的主线程时间。
+            // 直接 scrollTo 一步到位，视觉上没有区别（内容本来就在底部追加）。
+            scrollState.scrollTo(scrollState.maxValue)
         } else {
             if (state.expandState.expanded) {
                 state.expandState = if (settings.displaySetting.autoCloseThinking)
@@ -114,7 +117,9 @@ private fun rememberReasoningState(reasoning: UIMessagePart.Reasoning): Pair<Rea
         if (loading) {
             while (isActive) {
                 state.duration = (reasoning.finishedAt ?: Clock.System.now()) - reasoning.createdAt
-                delay(50)
+                // 这个计时器每 tick 都会重组整个思考卡（标题 + 内容）。50ms 是 20fps 的
+                // 无谓重组，而秒表本身只显示到 0.1s 精度，200ms 已经足够顺滑。
+                delay(200)
             }
         }
     }

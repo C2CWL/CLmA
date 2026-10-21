@@ -418,7 +418,10 @@ private fun MessagePartsBlock(
                             it.tool.approvalState is ToolApprovalState.Pending
                     }
                     ChainOfThought(
-                        modifier = Modifier.animateContentSize(),
+                        // 流式期间思考链每来一个 token 就长一截，animateContentSize 每帧都要
+                        // 重新测量并对高度做插值，和列表自动跟随滚动抢同一帧；生成结束、
+                        // 内容稳定后再恢复动画。
+                        modifier = if (loading) Modifier else Modifier.animateContentSize(),
                         steps = block.steps,
                         collapsedVisibleCount = thinkingStepsCollapsedVisibleCount(
                             setting = settings.displaySetting.thinkingStepsVisibleCount,
