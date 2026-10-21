@@ -121,8 +121,13 @@ fun SettingAboutPage() {
                         )
 
                         Text(
-                            text = "RikkaHub",
+                            text = stringResource(R.string.app_name),
                             style = MaterialTheme.typography.displaySmall,
+                        )
+                        Text(
+                            text = stringResource(R.string.about_page_tagline),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -157,21 +162,21 @@ fun SettingAboutPage() {
                         modifier = Modifier.padding(horizontal = 8.dp),
                     ) {
                         item(
-                            onClick = { context.openUrl("https://github.com/wuyhong715/rikkahub-agent-pure/releases/latest") },
-                            leadingContent = { Icon(HugeIcons.Earth, null) },
-                            supportingContent = { Text("github.com/wuyhong715/rikkahub-agent-pure/releases/latest") },
-                            headlineContent = { Text(stringResource(R.string.about_page_website)) },
-                        )
-                        item(
-                            onClick = { context.openUrl("https://github.com/wuyhong715/rikkahub-agent-pure") },
+                            onClick = { context.openUrl("https://github.com/C2CWL/CLmA") },
                             leadingContent = { Icon(HugeIcons.Github, null) },
-                            supportingContent = { Text("github.com/wuyhong715/rikkahub-agent-pure") },
+                            supportingContent = { Text("github.com/C2CWL/CLmA") },
                             headlineContent = { Text(stringResource(R.string.about_page_github)) },
                         )
                         item(
-                            onClick = { context.openUrl("https://github.com/wuyhong715/rikkahub-agent-pure/blob/master/LICENSE") },
+                            onClick = { context.openUrl("https://github.com/wuyhong715/rikkahub-agent-pure") },
+                            leadingContent = { Icon(HugeIcons.Earth, null) },
+                            supportingContent = { Text(stringResource(R.string.about_page_upstream_url)) },
+                            headlineContent = { Text(stringResource(R.string.about_page_upstream)) },
+                        )
+                        item(
+                            onClick = { context.openUrl("https://github.com/C2CWL/CLmA/blob/main/LICENSE") },
                             leadingContent = { Icon(HugeIcons.File02, null) },
-                            supportingContent = { Text("github.com/wuyhong715/rikkahub-agent-pure/blob/master/LICENSE") },
+                            supportingContent = { Text("AGPL-3.0") },
                             headlineContent = { Text(stringResource(R.string.about_page_license)) },
                         )
                     }

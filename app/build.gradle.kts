@@ -26,11 +26,11 @@ android {
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "excp.rikkahub"
+        applicationId = "com.clma.app"
         minSdk = 26
         targetSdk = 37
-        versionCode = 214
-        versionName = "2.5.5-pure.3"
+        versionCode = 1
+        versionName = "0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -102,16 +102,11 @@ android {
             buildConfigField("String", "VERSION_CODE", "\"${android.defaultConfig.versionCode}\"")
             buildConfigField("String", "UPDATE_API_URL", "\"\"")
         }
-        // Shipping variant for RikkaHub Agent · Pure. Turns on the same
-        // release-grade R8 + (AGP 9) optimized resource shrinking as `release`
-        // — the keep rules live in src/main/keepRules/rikkahub.keep — while
-        // staying on the ".debug" applicationId so devices already running the
-        // debug-signed build upgrade in place. It is built unsigned on purpose:
-        // p2.keystore never leaves the VPS, which re-signs this APK with the
-        // same key as the old debug package, so the on-device signature is
-        // unchanged. Debug builds stay unoptimized for day-to-day iteration.
+        // Shipping variant for CLmA (derived from RikkaHub Agent · Pure).
+        // Same release-grade R8 + resource shrinking as `release`; keep rules
+        // still live in src/main/keepRules/rikkahub.keep. applicationId is
+        // com.clma.app with no suffix so it coexists with upstream packages.
         create("pure") {
-            applicationIdSuffix = ".debug"
             // The library subprojects (:ai, :local-llm, :llama-cpp, …) only
             // publish debug/release variants, so "pure" resolves to their
             // release variant.
