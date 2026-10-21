@@ -11,7 +11,7 @@
     <item name="android:backgroundDimEnabled">false</item>
 </style>
 
-<!-- Bottom quick-chat panel hosted by the floating ball. Translucent so whatever app the
+<!-- Bottom quick-chat panel opened from the edge bar. Translucent so whatever app the
      user is in stays visible behind the panel, no dim, no window animation (the panel does
      its own slide-in in Compose). -->
 <style name="Theme.Rikkahub.QuickChat" parent="Theme.Rikkahub">

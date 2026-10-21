@@ -20,9 +20,9 @@ import android.widget.TextView
  * with FLAG_NOT_TOUCHABLE so it never blocks user gestures. No-ops silently if
  * SYSTEM_ALERT_WINDOW has not been granted — overlay is purely informational.
  *
- * When the floating ball is on screen the pill steps aside: the ball's halo turning grey and a
- * light dot orbiting it *is* the working indicator there (see [FloatingBallService.setWorking]).
- * The pill is the fallback for users who never turned the ball on.
+ * When the edge bar is on screen the pill steps aside: a light sweep gliding through the bar *is*
+ * the working indicator there (see [FloatingBallService.setWorking]). The pill is the fallback
+ * for users who never turned the edge bar on.
  */
 object AgentOverlay {
     private const val TAG = "AgentOverlay"
@@ -38,8 +38,8 @@ object AgentOverlay {
             Log.d(TAG, "show: SYSTEM_ALERT_WINDOW not granted, no-op")
             return
         }
-        // The floating ball carries the signal whenever it is up; only fall back to the pill
-        // (which is what users found abrupt) when there is no ball to animate.
+        // The edge bar carries the signal whenever it is up; only fall back to the pill (which is
+        // what users found abrupt) when there is no bar to animate.
         if (FloatingBallService.isShowing) {
             FloatingBallService.setWorking(app, true)
             return
@@ -49,7 +49,7 @@ object AgentOverlay {
 
     fun hide(context: Context) {
         val app = context.applicationContext
-        // No-op unless the ball is actually up (see setWorking), so this is safe unconditionally.
+        // No-op unless the edge bar is actually up (see setWorking), so this is safe unconditionally.
         FloatingBallService.setWorking(app, false)
         mainHandler.post { hideInternal(app) }
     }
