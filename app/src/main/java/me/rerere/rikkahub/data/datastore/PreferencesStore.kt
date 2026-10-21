@@ -1227,6 +1227,12 @@ data class DisplaySetting(
     val showModelIcon: Boolean = true,
     val showModelName: Boolean = true,
     val showDateTimeInMessage: Boolean = false,
+    /**
+     * When [showDateTimeInMessage] is on: prefer `finishedAt` (completion / interrupt time)
+     * once the reply has ended; while still streaming keep showing `createdAt` (first-token time).
+     * Off restores the old always-`createdAt` behaviour. Default on.
+     */
+    val showMessageEndTime: Boolean = true,
     val showTokenUsage: Boolean = true,
     val showThinkingContent: Boolean = true,
     val autoCloseThinking: Boolean = true,
