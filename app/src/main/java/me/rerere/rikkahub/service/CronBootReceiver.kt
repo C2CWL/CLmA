@@ -62,7 +62,7 @@ class CronBootReceiver : BroadcastReceiver(), KoinComponent {
                     me.rerere.rikkahub.workflow.trigger.WorkflowBootDispatcher.onBoot()
                 }
 
-                // Re-show the floating ball when it was left on. The service is
+                // Re-show the edge bar when it was left on. The service is
                 // START_NOT_STICKY, so a reboot does not bring it back by itself. Allowed from
                 // the background because SYSTEM_ALERT_WINDOW is an FGS-start exemption.
                 runCatching {

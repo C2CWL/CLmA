@@ -1,6 +1,5 @@
 package me.rerere.rikkahub.service
 
-import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.app.ActivityOptions
 import android.app.Notification
@@ -8,11 +7,8 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.content.pm.ServiceInfo
 import android.content.res.Configuration
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.PixelFormat
 import android.graphics.Rect
 import android.os.Build
@@ -22,16 +18,12 @@ import android.os.Looper
 import android.provider.Settings
 import android.util.Log
 import android.view.Gravity
+import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
+import android.view.WindowInsets
 import android.view.WindowManager
-import android.view.animation.AccelerateInterpolator
-import android.view.animation.OvershootInterpolator
-import androidx.compose.material3.ColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.ui.graphics.toArgb
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
@@ -39,42 +31,34 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import me.rerere.rikkahub.FLOATING_BALL_NOTIFICATION_CHANNEL_ID
 import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.datastore.FloatingBallStyle
-import me.rerere.rikkahub.data.datastore.FloatingBallTuckStyle
 import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.datastore.getCurrentAssistant
-import me.rerere.rikkahub.data.model.Avatar
 import me.rerere.rikkahub.ui.hooks.readStringPreference
 import me.rerere.rikkahub.ui.hooks.writeStringPreference
 import me.rerere.rikkahub.ui.pages.quickchat.QuickChatActivity
-import me.rerere.rikkahub.ui.theme.ColorMode
-import me.rerere.rikkahub.ui.theme.findPresetTheme
-import me.rerere.rikkahub.ui.theme.findThemeById
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
-import java.io.File
 import kotlin.math.abs
 
 private const val TAG = "FloatingBallService"
 
 /**
- * Always-available floating ball.
+ * The always-available edge bar (it replaced the floating ball; the class keeps its old name so
+ * the manifest entry, the settings key and every caller stay unchanged).
  *
- * A tiny circular overlay (TYPE_APPLICATION_OVERLAY) that survives across apps so the user can
- * reach the agent without leaving what they are doing:
- *  - tap    → [ORIGINAL] open [QuickChatActivity]; [CAPSULE] bring the main app to the front
- *  - long   → [ORIGINAL] hold-to-talk quick chat; [CAPSULE] open the quick-chat panel (no voice arm)
- *  - drag   → move it; it settles on an edge with side hysteresis and remembers where it was
+ * A slim pill ([EdgeBarView]) in a small TYPE_APPLICATION_OVERLAY window, flush with the left or
+ * right screen edge, that survives across apps:
+ *  - tap                 → open the half-screen [QuickChatActivity], anchored to the bar;
+ *  - long press, drag    → move the bar up / down along its edge (dropped well across the
+ *                          screen it switches edges); the position is saved on release;
+ *  - anything else (a plain swipe) does nothing.
  *
- * While a generation turn runs the ball is also the "agent is working" light: its halo turns grey
- * and a light dot orbits it (see [HaloBallView]). That replaces [AgentOverlay]'s top-of-screen
- * pill whenever the ball is on screen; the pill remains the fallback for users without the ball.
+ * The bar hides while the quick-chat panel is up and shows again when it closes. It is also the
+ * "agent is working" light: [AgentOverlay] hands the signal here whenever the bar is on screen
+ * (see [setWorking]); a reply that finished while the panel was closed turns the bar green until
+ * the panel is opened.
  *
  * Runs as a `specialUse` foreground service so the overlay is not evicted when the app goes to
  * the background. The overlay window itself is what exempts us from Android 14+ background
@@ -90,64 +74,20 @@ class FloatingBallService : Service(), KoinComponent {
         const val ACTION_START = "me.rerere.rikkahub.action.FLOATING_BALL_START"
         const val ACTION_STOP = "me.rerere.rikkahub.action.FLOATING_BALL_STOP"
 
-        /** The quick-chat panel came up / went away: the ball hides while it is on screen. */
+        /** The quick-chat panel came up / went away: the bar hides while it is on screen. */
         const val ACTION_PANEL_OPEN = "me.rerere.rikkahub.action.FLOATING_BALL_PANEL_OPEN"
         const val ACTION_PANEL_CLOSE = "me.rerere.rikkahub.action.FLOATING_BALL_PANEL_CLOSE"
 
-        /** A generation turn started / finished: the ball becomes the "agent is working" light. */
+        /** A generation turn started / finished: the bar becomes the "agent is working" light. */
         const val ACTION_WORKING_ON = "me.rerere.rikkahub.action.FLOATING_BALL_WORKING_ON"
         const val ACTION_WORKING_OFF = "me.rerere.rikkahub.action.FLOATING_BALL_WORKING_OFF"
         const val NOTIFICATION_ID = 2003
 
+        // Same keys the floating ball used, so the bar opens on the side / height the ball was on.
         private const val PREF_X = "floating_ball_x"
         private const val PREF_Y = "floating_ball_y"
-        private const val LONG_PRESS_MS = 420L
-        private const val BALL_SIZE_DP = 56
 
-        /** Used only if the app theme cannot be resolved; the default look follows the theme. */
-        private const val FALLBACK_BALL_COLOR = 0xFF6750A4.toInt()
-
-        private const val IDLE_ANIM_MS = 220L
-
-        /** Capsule bar opacity: nearly solid so text stays readable over any app behind it. */
-        private const val CAPSULE_CONTAINER_ALPHA = 0.94f
-
-        /**
-         * The quick-chat panel unfolds out of the ball, so the ball must stay put for the first
-         * beat of that (the activity takes a moment to come up) and only then fold away — a
-         * little after the panel asks to be shown, so the two animations overlap rather than the
-         * ball vanishing into an empty screen.
-         */
-        private const val BALL_COLLAPSE_DELAY_MS = 120L
-
-        /** The ball folding away into the panel, and popping back out of it. */
-        private const val BALL_COLLAPSE_MS = 180L
-        private const val BALL_COLLAPSE_END_SCALE = 0.35f
-        private const val BALL_SPAWN_MS = 340L
-        private const val BALL_SPAWN_START_SCALE = 0.4f
-        private const val BALL_SPAWN_OVERSHOOT = 1.6f
-
-        // Same SharedPreferences file/key the UI uses (see ui/hooks/ColorMode.kt). The ball watches
-        // it so a light/dark switch re-tints the ball without restarting the service.
-        private const val PREFS_NAME = "rikkahub.preferences"
-        private const val COLOR_MODE_KEY = "colorMode"
-        private const val AMOLED_DARK_KEY = "amoledDark"
-
-        /**
-         * Where a user-picked ball image lives. The app's private files dir needs no storage
-         * permission and is wiped on uninstall, so a stale settings path can never leak data.
-         */
-        /** A fresh file for a newly picked ball icon (see [FloatingBallIconFiles]). */
-        fun newIconFile(context: Context): File =
-            FloatingBallIconFiles.newFile(context.filesDir, System.currentTimeMillis())
-
-        /** On-screen strip of a tucked ball: just the slim handle and a little touch room. */
-        private const val TUCKED_STRIP_DP = HaloBallLook.HANDLE_STRIP_DP
-
-        /** Height cap of the edge-gesture exclusion around a tucked handle (system budget: 200dp per edge). */
-        private const val EDGE_EXCLUSION_MAX_DP = 120f
-
-        /** Starts (or re-starts) the ball. Idempotent — a running service just re-shows its view. */
+        /** Starts (or re-starts) the bar. Idempotent — a running service just re-shows its view. */
         fun start(context: Context) {
             val intent = Intent(context, FloatingBallService::class.java).apply {
                 action = ACTION_START
@@ -157,7 +97,7 @@ class FloatingBallService : Service(), KoinComponent {
         }
 
         /**
-         * Stops the ball. Uses startService (not stopService) so the running instance handles
+         * Stops the bar. Uses startService (not stopService) so the running instance handles
          * ACTION_STOP on its own looper and tears its overlay view down first.
          */
         fun stop(context: Context) {
@@ -169,10 +109,10 @@ class FloatingBallService : Service(), KoinComponent {
         }
 
         /**
-         * Tells a running ball that the quick-chat panel opened / closed, so it can step out of
-         * the way (hidden while the panel is up) and come back afterwards. Deliberately a plain
-         * startService: the ball is already a foreground service whenever the panel can be open,
-         * and a no-op command on a dead instance must not resurrect it.
+         * Tells a running bar that the quick-chat panel opened / closed, so it can step out of the
+         * way while the panel is up. Deliberately a plain startService: the bar is already a
+         * foreground service whenever the panel can be open, and a no-op command on a dead
+         * instance must not resurrect it.
          */
         fun notifyPanel(context: Context, open: Boolean) {
             val intent = Intent(context, FloatingBallService::class.java).apply {
@@ -183,8 +123,8 @@ class FloatingBallService : Service(), KoinComponent {
         }
 
         /**
-         * True while the overlay view is actually on screen. [AgentOverlay] reads this to decide
-         * whether the ball can carry the "agent is working" signal or whether it still needs the
+         * True while the bar is actually on screen. [AgentOverlay] reads this to decide whether
+         * the bar can carry the "agent is working" signal or whether it still needs its
          * top-of-screen pill as a fallback.
          */
         @Volatile
@@ -192,9 +132,8 @@ class FloatingBallService : Service(), KoinComponent {
             private set
 
         /**
-         * Tells the ball that a generation turn started / finished, so it can turn its halo into
-         * the orbiting-light-dot "thinking" state. A no-op while the ball is not on screen (so
-         * the caller keeps its own indicator instead of resurrecting a dead service).
+         * Tells the bar that a generation turn started / finished. A no-op while the bar is not
+         * on screen (so the caller keeps its own indicator instead of resurrecting a dead service).
          */
         fun setWorking(context: Context, working: Boolean) {
             if (!isShowing) return
@@ -204,167 +143,40 @@ class FloatingBallService : Service(), KoinComponent {
             runCatching { context.startService(intent) }
                 .onFailure { Log.w(TAG, "setWorking failed", it) }
         }
-
-        /**
-         * True while the user is holding the ball down to talk.
-         *
-         * The ball's long-press opens the quick-chat panel and starts recording; recording ends the
-         * moment the finger leaves the ball. The panel owns the recorder (ASR is a Compose-side
-         * thing), so it observes this flag rather than the service poking it: both live in the same
-         * process, so a plain StateFlow is race-free, whereas an intent hand-off would not be — a
-         * quick release would otherwise land before the panel had even come up.
-         */
-        private val _voiceHold = MutableStateFlow(false)
-        val voiceHoldActive: StateFlow<Boolean> = _voiceHold.asStateFlow()
     }
 
     private val settingsStore: SettingsStore by inject()
 
     private val mainHandler = Handler(Looper.getMainLooper())
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    /** The overlay window's root: the round [HaloBallView], or a [CapsuleBallView]. */
-    private var ballView: View? = null
-    private var ballParams: WindowManager.LayoutParams? = null
 
-    /** Non-null only while the status capsule style is on screen. */
-    private val capsuleView: CapsuleBallView? get() = ballView as? CapsuleBallView
+    private var barView: EdgeBarView? = null
+    private var barParams: WindowManager.LayoutParams? = null
 
-    /** The halo artwork, whichever face is up: the ball itself, or the capsule's icon. */
-    private val haloView: HaloBallView? get() = capsuleView?.halo ?: ballView as? HaloBallView
+    /** True while the half-screen quick-chat panel is up; the bar stays out of its way. */
+    private var panelOpen = false
 
-    /** Style the current overlay was built with; a settings change to another style rebuilds it. */
-    private var shownStyle: FloatingBallStyle? = null
-
-    /** Capsule status line: when the running turn started, and how long the last one took. */
-    private var workingSinceMs: Long? = null
-    private var lastTurnMs: Long? = null
-
-    /** Ticks the capsule's timer once a second while a turn runs. */
-    private val capsuleTick = object : Runnable {
-        override fun run() {
-            updateCapsuleTexts()
-            if (working && capsuleView != null) mainHandler.postDelayed(this, 1000L)
-        }
-    }
-    private var longPressFired = false
-
-    /** True between ACTION_WORKING_ON and ACTION_WORKING_OFF — the driver of the orbit animation. */
+    /** True between ACTION_WORKING_ON and ACTION_WORKING_OFF. */
     private var working = false
 
-    /**
-     * Pushes the orbit animation state onto the view. The dot only spins while a turn is running
-     * *and* the quick-chat panel is not covering the ball — an invisible ball has no business
-     * redrawing itself 60 times a second.
-     */
-    private fun syncWorking() {
-        haloView?.setWorking(working && !panelOpen && capsuleView?.handleMode != true)
-        mainHandler.removeCallbacks(capsuleTick)
-        if (capsuleView != null) capsuleTick.run()
-        syncHandleSignal()
-    }
-
-    /**
-     * A turn finished and the user has not looked since: set on ACTION_WORKING_OFF, cleared when
-     * the ball is woken from the edge or the panel opens. Only the tucked handle shows it (the
-     * awake capsule already says "done" in its status line).
-     */
+    /** A turn finished while the panel was closed; cleared when the panel opens. */
     private var unseenDone = false
 
-    /**
-     * Pushes the running / finished state onto the tucked handle, so a ball tucked into the edge
-     * still says that the agent is working or that a reply is waiting.
-     */
-    private fun syncHandleSignal() {
-        val signal = HaloBallLook.handleSignal(working = working, unseenDone = unseenDone)
-        (ballView as? HaloBallView)?.handleSignal = signal
-        capsuleView?.handleSignal = signal
-    }
-
-    /** Opacity of the tucked ball: the user's setting, raised while a finished reply is unseen. */
-    private fun tuckedAlpha(): Float =
-        HaloBallLook.tuckedAlpha(hiddenAlpha(), HaloBallLook.handleSignal(working, unseenDone))
-
-    /** Fades an already-tucked ball to [tuckedAlpha] after the signal changed (not mid-slide). */
-    private fun refreshTuckedAlpha() {
-        val view = ballView ?: return
-        if (!hidden || motionAnimator?.isRunning == true) return
-        view.animate().alpha(tuckedAlpha()).setDuration(IDLE_ANIM_MS).start()
-    }
-
-    /** Cache so repainting on unrelated settings changes does not re-decode the picked image. */
-    private var loadedIconPath: String? = null
-    private var loadedIconStamp: Long = 0L
-    private var loadedIconBitmap: Bitmap? = null
-
-    /** Light/dark switch is a plain SharedPreferences write, not a Settings change: watch it too. */
-    private val themePrefsListener =
-        SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            if (key == COLOR_MODE_KEY || key == AMOLED_DARK_KEY) {
-                // Callbacks fire on whichever thread wrote the pref; the overlay must repaint on main.
-                mainHandler.post { applyAppearance() }
-            }
-        }
-
-    /** True while the ball is tucked into the edge (dimmed, half off-screen) waiting to be woken. */
-    private var hidden = false
-
-    /** True while the half-screen quick-chat panel is up; the ball stays out of its way. */
-    private var panelOpen = false
-    private var motionAnimator: ValueAnimator? = null
+    /** Set by the long-press timer; from then on the gesture moves the bar instead of tapping. */
+    private var dragArmed = false
 
     private val longPressRunnable = Runnable {
-        // Only fire if the finger is still down and we have not turned this into a drag.
-        if (ballView != null) {
-            longPressFired = true
-            if (shownStyle == FloatingBallStyle.CAPSULE) {
-                // Capsule: long-press opens the floating quick-chat panel (tap already goes to the app).
-                openQuickChat(voice = false)
-            } else {
-                // Round ball: hold-to-talk — panel records while the finger is down and stops on lift.
-                _voiceHold.value = true
-                openQuickChat(voice = true)
-            }
-        }
+        val view = barView ?: return@Runnable
+        dragArmed = true
+        view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
     }
-
-    private val idleRunnable = Runnable {
-        if (!panelOpen && ballView != null && !hidden) setHidden(true)
-    }
-
-    /** Folds the ball away a beat after the panel starts unfolding (see [BALL_COLLAPSE_DELAY_MS]). */
-    private val collapseRunnable = Runnable { collapseBall() }
 
     override fun onCreate() {
         super.onCreate()
-        getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .registerOnSharedPreferenceChangeListener(themePrefsListener)
-        // Theme colour / picked icon can change at any time while the ball is up; repaint live.
-        // A no-op until the overlay view exists, and showBall() paints once itself.
+        // Colour changes from the settings page repaint the running bar live.
         scope.launch {
             settingsStore.settingsFlow.collect { settings ->
-                if (ballView != null && shownStyle != null && settings.floatingBallStyle != shownStyle) {
-                    // Switching between the round ball and the capsule swaps the whole overlay;
-                    // a turn that is running keeps animating on the new face.
-                    val wasWorking = working
-                    hideBall()
-                    showBall()
-                    working = wasWorking
-                    syncWorking()
-                    scheduleIdle()
-                } else {
-                    applyAppearance()
-                    // A tucked round ball follows a tuck-style change at once.
-                    if (hidden && capsuleView == null && tuckedStyle != null &&
-                        settings.floatingBallTuckStyle != tuckedStyle
-                    ) {
-                        tuckIntoEdge()
-                    } else if (hidden) {
-                        refreshTuckedAlpha()
-                    }
-                    if (!hidden) {
-                        scheduleIdle()
-                    }
-                }
+                barView?.barColor = settings.floatingBallBarColor
             }
         }
     }
@@ -380,81 +192,30 @@ class FloatingBallService : Service(), KoinComponent {
 
             ACTION_PANEL_OPEN -> {
                 panelOpen = true
-                // The user has seen the result now; the capsule goes back to "tap to chat".
-                lastTurnMs = null
+                // The user is looking at the conversation now.
                 unseenDone = false
-                if (ballView == null) {
-                    stopSelf()
-                } else {
-                    // The panel unfolds out of the ball, so hand the ball over a beat later: it
-                    // folds away as the panel grows, instead of blinking out first.
-                    mainHandler.removeCallbacks(idleRunnable)
-                    motionAnimator?.cancel()
-                    mainHandler.removeCallbacks(collapseRunnable)
-                    mainHandler.postDelayed(collapseRunnable, BALL_COLLAPSE_DELAY_MS)
-                    syncWorking()
-                }
+                if (barView == null) stopSelf() else syncBar()
                 return START_NOT_STICKY
             }
 
             ACTION_PANEL_CLOSE -> {
-                // Only a panel that actually came up can hand the ball back: a close with no
-                // matching open (the activity was torn down before its first frame) must leave
-                // the ball exactly as it is.
-                val panelCameUp = panelOpen
                 panelOpen = false
-                if (ballView == null) {
-                    stopSelf()
-                } else {
-                    mainHandler.removeCallbacks(collapseRunnable)
-                    if (panelCameUp) {
-                        // The panel folded back into the spot the ball belongs to — pop it out.
-                        ballView?.visibility = View.VISIBLE
-                        if (hidden) {
-                            // A panel is only ever opened from an awake ball, but stay safe: a
-                            // tucked ball is woken (that animation owns position and opacity).
-                            setHidden(false)
-                        } else {
-                            spawnBall()
-                            scheduleIdle()
-                        }
-                        syncWorking()
-                    }
-                }
+                if (barView == null) stopSelf() else syncBar()
                 return START_NOT_STICKY
             }
 
             ACTION_WORKING_ON -> {
-                if (ballView == null) {
-                    stopSelf()
-                } else {
-                    if (!working) workingSinceMs = System.currentTimeMillis()
-                    lastTurnMs = null
-                    working = true
-                    // The ball is the status light while a turn runs, so it must not tuck itself
-                    // away mid-turn. A ball that is already tucked stays tucked (per the agreed
-                    // behaviour) — we only stop the countdown from tucking an awake one.
-                    mainHandler.removeCallbacks(idleRunnable)
-                    unseenDone = false
-                    syncWorking()
-                    refreshTuckedAlpha()
-                }
+                working = true
+                unseenDone = false
+                if (barView == null) stopSelf() else syncBar()
                 return START_NOT_STICKY
             }
 
             ACTION_WORKING_OFF -> {
-                if (ballView == null) {
-                    stopSelf()
-                } else {
-                    workingSinceMs?.let { lastTurnMs = System.currentTimeMillis() - it }
-                    workingSinceMs = null
-                    working = false
-                    // A reply the user did not watch arrive: the tucked handle keeps saying so.
-                    unseenDone = !panelOpen
-                    syncWorking()
-                    refreshTuckedAlpha()
-                    scheduleIdle()
-                }
+                working = false
+                // A reply the user did not watch arrive: the bar turns green until the panel opens.
+                unseenDone = !panelOpen
+                if (barView == null) stopSelf() else syncBar()
                 return START_NOT_STICKY
             }
 
@@ -468,75 +229,48 @@ class FloatingBallService : Service(), KoinComponent {
                     stopSelf()
                     return START_NOT_STICKY
                 }
-                showBall()
-                scheduleIdle()
+                showBar()
             }
         }
-        // NOT sticky: if the user turned the ball off we must not resurrect it after a kill.
+        // NOT sticky: if the user turned the bar off we must not resurrect it after a kill.
         // App start / boot are what bring it back when the setting is still on.
         return START_NOT_STICKY
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        val view = ballView ?: return
-        val params = ballParams ?: return
-        val wm = getSystemService(Context.WINDOW_SERVICE) as? WindowManager ?: return
+        // Rotation / resize: keep the side, re-clamp the height against the new screen.
         mainHandler.post {
-            // Night mode is part of the configuration, so the themed ball may need a repaint.
-            applyAppearance()
-            if (hidden) {
-                // Recompute the tucked position against the new width/orientation.
-                tuckIntoEdge()
-            } else {
-                snapToEdge(wm, view, params)
-                scheduleIdle()
-            }
+            val view = barView ?: return@post
+            val params = barParams ?: return@post
+            params.y = clampTop(params.y)
+            updateLayout(view, params)
+            updateGestureExclusion(view)
         }
     }
 
     override fun onDestroy() {
         scope.cancel()
-        runCatching {
-            getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                .unregisterOnSharedPreferenceChangeListener(themePrefsListener)
-        }
-        hideBall()
+        hideBar()
         runCatching { ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE) }
         super.onDestroy()
     }
 
     // ---- Overlay view ----
 
-    @SuppressLint("ClickableViewAccessibility", "RtlHardcoded")
-    private fun showBall() {
-        if (ballView != null) return
-        val wm = getSystemService(Context.WINDOW_SERVICE) as? WindowManager ?: return
-        val density = resources.displayMetrics.density
-        val size = (BALL_SIZE_DP * density).toInt()
-        val style = settingsStore.settingsFlow.value.floatingBallStyle
-
-        val container: View = when (style) {
-            FloatingBallStyle.ORIGINAL -> HaloBallView(this)
-            FloatingBallStyle.CAPSULE -> CapsuleBallView(this).apply {
-                closeButton.contentDescription = getString(R.string.floating_ball_capsule_hide)
-                closeButton.setOnClickListener {
-                    mainHandler.removeCallbacks(idleRunnable)
-                    setHidden(true)
-                }
-            }
-        }.apply {
-            contentDescription = getString(R.string.quick_chat_title)
-            isClickable = true
-        }
-        // The capsule sizes itself to its text; the round ball is a fixed square.
-        val windowSize = if (style == FloatingBallStyle.CAPSULE) WindowManager.LayoutParams.WRAP_CONTENT else size
-
-        val screenWidth = resources.displayMetrics.widthPixels
-        val screenHeight = resources.displayMetrics.heightPixels
-        val margin = (12 * density).toInt()
-        val defaultX = screenWidth - size - margin
-        val defaultY = (screenHeight * 0.62f).toInt()
+    @SuppressLint("RtlHardcoded")
+    private fun showBar() {
+        if (barView != null) return
+        val wm = windowManager() ?: return
+        val width = dpPx(EdgeBarLook.TOUCH_WIDTH_DP)
+        val height = dpPx(EdgeBarLook.TOUCH_HEIGHT_DP)
+        val screen = screenSize()
+        val onRight = EdgeBarLook.onRightFromSavedX(
+            readStringPreference(PREF_X)?.toIntOrNull(),
+            screen.width,
+        )
+        val savedTop = readStringPreference(PREF_Y)?.toIntOrNull()
+            ?: EdgeBarLook.defaultTop(height, screen.height)
 
         val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
@@ -544,325 +278,152 @@ class FloatingBallService : Service(), KoinComponent {
             @Suppress("DEPRECATION")
             WindowManager.LayoutParams.TYPE_PHONE
         }
-
         val params = WindowManager.LayoutParams(
-            windowSize,
-            windowSize,
+            width,
+            height,
             type,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
                 or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
                 or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT,
         ).apply {
-            gravity = Gravity.TOP or Gravity.START
-            x = readStringPreference(PREF_X)?.toIntOrNull() ?: defaultX
-            y = readStringPreference(PREF_Y)?.toIntOrNull() ?: defaultY
+            // Placed by gravity, so the bar stays flush with its edge across rotations / resizes.
+            gravity = Gravity.TOP or (if (onRight) Gravity.RIGHT else Gravity.LEFT)
+            x = 0
+            y = savedTop
         }
+        params.y = clampTop(params.y)
 
+        val view = EdgeBarView(this).apply {
+            this.onRight = onRight
+            barColor = settingsStore.settingsFlow.value.floatingBallBarColor
+            contentDescription = getString(R.string.setting_floating_ball_bar_a11y)
+            isClickable = true
+            isHapticFeedbackEnabled = true
+        }
         try {
-            wm.addView(container, params)
+            wm.addView(view, params)
         } catch (t: Throwable) {
             Log.w(TAG, "addView failed", t)
             return
         }
-        ballView = container
-        ballParams = params
-        shownStyle = style
+        barView = view
+        barParams = params
         isShowing = true
-        // Paint colour + icon from the current theme / user picks (never hard-coded).
-        applyAppearance()
-        attachTouch(container, params, wm)
-        // Clamp into range once the view exists — a saved position from another orientation, or
-        // a first-run default near the bottom, could otherwise sit partly off-screen.
-        mainHandler.post { snapToEdge(wm, container, params) }
-        // Born, not blinked into existence: the ball pops out wherever it belongs.
-        spawnBall()
+        attachTouch(view, params)
+        // Touches are handled in attachTouch; this is what TalkBack / switch access trigger.
+        view.setOnClickListener { openQuickChat() }
+        syncBar()
     }
 
-    private fun hideBall() {
-        val view = ballView ?: return
-        // Removing the window drops its exclusion rects anyway; cleared first so a view that
-        // somehow fails to detach cannot keep them.
-        clearEdgeGestureExclusion(view)
-        ballView = null
-        ballParams = null
-        shownStyle = null
+    private fun hideBar() {
+        val view = barView ?: return
+        mainHandler.removeCallbacks(longPressRunnable)
+        clearGestureExclusion(view)
+        barView = null
+        barParams = null
         isShowing = false
         working = false
         unseenDone = false
-        lastTurnMs = null
-        tuckedStyle = null
-        mainHandler.removeCallbacks(capsuleTick)
-        longPressFired = false
-        hidden = false
-        _voiceHold.value = false
-        loadedIconPath = null
-        loadedIconStamp = 0L
-        loadedIconBitmap = null
-        avatarKey = null
-        avatarBitmap = null
-        mainHandler.removeCallbacks(longPressRunnable)
-        mainHandler.removeCallbacks(idleRunnable)
-        mainHandler.removeCallbacks(collapseRunnable)
-        motionAnimator?.cancel()
-        motionAnimator = null
-        view.animate().cancel()
-        val wm = getSystemService(Context.WINDOW_SERVICE) as? WindowManager ?: return
+        dragArmed = false
+        val wm = windowManager() ?: return
         runCatching { wm.removeViewImmediate(view) }
             .onFailure { Log.w(TAG, "removeView failed", it) }
     }
 
-    // ---- Appearance ----
-
     /**
-     * Paints the ball from the current settings: the halo is stroked in the app theme's primary
-     * colour, or in the colour the user picked; a user-picked image, when there is one, replaces
-     * the halo instead. Cheap and idempotent — safe to call on every settings change.
+     * Pushes visibility and status onto the bar. Hidden while the panel is up — and made
+     * untouchable then, so the invisible window cannot swallow taps meant for the panel.
      */
-    private fun applyAppearance() {
-        val ball = haloView ?: return
-        val settings = settingsStore.settingsFlow.value
-        val picked = settings.floatingBallIconPath
-            .takeIf { it.isNotBlank() }
-            ?.let { loadIcon(it) }
-        val capsule = capsuleView
-        if (capsule == null) {
-            ball.accentColor = settings.floatingBallColor ?: themePrimaryColor()
-            applyBacking(ball)
-            ball.setIcon(picked)
-            return
-        }
-        // Capsule: theme surface colours for the bar; the icon is the picked ball image, else
-        // the current assistant's avatar, else the plain halo.
-        val scheme = themeScheme()
-        val accent = settings.floatingBallColor ?: scheme?.primary?.toArgb() ?: FALLBACK_BALL_COLOR
-        capsule.applyColors(
-            container = scheme?.surfaceContainerHigh?.copy(alpha = CAPSULE_CONTAINER_ALPHA)?.toArgb()
-                ?: 0xF0FFFFFF.toInt(),
-            outline = scheme?.outlineVariant?.toArgb() ?: 0x33000000,
-            onSurface = scheme?.onSurface?.toArgb() ?: 0xFF1C1B1F.toInt(),
-            onSurfaceVariant = scheme?.onSurfaceVariant?.toArgb() ?: 0xFF49454F.toInt(),
-            accent = accent,
-        )
-        // The embedded halo keeps the round ball's themed backing disc and hairline outline.
-        applyBacking(ball)
-        ball.setIcon(picked ?: assistantAvatarIcon(settings.getCurrentAssistant().avatar))
-        updateCapsuleTexts()
-    }
-
-    /** Title = current assistant's name; status = ready / working + timer / done + duration. */
-    private fun updateCapsuleTexts() {
-        val capsule = capsuleView ?: return
-        val settings = settingsStore.settingsFlow.value
-        val title = settings.getCurrentAssistant().name.ifBlank { getString(R.string.quick_chat_title) }
-        val status = capsuleStatus(working, workingSinceMs, System.currentTimeMillis(), lastTurnMs)
-        val statusText = when (status.kind) {
-            CapsuleStatus.Kind.READY -> getString(R.string.floating_ball_capsule_status_ready)
-            CapsuleStatus.Kind.WORKING -> status.elapsed
-                ?.let { getString(R.string.floating_ball_capsule_status_working_timer, it) }
-                ?: getString(R.string.floating_ball_capsule_status_working)
-            CapsuleStatus.Kind.DONE -> getString(R.string.floating_ball_capsule_status_done, status.elapsed ?: "")
-        }
-        capsule.setTexts(title, statusText)
-    }
-
-    /** Assistant avatar as a bitmap for the capsule icon: local image or emoji; else none. */
-    private var avatarKey: String? = null
-    private var avatarBitmap: Bitmap? = null
-
-    private fun assistantAvatarIcon(avatar: Avatar): Bitmap? {
-        val key = when (avatar) {
-            is Avatar.Image -> "img:" + avatar.url
-            is Avatar.Emoji -> "emoji:" + avatar.content
-            else -> null
-        }
-        if (key == avatarKey) return avatarBitmap
-        avatarKey = key
-        avatarBitmap = when (avatar) {
-            is Avatar.Image -> avatar.url
-                .removePrefix("file://")
-                .takeIf { it.startsWith("/") }
-                ?.let { decodeIcon(it) }
-            is Avatar.Emoji -> renderEmoji(avatar.content)
-            else -> null
-        }
-        return avatarBitmap
-    }
-
-    private fun renderEmoji(text: String): Bitmap? = runCatching {
-        if (text.isBlank()) return@runCatching null
-        val side = (BALL_SIZE_DP * resources.displayMetrics.density).toInt().coerceAtLeast(1)
-        val bitmap = Bitmap.createBitmap(side, side, Bitmap.Config.ARGB_8888)
-        val canvas = android.graphics.Canvas(bitmap)
-        val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-            textSize = side * 0.62f
-            textAlign = android.graphics.Paint.Align.CENTER
-        }
-        val y = side / 2f - (paint.descent() + paint.ascent()) / 2f
-        canvas.drawText(text, side / 2f, y, paint)
-        bitmap
-    }.getOrNull()
-
-    /** The app theme's primary colour, honouring dynamic colour / dark mode / custom themes. */
-    private fun themePrimaryColor(): Int =
-        themeScheme()?.primary?.toArgb() ?: FALLBACK_BALL_COLOR
-
-    /** The app theme's colour scheme (dynamic colour / dark mode / custom themes), or null. */
-    private fun themeScheme(): ColorScheme? = runCatching {
-        val settings = settingsStore.settingsFlow.value
-        val dark = when (colorMode()) {
-            ColorMode.SYSTEM ->
-                (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
-                    Configuration.UI_MODE_NIGHT_YES
-
-            ColorMode.LIGHT -> false
-            ColorMode.DARK -> true
-        }
-        val scheme = if (settings.dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            if (dark) dynamicDarkColorScheme(this) else dynamicLightColorScheme(this)
+    private fun syncBar() {
+        val view = barView ?: return
+        val params = barParams ?: return
+        view.signal = EdgeBarLook.signal(working = working, unseenDone = unseenDone)
+        val hidden = panelOpen
+        view.visibility = if (hidden) View.INVISIBLE else View.VISIBLE
+        val flags = if (hidden) {
+            params.flags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
         } else {
-            (findThemeById(settings.themeId, settings.customThemes) ?: findPresetTheme(settings.themeId))
-                .getColorScheme(dark)
+            params.flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE.inv()
         }
-        scheme
-    }.getOrNull()
-
-    /**
-     * Resting backing colours from the app theme: translucent surface disc (overlays cannot blur
-     * the apps behind them) and an outlineVariant hairline. Keeps the view's defaults on failure.
-     */
-    private fun applyBacking(ball: HaloBallView) {
-        val scheme = runCatching { backingScheme() }.getOrNull() ?: return
-        ball.surfaceColor = HaloBallLook.withAlphaFraction(scheme.surface.toArgb(), HaloBallLook.BACKING_ALPHA)
-        ball.outlineColor = scheme.outlineVariant.toArgb()
-    }
-
-    /** Same theme resolution as [themePrimaryColor] (dynamic colour / dark mode / custom themes). */
-    private fun backingScheme(): ColorScheme {
-        val settings = settingsStore.settingsFlow.value
-        val dark = when (colorMode()) {
-            ColorMode.SYSTEM ->
-                (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
-                    Configuration.UI_MODE_NIGHT_YES
-
-            ColorMode.LIGHT -> false
-            ColorMode.DARK -> true
+        if (flags != params.flags) {
+            params.flags = flags
+            updateLayout(view, params)
         }
-        return if (settings.dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            if (dark) dynamicDarkColorScheme(this) else dynamicLightColorScheme(this)
+        if (hidden) {
+            mainHandler.removeCallbacks(longPressRunnable)
+            dragArmed = false
+            clearGestureExclusion(view)
         } else {
-            (findThemeById(settings.themeId, settings.customThemes) ?: findPresetTheme(settings.themeId))
-                .getColorScheme(dark)
+            updateGestureExclusion(view)
         }
     }
 
-    private fun colorMode(): ColorMode {
-        val raw = readStringPreference(COLOR_MODE_KEY)
-        return ColorMode.entries.firstOrNull { it.name == raw } ?: ColorMode.SYSTEM
-    }
-
-    /** Decodes the picked image, downsampled to roughly the ball size; cached by path + mtime. */
-    private fun loadIcon(path: String): Bitmap? {
-        val stamp = File(path).lastModified()
-        if (loadedIconPath == path && loadedIconStamp == stamp) return loadedIconBitmap
-        val bitmap = decodeIcon(path)
-        loadedIconPath = path
-        loadedIconStamp = stamp
-        loadedIconBitmap = bitmap
-        return bitmap
-    }
-
-    private fun decodeIcon(path: String): Bitmap? = runCatching {
-        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        BitmapFactory.decodeFile(path, bounds)
-        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return@runCatching null
-        val target = (BALL_SIZE_DP * resources.displayMetrics.density).toInt().coerceAtLeast(1)
-        var sample = 1
-        while (bounds.outWidth / (sample * 2) >= target && bounds.outHeight / (sample * 2) >= target) {
-            sample *= 2
-        }
-        BitmapFactory.decodeFile(path, BitmapFactory.Options().apply { inSampleSize = sample })
-    }.getOrNull()
-
-    @SuppressLint("ClickableViewAccessibility")
-    private fun attachTouch(
-        view: View,
-        params: WindowManager.LayoutParams,
-        wm: WindowManager,
-    ) {
+    @SuppressLint("ClickableViewAccessibility", "RtlHardcoded")
+    private fun attachTouch(view: EdgeBarView, params: WindowManager.LayoutParams) {
         val touchSlop = ViewConfiguration.get(this).scaledTouchSlop
         var downRawX = 0f
         var downRawY = 0f
-        var startX = 0
         var startY = 0
-        var dragging = false
-        var startedHidden = false
-        /** Side at finger-down (after any wake); snap hysteresis prefers this side. */
-        var dragStartedOnRight = true
+        /** The finger moved before the long press armed: a swipe, which does nothing. */
+        var swiped = false
 
         view.setOnTouchListener { _, event ->
             when (event.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
-                    // Any interaction pushes the auto-tuck countdown back.
-                    mainHandler.removeCallbacks(idleRunnable)
-                    // A tucked-away ball is woken by the touch itself, but the touch is no longer
-                    // swallowed: it can be dragged out of the edge straight away. It only *opens
-                    // the panel / app* on the next tap, so the "tap once to wake" rule still holds.
-                    startedHidden = hidden
-                    if (hidden) setHidden(false, instant = true)
                     downRawX = event.rawX
                     downRawY = event.rawY
-                    startX = params.x
                     startY = params.y
-                    val downWidth = overlayWidth(view, params)
-                    val screenWidth = resources.displayMetrics.widthPixels
-                    dragStartedOnRight = params.x + downWidth / 2f >= screenWidth / 2f
-                    dragging = false
-                    longPressFired = false
+                    swiped = false
+                    dragArmed = false
                     mainHandler.removeCallbacks(longPressRunnable)
-                    mainHandler.postDelayed(longPressRunnable, LONG_PRESS_MS)
+                    mainHandler.postDelayed(longPressRunnable, EdgeBarLook.LONG_PRESS_MS)
                     true
                 }
 
                 MotionEvent.ACTION_MOVE -> {
-                    // Once the hold-to-talk gesture has armed, keep the ball still: the finger is
-                    // talking, not dragging.
-                    if (longPressFired) return@setOnTouchListener true
                     val dx = event.rawX - downRawX
                     val dy = event.rawY - downRawY
-                    if (!dragging && (abs(dx) > touchSlop || abs(dy) > touchSlop)) {
-                        dragging = true
+                    if (dragArmed) {
+                        // Vertical only while dragging; the side is decided on release.
+                        val y = clampTop((startY + dy).toInt())
+                        if (y != params.y) {
+                            params.y = y
+                            updateLayout(view, params)
+                        }
+                    } else if (!swiped && (abs(dx) > touchSlop || abs(dy) > touchSlop)) {
+                        // Low sensitivity: moving before the long press is recognised is a plain
+                        // swipe — never a drag, never a tap.
+                        swiped = true
                         mainHandler.removeCallbacks(longPressRunnable)
-                    }
-                    if (dragging) {
-                        params.x = (startX + dx).toInt()
-                        params.y = (startY + dy).toInt()
-                        runCatching { wm.updateViewLayout(view, params) }
                     }
                     true
                 }
 
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                     mainHandler.removeCallbacks(longPressRunnable)
-                    if (longPressFired) {
-                        // Round-ball hold-to-talk: finger up ends recording. Capsule long-press only
-                        // opened the panel (no voice arm), so there is nothing to release here.
-                        if (_voiceHold.value) {
-                            _voiceHold.value = false
-                            // Ball was kept visible under the finger so the touch survived; fold now.
-                            if (panelOpen) mainHandler.post { collapseBall() }
-                        }
-                    }
-                    // A cancelled gesture (e.g. taken by the system) is never a tap: it must not open
-                    // the panel/app. A drag still settles on an edge, and a ball woken by the touch stays out.
                     val cancelled = event.actionMasked == MotionEvent.ACTION_CANCEL
                     when {
-                        dragging -> snapToEdge(wm, view, params, startedOnRight = dragStartedOnRight)
-                        !cancelled && !longPressFired && !startedHidden -> onBallTap()
+                        dragArmed -> {
+                            val screen = screenSize()
+                            val onRight = if (cancelled) {
+                                view.onRight
+                            } else {
+                                EdgeBarLook.onRightAfterDrag(event.rawX, screen.width, view.onRight)
+                            }
+                            if (onRight != view.onRight) {
+                                view.onRight = onRight
+                                params.gravity = Gravity.TOP or (if (onRight) Gravity.RIGHT else Gravity.LEFT)
+                                updateLayout(view, params)
+                            }
+                            updateGestureExclusion(view)
+                            savePosition(onRight, params)
+                        }
+                        // A cancelled gesture (e.g. taken by the system) is never a tap.
+                        !cancelled && !swiped -> openQuickChat()
                     }
-                    startedHidden = false
-                    dragging = false
-                    scheduleIdle()
+                    dragArmed = false
+                    swiped = false
                     true
                 }
 
@@ -871,66 +432,20 @@ class FloatingBallService : Service(), KoinComponent {
         }
     }
 
-    @SuppressLint("RtlHardcoded")
-    private fun snapToEdge(
-        wm: WindowManager,
-        view: View,
-        params: WindowManager.LayoutParams,
-        startedOnRight: Boolean? = null,
-    ) {
-        val density = resources.displayMetrics.density
-        val margin = (8 * density).toInt()
-        val screenWidth = resources.displayMetrics.widthPixels
-        val screenHeight = resources.displayMetrics.heightPixels
-        val size = overlayWidth(view, params)
-        val maxX = (screenWidth - size - margin).coerceAtLeast(margin)
-        val maxY = (screenHeight - overlayHeight(view, params) - margin).coerceAtLeast(margin)
-
-        val centerX = params.x + size / 2f
-        val onRight = FloatingBallGesture.settleOnRight(
-            centerX = centerX,
-            screenWidth = screenWidth,
-            startedOnRight = startedOnRight ?: (centerX >= screenWidth / 2f),
-        )
-        params.x = if (onRight) maxX else margin
-        params.y = params.y.coerceIn(margin, maxY)
-        runCatching { wm.updateViewLayout(view, params) }
-        writeStringPreference(PREF_X, params.x.toString())
+    private fun savePosition(onRight: Boolean, params: WindowManager.LayoutParams) {
+        val screen = screenSize()
+        writeStringPreference(PREF_X, EdgeBarLook.savedXFor(onRight, screen.width, params.width).toString())
         writeStringPreference(PREF_Y, params.y.toString())
     }
 
-    /**
-     * Single tap on the awake overlay: the round ball still opens the half-screen quick-chat
-     * panel; the status capsule jumps straight back into the main app. Capsule long-press is
-     * what opens the floating chat panel instead.
-     */
-    private fun onBallTap() {
-        if (shownStyle == FloatingBallStyle.CAPSULE) openApp()
-        else openQuickChat(voice = false)
-    }
-
-    private fun openApp() {
+    private fun openQuickChat() {
         try {
-            val intent = packageManager.getLaunchIntentForPackage(packageName)?.apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
-            } ?: return
-            startActivity(intent)
-        } catch (t: Throwable) {
-            Log.w(TAG, "openApp failed", t)
-        }
-    }
-
-    private fun openQuickChat(voice: Boolean) {
-        try {
-            // No stock window animation for the panel: it plays its own unfold out of the ball, and
-            // the system's launch transition fighting that is what made the panel stutter — and
-            // look half-animated — over the launcher. The intent also carries
-            // FLAG_ACTIVITY_NO_ANIMATION, and the activity overrides its own open/close transition
-            // to nothing, so opening/closing is entirely ours.
+            // No stock window animation for the panel: it plays its own unfold, and the system's
+            // launch transition fighting that made the panel stutter over the launcher.
             @Suppress("DEPRECATION")
             val options = ActivityOptions.makeCustomAnimation(this, 0, 0)
             startActivity(
-                QuickChatActivity.intent(this, voice, ballSide(), ballCenterY()),
+                QuickChatActivity.intent(this, barSide(), barCenterY()),
                 options.toBundle(),
             )
         } catch (t: Throwable) {
@@ -938,332 +453,74 @@ class FloatingBallService : Service(), KoinComponent {
         }
     }
 
-    /** `"left"`/`"right"` — which edge the ball sits on, so the panel can mirror itself. */
-    private fun ballSide(): String {
-        val params = ballParams ?: return "right"
-        val size = ballView?.let { overlayWidth(it, params) } ?: params.width
-        val screenWidth = resources.displayMetrics.widthPixels
-        return if (params.x + size / 2 >= screenWidth / 2) "right" else "left"
+    /** `"left"`/`"right"` — which edge the bar sits on, so the panel can mirror itself. */
+    private fun barSide(): String = if (barView?.onRight != false) "right" else "left"
+
+    /** Vertical centre of the bar, in screen pixels; the panel anchors itself to this. */
+    private fun barCenterY(): Int {
+        val params = barParams ?: return 0
+        return params.y + params.height / 2
     }
 
-    /** Vertical centre of the ball, in screen pixels; the panel anchors itself to this. */
-    private fun ballCenterY(): Int {
-        val params = ballParams ?: return 0
-        val size = ballView?.let { overlayHeight(it, params) } ?: params.height
-        return params.y + size / 2
-    }
+    // ---- Geometry ----
 
-    /**
-     * Laid-out size of the overlay, else the window's fixed size (the round ball), else — for the
-     * self-sizing capsule before its first layout pass — a measured size.
-     */
-    private fun overlayWidth(view: View, params: WindowManager.LayoutParams): Int =
-        view.width.takeIf { it > 0 } ?: params.width.takeIf { it > 0 } ?: measureOverlay(view).first
+    private class ScreenSize(val width: Int, val height: Int, val topInset: Int, val bottomInset: Int)
 
-    private fun overlayHeight(view: View, params: WindowManager.LayoutParams): Int =
-        view.height.takeIf { it > 0 } ?: params.height.takeIf { it > 0 } ?: measureOverlay(view).second
+    private fun windowManager(): WindowManager? = getSystemService(Context.WINDOW_SERVICE) as? WindowManager
 
-    private fun measureOverlay(view: View): Pair<Int, Int> {
-        val spec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-        view.measure(spec, spec)
-        return view.measuredWidth to view.measuredHeight
-    }
+    private fun dpPx(dp: Float): Int = (dp * resources.displayMetrics.density).toInt()
 
-    // ---- Auto tuck (idle) ----
-
-    private fun idleSeconds(): Int = settingsStore.settingsFlow.value.floatingBallIdleSeconds
-
-    private fun hiddenAlpha(): Float =
-        settingsStore.settingsFlow.value.floatingBallHiddenAlpha.coerceIn(10, 100) / 100f
-
-    /** (Re)starts the countdown that tucks the ball away once the user stops bothering with it. */
-    private fun scheduleIdle() {
-        mainHandler.removeCallbacks(idleRunnable)
-        if (panelOpen || hidden || working || ballView == null) return
-        val seconds = idleSeconds()
-        if (seconds <= 0) return
-        mainHandler.postDelayed(idleRunnable, seconds * 1000L)
-    }
-
-    private fun setHidden(hide: Boolean, instant: Boolean = false) {
-        if (hidden == hide) return
-        hidden = hide
-        if (hide) {
-            mainHandler.removeCallbacks(idleRunnable)
-            tuckIntoEdge()
-        } else {
-            // Woken from the edge: the user is looking at the ball now.
-            unseenDone = false
-            wakeUp(instant)
-            syncHandleSignal()
-            scheduleIdle()
-        }
-    }
-
-    /**
-     * Collapses the ball into a slim handle on the edge it was snapped to: all but a thin strip of
-     * the window slides off-screen, the view draws only the handle in that strip, and it dims to
-     * the hidden-opacity setting.
-     */
-    private fun tuckIntoEdge() {
-        val view = ballView ?: return
-        val params = ballParams ?: return
-        val wm = getSystemService(Context.WINDOW_SERVICE) as? WindowManager ?: return
-        capsuleView?.let { capsule ->
-            tuckCapsule(capsule, params, wm)
-            return
-        }
-        val size = view.width.takeIf { it > 0 } ?: params.width
-        val screenWidth = resources.displayMetrics.widthPixels
-        val onRight = params.x + size / 2 >= screenWidth / 2
-        val tuckStyle = settingsStore.settingsFlow.value.floatingBallTuckStyle
-        val halfBall = tuckStyle == FloatingBallTuckStyle.HALF_BALL
-        val strip = if (halfBall) {
-            HaloBallLook.halfTuckStrip(size)
-        } else {
-            (TUCKED_STRIP_DP * resources.displayMetrics.density).toInt()
-        }
-        val targetX = HaloBallLook.tuckedX(onRight, screenWidth, size, strip).toFloat()
-        // Only the round ball tucks this way; the capsule tucks via tuckCapsule() above. Half-ball:
-        // the whole ball (orbit included) stays drawn and just slides half off the edge.
-        (view as? HaloBallView)?.let { halo ->
-            if (halfBall) {
-                halo.setHandle(on = false)
-                halo.halfTuckedOnRight = onRight
-            } else {
-                halo.halfTuckedOnRight = null
-                halo.setHandle(on = true, onRight = onRight)
+    /** Full screen size plus the status / navigation bar heights the bar must stay clear of. */
+    private fun screenSize(): ScreenSize {
+        val wm = windowManager()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && wm != null) {
+            runCatching {
+                val metrics = wm.currentWindowMetrics
+                val insets = metrics.windowInsets.getInsetsIgnoringVisibility(
+                    WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout()
+                )
+                val bounds = metrics.bounds
+                return ScreenSize(bounds.width(), bounds.height(), insets.top, insets.bottom)
             }
         }
-        tuckedStyle = tuckStyle
-        animateTo(view, params, wm, targetX, tuckedAlpha())
-        // Only the on-screen part is kept off the system back gesture.
-        val (visibleLeft, visibleRight) = HaloBallLook.visibleSpan(onRight, size, strip)
-        setEdgeGestureExclusion(
-            view,
-            left = visibleLeft,
-            width = visibleRight - visibleLeft,
-            height = view.height.takeIf { it > 0 } ?: params.height,
+        val dm = resources.displayMetrics
+        @SuppressLint("DiscouragedApi", "InternalInsetResource")
+        val statusId = resources.getIdentifier("status_bar_height", "dimen", "android")
+        val status = if (statusId > 0) resources.getDimensionPixelSize(statusId) else dpPx(24f)
+        return ScreenSize(dm.widthPixels, dm.heightPixels, status, 0)
+    }
+
+    private fun clampTop(top: Int): Int {
+        val screen = screenSize()
+        return EdgeBarLook.clampTop(
+            top = top,
+            windowHeight = dpPx(EdgeBarLook.TOUCH_HEIGHT_DP),
+            screenHeight = screen.height,
+            topInset = screen.topInset,
+            bottomInset = screen.bottomInset,
+            margin = dpPx(EdgeBarLook.EDGE_MARGIN_DP),
         )
     }
 
-    /** Tuck style the tucked round ball was laid out with, to re-tuck when the setting changes. */
-    private var tuckedStyle: FloatingBallTuckStyle? = null
-
-    /**
-     * Keeps the system edge-back gesture off a tucked handle (API 29+), so a swipe from the edge
-     * reaches the ball and drags it out instead of being taken as "back" and cancelled. The rect
-     * is centred and capped at [EDGE_EXCLUSION_MAX_DP], under the system's per-edge budget
-     * (200dp); [clearEdgeGestureExclusion] removes it on wake.
-     */
-    private fun setEdgeGestureExclusion(view: View, width: Int, height: Int, left: Int = 0) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
-        val max = (EDGE_EXCLUSION_MAX_DP * resources.displayMetrics.density).toInt()
-        val h = height.coerceIn(0, max)
-        val top = ((height - h) / 2).coerceAtLeast(0)
-        view.systemGestureExclusionRects = listOf(Rect(left, top, left + width.coerceAtLeast(0), top + h))
+    private fun updateLayout(view: View, params: WindowManager.LayoutParams) {
+        val wm = windowManager() ?: return
+        runCatching { wm.updateViewLayout(view, params) }
     }
 
-    private fun clearEdgeGestureExclusion(view: View) {
+    /**
+     * Keeps the system edge-back gesture off the bar's own small touch area (API 29+, well under
+     * the 200dp per-edge budget), so a long-press drag on the bar is not taken as "back" and
+     * cancelled. Back still works everywhere else along the edge.
+     */
+    private fun updateGestureExclusion(view: View) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
+        val params = barParams ?: return
+        view.systemGestureExclusionRects = listOf(Rect(0, 0, params.width, params.height))
+    }
+
+    private fun clearGestureExclusion(view: View) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
         view.systemGestureExclusionRects = emptyList()
-    }
-
-    /**
-     * Brings a tucked-away ball back out to its remembered edge, at full opacity. [instant] skips
-     * the slide — used when the user grabs the ball: it must be under the finger at once, ready to
-     * be dragged, instead of still sliding in from the edge.
-     */
-    private fun wakeUp(instant: Boolean = false) {
-        val view = ballView ?: return
-        val params = ballParams ?: return
-        val wm = getSystemService(Context.WINDOW_SERVICE) as? WindowManager ?: return
-        clearEdgeGestureExclusion(view)
-        capsuleView?.let { capsule ->
-            wakeCapsule(capsule, params, wm)
-            return
-        }
-        val density = resources.displayMetrics.density
-        val size = view.width.takeIf { it > 0 } ?: params.width
-        val screenWidth = resources.displayMetrics.widthPixels
-        val screenHeight = resources.displayMetrics.heightPixels
-        val margin = (8 * density).toInt()
-        val maxX = (screenWidth - size - margin).coerceAtLeast(margin)
-        val maxY = (screenHeight - size - margin).coerceAtLeast(margin)
-        params.y = params.y.coerceIn(margin, maxY)
-        val restingX = readStringPreference(PREF_X)?.toIntOrNull()?.coerceIn(margin, maxX)
-            ?: if (params.x + size / 2 >= screenWidth / 2) maxX else margin
-        // Back to the full ball before it moves, so it slides (or jumps) out whole.
-        (view as? HaloBallView)?.let { halo ->
-            halo.setHandle(on = false)
-            halo.halfTuckedOnRight = null
-        }
-        tuckedStyle = null
-        if (instant) {
-            motionAnimator?.cancel()
-            view.animate().cancel()
-            params.x = restingX
-            view.alpha = 1f
-            runCatching { wm.updateViewLayout(view, params) }
-        } else {
-            animateTo(view, params, wm, restingX.toFloat(), 1f)
-        }
-        writeStringPreference(PREF_X, restingX.toString())
-        writeStringPreference(PREF_Y, params.y.toString())
-    }
-
-    /**
-     * Capsule tuck: a capsule cut in half would show a sliver of text, so it collapses to a slim
-     * handle flush with the edge it sits on, dimmed like the tucked ball.
-     */
-    private fun tuckCapsule(capsule: CapsuleBallView, params: WindowManager.LayoutParams, wm: WindowManager) {
-        motionAnimator?.cancel()
-        capsule.animate().cancel()
-        val screenWidth = resources.displayMetrics.widthPixels
-        val screenHeight = resources.displayMetrics.heightPixels
-        val density = resources.displayMetrics.density
-        val margin = (8 * density).toInt()
-        val width = capsule.width.takeIf { it > 0 } ?: capsule.measuredCapsuleWidth()
-        val oldHeight = capsule.height.takeIf { it > 0 } ?: measureOverlay(capsule).second
-        val oldY = params.y
-        val onRight = params.x + width / 2 >= screenWidth / 2
-        capsule.handleOnRight = onRight
-        capsule.handleMode = true
-        syncWorking()
-        // The handle's touch strip is wider than the visible pill, which is drawn flush with the edge.
-        val strip = (CapsuleBallView.HANDLE_TOUCH_DP * density).toInt()
-        val handleHeight = (CapsuleBallView.HANDLE_HEIGHT_DP * density).toInt() + 2 * capsule.shadowInset
-        // The root keeps a shadow inset on every side; push it past the edge so the handle is flush.
-        params.x = if (onRight) screenWidth - strip - capsule.shadowInset else -capsule.shadowInset
-        // Keep the vertical centre so collapsing to the short handle does not jump on screen.
-        val maxY = (screenHeight - handleHeight - margin).coerceAtLeast(margin)
-        params.y = FloatingBallGesture.topPreservingCenter(oldY, oldHeight, handleHeight)
-            .coerceIn(margin, maxY)
-        runCatching { wm.updateViewLayout(capsule, params) }
-        capsule.animate().alpha(tuckedAlpha()).setDuration(IDLE_ANIM_MS).start()
-        // Sizes from the handle layout: the view is only re-laid out on the next frame.
-        setEdgeGestureExclusion(
-            capsule,
-            width = strip + 2 * capsule.shadowInset,
-            height = handleHeight,
-        )
-    }
-
-    /** Capsule wake: back to the full bar at its remembered edge, at full opacity, at once. */
-    private fun wakeCapsule(capsule: CapsuleBallView, params: WindowManager.LayoutParams, wm: WindowManager) {
-        // The tucked capsule's edge rect must not outlive the handle: it would keep swallowing
-        // the system back gesture next to the expanded bar. (wakeUp() clears the same view, as
-        // the capsule is the overlay's root view; kept here so this path is safe on its own.)
-        clearEdgeGestureExclusion(capsule)
-        motionAnimator?.cancel()
-        capsule.animate().cancel()
-        val screenWidth = resources.displayMetrics.widthPixels
-        val screenHeight = resources.displayMetrics.heightPixels
-        val margin = (8 * resources.displayMetrics.density).toInt()
-        val oldHeight = capsule.height.takeIf { it > 0 }
-            ?: ((CapsuleBallView.HANDLE_HEIGHT_DP * resources.displayMetrics.density).toInt()
-                + 2 * capsule.shadowInset)
-        val oldY = params.y
-        val onRight = params.x > screenWidth / 2
-        capsule.handleMode = false
-        syncWorking()
-        val width = capsule.measuredCapsuleWidth()
-        // Re-measure after leaving handle mode so height matches the full bar, not the slim strip.
-        val height = measureOverlay(capsule).second.coerceAtLeast(1)
-        params.x = if (onRight) (screenWidth - width - margin).coerceAtLeast(margin) else margin
-        val maxY = (screenHeight - height - margin).coerceAtLeast(margin)
-        // Expand about the same centre as the handle so wake does not read as a downward jerk.
-        params.y = FloatingBallGesture.topPreservingCenter(oldY, oldHeight, height)
-            .coerceIn(margin, maxY)
-        capsule.alpha = 1f
-        runCatching { wm.updateViewLayout(capsule, params) }
-        writeStringPreference(PREF_X, params.x.toString())
-        writeStringPreference(PREF_Y, params.y.toString())
-    }
-
-    private fun animateTo(
-        view: View,
-        params: WindowManager.LayoutParams,
-        wm: WindowManager,
-        targetX: Float,
-        targetAlpha: Float,
-    ) {
-        motionAnimator?.cancel()
-        // A running spawn/collapse owns scale and alpha; the tuck/wake animation must take over.
-        view.animate().cancel()
-        val startX = params.x.toFloat()
-        val startAlpha = view.alpha
-        motionAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
-            duration = IDLE_ANIM_MS
-            addUpdateListener { anim ->
-                val fraction = anim.animatedValue as Float
-                params.x = Math.round(startX + (targetX - startX) * fraction)
-                view.alpha = startAlpha + (targetAlpha - startAlpha) * fraction
-                runCatching { wm.updateViewLayout(view, params) }
-            }
-            start()
-        }
-    }
-
-    // ---- Spawn / collapse ----
-
-    /**
-     * Folds the ball away into the quick-chat panel: it shrinks and fades from where it sits, then
-     * goes invisible. Only stays hidden if the panel is still up by the time it finishes, so a
-     * panel dismissed mid-collapse never leaves the ball stranded.
-     */
-    private fun collapseBall() {
-        val view = ballView ?: return
-        if (panelOpen && voiceHoldActive.value) {
-            // The finger is still down for hold-to-talk. Hiding the ball now would rip the touch
-            // out from under the gesture (INVISIBLE cancels it) and end the recording early — so
-            // the ball stays put, under the user's finger, until the hold is released.
-            return
-        }
-        if (panelOpen) {
-            // The panel is unfolding out of the ball — the ball becomes it.
-            view.animate().cancel()
-            view.animate()
-                .scaleX(BALL_COLLAPSE_END_SCALE)
-                .scaleY(BALL_COLLAPSE_END_SCALE)
-                .alpha(0f)
-                .setDuration(BALL_COLLAPSE_MS)
-                .setInterpolator(AccelerateInterpolator(1.6f))
-                .withEndAction {
-                    if (panelOpen && ballView === view) {
-                        view.visibility = View.INVISIBLE
-                        view.scaleX = 1f
-                        view.scaleY = 1f
-                    }
-                }
-                .start()
-        } else {
-            // The panel closed while we were waiting: nothing to fold into, just stay visible.
-            view.visibility = View.VISIBLE
-            view.scaleX = 1f
-            view.scaleY = 1f
-            view.alpha = 1f
-        }
-    }
-
-    /**
-     * Pops the ball back out of where the panel folded into — a springy overshoot, so the ball
-     * reads as re-forming rather than simply appearing. Also used the first time the ball is put
-     * on screen.
-     */
-    private fun spawnBall() {
-        val view = ballView ?: return
-        view.animate().cancel()
-        view.scaleX = BALL_SPAWN_START_SCALE
-        view.scaleY = BALL_SPAWN_START_SCALE
-        view.alpha = 0f
-        view.animate()
-            .scaleX(1f)
-            .scaleY(1f)
-            .alpha(1f)
-            .setDuration(BALL_SPAWN_MS)
-            .setInterpolator(OvershootInterpolator(BALL_SPAWN_OVERSHOOT))
-            .start()
     }
 
     // ---- Foreground ----

@@ -160,10 +160,10 @@ class SettingsSearchIndexTest {
     }
 
     @Test
-    fun `floating ball nested alpha is indexed`() {
+    fun `edge bar nested colour is indexed`() {
         val entry = settingsSearchIndex(developerMode = false).single {
             it.route == Screen.SettingFloatingBall &&
-                it.titleRes == R.string.setting_floating_ball_alpha_title
+                it.titleRes == R.string.setting_floating_ball_color_title
         }
         assertNotNull(entry.parentTitleRes)
         assertEquals(R.string.setting_floating_ball_page_title, entry.parentTitleRes)

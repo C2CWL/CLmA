@@ -46,6 +46,8 @@ import me.rerere.rikkahub.utils.CrashHandler
 import me.rerere.rikkahub.utils.DatabaseUtil
 import me.rerere.rikkahub.data.repository.WorkspaceRepository
 import me.rerere.workspace.WorkspaceManager
+import me.rerere.rikkahub.ui.hooks.readBooleanPreference
+import me.rerere.rikkahub.ui.hooks.writeBooleanPreference
 import org.koin.android.ext.android.get
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -58,6 +60,9 @@ const val CHAT_COMPLETED_NOTIFICATION_CHANNEL_ID = "chat_completed"
 const val CHAT_LIVE_UPDATE_NOTIFICATION_CHANNEL_ID = "chat_live_update"
 const val WEB_SERVER_NOTIFICATION_CHANNEL_ID = "web_server"
 const val FLOATING_BALL_NOTIFICATION_CHANNEL_ID = "floating_ball"
+
+/** Set once the removed floating ball's picked-icon files have been deleted from filesDir. */
+private const val LEGACY_BALL_ICONS_CLEANED_KEY = "edge_bar_legacy_ball_icons_cleaned"
 
 class RikkaHubApp : Application() {
     override fun onCreate() {
@@ -131,7 +136,7 @@ class RikkaHubApp : Application() {
         // Start WebServer if enabled in settings
         startWebServerIfEnabled()
 
-        // Bring the floating ball back if it was left on
+        // Bring the edge bar back if it was left on
         restoreFloatingBallIfEnabled()
 
         // Eagerly construct ChatService on the main thread. Its constructor calls
@@ -503,7 +508,8 @@ class RikkaHubApp : Application() {
     }
 
     /**
-     * Bring the floating ball back after a process start when it is still enabled. The service is
+     * Bring the edge bar (formerly the floating ball) back after a process start when it is still
+     * enabled. The service is
      * START_NOT_STICKY (so turning it off is final), which means the OS will not revive it on its
      * own — we do it here, the same way [startTelegramBotIfEnabled] handles the bot.
      *
@@ -511,7 +517,18 @@ class RikkaHubApp : Application() {
      * itself anyway, and we avoid leaving a useless foreground service behind.
      */
     private fun restoreFloatingBallIfEnabled() {
-        get<AppScope>().launch {
+        get<AppScope>().launch(Dispatchers.IO) {
+            // One-time cleanup: the removed floating ball could show a user-picked picture, copied
+            // into filesDir as floating_ball_icon*. Nothing reads those any more.
+            runCatching {
+                if (!readBooleanPreference(LEGACY_BALL_ICONS_CLEANED_KEY)) {
+                    filesDir.listFiles { file -> file.isFile && file.name.startsWith("floating_ball_icon") }
+                        ?.forEach { it.delete() }
+                    writeBooleanPreference(LEGACY_BALL_ICONS_CLEANED_KEY, true)
+                }
+            }.onFailure {
+                Log.w(TAG, "legacy floating-ball icon cleanup failed", it)
+            }
             runCatching {
                 val settings = get<SettingsStore>().settingsFlowRaw.first()
                 if (!settings.floatingBallEnabled) return@runCatching

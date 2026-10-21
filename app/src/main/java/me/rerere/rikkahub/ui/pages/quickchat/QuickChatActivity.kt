@@ -46,7 +46,7 @@ import org.koin.android.ext.android.inject
 import org.koin.compose.koinInject
 
 /**
- * Half-screen quick-chat panel opened by the floating ball.
+ * Half-screen quick-chat panel opened by tapping the edge bar.
  *
  * Transparent + translucent so whatever app the user is in stays visible behind the panel — the
  * panel looks like it floats over the current screen, and dismissing it (tap outside / close /
@@ -55,35 +55,28 @@ import org.koin.compose.koinInject
  * Reuses the app's own theme and Koin singletons, so the panel talks to the same ChatService
  * conversations as the main chat page.
  *
- * The panel is positioned and mirrored from the ball that opened it: it never sits at a fixed
- * bottom, and its controls move to whichever side the ball is on (see [QuickChatPanel]).
+ * The panel is positioned and mirrored from the edge bar that opened it: it never sits at a fixed
+ * bottom, and its controls move to whichever side the bar is on (see [QuickChatPanel]).
  */
 class QuickChatActivity : ComponentActivity() {
 
     companion object {
-        /**
-         * True when the panel was opened by holding the ball: the panel records for exactly as
-         * long as the ball stays held (see [FloatingBallService.voiceHoldActive]).
-         */
-        const val EXTRA_VOICE = "quick_chat_voice"
-
-        /** Which edge the ball sits on, `"left"` / `"right"`; drives the panel's mirrored layout. */
+        /** Which edge the edge bar sits on, `"left"` / `"right"`; drives the panel's mirrored layout. */
         const val EXTRA_BALL_SIDE = "quick_chat_ball_side"
 
-        /** Vertical centre of the ball, in screen pixels; the panel anchors itself to it. */
+        /** Vertical centre of the edge bar, in screen pixels; the panel anchors itself to it. */
         const val EXTRA_BALL_CENTER_Y = "quick_chat_ball_center_y"
 
-        fun intent(context: Context, voice: Boolean, ballSide: String, ballCenterY: Int): Intent =
+        fun intent(context: Context, ballSide: String, ballCenterY: Int): Intent =
             Intent(context, QuickChatActivity::class.java).apply {
                 addFlags(
                     Intent.FLAG_ACTIVITY_NEW_TASK or
                         Intent.FLAG_ACTIVITY_SINGLE_TOP or
-                        // The panel animates itself (it unfolds out of the ball); the platform's
+                        // The panel animates itself (it unfolds out of the edge bar); the platform's
                         // stock open/close transition layered on top was the stutter — worst over
                         // the launcher. Belt-and-braces with the activity's own override below.
                         Intent.FLAG_ACTIVITY_NO_ANIMATION
                 )
-                putExtra(EXTRA_VOICE, voice)
                 putExtra(EXTRA_BALL_SIDE, ballSide)
                 putExtra(EXTRA_BALL_CENTER_Y, ballCenterY)
             }
@@ -92,7 +85,7 @@ class QuickChatActivity : ComponentActivity() {
     /** Settings store, published through [LocalSettings] for the components the panel hosts. */
     private val settingsStore: SettingsStore by inject()
 
-    /** Mirror the panel when the ball is on the left, so its controls fall under that thumb. */
+    /** Mirror the panel when the bar is on the left, so its controls fall under that thumb. */
     private val mirror = mutableStateOf(false)
     private val ballCenterY = mutableIntStateOf(0)
 
@@ -106,9 +99,6 @@ class QuickChatActivity : ComponentActivity() {
      * on a blur the device may not have.
      */
     private val blurredBackdrop = mutableStateOf(false)
-
-    /** Opened by holding the ball: the panel records for as long as the ball stays held. */
-    private val holdToTalk = mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -164,13 +154,11 @@ class QuickChatActivity : ComponentActivity() {
                         showCloseButton = true,
                     )
                     QuickChatPanel(
-                        holdToTalk = holdToTalk.value,
                         mirror = mirror.value,
                         ballCenterY = ballCenterY.intValue,
                         blurredBackdrop = blurredBackdrop.value,
-                        // Told from the panel's first frame, not from onCreate: the ball folds itself
-                        // away exactly as the panel unfolds, and stands the idle countdown down while
-                        // the panel owns the screen. It comes back when we finish.
+                        // Told from the panel's first frame, not from onCreate: the edge bar hides
+                        // as the panel unfolds and comes back when we finish.
                         onUnfoldStart = { FloatingBallService.notifyPanel(this, open = true) },
                         onClose = { finish() },
                     )
@@ -212,7 +200,7 @@ class QuickChatActivity : ComponentActivity() {
 
     override fun finish() {
         super.finish()
-        // The panel folds back into the ball itself; the stock close animation would fight it.
+        // The panel folds back into the edge bar itself; the stock close animation would fight it.
         @Suppress("DEPRECATION")
         overridePendingTransition(0, 0)
     }
@@ -220,7 +208,6 @@ class QuickChatActivity : ComponentActivity() {
     private fun readPanelExtras(intent: Intent?) {
         mirror.value = intent?.getStringExtra(EXTRA_BALL_SIDE) == "left"
         ballCenterY.intValue = intent?.getIntExtra(EXTRA_BALL_CENTER_Y, 0) ?: 0
-        holdToTalk.value = intent?.getBooleanExtra(EXTRA_VOICE, false) == true
     }
 
     /**
