@@ -102,7 +102,7 @@ fun SettingAboutPage() {
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         AsyncImage(
-                            model = R.mipmap.ic_launcher,
+                            model = R.drawable.ic_clma_logo,
                             contentDescription = stringResource(R.string.accessibility_app_logo),
                             modifier = Modifier
                                 .clip(CircleShape)

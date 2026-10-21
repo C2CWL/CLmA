@@ -42,7 +42,6 @@ enum class SettingsHubItemId {
     DOCTOR,
     LOGS,
     ABOUT,
-    SPONSOR,
     SHARE,
 }
 
@@ -283,12 +282,6 @@ val settingsHubItems: Map<SettingsHubItemId, SettingsHubItemDef> = listOf(
         reorganized = SettingsHubItemCopy(R.string.setting_page_about, R.string.setting_page_about_desc),
     ),
     SettingsHubItemDef(
-        id = SettingsHubItemId.SPONSOR,
-        route = Screen.SettingSponsor,
-        classic = SettingsHubItemCopy(R.string.setting_page_sponsor, R.string.setting_page_sponsor_desc),
-        reorganized = SettingsHubItemCopy(R.string.setting_page_sponsor, R.string.setting_page_sponsor_desc),
-    ),
-    SettingsHubItemDef(
         id = SettingsHubItemId.SHARE,
         route = null,
         classic = SettingsHubItemCopy(R.string.setting_page_share, R.string.setting_page_share_desc),
@@ -373,7 +366,6 @@ private val classicSections: List<SettingsHubSectionDef> = listOf(
             SettingsHubItemId.DOCTOR,
             SettingsHubItemId.LOGS,
             SettingsHubItemId.ABOUT,
-            SettingsHubItemId.SPONSOR,
             SettingsHubItemId.SHARE,
         ),
     ),
@@ -457,7 +449,6 @@ private val reorganizedSections: List<SettingsHubSectionDef> = listOf(
             SettingsHubItemId.DOCTOR,
             SettingsHubItemId.LOGS,
             SettingsHubItemId.ABOUT,
-            SettingsHubItemId.SPONSOR,
             SettingsHubItemId.SHARE,
         ),
     ),

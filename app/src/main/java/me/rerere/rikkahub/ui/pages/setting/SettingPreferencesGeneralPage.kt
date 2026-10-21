@@ -1,5 +1,6 @@
 package me.rerere.rikkahub.ui.pages.setting
 
+import android.widget.Toast
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
@@ -27,6 +28,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -45,6 +47,9 @@ import me.rerere.rikkahub.ui.components.ui.snapToInt
 import me.rerere.rikkahub.ui.components.ui.Select
 import me.rerere.rikkahub.ui.hooks.rememberSharedPreferenceBoolean
 import me.rerere.rikkahub.ui.theme.CustomColors
+import me.rerere.rikkahub.utils.AppIconStyle
+import me.rerere.rikkahub.utils.applyAppIcon
+import me.rerere.rikkahub.utils.currentAppIcon
 import me.rerere.rikkahub.utils.plus
 import org.koin.androidx.compose.koinViewModel
 
@@ -52,6 +57,8 @@ import org.koin.androidx.compose.koinViewModel
 fun SettingPreferencesGeneralPage(vm: SettingVM = koinViewModel()) {
     val settings by vm.settings.collectAsStateWithLifecycle()
     var displaySetting by remember(settings) { mutableStateOf(settings.displaySetting) }
+    val context = LocalContext.current
+    var appIcon by remember(context) { mutableStateOf(currentAppIcon(context)) }
 
     fun updateDisplaySetting(setting: DisplaySetting) {
         displaySetting = setting
@@ -144,6 +151,39 @@ fun SettingPreferencesGeneralPage(vm: SettingVM = koinViewModel()) {
                                             LoadingIndicatorStyle.SHIMMER -> R.string.setting_display_page_loading_indicator_style_shimmer
                                             LoadingIndicatorStyle.SPARKLE -> R.string.setting_display_page_loading_indicator_style_sparkle
                                             LoadingIndicatorStyle.CLAUDE -> R.string.setting_display_page_loading_indicator_style_claude
+                                        }
+                                    )
+                                },
+                                containerColor = CustomColors.listItemColors.containerColor,
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                                modifier = Modifier.width(150.dp),
+                            )
+                        },
+                    )
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_app_icon_title)) },
+                        supportingContent = {
+                            Text(stringResource(R.string.setting_display_page_app_icon_desc))
+                        },
+                        trailingContent = {
+                            Select(
+                                options = AppIconStyle.entries,
+                                selectedOption = appIcon,
+                                onOptionSelected = { style ->
+                                    if (applyAppIcon(context, style)) {
+                                        appIcon = style
+                                        Toast.makeText(
+                                            context,
+                                            context.getString(R.string.setting_display_page_app_icon_applied),
+                                            Toast.LENGTH_SHORT,
+                                        ).show()
+                                    }
+                                },
+                                optionToString = {
+                                    stringResource(
+                                        when (it) {
+                                            AppIconStyle.DEFAULT -> R.string.setting_display_page_app_icon_default
+                                            AppIconStyle.RING -> R.string.setting_display_page_app_icon_ring
                                         }
                                     )
                                 },

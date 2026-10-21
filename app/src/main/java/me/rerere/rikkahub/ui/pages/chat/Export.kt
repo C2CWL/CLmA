@@ -497,7 +497,7 @@ private fun ExportedChatImage(
                             )
                         }
                         // Use painterResource for the logo
-                        val painter = painterResource(id = R.mipmap.ic_launcher_foreground)
+                        val painter = painterResource(id = R.drawable.ic_launcher_clma_foreground)
                         Image(
                             painter = painter,
                             contentDescription = stringResource(R.string.accessibility_app_logo),
