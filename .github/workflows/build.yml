@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - main
       - 'feat/**'
       # Maintenance branches (CI tweaks, dependency bumps, docs) build too — they
       # are still code that will be merged, so they deserve the same gate.
@@ -20,6 +21,7 @@ on:
   pull_request:
     branches:
       - master
+      - main
     # Same rule for PRs: a docs-only PR stays mergeable without burning a run.
     paths-ignore:
       - '**/*.md'
