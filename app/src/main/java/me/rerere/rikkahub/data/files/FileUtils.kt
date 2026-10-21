@@ -3,7 +3,6 @@ package me.rerere.rikkahub.data.files
 import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
-import android.provider.DocumentsContract
 import android.provider.OpenableColumns
 import android.util.Log
 import android.webkit.MimeTypeMap
@@ -44,26 +43,26 @@ object FileUtils {
 
     fun getFileNameFromUri(context: Context, uri: Uri): String? {
         return runCatching {
+            // Only request OpenableColumns.DISPLAY_NAME. Pairing it with the identical
+            // DocumentsContract display-name constant (same "_display_name" string) made some
+            // providers reject the query. Fall back to the URI last path segment.
             var fileName: String? = null
-            val projection = arrayOf(
-                OpenableColumns.DISPLAY_NAME,
-                DocumentsContract.Document.COLUMN_DISPLAY_NAME
-            )
-            context.contentResolver.query(uri, projection, null, null, null)?.use { cursor ->
+            context.contentResolver.query(
+                uri,
+                arrayOf(OpenableColumns.DISPLAY_NAME),
+                null,
+                null,
+                null,
+            )?.use { cursor ->
                 if (cursor.moveToFirst()) {
-                    val documentDisplayNameIndex =
-                        cursor.getColumnIndex(DocumentsContract.Document.COLUMN_DISPLAY_NAME)
-                    if (documentDisplayNameIndex != -1) {
-                        fileName = cursor.getString(documentDisplayNameIndex)
-                    } else {
-                        val openableDisplayNameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                        if (openableDisplayNameIndex != -1) {
-                            fileName = cursor.getString(openableDisplayNameIndex)
-                        }
+                    val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    if (index != -1) {
+                        fileName = cursor.getString(index)
                     }
                 }
             }
-            fileName
+            fileName?.takeIf { it.isNotBlank() }
+                ?: uri.lastPathSegment?.substringAfterLast('/')?.takeIf { it.isNotBlank() }
         }.onFailure {
             Log.w(TAG, "getFileNameFromUri: Failed to query display name for $uri", it)
         }.getOrNull()

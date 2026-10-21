@@ -24,8 +24,10 @@ import me.rerere.rikkahub.ui.components.ui.permission.PermissionManager
 import me.rerere.rikkahub.ui.components.ui.permission.rememberPermissionState
 import me.rerere.rikkahub.ui.context.LocalToaster
 import me.rerere.rikkahub.ui.hooks.ChatInputState
+import me.rerere.rikkahub.utils.ChatAttachmentKind
 import me.rerere.rikkahub.utils.ImageUtils
-import me.rerere.rikkahub.utils.isAllowedFileType
+import me.rerere.rikkahub.utils.classifyChatAttachment
+import me.rerere.rikkahub.utils.guessMimeFromFileName
 import org.koin.compose.koinInject
 import java.io.File
 import kotlin.uuid.Uuid
@@ -194,34 +196,89 @@ internal fun rememberChatAttachmentPickerActions(
             }
         }
 
+    // Prefer GetMultipleContents over OpenMultipleDocuments: several OEM document UIs
+    // mishandle ACTION_OPEN_DOCUMENT + */*, while GET_CONTENT is what the image/video
+    // buttons already use successfully. Any format is accepted; media is reclassified.
     val filePickerLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
-            if (uris.isNotEmpty()) {
-                val documents = uris.mapNotNull { uri ->
-                    val fileName = filesManager.getFileNameFromUri(uri) ?: "file"
-                    val mime = filesManager.getFileMimeType(uri) ?: "text/plain"
-                    if (isAllowedFileType(fileName, mime)) {
-                        val localUri = filesManager.createChatFilesByContents(listOf(uri)).firstOrNull()
-                            ?: run {
-                                toaster.show(
-                                    resources.getString(R.string.chat_input_file_read_failed, fileName),
-                                    type = ToastType.Error
-                                )
-                                return@mapNotNull null
-                            }
-                        UIMessagePart.Document(url = localUri.toString(), fileName = fileName, mime = mime)
-                    } else {
+        rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
+            if (uris.isEmpty()) {
+                Log.d(TAG, "File picker: no files selected")
+                return@rememberLauncherForActivityResult
+            }
+            Log.d(TAG, "File picker: selected ${uris.size} uri(s)")
+            val images = mutableListOf<Uri>()
+            val videos = mutableListOf<Uri>()
+            val audios = mutableListOf<Uri>()
+            val documents = mutableListOf<UIMessagePart.Document>()
+
+            uris.forEach { uri ->
+                val fileName = filesManager.getFileNameFromUri(uri)
+                    ?: uri.lastPathSegment?.substringAfterLast('/')
+                    ?: "file"
+                val mime = filesManager.getFileMimeType(uri)
+                    ?: guessMimeFromFileName(fileName)
+                    ?: "application/octet-stream"
+                val localUri = filesManager.createChatFilesByContents(listOf(uri)).firstOrNull()
+                    ?: run {
                         toaster.show(
-                            resources.getString(R.string.chat_input_unsupported_file_type, fileName),
-                            type = ToastType.Error
+                            resources.getString(R.string.chat_input_file_read_failed, fileName),
+                            type = ToastType.Error,
                         )
-                        null
+                        return@forEach
+                    }
+
+                when (classifyChatAttachment(fileName, mime)) {
+                    ChatAttachmentKind.IMAGE -> images.add(localUri)
+                    ChatAttachmentKind.VIDEO -> {
+                        val size = filesManager.getFileSize(uri)
+                        if (size != null && size > MAX_VIDEO_ATTACHMENT_BYTES) {
+                            toaster.show(
+                                resources.getString(
+                                    R.string.chat_input_attachment_too_large,
+                                    resources.getString(R.string.video),
+                                    size / (1024 * 1024),
+                                ),
+                                type = ToastType.Error,
+                            )
+                            filesManager.deleteChatFiles(listOf(localUri))
+                        } else {
+                            videos.add(localUri)
+                        }
+                    }
+                    ChatAttachmentKind.AUDIO -> {
+                        val size = filesManager.getFileSize(uri)
+                        if (size != null && size > MAX_AUDIO_ATTACHMENT_BYTES) {
+                            toaster.show(
+                                resources.getString(
+                                    R.string.chat_input_attachment_too_large,
+                                    resources.getString(R.string.audio),
+                                    size / (1024 * 1024),
+                                ),
+                                type = ToastType.Error,
+                            )
+                            filesManager.deleteChatFiles(listOf(localUri))
+                        } else {
+                            audios.add(localUri)
+                        }
+                    }
+                    ChatAttachmentKind.DOCUMENT -> {
+                        documents.add(
+                            UIMessagePart.Document(
+                                url = localUri.toString(),
+                                fileName = fileName,
+                                mime = mime,
+                            )
+                        )
                     }
                 }
-                if (documents.isNotEmpty()) {
-                    inputState.addFiles(documents)
-                    onAttachmentAdded()
-                }
+            }
+
+            if (images.isNotEmpty()) inputState.addImages(images)
+            if (videos.isNotEmpty()) inputState.addVideos(videos)
+            if (audios.isNotEmpty()) inputState.addAudios(audios)
+            if (documents.isNotEmpty()) inputState.addFiles(documents)
+            if (images.isNotEmpty() || videos.isNotEmpty() || audios.isNotEmpty() || documents.isNotEmpty()) {
+                onAttachmentAdded()
             }
         }
 
@@ -230,6 +287,8 @@ internal fun rememberChatAttachmentPickerActions(
         onPickImage = { imagePickerLauncher.launch("image/*") },
         onPickVideo = { videoPickerLauncher.launch("video/*") },
         onPickAudio = { audioPickerLauncher.launch("audio/*") },
-        onPickFile = { filePickerLauncher.launch(arrayOf("*/*")) },
+        onPickFile = { filePickerLauncher.launch("*/*") },
     )
 }
+
+private const val TAG = "ChatAttachmentPicker"
