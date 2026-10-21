@@ -546,12 +546,19 @@ class SettingsStore(
                     Log.w(TAG, "Failed to decode networkSetting, using default", it)
                     NetworkSetting()
                 },
-                searchServices = preferences[SEARCH_SERVICES]?.let { raw ->
-                    runCatching { JsonInstant.decodeFromString<List<SearchServiceOptions>>(raw) }.getOrElse {
-                        Log.w(TAG, "Failed to decode searchServices, using default", it)
-                        listOf(SearchServiceOptions.DEFAULT)
-                    }
-                } ?: listOf(SearchServiceOptions.DEFAULT),
+                searchServices = (
+                    preferences[SEARCH_SERVICES]?.let { raw ->
+                        runCatching { JsonInstant.decodeFromString<List<SearchServiceOptions>>(raw) }.getOrElse {
+                            Log.w(TAG, "Failed to decode searchServices, using default", it)
+                            listOf(SearchServiceOptions.DEFAULT)
+                        }
+                    } ?: listOf(SearchServiceOptions.DEFAULT)
+                )
+                    // CLmA is not the upstream service: drop the official RikkaHub search
+                    // preset (api.rikka-ai.com). Keep the sealed subclass for serde so old
+                    // installs still decode; just don't surface or call it.
+                    .filterNot { it is SearchServiceOptions.RikkaHubOptions }
+                    .ifEmpty { listOf(SearchServiceOptions.DEFAULT) },
                 searchCommonOptions = preferences[SEARCH_COMMON]?.let { raw ->
                     runCatching { JsonInstant.decodeFromString<SearchCommonOptions>(raw) }.getOrElse {
                         Log.w(TAG, "Failed to decode searchCommonOptions, using default", it)
