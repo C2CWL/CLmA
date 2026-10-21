@@ -49,6 +49,7 @@ fun RabbitLoadingIndicator(modifier: Modifier = Modifier) {
         LoadingIndicatorStyle.SHIMMER -> ShimmerBar(modifier = modifier)
         LoadingIndicatorStyle.APP_ICON -> AppIconLoadingIndicator(modifier = modifier)
         LoadingIndicatorStyle.DEFAULT -> ContainedLoadingIndicator(modifier = modifier)
+        LoadingIndicatorStyle.CLAUDE -> ClaudeLoadingIndicator(modifier = modifier)
     }
 }
 
