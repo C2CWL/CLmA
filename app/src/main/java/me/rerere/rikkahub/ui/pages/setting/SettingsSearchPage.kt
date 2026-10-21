@@ -62,11 +62,7 @@ fun SettingsSearchPage(vm: SettingVM = koinViewModel()) {
             entries.filter { it.parentTitleRes == null }
         } else {
             entries.filter { entry ->
-                context.getString(entry.titleRes).contains(q, ignoreCase = true) ||
-                    entry.descriptionRes?.let { context.getString(it).contains(q, ignoreCase = true) } == true ||
-                    entry.altTitles.any { context.getString(it).contains(q, ignoreCase = true) } ||
-                    context.getString(entry.groupRes).contains(q, ignoreCase = true) ||
-                    entry.parentTitleRes?.let { context.getString(it).contains(q, ignoreCase = true) } == true
+                entry.matchesSearchQuery(q) { id -> context.getString(id) }
             }
         }
     }

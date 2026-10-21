@@ -26,6 +26,28 @@ data class SettingsSearchEntry(
 )
 
 /**
+ * Query match used by [SettingsSearchPage].
+ *
+ * The query is split on whitespace and every token has to hit one of the entry's searchable
+ * strings, so "顶栏 高度" and "顶栏高度" find the same row, and a word that only appears inside a
+ * description or a page name still matches. The old whole-query `contains` returned nothing the
+ * moment the query had a space in it or was one character longer than the stored wording
+ * ("透明度" against a description that only says "完全透明").
+ */
+fun SettingsSearchEntry.matchesSearchQuery(query: String, text: (Int) -> String): Boolean {
+    val tokens = query.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }
+    if (tokens.isEmpty()) return false
+    val haystack = buildList {
+        add(text(titleRes))
+        descriptionRes?.let { add(text(it)) }
+        altTitles.forEach { add(text(it)) }
+        add(text(groupRes))
+        parentTitleRes?.let { add(text(it)) }
+    }
+    return tokens.all { token -> haystack.any { it.contains(token, ignoreCase = true) } }
+}
+
+/**
  * Static mirror of hub rows in [SettingPage] plus nested items from secondary pages.
  * Nested rows share the parent [Screen] route — uniqueness is (route, titleRes, parentTitleRes).
  */
@@ -36,6 +58,23 @@ fun settingsSearchIndex(
 ): List<SettingsSearchEntry> {
     val entries = mutableListOf<SettingsSearchEntry>()
 
+    // Both hub styles' names for a page stay searchable, so a row can still be found by the name
+    // the user saw before switching the settings hub layout (the hub row itself already does this
+    // through altTitles; nested rows used to know only the active style's name).
+    val parentAliases: Map<Screen, List<Int>> = mapOf(
+        Screen.SettingPreferencesUI to listOf(
+            R.string.setting_page_preferences_ui,
+            R.string.setting_page_hub_chat_display,
+        ),
+        Screen.SettingPreferencesGeneral to listOf(
+            R.string.setting_page_preferences_general,
+            R.string.setting_page_hub_chat_actions,
+        ),
+        Screen.SettingPreferencesNotification to listOf(
+            R.string.setting_page_preferences_notification,
+            R.string.setting_page_hub_app_alerts,
+        ),
+    )
 
     fun nested(
         @StringRes parent: Int,
@@ -50,7 +89,7 @@ fun settingsSearchIndex(
             descriptionRes = desc,
             groupRes = group,
             route = route,
-            altTitles = alts.toList(),
+            altTitles = (alts.toList() + parentAliases[route].orEmpty()).filter { it != parent },
             parentTitleRes = parent,
         )
     }
@@ -154,7 +193,46 @@ fun settingsSearchIndex(
     // Nested: Theme
     val themeParent = R.string.setting_page_preferences_theme
     nested(themeParent, Screen.SettingPreferencesTheme, appearance, R.string.setting_page_color_mode)
+    nested(themeParent, Screen.SettingPreferencesTheme, appearance, R.string.setting_page_dynamic_color, R.string.setting_page_dynamic_color_desc)
+    nested(themeParent, Screen.SettingPreferencesTheme, appearance, R.string.setting_page_theme_setting, R.string.setting_page_theme_setting_desc)
     nested(themeParent, Screen.SettingPreferencesTheme, appearance, R.string.setting_display_page_amoled_dark_mode_title, R.string.setting_display_page_amoled_dark_mode_desc)
+
+    // Nested: models — generation budgets and the compaction that runs when they are hit
+    val modelParent = R.string.setting_model_page_title
+    nested(modelParent, Screen.SettingModels, models, R.string.setting_model_page_generation_limits)
+    nested(modelParent, Screen.SettingModels, models, R.string.setting_model_page_turn_budget, R.string.setting_model_page_turn_budget_desc)
+    nested(modelParent, Screen.SettingModels, models, R.string.setting_model_page_max_tool_steps, R.string.setting_model_page_max_tool_steps_desc)
+    nested(modelParent, Screen.SettingModels, models, R.string.assistant_page_thinking_budget)
+    nested(modelParent, Screen.SettingModels, models, R.string.setting_model_page_enable_suggestion)
+    nested(modelParent, Screen.SettingModels, models, R.string.setting_model_page_enable_auto_compaction, R.string.setting_model_page_enable_auto_compaction_desc)
+    nested(modelParent, Screen.SettingModels, models, R.string.setting_model_page_auto_compaction_threshold, R.string.setting_model_page_auto_compaction_threshold_desc)
+    nested(modelParent, Screen.SettingModels, models, R.string.setting_model_page_auto_compaction_tokens, R.string.setting_model_page_auto_compaction_tokens_desc)
+    nested(modelParent, Screen.SettingModels, models, R.string.setting_model_page_auto_compaction_keep_tool_calls)
+    nested(modelParent, Screen.SettingModels, models, R.string.setting_model_page_context_compaction_target, R.string.setting_model_page_context_compaction_target_desc)
+
+    // Nested: network — proxy and the two stream watchdogs
+    val networkParent = R.string.setting_page_preferences_network
+    nested(networkParent, Screen.SettingPreferencesNetwork, device, R.string.setting_page_preferences_network_proxy)
+    nested(networkParent, Screen.SettingPreferencesNetwork, device, R.string.setting_page_preferences_network_user_agent)
+    nested(networkParent, Screen.SettingPreferencesNetwork, device, R.string.setting_page_preferences_network_first_output_timeout, R.string.setting_page_preferences_network_first_output_timeout_desc)
+    nested(networkParent, Screen.SettingPreferencesNetwork, device, R.string.setting_page_preferences_network_stall_timeout, R.string.setting_page_preferences_network_stall_timeout_desc)
+    nested(networkParent, Screen.SettingPreferencesNetwork, device, R.string.setting_page_preferences_network_stream_retries, R.string.setting_page_preferences_network_stream_retries_desc)
+
+    // Nested: web server
+    val webParent = R.string.setting_page_web_server
+    nested(webParent, Screen.SettingWeb, device, R.string.setting_page_web_server_port, R.string.setting_page_web_server_port_desc)
+    nested(webParent, Screen.SettingWeb, device, R.string.setting_page_web_server_localhost_only, R.string.setting_page_web_server_localhost_only_desc)
+    nested(webParent, Screen.SettingWeb, device, R.string.setting_page_web_server_jwt_enable, R.string.setting_page_web_server_jwt_enable_desc)
+    nested(webParent, Screen.SettingWeb, device, R.string.setting_page_web_server_password, R.string.setting_page_web_server_password_desc)
+
+    // Nested: SSH hosts (the page itself is the hub row; these are its two lists)
+    val sshParent = R.string.setting_page_ssh
+    nested(sshParent, Screen.SettingSsh, device, R.string.setting_ssh_page_hosts)
+    nested(sshParent, Screen.SettingSsh, device, R.string.setting_ssh_page_known_hosts)
+
+    // Nested: accessibility repair
+    val accessibilityParent = R.string.setting_page_accessibility
+    nested(accessibilityParent, Screen.SettingAccessibility, device, R.string.setting_page_accessibility_repair, R.string.setting_page_accessibility_repair_desc)
 
     // Nested: Notification prefs
     val notifParent = when (hubStyle) {

@@ -874,7 +874,7 @@
   <string name="setting_display_page_clean_layout_top_height_title">Header height</string>
   <string name="setting_display_page_clean_layout_top_height_desc">40 to 72 dp. Shorter leaves more of the wallpaper; the status bar stays clear either way</string>
   <string name="setting_display_page_clean_layout_bottom_padding_title">Input box padding</string>
-  <string name="setting_display_page_clean_layout_bottom_padding_desc">4 to 10 dp of space above and below the text. Smaller makes the box shorter</string>
+  <string name="setting_display_page_clean_layout_bottom_padding_desc">0 to 24 dp of space above and below the text. Smaller makes the box shorter</string>
   <string name="setting_display_page_drawer_capsules_title">Drawer capsules</string>
   <string name="setting_display_page_drawer_capsules_desc">Drop the two floating cards at the top and bottom of the drawer: identity, shortcuts, folders and bottom actions become small capsules sitting on the frosted panel. Turn off to get the two cards back</string>
   <string name="setting_display_page_show_user_avatar_title">Show User Avatar</string>

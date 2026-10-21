@@ -59,6 +59,8 @@ import me.rerere.rikkahub.ui.components.message.thinkingStepsVisibleToSlider
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.richtext.MarkdownBlock
 import me.rerere.rikkahub.ui.components.ui.CardGroup
+import me.rerere.rikkahub.ui.components.ui.CleanInputPaddingMaxDp
+import me.rerere.rikkahub.ui.components.ui.CleanInputPaddingMinDp
 import me.rerere.rikkahub.ui.components.ui.PercentSlider
 import me.rerere.rikkahub.ui.components.ui.Select
 import me.rerere.rikkahub.ui.components.ui.SettingSlider
@@ -303,12 +305,12 @@ fun SettingPreferencesUIPage(vm: SettingVM = koinViewModel()) {
                                         onValueChange = {
                                             updateDisplaySetting(displaySetting.copy(cleanLayoutBottomPadding = it))
                                         },
-                                        valueRange = 4f..10f,
+                                        valueRange = CleanInputPaddingMinDp..CleanInputPaddingMaxDp,
                                         title = stringResource(R.string.setting_display_page_clean_layout_bottom_padding_title),
                                         valueLabel = { "${it.roundToInt()} dp" },
-                                        parseInput = { parseIntInRange(it, 4f..10f) },
-                                        snap = { snapToInt(it, 4f..10f) },
-                                        rangeHint = "4 – 10 dp",
+                                        parseInput = { parseIntInRange(it, CleanInputPaddingMinDp..CleanInputPaddingMaxDp) },
+                                        snap = { snapToInt(it, CleanInputPaddingMinDp..CleanInputPaddingMaxDp) },
+                                        rangeHint = "0 – 24 dp",
                                     )
                                 }
                             },

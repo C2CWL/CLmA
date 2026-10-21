@@ -113,6 +113,8 @@ import me.rerere.rikkahub.ui.components.ai.completion.ChatCompletionItem
 import me.rerere.rikkahub.ui.components.ai.completion.ChatCompletionList
 import me.rerere.rikkahub.ui.components.ai.completion.ChatCompletionProvider
 import me.rerere.rikkahub.ui.components.ui.AutoAIIconFill
+import me.rerere.rikkahub.ui.components.ui.CleanInputPaddingMaxDp
+import me.rerere.rikkahub.ui.components.ui.CleanInputPaddingMinDp
 import me.rerere.rikkahub.ui.components.ui.KeepScreenOn
 import me.rerere.rikkahub.ui.components.ui.cleanPanelFill
 import me.rerere.rikkahub.ui.components.ui.cleanPanelOutline
@@ -329,10 +331,11 @@ fun ChatInput(
                     // middle (text) column gives up that space instead.
                     modifier = if (cleanLayout) {
                         // Vertical inset is the user's call (DisplaySetting.cleanLayoutBottomPadding,
-                        // 4..10dp). It only grows the card; the field and the buttons keep their place.
+                        // 0..24dp). It only grows the card; the field and the buttons keep their place.
                         Modifier.padding(
                             horizontal = 14.dp,
-                            vertical = settings.displaySetting.cleanLayoutBottomPadding.dp,
+                            vertical = settings.displaySetting.cleanLayoutBottomPadding
+                                .coerceIn(CleanInputPaddingMinDp, CleanInputPaddingMaxDp).dp,
                         )
                     } else {
                         Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
