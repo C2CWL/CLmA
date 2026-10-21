@@ -18,21 +18,21 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.LinkAnnotation
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.TextLinkStyles
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -45,6 +45,9 @@ import me.rerere.rikkahub.Screen
 import me.rerere.rikkahub.service.ChatError
 import me.rerere.rikkahub.service.ChatErrorSolution
 import me.rerere.rikkahub.ui.context.LocalNavController
+import me.rerere.rikkahub.ui.context.LocalSettings
+import me.rerere.rikkahub.utils.ErrorAction
+import me.rerere.rikkahub.utils.explainForUser
 import kotlin.uuid.Uuid
 
 @Composable
@@ -110,14 +113,28 @@ fun ErrorCard(
 ) {
     val clipboard = LocalClipboard.current
     val navController = LocalNavController.current
+    val settings = LocalSettings.current
     val scope = rememberCoroutineScope()
-    val checkFastModelSettings = stringResource(R.string.chat_page_check_fast_model_settings)
-    val linkColor = MaterialTheme.colorScheme.primary
 
-    // 5 秒后自动消失
-    LaunchedEffect(error.id) {
-        delay(5000)
-        onDismiss()
+    // Plain-language rendering of the raw throwable. Providers word errors differently, so this
+    // is a best guess — the card says so, and the raw text stays one tap away.
+    val explained = remember(error.error) { error.error.explainForUser() }
+    // A caller-supplied solution (e.g. "check fast model settings") wins over the heuristic.
+    val action = if (error.solution == ChatErrorSolution.CheckFastModelSettings) {
+        ErrorAction.OpenModelSettings
+    } else {
+        explained.action
+    }
+
+    var detailsExpanded by remember(error.id) { mutableStateOf(false) }
+    val autoDismiss = settings.errorCardAutoDismiss
+
+    // Auto-dismiss is opt-in and paused while the user is reading the details.
+    LaunchedEffect(error.id, autoDismiss, detailsExpanded) {
+        if (autoDismiss && !detailsExpanded) {
+            delay(5000)
+            onDismiss()
+        }
     }
 
     Surface(
@@ -126,87 +143,149 @@ fun ErrorCard(
         color = MaterialTheme.colorScheme.errorContainer,
         shadowElevation = 4.dp,
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
+                .padding(start = 12.dp, end = 4.dp, top = 10.dp, bottom = 4.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top,
             ) {
-                if (error.title != null) {
-                    Text(
-                        text = error.title,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onErrorContainer,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                Text(
-                    text = error.error.message ?: "Unknown error",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f),
-                    overflow = TextOverflow.Ellipsis,
-                )
-                if (error.solution == ChatErrorSolution.CheckFastModelSettings) {
-                    Text(
-                        text = buildAnnotatedString {
-                            withLink(
-                                LinkAnnotation.Clickable(
-                                    tag = "check_fast_model_settings",
-                                    styles = TextLinkStyles(
-                                        style = SpanStyle(
-                                            color = linkColor,
-                                            textDecoration = TextDecoration.Underline,
-                                        )
-                                    ),
-                                    linkInteractionListener = {
-                                        navController.navigate(Screen.SettingModels)
-                                    },
-                                )
-                            ) {
-                                append(checkFastModelSettings)
-                            }
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
-            IconButton(
-                onClick = {
-                    scope.launch {
-                        clipboard.setClipEntry(
-                            ClipEntry(
-                                clipData = ClipData.newPlainText("Error", error.error.message ?: "Unknown error")
-                            )
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(top = 2.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    if (error.title != null) {
+                        Text(
+                            text = error.title,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.7f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                         )
                     }
-                },
-                modifier = Modifier.size(32.dp),
-            ) {
-                Icon(
-                    imageVector = HugeIcons.Copy01,
-                    contentDescription = stringResource(R.string.accessibility_copy_error_message),
-                    tint = MaterialTheme.colorScheme.onErrorContainer,
-                    modifier = Modifier.size(18.dp),
-                )
+                    Text(
+                        text = stringResource(explained.title),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                    )
+                    Text(
+                        text = stringResource(explained.reason),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.85f),
+                    )
+                }
+                IconButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.size(32.dp),
+                ) {
+                    Icon(
+                        imageVector = HugeIcons.Cancel01,
+                        contentDescription = stringResource(R.string.chat_page_dismiss_error),
+                        tint = MaterialTheme.colorScheme.onErrorContainer,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
             }
-            IconButton(
-                onClick = onDismiss,
-                modifier = Modifier.size(32.dp),
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(
-                    imageVector = HugeIcons.Cancel01,
-                    contentDescription = stringResource(R.string.chat_page_dismiss_error),
-                    tint = MaterialTheme.colorScheme.onErrorContainer,
-                    modifier = Modifier.size(18.dp),
-                )
+                if (action != null) {
+                    TextButton(
+                        onClick = {
+                            when (action) {
+                                ErrorAction.OpenModelSettings -> navController.navigate(Screen.SettingModels)
+                                ErrorAction.OpenLogs -> navController.navigate(Screen.Log)
+                            }
+                        },
+                    ) {
+                        Text(
+                            text = stringResource(
+                                when (action) {
+                                    ErrorAction.OpenModelSettings -> R.string.error_action_open_model_settings
+                                    ErrorAction.OpenLogs -> R.string.error_action_view_logs
+                                }
+                            ),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                        )
+                    }
+                }
+                TextButton(onClick = { detailsExpanded = !detailsExpanded }) {
+                    Text(
+                        text = if (detailsExpanded) {
+                            stringResource(R.string.error_action_hide_details)
+                        } else {
+                            stringResource(R.string.error_action_details)
+                        },
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                    )
+                }
+            }
+
+            // "Best guess" disclaimer: every provider words its errors differently, so the
+            // explanation above can be wrong even when the raw error is right.
+            Text(
+                text = stringResource(R.string.error_explain_disclaimer),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.6f),
+                modifier = Modifier.padding(bottom = 6.dp),
+            )
+
+            AnimatedVisibility(visible = detailsExpanded) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(end = 8.dp, bottom = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                    ) {
+                        IconButton(
+                            onClick = {
+                                scope.launch {
+                                    clipboard.setClipEntry(
+                                        ClipEntry(
+                                            clipData = ClipData.newPlainText(
+                                                "Error details",
+                                                explained.detail,
+                                            )
+                                        )
+                                    )
+                                }
+                            },
+                            modifier = Modifier.size(32.dp),
+                        ) {
+                            Icon(
+                                imageVector = HugeIcons.Copy01,
+                                contentDescription = stringResource(R.string.accessibility_copy_error_message),
+                                tint = MaterialTheme.colorScheme.onErrorContainer,
+                                modifier = Modifier.size(16.dp),
+                            )
+                        }
+                    }
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                    ) {
+                        Text(
+                            text = explained.detail,
+                            modifier = Modifier.padding(10.dp),
+                            style = MaterialTheme.typography.bodySmall,
+                            fontFamily = FontFamily.Monospace,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
             }
         }
     }
