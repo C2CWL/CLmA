@@ -156,10 +156,10 @@ jobs:
       # stubbed via returnDefaultValues), so this is seconds, not minutes.
       - name: Assemble pure APK + unit tests
         env:
-          # Fast lane: a push to a non-master branch (feat/**) skips the release
-          # lint pass. master pushes and pull requests keep lintVital as the
-          # release gate — see skipLintVital in app/build.gradle.kts.
-          SKIP_LINT: ${{ github.event_name == 'push' && github.ref != 'refs/heads/master' }}
+          # Fast lane: a push to a feature branch (feat/**) skips the release
+          # lint pass. Pushes to main/master and pull requests keep lintVital as
+          # the release gate — see skipLintVital in app/build.gradle.kts.
+          SKIP_LINT: ${{ github.event_name == 'push' && github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master' }}
         run: |
           FLAGS=""
           if [ "$SKIP_LINT" = "true" ]; then
