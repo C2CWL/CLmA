@@ -99,7 +99,9 @@ import me.rerere.hugeicons.stroke.Cancel01
 import me.rerere.hugeicons.stroke.Fullscreen
 import me.rerere.hugeicons.stroke.Zap
 import me.rerere.rikkahub.R
+import me.rerere.rikkahub.data.datastore.ChatLayout
 import me.rerere.rikkahub.data.datastore.Settings
+import me.rerere.rikkahub.data.datastore.effectiveChatLayout
 import me.rerere.rikkahub.data.datastore.getCurrentAssistant
 import me.rerere.rikkahub.data.datastore.resolveChatModel
 import me.rerere.rikkahub.data.datastore.getQuickMessagesOfAssistant
@@ -116,6 +118,8 @@ import me.rerere.rikkahub.ui.components.ui.AutoAIIconFill
 import me.rerere.rikkahub.ui.components.ui.CleanInputPaddingMaxDp
 import me.rerere.rikkahub.ui.components.ui.CleanInputPaddingMinDp
 import me.rerere.rikkahub.ui.components.ui.KeepScreenOn
+import me.rerere.rikkahub.ui.components.ui.ClaudeCoral
+import me.rerere.rikkahub.ui.components.ui.ClaudeCoralDeep
 import me.rerere.rikkahub.ui.components.ui.cleanPanelFill
 import me.rerere.rikkahub.ui.components.ui.cleanPanelOutline
 import me.rerere.rikkahub.ui.components.ui.permission.PermissionManager
@@ -251,16 +255,23 @@ fun ChatInput(
     val naturallyExpanded = isFocused ||
         state.messageContent.isNotEmpty() ||
         state.textContent.text.contains('\n')
-    // Clean layout (DisplaySetting.cleanLayout, off by default) keeps the open two-row box all the
-    // time: full-width field on top, tools underneath, "+" moved to the right next to send.
-    val cleanLayout = settings.displaySetting.cleanLayout
-    val useGlass = !cleanLayout || settings.displaySetting.cleanLayoutGlass
+    // CLEAN / CLAUDE keep the open two-row box all the time: full-width field on top, tools
+    // underneath, "+" moved to the right next to send. ORIGINAL keeps the collapsible pill.
+    val chatLayout = settings.displaySetting.effectiveChatLayout
+    val cleanLayout = chatLayout != ChatLayout.ORIGINAL
+    val claudeLayout = chatLayout == ChatLayout.CLAUDE
+    // Claude layout prefers a solid card (no glass) so the 24dp composer reads like paper.
+    val useGlass = when (chatLayout) {
+        ChatLayout.ORIGINAL -> true
+        ChatLayout.CLEAN -> settings.displaySetting.cleanLayoutGlass
+        ChatLayout.CLAUDE -> false
+    }
     val expanded = cleanLayout || naturallyExpanded
     // Animate the corner along with the layout change below, so the pill does not snap between
-    // its 28dp and 16dp radii while the bar is growing. Clean layout is always open and uses a
-    // smaller, flatter 14dp card.
+    // its 28dp and 16dp radii while the bar is growing. Clean = flatter 14dp; Claude = 24dp card.
     val containerCorner by animateDpAsState(
         targetValue = when {
+            claudeLayout -> 24.dp
             cleanLayout -> 14.dp
             expanded -> 16.dp
             else -> 28.dp
@@ -269,8 +280,8 @@ fun ChatInput(
         label = "chatInputCorner",
     )
     val containerShape = RoundedCornerShape(containerCorner)
-    // Clean layout non-glass branch: a flat card with a hairline (Kelivo-style). Fill and rim come
-    // from the shared clean-panel helpers, so the header above is made of exactly the same pair.
+    // Clean/Claude non-glass branch: a flat card with a hairline. Fill and rim come from the
+    // shared clean-panel helpers, so the header above is made of exactly the same pair.
     // The opacity slider scales both materials: the flat fill directly, the glass tint through
     // rikkaGlassStyle's tintStrength (0 = clear, 1 = the recipe's own tint).
     val darkTheme = LocalDarkMode.current
@@ -453,6 +464,7 @@ fun ChatInput(
                                     loading && state.isEmpty() -> SendButton(
                                         loading = true,
                                         empty = true,
+                                        warmAccent = claudeLayout,
                                         onClick = { sendMessage() },
                                         onLongClick = { sendMessageWithoutAnswer() },
                                     )
@@ -460,6 +472,7 @@ fun ChatInput(
                                     !state.isEmpty() -> SendButton(
                                         loading = loading,
                                         empty = false,
+                                        warmAccent = claudeLayout,
                                         onClick = { sendMessage() },
                                         onLongClick = { sendMessageWithoutAnswer() },
                                     )
@@ -469,6 +482,7 @@ fun ChatInput(
                                     else -> SendButton(
                                         loading = false,
                                         empty = true,
+                                        warmAccent = claudeLayout,
                                         onClick = { sendMessage() },
                                         onLongClick = { sendMessageWithoutAnswer() },
                                     )
@@ -679,16 +693,22 @@ private fun SendButton(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     modifier: Modifier = Modifier,
+    /** 暖阳布局：发送键用暖珊瑚橙，而不是主题 primary。 */
+    warmAccent: Boolean = false,
 ) {
     val showStop = loading && empty
+    val darkTheme = LocalDarkMode.current
+    val warmSend = if (darkTheme) ClaudeCoral else ClaudeCoralDeep
     val containerColor = when {
         showStop -> MaterialTheme.colorScheme.errorContainer
         empty -> MaterialTheme.colorScheme.surfaceContainerHigh
+        warmAccent -> warmSend
         else -> MaterialTheme.colorScheme.primary
     }
     val contentColor = when {
         showStop -> MaterialTheme.colorScheme.onErrorContainer
         empty -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+        warmAccent -> Color.White
         else -> MaterialTheme.colorScheme.onPrimary
     }
     Box(

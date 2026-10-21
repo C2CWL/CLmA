@@ -46,8 +46,11 @@ import me.rerere.hugeicons.stroke.Delete02
 import me.rerere.hugeicons.stroke.FileImport
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.ChatFontFamily
+import me.rerere.rikkahub.data.datastore.ChatLayout
 import me.rerere.rikkahub.data.datastore.DisplaySetting
 import me.rerere.rikkahub.data.datastore.PopupMenuStyle
+import me.rerere.rikkahub.data.datastore.effectiveChatLayout
+import me.rerere.rikkahub.data.datastore.withChatLayout
 import me.rerere.rikkahub.data.datastore.SettingsHubStyle
 import me.rerere.rikkahub.data.datastore.ToolCallStyle
 import me.rerere.rikkahub.data.files.FileFolders
@@ -235,30 +238,48 @@ fun SettingPreferencesUIPage(vm: SettingVM = koinViewModel()) {
                     title = { Text(stringResource(R.string.setting_page_layout_display_settings)) },
                 ) {
                     item(
-                        headlineContent = { Text(stringResource(R.string.setting_display_page_clean_layout_title)) },
-                        supportingContent = { Text(stringResource(R.string.setting_display_page_clean_layout_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_chat_layout_title)) },
+                        supportingContent = { Text(stringResource(R.string.setting_display_page_chat_layout_desc)) },
                         trailingContent = {
-                            Switch(
-                                checked = displaySetting.cleanLayout,
-                                onCheckedChange = {
-                                    updateDisplaySetting(displaySetting.copy(cleanLayout = it))
-                                }
+                            Select(
+                                options = ChatLayout.entries,
+                                selectedOption = displaySetting.effectiveChatLayout,
+                                onOptionSelected = {
+                                    updateDisplaySetting(displaySetting.withChatLayout(it))
+                                },
+                                optionToString = {
+                                    stringResource(
+                                        when (it) {
+                                            ChatLayout.ORIGINAL -> R.string.setting_display_page_chat_layout_original
+                                            ChatLayout.CLEAN -> R.string.setting_display_page_chat_layout_clean
+                                            ChatLayout.CLAUDE -> R.string.setting_display_page_chat_layout_claude
+                                        }
+                                    )
+                                },
+                                containerColor = CustomColors.listItemColors.containerColor,
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                                modifier = Modifier.width(150.dp),
                             )
                         },
                     )
-                    if (displaySetting.cleanLayout) {
-                        item(
-                            headlineContent = { Text(stringResource(R.string.setting_display_page_clean_layout_glass_title)) },
-                            supportingContent = { Text(stringResource(R.string.setting_display_page_clean_layout_glass_desc)) },
-                            trailingContent = {
-                                Switch(
-                                    checked = displaySetting.cleanLayoutGlass,
-                                    onCheckedChange = {
-                                        updateDisplaySetting(displaySetting.copy(cleanLayoutGlass = it))
-                                    }
-                                )
-                            },
-                        )
+                    // CLEAN / CLAUDE share the flat header + two-row composer; their panel knobs
+                    // still apply. ORIGINAL hides them so the old chrome stays untouched.
+                    if (displaySetting.effectiveChatLayout != ChatLayout.ORIGINAL) {
+                        // Glass is a CLEAN-only material; CLAUDE keeps a solid paper card.
+                        if (displaySetting.effectiveChatLayout == ChatLayout.CLEAN) {
+                            item(
+                                headlineContent = { Text(stringResource(R.string.setting_display_page_clean_layout_glass_title)) },
+                                supportingContent = { Text(stringResource(R.string.setting_display_page_clean_layout_glass_desc)) },
+                                trailingContent = {
+                                    Switch(
+                                        checked = displaySetting.cleanLayoutGlass,
+                                        onCheckedChange = {
+                                            updateDisplaySetting(displaySetting.copy(cleanLayoutGlass = it))
+                                        }
+                                    )
+                                },
+                            )
+                        }
                         item(
                             headlineContent = { Text(stringResource(R.string.setting_display_page_clean_layout_top_opacity_title)) },
                             supportingContent = {

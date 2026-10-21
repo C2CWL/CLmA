@@ -232,22 +232,6 @@ fun ColumnScope.ChatMessageActionButtons(
             color = actionIconColor,
             onUpdate = onUpdate,
         )
-
-        if (settings.displaySetting.showDateTimeInMessage) {
-            // Streaming: createdAt ≈ first-token time. After finish/stop: finishedAt when the
-            // "prefer end time" switch is on (default), else keep the old always-createdAt look.
-            val displayAt = message.displayTimestamp(
-                preferEndTime = settings.displaySetting.showMessageEndTime,
-            )
-            Text(
-                text = displayAt.toJavaLocalDateTime().toMessageTimeString(),
-                style = MaterialTheme.typography.labelSmall,
-                color = ink.copy(alpha = style.timeAlpha),
-                maxLines = 1,
-                // The icons bring their own 8dp padding; the time needs it only against a plate edge.
-                modifier = if (style.plated) Modifier.padding(end = 10.dp) else Modifier,
-            )
-        }
     }
 
     // Translation dialog
@@ -279,6 +263,35 @@ fun ColumnScope.ChatMessageActionButtons(
         },
         onDismiss = { showRegenerateConfirm = false },
         text = { Text(stringResource(R.string.regenerate_confirm_message)) }
+    )
+}
+
+/**
+ * 独立的消息时间戳：画在操作栏之外，不受操作栏显隐约束。用户消息（`finishedAt` 恒为
+ * null）和插话打断的前半（不出操作栏）也能显示时间。受「显示消息时间」开关控制。
+ */
+@Composable
+fun ChatMessageTimestamp(
+    message: UIMessage,
+    photoShown: Boolean = false,
+    hazeState: HazeState? = null,
+    modifier: Modifier = Modifier,
+) {
+    val settings = LocalSettings.current
+    if (!settings.displaySetting.showDateTimeInMessage) return
+    val style = messageActionsStyle(photoShown, sdkInt = Build.VERSION.SDK_INT, hasHazeState = hazeState != null)
+    val ink = if (style.onSurfaceInk) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
+    // Streaming: createdAt ≈ first-token time. After finish/stop: finishedAt when the
+    // "prefer end time" switch is on (default), else keep the old always-createdAt look.
+    val displayAt = message.displayTimestamp(
+        preferEndTime = settings.displaySetting.showMessageEndTime,
+    )
+    Text(
+        text = displayAt.toJavaLocalDateTime().toMessageTimeString(),
+        style = MaterialTheme.typography.labelSmall,
+        color = ink.copy(alpha = style.timeAlpha),
+        maxLines = 1,
+        modifier = modifier,
     )
 }
 

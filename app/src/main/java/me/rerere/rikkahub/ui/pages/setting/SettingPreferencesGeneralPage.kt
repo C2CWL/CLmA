@@ -143,6 +143,7 @@ fun SettingPreferencesGeneralPage(vm: SettingVM = koinViewModel()) {
                                             LoadingIndicatorStyle.APP_ICON -> R.string.setting_display_page_loading_indicator_style_app_icon
                                             LoadingIndicatorStyle.SHIMMER -> R.string.setting_display_page_loading_indicator_style_shimmer
                                             LoadingIndicatorStyle.SPARKLE -> R.string.setting_display_page_loading_indicator_style_sparkle
+                                            LoadingIndicatorStyle.CLAUDE -> R.string.setting_display_page_loading_indicator_style_claude
                                         }
                                     )
                                 },

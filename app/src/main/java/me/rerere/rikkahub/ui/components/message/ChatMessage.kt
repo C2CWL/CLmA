@@ -90,7 +90,9 @@ import me.rerere.hugeicons.stroke.MusicNote03
 import me.rerere.hugeicons.stroke.Video01
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.Screen
+import me.rerere.rikkahub.data.datastore.ChatLayout
 import me.rerere.rikkahub.data.datastore.ToolCallStyle
+import me.rerere.rikkahub.data.datastore.effectiveChatLayout
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.AssistantAffectScope
 import me.rerere.rikkahub.data.model.AssistantBackgroundMode
@@ -238,10 +240,13 @@ fun ChatMessage(
 
         // 被插话打断的前半保持 finishedAt == null：它“话还没说完”，不出操作栏，
         // 避免在同一个回合中间出现“这条回复已结束”的视觉断裂。
+        // 用户消息的 finishedAt 恒为 null（发出时不写），不能按同一条件隐藏，
+        // 否则历史里的用户消息会丢整条操作栏（复制/重生成/编辑）。
         val showActions = if (lastMessage) {
             !loading
         } else {
-            message.parts.isEmptyUIMessage().not() && message.finishedAt != null
+            message.parts.isEmptyUIMessage().not() &&
+                (message.role == MessageRole.USER || message.finishedAt != null)
         }
 
         AnimatedVisibility(
@@ -266,6 +271,16 @@ fun ChatMessage(
                     hazeState = hazeState,
                 )
             }
+        }
+
+        // 时间戳独立于操作栏渲染：操作栏隐藏时（插话打断的前半、流式中）也能显示。
+        // 空消息（流式首 token 之前）不显示。
+        if (message.parts.isEmptyUIMessage().not()) {
+            ChatMessageTimestamp(
+                message = actionMessage,
+                photoShown = photoShown,
+                hazeState = hazeState,
+            )
         }
 
         EditedFilesList(
@@ -348,6 +363,10 @@ private fun MessagePartsBlock(
     // 消息输出HapticFeedback
     val hapticFeedback = LocalHapticFeedback.current
     val settings = LocalSettings.current
+    // 暖阳布局：助手消息默认无气泡，贴近安静的阅读栏。
+    val showAssistantBubble =
+        settings.displaySetting.showAssistantBubble &&
+            settings.displaySetting.effectiveChatLayout != ChatLayout.CLAUDE
     val partsState by rememberUpdatedState(parts)
 
     val handleClickCitation: (String) -> Unit = remember {
@@ -535,15 +554,15 @@ private fun MessagePartsBlock(
                                         ),
                                         assistant?.useGradientBackground == true,
                                     ),
-                                    showAssistantBubble = settings.displaySetting.showAssistantBubble,
+                                    showAssistantBubble = showAssistantBubble,
                                 )
-                                if (settings.displaySetting.showAssistantBubble || onPhoto) {
+                                if (showAssistantBubble || onPhoto) {
                                     Surface(
                                         // 流式期间关掉高度动画：内容每个 token 都在长，
                                         // 动画每帧都要重测+插值，和自动跟随滚动抢帧。
                                         modifier = if (loading) Modifier else Modifier.animateContentSize(),
                                         shape = RoundedCornerShape(16.dp),
-                                        color = if (settings.displaySetting.showAssistantBubble) {
+                                        color = if (showAssistantBubble) {
                                             MaterialTheme.colorScheme.surfaceContainerHigh.copy(
                                                 alpha = settings.displaySetting.bubbleOpacity,
                                             )

@@ -38,6 +38,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
@@ -91,7 +92,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import me.rerere.ai.ui.UIMessage
 import me.rerere.rikkahub.R
+import me.rerere.rikkahub.data.datastore.ChatLayout
 import me.rerere.rikkahub.data.datastore.Settings
+import me.rerere.rikkahub.data.datastore.effectiveChatLayout
 import me.rerere.rikkahub.data.ai.AssistantResolver
 import me.rerere.rikkahub.data.model.AssistantBackgroundMode
 import me.rerere.rikkahub.data.model.Conversation
@@ -322,6 +325,15 @@ private fun ChatListNormal(
 
         ChatFontProvider(displaySetting = settings.displaySetting) {
             val bounceEnabled = settings.displaySetting.enableBounceOverscroll
+            // 暖阳：消息限宽居中，贴近安静阅读栏。
+            val claudeReading = settings.displaySetting.effectiveChatLayout == ChatLayout.CLAUDE
+            val messageModifier = if (claudeReading) {
+                Modifier
+                    .widthIn(max = 720.dp)
+                    .fillMaxWidth()
+            } else {
+                Modifier.fillMaxWidth()
+            }
             val defaultOverscrollFactory = LocalOverscrollFactory.current
             CompositionLocalProvider(
                 LocalOverscrollFactory provides if (bounceEnabled) null else defaultOverscrollFactory,
@@ -330,12 +342,15 @@ private fun ChatListNormal(
                     state = state,
                     // The top inset is content padding rather than a modifier padding, so the messages
                     // can scroll UNDER the title bar (where they fade out) instead of being clipped by it.
-                    contentPadding = PaddingValues(16.dp) + PaddingValues(
+                    contentPadding = PaddingValues(
+                        horizontal = if (claudeReading) 20.dp else 16.dp,
+                        vertical = 0.dp,
+                    ) + PaddingValues(
                         top = innerPadding.calculateTopPadding(),
                         bottom = 32.dp + innerPadding.calculateBottomPadding(),
                     ),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(if (claudeReading) 16.dp else 12.dp),
                     modifier = Modifier
                         .fillMaxSize()
                         .bounceOverscroll(state, enabled = bounceEnabled)
@@ -346,7 +361,7 @@ private fun ChatListNormal(
                 key = { it.id },
             ) { group ->
                 val node = group.terminalNode
-                Column {
+                Column(modifier = messageModifier) {
                     ListSelectableItem(
                         key = group.id,
                         onSelectChange = {
@@ -430,11 +445,14 @@ private fun ChatListNormal(
                         ),
                         assistant?.useGradientBackground == true,
                     )
-                    ChatLoadingIndicator(
-                        processingStatus = processingStatus,
-                        photoShown = photoShown,
-                        hazeState = hazeState,
-                    )
+                    // 暖阳：思考行跟消息同宽、左对齐，不居中漂浮。
+                    Box(modifier = messageModifier) {
+                        ChatLoadingIndicator(
+                            processingStatus = processingStatus,
+                            photoShown = photoShown,
+                            hazeState = hazeState,
+                        )
+                    }
                 }
             }
 

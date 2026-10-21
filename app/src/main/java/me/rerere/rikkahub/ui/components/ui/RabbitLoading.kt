@@ -49,6 +49,7 @@ fun RabbitLoadingIndicator(modifier: Modifier = Modifier) {
         LoadingIndicatorStyle.SHIMMER -> ShimmerBar(modifier = modifier)
         LoadingIndicatorStyle.APP_ICON -> AppIconLoadingIndicator(modifier = modifier)
         LoadingIndicatorStyle.DEFAULT -> ContainedLoadingIndicator(modifier = modifier)
+        LoadingIndicatorStyle.CLAUDE -> ClaudeLoadingIndicator(modifier = modifier)
     }
 }
 
@@ -102,6 +103,11 @@ fun ChatLoadingIndicator(
                 text = processingStatus,
             )
         }
+
+        LoadingIndicatorStyle.CLAUDE -> ClaudeThinkingRow(
+            modifier = Modifier.padding(8.dp),
+            text = processingStatus,
+        )
 
         LoadingIndicatorStyle.DEFAULT, LoadingIndicatorStyle.APP_ICON -> Row(
             modifier = Modifier.padding(8.dp),

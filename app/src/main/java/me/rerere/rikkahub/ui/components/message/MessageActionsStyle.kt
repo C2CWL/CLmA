@@ -2,8 +2,8 @@ package me.rerere.rikkahub.ui.components.message
 
 /*
  * Styling of the action row under a message, assistant and user alike (copy, regenerate, TTS,
- * translate, more, branch selector, timestamp). Pure (no Compose / Android types) so every
- * branch is unit-tested.
+ * translate, more, branch selector). The standalone timestamp ([ChatMessageTimestamp]) reuses
+ * the same ink/alpha. Pure (no Compose / Android types) so every branch is unit-tested.
  *
  * Over a photo wallpaper it gets the same plate as the per-turn usage line ([usageLineStyle]):
  * a frosted pill on API 31+ with the page's haze state, otherwise the flat title plate, and

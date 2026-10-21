@@ -86,7 +86,9 @@ import me.rerere.hugeicons.stroke.MessageAdd01
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.costguards.TokenBudgetTracker
 import me.rerere.rikkahub.data.usage.TurnFooter
+import me.rerere.rikkahub.data.datastore.ChatLayout
 import me.rerere.rikkahub.data.datastore.Settings
+import me.rerere.rikkahub.data.datastore.effectiveChatLayout
 import me.rerere.rikkahub.data.datastore.findProvider
 import me.rerere.rikkahub.data.datastore.getCurrentAssistant
 import me.rerere.rikkahub.data.datastore.getSelectedASRProvider
@@ -700,7 +702,9 @@ private fun ChatPageContent(
                 )
                 val bottomFade = bottomBarFade(darkTheme = darkTheme, photoShown = photoShown)
                 val fadeColor = MaterialTheme.colorScheme.background
-                val cleanLayout = setting.displaySetting.cleanLayout
+                // CLEAN 与 CLAUDE 都走扁平顶栏 + 面板，不需要顶部溶解。
+                val chatLayout = setting.displaySetting.effectiveChatLayout
+                val cleanLayout = chatLayout != ChatLayout.ORIGINAL
 
                 // Top dissolve: extends below the title bar so incoming/outgoing messages
                 // fade in/out smoothly instead of clipping abruptly at the bar's bottom edge.
@@ -755,7 +759,7 @@ private fun ChatPageContent(
                         .fillMaxWidth()
                         .onSizeChanged { topBarHeightPx = it.height },
                 ) {
-                    if (setting.displaySetting.cleanLayout) {
+                    if (chatLayout != ChatLayout.ORIGINAL) {
                         CleanTopBarPanel(settings = setting, hazeState = hazeState) {
                             CleanTopBar(
                                 settings = setting,
