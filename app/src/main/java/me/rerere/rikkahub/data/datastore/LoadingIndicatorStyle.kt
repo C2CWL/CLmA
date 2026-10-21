@@ -10,7 +10,7 @@ enum class LoadingIndicatorStyle {
     @SerialName("default")
     DEFAULT,
 
-    /** Animated app-icon rabbit (the old switch turned on, and the long-standing default). */
+    /** Animated CLmA mark (the old switch turned on, and the long-standing default). */
     @SerialName("app_icon")
     APP_ICON,
 

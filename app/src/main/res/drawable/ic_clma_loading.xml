@@ -1,0 +1,46 @@
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+  xmlns:aapt="http://schemas.android.com/aapt">
+
+  <!-- CLmA mark: open ring + amber node + centre dot. Replaces the old rabbit. -->
+  <aapt:attr name="android:drawable">
+    <vector
+      android:width="24dp"
+      android:height="24dp"
+      android:viewportWidth="120"
+      android:viewportHeight="120">
+
+      <!-- Rotating ring + node. Pivot is the viewport centre so the spin is concentric. -->
+      <group
+        android:name="clma_ring"
+        android:pivotX="60"
+        android:pivotY="60">
+        <path
+          android:strokeColor="#333333"
+          android:strokeWidth="7.5"
+          android:strokeLineCap="round"
+          android:pathData="M89.45,54.28 A30,30 0 1,1 65.72,30.55" />
+        <path
+          android:fillColor="#333333"
+          android:pathData="M70.21,38.79 a11,11 0 1,0 22,0 a11,11 0 1,0 -22,0 Z" />
+      </group>
+
+      <!-- Centre dot stays still, so the motion reads as the ring orbiting it. -->
+      <path
+        android:fillColor="#333333"
+        android:pathData="M54,60 a6,6 0 1,0 12,0 a6,6 0 1,0 -12,0 Z" />
+    </vector>
+  </aapt:attr>
+
+  <target android:name="clma_ring">
+    <aapt:attr name="android:animation">
+      <objectAnimator
+        android:propertyName="rotation"
+        android:duration="1400"
+        android:valueFrom="0"
+        android:valueTo="360"
+        android:valueType="floatType"
+        android:interpolator="@android:anim/linear_interpolator"
+        android:repeatCount="infinite" />
+    </aapt:attr>
+  </target>
+</animated-vector>

@@ -146,7 +146,7 @@
     android:dataExtractionRules="@xml/data_extraction_rules"
     android:enableOnBackInvokedCallback="true"
     android:fullBackupContent="@xml/backup_rules"
-    android:icon="@mipmap/ic_launcher"
+    android:icon="@mipmap/ic_launcher_clma"
     android:label="@string/app_name"
     android:supportsRtl="true"
     android:theme="@style/Theme.Rikkahub"
@@ -176,11 +176,6 @@
       android:theme="@style/Theme.Rikkahub"
       android:windowSoftInputMode="adjustResize">
       <intent-filter>
-        <action android:name="android.intent.action.MAIN" />
-
-        <category android:name="android.intent.category.LAUNCHER" />
-      </intent-filter>
-      <intent-filter>
         <action android:name="android.intent.action.SEND" />
 
         <category android:name="android.intent.category.DEFAULT" />
@@ -204,6 +199,42 @@
         android:name="android.app.shortcuts"
         android:resource="@xml/shortcuts" />
     </activity>
+    <!--
+      Two launcher entries over the same activity, so the user can switch the home-screen
+      icon without a second install. Exactly one alias is enabled at a time; the switch is
+      done in AppIconManager with setComponentEnabledSetting(..., DONT_KILL_APP), which is
+      the same no-kill swap ReFra / Halcyon use. The alias component names are declared in
+      the source namespace (me.rerere.rikkahub), not the applicationId, because the aliases
+      live in the same package as RouteActivity.
+    -->
+    <activity-alias
+      android:name=".Launcher_Default"
+      android:enabled="true"
+      android:exported="true"
+      android:icon="@mipmap/ic_launcher_clma"
+      android:label="@string/app_name"
+      android:roundIcon="@mipmap/ic_launcher_clma_round"
+      android:targetActivity=".RouteActivity">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+    </activity-alias>
+    <activity-alias
+      android:name=".Launcher_Ring"
+      android:enabled="false"
+      android:exported="true"
+      android:icon="@mipmap/ic_launcher_ring"
+      android:label="@string/app_name"
+      android:roundIcon="@mipmap/ic_launcher_ring"
+      android:targetActivity=".RouteActivity">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+    </activity-alias>
     <activity
       android:name=".ui.activity.ShortcutHandlerActivity"
       android:exported="true"

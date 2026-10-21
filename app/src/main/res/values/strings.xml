@@ -945,6 +945,11 @@
   <string name="setting_display_page_use_app_icon_style_loading_indicator_desc">Use the animated app icon instead of the default circular loading indicator</string>
   <string name="setting_display_page_use_app_icon_style_loading_indicator_title">Use App Icon-Style Loading Indicator</string>
   <string name="setting_display_page_loading_indicator_style_title">Loading indicator style</string>
+  <string name="setting_display_page_app_icon_title">Home screen icon</string>
+  <string name="setting_display_page_app_icon_desc">Switch between the two CLmA icons. The launcher usually refreshes by itself; if it does not, restart the launcher or re-add the icon.</string>
+  <string name="setting_display_page_app_icon_default">F1</string>
+  <string name="setting_display_page_app_icon_ring">Ring</string>
+  <string name="setting_display_page_app_icon_applied">Icon updated</string>
   <string name="setting_display_page_loading_indicator_style_desc">What shows under your message while the assistant is thinking</string>
   <string name="setting_display_page_loading_indicator_style_default">Default</string>
   <string name="setting_display_page_loading_indicator_style_app_icon">App icon</string>
@@ -3225,19 +3230,6 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
 
   <string name="chat_page_continuing">Connection lost — continuing the reply (%1$d/%2$d)</string>
   <string name="chat_page_subagents_running">%1$d sub-agent(s) running · %2$s</string>
-
-  <string name="setting_page_sponsor">Sponsor</string>
-  <string name="setting_page_sponsor_desc">Support the project</string>
-  <string name="setting_sponsor_page_title">Sponsor</string>
-  <string name="setting_sponsor_page_desc">This app has no ads and no paid tier. If it is useful to you, a small donation keeps it going — thank you!</string>
-  <string name="setting_sponsor_qr_section">Scan to donate</string>
-  <string name="setting_sponsor_link_section">Other ways to support</string>
-  <string name="setting_sponsor_wechat">WeChat</string>
-  <string name="setting_sponsor_wechat_desc">Scan the QR code with WeChat</string>
-  <string name="setting_sponsor_alipay">Alipay</string>
-  <string name="setting_sponsor_alipay_desc">Scan the QR code with Alipay</string>
-  <string name="setting_sponsor_qr_hint">Screenshot this code, then scan it in the app above. Thank you!</string>
-  <string name="setting_sponsor_qr_close">Close</string>
   <string name="setting_floating_ball_style_title">Style</string>
   <string name="setting_floating_ball_style_desc">Round ball with the classic quick-chat panel, or a status capsule with its own modern quick-chat chrome (not switchable separately)</string>
   <string name="setting_floating_ball_style_original">Original</string>

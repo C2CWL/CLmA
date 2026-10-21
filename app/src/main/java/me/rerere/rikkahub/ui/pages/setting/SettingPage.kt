@@ -315,7 +315,6 @@ private fun hubItemIcon(id: SettingsHubItemId): ImageVector = when (id) {
     SettingsHubItemId.DOCTOR -> HugeIcons.Wrench01
     SettingsHubItemId.LOGS -> HugeIcons.Bookshelf01
     SettingsHubItemId.ABOUT -> HugeIcons.Clapping01
-    SettingsHubItemId.SPONSOR -> HugeIcons.InLove
     SettingsHubItemId.SHARE -> HugeIcons.Share04
 }
 

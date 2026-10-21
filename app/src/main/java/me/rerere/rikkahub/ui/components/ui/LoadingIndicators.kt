@@ -43,7 +43,7 @@ private const val THINKING_PLATE_FLAT_ALPHA = 0.60f
 
 /** Icon-sized indicator for square slots (e.g. the compress dialog), in the chosen style. */
 @Composable
-fun RabbitLoadingIndicator(modifier: Modifier = Modifier) {
+fun AppLoadingIndicator(modifier: Modifier = Modifier) {
     when (LocalSettings.current.displaySetting.effectiveLoadingIndicatorStyle) {
         LoadingIndicatorStyle.SPARKLE -> SparkleLoadingIndicator(modifier = modifier)
         LoadingIndicatorStyle.SHIMMER -> ShimmerBar(modifier = modifier)
@@ -114,7 +114,7 @@ fun ChatLoadingIndicator(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            RabbitLoadingIndicator(
+            AppLoadingIndicator(
                 modifier = Modifier.size(28.dp)
             )
             AnimatedVisibility(
@@ -137,7 +137,7 @@ private fun AppIconLoadingIndicator(modifier: Modifier) {
         modifier = modifier,
         factory = { context ->
             ImageView(context).apply {
-                val drawable = AppCompatResources.getDrawable(context, R.drawable.rabbit) as? AnimatedVectorDrawable
+                val drawable = AppCompatResources.getDrawable(context, R.drawable.ic_clma_loading) as? AnimatedVectorDrawable
                 setImageDrawable(drawable)
                 drawable?.setTint(primaryColor)
                 drawable?.start()
