@@ -1,9 +1,9 @@
 package me.rerere.rikkahub.data.sync
 
 import androidx.core.net.toUri
+import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.Avatar
-import me.rerere.rikkahub.data.model.Settings
 import java.io.File
 
 /**
