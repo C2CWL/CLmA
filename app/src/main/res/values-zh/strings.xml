@@ -2107,6 +2107,7 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="workspace_page_name_duplicate">名称已存在</string>
   <string name="setting_mcp_page_name_invalid">名称只能包含英文字母和数字</string>
   <string name="error_mcp_invalid_server_name">无效的MCP服务器名称（仅允许字母数字字符）：%1$s</string>
+  <string name="log_page_copy_all">复制全部日志</string>
   <string name="log_page_record_requests">记录请求</string>
   <string name="log_page_record_requests_desc">捕获请求标头、正文和响应元数据</string>
   <string name="codex_provider_description">使用 OpenAI Codex OAuth 和 Responses API。此集成依赖 Codex 服务兼容性。</string>
@@ -2944,4 +2945,5 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="floating_ball_capsule_status_done">已完成 · %1$s</string>
   <string name="floating_ball_capsule_hide">收起到边缘</string>
   <string name="chat_interject_unavailable">生成已结束，请重新发送</string>
+  <string name="chat_interjection_label">插话</string>
 </resources>

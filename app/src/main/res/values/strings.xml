@@ -2315,6 +2315,7 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="tool_ui_file">file</string>
   <string name="workspace_page_name_duplicate">Name already exists</string>
   <string name="setting_mcp_page_name_invalid">Name can only contain English letters and numbers</string>
+  <string name="log_page_copy_all">Copy all logs</string>
   <string name="log_page_record_requests">Record requests</string>
   <string name="log_page_record_requests_desc">Capture request headers, bodies, and response metadata</string>
   <string name="codex_provider_description">Uses the OpenAI Codex OAuth and Responses API flow. This integration depends on Codex service compatibility.</string>
@@ -3228,4 +3229,5 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="floating_ball_capsule_status_done">Done · %1$s</string>
   <string name="floating_ball_capsule_hide">Hide to edge</string>
   <string name="chat_interject_unavailable">Generation already finished — send it as a normal message</string>
+  <string name="chat_interjection_label">Interjection</string>
 </resources>
