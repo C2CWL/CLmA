@@ -47,10 +47,8 @@ private val BUILT_IN_PROVIDER_CATEGORY: Map<Uuid, ProviderCategory> = buildMap {
     put(Uuid.parse("a2bafe83-eaf8-47bf-a8c7-3dd82d89f637"), ProviderCategory.DOMESTIC) // MIMO
     put(Uuid.parse("b4deabea-20fb-4101-a74c-65679c7e4754"), ProviderCategory.DOMESTIC) // MiniMax (anthropic/v1 - minimaxi)
     put(Uuid.parse("b55716c7-e465-4666-a788-4243aab13fb3"), ProviderCategory.DOMESTIC) // MiniMax (anthropic/v1 - minimax.io)
-    put(Uuid.parse("da93779f-3956-48cc-82ef-67bb482eaaf7"), ProviderCategory.DOMESTIC) // 302.AI
 
     // 国际
-    put(Uuid.parse("a8d2d463-e8c0-41f2-b89e-f5eb8e716cce"), ProviderCategory.INTERNATIONAL) // RikkaHub
     put(Uuid.parse("1eeea727-9ee5-4cae-93e6-6fb01a4d051e"), ProviderCategory.INTERNATIONAL) // OpenAI
     put(DEFAULT_CODEX_PROVIDER_ID, ProviderCategory.INTERNATIONAL) // Codex
     put(DEFAULT_GROK_PROVIDER_ID, ProviderCategory.INTERNATIONAL) // Grok
@@ -66,8 +64,12 @@ fun ProviderSetting.category(): ProviderCategory =
     BUILT_IN_PROVIDER_CATEGORY[id] ?: ProviderCategory.OTHER
 
 /**
- * 已从 [DEFAULT_PROVIDERS] 删除的上游赞助内置服务商（条目里带返利/推广链接）。
- * 新装不再出现；老用户由 PreferencesStore 做一次性清理（只删没被动过的行）。
+ * 已从 [DEFAULT_PROVIDERS] 删除的上游赞助 / 中转内置服务商。
+ *
+ * 两类：条目里带返利或推广链接的中转（AiHubMix / APIMart / 小马算力 / 随想AI网关 /
+ * MaruCode / AckAI / UnifyLLM / 302.AI），以及上游官方的赞助中转（RikkaHub）。
+ * CLmA 不是官方、也没收赞助费，所以一律不预置。新装不再出现；老用户由 PreferencesStore
+ * 做一次性清理（只删没被动过的行）。
  */
 val REMOVED_SPONSORED_PROVIDER_IDS: Set<Uuid> = setOf(
     Uuid.parse("1b1395ed-b702-4aeb-8bc1-b681c4456953"), // AiHubMix
@@ -77,4 +79,6 @@ val REMOVED_SPONSORED_PROVIDER_IDS: Set<Uuid> = setOf(
     Uuid.parse("afbc54ad-807e-4455-9594-7d7a546356ad"), // MaruCode
     Uuid.parse("53027b08-1b58-43d5-90ed-29173203e3d8"), // AckAI
     Uuid.parse("4da09554-8844-4cc8-a4a9-fe1b2515e91b"), // UnifyLLM
+    Uuid.parse("da93779f-3956-48cc-82ef-67bb482eaaf7"), // 302.AI
+    Uuid.parse("a8d2d463-e8c0-41f2-b89e-f5eb8e716cce"), // RikkaHub（官方赞助中转）
 )

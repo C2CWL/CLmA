@@ -236,12 +236,12 @@ internal fun compactionContextLength(settings: Settings, model: Model): Int? =
 
 /**
  * Resolve the model to compress against. `settings.compressModelId` defaults to (and is
- * user-selectable as) the "Auto" placeholder, a literal [Model] owned by the built-in
- * "RikkaHub" provider, which ships disabled — so resolving it as a real model and then
- * discovering its provider is disabled used to surface as an opaque failure. Falls through, in
- * order: the configured model (unless it's the Auto placeholder or its provider is disabled),
- * the current chat model (same guard), then the first model belonging to any enabled provider.
- * Returns null only when none of those is usable.
+ * user-selectable as) the legacy "Auto" placeholder id. That model belonged to the built-in
+ * "RikkaHub" provider, which is no longer shipped — resolving the placeholder as a real model
+ * would surface as an opaque failure. Falls through, in order: the configured model (unless
+ * it's the Auto placeholder or its provider is disabled), the current chat model (same guard),
+ * then the first model belonging to any enabled provider. Returns null only when none of
+ * those is usable.
  */
 internal fun resolveCompressionModel(settings: Settings): Model? {
     fun Model.takeIfUsable(): Model? {

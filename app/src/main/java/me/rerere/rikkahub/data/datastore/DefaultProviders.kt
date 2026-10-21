@@ -1,22 +1,19 @@
 package me.rerere.rikkahub.data.datastore
 
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.LinkAnnotation
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.withLink
-import androidx.compose.ui.text.withStyle
 import me.rerere.ai.provider.BalanceOption
-import me.rerere.ai.provider.Modality
-import me.rerere.ai.provider.Model
-import me.rerere.ai.provider.ModelAbility
 import me.rerere.ai.provider.ProviderSetting
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.ui.components.richtext.MarkdownBlock
 import kotlin.uuid.Uuid
 
+/**
+ * Id of the old RikkaHub "auto" model. The provider is no longer shipped (CLmA is not the
+ * upstream service and has no sponsored relay), but the constant stays because existing
+ * installs may still have this id saved as their chat/compress model id — it is used as the
+ * "nothing selected yet" sentinel in PreferencesStore and ChatService.
+ */
 val DEFAULT_AUTO_MODEL_ID = Uuid.parse("b7055fb4-39f9-4042-a88a-0d80ed76cf08")
 val DEFAULT_CODEX_PROVIDER_ID = Uuid.parse("7ce7e322-b995-4b0c-9d48-42e08dcfcdda")
 val DEFAULT_GROK_PROVIDER_ID = Uuid.parse("8f3e1d20-4b6a-4c9e-a1f2-9d5c7e0b3a44")
@@ -78,27 +75,6 @@ val DEFAULT_PROVIDERS = listOf(
     // key. Existing users keep their per-provider enabled state — PreferencesStore's
     // merge only re-copies builtIn/description/shortDescription back from defaults,
     // not enabled (same pattern as the AICore default-off comment above).
-    ProviderSetting.OpenAI(
-        id = Uuid.parse("a8d2d463-e8c0-41f2-b89e-f5eb8e716cce"),
-        name = "RikkaHub",
-        baseUrl = "https://api.rikka-ai.com/v1",
-        apiKey = "",
-        enabled = false,
-        builtIn = true,
-        description = {
-            Text(stringResource(R.string.rikkahub_provider_description))
-        },
-        models = listOf(
-            Model(
-                id = DEFAULT_AUTO_MODEL_ID,
-                modelId = "auto",
-                displayName = "Auto",
-                inputModalities = listOf(Modality.TEXT),
-                outputModalities = listOf(Modality.TEXT),
-                abilities = listOf(ModelAbility.TOOL, ModelAbility.REASONING),
-            )
-        )
-    ),
     ProviderSetting.OpenAI(
         id = Uuid.parse("1eeea727-9ee5-4cae-93e6-6fb01a4d051e"),
         name = "OpenAI",
@@ -234,26 +210,6 @@ val DEFAULT_PROVIDERS = listOf(
         apiKey = "",
         enabled = false,
         builtIn = true
-    ),
-    ProviderSetting.OpenAI(
-        id = Uuid.parse("da93779f-3956-48cc-82ef-67bb482eaaf7"),
-        name = "302.AI",
-        baseUrl = "https://api.302.ai/v1",
-        apiKey = "",
-        enabled = false,
-        builtIn = true,
-        description = {
-            Text(
-                text = buildAnnotatedString {
-                    append("企业级AI服务, 官网：")
-                    withLink(LinkAnnotation.Url("https://302.ai/")) {
-                        withStyle(SpanStyle(MaterialTheme.colorScheme.primary)) {
-                            append("https://302.ai/")
-                        }
-                    }
-                }
-            )
-        }
     ),
     ProviderSetting.OpenAI(
         id = Uuid.parse("ef5d149b-8e34-404b-818c-6ec242e5c3c5"),

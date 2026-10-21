@@ -642,9 +642,11 @@ class SettingsStore(
             }.toMutableList()
             // One-shot cleanup (2026-10): the upstream-sponsored built-in providers carrying
             // affiliate links (AiHubMix / APIMart / 小马算力 / 随想AI网关 / MaruCode / AckAI /
-            // UnifyLLM) are no longer shipped in DEFAULT_PROVIDERS. Fresh installs never seed
-            // them; existing installs already have them, so drop only the rows the user never
-            // touched (still disabled, no API key, no models) and leave a configured one be.
+            // UnifyLLM / 302.AI) plus the upstream's own sponsored relay (RikkaHub) are no
+            // longer shipped in DEFAULT_PROVIDERS — CLmA is not the official service and takes
+            // no sponsorship. Fresh installs never seed them; existing installs already have
+            // them, so drop only the rows the user never touched (still disabled, no API key,
+            // no models) and leave a configured one be.
             providers.removeAll { provider ->
                 provider.builtIn &&
                     provider.id in REMOVED_SPONSORED_PROVIDER_IDS &&
