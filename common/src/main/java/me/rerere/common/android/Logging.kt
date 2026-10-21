@@ -83,6 +83,7 @@ object Logging {
     private const val MAX_ROTATED_FILES = 2
 
     private val timeFormat = SimpleDateFormat("MM-dd HH:mm:ss.SSS", Locale.US)
+    private val writeLock = Any()
 
     /** Point the rolling file log at [dir]. Safe to call more than once. */
     fun init(dir: File, minLevel: LogLevel = LogLevel.INFO) {
@@ -99,8 +100,12 @@ object Logging {
         addLog(LogEntry.TextLog(tag = tag, message = message, level = level))
     }
 
-    fun logRequest(entry: LogEntry.RequestLog) {
-        if (!requestLoggingEnabled) return
+    /**
+     * [force] bypasses the "record requests" switch. Failed requests always pass through it:
+     * the switch exists to avoid hoarding every successful call, not to hide the one that broke.
+     */
+    fun logRequest(entry: LogEntry.RequestLog, force: Boolean = false) {
+        if (!force && !requestLoggingEnabled) return
         addLog(entry)
     }
 
@@ -168,7 +173,8 @@ object Logging {
     }
 
     private fun format(entry: LogEntry): String {
-        val time = timeFormat.format(Date(entry.timestamp))
+        // SimpleDateFormat is not thread-safe and log calls come from arbitrary threads.
+        val time = synchronized(timeFormat) { timeFormat.format(Date(entry.timestamp)) }
         return when (entry) {
             is LogEntry.TextLog -> "$time ${entry.level} [${entry.tag}] ${entry.message}"
             is LogEntry.RequestLog -> buildString {
@@ -185,10 +191,12 @@ object Logging {
         try {
             if (!dir.exists()) dir.mkdirs()
             val file = File(dir, LOG_FILE_NAME)
-            if (file.length() > MAX_FILE_BYTES) {
-                rotate(dir, file)
+            synchronized(writeLock) {
+                if (file.length() > MAX_FILE_BYTES) {
+                    rotate(dir, file)
+                }
+                file.appendText(format(entry) + "\n")
             }
-            file.appendText(format(entry) + "\n")
         } catch (_: IOException) {
             // Never let logging break the caller.
         }
