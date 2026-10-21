@@ -877,6 +877,12 @@
   <string name="setting_display_page_show_user_avatar_desc">是否在聊天消息中显示用户头像</string>
   <string name="setting_display_page_clean_layout_title">简洁布局</string>
   <string name="setting_display_page_clean_layout_desc">扁平顶栏，标题下方显示模型名；输入框分两行，工具按钮在输入框下方</string>
+  <string name="setting_display_page_chat_layout_title">聊天布局</string>
+  <string name="setting_display_page_chat_layout_desc">聊天页整体样式：顶栏、输入框与消息呈现</string>
+  <string name="setting_display_page_chat_layout_original">原版</string>
+  <string name="setting_display_page_chat_layout_clean">简洁</string>
+  <string name="setting_display_page_chat_layout_claude">暖阳</string>
+  <string name="setting_display_page_loading_indicator_style_claude">暖阳</string>
   <string name="setting_display_page_clean_layout_glass_title">液态玻璃</string>
   <string name="setting_display_page_clean_layout_glass_desc">在简洁布局下为输入框和顶栏启用液态玻璃质感；关闭后两者均为扁平单色卡片</string>
   <string name="setting_display_page_clean_layout_opacity_desc">0% 完全透明，100% 为材质默认浓度</string>

@@ -103,6 +103,11 @@ fun ChatLoadingIndicator(
             )
         }
 
+        LoadingIndicatorStyle.CLAUDE -> ClaudeThinkingRow(
+            modifier = Modifier.padding(8.dp),
+            text = processingStatus,
+        )
+
         LoadingIndicatorStyle.DEFAULT, LoadingIndicatorStyle.APP_ICON -> Row(
             modifier = Modifier.padding(8.dp),
             verticalAlignment = Alignment.CenterVertically,

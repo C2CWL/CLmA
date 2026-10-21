@@ -1218,7 +1218,11 @@ data class DisplaySetting(
     val showAssistantBubble: Boolean = false,
     val bubbleOpacity: Float = 1.0f,
     // 简洁布局：扁平顶栏 + 两行输入框。默认关，关时与原来完全一致。
+    // 旧字段：布局选择由 chatLayout 接管；此处仅为兼容保留并与 ORIGINAL/CLEAN 同步，
+    // CLAUDE 时也置 true（旧版本回退到简洁布局比回到原版更接近）。
     val cleanLayout: Boolean = false,
+    /** Null = 未选择：跟随旧开关 [cleanLayout]（见 resolveChatLayout）。 */
+    val chatLayout: ChatLayout? = null,
     // 简洁布局输入框液态玻璃材质。关时为扁平单色卡片。默认开。
     val cleanLayoutGlass: Boolean = true,
     // 简洁布局顶栏面板浓度：0 = 完全透明（只剩描边），1 = 材质默认浓度。默认 1。

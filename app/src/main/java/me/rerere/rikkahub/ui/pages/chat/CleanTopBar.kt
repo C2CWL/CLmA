@@ -41,7 +41,9 @@ import me.rerere.hugeicons.stroke.LeftToRightListBullet
 import me.rerere.hugeicons.stroke.Menu03
 import me.rerere.hugeicons.stroke.MessageAdd01
 import me.rerere.rikkahub.R
+import me.rerere.rikkahub.data.datastore.ChatLayout
 import me.rerere.rikkahub.data.datastore.Settings
+import me.rerere.rikkahub.data.datastore.effectiveChatLayout
 import me.rerere.rikkahub.data.datastore.resolveChatModel
 import me.rerere.rikkahub.data.model.Conversation
 import me.rerere.rikkahub.data.usage.TurnFooter
@@ -193,7 +195,9 @@ internal fun CleanTopBarPanel(
     content: @Composable () -> Unit,
 ) {
     val darkTheme = LocalDarkMode.current
-    val glass = settings.displaySetting.cleanLayoutGlass
+    // CLAUDE (暖阳) keeps a solid paper header; glass is CLEAN-only.
+    val glass = settings.displaySetting.effectiveChatLayout == ChatLayout.CLEAN &&
+        settings.displaySetting.cleanLayoutGlass
     val opacity = settings.displaySetting.cleanLayoutTopOpacity
     val shape = cleanHeaderShape()
     Surface(

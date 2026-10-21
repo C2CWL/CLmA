@@ -24,6 +24,13 @@ enum class LoadingIndicatorStyle {
      */
     @SerialName("sparkle")
     SPARKLE,
+
+    /**
+     * Claude.ai's starburst: the four-point asterisk rotates and breathes in the brand coral,
+     * next to a shimmering "Thinking…" label.
+     */
+    @SerialName("claude")
+    CLAUDE,
 }
 
 /**
@@ -43,7 +50,7 @@ fun DisplaySetting.withLoadingIndicatorStyle(style: LoadingIndicatorStyle): Disp
     useAppIconStyleLoadingIndicator = when (style) {
         LoadingIndicatorStyle.APP_ICON -> true
         LoadingIndicatorStyle.DEFAULT -> false
-        LoadingIndicatorStyle.SHIMMER, LoadingIndicatorStyle.SPARKLE -> useAppIconStyleLoadingIndicator
+        LoadingIndicatorStyle.SHIMMER, LoadingIndicatorStyle.SPARKLE, LoadingIndicatorStyle.CLAUDE -> useAppIconStyleLoadingIndicator
     },
 )
 
