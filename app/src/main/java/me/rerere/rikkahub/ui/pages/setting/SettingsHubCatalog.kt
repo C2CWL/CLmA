@@ -33,6 +33,7 @@ enum class SettingsHubItemId {
     SHIZUKU,
     TERMUX,
     SSH,
+    SECRETS,
     WEB,
     TELEGRAM,
     BROWSER,
@@ -228,6 +229,12 @@ val settingsHubItems: Map<SettingsHubItemId, SettingsHubItemDef> = listOf(
         reorganized = SettingsHubItemCopy(R.string.setting_page_ssh, R.string.setting_page_ssh_desc),
     ),
     SettingsHubItemDef(
+        id = SettingsHubItemId.SECRETS,
+        route = Screen.SettingSecrets,
+        classic = SettingsHubItemCopy(R.string.setting_page_secrets, R.string.setting_page_secrets_desc),
+        reorganized = SettingsHubItemCopy(R.string.setting_page_secrets, R.string.setting_page_secrets_desc),
+    ),
+    SettingsHubItemDef(
         id = SettingsHubItemId.WEB,
         route = Screen.SettingWeb,
         classic = SettingsHubItemCopy(R.string.setting_page_web_server, R.string.setting_page_web_server_desc),
@@ -346,6 +353,7 @@ private val classicSections: List<SettingsHubSectionDef> = listOf(
         reorganizedTitleRes = R.string.setting_page_group_connections,
         items = listOf(
             SettingsHubItemId.SSH,
+            SettingsHubItemId.SECRETS,
             SettingsHubItemId.WEB,
             SettingsHubItemId.TELEGRAM,
             SettingsHubItemId.BROWSER,
@@ -429,6 +437,7 @@ private val reorganizedSections: List<SettingsHubSectionDef> = listOf(
         items = listOf(
             SettingsHubItemId.NETWORK,
             SettingsHubItemId.SSH,
+            SettingsHubItemId.SECRETS,
             SettingsHubItemId.WEB,
             SettingsHubItemId.TELEGRAM,
             SettingsHubItemId.BROWSER,

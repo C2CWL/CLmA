@@ -102,6 +102,7 @@
   <string name="chat_message_tool_request_secret_hide">Hide</string>
   <string name="chat_message_tool_request_secret_store">Store securely</string>
   <string name="chat_message_tool_request_secret_stored">Stored as %1$s (value not shown)</string>
+  <string name="chat_message_tool_request_secret_overwrite">will overwrite the existing value</string>
   <string name="assistant_page_local_tools_clipboard_desc">Read or write plain text from the device clipboard</string>
   <string name="assistant_page_local_tools_clipboard_title">Clipboard</string>
   <string name="assistant_page_local_tools_javascript_engine_desc">Execute JavaScript code with QuickJS engine for calculations and scripting</string>
@@ -3035,6 +3036,19 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <!-- P2-32 ssh hosts page -->
   <string name="setting_page_ssh">SSH hosts</string>
   <string name="setting_page_ssh_desc">Manage the saved hosts used by ssh_exec_saved, ssh_upload and ssh_download.</string>
+  <string name="setting_page_secrets">Secure secrets</string>
+  <string name="setting_page_secrets_desc">On-device vault behind request_secret / password_secret. Values never leave this device.</string>
+  <string name="setting_secrets_page_title">Secure secrets</string>
+  <string name="setting_secrets_page_list">Vault entries</string>
+  <string name="setting_secrets_page_empty">No secrets stored yet</string>
+  <string name="setting_secrets_page_empty_hint">Secrets are added via the in-chat secure input card (request_secret).</string>
+  <string name="setting_secrets_page_value_hidden">Value hidden — stored encrypted on this device only</string>
+  <string name="setting_secrets_page_delete">Delete</string>
+  <string name="setting_secrets_page_deleted">Secret deleted</string>
+  <string name="setting_secrets_page_delete_confirm_title">Delete “%1$s”?</string>
+  <string name="setting_secrets_page_delete_confirm_body">The stored value will be removed from this device. Tools referencing it will fail until you re-enter the secret.</string>
+  <string name="setting_secrets_page_about_title">How this works</string>
+  <string name="setting_secrets_page_about_body">Secrets are encrypted with the Android Keystore and never appear in chat history or leave the device. The assistant references them by name (password_secret / stdin_secret / …) and they are resolved locally at execution time.</string>
   <string name="setting_ssh_page_title">SSH hosts</string>
   <string name="setting_ssh_page_hosts">Saved hosts</string>
   <string name="setting_ssh_page_empty">No saved hosts yet</string>

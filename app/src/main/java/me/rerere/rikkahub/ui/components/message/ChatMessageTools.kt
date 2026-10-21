@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
@@ -23,6 +24,7 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.SheetValue
@@ -59,6 +61,7 @@ import me.rerere.common.http.jsonObjectOrNull
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.BubbleChatQuestion
 import me.rerere.hugeicons.stroke.Cancel01
+import me.rerere.hugeicons.stroke.Lock
 import me.rerere.hugeicons.stroke.Refresh03
 import me.rerere.hugeicons.stroke.Tick01
 import me.rerere.hugeicons.stroke.Tools
@@ -759,12 +762,13 @@ private data class AskUserQuestion(
 /**
  * Secure input card for [REQUEST_SECRET_TOOL_NAME].
  *
- * The plaintext is written straight into [AgentSecretsStore] and never appears in
- * [ToolApprovalState.Answered] / chat history / the LLM cloud. Only `{stored,name,kind}`
- * is returned as the tool answer.
+ * Rendered as a standalone bubble (not a chain-of-thought tool step) so the password
+ * form reads as its own message. The plaintext is written straight into
+ * [AgentSecretsStore] and never appears in [ToolApprovalState.Answered] / chat history /
+ * the LLM cloud. Only `{stored,name,kind}` is returned as the tool answer.
  */
 @Composable
-private fun ChainOfThoughtScope.RequestSecretToolStep(
+private fun RequestSecretToolStep(
     tool: UIMessagePart.Tool,
     loading: Boolean,
     onToolAnswer: ((toolCallId: String, answer: String) -> Unit)?,
@@ -784,185 +788,192 @@ private fun ChainOfThoughtScope.RequestSecretToolStep(
     var confirm by remember(tool.toolCallId) { mutableStateOf("") }
     var showPlain by remember(tool.toolCallId) { mutableStateOf(false) }
     var errorText by remember(tool.toolCallId) { mutableStateOf<String?>(null) }
-    var expanded by remember { mutableStateOf(true) }
-    val capsule = LocalToolCallStyle.current == ToolCallStyle.CAPSULE
     val nameValid = remember(name) {
         name.isNotBlank() && Regex("""[A-Za-z0-9_]{1,64}""").matches(name)
     }
+    // Overwrite warning: the vault already holds a value under this name.
+    val existsAlready = remember(tool.toolCallId, isPending) {
+        isPending && nameValid && secretsStore.has(name)
+    }
 
-    ControlledChainOfThoughtStep(
-        expanded = expanded,
-        onExpandedChange = { expanded = it },
-        icon = {
-            if (loading) {
-                DotLoading(size = if (capsule) 12.dp else 10.dp)
-            } else {
-                Icon(
-                    imageVector = if (capsule) {
-                        capsuleToolIcon(REQUEST_SECRET_TOOL_NAME)
-                    } else {
-                        HugeIcons.Tools
-                    },
-                    contentDescription = null,
-                    modifier = Modifier.size(if (capsule) CapsuleToolIconSize else 16.dp),
-                    tint = if (capsule) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        LocalContentColor.current.copy(alpha = 0.7f)
-                    },
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f),
+        tonalElevation = 1.dp,
+    ) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (loading) {
+                    DotLoading(size = 12.dp)
+                } else {
+                    Icon(
+                        imageVector = HugeIcons.Lock,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                Text(
+                    text = stringResource(R.string.chat_message_tool_request_secret_title),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier
+                        .padding(start = 6.dp)
+                        .shimmer(isLoading = loading),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
-        },
-        label = {
-            Text(
-                text = stringResource(R.string.chat_message_tool_request_secret_title),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = if (capsule) FontWeight.Medium else null,
-                color = if (capsule) {
-                    MaterialTheme.colorScheme.onSurface
-                } else {
-                    MaterialTheme.colorScheme.secondary
-                },
-                modifier = Modifier.shimmer(isLoading = loading),
-                maxLines = if (capsule) 1 else 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-        },
-        content = {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(
-                    text = prompt,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    text = stringResource(R.string.chat_message_tool_request_secret_name_label, name.ifBlank { "—" }),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(
-                    text = stringResource(R.string.chat_message_tool_request_secret_hint),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
 
-                if (isPending && onToolAnswer != null) {
+            Text(
+                text = prompt,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = stringResource(R.string.chat_message_tool_request_secret_name_label, name.ifBlank { "—" }) +
+                    if (existsAlready) {
+                        " · " + stringResource(R.string.chat_message_tool_request_secret_overwrite)
+                    } else {
+                        ""
+                    },
+                style = MaterialTheme.typography.labelSmall,
+                color = if (existsAlready) {
+                    MaterialTheme.colorScheme.tertiary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+            )
+            Text(
+                text = stringResource(R.string.chat_message_tool_request_secret_hint),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            if (isPending && onToolAnswer != null) {
+                OutlinedTextField(
+                    value = value,
+                    onValueChange = {
+                        value = it
+                        errorText = null
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    textStyle = MaterialTheme.typography.bodySmall,
+                    singleLine = !isPrivateKey,
+                    minLines = if (isPrivateKey) 4 else 1,
+                    maxLines = if (isPrivateKey) 12 else 1,
+                    visualTransformation = if (showPlain || isPrivateKey) {
+                        VisualTransformation.None
+                    } else {
+                        PasswordVisualTransformation()
+                    },
+                    label = {
+                        Text(stringResource(R.string.chat_message_tool_request_secret_value_label))
+                    },
+                )
+                if (!isPrivateKey) {
                     OutlinedTextField(
-                        value = value,
+                        value = confirm,
                         onValueChange = {
-                            value = it
+                            confirm = it
                             errorText = null
                         },
                         modifier = Modifier.fillMaxWidth(),
                         textStyle = MaterialTheme.typography.bodySmall,
-                        singleLine = !isPrivateKey,
-                        minLines = if (isPrivateKey) 4 else 1,
-                        maxLines = if (isPrivateKey) 12 else 1,
-                        visualTransformation = if (showPlain || isPrivateKey) {
+                        singleLine = true,
+                        visualTransformation = if (showPlain) {
                             VisualTransformation.None
                         } else {
                             PasswordVisualTransformation()
                         },
                         label = {
-                            Text(stringResource(R.string.chat_message_tool_request_secret_value_label))
+                            Text(stringResource(R.string.chat_message_tool_request_secret_confirm_label))
                         },
-                    )
-                    if (!isPrivateKey) {
-                        OutlinedTextField(
-                            value = confirm,
-                            onValueChange = {
-                                confirm = it
-                                errorText = null
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            textStyle = MaterialTheme.typography.bodySmall,
-                            singleLine = true,
-                            visualTransformation = if (showPlain) {
-                                VisualTransformation.None
-                            } else {
-                                PasswordVisualTransformation()
-                            },
-                            label = {
-                                Text(stringResource(R.string.chat_message_tool_request_secret_confirm_label))
-                            },
-                        )
-                    }
-                    TextButton(onClick = { showPlain = !showPlain }) {
-                        Text(
-                            text = stringResource(
-                                if (showPlain) {
-                                    R.string.chat_message_tool_request_secret_hide
-                                } else {
-                                    R.string.chat_message_tool_request_secret_show
-                                },
-                            ),
-                        )
-                    }
-                    errorText?.let {
-                        Text(
-                            text = it,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.error,
-                        )
-                    }
-                    FilledTonalButton(
-                        onClick = {
-                            when {
-                                !nameValid -> {
-                                    errorText = "Invalid vault name"
-                                }
-                                value.isEmpty() -> {
-                                    errorText = "Value required"
-                                }
-                                !isPrivateKey && value != confirm -> {
-                                    errorText = "Values do not match"
-                                }
-                                else -> {
-                                    val ok = secretsStore.set(name, value)
-                                    // Clear local plaintext immediately.
-                                    value = ""
-                                    confirm = ""
-                                    if (!ok) {
-                                        errorText = "Failed to store secret"
-                                        return@FilledTonalButton
-                                    }
-                                    val answerPayload = buildJsonObject {
-                                        put("stored", true)
-                                        put("name", name)
-                                        put("kind", kind)
-                                    }
-                                    onToolAnswer(tool.toolCallId, answerPayload.toString())
-                                }
-                            }
-                        },
-                        enabled = nameValid && value.isNotEmpty() && (isPrivateKey || confirm.isNotEmpty()),
-                        modifier = Modifier.align(Alignment.End),
-                    ) {
-                        Icon(
-                            imageVector = HugeIcons.Tick01,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                        )
-                        Text(
-                            text = stringResource(R.string.chat_message_tool_request_secret_store),
-                            modifier = Modifier.padding(start = 4.dp),
-                        )
-                    }
-                } else if (isAnswered) {
-                    val answeredState = tool.approvalState as ToolApprovalState.Answered
-                    val storedName = runCatching {
-                        JsonInstant.parseToJsonElement(answeredState.answer)
-                            .jsonObject["name"]?.jsonPrimitive?.contentOrNull
-                    }.getOrNull() ?: name
-                    Text(
-                        text = stringResource(R.string.chat_message_tool_request_secret_stored, storedName),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary,
                     )
                 }
+                TextButton(onClick = { showPlain = !showPlain }) {
+                    Text(
+                        text = stringResource(
+                            if (showPlain) {
+                                R.string.chat_message_tool_request_secret_hide
+                            } else {
+                                R.string.chat_message_tool_request_secret_show
+                            },
+                        ),
+                    )
+                }
+                errorText?.let {
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+                FilledTonalButton(
+                    onClick = {
+                        when {
+                            !nameValid -> {
+                                errorText = "Invalid vault name"
+                            }
+                            value.isEmpty() -> {
+                                errorText = "Value required"
+                            }
+                            !isPrivateKey && value != confirm -> {
+                                errorText = "Values do not match"
+                            }
+                            else -> {
+                                val ok = secretsStore.set(name, value)
+                                // Clear local plaintext immediately.
+                                value = ""
+                                confirm = ""
+                                if (!ok) {
+                                    errorText = "Failed to store secret"
+                                    return@FilledTonalButton
+                                }
+                                val answerPayload = buildJsonObject {
+                                    put("stored", true)
+                                    put("name", name)
+                                    put("kind", kind)
+                                }
+                                onToolAnswer(tool.toolCallId, answerPayload.toString())
+                            }
+                        }
+                    },
+                    enabled = nameValid && value.isNotEmpty() && (isPrivateKey || confirm.isNotEmpty()),
+                    modifier = Modifier.align(Alignment.End),
+                ) {
+                    Icon(
+                        imageVector = HugeIcons.Tick01,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                    )
+                    Text(
+                        text = stringResource(R.string.chat_message_tool_request_secret_store),
+                        modifier = Modifier.padding(start = 4.dp),
+                    )
+                }
+            } else if (isAnswered) {
+                val answeredState = tool.approvalState as ToolApprovalState.Answered
+                val storedName = runCatching {
+                    JsonInstant.parseToJsonElement(answeredState.answer)
+                        .jsonObject["name"]?.jsonPrimitive?.contentOrNull
+                }.getOrNull() ?: name
+                Text(
+                    text = stringResource(R.string.chat_message_tool_request_secret_stored, storedName),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
+    }
+}
             }
         },
     )

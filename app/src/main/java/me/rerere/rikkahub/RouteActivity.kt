@@ -135,6 +135,7 @@ import me.rerere.rikkahub.ui.pages.setting.SettingSponsorPage
 import me.rerere.rikkahub.ui.pages.setting.SettingSubAgentsPage
 // P2-32 ssh hosts page
 import me.rerere.rikkahub.ui.pages.setting.SettingSshPage
+import me.rerere.rikkahub.ui.pages.setting.SettingSecretsPage
 import me.rerere.rikkahub.ui.pages.setting.SettingTelegramPage
 import me.rerere.rikkahub.ui.pages.setting.SettingWebPage
 import me.rerere.rikkahub.ui.pages.share.handler.ShareHandlerPage
@@ -544,6 +545,10 @@ class RouteActivity : ComponentActivity() {
                                 SettingSshPage()
                             }
 
+                            entry<Screen.SettingSecrets> {
+                                SettingSecretsPage()
+                            }
+
                             entry<Screen.SettingFiles> {
                                 SettingFilesPage()
                             }
@@ -838,6 +843,9 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data object SettingSsh : Screen
+
+    @Serializable
+    data object SettingSecrets : Screen
 
     @Serializable
     data object SettingFiles : Screen
