@@ -25,6 +25,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
+import me.rerere.common.android.LogLevel
 import me.rerere.common.android.Logging
 import me.rerere.common.android.appTempFolder
 import com.whl.quickjs.android.QuickJSLoader
@@ -82,6 +83,12 @@ class RikkaHubApp : Application() {
         // gate full request/response body logging the same way HttpLoggingInterceptor
         // is already gated behind BuildConfig.DEBUG in DataSourceModule.
         Logging.setDebugLoggingEnabled(BuildConfig.DEBUG)
+        // Rolling on-disk log so a crash or a failed request is still diagnosable after the
+        // process (and the in-memory ring buffer) is gone.
+        Logging.init(
+            dir = java.io.File(filesDir, "logs"),
+            minLevel = if (BuildConfig.DEBUG) LogLevel.DEBUG else LogLevel.INFO,
+        )
         startKoin {
             androidLogger()
             androidContext(this@RikkaHubApp)
