@@ -974,10 +974,6 @@ private fun RequestSecretToolStep(
         }
     }
 }
-            }
-        },
-    )
-}
 
 @Composable
 private fun ToolDenyReasonDialog(
