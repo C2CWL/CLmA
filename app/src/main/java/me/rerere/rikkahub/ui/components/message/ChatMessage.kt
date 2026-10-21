@@ -70,6 +70,7 @@ import androidx.core.net.toFile
 import androidx.core.net.toUri
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -497,6 +498,11 @@ private fun MessagePartsBlock(
                         // non-user messages: user messages don't carry this metadata.
                         val renderedAsWebviewCard =
                             role != MessageRole.USER && SkillWebviewCardOrNull(part)
+                        // 插话卡片：合并渲染（AutoCompactionMessageGroup）把用户插话转成
+                        // 带 `rikkahub.interjection` 标记的 Text part，这里画成内嵌卡片，
+                        // 让前后两段 assistant 在视觉上是同一条连续消息。
+                        val renderedAsInterjection =
+                            !renderedAsWebviewCard && role != MessageRole.USER && InterjectionCard(part)
                         val textContent = @Composable {
                             if (role == MessageRole.USER) {
                                 // Long pasted prompts collapse to a preview. The chevron
@@ -575,7 +581,7 @@ private fun MessagePartsBlock(
                         // 内部可选择的 Text 会频繁注册/注销，与 Compose 选择工具栏在绘制阶段
                         // 对 selectable 列表的排序产生并发修改，导致 ConcurrentModificationException。
                         // 生成结束后内容稳定，再启用文本选择。
-                        if (!renderedAsWebviewCard) {
+                        if (!renderedAsWebviewCard && !renderedAsInterjection) {
                             if (loading) {
                                 textContent()
                             } else {
@@ -886,4 +892,39 @@ private fun UserMessageBubble(
             }
         }
     }
+}
+
+/**
+ * 插话卡片：合并渲染（[me.rerere.rikkahub.ui.pages.chat.groupAutomaticCompactionMessages] 把
+ * 插话三明治并成一组）时，用户插话被转成带 `rikkahub.interjection` 标记的 Text part。
+ * 这里把它画成内嵌在 assistant 消息里的小卡片——前后两段在视觉上是同一条连续消息，
+ * 插话本身以缩进引用的形式可见。没有标记时返回 false，调用方回落到标准 markdown 渲染。
+ */
+@Composable
+internal fun InterjectionCard(
+    part: UIMessagePart.Text,
+    modifier: Modifier = Modifier,
+): Boolean {
+    if (part.metadata?.get("rikkahub.interjection")?.jsonPrimitive?.booleanOrNull != true) return false
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f),
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.chat_interjection_label),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Text(
+                text = part.text,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+            )
+        }
+    }
+    return true
 }

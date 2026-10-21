@@ -102,7 +102,10 @@ fun List<UIMessagePart>.groupMessageParts(
                 val foldAsNarration = foldProcessNarration &&
                     part is UIMessagePart.Text &&
                     index < lastThinkingIndex &&
-                    part.metadata?.containsKey("rikkahub.webview") != true
+                    part.metadata?.containsKey("rikkahub.webview") != true &&
+                    // 插话卡片（合并渲染时用户插话转成的标记 Text）必须保持独立块，
+                    // 否则会被折进后半的思考链里，卡片就没了。
+                    part.metadata?.containsKey("rikkahub.interjection") != true
 
                 if (foldAsNarration) {
                     currentThinkingSteps.add(

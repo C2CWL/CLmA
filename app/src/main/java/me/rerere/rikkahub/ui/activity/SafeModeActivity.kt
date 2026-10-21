@@ -8,6 +8,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -33,6 +34,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberBottomSheetState
@@ -73,6 +75,7 @@ class SafeModeActivity : ComponentActivity() {
             RikkahubTheme {
                 val settings by settingsStore.settingsFlow.collectAsStateWithLifecycle()
                 var showAssistantPicker by remember { mutableStateOf(false) }
+                var crashDetailsExpanded by remember { mutableStateOf(false) }
                 val scope = rememberCoroutineScope()
                 val context = LocalContext.current
 
@@ -94,6 +97,24 @@ class SafeModeActivity : ComponentActivity() {
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+
+                        if (stackTrace != null) {
+                            // Plain-language summary first: most users can't read a stack trace,
+                            // and "the app crashed" alone doesn't tell them whether to switch
+                            // assistant or just go back in.
+                            Text(
+                                text = stringResource(R.string.safe_mode_crash_headline),
+                                style = MaterialTheme.typography.titleMedium,
+                            )
+                            Text(
+                                text = stringResource(
+                                    R.string.safe_mode_crash_likely,
+                                    stringResource(crashCauseRes(stackTrace)),
+                                ),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
 
                         Text(
                             text = stringResource(
@@ -122,12 +143,17 @@ class SafeModeActivity : ComponentActivity() {
                         if (stackTrace != null) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
                             ) {
-                                Text(
-                                    text = stringResource(R.string.safe_mode_crash_report),
-                                    style = MaterialTheme.typography.titleSmall,
-                                )
+                                TextButton(onClick = { crashDetailsExpanded = !crashDetailsExpanded }) {
+                                    Text(
+                                        text = stringResource(
+                                            if (crashDetailsExpanded) R.string.error_action_hide_details
+                                            else R.string.safe_mode_crash_details
+                                        )
+                                    )
+                                }
                                 OutlinedButton(
                                     onClick = {
                                         val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
@@ -137,25 +163,41 @@ class SafeModeActivity : ComponentActivity() {
                                     Text(stringResource(R.string.safe_mode_copy))
                                 }
                             }
-                            Card(
+                            AnimatedVisibility(
+                                visible = crashDetailsExpanded,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .weight(1f),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                                )
                             ) {
-                                val vScroll = rememberScrollState()
-                                val hScroll = rememberScrollState()
-                                Text(
-                                    text = stackTrace,
-                                    modifier = Modifier
-                                        .padding(12.dp)
-                                        .verticalScroll(vScroll)
-                                        .horizontalScroll(hScroll),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    fontFamily = FontFamily.Monospace,
-                                )
+                                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    // Same disclaimer as the chat error card: the summary above is
+                                    // a keyword guess, the stack trace is the ground truth.
+                                    Text(
+                                        text = stringResource(R.string.safe_mode_crash_details_hint),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                    Card(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .fillMaxHeight(),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                                        )
+                                    ) {
+                                        val vScroll = rememberScrollState()
+                                        val hScroll = rememberScrollState()
+                                        Text(
+                                            text = stackTrace,
+                                            modifier = Modifier
+                                                .padding(12.dp)
+                                                .verticalScroll(vScroll)
+                                                .horizontalScroll(hScroll),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            fontFamily = FontFamily.Monospace,
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -265,4 +307,19 @@ private fun AssistantPickerSheet(
             }
         }
     }
+}
+
+/**
+ * Best-effort keyword guess at what kind of crash this was. Deliberately coarse: the goal is to
+ * tell a non-technical user whether this smells like memory, local data or an internal bug — not
+ * to classify the exception precisely. The full stack trace is one tap away.
+ */
+private fun crashCauseRes(stackTrace: String): Int = when {
+    stackTrace.contains("OutOfMemoryError") -> R.string.safe_mode_crash_cause_memory
+    stackTrace.contains("SQLite", ignoreCase = true) ||
+        stackTrace.contains("database", ignoreCase = true) -> R.string.safe_mode_crash_cause_storage
+    stackTrace.contains("NullPointerException") ||
+        stackTrace.contains("IllegalStateException") ||
+        stackTrace.contains("IllegalArgumentException") -> R.string.safe_mode_crash_cause_internal
+    else -> R.string.safe_mode_crash_cause_unknown
 }

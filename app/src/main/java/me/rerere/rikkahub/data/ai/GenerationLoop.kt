@@ -961,14 +961,18 @@ class GenerationLoop(
                         assistant = assistant,
                         settings = settings
                     )
+                    // onGenerationFinish 负责关闭进行中的 part（reasoning 的思考计时等），
+                    // 插话打断时也必须跑，否则前半的思考块会一直显示“思考中”。
+                    messages = messages.onGenerationFinish(
+                        transformers = outputTransformers,
+                        context = context,
+                        model = model,
+                        assistant = assistant,
+                        settings = settings
+                    )
                     if (!steered) {
-                        messages = messages.onGenerationFinish(
-                            transformers = outputTransformers,
-                            context = context,
-                            model = model,
-                            assistant = assistant,
-                            settings = settings
-                        )
+                        // 消息级 finishedAt 只在整轮真正结束时设置：被打断的前半保持 null，
+                        // UI 不出操作栏、usage 结转到后半（见 UsageTurnViewFactory）。
                         messages = messages.slice(0 until messages.lastIndex) + messages.last().copy(
                             finishedAt = Clock.System.now()
                                 .toLocalDateTime(TimeZone.currentSystemDefault())
