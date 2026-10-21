@@ -204,7 +204,17 @@ class BackupManager(
         /** Must finish before Koin, Room, SettingsStore or any background consumers are initialized. */
         suspend fun applyPendingRestore(context: Context, json: Json): Boolean = withContext(Dispatchers.IO) {
             pendingRestore(context).apply { settingsJson ->
-                SettingsStore.restoreBeforeInitialization(context, json.decodeFromString<Settings>(settingsJson))
+                // A backup carries absolute `file:///…/files/<relative>` URIs for avatars and chat
+                // wallpapers, naming the *exporting* install's files dir. Importing into a build
+                // with a different applicationId (upstream ↔ fork, release ↔ debug) would otherwise
+                // leave every image pointing at a directory that does not exist here. The payload
+                // is already installed when this callback runs, so a genuinely missing file
+                // degrades to Avatar.Dummy / no wallpaper instead of staying dangling.
+                val settings = json.decodeFromString<Settings>(settingsJson)
+                SettingsStore.restoreBeforeInitialization(
+                    context = context,
+                    settings = LocalUriRemap.apply(settings, context.filesDir),
+                )
             }
         }
     }
