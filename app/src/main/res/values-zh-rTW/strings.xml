@@ -653,6 +653,10 @@
   <string name="setting_display_page_tool_call_style_desc">經典樣式保留時間軸。膠囊樣式把搜尋和網頁工具顯示為精簡的動作標籤</string>
   <string name="setting_display_page_tool_call_style_classic">經典</string>
   <string name="setting_display_page_tool_call_style_capsule">膠囊</string>
+  <string name="setting_display_page_popup_menu_style_title">彈出選單樣式</string>
+  <string name="setting_display_page_popup_menu_style_desc">表現力：圓角分組選單 + 彈性動畫。經典：系統預設平面選單</string>
+  <string name="setting_display_page_popup_menu_style_classic">經典</string>
+  <string name="setting_display_page_popup_menu_style_expressive">表現力</string>
   <string name="setting_display_page_auto_play_tts_desc">助理訊息產生完成後自動播放語音</string>
   <string name="setting_display_page_auto_play_tts_title">產生後自動播放 TTS</string>
   <string name="setting_display_page_chat_font_family_default">預設</string>
@@ -806,6 +810,30 @@
   <string name="setting_model_page_translate_model_desc">用於翻譯功能的模型</string>
   <string name="setting_model_page_translate_prompt_vars">變數: 原始文字: {source_text}, 目標語言: {target_lang}</string>
   <string name="setting_page_group_appearance">外觀與互動</string>
+
+  <string name="setting_page_hub_chat_display">聊天顯示</string>
+  <string name="setting_page_hub_chat_display_desc">版面、氣泡、思考步驟、字型、程式碼區塊</string>
+  <string name="setting_page_hub_chat_actions">聊天操作</string>
+  <string name="setting_page_hub_chat_actions_desc">傳送、捲動、貼上、觸感、載入指示</string>
+  <string name="setting_page_hub_app_alerts">應用提醒</string>
+  <string name="setting_page_hub_app_alerts_desc">更新提醒與生成完成通知</string>
+  <string name="setting_page_hub_notif_access">通知讀取</string>
+  <string name="setting_page_hub_notif_access_desc">讀取系統通知與 Telegram 自動轉發白名單</string>
+  <string name="setting_page_hub_network_desc">代理、User-Agent、重試與串流逾時</string>
+  <string name="setting_page_group_appearance_reorg">外觀與聊天</string>
+  <string name="setting_page_group_models_reorg">模型與語音</string>
+  <string name="setting_page_group_connections_reorg">網路與連線</string>
+  <string name="setting_page_ui_style_section">介面風格</string>
+  <string name="setting_page_settings_hub_style_title">設定頁版面</string>
+  <string name="setting_page_settings_hub_style_desc">新版：更清楚的命名，網路歸入連線。原版：保留舊入口分組</string>
+  <string name="setting_page_settings_hub_style_classic">原版</string>
+  <string name="setting_page_settings_hub_style_reorganized">新版</string>
+
+  <string name="setting_page_general_group_conversation">對話</string>
+  <string name="setting_page_general_group_navigation">捲動與導覽</string>
+  <string name="setting_page_general_group_feedback">回饋效果</string>
+  <string name="setting_page_general_group_input_media">輸入與媒體</string>
+  <string name="setting_page_general_group_advanced">進階</string>
   <string name="setting_page_group_models">模型與 AI</string>
   <string name="setting_page_group_assistant">助手與自動化</string>
   <string name="setting_page_group_device">裝置與權限</string>
@@ -848,6 +876,9 @@
   <string name="setting_page_mcp">MCP</string>
   <string name="setting_page_mcp_desc">配置MCP伺服器</string>
   <string name="setting_page_message_display_settings">訊息顯示</string>
+  <string name="setting_page_layout_display_settings">版面</string>
+  <string name="setting_page_thinking_tools_settings">思考與工具</string>
+  <string name="setting_page_font_display_settings">字型</string>
   <string name="setting_page_model_and_services">模型與服務</string>
   <string name="setting_page_no_share_app">找不到分享應用</string>
   <string name="setting_page_providers">提供商</string>

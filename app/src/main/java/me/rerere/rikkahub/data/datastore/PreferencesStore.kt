@@ -1240,6 +1240,10 @@ data class DisplaySetting(
     val thinkingStepsVisibleCount: Int = 2,
     // 工具调用样式。默认经典时间线；旧设置没有该字段时也读回经典。
     val toolCallStyle: ToolCallStyle = ToolCallStyle.CLASSIC,
+    // 弹出菜单样式。默认表现力（圆角分组 + spring）；可切回经典平面菜单。
+    val popupMenuStyle: PopupMenuStyle = PopupMenuStyle.EXPRESSIVE,
+    // 设置首页信息架构。默认新版分组/文案；可切回原版入口布局。与菜单样式正交。
+    val settingsHubStyle: SettingsHubStyle = SettingsHubStyle.REORGANIZED,
     // 把夹在工具/思考轮次之间的过程旁白并进思考链，避免拆成多张「再显示 N 步」和正文穿插。
     // 默认开；关掉则恢复旧的旁白当正文、步骤组被切开的布局。
     val foldProcessNarration: Boolean = true,

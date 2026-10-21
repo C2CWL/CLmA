@@ -789,6 +789,10 @@
   <string name="setting_display_page_tool_call_style_desc">Classic keeps the timeline. Capsule shows search and page tools as compact action chips</string>
   <string name="setting_display_page_tool_call_style_classic">Classic</string>
   <string name="setting_display_page_tool_call_style_capsule">Capsule</string>
+  <string name="setting_display_page_popup_menu_style_title">Popup menu style</string>
+  <string name="setting_display_page_popup_menu_style_desc">Expressive uses rounded grouped menus with spring motion. Classic keeps the flat stock menu</string>
+  <string name="setting_display_page_popup_menu_style_classic">Classic</string>
+  <string name="setting_display_page_popup_menu_style_expressive">Expressive</string>
   <string name="setting_display_page_auto_play_tts_desc">Automatically play TTS after assistant message generation completes</string>
   <string name="setting_display_page_auto_play_tts_title">Auto-play TTS After Generation</string>
   <string name="setting_display_page_chat_font_family_default">Default</string>
@@ -972,6 +976,30 @@
   <string name="setting_model_page_translate_model_desc">The model used for translation features</string>
   <string name="setting_model_page_translate_prompt_vars">Variables: Source text: {source_text}, Target language: {target_lang}</string>
   <string name="setting_page_group_appearance">Appearance &amp; interaction</string>
+
+  <string name="setting_page_hub_chat_display">Chat display</string>
+  <string name="setting_page_hub_chat_display_desc">Layout, bubbles, thinking steps, fonts, code blocks</string>
+  <string name="setting_page_hub_chat_actions">Chat actions</string>
+  <string name="setting_page_hub_chat_actions_desc">Send, scroll, paste, haptics, loading indicator</string>
+  <string name="setting_page_hub_app_alerts">App alerts</string>
+  <string name="setting_page_hub_app_alerts_desc">Update reminders and generation notifications</string>
+  <string name="setting_page_hub_notif_access">Notification access</string>
+  <string name="setting_page_hub_notif_access_desc">Read system notifications and Telegram auto-forward whitelist</string>
+  <string name="setting_page_hub_network_desc">Proxy, User-Agent, retries and stream timeouts</string>
+  <string name="setting_page_group_appearance_reorg">Look &amp; chat</string>
+  <string name="setting_page_group_models_reorg">Models &amp; speech</string>
+  <string name="setting_page_group_connections_reorg">Network &amp; connections</string>
+  <string name="setting_page_ui_style_section">UI style</string>
+  <string name="setting_page_settings_hub_style_title">Settings layout</string>
+  <string name="setting_page_settings_hub_style_desc">Reorganized uses clearer names and puts network under connections. Classic keeps the previous hub layout</string>
+  <string name="setting_page_settings_hub_style_classic">Classic</string>
+  <string name="setting_page_settings_hub_style_reorganized">Reorganized</string>
+
+  <string name="setting_page_general_group_conversation">Conversation</string>
+  <string name="setting_page_general_group_navigation">Scrolling &amp; navigation</string>
+  <string name="setting_page_general_group_feedback">Feedback</string>
+  <string name="setting_page_general_group_input_media">Input &amp; media</string>
+  <string name="setting_page_general_group_advanced">Advanced</string>
   <string name="setting_page_group_models">Models &amp; AI</string>
   <string name="setting_page_group_assistant">Assistant &amp; automation</string>
   <string name="setting_page_group_device">Device &amp; permissions</string>
@@ -1054,6 +1082,9 @@
   <string name="setting_page_mcp">MCP</string>
   <string name="setting_page_mcp_desc">Configure MCP Servers</string>
   <string name="setting_page_message_display_settings">Message Display</string>
+  <string name="setting_page_layout_display_settings">Layout</string>
+  <string name="setting_page_thinking_tools_settings">Thinking &amp; tools</string>
+  <string name="setting_page_font_display_settings">Fonts</string>
   <string name="setting_page_model_and_services">Models &amp; Services</string>
   <string name="setting_page_no_share_app">No sharing app found</string>
   <string name="setting_page_providers">Providers</string>

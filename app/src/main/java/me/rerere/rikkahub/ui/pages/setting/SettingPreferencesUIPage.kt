@@ -20,7 +20,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
@@ -48,6 +47,8 @@ import me.rerere.hugeicons.stroke.FileImport
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.ChatFontFamily
 import me.rerere.rikkahub.data.datastore.DisplaySetting
+import me.rerere.rikkahub.data.datastore.PopupMenuStyle
+import me.rerere.rikkahub.data.datastore.SettingsHubStyle
 import me.rerere.rikkahub.data.datastore.ToolCallStyle
 import me.rerere.rikkahub.data.files.FileFolders
 import me.rerere.rikkahub.data.files.FileUtils
@@ -60,6 +61,9 @@ import me.rerere.rikkahub.ui.components.richtext.MarkdownBlock
 import me.rerere.rikkahub.ui.components.ui.CardGroup
 import me.rerere.rikkahub.ui.components.ui.PercentSlider
 import me.rerere.rikkahub.ui.components.ui.Select
+import me.rerere.rikkahub.ui.components.ui.SettingSlider
+import me.rerere.rikkahub.ui.components.ui.parseIntInRange
+import me.rerere.rikkahub.ui.components.ui.snapToInt
 import me.rerere.rikkahub.ui.context.LocalToaster
 import me.rerere.rikkahub.ui.theme.CustomColors
 import me.rerere.rikkahub.ui.theme.FontScale
@@ -166,7 +170,67 @@ fun SettingPreferencesUIPage(vm: SettingVM = koinViewModel()) {
             item {
                 CardGroup(
                     modifier = Modifier.padding(horizontal = 8.dp),
-                    title = { Text(stringResource(R.string.setting_page_message_display_settings)) },
+                    title = { Text(stringResource(R.string.setting_page_ui_style_section)) },
+                ) {
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_page_settings_hub_style_title)) },
+                        supportingContent = {
+                            Text(stringResource(R.string.setting_page_settings_hub_style_desc))
+                        },
+                        trailingContent = {
+                            Select(
+                                options = SettingsHubStyle.entries,
+                                selectedOption = displaySetting.settingsHubStyle,
+                                onOptionSelected = {
+                                    updateDisplaySetting(displaySetting.copy(settingsHubStyle = it))
+                                },
+                                optionToString = {
+                                    stringResource(
+                                        when (it) {
+                                            SettingsHubStyle.CLASSIC -> R.string.setting_page_settings_hub_style_classic
+                                            SettingsHubStyle.REORGANIZED -> R.string.setting_page_settings_hub_style_reorganized
+                                        }
+                                    )
+                                },
+                                containerColor = CustomColors.listItemColors.containerColor,
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                                modifier = Modifier.width(150.dp),
+                            )
+                        },
+                    )
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_popup_menu_style_title)) },
+                        supportingContent = {
+                            Text(stringResource(R.string.setting_display_page_popup_menu_style_desc))
+                        },
+                        trailingContent = {
+                            Select(
+                                options = PopupMenuStyle.entries,
+                                selectedOption = displaySetting.popupMenuStyle,
+                                onOptionSelected = {
+                                    updateDisplaySetting(displaySetting.copy(popupMenuStyle = it))
+                                },
+                                optionToString = {
+                                    stringResource(
+                                        when (it) {
+                                            PopupMenuStyle.CLASSIC -> R.string.setting_display_page_popup_menu_style_classic
+                                            PopupMenuStyle.EXPRESSIVE -> R.string.setting_display_page_popup_menu_style_expressive
+                                        }
+                                    )
+                                },
+                                containerColor = CustomColors.listItemColors.containerColor,
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                                modifier = Modifier.width(150.dp),
+                            )
+                        },
+                    )
+                }
+            }
+
+            item {
+                CardGroup(
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    title = { Text(stringResource(R.string.setting_page_layout_display_settings)) },
                 ) {
                     item(
                         headlineContent = { Text(stringResource(R.string.setting_display_page_clean_layout_title)) },
@@ -214,18 +278,19 @@ fun SettingPreferencesUIPage(vm: SettingVM = koinViewModel()) {
                             supportingContent = {
                                 Column {
                                     Text(stringResource(R.string.setting_display_page_clean_layout_top_height_desc))
-                                    Slider(
+                                    SettingSlider(
                                         value = displaySetting.cleanLayoutTopHeight,
                                         onValueChange = {
                                             updateDisplaySetting(displaySetting.copy(cleanLayoutTopHeight = it))
                                         },
                                         valueRange = 40f..72f,
-                                        steps = 31,
+                                        title = stringResource(R.string.setting_display_page_clean_layout_top_height_title),
+                                        valueLabel = { "${it.roundToInt()} dp" },
+                                        parseInput = { parseIntInRange(it, 40f..72f) },
+                                        snap = { snapToInt(it, 40f..72f) },
+                                        rangeHint = "40 – 72 dp",
                                     )
                                 }
-                            },
-                            trailingContent = {
-                                Text("${displaySetting.cleanLayoutTopHeight.roundToInt()} dp")
                             },
                         )
                         item(
@@ -233,18 +298,19 @@ fun SettingPreferencesUIPage(vm: SettingVM = koinViewModel()) {
                             supportingContent = {
                                 Column {
                                     Text(stringResource(R.string.setting_display_page_clean_layout_bottom_padding_desc))
-                                    Slider(
+                                    SettingSlider(
                                         value = displaySetting.cleanLayoutBottomPadding,
                                         onValueChange = {
                                             updateDisplaySetting(displaySetting.copy(cleanLayoutBottomPadding = it))
                                         },
                                         valueRange = 4f..10f,
-                                        steps = 5,
+                                        title = stringResource(R.string.setting_display_page_clean_layout_bottom_padding_title),
+                                        valueLabel = { "${it.roundToInt()} dp" },
+                                        parseInput = { parseIntInRange(it, 4f..10f) },
+                                        snap = { snapToInt(it, 4f..10f) },
+                                        rangeHint = "4 – 10 dp",
                                     )
                                 }
-                            },
-                            trailingContent = {
-                                Text("${displaySetting.cleanLayoutBottomPadding.roundToInt()} dp")
                             },
                         )
                         item(
@@ -276,6 +342,14 @@ fun SettingPreferencesUIPage(vm: SettingVM = koinViewModel()) {
                             )
                         },
                     )
+                }
+            }
+
+            item {
+                CardGroup(
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    title = { Text(stringResource(R.string.setting_page_message_display_settings)) },
+                ) {
                     item(
                         headlineContent = { Text(stringResource(R.string.setting_display_page_show_user_avatar_title)) },
                         supportingContent = { Text(stringResource(R.string.setting_display_page_show_user_avatar_desc)) },
@@ -303,22 +377,14 @@ fun SettingPreferencesUIPage(vm: SettingVM = koinViewModel()) {
                     item(
                         headlineContent = { Text(stringResource(R.string.setting_display_page_bubble_opacity_title)) },
                         supportingContent = {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                Slider(
-                                    value = displaySetting.bubbleOpacity,
-                                    onValueChange = {
-                                        updateDisplaySetting(displaySetting.copy(bubbleOpacity = it))
-                                    },
-                                    valueRange = 0.1f..1.0f,
-                                    steps = 8,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                Text(text = "${(displaySetting.bubbleOpacity * 100).roundToInt()}%")
-                            }
+                            PercentSlider(
+                                value = displaySetting.bubbleOpacity,
+                                onValueChange = {
+                                    updateDisplaySetting(displaySetting.copy(bubbleOpacity = it))
+                                },
+                                valueRange = 0.1f..1.0f,
+                                title = stringResource(R.string.setting_display_page_bubble_opacity_title),
+                            )
                         }
                     )
                     item(
@@ -383,6 +449,14 @@ fun SettingPreferencesUIPage(vm: SettingVM = koinViewModel()) {
                             )
                         },
                     )
+                }
+            }
+
+            item {
+                CardGroup(
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    title = { Text(stringResource(R.string.setting_page_thinking_tools_settings)) },
+                ) {
                     item(
                         headlineContent = { Text(stringResource(R.string.setting_display_page_show_thinking_content_title)) },
                         supportingContent = { Text(stringResource(R.string.setting_display_page_show_thinking_content_desc)) },
@@ -424,35 +498,37 @@ fun SettingPreferencesUIPage(vm: SettingVM = koinViewModel()) {
                         supportingContent = {
                             Column {
                                 Text(stringResource(R.string.setting_display_page_thinking_steps_visible_desc))
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                ) {
-                                    // 0..MAX 是步数，最上面多一档 MAX+1 =“全部”
-                                    Slider(
-                                        value = thinkingStepsVisibleToSlider(
-                                            displaySetting.thinkingStepsVisibleCount
-                                        ).toFloat(),
-                                        onValueChange = {
-                                            updateDisplaySetting(
-                                                displaySetting.copy(
-                                                    thinkingStepsVisibleCount = thinkingStepsVisibleFromSlider(it.roundToInt())
-                                                )
+                                val allLabel = stringResource(R.string.setting_display_page_thinking_steps_visible_all)
+                                val stepsRange = 0f..(THINKING_STEPS_VISIBLE_MAX + 1).toFloat()
+                                SettingSlider(
+                                    value = thinkingStepsVisibleToSlider(
+                                        displaySetting.thinkingStepsVisibleCount
+                                    ).toFloat(),
+                                    onValueChange = {
+                                        updateDisplaySetting(
+                                            displaySetting.copy(
+                                                thinkingStepsVisibleCount = thinkingStepsVisibleFromSlider(it.roundToInt())
                                             )
-                                        },
-                                        valueRange = 0f..(THINKING_STEPS_VISIBLE_MAX + 1).toFloat(),
-                                        steps = THINKING_STEPS_VISIBLE_MAX,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                    Text(
-                                        text = if (displaySetting.thinkingStepsVisibleCount == THINKING_STEPS_VISIBLE_ALL) {
-                                            stringResource(R.string.setting_display_page_thinking_steps_visible_all)
+                                        )
+                                    },
+                                    valueRange = stepsRange,
+                                    title = stringResource(R.string.setting_display_page_thinking_steps_visible_title),
+                                    valueLabel = { raw ->
+                                        val count = thinkingStepsVisibleFromSlider(raw.roundToInt())
+                                        if (count == THINKING_STEPS_VISIBLE_ALL) allLabel
+                                        else "${count.coerceIn(0, THINKING_STEPS_VISIBLE_MAX)}"
+                                    },
+                                    parseInput = { input ->
+                                        val trimmed = input.trim()
+                                        if (trimmed.equals(allLabel, ignoreCase = true)) {
+                                            (THINKING_STEPS_VISIBLE_MAX + 1).toFloat()
                                         } else {
-                                            "${displaySetting.thinkingStepsVisibleCount.coerceIn(0, THINKING_STEPS_VISIBLE_MAX)}"
+                                            parseIntInRange(trimmed, stepsRange)
                                         }
-                                    )
-                                }
+                                    },
+                                    snap = { snapToInt(it, stepsRange) },
+                                    rangeHint = "0 – $THINKING_STEPS_VISIBLE_MAX / $allLabel",
+                                )
                             }
                         }
                     )
@@ -482,6 +558,14 @@ fun SettingPreferencesUIPage(vm: SettingVM = koinViewModel()) {
                             )
                         },
                     )
+                }
+            }
+
+            item {
+                CardGroup(
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    title = { Text(stringResource(R.string.setting_page_font_display_settings)) },
+                ) {
                     item(
                         headlineContent = { Text(stringResource(R.string.setting_display_page_chat_font_family_title)) },
                         supportingContent = {
