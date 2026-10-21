@@ -61,7 +61,6 @@ interface SearchService<T : SearchServiceOptions> {
                 is SearchServiceOptions.FirecrawlOptions -> FirecrawlSearchService
                 is SearchServiceOptions.JinaOptions -> JinaSearchService
                 is SearchServiceOptions.BochaOptions -> BochaSearchService
-                is SearchServiceOptions.RikkaHubOptions -> RikkaHubSearchService
                 is SearchServiceOptions.GrokOptions -> GrokSearchService
                 is SearchServiceOptions.TinyfishOptions -> TinyfishSearchService
                 is SearchServiceOptions.SerperOptions -> SerperSearchService
@@ -132,7 +131,6 @@ sealed class SearchServiceOptions {
         val TYPES = mapOf(
             BingLocalOptions::class to "Bing",
             DuckDuckGoOptions::class to "Built-in",
-            RikkaHubOptions::class to "RikkaHub",
             ZhipuOptions::class to "智谱",
             DoubaoOptions::class to "豆包",
             TavilyOptions::class to "Tavily",
@@ -172,7 +170,6 @@ sealed class SearchServiceOptions {
         private val CONSTRUCTORS: Map<KClass<out SearchServiceOptions>, () -> SearchServiceOptions> = mapOf(
             BingLocalOptions::class to { BingLocalOptions() },
             DuckDuckGoOptions::class to { DuckDuckGoOptions() },
-            RikkaHubOptions::class to { RikkaHubOptions() },
             ZhipuOptions::class to { ZhipuOptions() },
             DoubaoOptions::class to { DoubaoOptions() },
             TavilyOptions::class to { TavilyOptions() },

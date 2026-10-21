@@ -19,7 +19,6 @@ import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -55,7 +54,6 @@ import me.rerere.hugeicons.stroke.Developer
 import me.rerere.hugeicons.stroke.Earth
 import me.rerere.hugeicons.stroke.GlobalSearch
 import me.rerere.hugeicons.stroke.ImageUpload
-import me.rerere.hugeicons.stroke.InLove
 import me.rerere.hugeicons.stroke.Internet
 import me.rerere.hugeicons.stroke.Link01
 import me.rerere.hugeicons.stroke.Lock
@@ -73,7 +71,6 @@ import me.rerere.hugeicons.stroke.SmartPhone01
 import me.rerere.hugeicons.stroke.Sun01
 import me.rerere.hugeicons.stroke.Telegram
 import me.rerere.hugeicons.stroke.Tick01
-import me.rerere.hugeicons.stroke.Tiktok
 import me.rerere.hugeicons.stroke.View
 import me.rerere.hugeicons.stroke.Wrench01
 import me.rerere.rikkahub.R
@@ -83,15 +80,10 @@ import me.rerere.rikkahub.data.datastore.isNotConfigured
 import me.rerere.rikkahub.data.files.FilesManager
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.CardGroup
-import me.rerere.rikkahub.ui.components.ui.icons.DiscordIcon
-import me.rerere.rikkahub.ui.components.ui.icons.TencentQQIcon
 import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.context.Navigator
 import me.rerere.rikkahub.ui.theme.CustomColors
-import me.rerere.rikkahub.utils.joinQQGroup
-import me.rerere.rikkahub.utils.openUrl
 import me.rerere.rikkahub.utils.plus
-import me.rerere.rikkahub.utils.writeClipboardText
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 
@@ -207,35 +199,6 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                                         leadingContent = { Icon(icon, null) },
                                         supportingContent = {
                                             copy.descriptionRes?.let { Text(stringResource(it)) }
-                                        },
-                                        trailingContent = {
-                                            Row(
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                            ) {
-                                                var showQQGroupSheet by remember { mutableStateOf(false) }
-                                                IconButton(onClick = { showQQGroupSheet = true }) {
-                                                    Icon(
-                                                        imageVector = TencentQQIcon,
-                                                        contentDescription = stringResource(R.string.accessibility_qq),
-                                                        tint = MaterialTheme.colorScheme.secondary
-                                                    )
-                                                }
-                                                if (showQQGroupSheet) {
-                                                    QQGroupBottomSheet(onDismiss = { showQQGroupSheet = false })
-                                                }
-                                                IconButton(
-                                                    onClick = {
-                                                        context.openUrl("https://discord.gg/9weBqxe5c4")
-                                                    }
-                                                ) {
-                                                    Icon(
-                                                        imageVector = DiscordIcon,
-                                                        contentDescription = stringResource(R.string.accessibility_discord),
-                                                        tint = MaterialTheme.colorScheme.secondary
-                                                    )
-                                                }
-                                            }
                                         },
                                         headlineContent = { Text(stringResource(copy.titleRes)) },
                                     )
@@ -357,55 +320,3 @@ private fun ProviderConfigWarningCard(navController: Navigator) {
     }
 }
 
-private data class QQGroup(
-    val name: String,
-    val key: String? = null,
-    val number: String? = null,
-    val icon: ImageVector = TencentQQIcon,
-)
-
-private val QQ_GROUPS = listOf(
-    QQGroup("RikkaHub 一群", "4POE46u9e_zoy1TkNfWdCvueR9CKFJdk"),
-    QQGroup("RikkaHub 二群", "Qsm0whzbPsm1UyNpR683ulLyMZ2Pqrw0"),
-    QQGroup("RikkaHub 三群", "Qc9oP-9tXioZeQEvEvI2_owWtBAIx3lS"),
-    QQGroup("抖音一群", number = "569655479852", icon = HugeIcons.Tiktok),
-)
-
-@Composable
-private fun QQGroupBottomSheet(onDismiss: () -> Unit) {
-    val context = LocalContext.current
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            QQ_GROUPS.forEach { group ->
-                ListItem(
-                    onClick = {
-                        if (group.number != null) {
-                            context.writeClipboardText(group.number)
-                            Toast.makeText(context, "群号已复制", Toast.LENGTH_SHORT).show()
-                        } else {
-                            context.joinQQGroup(group.key)
-                        }
-                        onDismiss()
-                    },
-                    supportingContent = group.number?.let { number ->
-                        { Text(number) }
-                    },
-                    leadingContent = {
-                        Icon(
-                            imageVector = group.icon,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.secondary
-                        )
-                    },
-                ) {
-                    Text(group.name)
-                }
-            }
-        }
-    }
-}
