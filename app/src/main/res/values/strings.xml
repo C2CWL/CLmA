@@ -6,8 +6,11 @@
   <string name="about_page_title">About</string>
   <string name="about_page_version">Version</string>
   <string name="about_page_website">Project</string>
+  <string name="about_page_tagline">Personal Android AI agent build</string>
+  <string name="about_page_upstream">Upstream</string>
+  <string name="about_page_upstream_url">RikkaHub Agent · Pure (wuyhong715)</string>
   <string name="add">Add</string>
-  <string name="app_name">RikkaHub Agent</string>
+  <string name="app_name">CLmA</string>
   <string name="asr_button_content_description">Speech Recognition</string>
   <string name="asr_button_stop">Stop</string>
   <string name="assistant_detail_basic_desc">Configure name, avatar, model, and parameters</string>
@@ -1164,7 +1167,7 @@
   <string name="setting_page_search_web_fetch_tools_desc">Let the assistant fetch and read web page content directly. On by default; turn off to rely only on your configured search provider.</string>
   <string name="setting_page_share">Share</string>
   <string name="setting_page_share_desc">Share this app with friends</string>
-  <string name="setting_page_share_text">RikkaHub Agent · Pure - Open Source Android AI Assistant\n\nProject: https://github.com/wuyhong715/rikkahub-agent-pure/releases/latest</string>
+  <string name="setting_page_share_text">CLmA — personal Android AI agent build\n\nProject: https://github.com/C2CWL/CLmA\nUpstream: RikkaHub Agent · Pure (AGPL-3.0)</string>
   <string name="setting_page_theme_setting">Custom themes</string>
   <string name="setting_page_theme_setting_desc">Customize app color scheme</string>
   <string name="setting_theme_page_preset_themes">Preset Themes</string>

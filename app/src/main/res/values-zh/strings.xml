@@ -6,8 +6,11 @@
   <string name="about_page_title">关于</string>
   <string name="about_page_version">版本</string>
   <string name="about_page_website">项目地址</string>
+  <string name="about_page_tagline">个人维护的 Android AI Agent 发行版</string>
+  <string name="about_page_upstream">上游项目</string>
+  <string name="about_page_upstream_url">RikkaHub Agent · Pure（wuyhong715）</string>
   <string name="add">添加</string>
-  <string name="app_name">RikkaHub Agent</string>
+  <string name="app_name">CLmA</string>
   <string name="asr_button_content_description">语音识别</string>
   <string name="asr_button_stop">停止</string>
   <string name="assistant_detail_basic_desc">配置名称、头像、模型和参数</string>
@@ -1097,7 +1100,7 @@
   <string name="setting_page_search_title">搜索服务</string>
   <string name="setting_page_share">分享</string>
   <string name="setting_page_share_desc">分享本APP给朋友</string>
-  <string name="setting_page_share_text">RikkaHub Agent · Pure - 开源安卓AI助手\n\n项目地址: https://github.com/wuyhong715/rikkahub-agent-pure/releases/latest</string>
+  <string name="setting_page_share_text">CLmA — 个人维护的 Android AI Agent 发行版\n\n项目: https://github.com/C2CWL/CLmA\n上游: RikkaHub Agent · Pure（AGPL-3.0）</string>
   <string name="setting_page_theme_setting">自定义主题</string>
   <string name="setting_page_theme_setting_desc">自定义应用配色方案</string>
   <string name="setting_theme_page_preset_themes">预设主题</string>
