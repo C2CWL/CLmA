@@ -42,7 +42,7 @@ import kotlinx.coroutines.isActive
 import com.clma.ai.provider.Model
 import com.clma.ai.ui.UIMessagePart
 import me.rerere.hugeicons.HugeIcons
-import me.rerere.hugeicons.stroke.Idea01
+import me.rerere.hugeicons.stroke.Atom02
 import me.rerere.hugeicons.stroke.Message01
 import com.clma.app.R
 import com.clma.app.data.model.Assistant
@@ -215,7 +215,7 @@ fun ChainOfThoughtScope.ChatMessageReasoningStep(
         onExpandedChange = { state.onExpandedChange(it, loading) },
         icon = {
             Icon(
-                imageVector = HugeIcons.Idea01,
+                imageVector = HugeIcons.Atom02,
                 contentDescription = null,
                 modifier = Modifier.size(16.dp),
                 tint = MaterialTheme.colorScheme.secondary,

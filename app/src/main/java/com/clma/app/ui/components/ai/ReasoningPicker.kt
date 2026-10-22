@@ -52,8 +52,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.clma.ai.core.ReasoningLevel
 import me.rerere.hugeicons.HugeIcons
-import me.rerere.hugeicons.stroke.Idea
-import me.rerere.hugeicons.stroke.Idea01
+import me.rerere.hugeicons.stroke.Atom02
 import com.clma.app.R
 import com.clma.app.ui.components.ui.ToggleSurface
 import com.clma.app.ui.components.ui.icons.ReasoningHigh
@@ -157,8 +156,8 @@ fun ReasoningPicker(
                 )
                 Icon(
                     imageVector = when (reasoningLevel) {
-                        ReasoningLevel.OFF -> HugeIcons.Idea
-                        ReasoningLevel.AUTO -> HugeIcons.Idea01
+                        ReasoningLevel.OFF -> HugeIcons.Atom02
+                        ReasoningLevel.AUTO -> HugeIcons.Atom02
                         ReasoningLevel.LOW -> ReasoningLow
                         ReasoningLevel.MEDIUM -> ReasoningMedium
                         ReasoningLevel.HIGH -> ReasoningHigh
@@ -213,8 +212,8 @@ fun ReasoningPicker(
 @Composable
 internal fun ReasoningIcon(level: ReasoningLevel, modifier: Modifier = Modifier) {
     when (level) {
-        ReasoningLevel.OFF -> Icon(HugeIcons.Idea, null, modifier = modifier)
-        ReasoningLevel.AUTO -> Icon(HugeIcons.Idea01, null, modifier = modifier)
+        ReasoningLevel.OFF -> Icon(HugeIcons.Atom02, null, modifier = modifier)
+        ReasoningLevel.AUTO -> Icon(HugeIcons.Atom02, null, modifier = modifier)
         ReasoningLevel.LOW -> Icon(ReasoningLow, null, modifier = modifier)
         ReasoningLevel.MEDIUM -> Icon(ReasoningMedium, null, modifier = modifier)
         ReasoningLevel.HIGH -> Icon(ReasoningHigh, null, modifier = modifier)
