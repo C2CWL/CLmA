@@ -26,6 +26,16 @@ import java.io.ByteArrayOutputStream
 private const val SHELL_TIMEOUT_MAX_SECONDS = 600L
 private const val MAX_READ_FILE_BYTES = 8L * 1024 * 1024
 
+/** Default page size (lines) of workspace_read_file when the caller asks for a range. */
+internal const val READ_FILE_DEFAULT_LIMIT_LINES = 2_000
+
+/**
+ * Character cap of one workspace_read_file page. A call without offset/limit on a file at or
+ * below this size returns the whole file exactly as before; larger files come back paged so a
+ * single call can never dump megabytes of text into the context window.
+ */
+internal const val READ_FILE_MAX_PAGE_CHARS = 100_000
+
 val WorkspaceToolDefaultApprovals: Map<String, Boolean> = mapOf(
     "workspace_read_file" to false,
     "workspace_write_file" to false,
@@ -82,11 +92,25 @@ private fun createReadFileTool(
         Read a file using the assistant's bound workspace Rootfs. Paths must be absolute inside Rootfs.
         Use /workspace for the workspace files area.
         Supports UTF-8 text files and image files (png, jpg, jpeg, gif, webp, bmp, svg, heic, heif, avif, ico).
+        Large text files are returned in pages: pass offset (1-based start line) and limit (number of lines)
+        to read a specific range. The result reports total_lines and, when more remains, next_offset.
     """.trimIndent().replace("\n", " "),
     parameters = {
         InputSchema.Obj(
             properties = buildJsonObject {
                 putPathProperty(required = true)
+                put("offset", buildJsonObject {
+                    put("type", "integer")
+                    put("description", "1-based line number to start reading from (text files only). Defaults to 1.")
+                })
+                put("limit", buildJsonObject {
+                    put("type", "integer")
+                    put(
+                        "description",
+                        "Maximum number of lines to return (text files only). Defaults to $READ_FILE_DEFAULT_LIMIT_LINES; " +
+                            "a page is also capped at $READ_FILE_MAX_PAGE_CHARS characters."
+                    )
+                })
             },
             required = listOf("path"),
         )
@@ -97,12 +121,24 @@ private fun createReadFileTool(
         if (path.isImagePath()) {
             workspaceRepository.readImageInRootfs(workspaceId, path)
         } else {
+            val params = it.jsonObject
             val text = workspaceRepository.readTextInRootfs(workspaceId, path)
+            val page = paginateText(
+                text = text,
+                offset = params.string("offset")?.toIntOrNull(),
+                limit = params.string("limit")?.toIntOrNull(),
+            )
             listOf(
                 UIMessagePart.Text(
                     buildJsonObject {
                         put("path", path)
-                        put("text", text)
+                        put("text", page.text)
+                        put("total_lines", page.totalLines)
+                        if (page.paged) {
+                            put("offset", page.startLine)
+                            put("lines_returned", page.linesReturned)
+                            page.nextOffset?.let { next -> put("next_offset", next) }
+                        }
                     }.toString()
                 )
             )
@@ -706,4 +742,79 @@ private fun WorkspaceFileEntry.toJson() = buildJsonObject {
     put("isDirectory", isDirectory)
     put("sizeBytes", sizeBytes)
     put("updatedAt", updatedAt)
+}
+
+/** One page of a text file returned by workspace_read_file. */
+internal data class TextPage(
+    val text: String,
+    /** Number of lines in the whole file. */
+    val totalLines: Int,
+    /** 1-based first line of [text]. */
+    val startLine: Int,
+    val linesReturned: Int,
+    /** 1-based line to pass as `offset` to continue, or null when the file has been read to the end. */
+    val nextOffset: Int?,
+    /** False only for the backward-compatible "whole small file, no range requested" case. */
+    val paged: Boolean,
+)
+
+/**
+ * Splits [text] into lines and returns the requested range. Without [offset]/[limit] a file of at
+ * most [maxChars] characters is returned unchanged (the historical behaviour). Otherwise at most
+ * [limit] lines (default [READ_FILE_DEFAULT_LIMIT_LINES]) starting at line [offset] are returned,
+ * further capped at [maxChars] characters (a single over-long line is cut at the cap).
+ * Pure so it can be unit-tested without a workspace.
+ */
+internal fun paginateText(
+    text: String,
+    offset: Int?,
+    limit: Int?,
+    maxChars: Int = READ_FILE_MAX_PAGE_CHARS,
+): TextPage {
+    val lines = if (text.isEmpty()) emptyList() else text.removeSuffix("\n").split('\n')
+    val totalLines = lines.size
+    if (offset == null && limit == null && text.length <= maxChars) {
+        return TextPage(
+            text = text,
+            totalLines = totalLines,
+            startLine = 1,
+            linesReturned = totalLines,
+            nextOffset = null,
+            paged = false,
+        )
+    }
+    val start = (offset ?: 1).coerceAtLeast(1)
+    val maxLines = (limit ?: READ_FILE_DEFAULT_LIMIT_LINES).coerceAtLeast(1)
+    if (start > totalLines) {
+        return TextPage("", totalLines, start, 0, null, paged = true)
+    }
+    val out = StringBuilder()
+    var index = start - 1
+    var returned = 0
+    while (index < totalLines && returned < maxLines) {
+        val line = lines[index]
+        val needed = line.length + if (returned > 0) 1 else 0
+        if (out.length + needed > maxChars) {
+            if (returned == 0) {
+                // A single line longer than the whole page: return its head so the call still
+                // makes progress; the caller can use shell tools for such a line.
+                out.append(line, 0, maxChars.coerceAtMost(line.length))
+                returned = 1
+                index++
+            }
+            break
+        }
+        if (returned > 0) out.append('\n')
+        out.append(line)
+        returned++
+        index++
+    }
+    return TextPage(
+        text = out.toString(),
+        totalLines = totalLines,
+        startLine = start,
+        linesReturned = returned,
+        nextOffset = if (index < totalLines) index + 1 else null,
+        paged = true,
+    )
 }

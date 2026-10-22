@@ -79,4 +79,62 @@ class WorkspaceToolsTest {
         assertTrue(text.contains("truncated"))
         assertTrue(text.endsWith("truncated: showing 1 entries; narrow the path for a complete listing)"))
     }
+
+    @Test
+    fun `read_file without range returns a small file unchanged`() {
+        val page = paginateText("a\nb\n", offset = null, limit = null)
+        assertEquals("a\nb\n", page.text)
+        assertEquals(2, page.totalLines)
+        assertFalse(page.paged)
+        assertEquals(null, page.nextOffset)
+    }
+
+    @Test
+    fun `read_file offset and limit select lines and report where to continue`() {
+        val text = (1..10).joinToString("\n") { "line$it" }
+        val page = paginateText(text, offset = 3, limit = 4)
+        assertEquals("line3\nline4\nline5\nline6", page.text)
+        assertEquals(10, page.totalLines)
+        assertEquals(3, page.startLine)
+        assertEquals(4, page.linesReturned)
+        assertEquals(7, page.nextOffset)
+        assertTrue(page.paged)
+
+        val last = paginateText(text, offset = 9, limit = 100)
+        assertEquals("line9\nline10", last.text)
+        assertEquals(null, last.nextOffset)
+    }
+
+    @Test
+    fun `read_file pages a large file even without a range`() {
+        val text = (1..5_000).joinToString("\n") { "x".repeat(10) }
+        val page = paginateText(text, offset = null, limit = null, maxChars = 1_000)
+        assertTrue(page.paged)
+        assertTrue(page.text.length <= 1_000)
+        assertEquals(5_000, page.totalLines)
+        assertEquals(page.linesReturned + 1, page.nextOffset)
+    }
+
+    @Test
+    fun `read_file default limit caps lines`() {
+        val text = (1..5_000).joinToString("\n") { "y" }
+        val page = paginateText(text, offset = 1, limit = null)
+        assertEquals(READ_FILE_DEFAULT_LIMIT_LINES, page.linesReturned)
+        assertEquals(READ_FILE_DEFAULT_LIMIT_LINES + 1, page.nextOffset)
+    }
+
+    @Test
+    fun `read_file offset past the end returns nothing`() {
+        val page = paginateText("a\nb", offset = 5, limit = 10)
+        assertEquals("", page.text)
+        assertEquals(0, page.linesReturned)
+        assertEquals(null, page.nextOffset)
+    }
+
+    @Test
+    fun `read_file cuts a single over-long line at the page cap`() {
+        val page = paginateText("z".repeat(50) + "\nnext", offset = 1, limit = 10, maxChars = 20)
+        assertEquals("z".repeat(20), page.text)
+        assertEquals(2, page.nextOffset)
+    }
 }
