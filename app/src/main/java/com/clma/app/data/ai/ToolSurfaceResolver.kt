@@ -3,6 +3,9 @@ package com.clma.app.data.ai
 import com.clma.ai.core.Tool
 import com.clma.ai.provider.Modality
 import com.clma.ai.provider.Model
+import com.clma.app.data.ai.tools.LocalToolFilter
+import com.clma.app.data.ai.tools.LocalToolInventory
+import com.clma.app.data.ai.tools.LocalToolOption
 import com.clma.app.data.ai.tools.LocalTools
 import com.clma.app.data.ai.tools.ToolInvocationContext
 import com.clma.app.data.ai.tools.ToolInvocationContexts
@@ -54,6 +57,51 @@ object ToolSurfaceResolver {
         // P2-02 - the per-tool deny-list rides along with the option list it refines.
         disabledToolNames = assistant.disabledLocalTools,
     )
+
+    /**
+     * P2-05 (chat half) — the same surface, split by [LocalToolOption] group.
+     *
+     * [resolve] answers "what can this assistant call"; this answers "which group does each of
+     * those tools belong to", which is what a catalogued surface needs in order to say *what
+     * the catalog covers* without listing every name. Only the assistant's enabled options are
+     * queried, and one option per call — the factory adds nothing but
+     * [LocalToolFilter.UNGROUPED_TOOL_NAMES] to a single-group query, and those are dropped here
+     * for the same reason [LocalToolPalette] drops them: they belong to no group.
+     *
+     * Callers use this for *attribution only* and take the tool objects themselves from
+     * [resolve]: several tools close over `knownToolNamesProvider = { tools.map { it.name } }`
+     * (`workflow_create`, `schedule_job`), and a per-group list would silently narrow that to
+     * one group's names.
+     */
+    fun resolveByGroup(
+        localTools: LocalTools,
+        assistant: Assistant,
+        context: ToolInvocationContext,
+    ): List<LocalToolInventory> = assistant.localTools.distinct().map { option ->
+        LocalToolInventory(
+            group = option,
+            tools = localTools.getTools(
+                options = listOf(option),
+                invocationContext = context,
+                disabledToolNames = assistant.disabledLocalTools,
+            ),
+        )
+    }
+
+    /**
+     * tool name → owning group, first inventory wins. Ungrouped / blank names are absent, so a
+     * caller must treat "no group" as "not attributable", not as "catalogue it under anything".
+     */
+    fun groupIndex(inventories: List<LocalToolInventory>): Map<String, LocalToolOption> {
+        val index = LinkedHashMap<String, LocalToolOption>()
+        for (inventory in inventories) {
+            for (tool in inventory.tools) {
+                if (tool.name.isBlank() || tool.name in LocalToolFilter.UNGROUPED_TOOL_NAMES) continue
+                if (!index.containsKey(tool.name)) index[tool.name] = inventory.group
+            }
+        }
+        return index
+    }
 
     /**
      * Interactive turn / tool-loop / rerun rebuild — the model is about to receive these

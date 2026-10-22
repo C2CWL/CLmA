@@ -212,7 +212,7 @@ class ToolCatalogTest {
     }
 
     @Test
-    fun `open outcome tells the model activation lands next turn`() {
+    fun `open outcome tells the model activation lands on the next request`() {
         val outcome = ToolOpenOutcome(
             activated = listOf("a"),
             alreadyActive = emptyList(),
@@ -220,7 +220,72 @@ class ToolCatalogTest {
             rejectedOverCap = emptyList(),
             activeCount = 1,
         )
-        assertTrue(outcome.toJson().contains("NEXT turn"))
+        val note = outcome.toJson()
+        assertTrue(note.contains("NEXT request"))
+        // Same-turn wording matters: the loop re-reads the surface per step, so a model that
+        // reads only "next turn" would waste a round-trip.
+        assertTrue(note.contains("same turn"))
+    }
+
+    // ------------------------------------------------------- local-group catalogue
+
+    @Test
+    fun `categories lists each group once in inventory order`() {
+        val catalog = ToolCatalog(
+            listOf(
+                ToolCatalogEntry("a", "s", ToolCatalogSource.LOCAL, fakeTool("a"), group = "media_player"),
+                ToolCatalogEntry("b", "s", ToolCatalogSource.LOCAL, fakeTool("b"), group = "files"),
+                ToolCatalogEntry("c", "s", ToolCatalogSource.LOCAL, fakeTool("c"), group = "media_player"),
+                // MCP entries have no group and must not add a category.
+                ToolCatalogEntry("mcp__vps__ls", "s", ToolCatalogSource.MCP, fakeTool("mcp__vps__ls")),
+            ),
+        )
+        assertEquals(listOf("media_player", "files"), catalog.categories)
+    }
+
+    @Test
+    fun `tool_search advertises the capability groups without naming every tool`() = runBlocking {
+        val catalog = ToolCatalog(
+            listOf(
+                ToolCatalogEntry("set_volume", "s", ToolCatalogSource.LOCAL, fakeTool("set_volume"), group = "volume"),
+                ToolCatalogEntry("list_files", "s", ToolCatalogSource.LOCAL, fakeTool("list_files"), group = "files"),
+            ),
+        )
+        val search = buildToolCatalogTools(catalog, ToolActivationState()).first { it.name == "tool_search" }
+        assertTrue(search.description.contains("volume"))
+        assertTrue(search.description.contains("files"))
+    }
+
+    @Test
+    fun `a catalog with no local groups keeps the plain search description`() {
+        val search = buildToolCatalogTools(catalogOf("mcp__vps__ls"), ToolActivationState())
+            .first { it.name == "tool_search" }
+        assertFalse(search.description.contains("Capability groups"))
+    }
+
+    @Test
+    fun `schemaJsonFor renders the real parameters of a catalogued tool`() {
+        val tool = Tool(
+            name = "set_volume",
+            description = "Set a stream volume.",
+            parameters = {
+                com.clma.ai.core.InputSchema.Obj(
+                    properties = buildJsonObject {
+                        put("percent", buildJsonObject { put("type", "number") })
+                    },
+                    required = listOf("percent"),
+                )
+            },
+            execute = { emptyList() },
+        )
+        val catalog = ToolCatalog(listOf(ToolCatalogEntry("set_volume", "s", ToolCatalogSource.LOCAL, tool, group = "volume")))
+        val parsed = kotlinx.serialization.json.Json
+            .parseToJsonElement(catalog.schemaJsonFor("set_volume")!!)
+            .jsonObject
+        assertEquals("set_volume", parsed["name"]?.jsonPrimitive?.content)
+        assertEquals("Set a stream volume.", parsed["description"]?.jsonPrimitive?.content)
+        assertNotNull(parsed["parameters"])
+        assertNull(catalog.schemaJsonFor("not_in_catalog"))
     }
 
     // ------------------------------------------------------------ tool wiring

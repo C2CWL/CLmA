@@ -681,6 +681,18 @@ class GenerationLoop(
         assistant: Assistant,
         memories: List<AssistantMemory>? = null,
         tools: List<Tool> = emptyList(),
+        // P2-05 — re-resolved before every step of the tool loop, including the request that
+        // follows a tool result. The progressive surface uses this to inject a schema the model
+        // activated with `tool_open` a moment ago, so activation lands inside the SAME turn
+        // instead of waiting for the next user message. Null = `tools` is the whole story
+        // (every existing caller); a fresh list is requested per step, so the provider must be
+        // cheap — ChatToolSurface only re-reads the activation set.
+        toolsProvider: (suspend () -> List<Tool>)? = null,
+        // P2-05 — answers "this name exists in the catalog but is not loaded": given a tool name,
+        // returns its real schema JSON (name/description/parameters) or null. Used only to
+        // explain a call to a tool the model never opened, so it can retry correctly in the same
+        // turn instead of guessing parameters.
+        unloadedToolSchema: (suspend (String) -> String?)? = null,
         // Read live from the runtime holder, not captured once: the default expression is
         // evaluated per call, so a settings change takes effect on the next turn.
         maxSteps: Int = ToolRuntimeLimits.maxToolSteps,
@@ -792,7 +804,7 @@ class GenerationLoop(
                         }
                     ).let(this::addAll)
                 }
-                addAll(tools)
+                addAll(toolsProvider?.invoke() ?: tools)
             }
 
             // Check if we have tool calls ready to continue after user interaction.
@@ -1317,6 +1329,33 @@ class GenerationLoop(
                         // a newly mcp_add-ed server never enabled for this assistant).
                         val toolDef = toolsInternal.find { toolDef -> toolDef.name == tool.toolName }
                         if (toolDef == null) {
+                            // P2-05 — the name may simply be catalogued but not opened yet. Answering
+                            // with the real schema turns a dead end into a one-step recovery: the
+                            // model opens it (or calls it with the exact parameters below) and the
+                            // next step of THIS turn can run it.
+                            val unloadedSchema = unloadedToolSchema?.invoke(tool.toolName)
+                            if (unloadedSchema != null) {
+                                Log.w(TAG, "tool ${tool.toolName} called while unloaded; returning its schema")
+                                executedTools += tool.copy(
+                                    output = listOf(
+                                        UIMessagePart.Text(
+                                            json.encodeToString(buildJsonObject {
+                                                put("error", JsonPrimitive("tool_not_loaded"))
+                                                put(
+                                                    "detail",
+                                                    JsonPrimitive("Tool '${tool.toolName}' exists in the tool catalog but was not activated, so this call did NOT execute. Nothing ran."),
+                                                )
+                                                put("tool", json.parseToJsonElement(unloadedSchema))
+                                                put(
+                                                    "recovery",
+                                                    JsonPrimitive("Call tool_open with names=[\"${tool.toolName}\"] and retry, or retry now with exactly the parameters described in `tool`. Activation lands on your next step — the same turn continues."),
+                                                )
+                                            })
+                                        )
+                                    )
+                                )
+                                return@forEach
+                            }
                             Log.w(TAG, "tool ${tool.toolName} not found among ${toolsInternal.size} tools available this turn")
                             executedTools += tool.copy(
                                 output = listOf(
