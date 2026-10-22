@@ -311,6 +311,12 @@
   <string name="chat_page_rename_chat">名前を変更</string>
   <string name="chat_page_save">保存</string>
   <string name="chat_page_scroll_to_bottom">一番下へスクロール</string>
+  <string name="chat_page_jump_to_top">一番上へ</string>
+  <string name="chat_page_jump_previous_message">前のメッセージ</string>
+  <string name="chat_page_jump_next_message">次のメッセージ</string>
+  <string name="chat_page_jump_to_bottom">一番下へ</string>
+  <string name="chat_page_message_navigation">メッセージナビゲーション</string>
+  <string name="chat_page_message_navigation_collapse">メッセージナビゲーションを閉じる</string>
   <string name="chat_page_search_chats">チャットを検索</string>
   <string name="chat_page_today">今日</string>
   <string name="chat_page_yesterday">昨日</string>

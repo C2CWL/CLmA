@@ -311,6 +311,12 @@
   <string name="chat_page_rename_chat">Переименовать</string>
   <string name="chat_page_save">Сохранить</string>
   <string name="chat_page_scroll_to_bottom">Прокрутить вниз</string>
+  <string name="chat_page_jump_to_top">В начало</string>
+  <string name="chat_page_jump_previous_message">Предыдущее сообщение</string>
+  <string name="chat_page_jump_next_message">Следующее сообщение</string>
+  <string name="chat_page_jump_to_bottom">В конец</string>
+  <string name="chat_page_message_navigation">Навигация по сообщениям</string>
+  <string name="chat_page_message_navigation_collapse">Закрыть навигацию по сообщениям</string>
   <string name="chat_page_search_chats">Поиск чатов</string>
   <string name="chat_page_today">Сегодня</string>
   <string name="chat_page_yesterday">Вчера</string>

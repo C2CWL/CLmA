@@ -357,6 +357,12 @@
   <string name="chat_page_rename_chat">重命名</string>
   <string name="chat_page_save">保存</string>
   <string name="chat_page_scroll_to_bottom">滚动到底部</string>
+  <string name="chat_page_jump_to_top">最顶部</string>
+  <string name="chat_page_jump_previous_message">上一条</string>
+  <string name="chat_page_jump_next_message">下一条</string>
+  <string name="chat_page_jump_to_bottom">最底部</string>
+  <string name="chat_page_message_navigation">消息导航</string>
+  <string name="chat_page_message_navigation_collapse">收起消息导航</string>
   <string name="chat_page_search_chats">搜索聊天</string>
   <string name="chat_page_today">今天</string>
   <string name="chat_page_yesterday">昨天</string>

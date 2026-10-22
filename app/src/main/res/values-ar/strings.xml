@@ -395,6 +395,12 @@
   <string name="chat_page_rename_chat">إعادة تسمية</string>
   <string name="chat_page_save">حفظ</string>
   <string name="chat_page_scroll_to_bottom">التمرير إلى الأسفل</string>
+  <string name="chat_page_jump_to_top">الانتقال إلى الأعلى</string>
+  <string name="chat_page_jump_previous_message">الرسالة السابقة</string>
+  <string name="chat_page_jump_next_message">الرسالة التالية</string>
+  <string name="chat_page_jump_to_bottom">الانتقال إلى الأسفل</string>
+  <string name="chat_page_message_navigation">التنقل بين الرسائل</string>
+  <string name="chat_page_message_navigation_collapse">إغلاق التنقل بين الرسائل</string>
   <string name="chat_page_search_chats">البحث في الدردشات</string>
   <string name="chat_page_today">اليوم</string>
   <string name="chat_page_yesterday">أمس</string>

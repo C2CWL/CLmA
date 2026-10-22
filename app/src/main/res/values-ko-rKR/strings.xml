@@ -311,6 +311,12 @@
   <string name="chat_page_rename_chat">이름 변경</string>
   <string name="chat_page_save">저장</string>
   <string name="chat_page_scroll_to_bottom">맨 아래로 스크롤</string>
+  <string name="chat_page_jump_to_top">맨 위로</string>
+  <string name="chat_page_jump_previous_message">이전 메시지</string>
+  <string name="chat_page_jump_next_message">다음 메시지</string>
+  <string name="chat_page_jump_to_bottom">맨 아래로</string>
+  <string name="chat_page_message_navigation">메시지 탐색</string>
+  <string name="chat_page_message_navigation_collapse">메시지 탐색 닫기</string>
   <string name="chat_page_search_chats">채팅 검색</string>
   <string name="chat_page_today">오늘</string>
   <string name="chat_page_yesterday">어제</string>
