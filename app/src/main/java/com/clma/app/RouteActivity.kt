@@ -93,7 +93,6 @@ import com.clma.app.ui.pages.backup.BackupPage
 import com.clma.app.ui.pages.chat.ChatPage
 import com.clma.app.ui.pages.debug.DebugPage
 import com.clma.app.ui.pages.developer.DeveloperPage
-import com.clma.app.ui.pages.extensions.ExtensionsPage
 import com.clma.app.ui.pages.extensions.PromptPage
 import com.clma.app.ui.pages.extensions.QuickMessagesPage
 import com.clma.app.ui.pages.extensions.skills.SkillDetailPage
@@ -122,6 +121,10 @@ import com.clma.app.ui.pages.setting.SettingPreferencesNotificationPage
 import com.clma.app.ui.pages.setting.SettingPreferencesGeneralPage
 import com.clma.app.ui.pages.setting.SettingPreferencesNetworkPage
 import com.clma.app.ui.pages.setting.SettingPreferencesUIPage
+import com.clma.app.ui.pages.setting.SettingColorModePage
+import com.clma.app.ui.pages.setting.SettingFontsPage
+import com.clma.app.ui.pages.setting.SettingChatLayoutPage
+import com.clma.app.ui.pages.setting.SettingRuntimePage
 import com.clma.app.ui.pages.setting.SettingThemePage
 import com.clma.app.ui.pages.setting.SettingFilesPage
 import com.clma.app.ui.pages.setting.SettingMcpPage
@@ -496,6 +499,22 @@ class RouteActivity : ComponentActivity() {
                                 SettingPreferencesUIPage()
                             }
 
+                            entry<Screen.SettingColorMode> {
+                                SettingColorModePage()
+                            }
+
+                            entry<Screen.SettingFonts> {
+                                SettingFontsPage()
+                            }
+
+                            entry<Screen.SettingChatLayout> {
+                                SettingChatLayoutPage()
+                            }
+
+                            entry<Screen.SettingRuntime> {
+                                SettingRuntimePage()
+                            }
+
                             entry<Screen.SettingPreferencesNetwork> {
                                 SettingPreferencesNetworkPage()
                             }
@@ -624,10 +643,6 @@ class RouteActivity : ComponentActivity() {
 
                             entry<Screen.Log> {
                                 LogPage()
-                            }
-
-                            entry<Screen.Extensions> {
-                                ExtensionsPage()
                             }
 
                             entry<Screen.QuickMessages> {
@@ -806,6 +821,18 @@ sealed interface Screen : NavKey {
     data object SettingPreferencesUI : Screen
 
     @Serializable
+    data object SettingColorMode : Screen
+
+    @Serializable
+    data object SettingFonts : Screen
+
+    @Serializable
+    data object SettingChatLayout : Screen
+
+    @Serializable
+    data object SettingRuntime : Screen
+
+    @Serializable
     data object SettingPreferencesNetwork : Screen
 
     @Serializable
@@ -900,9 +927,6 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data object Log : Screen
-
-    @Serializable
-    data object Extensions : Screen
 
     @Serializable
     data object QuickMessages : Screen

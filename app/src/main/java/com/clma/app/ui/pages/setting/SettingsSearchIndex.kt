@@ -3,7 +3,6 @@ package com.clma.app.ui.pages.setting
 import androidx.annotation.StringRes
 import com.clma.app.R
 import com.clma.app.Screen
-import com.clma.app.data.datastore.SettingsHubStyle
 
 /**
  * Anything the settings search can show and open: a static row from [settingsSearchIndex] or a
@@ -28,7 +27,7 @@ sealed interface SettingsSearchItem {
  *
  * Hub rows have an empty [breadcrumbRes]. Everything below a hub row (sub-pages, tabs, rows
  * inside a page) carries the path of page titles that leads to it, so the result can show
- * "扩展管理 · 工作区" and still navigate straight to the right page (and tab).
+ * "外观与视觉基调 · 字体与排版" and still navigate straight to the right page (and tab).
  */
 data class SettingsSearchEntry(
     @param:StringRes val titleRes: Int,
@@ -36,8 +35,8 @@ data class SettingsSearchEntry(
     @param:StringRes override val groupRes: Int,
     override val route: Screen,
     /**
-     * Extra search-only terms, never rendered. Lets a page be found by a synonym, by the other
-     * hub style's name of a parent page, or by the name of a row it owns.
+     * Extra search-only terms, never rendered. Lets a page be found by a synonym, by a former
+     * page name, or by the name of a row it owns.
      */
     @param:StringRes val altTitles: List<Int> = emptyList(),
     override val breadcrumbRes: List<Int> = emptyList(),
@@ -48,7 +47,7 @@ data class SettingsSearchEntry(
 
 // ─────────────────────────────────────────────────────────────────────────────────────────────
 // Page tree — the single place that says which settings pages exist, who links to them, and
-// which rows they show. Hub rows themselves (title / description / group, per hub style) come
+// which rows they show. Hub rows themselves (title / description / group) come
 // from [settingsHubItems]; a spec for a hub route only adds rows, tabs and aliases.
 //
 // Adding a settings page: add a [SettingsSearchPageSpec] with `parent` = the page that opens
@@ -109,11 +108,21 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
     // ── Appearance ──
     SettingsSearchPageSpec(
         route = Screen.SettingPreferencesTheme,
+        altTitles = listOf(R.string.setting_page_preferences_theme, R.string.theme_name_claude, R.string.theme_name_gemini),
+        items = listOf(
+            row(R.string.setting_page_dynamic_color, R.string.setting_page_dynamic_color_desc),
+            row(R.string.setting_visual_style_section_details),
+            row(R.string.setting_display_page_popup_menu_style_title, R.string.setting_display_page_popup_menu_style_desc, R.string.setting_display_page_popup_menu_style_classic, R.string.setting_display_page_popup_menu_style_expressive),
+            row(R.string.setting_display_page_loading_indicator_style_title, R.string.setting_display_page_loading_indicator_style_desc),
+            row(R.string.setting_display_page_enable_blur_effect_title, R.string.setting_display_page_enable_blur_effect_desc),
+            row(R.string.setting_display_page_app_icon_title, R.string.setting_display_page_app_icon_desc),
+        ),
+    ),
+    SettingsSearchPageSpec(
+        route = Screen.SettingColorMode,
         altTitles = listOf(R.string.setting_page_color_mode),
         items = listOf(
-            row(R.string.setting_visual_style_title, R.string.setting_visual_style_desc),
-            row(R.string.setting_page_color_mode),
-            row(R.string.setting_page_dynamic_color, R.string.setting_page_dynamic_color_desc),
+            row(R.string.setting_page_color_mode, null, R.string.setting_page_color_mode_light, R.string.setting_page_color_mode_dark),
             row(R.string.setting_display_page_amoled_dark_mode_title, R.string.setting_display_page_amoled_dark_mode_desc),
         ),
     ),
@@ -129,7 +138,7 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
         ),
     ),
     SettingsSearchPageSpec(
-        route = Screen.SettingPreferencesUI,
+        route = Screen.SettingChatLayout,
         items = listOf(
             row(R.string.setting_display_page_chat_layout_title, R.string.setting_display_page_chat_layout_desc),
             row(R.string.setting_display_page_clean_layout_title, R.string.setting_display_page_clean_layout_desc),
@@ -139,6 +148,23 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
             row(R.string.setting_display_page_clean_layout_bottom_padding_title, R.string.setting_display_page_clean_layout_bottom_padding_desc),
             row(R.string.setting_display_page_clean_layout_bottom_opacity_title),
             row(R.string.setting_display_page_drawer_capsules_title, R.string.setting_display_page_drawer_capsules_desc),
+        ),
+    ),
+    SettingsSearchPageSpec(
+        route = Screen.SettingFonts,
+        items = listOf(
+            row(R.string.setting_display_page_chat_font_family_title),
+            row(R.string.setting_display_page_custom_font_title),
+            row(R.string.setting_display_page_ui_font_family_title, R.string.setting_display_page_ui_font_family_desc),
+            row(R.string.setting_display_page_ui_custom_font_title),
+            row(R.string.setting_display_page_font_size_title),
+            row(R.string.setting_display_page_ui_font_scale_title, R.string.setting_display_page_ui_font_scale_desc),
+        ),
+    ),
+    SettingsSearchPageSpec(
+        route = Screen.SettingPreferencesUI,
+        altTitles = listOf(R.string.setting_page_preferences_ui, R.string.setting_page_hub_chat_display),
+        items = listOf(
             row(R.string.setting_display_page_show_user_avatar_title, R.string.setting_display_page_show_user_avatar_desc),
             row(R.string.setting_display_page_show_assistant_bubble_title, R.string.setting_display_page_show_assistant_bubble_desc),
             row(R.string.setting_display_page_bubble_opacity_title),
@@ -152,14 +178,6 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
             row(R.string.setting_display_page_fold_process_narration_title, R.string.setting_display_page_fold_process_narration_desc),
             row(R.string.setting_display_page_thinking_steps_visible_title, R.string.setting_display_page_thinking_steps_visible_desc),
             row(R.string.setting_display_page_tool_call_style_title, R.string.setting_display_page_tool_call_style_desc, R.string.setting_display_page_tool_call_style_capsule, R.string.setting_display_page_tool_call_style_classic),
-            row(R.string.setting_display_page_popup_menu_style_title, R.string.setting_display_page_popup_menu_style_desc, R.string.setting_display_page_popup_menu_style_classic, R.string.setting_display_page_popup_menu_style_expressive),
-            row(R.string.setting_page_settings_hub_style_title, R.string.setting_page_settings_hub_style_desc, R.string.setting_page_settings_hub_style_classic, R.string.setting_page_settings_hub_style_reorganized),
-            row(R.string.setting_display_page_chat_font_family_title),
-            row(R.string.setting_display_page_custom_font_title),
-            row(R.string.setting_display_page_ui_font_family_title, R.string.setting_display_page_ui_font_family_desc),
-            row(R.string.setting_display_page_ui_custom_font_title),
-            row(R.string.setting_display_page_font_size_title),
-            row(R.string.setting_display_page_ui_font_scale_title, R.string.setting_display_page_ui_font_scale_desc),
             row(R.string.setting_display_page_code_block_auto_wrap_title, R.string.setting_display_page_code_block_auto_wrap_desc),
             row(R.string.setting_display_page_code_block_auto_collapse_title, R.string.setting_display_page_code_block_auto_collapse_desc),
             row(R.string.setting_display_page_show_line_numbers_title, R.string.setting_display_page_show_line_numbers_desc),
@@ -167,16 +185,14 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
     ),
     SettingsSearchPageSpec(
         route = Screen.SettingPreferencesGeneral,
+        altTitles = listOf(R.string.setting_page_preferences_general, R.string.setting_page_hub_chat_actions),
         items = listOf(
             row(R.string.setting_display_page_create_new_conversation_on_start_title, R.string.setting_display_page_create_new_conversation_on_start_desc),
             row(R.string.setting_display_page_send_on_enter_title, R.string.setting_display_page_send_on_enter_desc),
-            row(R.string.setting_display_page_app_icon_title, R.string.setting_display_page_app_icon_desc),
             row(R.string.setting_display_page_show_message_jumper_title, R.string.setting_display_page_show_message_jumper_desc),
             row(R.string.setting_display_page_message_jumper_position_title, R.string.setting_display_page_message_jumper_position_desc),
             row(R.string.setting_display_page_enable_auto_scroll_title, R.string.setting_display_page_enable_auto_scroll_desc),
             row(R.string.setting_display_page_enable_interject_title, R.string.setting_display_page_enable_interject_desc),
-            row(R.string.setting_display_page_loading_indicator_style_title, R.string.setting_display_page_loading_indicator_style_desc),
-            row(R.string.setting_display_page_enable_blur_effect_title, R.string.setting_display_page_enable_blur_effect_desc),
             row(R.string.setting_display_page_enable_message_generation_haptic_effect_title, R.string.setting_display_page_enable_message_generation_haptic_effect_desc),
             row(R.string.setting_display_page_skip_crop_image_title, R.string.setting_display_page_skip_crop_image_desc),
             row(R.string.setting_display_page_paste_long_text_as_file_title, R.string.setting_display_page_paste_long_text_as_file_desc),
@@ -184,11 +200,12 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
             row(R.string.setting_display_page_volume_key_scroll_title, R.string.setting_display_page_volume_key_scroll_desc),
             row(R.string.setting_display_page_volume_key_scroll_ratio),
             row(R.string.setting_display_page_bounce_overscroll_title, R.string.setting_display_page_bounce_overscroll_desc),
-            row(R.string.setting_display_page_parse_text_tool_calls_title, R.string.setting_display_page_parse_text_tool_calls_desc),
+            row(R.string.error_auto_dismiss_title, R.string.error_auto_dismiss_desc),
         ),
     ),
     SettingsSearchPageSpec(
         route = Screen.SettingPreferencesNotification,
+        altTitles = listOf(R.string.setting_page_preferences_notification, R.string.setting_page_hub_app_alerts),
         items = listOf(
             row(R.string.setting_display_page_notification_message_generated, R.string.setting_display_page_notification_message_generated_desc),
             row(R.string.setting_display_page_live_update_notification, R.string.setting_display_page_live_update_notification_desc),
@@ -198,6 +215,7 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
     // ── Models & services ──
     SettingsSearchPageSpec(
         route = Screen.SettingModels(),
+        altTitles = listOf(R.string.setting_model_page_title),
         tabs = listOf(modelsModelTab, modelsPromptTab),
         items = listOf(
             row(R.string.setting_model_page_chat_model, R.string.setting_model_page_chat_model_desc, tab = modelsModelTab),
@@ -205,16 +223,8 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
             row(R.string.setting_model_page_translate_model, R.string.setting_model_page_translate_model_desc, tab = modelsModelTab),
             row(R.string.setting_model_page_ocr_model, R.string.setting_model_page_ocr_model_desc, tab = modelsModelTab),
             row(R.string.setting_model_page_compress_model, R.string.setting_model_page_compress_model_desc, tab = modelsModelTab),
-            row(R.string.setting_model_page_generation_limits, tab = modelsModelTab),
-            row(R.string.setting_model_page_turn_budget, R.string.setting_model_page_turn_budget_desc, tab = modelsModelTab),
-            row(R.string.setting_model_page_max_tool_steps, R.string.setting_model_page_max_tool_steps_desc, tab = modelsModelTab),
             row(R.string.assistant_page_thinking_budget, tab = modelsModelTab),
             row(R.string.setting_model_page_enable_suggestion, tab = modelsModelTab),
-            row(R.string.setting_model_page_enable_auto_compaction, R.string.setting_model_page_enable_auto_compaction_desc, tab = modelsModelTab),
-            row(R.string.setting_model_page_auto_compaction_threshold, R.string.setting_model_page_auto_compaction_threshold_desc, tab = modelsModelTab),
-            row(R.string.setting_model_page_auto_compaction_tokens, R.string.setting_model_page_auto_compaction_tokens_desc, tab = modelsModelTab),
-            row(R.string.setting_model_page_auto_compaction_keep_tool_calls, tab = modelsModelTab),
-            row(R.string.setting_model_page_context_compaction_target, R.string.setting_model_page_context_compaction_target_desc, tab = modelsModelTab),
             row(R.string.setting_model_page_prompt_title, null, R.string.setting_model_page_prompt, tab = modelsPromptTab),
             row(R.string.setting_model_page_prompt_suggestion, null, R.string.setting_model_page_prompt, tab = modelsPromptTab),
             row(R.string.setting_model_page_prompt_translation, null, R.string.setting_model_page_prompt, tab = modelsPromptTab),
@@ -223,7 +233,23 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
         ),
     ),
     SettingsSearchPageSpec(
+        route = Screen.SettingRuntime,
+        items = listOf(
+            row(R.string.setting_model_page_generation_limits),
+            row(R.string.setting_model_page_turn_budget, R.string.setting_model_page_turn_budget_desc),
+            row(R.string.setting_model_page_max_tool_steps, R.string.setting_model_page_max_tool_steps_desc),
+            row(R.string.setting_display_page_parse_text_tool_calls_title, R.string.setting_display_page_parse_text_tool_calls_desc),
+            row(R.string.setting_runtime_section_compaction),
+            row(R.string.setting_model_page_enable_auto_compaction, R.string.setting_model_page_enable_auto_compaction_desc),
+            row(R.string.setting_model_page_auto_compaction_threshold, R.string.setting_model_page_auto_compaction_threshold_desc),
+            row(R.string.setting_model_page_auto_compaction_tokens, R.string.setting_model_page_auto_compaction_tokens_desc),
+            row(R.string.setting_model_page_auto_compaction_keep_tool_calls),
+            row(R.string.setting_model_page_context_compaction_target, R.string.setting_model_page_context_compaction_target_desc),
+        ),
+    ),
+    SettingsSearchPageSpec(
         route = Screen.SettingProvider,
+        altTitles = listOf(R.string.setting_page_providers),
         items = listOf(
             row(R.string.setting_provider_page_add_provider),
             row(R.string.setting_provider_page_import_dialog_title, null, R.string.setting_provider_page_scan_qr_code),
@@ -256,6 +282,7 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
     ),
     SettingsSearchPageSpec(
         route = Screen.SettingPreferencesNetwork,
+        altTitles = listOf(R.string.setting_page_preferences_network),
         items = listOf(
             row(R.string.setting_page_preferences_network_proxy),
             row(R.string.setting_page_preferences_network_user_agent),
@@ -266,21 +293,15 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
     ),
 
     // ── Assistant & extensions ──
-    SettingsSearchPageSpec(route = Screen.Assistant),
-    SettingsSearchPageSpec(route = Screen.Extensions),
+    SettingsSearchPageSpec(route = Screen.Assistant, altTitles = listOf(R.string.setting_page_assistant)),
     SettingsSearchPageSpec(
         route = Screen.QuickMessages,
-        parent = Screen.Extensions,
-        titleRes = R.string.assistant_page_quick_messages,
-        descriptionRes = R.string.extensions_page_quick_messages_desc,
+        altTitles = listOf(R.string.setting_page_extensions),
         items = listOf(row(R.string.quick_messages_page_add_title)),
     ),
     SettingsSearchPageSpec(
         route = Screen.Prompts(),
-        parent = Screen.Extensions,
-        titleRes = R.string.extensions_page_prompts,
-        descriptionRes = R.string.extensions_page_prompts_desc,
-        altTitles = listOf(R.string.prompt_page_title),
+        altTitles = listOf(R.string.prompt_page_title, R.string.extensions_page_prompts, R.string.setting_page_extensions),
         tabs = listOf(promptsModeTab, promptsLorebookTab),
         items = listOf(
             row(R.string.prompt_page_add_mode_injection, tab = promptsModeTab),
@@ -289,10 +310,7 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
     ),
     SettingsSearchPageSpec(
         route = Screen.Skills,
-        parent = Screen.Extensions,
-        titleRes = R.string.extensions_page_agent_skills,
-        descriptionRes = R.string.extensions_page_agent_skills_desc,
-        altTitles = listOf(R.string.skills_page_title),
+        altTitles = listOf(R.string.skills_page_title, R.string.setting_page_extensions),
         items = listOf(
             row(R.string.skills_page_add_title),
             row(R.string.skills_page_import_from_github),
@@ -303,14 +321,12 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
     ),
     SettingsSearchPageSpec(
         route = Screen.Workspaces,
-        parent = Screen.Extensions,
-        titleRes = R.string.extensions_page_workspace,
-        descriptionRes = R.string.extensions_page_workspace_desc,
-        altTitles = listOf(R.string.workspace_page_title),
+        altTitles = listOf(R.string.workspace_page_title, R.string.setting_page_extensions),
         items = listOf(row(R.string.workspace_page_create)),
     ),
     SettingsSearchPageSpec(
         route = Screen.SettingSubAgents,
+        altTitles = listOf(R.string.setting_page_sub_agents),
         items = listOf(
             row(R.string.setting_sub_agents_dispatch_profile_title, R.string.setting_sub_agents_dispatch_profile_desc,
                 R.string.setting_sub_agents_profile_never, R.string.setting_sub_agents_profile_assist,
@@ -322,6 +338,7 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
     ),
     SettingsSearchPageSpec(
         route = Screen.SettingMcp,
+        altTitles = listOf(R.string.setting_page_mcp),
         items = listOf(row(R.string.setting_mcp_page_import_title)),
     ),
     SettingsSearchPageSpec(
@@ -368,6 +385,7 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
     ),
     SettingsSearchPageSpec(
         route = Screen.SettingNotifications,
+        altTitles = listOf(R.string.setting_page_notifications),
         items = listOf(
             row(R.string.setting_page_notifications_open_settings),
             row(R.string.setting_page_notifications_whitelist_section, null, R.string.setting_page_notifications_whitelist_label),
@@ -376,6 +394,7 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
     ),
     SettingsSearchPageSpec(
         route = Screen.SettingPermissions,
+        altTitles = listOf(R.string.setting_page_permissions),
         items = listOf(
             row(R.string.setting_page_permissions_group_runtime),
             row(R.string.setting_page_permissions_group_special),
@@ -466,6 +485,7 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
     // ── Data ──
     SettingsSearchPageSpec(
         route = Screen.Backup(),
+        altTitles = listOf(R.string.setting_page_data_backup),
         tabs = listOf(backupLocalTab, backupWebDavTab, backupS3Tab, backupReminderTab),
         items = listOf(
             row(R.string.backup_page_backup_items, tab = backupLocalTab),
@@ -497,7 +517,6 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
         route = Screen.Log,
         items = listOf(
             row(R.string.log_page_record_requests, R.string.log_page_record_requests_desc),
-            row(R.string.error_auto_dismiss_title, R.string.error_auto_dismiss_desc),
         ),
     ),
     SettingsSearchPageSpec(
@@ -518,33 +537,25 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
  */
 fun settingsSearchIndex(
     developerMode: Boolean,
-    hubStyle: SettingsHubStyle = SettingsHubStyle.REORGANIZED,
     pages: List<SettingsSearchPageSpec> = settingsSearchPages,
 ): List<SettingsSearchEntry> {
-    val otherStyle = when (hubStyle) {
-        SettingsHubStyle.CLASSIC -> SettingsHubStyle.REORGANIZED
-        SettingsHubStyle.REORGANIZED -> SettingsHubStyle.CLASSIC
-    }
     val specByRoute = pages.associateBy { it.route }
     val entries = mutableListOf<SettingsSearchEntry>()
 
-    // Placement of a page: its hub group, the titles leading to it (inclusive) and the other hub
-    // style's names of hub pages on that path (search-only, so a row is still found by the name
-    // the user saw before switching the hub layout).
+    // Placement of a page: its hub group, the titles leading to it (inclusive) and search-only
+    // aliases inherited by everything below it.
     class Placement(val groupRes: Int, val path: List<Int>, val aliases: List<Int>)
 
     val hubPlacement = mutableMapOf<Screen, Placement>()
-    for ((def, copy, groupRes) in settingsHubSearchRows(hubStyle)) {
+    for ((def, groupRes) in settingsHubSearchRows()) {
         val route = def.route ?: continue
-        val otherTitle = def.copyFor(otherStyle).titleRes
-        val aliases = if (otherTitle != copy.titleRes) listOf(otherTitle) else emptyList()
-        hubPlacement[route] = Placement(groupRes, listOf(copy.titleRes), aliases)
+        hubPlacement[route] = Placement(groupRes, listOf(def.titleRes), emptyList())
         entries += SettingsSearchEntry(
-            titleRes = copy.titleRes,
-            descriptionRes = copy.descriptionRes,
+            titleRes = def.titleRes,
+            descriptionRes = def.descriptionRes,
             groupRes = groupRes,
             route = route,
-            altTitles = aliases + specByRoute[route]?.altTitles.orEmpty(),
+            altTitles = specByRoute[route]?.altTitles.orEmpty().filter { it != def.titleRes },
         )
     }
 

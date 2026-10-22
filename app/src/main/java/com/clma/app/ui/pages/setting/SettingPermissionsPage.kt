@@ -76,7 +76,7 @@ fun SettingPermissionsPage() {
     Scaffold(
         topBar = {
             LargeFlexibleTopAppBar(
-                title = { Text(stringResource(R.string.setting_page_permissions)) },
+                title = { Text(stringResource(R.string.setting_hub_permissions)) },
                 navigationIcon = { BackButton() },
                 scrollBehavior = scrollBehavior,
                 colors = CustomColors.topBarColors,

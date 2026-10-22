@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 设置首页重组：分组标题、首页行名、右侧状态摘要和拆出的新页面。 -->
+<resources>
+  <string name="setting_hub_group_models">模型與服務</string>
+  <string name="setting_hub_group_agent">Agent 與工具</string>
+  <string name="setting_hub_group_connections">連線與執行環境</string>
+  <string name="setting_hub_group_device">裝置與權限</string>
+  <string name="setting_hub_group_automation">自動化與遠端</string>
+  <string name="setting_hub_group_appearance">外觀與視覺基調</string>
+  <string name="setting_hub_group_chat">聊天</string>
+  <string name="setting_hub_group_data">資料</string>
+  <string name="setting_hub_group_about">關於</string>
+  <string name="setting_hub_search_hint">搜尋設定項目…</string>
+  <string name="setting_hub_providers">供應商與金鑰</string>
+  <string name="setting_hub_default_model">預設模型</string>
+  <string name="setting_hub_assistant">助理與系統提示詞</string>
+  <string name="setting_hub_prompts">提示詞注入與世界書</string>
+  <string name="setting_hub_mcp">MCP 服務</string>
+  <string name="setting_hub_sub_agents">子智能體</string>
+  <string name="setting_hub_runtime">執行與上下文</string>
+  <string name="setting_hub_runtime_desc">單輪時間預算、每輪工具步驟上限、正文工具呼叫解析和自動上下文壓縮</string>
+  <string name="setting_hub_network">網路與代理</string>
+  <string name="setting_hub_permissions">權限總覽</string>
+  <string name="setting_hub_color_mode">深淺色模式</string>
+  <string name="setting_hub_color_mode_desc">跟隨系統、淺色或深色，以及 AMOLED 純黑背景</string>
+  <string name="setting_hub_fonts">字型與排版</string>
+  <string name="setting_hub_fonts_desc">聊天字型、介面字型、自訂字型檔案和字級</string>
+  <string name="setting_hub_message_display">訊息顯示</string>
+  <string name="setting_hub_message_display_desc">頭像、氣泡、思考過程、工具呼叫和程式碼區塊</string>
+  <string name="setting_hub_input">輸入與互動</string>
+  <string name="setting_hub_input_desc">傳送、捲動、貼上，以及聊天時的回饋</string>
+  <string name="setting_hub_message_notification">訊息通知</string>
+  <string name="setting_hub_backup">備份與同步</string>
+  <string name="setting_visual_style_section_palette">配色</string>
+  <string name="setting_visual_style_section_details">介面細節</string>
+  <string name="setting_visual_style_palette_claude_desc">米白 · 赭橙</string>
+  <string name="setting_visual_style_palette_gemini_desc">冷白 · 藍</string>
+  <string name="setting_runtime_section_compaction">上下文壓縮</string>
+  <string name="setting_hub_summary_on">已開啟</string>
+  <string name="setting_hub_summary_off">已關閉</string>
+  <string name="setting_hub_summary_count" formatted="true">%1$d 個</string>
+  <string name="setting_hub_summary_enabled_count" formatted="true">已啟用 %1$d 個</string>
+  <string name="setting_hub_summary_none">未新增</string>
+  <string name="setting_hub_summary_not_selected">未選擇</string>
+  <string name="setting_hub_summary_direct">直連</string>
+  <string name="setting_hub_summary_proxy">代理</string>
+  <string name="setting_hub_summary_runtime" formatted="true">%1$d 步 · %2$d 分鐘</string>
+  <string name="setting_hub_summary_concurrency" formatted="true">並行 %1$d</string>
+  <string name="setting_hub_summary_standard">標準</string>
+  <string name="setting_hub_summary_custom">自訂</string>
+  <string name="setting_hub_summary_send_on_enter">Enter 傳送</string>
+  <string name="setting_hub_summary_enter_newline">Enter 換行</string>
+  <string name="setting_hub_summary_recording">記錄中</string>
+  <string name="setting_hub_summary_not_recording">未記錄</string>
+  <string name="setting_hub_summary_reminder_on">提醒已開</string>
+  <string name="setting_hub_summary_reminder_off">提醒已關</string>
+  <string name="setting_hub_summary_files" formatted="true">%1$d 個 · %2$.1f MB</string>
+  <string name="setting_hub_summary_granted">已授權</string>
+  <string name="setting_hub_summary_not_granted">未授權</string>
+</resources>

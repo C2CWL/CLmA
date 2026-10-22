@@ -466,8 +466,6 @@
   <string name="extensions_page_prompts">التوجيهات</string>
   <string name="extensions_page_prompts_desc">إدارة واستخدام التوجيهات المخصصة</string>
   <string name="extensions_page_quick_messages_desc">إدارة قوالب الرسائل السريعة المشتركة</string>
-  <string name="extensions_page_section_extensions">الإضافات</string>
-  <string name="extensions_page_title">الإضافات</string>
   <string name="favorite_page_no_favorites">لا توجد مفضلات بعد</string>
   <string name="favorite_page_removed">تمت إزالة المفضلة</string>
   <string name="favorite_page_title">المفضلة</string>
@@ -831,7 +829,6 @@
   <string name="setting_page_built_in_tools_url_context_desc">تمكين معالجة محتوى الرابط</string>
   <string name="setting_page_built_in_tools_image_generation">توليد الصور</string>
   <string name="setting_page_built_in_tools_image_generation_desc">تمكين قدرة توليد الصور</string>
-  <string name="setting_page_chat_storage_desc">%1$d ملفات، %2$.2f ميغابايت</string>
   <string name="setting_page_code_display_settings">عرض الشيفرة</string>
   <string name="setting_page_color_mode">وضع الألوان</string>
   <string name="setting_page_color_mode_dark">داكن</string>
@@ -849,7 +846,6 @@
   <string name="setting_page_dynamic_color">الألوان الديناميكية</string>
   <string name="setting_page_dynamic_color_desc">استخدام الألوان الديناميكية</string>
   <string name="setting_page_extensions">الإضافات</string>
-  <string name="setting_page_extensions_desc">إدارة حقن التوجيهات والمهارات وغير ذلك</string>
   <string name="setting_page_general_settings">الإعدادات العامة</string>
   <string name="setting_page_interaction_notification_settings">التفاعل والإشعارات</string>
   <string name="setting_page_mcp">MCP</string>
@@ -1226,7 +1222,6 @@
   <string name="setting_provider_aicore_release_stage">مرحلة الإصدار</string>
   <string name="setting_provider_aicore_status_help">على الجهاز. يتطلب Pixel 8/9/10 مع تثبيت تطبيق AICore والتسجيل في برنامج الوصول المبكر لـ GenAI Prompt-API (موافقة منفصلة). إذا رأيت ErrorCode 606 / FEATURE_NOT_FOUND عند أول تشغيل، فلديك AICore مثبت لكن دون قناة Prompt-API — اطلب الوصول عبر نموذج الوصول المبكر لـ GenAI Prompt-API، ثم أعد التشغيل. استدعاء الأدوات مدعوم عبر هندسة التوجيهات — يُصدر Gemini Nano ترميز &lt;tool_call&gt; الذي يحلله RikkaHub ويوزّعه.</string>
   <string name="setting_page_notifications">الإشعارات</string>
-  <string name="setting_page_notifications_desc">حالة الوصول إلى الإشعارات وسجل النشاط الأخير والقائمة البيضاء لكل تطبيق التي تُحوِّل تلقائيًا إلى Telegram.</string>
   <string name="setting_page_notifications_status_section">الحالة</string>
   <string name="setting_page_notifications_status_connected">الخدمة: متصلة</string>
   <string name="setting_page_notifications_status_not_connected">الخدمة: غير متصلة</string>
@@ -1633,13 +1628,10 @@
   <string name="setting_page_preferences">التفضيلات</string>
   <string name="setting_page_preferences_desc">المظهر، الإشعارات، واجهة المستخدم والإعدادات العامة</string>
   <string name="setting_page_preferences_theme">المظهر والسمة</string>
-  <string name="setting_page_preferences_theme_desc">اللون الديناميكي، السمة، ووضع AMOLED الداكن</string>
   <string name="setting_page_preferences_notification">الإشعارات</string>
   <string name="setting_page_preferences_notification_desc">تنبيهات التحديثات وإشعارات توليد الرسائل</string>
   <string name="setting_page_preferences_general">عام</string>
-  <string name="setting_page_preferences_general_desc">سلوك التفاعل، التمرير، وإعدادات الإدخال</string>
   <string name="setting_page_preferences_ui">واجهة المستخدم</string>
-  <string name="setting_page_preferences_ui_desc">عرض الرسائل، الخطوط، ومكعبات البرمجة</string>
   <string name="setting_page_search_config">التكوين</string>
   <string name="setting_page_search_test">اختبار البحث</string>
   <string name="setting_page_search_test_query_hint">أدخل نص الاستعلام للاختبار…</string>

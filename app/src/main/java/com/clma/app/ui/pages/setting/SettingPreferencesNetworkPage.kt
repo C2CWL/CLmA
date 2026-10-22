@@ -265,7 +265,7 @@ fun SettingPreferencesNetworkPage(vm: SettingVM = koinViewModel()) {
     Scaffold(
         topBar = {
             LargeFlexibleTopAppBar(
-                title = { Text(stringResource(R.string.setting_page_preferences_network)) },
+                title = { Text(stringResource(R.string.setting_hub_network)) },
                 navigationIcon = { BackButton() },
                 scrollBehavior = scrollBehavior,
                 colors = CustomColors.topBarColors,

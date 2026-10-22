@@ -1,393 +1,268 @@
 package com.clma.app.ui.pages.setting
 
-import android.widget.Toast
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.LargeFlexibleTopAppBar
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clma.app.R
 import com.clma.app.data.datastore.DisplaySetting
-import com.clma.app.data.datastore.LoadingIndicatorStyle
-import com.clma.app.data.datastore.effectiveLoadingIndicatorStyle
-import com.clma.app.data.datastore.withLoadingIndicatorStyle
-import com.clma.app.ui.components.nav.BackButton
 import com.clma.app.ui.components.ui.CardGroup
 import com.clma.app.ui.components.ui.PercentSlider
-import com.clma.app.ui.components.ui.SettingSlider
-import com.clma.app.ui.components.ui.parseIntInRange
-import com.clma.app.ui.components.ui.snapToInt
-import com.clma.app.ui.components.ui.Select
 import com.clma.app.ui.hooks.rememberSharedPreferenceBoolean
-import com.clma.app.ui.theme.CustomColors
-import com.clma.app.utils.AppIconStyle
-import com.clma.app.utils.applyAppIcon
-import com.clma.app.utils.currentAppIcon
 import com.clma.app.utils.plus
 import org.koin.androidx.compose.koinViewModel
 
+/**
+ * 输入与交互 (route kept as [com.clma.app.Screen.SettingPreferencesGeneral]): sending, scrolling,
+ * pasting and feedback while chatting. 「错误提示自动消失」 moved here from the request-log page;
+ * the look-related rows (loading animation, blur, launcher icon) moved to 视觉风格 and
+ * 「解析正文中的工具调用」 to 运行与上下文.
+ */
 @Composable
 fun SettingPreferencesGeneralPage(vm: SettingVM = koinViewModel()) {
     val settings by vm.settings.collectAsStateWithLifecycle()
     var displaySetting by remember(settings) { mutableStateOf(settings.displaySetting) }
-    val context = LocalContext.current
-    var appIcon by remember(context) { mutableStateOf(currentAppIcon(context)) }
 
     fun updateDisplaySetting(setting: DisplaySetting) {
         displaySetting = setting
         vm.updateSettings(settings.copy(displaySetting = setting))
     }
 
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-
-    Scaffold(
-        topBar = {
-            LargeFlexibleTopAppBar(
-                title = {
-                    Text(stringResource(R.string.setting_page_preferences_general))
-                },
-                navigationIcon = {
-                    BackButton()
-                },
-                scrollBehavior = scrollBehavior,
-                colors = CustomColors.topBarColors
+    SettingSubPageScaffold(title = stringResource(R.string.setting_hub_input)) {
+        item {
+            var createNewConversationOnStart by rememberSharedPreferenceBoolean(
+                "create_new_conversation_on_start",
+                true
             )
-        },
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        containerColor = CustomColors.topBarColors.containerColor
-    ) { contentPadding ->
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = contentPadding + PaddingValues(8.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            item {
-                var createNewConversationOnStart by rememberSharedPreferenceBoolean(
-                    "create_new_conversation_on_start",
-                    true
-                )
-                CardGroup(
-                    modifier = Modifier.padding(horizontal = 8.dp),
-                    title = { Text(stringResource(R.string.setting_page_general_group_conversation)) },
-                ) {
-                    item(
-                        headlineContent = { Text(stringResource(R.string.setting_display_page_create_new_conversation_on_start_title)) },
-                        supportingContent = { Text(stringResource(R.string.setting_display_page_create_new_conversation_on_start_desc)) },
-                        trailingContent = {
-                            Switch(
-                                checked = createNewConversationOnStart,
-                                onCheckedChange = { createNewConversationOnStart = it }
-                            )
-                        },
-                    )
-                    item(
-                        headlineContent = { Text(stringResource(R.string.setting_display_page_send_on_enter_title)) },
-                        supportingContent = { Text(stringResource(R.string.setting_display_page_send_on_enter_desc)) },
-                        trailingContent = {
-                            Switch(
-                                checked = displaySetting.sendOnEnter,
-                                onCheckedChange = {
-                                    updateDisplaySetting(displaySetting.copy(sendOnEnter = it))
-                                }
-                            )
-                        },
-                    )
-                    item(
-                        headlineContent = { Text(stringResource(R.string.setting_display_page_enable_interject_title)) },
-                        supportingContent = { Text(stringResource(R.string.setting_display_page_enable_interject_desc)) },
-                        trailingContent = {
-                            Switch(
-                                checked = displaySetting.enableInterject,
-                                onCheckedChange = {
-                                    updateDisplaySetting(displaySetting.copy(enableInterject = it))
-                                }
-                            )
-                        },
-                    )
-                    item(
-                        headlineContent = { Text(stringResource(R.string.setting_display_page_loading_indicator_style_title)) },
-                        supportingContent = {
-                            Text(stringResource(R.string.setting_display_page_loading_indicator_style_desc))
-                        },
-                        trailingContent = {
-                            Select(
-                                options = LoadingIndicatorStyle.entries,
-                                selectedOption = displaySetting.effectiveLoadingIndicatorStyle,
-                                onOptionSelected = {
-                                    updateDisplaySetting(displaySetting.withLoadingIndicatorStyle(it))
-                                },
-                                optionToString = {
-                                    stringResource(
-                                        when (it) {
-                                            LoadingIndicatorStyle.APP_ICON -> R.string.setting_display_page_loading_indicator_style_app_icon
-                                            LoadingIndicatorStyle.ATOM_DOTS -> R.string.setting_display_page_loading_indicator_style_atom_dots
-                                            LoadingIndicatorStyle.BREATHING_ORB -> R.string.setting_display_page_loading_indicator_style_breathing_orb
-                                            LoadingIndicatorStyle.TWIN_ORBIT -> R.string.setting_display_page_loading_indicator_style_twin_orbit
-                                        }
-                                    )
-                                },
-                                containerColor = CustomColors.listItemColors.containerColor,
-                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                                modifier = Modifier.width(150.dp),
-                            )
-                        },
-                    )
-                    item(
-                        headlineContent = { Text(stringResource(R.string.setting_display_page_app_icon_title)) },
-                        supportingContent = {
-                            Text(stringResource(R.string.setting_display_page_app_icon_desc))
-                        },
-                        trailingContent = {
-                            Select(
-                                options = AppIconStyle.entries,
-                                selectedOption = appIcon,
-                                onOptionSelected = { style ->
-                                    if (applyAppIcon(context, style)) {
-                                        appIcon = style
-                                        Toast.makeText(
-                                            context,
-                                            context.getString(R.string.setting_display_page_app_icon_applied),
-                                            Toast.LENGTH_SHORT,
-                                        ).show()
-                                    }
-                                },
-                                optionToString = {
-                                    stringResource(
-                                        when (it) {
-                                            AppIconStyle.DEFAULT -> R.string.setting_display_page_app_icon_default
-                                            AppIconStyle.RING -> R.string.setting_display_page_app_icon_ring
-                                        }
-                                    )
-                                },
-                                containerColor = CustomColors.listItemColors.containerColor,
-                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                                modifier = Modifier.width(150.dp),
-                            )
-                        },
-                    )
-                }
-            }
-
-            item {
-                CardGroup(
-                    modifier = Modifier.padding(horizontal = 8.dp),
-                    title = { Text(stringResource(R.string.setting_page_general_group_navigation)) },
-                ) {
-                    item(
-                        headlineContent = { Text(stringResource(R.string.setting_display_page_show_message_jumper_title)) },
-                        supportingContent = { Text(stringResource(R.string.setting_display_page_show_message_jumper_desc)) },
-                        trailingContent = {
-                            Switch(
-                                checked = displaySetting.showMessageJumper,
-                                onCheckedChange = {
-                                    updateDisplaySetting(displaySetting.copy(showMessageJumper = it))
-                                }
-                            )
-                        },
-                    )
-                    if (displaySetting.showMessageJumper) {
-                        item(
-                            headlineContent = { Text(stringResource(R.string.setting_display_page_message_jumper_position_title)) },
-                            supportingContent = { Text(stringResource(R.string.setting_display_page_message_jumper_position_desc)) },
-                            trailingContent = {
-                                Switch(
-                                    checked = displaySetting.messageJumperOnLeft,
-                                    onCheckedChange = {
-                                        updateDisplaySetting(displaySetting.copy(messageJumperOnLeft = it))
-                                    }
-                                )
-                            },
+            CardGroup(
+                modifier = Modifier.padding(horizontal = 8.dp),
+                title = { Text(stringResource(R.string.setting_page_general_group_conversation)) },
+            ) {
+                item(
+                    headlineContent = { Text(stringResource(R.string.setting_display_page_create_new_conversation_on_start_title)) },
+                    supportingContent = { Text(stringResource(R.string.setting_display_page_create_new_conversation_on_start_desc)) },
+                    trailingContent = {
+                        Switch(
+                            checked = createNewConversationOnStart,
+                            onCheckedChange = { createNewConversationOnStart = it }
                         )
-                    }
-                    item(
-                        headlineContent = { Text(stringResource(R.string.setting_display_page_enable_auto_scroll_title)) },
-                        supportingContent = { Text(stringResource(R.string.setting_display_page_enable_auto_scroll_desc)) },
-                        trailingContent = {
-                            Switch(
-                                checked = displaySetting.enableAutoScroll,
-                                onCheckedChange = {
-                                    updateDisplaySetting(displaySetting.copy(enableAutoScroll = it))
-                                }
-                            )
-                        },
-                    )
-                    item(
-                        headlineContent = { Text(stringResource(R.string.setting_display_page_volume_key_scroll_title)) },
-                        supportingContent = { Text(stringResource(R.string.setting_display_page_volume_key_scroll_desc)) },
-                        trailingContent = {
-                            Switch(
-                                checked = displaySetting.enableVolumeKeyScroll,
-                                onCheckedChange = {
-                                    updateDisplaySetting(displaySetting.copy(enableVolumeKeyScroll = it))
-                                }
-                            )
-                        },
-                    )
-                    if (displaySetting.enableVolumeKeyScroll) {
-                        item(
-                            headlineContent = { Text(stringResource(R.string.setting_display_page_volume_key_scroll_ratio)) },
-                            supportingContent = {
-                                PercentSlider(
-                                    value = displaySetting.volumeKeyScrollRatio,
-                                    onValueChange = {
-                                        updateDisplaySetting(displaySetting.copy(volumeKeyScrollRatio = it))
-                                    },
-                                    valueRange = 0.25f..1.0f,
-                                    title = stringResource(R.string.setting_display_page_volume_key_scroll_ratio),
-                                )
+                    },
+                )
+                item(
+                    headlineContent = { Text(stringResource(R.string.setting_display_page_send_on_enter_title)) },
+                    supportingContent = { Text(stringResource(R.string.setting_display_page_send_on_enter_desc)) },
+                    trailingContent = {
+                        Switch(
+                            checked = displaySetting.sendOnEnter,
+                            onCheckedChange = {
+                                updateDisplaySetting(displaySetting.copy(sendOnEnter = it))
                             }
                         )
-                    }
-                    item(
-                        headlineContent = { Text(stringResource(R.string.setting_display_page_bounce_overscroll_title)) },
-                        supportingContent = { Text(stringResource(R.string.setting_display_page_bounce_overscroll_desc)) },
-                        trailingContent = {
-                            Switch(
-                                checked = displaySetting.enableBounceOverscroll,
-                                onCheckedChange = {
-                                    updateDisplaySetting(displaySetting.copy(enableBounceOverscroll = it))
-                                }
-                            )
-                        },
-                    )
-                }
-            }
-
-            item {
-                CardGroup(
-                    modifier = Modifier.padding(horizontal = 8.dp),
-                    title = { Text(stringResource(R.string.setting_page_general_group_feedback)) },
-                ) {
-                    item(
-                        headlineContent = { Text(stringResource(R.string.setting_display_page_enable_blur_effect_title)) },
-                        supportingContent = { Text(stringResource(R.string.setting_display_page_enable_blur_effect_desc)) },
-                        trailingContent = {
-                            Switch(
-                                checked = displaySetting.enableBlurEffect,
-                                onCheckedChange = {
-                                    updateDisplaySetting(displaySetting.copy(enableBlurEffect = it))
-                                }
-                            )
-                        },
-                    )
-                    item(
-                        headlineContent = { Text(stringResource(R.string.setting_display_page_enable_message_generation_haptic_effect_title)) },
-                        supportingContent = { Text(stringResource(R.string.setting_display_page_enable_message_generation_haptic_effect_desc)) },
-                        trailingContent = {
-                            Switch(
-                                checked = displaySetting.enableMessageGenerationHapticEffect,
-                                onCheckedChange = {
-                                    updateDisplaySetting(displaySetting.copy(enableMessageGenerationHapticEffect = it))
-                                }
-                            )
-                        },
-                    )
-                }
-            }
-
-            item {
-                CardGroup(
-                    modifier = Modifier.padding(horizontal = 8.dp),
-                    title = { Text(stringResource(R.string.setting_page_general_group_input_media)) },
-                ) {
-                    item(
-                        headlineContent = { Text(stringResource(R.string.setting_display_page_skip_crop_image_title)) },
-                        supportingContent = { Text(stringResource(R.string.setting_display_page_skip_crop_image_desc)) },
-                        trailingContent = {
-                            Switch(
-                                checked = displaySetting.skipCropImage,
-                                onCheckedChange = {
-                                    updateDisplaySetting(displaySetting.copy(skipCropImage = it))
-                                }
-                            )
-                        },
-                    )
-                    item(
-                        headlineContent = { Text(stringResource(R.string.setting_display_page_paste_long_text_as_file_title)) },
-                        supportingContent = { Text(stringResource(R.string.setting_display_page_paste_long_text_as_file_desc)) },
-                        trailingContent = {
-                            Switch(
-                                checked = displaySetting.pasteLongTextAsFile,
-                                onCheckedChange = {
-                                    updateDisplaySetting(displaySetting.copy(pasteLongTextAsFile = it))
-                                }
-                            )
-                        },
-                    )
-                    if (displaySetting.pasteLongTextAsFile) {
-                        item(
-                            headlineContent = { Text(stringResource(R.string.setting_display_page_paste_long_text_threshold_title)) },
-                            supportingContent = {
-                                var thresholdText by remember(displaySetting.pasteLongTextThreshold) {
-                                    mutableStateOf(displaySetting.pasteLongTextThreshold.toString())
-                                }
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                ) {
-                                    TextField(
-                                        value = thresholdText,
-                                        onValueChange = { value ->
-                                            thresholdText = value.filter { it.isDigit() }
-                                            parsePasteLongTextThreshold(thresholdText)?.let { threshold ->
-                                                updateDisplaySetting(displaySetting.copy(pasteLongTextThreshold = threshold))
-                                            }
-                                        },
-                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                        singleLine = true,
-                                        isError = parsePasteLongTextThreshold(thresholdText) == null,
-                                        modifier = Modifier.width(100.dp),
-                                    )
-                                }
-                            },
+                    },
+                )
+                item(
+                    headlineContent = { Text(stringResource(R.string.setting_display_page_enable_interject_title)) },
+                    supportingContent = { Text(stringResource(R.string.setting_display_page_enable_interject_desc)) },
+                    trailingContent = {
+                        Switch(
+                            checked = displaySetting.enableInterject,
+                            onCheckedChange = {
+                                updateDisplaySetting(displaySetting.copy(enableInterject = it))
+                            }
                         )
-                    }
-                }
+                    },
+                )
             }
+        }
 
-            item {
-                CardGroup(
-                    modifier = Modifier.padding(horizontal = 8.dp),
-                    title = { Text(stringResource(R.string.setting_page_general_group_advanced)) },
-                ) {
+        item {
+            CardGroup(
+                modifier = Modifier.padding(horizontal = 8.dp),
+                title = { Text(stringResource(R.string.setting_page_general_group_navigation)) },
+            ) {
+                item(
+                    headlineContent = { Text(stringResource(R.string.setting_display_page_show_message_jumper_title)) },
+                    supportingContent = { Text(stringResource(R.string.setting_display_page_show_message_jumper_desc)) },
+                    trailingContent = {
+                        Switch(
+                            checked = displaySetting.showMessageJumper,
+                            onCheckedChange = {
+                                updateDisplaySetting(displaySetting.copy(showMessageJumper = it))
+                            }
+                        )
+                    },
+                )
+                if (displaySetting.showMessageJumper) {
                     item(
-                        headlineContent = { Text(stringResource(R.string.setting_display_page_parse_text_tool_calls_title)) },
-                        supportingContent = { Text(stringResource(R.string.setting_display_page_parse_text_tool_calls_desc)) },
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_message_jumper_position_title)) },
+                        supportingContent = { Text(stringResource(R.string.setting_display_page_message_jumper_position_desc)) },
                         trailingContent = {
                             Switch(
-                                checked = settings.parseTextToolCalls,
-                                onCheckedChange = { enabled ->
-                                    vm.updateSettings { it.copy(parseTextToolCalls = enabled) }
+                                checked = displaySetting.messageJumperOnLeft,
+                                onCheckedChange = {
+                                    updateDisplaySetting(displaySetting.copy(messageJumperOnLeft = it))
                                 }
                             )
+                        },
+                    )
+                }
+                item(
+                    headlineContent = { Text(stringResource(R.string.setting_display_page_enable_auto_scroll_title)) },
+                    supportingContent = { Text(stringResource(R.string.setting_display_page_enable_auto_scroll_desc)) },
+                    trailingContent = {
+                        Switch(
+                            checked = displaySetting.enableAutoScroll,
+                            onCheckedChange = {
+                                updateDisplaySetting(displaySetting.copy(enableAutoScroll = it))
+                            }
+                        )
+                    },
+                )
+                item(
+                    headlineContent = { Text(stringResource(R.string.setting_display_page_volume_key_scroll_title)) },
+                    supportingContent = { Text(stringResource(R.string.setting_display_page_volume_key_scroll_desc)) },
+                    trailingContent = {
+                        Switch(
+                            checked = displaySetting.enableVolumeKeyScroll,
+                            onCheckedChange = {
+                                updateDisplaySetting(displaySetting.copy(enableVolumeKeyScroll = it))
+                            }
+                        )
+                    },
+                )
+                if (displaySetting.enableVolumeKeyScroll) {
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_volume_key_scroll_ratio)) },
+                        supportingContent = {
+                            PercentSlider(
+                                value = displaySetting.volumeKeyScrollRatio,
+                                onValueChange = {
+                                    updateDisplaySetting(displaySetting.copy(volumeKeyScrollRatio = it))
+                                },
+                                valueRange = 0.25f..1.0f,
+                                title = stringResource(R.string.setting_display_page_volume_key_scroll_ratio),
+                            )
+                        }
+                    )
+                }
+                item(
+                    headlineContent = { Text(stringResource(R.string.setting_display_page_bounce_overscroll_title)) },
+                    supportingContent = { Text(stringResource(R.string.setting_display_page_bounce_overscroll_desc)) },
+                    trailingContent = {
+                        Switch(
+                            checked = displaySetting.enableBounceOverscroll,
+                            onCheckedChange = {
+                                updateDisplaySetting(displaySetting.copy(enableBounceOverscroll = it))
+                            }
+                        )
+                    },
+                )
+            }
+        }
+
+        item {
+            CardGroup(
+                modifier = Modifier.padding(horizontal = 8.dp),
+                title = { Text(stringResource(R.string.setting_page_general_group_feedback)) },
+            ) {
+                item(
+                    headlineContent = { Text(stringResource(R.string.setting_display_page_enable_message_generation_haptic_effect_title)) },
+                    supportingContent = { Text(stringResource(R.string.setting_display_page_enable_message_generation_haptic_effect_desc)) },
+                    trailingContent = {
+                        Switch(
+                            checked = displaySetting.enableMessageGenerationHapticEffect,
+                            onCheckedChange = {
+                                updateDisplaySetting(displaySetting.copy(enableMessageGenerationHapticEffect = it))
+                            }
+                        )
+                    },
+                )
+                item(
+                    headlineContent = { Text(stringResource(R.string.error_auto_dismiss_title)) },
+                    supportingContent = { Text(stringResource(R.string.error_auto_dismiss_desc)) },
+                    trailingContent = {
+                        Switch(
+                            checked = settings.errorCardAutoDismiss,
+                            onCheckedChange = { enabled ->
+                                vm.updateSettings { it.copy(errorCardAutoDismiss = enabled) }
+                            }
+                        )
+                    },
+                )
+            }
+        }
+
+        item {
+            CardGroup(
+                modifier = Modifier.padding(horizontal = 8.dp),
+                title = { Text(stringResource(R.string.setting_page_general_group_input_media)) },
+            ) {
+                item(
+                    headlineContent = { Text(stringResource(R.string.setting_display_page_skip_crop_image_title)) },
+                    supportingContent = { Text(stringResource(R.string.setting_display_page_skip_crop_image_desc)) },
+                    trailingContent = {
+                        Switch(
+                            checked = displaySetting.skipCropImage,
+                            onCheckedChange = {
+                                updateDisplaySetting(displaySetting.copy(skipCropImage = it))
+                            }
+                        )
+                    },
+                )
+                item(
+                    headlineContent = { Text(stringResource(R.string.setting_display_page_paste_long_text_as_file_title)) },
+                    supportingContent = { Text(stringResource(R.string.setting_display_page_paste_long_text_as_file_desc)) },
+                    trailingContent = {
+                        Switch(
+                            checked = displaySetting.pasteLongTextAsFile,
+                            onCheckedChange = {
+                                updateDisplaySetting(displaySetting.copy(pasteLongTextAsFile = it))
+                            }
+                        )
+                    },
+                )
+                if (displaySetting.pasteLongTextAsFile) {
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_paste_long_text_threshold_title)) },
+                        supportingContent = {
+                            var thresholdText by remember(displaySetting.pasteLongTextThreshold) {
+                                mutableStateOf(displaySetting.pasteLongTextThreshold.toString())
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                TextField(
+                                    value = thresholdText,
+                                    onValueChange = { value ->
+                                        thresholdText = value.filter { it.isDigit() }
+                                        parsePasteLongTextThreshold(thresholdText)?.let { threshold ->
+                                            updateDisplaySetting(displaySetting.copy(pasteLongTextThreshold = threshold))
+                                        }
+                                    },
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    singleLine = true,
+                                    isError = parsePasteLongTextThreshold(thresholdText) == null,
+                                    modifier = Modifier.width(100.dp),
+                                )
+                            }
                         },
                     )
                 }
@@ -395,6 +270,7 @@ fun SettingPreferencesGeneralPage(vm: SettingVM = koinViewModel()) {
         }
     }
 }
+
 
 /**
  * Parses the paste-long-text-as-file threshold field. Returns null for text that is not a

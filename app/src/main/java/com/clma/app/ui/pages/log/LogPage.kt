@@ -144,12 +144,6 @@ fun LogPage() {
                     settingsStore.update { it.copy(recordRequests = enabled) }
                 }
             },
-            errorCardAutoDismiss = settings.errorCardAutoDismiss,
-            onErrorCardAutoDismissChange = { enabled ->
-                scope.launch {
-                    settingsStore.update { it.copy(errorCardAutoDismiss = enabled) }
-                }
-            },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(contentPadding)
@@ -163,8 +157,6 @@ private fun UnifiedLogList(
     earlierLogs: List<String>,
     requestLoggingEnabled: Boolean,
     onRequestLoggingChange: (Boolean) -> Unit,
-    errorCardAutoDismiss: Boolean,
-    onErrorCardAutoDismissChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var selectedLog by remember { mutableStateOf<LogEntry.RequestLog?>(null) }
@@ -184,13 +176,6 @@ private fun UnifiedLogList(
             RequestLoggingSwitchCard(
                 enabled = requestLoggingEnabled,
                 onEnabledChange = onRequestLoggingChange
-            )
-        }
-
-        item {
-            ErrorAutoDismissSwitchCard(
-                enabled = errorCardAutoDismiss,
-                onEnabledChange = onErrorCardAutoDismissChange
             )
         }
 
@@ -262,41 +247,6 @@ private fun RequestLoggingSwitchCard(
                 )
                 Text(
                     text = stringResource(R.string.log_page_record_requests_desc),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Switch(
-                checked = enabled,
-                onCheckedChange = onEnabledChange
-            )
-        }
-    }
-}
-
-@Composable
-private fun ErrorAutoDismissSwitchCard(
-    enabled: Boolean,
-    onEnabledChange: (Boolean) -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CustomColors.cardColorsOnSurfaceContainer,
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.error_auto_dismiss_title),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = stringResource(R.string.error_auto_dismiss_desc),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 设置首页重组：分组标题、首页行名、右侧状态摘要和拆出的新页面。 -->
+<resources>
+  <string name="setting_hub_group_models">Models &amp; services</string>
+  <string name="setting_hub_group_agent">Agent &amp; tools</string>
+  <string name="setting_hub_group_connections">Connections &amp; runtimes</string>
+  <string name="setting_hub_group_device">Device &amp; permissions</string>
+  <string name="setting_hub_group_automation">Automation &amp; remote</string>
+  <string name="setting_hub_group_appearance">Appearance &amp; look</string>
+  <string name="setting_hub_group_chat">Chat</string>
+  <string name="setting_hub_group_data">Data</string>
+  <string name="setting_hub_group_about">About</string>
+  <string name="setting_hub_search_hint">Search settings…</string>
+  <string name="setting_hub_providers">Providers &amp; keys</string>
+  <string name="setting_hub_default_model">Default models</string>
+  <string name="setting_hub_assistant">Assistants &amp; system prompts</string>
+  <string name="setting_hub_prompts">Prompt injections &amp; lorebooks</string>
+  <string name="setting_hub_mcp">MCP servers</string>
+  <string name="setting_hub_sub_agents">Sub-agents</string>
+  <string name="setting_hub_runtime">Runs &amp; context</string>
+  <string name="setting_hub_runtime_desc">Time budget and tool-step limit per turn, text tool-call parsing, automatic context compaction</string>
+  <string name="setting_hub_network">Network &amp; proxy</string>
+  <string name="setting_hub_permissions">Permissions overview</string>
+  <string name="setting_hub_color_mode">Light &amp; dark</string>
+  <string name="setting_hub_color_mode_desc">Follow the system, light or dark, and pure black for AMOLED screens</string>
+  <string name="setting_hub_fonts">Fonts &amp; text size</string>
+  <string name="setting_hub_fonts_desc">Chat and app fonts, custom font files and text size</string>
+  <string name="setting_hub_message_display">Message display</string>
+  <string name="setting_hub_message_display_desc">Avatars, bubbles, thinking, tool calls and code blocks</string>
+  <string name="setting_hub_input">Input &amp; interaction</string>
+  <string name="setting_hub_input_desc">Sending, scrolling, pasting and feedback while chatting</string>
+  <string name="setting_hub_message_notification">Message notifications</string>
+  <string name="setting_hub_backup">Backup &amp; sync</string>
+  <string name="setting_visual_style_section_palette">Palette</string>
+  <string name="setting_visual_style_section_details">Interface details</string>
+  <string name="setting_visual_style_palette_claude_desc">Warm white · terracotta</string>
+  <string name="setting_visual_style_palette_gemini_desc">Cool white · blue</string>
+  <string name="setting_runtime_section_compaction">Context compaction</string>
+  <string name="setting_hub_summary_on">On</string>
+  <string name="setting_hub_summary_off">Off</string>
+  <string name="setting_hub_summary_count" formatted="true">%1$d</string>
+  <string name="setting_hub_summary_enabled_count" formatted="true">%1$d on</string>
+  <string name="setting_hub_summary_none">None</string>
+  <string name="setting_hub_summary_not_selected">Not set</string>
+  <string name="setting_hub_summary_direct">Direct</string>
+  <string name="setting_hub_summary_proxy">Proxy</string>
+  <string name="setting_hub_summary_runtime" formatted="true">%1$d steps · %2$d min</string>
+  <string name="setting_hub_summary_concurrency" formatted="true">Up to %1$d</string>
+  <string name="setting_hub_summary_standard">Standard</string>
+  <string name="setting_hub_summary_custom">Custom</string>
+  <string name="setting_hub_summary_send_on_enter">Enter sends</string>
+  <string name="setting_hub_summary_enter_newline">Enter adds a line</string>
+  <string name="setting_hub_summary_recording">Recording</string>
+  <string name="setting_hub_summary_not_recording">Not recording</string>
+  <string name="setting_hub_summary_reminder_on">Reminder on</string>
+  <string name="setting_hub_summary_reminder_off">Reminder off</string>
+  <string name="setting_hub_summary_files" formatted="true">%1$d · %2$.1f MB</string>
+  <string name="setting_hub_summary_granted">Granted</string>
+  <string name="setting_hub_summary_not_granted">Not granted</string>
+</resources>
