@@ -8,10 +8,24 @@ import org.junit.Test
 class SplashStyleTest {
 
     @Test
-    fun `splash follows the in-app colour mode`() {
-        assertEquals(SplashStyle.CLAUDE, SplashStyle.resolve(ColorMode.SYSTEM))
-        assertEquals(SplashStyle.CLAUDE_LIGHT, SplashStyle.resolve(ColorMode.LIGHT))
-        assertEquals(SplashStyle.CLAUDE_DARK, SplashStyle.resolve(ColorMode.DARK))
+    fun `visual style reads the theme id and treats dynamic colour as other`() {
+        assertEquals(VisualStyle.CLAUDE, VisualStyle.current("claude", dynamicColor = false))
+        assertEquals(VisualStyle.GEMINI, VisualStyle.current("gemini", dynamicColor = false))
+        assertEquals(VisualStyle.OTHER, VisualStyle.current("sakura", dynamicColor = false))
+        assertEquals(VisualStyle.OTHER, VisualStyle.current("gemini", dynamicColor = true))
+        assertEquals(listOf(VisualStyle.CLAUDE, VisualStyle.GEMINI), VisualStyle.selectable)
+    }
+
+    @Test
+    fun `splash follows gemini and colour mode, everything else falls back to claude`() {
+        assertEquals(SplashStyle.GEMINI, SplashStyle.resolve("gemini", false, ColorMode.SYSTEM))
+        assertEquals(SplashStyle.GEMINI_LIGHT, SplashStyle.resolve("gemini", false, ColorMode.LIGHT))
+        assertEquals(SplashStyle.GEMINI_DARK, SplashStyle.resolve("gemini", false, ColorMode.DARK))
+        assertEquals(SplashStyle.CLAUDE, SplashStyle.resolve("claude", false, ColorMode.SYSTEM))
+        assertEquals(SplashStyle.CLAUDE_LIGHT, SplashStyle.resolve("claude", false, ColorMode.LIGHT))
+        assertEquals(SplashStyle.CLAUDE_DARK, SplashStyle.resolve("ocean", false, ColorMode.DARK))
+        assertEquals(SplashStyle.CLAUDE, SplashStyle.resolve("gemini", true, ColorMode.SYSTEM))
+        assertEquals(SplashStyle.CLAUDE, SplashStyle.resolve("some-custom-uuid", false, ColorMode.SYSTEM))
     }
 
     /** The system persists splash themes by name: every SplashStyle must exist, and the manifest default stays Claude. */

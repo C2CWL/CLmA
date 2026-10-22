@@ -10,15 +10,15 @@ import androidx.annotation.StyleRes
 import com.clma.app.R
 
 /**
- * Launch-screen (splash) style per colour mode.
+ * Launch-screen (splash) style per visual style and colour mode.
  *
  * The system draws the splash before any app code runs, so it can't read the user's settings at
  * that moment. On Android 12+ (API 31) the app can, however, tell the system which splash theme
  * to use for the *next* cold starts ([android.window.SplashScreen.setSplashScreenTheme]); the
  * system persists that choice by theme *name*. So:
- *  - first launch after install, or right after changing the in-app light/dark setting: the
- *    previous / manifest default (`Theme.CLmA.Splash.Claude`, light/dark following the system);
- *  - from the next cold start on: the splash matches the in-app light/dark setting.
+ *  - first launch after install, or right after changing the style: the manifest default
+ *    (`Theme.CLmA.Splash.Claude`, Claude warm, light/dark following the system) is shown;
+ *  - from the next cold start on: the splash matches the chosen style and colour mode.
  *
  * The style names in res/values/themes_splash.xml are persisted by the system — never rename them.
  */
@@ -44,14 +44,17 @@ enum class SplashStyle(val styleName: String) {
 
     companion object {
         /**
-         * Splash for the in-app colour mode. For now always Claude warm (the only app palette
-         * with a splash so far); the Gemini styles already exist so their names never change.
-         * "Follow system" uses the day/night style so the system picks light or dark at launch.
+         * Splash for the given settings. Any theme other than the Gemini preset (other presets,
+         * custom themes, dynamic colour) falls back to Claude warm. "Follow system" uses the
+         * day/night style so the system picks light or dark at launch time.
          */
-        fun resolve(colorMode: ColorMode): SplashStyle = when (colorMode) {
-            ColorMode.SYSTEM -> CLAUDE
-            ColorMode.LIGHT -> CLAUDE_LIGHT
-            ColorMode.DARK -> CLAUDE_DARK
+        fun resolve(themeId: String, dynamicColor: Boolean, colorMode: ColorMode): SplashStyle {
+            val gemini = VisualStyle.current(themeId, dynamicColor) == VisualStyle.GEMINI
+            return when (colorMode) {
+                ColorMode.SYSTEM -> if (gemini) GEMINI else CLAUDE
+                ColorMode.LIGHT -> if (gemini) GEMINI_LIGHT else CLAUDE_LIGHT
+                ColorMode.DARK -> if (gemini) GEMINI_DARK else CLAUDE_DARK
+            }
         }
     }
 }

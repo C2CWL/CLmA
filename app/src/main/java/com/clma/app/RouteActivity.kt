@@ -276,10 +276,13 @@ class RouteActivity : ComponentActivity() {
         val toastState = rememberToasterState()
         val settings by settingsStore.settingsFlow.collectAsStateWithLifecycle()
         val colorMode = rememberCurrentColorMode()
-        // Tell the system which splash to show on the next cold start (API 31+), so it follows
-        // the in-app light/dark setting. Runs on start and whenever the colour mode changes.
-        LaunchedEffect(colorMode) {
-            syncSplashTheme(SplashStyle.resolve(colorMode))
+        // Tell the system which splash to show on the next cold start (API 31+). Runs on start
+        // and whenever the visual style / colour mode changes; skips the placeholder settings
+        // emitted before the store has loaded.
+        LaunchedEffect(settings.init, settings.themeId, settings.dynamicColor, colorMode) {
+            if (!settings.init) {
+                syncSplashTheme(SplashStyle.resolve(settings.themeId, settings.dynamicColor, colorMode))
+            }
         }
         val tts = rememberCustomTtsState()
         val asr = rememberCustomAsrState()

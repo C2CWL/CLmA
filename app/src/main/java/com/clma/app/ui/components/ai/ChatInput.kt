@@ -118,8 +118,6 @@ import com.clma.app.ui.components.ui.AutoAIIconFill
 import com.clma.app.ui.components.ui.CleanInputPaddingMaxDp
 import com.clma.app.ui.components.ui.CleanInputPaddingMinDp
 import com.clma.app.ui.components.ui.KeepScreenOn
-import com.clma.app.ui.components.ui.ClaudeCoral
-import com.clma.app.ui.components.ui.ClaudeCoralDeep
 import com.clma.app.ui.components.ui.cleanPanelFill
 import com.clma.app.ui.components.ui.cleanGlassFill
 import com.clma.app.ui.components.ui.cleanPanelOutline
@@ -477,7 +475,6 @@ fun ChatInput(
                                     loading && state.isEmpty() -> SendButton(
                                         loading = true,
                                         empty = true,
-                                        warmAccent = claudeLayout,
                                         onClick = { sendMessage() },
                                         onLongClick = { sendMessageWithoutAnswer() },
                                     )
@@ -485,7 +482,6 @@ fun ChatInput(
                                     !state.isEmpty() -> SendButton(
                                         loading = loading,
                                         empty = false,
-                                        warmAccent = claudeLayout,
                                         onClick = { sendMessage() },
                                         onLongClick = { sendMessageWithoutAnswer() },
                                     )
@@ -495,7 +491,6 @@ fun ChatInput(
                                     else -> SendButton(
                                         loading = false,
                                         empty = true,
-                                        warmAccent = claudeLayout,
                                         onClick = { sendMessage() },
                                         onLongClick = { sendMessageWithoutAnswer() },
                                     )
@@ -716,22 +711,18 @@ private fun SendButton(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     modifier: Modifier = Modifier,
-    /** 暖阳布局：发送键用暖珊瑚橙，而不是主题 primary。 */
-    warmAccent: Boolean = false,
 ) {
     val showStop = loading && empty
-    val darkTheme = LocalDarkMode.current
-    val warmSend = if (darkTheme) ClaudeCoral else ClaudeCoralDeep
+    // Every layout (incl. 暖阳) follows the theme's primary, so the visual style decides the
+    // send colour: coral under Claude warm, blue under Gemini cool.
     val containerColor = when {
         showStop -> MaterialTheme.colorScheme.errorContainer
         empty -> MaterialTheme.colorScheme.surfaceContainerHigh
-        warmAccent -> warmSend
         else -> MaterialTheme.colorScheme.primary
     }
     val contentColor = when {
         showStop -> MaterialTheme.colorScheme.onErrorContainer
         empty -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-        warmAccent -> Color.White
         else -> MaterialTheme.colorScheme.onPrimary
     }
     Box(
