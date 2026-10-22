@@ -51,6 +51,7 @@ import com.clma.app.data.datastore.migration.PreferenceStoreV2Migration
 import com.clma.app.data.datastore.migration.PreferenceStoreV3Migration
 import com.clma.app.data.datastore.migration.PreferenceStoreV4Migration
 import com.clma.app.data.datastore.migration.PreferenceStoreV5Migration
+import com.clma.app.data.datastore.migration.PreferenceStoreV6Migration
 import com.clma.app.data.model.Assistant
 import com.clma.app.data.model.Avatar
 import com.clma.app.data.model.InjectionPosition
@@ -161,6 +162,7 @@ private fun createSettingsDataStore(context: Context): DataStore<Preferences> {
             PreferenceStoreV3Migration(),
             PreferenceStoreV4Migration(),
             PreferenceStoreV5Migration(),
+            PreferenceStoreV6Migration(),
         ),
         produceFile = { file },
     )
@@ -1202,6 +1204,9 @@ enum class ChatFontFamily {
     CUSTOM,
 }
 
+/** Default strength of the clean layout's header / composer panels (0..1). */
+const val DEFAULT_CLEAN_LAYOUT_OPACITY = 0.4f
+
 @Serializable
 data class DisplaySetting(
     val userAvatar: Avatar = Avatar.Dummy,
@@ -1220,10 +1225,12 @@ data class DisplaySetting(
     val chatLayout: ChatLayout? = null,
     // 简洁布局输入框液态玻璃材质。关时为扁平单色卡片。默认开。
     val cleanLayoutGlass: Boolean = true,
-    // 简洁布局顶栏面板浓度：0 = 完全透明（只剩描边），1 = 材质默认浓度。默认 1。
-    val cleanLayoutTopOpacity: Float = 1f,
+    // 简洁布局顶栏面板浓度：0 = 完全透明（只剩描边），1 = 接近实心卡片。默认 0.4。
+    // 液态玻璃开启时同样作用（玻璃之上叠一层面板填充，见 CleanGlassFillFactor）。
+    // 旧版本默认 1 且已随 JSON 存下，由 PreferenceStoreV6Migration 一次性改为 0.4。
+    val cleanLayoutTopOpacity: Float = DEFAULT_CLEAN_LAYOUT_OPACITY,
     // 简洁布局输入框面板浓度，语义同 cleanLayoutTopOpacity。
-    val cleanLayoutBottomOpacity: Float = 1f,
+    val cleanLayoutBottomOpacity: Float = DEFAULT_CLEAN_LAYOUT_OPACITY,
     // 简洁布局顶栏高度（dp）。默认 48，比 TopAppBar 的 64 矮一截；下限 40 保住两行文字，上限 72。
     val cleanLayoutTopHeight: Float = 48f,
     // 简洁布局输入框上下内边距（dp）。默认 6；0..24 由 CleanPanel 的常量给出，见那边的说明。

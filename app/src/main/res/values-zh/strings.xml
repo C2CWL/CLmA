@@ -887,13 +887,13 @@
   <string name="setting_display_page_loading_indicator_style_claude">暖阳</string>
   <string name="setting_display_page_clean_layout_glass_title">液态玻璃</string>
   <string name="setting_display_page_clean_layout_glass_desc">在简洁布局下为输入框和顶栏启用液态玻璃质感；关闭后两者均为扁平单色卡片</string>
-  <string name="setting_display_page_clean_layout_opacity_desc">0% 完全透明，100% 为材质默认浓度</string>
+  <string name="setting_display_page_clean_layout_opacity_desc">0% 完全透明，100% 接近实心卡片；默认 40%</string>
   <string name="setting_display_page_clean_layout_top_opacity_title">顶栏不透明度</string>
   <string name="setting_display_page_clean_layout_bottom_opacity_title">输入框不透明度</string>
   <string name="setting_display_page_clean_layout_top_height_title">顶栏高度</string>
-  <string name="setting_display_page_clean_layout_top_height_desc">40 到 72 dp，越矮壁纸露出越多；状态栏区域始终留出，不会挡住挖孔</string>
+  <string name="setting_display_page_clean_layout_top_height_desc">40 到 72 dp，越矮壁纸露出越多；放不下两行时只显示标题，隐藏模型与 token 行；状态栏区域始终留出，不会挡住挖孔</string>
   <string name="setting_display_page_clean_layout_bottom_padding_title">输入框内边距</string>
-  <string name="setting_display_page_clean_layout_bottom_padding_desc">文字上下各留 0 到 24 dp，越小输入框越矮</string>
+  <string name="setting_display_page_clean_layout_bottom_padding_desc">文字上下各留 0 到 24 dp，越小输入框越矮；默认 6 dp，相差几 dp 时变化很细微，可先拉到两端对比</string>
   <string name="setting_display_page_drawer_capsules_title">抽屉胶囊</string>
   <string name="setting_display_page_drawer_capsules_desc">抽屉顶部与底部不再用两张浮岛卡片，身份、入口、文件夹和底部动作各自是小胶囊，直接落在磨砂面板上；关闭后回到原来的两张卡片</string>
   <string name="setting_display_page_show_user_avatar_title">显示用户头像</string>

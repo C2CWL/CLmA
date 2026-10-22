@@ -55,18 +55,21 @@ class DisplaySettingCleanLayoutTest {
     }
 
     @Test
-    fun `panel opacity defaults to the full material strength`() {
+    fun `panel opacity defaults to 40 percent`() {
+        // 100% is a near-solid card since the glass panels gained a fill; 40% keeps the default
+        // close to the old look.
         val setting = DisplaySetting()
-        assertEquals(1f, setting.cleanLayoutTopOpacity, 0f)
-        assertEquals(1f, setting.cleanLayoutBottomOpacity, 0f)
+        assertEquals(0.4f, DEFAULT_CLEAN_LAYOUT_OPACITY, 0f)
+        assertEquals(0.4f, setting.cleanLayoutTopOpacity, 0f)
+        assertEquals(0.4f, setting.cleanLayoutBottomOpacity, 0f)
     }
 
     @Test
-    fun `stored settings without panel opacity read back as full strength`() {
+    fun `stored settings without panel opacity read back as the default`() {
         val legacy = """{"cleanLayout":true,"cleanLayoutGlass":true}"""
         val decoded = JsonInstant.decodeFromString<DisplaySetting>(legacy)
-        assertEquals(1f, decoded.cleanLayoutTopOpacity, 0f)
-        assertEquals(1f, decoded.cleanLayoutBottomOpacity, 0f)
+        assertEquals(0.4f, decoded.cleanLayoutTopOpacity, 0f)
+        assertEquals(0.4f, decoded.cleanLayoutBottomOpacity, 0f)
     }
 
     @Test

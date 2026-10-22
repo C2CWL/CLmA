@@ -121,6 +121,7 @@ import com.clma.app.ui.components.ui.KeepScreenOn
 import com.clma.app.ui.components.ui.ClaudeCoral
 import com.clma.app.ui.components.ui.ClaudeCoralDeep
 import com.clma.app.ui.components.ui.cleanPanelFill
+import com.clma.app.ui.components.ui.cleanGlassFill
 import com.clma.app.ui.components.ui.cleanPanelOutline
 import com.clma.app.ui.components.ui.permission.PermissionManager
 import com.clma.app.ui.components.ui.permission.PermissionRecordAudio
@@ -282,8 +283,8 @@ fun ChatInput(
     val containerShape = RoundedCornerShape(containerCorner)
     // Clean/Claude non-glass branch: a flat card with a hairline. Fill and rim come from the
     // shared clean-panel helpers, so the header above is made of exactly the same pair.
-    // The opacity slider scales both materials: the flat fill directly, the glass tint through
-    // rikkaGlassStyle's tintStrength (0 = clear, 1 = the recipe's own tint).
+    // The opacity slider scales both materials: the flat fill directly; glass through
+    // rikkaGlassStyle's tintStrength plus cleanGlassFill laid over the backdrop (0 = clear).
     val darkTheme = LocalDarkMode.current
     val cleanOpacity = if (cleanLayout) settings.displaySetting.cleanLayoutBottomOpacity else 1f
     val cleanCardColor = cleanPanelFill(cleanOpacity)
@@ -334,7 +335,13 @@ fun ChatInput(
                     ),
                 shape = containerShape,
                 tonalElevation = 0.dp,
-                color = if (useGlass) Color.Transparent else cleanCardColor,
+                // Glass in the clean layout also gets the panel fill over the backdrop, so the
+                // opacity slider is visible (see CleanGlassFillFactor). ORIGINAL keeps clear glass.
+                color = when {
+                    useGlass && cleanLayout -> cleanGlassFill(cleanOpacity)
+                    useGlass -> Color.Transparent
+                    else -> cleanCardColor
+                },
                 border = if (useGlass) null else BorderStroke(1.dp, cleanCardOutline),
             ) {
                 Column(

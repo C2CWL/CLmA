@@ -27,8 +27,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.dokar.sonner.ToastType
 import dev.chrisbanes.haze.HazeInput
@@ -47,6 +50,7 @@ import com.clma.app.data.datastore.effectiveChatLayout
 import com.clma.app.data.datastore.resolveChatModel
 import com.clma.app.data.model.Conversation
 import com.clma.app.data.usage.TurnFooter
+import com.clma.app.ui.components.ui.cleanGlassFill
 import com.clma.app.ui.components.ui.cleanHeaderShape
 import com.clma.app.ui.components.ui.cleanPanelFill
 import com.clma.app.ui.components.ui.cleanPanelOutline
@@ -84,11 +88,22 @@ internal fun CleanTopBar(
     val activity = LocalContext.current as ComponentActivity
     val drawerVm: ChatDrawerVM = koinViewModel(viewModelStoreOwner = activity)
     val editTitleWarning = stringResource(R.string.chat_page_edit_title_warning)
+    val barHeight = settings.displaySetting.cleanLayoutTopHeight
+    // TopAppBar never gets shorter than its title, so with two lines the bar could not go below
+    // ~44dp. Below that floor (measured with the current font scale) only the title is shown.
+    val density = LocalDensity.current
+    val titleStyle = MaterialTheme.typography.titleMedium
+    val subtitleStyle = MaterialTheme.typography.labelSmall
+    val showSubtitle = cleanTopBarShowsSubtitle(
+        barHeightDp = barHeight,
+        titleLineDp = lineHeightDp(titleStyle, density),
+        subtitleLineDp = lineHeightDp(subtitleStyle, density),
+    )
 
     TopAppBar(
         // Shorter than the 64dp default so the panel takes less of the photo. The status-bar inset
         // is applied by the bar itself and is not part of this height, so a punch-hole stays clear.
-        expandedHeight = settings.displaySetting.cleanLayoutTopHeight.dp,
+        expandedHeight = barHeight.dp,
         colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
         navigationIcon = {
             if (!bigScreen) {
@@ -117,20 +132,20 @@ internal fun CleanTopBar(
                             toaster.show(editTitleWarning, type = ToastType.Warning)
                         }
                     }
-                    .padding(horizontal = 4.dp, vertical = 2.dp),
+                    .padding(horizontal = 4.dp, vertical = CLEAN_TOP_BAR_TITLE_VERTICAL_PADDING_DP.dp),
             ) {
                 Text(
                     text = conversation.title.ifBlank { stringResource(R.string.chat_page_new_chat) },
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = titleStyle,
                 )
-                if (model != null) {
+                if (model != null && showSubtitle) {
                     val usedTokens = remember(turnFooters, conversation) {
                         conversationUsedTokens(turnFooters, conversation)
                     }
                     val locale = LocalConfiguration.current.locales[0]
-                    val style = MaterialTheme.typography.labelSmall
+                    val style = subtitleStyle
                     val color = MaterialTheme.colorScheme.onSurfaceVariant
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
@@ -221,10 +236,39 @@ internal fun CleanTopBarPanel(
             ),
         shape = shape,
         tonalElevation = 0.dp,
-        color = if (glass) Color.Transparent else cleanPanelFill(opacity),
+        // Glass also gets the panel fill over the backdrop, or the opacity slider has nothing
+        // visible to scale (see CleanGlassFillFactor).
+        color = if (glass) cleanGlassFill(opacity) else cleanPanelFill(opacity),
         border = if (glass) null else BorderStroke(1.dp, cleanPanelOutline(darkTheme)),
         content = content,
     )
+}
+
+/** Vertical padding around the clean bar's title column, in dp (top and bottom each). */
+internal const val CLEAN_TOP_BAR_TITLE_VERTICAL_PADDING_DP = 2
+
+/**
+ * Whether the "model / N tokens" line fits under the title in a bar of [barHeightDp].
+ *
+ * The two-line floor is title line + subtitle line + the column's padding. [titleLineDp] and
+ * [subtitleLineDp] are the line heights already converted to dp with the current font scale,
+ * so a larger font raises the floor with it.
+ */
+internal fun cleanTopBarShowsSubtitle(barHeightDp: Float, titleLineDp: Float, subtitleLineDp: Float): Boolean =
+    barHeightDp >= cleanTopBarTwoLineFloorDp(titleLineDp, subtitleLineDp)
+
+/** Height the two-line title needs, in dp; see [cleanTopBarShowsSubtitle]. */
+internal fun cleanTopBarTwoLineFloorDp(titleLineDp: Float, subtitleLineDp: Float): Float =
+    titleLineDp + subtitleLineDp + 2f * CLEAN_TOP_BAR_TITLE_VERTICAL_PADDING_DP
+
+/** One line of [style] in dp under [density] (font scale included); falls back to the font size. */
+private fun lineHeightDp(style: TextStyle, density: Density): Float {
+    val unit = when {
+        style.lineHeight.isSp -> style.lineHeight
+        style.fontSize.isSp -> style.fontSize
+        else -> return 0f
+    }
+    return with(density) { unit.toDp().value }
 }
 
 /** Touch target and icon size of the clean-layout top bar buttons (regular bar: 48dp / 24dp). */
