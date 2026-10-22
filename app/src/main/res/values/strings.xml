@@ -935,7 +935,6 @@
   <string name="setting_display_page_chat_layout_original">Original</string>
   <string name="setting_display_page_chat_layout_clean">Clean</string>
   <string name="setting_display_page_chat_layout_claude">Warm sun</string>
-  <string name="setting_display_page_loading_indicator_style_claude">Warm sun</string>
   <string name="setting_display_page_clean_layout_glass_title">Liquid glass</string>
   <string name="setting_display_page_clean_layout_glass_desc">Use liquid glass material for the clean layout input bar and header; when disabled, both use a flat solid card</string>
   <string name="setting_display_page_clean_layout_opacity_desc">0% is fully clear, 100% is close to a solid card. Default 40%</string>
@@ -964,12 +963,13 @@
   <string name="setting_display_page_app_icon_ring">Ring</string>
   <string name="setting_display_page_app_icon_applied">Icon updated</string>
   <string name="setting_display_page_loading_indicator_style_desc">What shows under your message while the assistant is thinking</string>
-  <string name="setting_display_page_loading_indicator_style_default">Default</string>
   <string name="setting_display_page_loading_indicator_style_app_icon">App icon</string>
-  <string name="setting_display_page_loading_indicator_style_shimmer">Shimmer</string>
-  <string name="chat_loading_sparkle_replying">Replying</string>
-  <string name="setting_display_page_loading_indicator_style_sparkle">Sparkle</string>
-  <string name="chat_loading_shimmer_thinking">Thinking…</string>
+  <string name="setting_display_page_loading_indicator_style_atom_dots">Atom and dots</string>
+  <string name="setting_display_page_loading_indicator_style_breathing_orb">Breathing orb</string>
+  <string name="setting_display_page_loading_indicator_style_twin_orbit">Twin orbit</string>
+  <string name="chat_loading_phase_thinking">Thinking</string>
+  <string name="chat_loading_phase_replying">Replying</string>
+  <string name="chat_loading_phase_working">Working</string>
   <string name="setting_display_page_bounce_overscroll_desc">Bounce effect when scrolling past the edge of the chat list</string>
   <string name="setting_display_page_bounce_overscroll_title">Bounce Overscroll</string>
   <string name="setting_display_page_volume_key_scroll_desc">Scroll pages with volume keys, ideal for e-ink screens</string>

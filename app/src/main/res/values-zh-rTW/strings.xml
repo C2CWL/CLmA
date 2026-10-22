@@ -730,7 +730,6 @@
   <string name="setting_display_page_chat_layout_original">原版</string>
   <string name="setting_display_page_chat_layout_clean">簡潔</string>
   <string name="setting_display_page_chat_layout_claude">暖陽</string>
-  <string name="setting_display_page_loading_indicator_style_claude">暖陽</string>
   <string name="setting_display_page_clean_layout_desc">扁平頂欄，標題下方顯示模型名稱；輸入框分兩行，工具按鈕在輸入框下方</string>
   <string name="setting_display_page_clean_layout_glass_title">輸入框液態玻璃</string>
   <string name="setting_display_page_clean_layout_glass_desc">在簡潔版面下為輸入框啟用液態玻璃質感；關閉後為扁平單色卡片</string>
@@ -744,12 +743,13 @@
   <string name="setting_display_page_use_app_icon_style_loading_indicator_title">使用 APP 圖示風格的載入指示器</string>
   <string name="setting_display_page_loading_indicator_style_title">載入指示器樣式</string>
   <string name="setting_display_page_loading_indicator_style_desc">助手思考或生成時，在你的訊息下方顯示的動畫</string>
-  <string name="setting_display_page_loading_indicator_style_default">預設</string>
   <string name="setting_display_page_loading_indicator_style_app_icon">應用程式圖示</string>
-  <string name="setting_display_page_loading_indicator_style_shimmer">流光</string>
-  <string name="chat_loading_sparkle_replying">回覆中</string>
-  <string name="setting_display_page_loading_indicator_style_sparkle">流光星芒</string>
-  <string name="chat_loading_shimmer_thinking">思考中…</string>
+  <string name="setting_display_page_loading_indicator_style_atom_dots">原子三點</string>
+  <string name="setting_display_page_loading_indicator_style_breathing_orb">呼吸光球</string>
+  <string name="setting_display_page_loading_indicator_style_twin_orbit">雙星繞軌</string>
+  <string name="chat_loading_phase_thinking">思考中</string>
+  <string name="chat_loading_phase_replying">回覆中</string>
+  <string name="chat_loading_phase_working">工作中</string>
   <string name="setting_display_page_volume_key_scroll_desc">使用音量鍵捲動頁面，適合電子墨水螢幕</string>
   <string name="setting_display_page_volume_key_scroll_ratio">捲動幅度</string>
   <string name="setting_display_page_volume_key_scroll_title">音量鍵翻頁</string>

@@ -895,7 +895,6 @@
   <string name="setting_display_page_chat_layout_original">原版</string>
   <string name="setting_display_page_chat_layout_clean">简洁</string>
   <string name="setting_display_page_chat_layout_claude">暖阳</string>
-  <string name="setting_display_page_loading_indicator_style_claude">暖阳</string>
   <string name="setting_display_page_clean_layout_glass_title">液态玻璃</string>
   <string name="setting_display_page_clean_layout_glass_desc">在简洁布局下为输入框和顶栏启用液态玻璃质感；关闭后两者均为扁平单色卡片</string>
   <string name="setting_display_page_clean_layout_opacity_desc">0% 完全透明，100% 接近实心卡片；默认 40%</string>
@@ -924,12 +923,13 @@
   <string name="setting_display_page_app_icon_ring">圆环</string>
   <string name="setting_display_page_app_icon_applied">图标已切换</string>
   <string name="setting_display_page_loading_indicator_style_desc">助手思考或生成时，在你的消息下方显示的动画</string>
-  <string name="setting_display_page_loading_indicator_style_default">默认</string>
   <string name="setting_display_page_loading_indicator_style_app_icon">应用图标</string>
-  <string name="setting_display_page_loading_indicator_style_shimmer">流光</string>
-  <string name="chat_loading_sparkle_replying">回复中</string>
-  <string name="setting_display_page_loading_indicator_style_sparkle">流光星芒</string>
-  <string name="chat_loading_shimmer_thinking">思考中…</string>
+  <string name="setting_display_page_loading_indicator_style_atom_dots">原子三点</string>
+  <string name="setting_display_page_loading_indicator_style_breathing_orb">呼吸光球</string>
+  <string name="setting_display_page_loading_indicator_style_twin_orbit">双星绕轨</string>
+  <string name="chat_loading_phase_thinking">思考中</string>
+  <string name="chat_loading_phase_replying">回复中</string>
+  <string name="chat_loading_phase_working">工作中</string>
   <string name="setting_display_page_bounce_overscroll_desc">聊天列表滑到边缘时回弹效果</string>
   <string name="setting_display_page_bounce_overscroll_title">回弹过拉效果</string>
   <string name="setting_display_page_volume_key_scroll_desc">使用音量键翻页，非常适合电子墨水屏</string>
