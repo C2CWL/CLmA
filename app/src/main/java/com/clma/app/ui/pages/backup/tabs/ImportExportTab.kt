@@ -37,6 +37,7 @@ import com.clma.app.ui.components.ui.StickyHeader
 import com.clma.app.ui.context.LocalToaster
 import com.clma.app.ui.pages.backup.BackupVM
 import com.clma.app.ui.pages.backup.components.BackupItemPicker
+import com.clma.app.utils.fileSizeToString
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -52,6 +53,7 @@ fun ImportExportTab(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val selectedBackupItems by vm.localBackupItems.collectAsStateWithLifecycle()
+    val backupItemSizes by vm.backupItemSizes.collectAsStateWithLifecycle()
     var isExporting by remember { mutableStateOf(false) }
     var isRestoring by remember { mutableStateOf(false) }
     var showImportConfirmDialog by remember { mutableStateOf(false) }
@@ -77,11 +79,16 @@ fun ImportExportTab(
                         }
                     }
 
+                    val exportedSize = exportFile.length()
+
                     // 清理临时文件
                     exportFile.delete()
 
                     toaster.show(
-                        context.getString(R.string.backup_page_backup_success),
+                        context.getString(
+                            R.string.backup_page_export_success_size,
+                            exportedSize.fileSizeToString(),
+                        ),
                         type = ToastType.Success
                     )
                 }.onFailure { e ->
@@ -195,6 +202,7 @@ fun ImportExportTab(
                     supportingContent = {
                         BackupItemPicker(
                             selected = selectedBackupItems,
+                            sizes = backupItemSizes,
                             onToggle = { item ->
                                 val newItems = if (item in selectedBackupItems) {
                                     selectedBackupItems - item

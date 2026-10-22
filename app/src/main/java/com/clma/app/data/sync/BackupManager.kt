@@ -34,6 +34,15 @@ class BackupManager(
 ) {
     private val restoreMutex = Mutex()
 
+    /** Estimated (pre-compression) size of each selectable [BackupItem]. Runs on the IO dispatcher. */
+    suspend fun estimateItemSizes(): Map<BackupItem, Long> = withContext(Dispatchers.IO) {
+        val db = context.getDatabasePath(SQLiteConfiguration.DATABASE_NAME)
+        BackupSizeEstimator.estimate(
+            filesDir = context.filesDir,
+            databaseFiles = listOf(db, File(db.path + "-wal")),
+        )
+    }
+
     suspend fun createBackup(items: Collection<BackupItem>): File = withContext(Dispatchers.IO) {
         val selected = BackupItem.normalize(items).toSet()
         val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))

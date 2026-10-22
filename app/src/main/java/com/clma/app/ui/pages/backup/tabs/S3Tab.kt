@@ -76,6 +76,7 @@ fun S3Tab(
     val settings by vm.settings.collectAsStateWithLifecycle()
     val s3Config = settings.s3Config
     val backupItemsState by vm.s3BackupItems.collectAsStateWithLifecycle()
+    val backupItemSizes by vm.backupItemSizes.collectAsStateWithLifecycle()
     val toaster = LocalToaster.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -96,7 +97,8 @@ fun S3Tab(
         )
     }
     val backupFileSummary = when (val state = backupItemsState) {
-        is UiState.Success -> "${stringResource(R.string.backup_page_files)}: ${state.data.size}"
+        is UiState.Success -> "${stringResource(R.string.backup_page_files)}: ${state.data.size} · " +
+            stringResource(R.string.backup_page_files_total_size, state.data.sumOf { it.size }.fileSizeToString())
         UiState.Loading -> "${stringResource(R.string.backup_page_files)}: ..."
         UiState.Idle -> "${stringResource(R.string.backup_page_files)}: -"
         is UiState.Error -> "${stringResource(R.string.backup_page_files)}: -"
@@ -209,6 +211,7 @@ fun S3Tab(
                     supportingContent = {
                         BackupItemPicker(
                             selected = BackupItem.normalize(s3Config.items),
+                            sizes = backupItemSizes,
                             onToggle = { item ->
                                 val current = BackupItem.normalize(s3Config.items)
                                 val newItems = if (item in current) {

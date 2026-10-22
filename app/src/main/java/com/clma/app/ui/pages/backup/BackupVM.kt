@@ -16,6 +16,7 @@ import com.clma.app.data.files.FilesManager
 import com.clma.app.data.files.saveUploadFromBytes
 import com.clma.app.data.repository.ConversationRepository
 import com.clma.app.data.sync.BackupItem
+import com.clma.app.data.sync.BackupManager
 import com.clma.app.data.sync.importer.ChatboxImporter
 import com.clma.app.data.sync.importer.CherryStudioProviderImporter
 import com.clma.app.data.sync.webdav.WebDavBackupItem
@@ -33,6 +34,7 @@ class BackupVM(
     private val s3Sync: S3Sync,
     private val conversationRepository: ConversationRepository,
     private val filesManager: FilesManager,
+    private val backupManager: BackupManager,
 ) : ViewModel() {
     val settings = settingsStore.settingsFlow.stateIn(
         scope = viewModelScope,
@@ -44,9 +46,21 @@ class BackupVM(
     val s3BackupItems = MutableStateFlow<UiState<List<S3BackupItem>>>(UiState.Idle)
     val localBackupItems = MutableStateFlow(BackupItem.selectable)
 
+    /** Estimated size of each backup item; `null` until the first estimate finishes. */
+    val backupItemSizes = MutableStateFlow<Map<BackupItem, Long>?>(null)
+
     init {
         loadBackupFileItems()
         loadS3BackupFileItems()
+        loadBackupItemSizes()
+    }
+
+    fun loadBackupItemSizes() {
+        viewModelScope.launch {
+            runCatching { backupManager.estimateItemSizes() }
+                .onSuccess { backupItemSizes.value = it }
+                .onFailure { Log.w(TAG, "loadBackupItemSizes failed", it) }
+        }
     }
 
     fun updateSettings(settings: Settings) {
