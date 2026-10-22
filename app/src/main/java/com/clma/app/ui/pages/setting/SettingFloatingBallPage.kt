@@ -145,6 +145,24 @@ fun SettingFloatingBallPage(vm: SettingVM = koinViewModel()) {
                         },
                     )
                     item(
+                        headlineContent = {
+                            Text(stringResource(R.string.setting_floating_ball_task_card_title))
+                        },
+                        supportingContent = {
+                            Text(stringResource(R.string.setting_floating_ball_task_card_desc))
+                        },
+                        trailingContent = {
+                            Switch(
+                                checked = settings.displaySetting.edgeBarTaskCard,
+                                onCheckedChange = { checked ->
+                                    vm.updateSettings {
+                                        it.copy(displaySetting = it.displaySetting.copy(edgeBarTaskCard = checked))
+                                    }
+                                },
+                            )
+                        },
+                    )
+                    item(
                         onClick = {
                             if (!overlayGranted) context.startActivity(overlaySettingsIntent())
                         },

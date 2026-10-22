@@ -2959,7 +2959,7 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="setting_page_floating_ball_desc">屏幕边缘的一根细条，在任意应用上点一下就能回到本应用</string>
   <string name="setting_floating_ball_page_title">边缘细条</string>
   <string name="setting_floating_ball_enable_title">显示边缘细条</string>
-  <string name="setting_floating_ball_enable_desc">在其他应用上层的屏幕边缘保留一根细条。点一下打开应用；长按后拖动可上下移动（拖到另一侧松手可换边）。</string>
+  <string name="setting_floating_ball_enable_desc">在其他应用上层的屏幕边缘保留一根细条。点一下打开应用；长按后可随意拖动，松手后吸附到左边、右边或顶部。</string>
   <string name="setting_floating_ball_overlay_title">在其他应用上层显示</string>
   <string name="setting_floating_ball_overlay_granted">已授权</string>
   <string name="setting_floating_ball_overlay_required">必须授权，否则边缘细条无法显示</string>
@@ -2973,6 +2973,8 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="setting_floating_ball_color_blue">蓝色</string>
   <string name="setting_floating_ball_color_teal">青绿</string>
   <string name="setting_floating_ball_preview_title">预览</string>
+  <string name="setting_floating_ball_task_card_title">回复时点细条展开任务卡片</string>
+  <string name="setting_floating_ball_task_card_desc">AI 回复时细条只显示流光；点一下展开任务卡片，可查看进度、补充一句、停止或打开对话。关闭后点细条总是打开应用。</string>
   <string name="setting_floating_ball_preview_desc">AI 回复时，一道彩色流光会沿着细条的边缘绕圈；回复完成但你还没看时，细条变成绿色并显示对勾，点一下细条后恢复原样。</string>
   <string name="setting_floating_ball_bar_a11y">打开应用（边缘细条）</string>
 

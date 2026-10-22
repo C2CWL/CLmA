@@ -34,6 +34,10 @@ class NotificationConfig {
 
     // 默认通知效果
     var useDefaults: Boolean = false
+
+    // 不确定进度条（生成中）与额外的操作按钮（如「停止」）
+    var indeterminateProgress: Boolean = false
+    var actions: List<NotificationCompat.Action> = emptyList()
 }
 
 object NotificationUtil {
@@ -103,6 +107,11 @@ object NotificationUtil {
             if (config.useDefaults) {
                 setDefaults(NotificationCompat.DEFAULT_ALL)
             }
+
+            if (config.indeterminateProgress) {
+                setProgress(0, 0, true)
+            }
+            config.actions.forEach { addAction(it) }
 
             // Android 15+ Live Update 支持
             if (config.requestPromotedOngoing && Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {

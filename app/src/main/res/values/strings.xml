@@ -3243,7 +3243,7 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="setting_page_floating_ball_desc">A slim bar on the screen edge — tap it to jump back into the app from anywhere</string>
   <string name="setting_floating_ball_page_title">Edge bar</string>
   <string name="setting_floating_ball_enable_title">Show edge bar</string>
-  <string name="setting_floating_ball_enable_desc">Keeps a slim bar on the screen edge, on top of other apps. Tap it to open the app. Long-press, then drag to move it up or down (drop it on the other side to switch edges).</string>
+  <string name="setting_floating_ball_enable_desc">Keeps a slim bar on the screen edge, on top of other apps. Tap it to open the app. Long-press, then drag to move it anywhere; it snaps to the left, right or top edge when you let go.</string>
   <string name="setting_floating_ball_overlay_title">Display over other apps</string>
   <string name="setting_floating_ball_overlay_granted">Granted</string>
   <string name="setting_floating_ball_overlay_required">Required — the edge bar cannot show without it</string>
@@ -3257,6 +3257,8 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="setting_floating_ball_color_blue">Blue</string>
   <string name="setting_floating_ball_color_teal">Teal</string>
   <string name="setting_floating_ball_preview_title">Preview</string>
+  <string name="setting_floating_ball_task_card_title">Tap the bar while replying to open the task card</string>
+  <string name="setting_floating_ball_task_card_desc">While the AI is replying the bar only shows the flowing light; tap it to see progress, add a note, stop or open the chat. When off, a tap always opens the app.</string>
   <string name="setting_floating_ball_preview_desc">While the AI is replying, a colourful light runs around the edge of the bar. When a reply finishes and you have not seen it yet, the bar turns green with a check mark until you tap it.</string>
   <string name="setting_floating_ball_bar_a11y">Open the app (edge bar)</string>
 

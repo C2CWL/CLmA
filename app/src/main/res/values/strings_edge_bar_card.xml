@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <!-- Edge bar task card: tap the bar while a reply is generating. -->
+  <string name="agent_overlay_working">The agent is working</string>
+  <string name="task_card_title">Replying: %s</string>
+  <string name="task_card_title_untitled">Replying</string>
+  <string name="task_card_subtitle">Running in background</string>
+  <string name="task_card_subtitle_step">Running in background · step %d</string>
+  <string name="task_card_step_thinking">Thinking…</string>
+  <string name="task_card_step_writing">Writing the reply…</string>
+  <string name="task_card_step_tool">Calling tool: %s</string>
+  <string name="task_card_elapsed">Elapsed %s</string>
+  <string name="task_card_input_hint">Add a note for the AI…</string>
+  <string name="task_card_input_note">The AI sees this right after the current tool call finishes</string>
+  <string name="task_card_send">Send</string>
+  <string name="task_card_stop">Stop</string>
+  <string name="task_card_open">Open</string>
+  <string name="task_card_collapse">Collapse</string>
+  <string name="task_card_interject_failed">Can\'t add a note right now, try again later</string>
+  <string name="task_card_interject_sent">Note sent</string>
+  <string name="task_card_notification_stop">Stop</string>
+</resources>

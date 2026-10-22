@@ -112,4 +112,37 @@ class EdgeBarLookTest {
         assertFalse(EdgeBarLook.isLightFill(EdgeBarColor.BLUE.argb(dark = false)))
         assertFalse(EdgeBarLook.isLightFill(EdgeBarColor.TEAL.argb(dark = false)))
     }
+
+    @Test
+    fun `saved edge keeps old sides and adds top`() {
+        val w = 1080
+        assertEquals(EdgeBarLook.Edge.RIGHT, EdgeBarLook.edgeFromSaved(null, null, w))
+        assertEquals(EdgeBarLook.Edge.LEFT, EdgeBarLook.edgeFromSaved(null, 0, w))
+        assertEquals(EdgeBarLook.Edge.RIGHT, EdgeBarLook.edgeFromSaved("right", w - 84, w))
+        assertEquals(EdgeBarLook.Edge.TOP, EdgeBarLook.edgeFromSaved(EdgeBarLook.SAVED_EDGE_TOP, 0, w))
+    }
+
+    @Test
+    fun `a drop near the top snaps to the top, otherwise to a side`() {
+        val w = 1080
+        val h = 2400
+        fun drop(x: Float, y: Float, was: EdgeBarLook.Edge) = EdgeBarLook.edgeAfterDrag(x, y, w, h, was)
+        assertEquals(EdgeBarLook.Edge.TOP, drop(540f, 100f, EdgeBarLook.Edge.RIGHT))
+        assertEquals(EdgeBarLook.Edge.TOP, drop(10f, 300f, EdgeBarLook.Edge.LEFT))
+        // Side to side keeps the "well across" rule.
+        assertEquals(EdgeBarLook.Edge.RIGHT, drop(500f, 1200f, EdgeBarLook.Edge.RIGHT))
+        assertEquals(EdgeBarLook.Edge.LEFT, drop(300f, 1200f, EdgeBarLook.Edge.RIGHT))
+        assertEquals(EdgeBarLook.Edge.LEFT, drop(600f, 1200f, EdgeBarLook.Edge.LEFT))
+        assertEquals(EdgeBarLook.Edge.RIGHT, drop(800f, 1200f, EdgeBarLook.Edge.LEFT))
+        // Coming down from the top picks the nearer half.
+        assertEquals(EdgeBarLook.Edge.LEFT, drop(400f, 1200f, EdgeBarLook.Edge.TOP))
+        assertEquals(EdgeBarLook.Edge.RIGHT, drop(600f, 1200f, EdgeBarLook.Edge.TOP))
+    }
+
+    @Test
+    fun `top bar stays on screen`() {
+        assertEquals(500, EdgeBarLook.topBarLeft(540, 80, 1080))
+        assertEquals(0, EdgeBarLook.topBarLeft(10, 80, 1080))
+        assertEquals(1000, EdgeBarLook.topBarLeft(1075, 80, 1080))
+    }
 }

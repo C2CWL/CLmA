@@ -1215,6 +1215,8 @@ data class DisplaySetting(
     val useAppIconStyleLoadingIndicator: Boolean = true,
     /** Null = not chosen yet: follow [useAppIconStyleLoadingIndicator] (see resolveLoadingIndicatorStyle). */
     val loadingIndicatorStyle: LoadingIndicatorStyle? = null,
+    /** Edge bar: while a reply is generating, a tap on the bar opens the task card (otherwise it opens the app). */
+    val edgeBarTaskCard: Boolean = true,
     val showUserAvatar: Boolean = true,
     val showAssistantBubble: Boolean = false,
     val bubbleOpacity: Float = 1.0f,
