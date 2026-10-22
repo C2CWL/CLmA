@@ -59,8 +59,11 @@ sealed class LogEntry {
 object Logging {
     private val recentLogs = arrayListOf<LogEntry>()
 
+    // "Record requests" switch. Defaults to true to match Settings.recordRequests; :app
+    // restores the user's saved value from SettingsStore at startup (RikkaHubApp.onCreate),
+    // so this initial value only applies until settings have loaded.
     @Volatile
-    private var requestLoggingEnabled = false
+    private var requestLoggingEnabled = true
 
     // Modules below :app (e.g. :ai) have no BuildConfig of their own to gate verbose
     // android.util.Log calls with, the way :app already gates HttpLoggingInterceptor
