@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.ContainedLoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,9 +32,10 @@ import com.clma.app.ui.context.LocalSettings
  */
 
 /*
- * Wallpaper plate behind the sparkle row: deliberately lighter than the usage line's (0.70 / 20dp
- * frosted, 0.86 flat) so it reads as a soft, see-through capsule rather than a block. The flat
- * fallback for devices without real blur (API < 31) is scaled down in proportion.
+ * Wallpaper plate behind the new rows (原子三点 / 呼吸光球 / 双星绕轨): deliberately lighter than the
+ * usage line's (0.70 / 20dp frosted, 0.86 flat) so it reads as a soft, see-through capsule rather
+ * than a block. The flat fallback for devices without real blur (API < 31) is scaled down in
+ * proportion.
  */
 private const val THINKING_PLATE_FROST_TINT_ALPHA = 0.42f
 private val THINKING_PLATE_FROST_BLUR = 12.dp
@@ -45,71 +45,31 @@ private const val THINKING_PLATE_FLAT_ALPHA = 0.60f
 @Composable
 fun AppLoadingIndicator(modifier: Modifier = Modifier) {
     when (LocalSettings.current.displaySetting.effectiveLoadingIndicatorStyle) {
-        LoadingIndicatorStyle.SPARKLE -> SparkleLoadingIndicator(modifier = modifier)
-        LoadingIndicatorStyle.SHIMMER -> ShimmerBar(modifier = modifier)
         LoadingIndicatorStyle.APP_ICON -> AppIconLoadingIndicator(modifier = modifier)
-        LoadingIndicatorStyle.DEFAULT -> ContainedLoadingIndicator(modifier = modifier)
-        LoadingIndicatorStyle.CLAUDE -> ClaudeLoadingIndicator(modifier = modifier)
+        LoadingIndicatorStyle.ATOM_DOTS -> AtomDotsLoadingIndicator(modifier = modifier)
+        LoadingIndicatorStyle.BREATHING_ORB -> BreathingOrbLoadingIndicator(modifier = modifier)
+        LoadingIndicatorStyle.TWIN_ORBIT -> TwinOrbitLoadingIndicator(modifier = modifier)
     }
 }
 
 /**
- * The chat list's "assistant is working" item, in the chosen style, showing [processingStatus]
- * when there is one. DEFAULT and APP_ICON keep the original centred icon + status row; SHIMMER is
- * a label pill; SPARKLE is a left-aligned icon + "Replying" row where the reply text starts.
+ * The chat list's "assistant is working" item, in the chosen style.
  *
- * Over a photo wallpaper ([photoShown]) the SPARKLE row sits on a compact plate (same frosted /
- * flat recipe as the usage line) so the soft palette stays visible on busy photos.
+ * APP_ICON keeps the original centred icon + optional [processingStatus] row. The other styles
+ * are a left-aligned icon + label row where the reply text starts; the label is
+ * [processingStatus] when there is one, otherwise the [phase] (思考中 / 回复中 / 工作中).
+ * Over a photo wallpaper ([photoShown]) those rows sit on a compact plate (same frosted / flat
+ * recipe as the usage line) so they stay legible on busy photos.
  */
 @Composable
 fun ChatLoadingIndicator(
     processingStatus: String?,
+    phase: GenerationPhase = GenerationPhase.WORKING,
     photoShown: Boolean = false,
     hazeState: HazeState? = null,
 ) {
     when (LocalSettings.current.displaySetting.effectiveLoadingIndicatorStyle) {
-        LoadingIndicatorStyle.SHIMMER -> ShimmerThinkingLabel(
-            modifier = Modifier.padding(8.dp),
-            text = processingStatus,
-        )
-
-        LoadingIndicatorStyle.SPARKLE -> if (photoShown) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp),
-            ) {
-                // Wraps icon + label as one pill; the row itself is unchanged (motion, static
-                // fallback), only padded so it does not touch the plate's edge.
-                WallpaperContrastPlate(
-                    photoShown = true,
-                    hazeState = hazeState,
-                    frostTintAlpha = THINKING_PLATE_FROST_TINT_ALPHA,
-                    frostBlur = THINKING_PLATE_FROST_BLUR,
-                    flatAlpha = THINKING_PLATE_FLAT_ALPHA,
-                ) {
-                    SparkleThinkingRow(
-                        modifier = Modifier.padding(start = 4.dp, end = 10.dp, top = 2.dp, bottom = 2.dp),
-                        text = processingStatus,
-                    )
-                }
-            }
-        } else {
-            SparkleThinkingRow(
-                // Being the list's last item it stays below the newest content and goes when done.
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp),
-                text = processingStatus,
-            )
-        }
-
-        LoadingIndicatorStyle.CLAUDE -> ClaudeThinkingRow(
-            modifier = Modifier.padding(8.dp),
-            text = processingStatus,
-        )
-
-        LoadingIndicatorStyle.DEFAULT, LoadingIndicatorStyle.APP_ICON -> Row(
+        LoadingIndicatorStyle.APP_ICON -> Row(
             modifier = Modifier.padding(8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -126,6 +86,49 @@ fun ChatLoadingIndicator(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+        }
+
+        LoadingIndicatorStyle.ATOM_DOTS -> ThinkingRowSlot(photoShown, hazeState) { rowModifier ->
+            AtomDotsThinkingRow(phase = phase, processingStatus = processingStatus, modifier = rowModifier)
+        }
+
+        LoadingIndicatorStyle.BREATHING_ORB -> ThinkingRowSlot(photoShown, hazeState) { rowModifier ->
+            BreathingOrbThinkingRow(phase = phase, processingStatus = processingStatus, modifier = rowModifier)
+        }
+
+        LoadingIndicatorStyle.TWIN_ORBIT -> ThinkingRowSlot(photoShown, hazeState) { rowModifier ->
+            TwinOrbitThinkingRow(phase = phase, processingStatus = processingStatus, modifier = rowModifier)
+        }
+    }
+}
+
+/**
+ * Lays out a left-aligned indicator row: on a soft plate over photo wallpapers, bare otherwise.
+ * Being the list's last item it stays below the newest content and goes when done.
+ */
+@Composable
+private fun ThinkingRowSlot(
+    photoShown: Boolean,
+    hazeState: HazeState?,
+    row: @Composable (Modifier) -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+    ) {
+        if (photoShown) {
+            WallpaperContrastPlate(
+                photoShown = true,
+                hazeState = hazeState,
+                frostTintAlpha = THINKING_PLATE_FROST_TINT_ALPHA,
+                frostBlur = THINKING_PLATE_FROST_BLUR,
+                flatAlpha = THINKING_PLATE_FLAT_ALPHA,
+            ) {
+                row(Modifier.padding(start = 8.dp, end = 12.dp, top = 6.dp, bottom = 6.dp))
+            }
+        } else {
+            row(Modifier.padding(start = 4.dp, top = 4.dp, bottom = 4.dp))
         }
     }
 }

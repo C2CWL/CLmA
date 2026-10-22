@@ -66,9 +66,10 @@ class DisplaySettingChatLayoutTest {
     }
 
     @Test
-    fun `loading indicator style includes claude and leaves the legacy switch alone`() {
-        val setting = DisplaySetting().withLoadingIndicatorStyle(LoadingIndicatorStyle.CLAUDE)
-        assertEquals(LoadingIndicatorStyle.CLAUDE, setting.loadingIndicatorStyle)
-        assertEquals(LoadingIndicatorStyle.CLAUDE, setting.effectiveLoadingIndicatorStyle)
+    fun `picking a loading indicator style does not touch the chat layout`() {
+        val setting = DisplaySetting(chatLayout = ChatLayout.CLAUDE)
+            .withLoadingIndicatorStyle(LoadingIndicatorStyle.TWIN_ORBIT)
+        assertEquals(LoadingIndicatorStyle.TWIN_ORBIT, setting.effectiveLoadingIndicatorStyle)
+        assertEquals(ChatLayout.CLAUDE, setting.effectiveChatLayout)
     }
 }
