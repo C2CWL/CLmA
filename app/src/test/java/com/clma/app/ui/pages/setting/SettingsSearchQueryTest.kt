@@ -2,7 +2,6 @@ package com.clma.app.ui.pages.setting
 
 import com.clma.app.R
 import com.clma.app.Screen
-import com.clma.app.data.datastore.SettingsHubStyle
 import com.clma.app.ui.pages.setting.SettingsSearchTestStrings.chinese
 import com.clma.app.ui.pages.setting.SettingsSearchTestStrings.english
 import org.junit.Assert.assertEquals
@@ -17,12 +16,11 @@ class SettingsSearchQueryTest {
 
     private fun search(
         query: String,
-        hubStyle: SettingsHubStyle = SettingsHubStyle.REORGANIZED,
         content: SettingsSearchUserContent = SettingsSearchUserContent(),
         text: (Int) -> String = chinese,
         fallback: ((Int) -> String)? = english,
     ): List<SettingsSearchItem> {
-        val index = settingsSearchIndex(developerMode = false, hubStyle = hubStyle)
+        val index = settingsSearchIndex(developerMode = false)
         val items = index + settingsSearchDynamicEntries(content, index)
         return rankSettingsSearch(query, items, text, fallback)
     }
@@ -35,7 +33,6 @@ class SettingsSearchQueryTest {
     @Test
     fun `workspace in chinese opens the workspaces page`() {
         assertTop("工作区", Screen.Workspaces)
-        assertTop("工作区", Screen.Workspaces, search("工作区", hubStyle = SettingsHubStyle.CLASSIC))
     }
 
     @Test
@@ -52,9 +49,18 @@ class SettingsSearchQueryTest {
     }
 
     @Test
-    fun `workspace result shows the extensions path`() {
+    fun `workspace is a hub row now`() {
         val top = search("工作区").first() as SettingsSearchEntry
-        assertEquals(listOf(R.string.setting_page_extensions), top.breadcrumbRes)
+        assertEquals(emptyList<Int>(), top.breadcrumbRes)
+        assertEquals(R.string.setting_hub_group_agent, top.groupRes)
+    }
+
+    @Test
+    fun `moved rows are found on their new pages`() {
+        assertTop("总时间预算", Screen.SettingRuntime)
+        assertTop("错误提示自动消失", Screen.SettingPreferencesGeneral)
+        assertTop("AMOLED", Screen.SettingColorMode)
+        assertTop("弹出菜单样式", Screen.SettingPreferencesTheme)
     }
 
     @Test

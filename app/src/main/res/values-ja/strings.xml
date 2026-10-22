@@ -382,8 +382,6 @@
   <string name="extensions_page_prompts">プロンプト</string>
   <string name="extensions_page_prompts_desc">カスタムプロンプトを管理して使用する</string>
   <string name="extensions_page_quick_messages_desc">共有クイックメッセージテンプレートを管理</string>
-  <string name="extensions_page_section_extensions">拡張機能</string>
-  <string name="extensions_page_title">拡張機能</string>
   <string name="favorite_page_no_favorites">お気に入りはまだありません</string>
   <string name="favorite_page_removed">お気に入りを削除しました</string>
   <string name="favorite_page_title">お気に入り</string>
@@ -815,7 +813,6 @@
   <string name="setting_page_built_in_tools_search_desc">Google検索連携を有効化</string>
   <string name="setting_page_built_in_tools_url_context">URLコンテキスト</string>
   <string name="setting_page_built_in_tools_url_context_desc">URLコンテンツ処理を有効化</string>
-  <string name="setting_page_chat_storage_desc">%1$d ファイル、%2$.2f MB</string>
   <string name="setting_page_code_display_settings">コード表示</string>
   <string name="setting_page_color_mode">カラーモード</string>
   <string name="setting_page_color_mode_dark">ダーク</string>
@@ -833,7 +830,6 @@
   <string name="setting_page_dynamic_color">ダイナミックカラー</string>
   <string name="setting_page_dynamic_color_desc">壁紙に基づいてアプリのテーマ配色を動的に生成するかどうか</string>
   <string name="setting_page_extensions">拡張機能</string>
-  <string name="setting_page_extensions_desc">プロンプトインジェクション、スキルなどを管理</string>
   <string name="setting_page_general_settings">一般設定</string>
   <string name="setting_page_interaction_notification_settings">インタラクションと通知</string>
   <string name="setting_page_mcp">MCP</string>
@@ -1138,13 +1134,10 @@ mDNSアドレス: .localホスト名を使用し、IPを知らなくても同じ
   <string name="setting_page_preferences">設定</string>
   <string name="setting_page_preferences_desc">テーマ、通知、UI、全般設定</string>
   <string name="setting_page_preferences_theme">テーマ</string>
-  <string name="setting_page_preferences_theme_desc">ダイナミックカラー、テーマ、AMOLEDダークモード</string>
   <string name="setting_page_preferences_notification">通知</string>
   <string name="setting_page_preferences_notification_desc">アップデート通知、メッセージ生成通知</string>
   <string name="setting_page_preferences_general">一般</string>
-  <string name="setting_page_preferences_general_desc">操作動作、スクロール、入力設定</string>
   <string name="setting_page_preferences_ui">UI設定</string>
-  <string name="setting_page_preferences_ui_desc">メッセージ表示、フォント、コードブロック</string>
   <string name="skills_page_import_from_file">ファイルからインポート</string>
   <string name="skills_page_add_manually">手動追加</string>
   <string name="setting_model_page_tab_model">モデル</string>
@@ -1456,7 +1449,6 @@ mDNSアドレス: .localホスト名を使用し、IPを知らなくても同じ
   <string name="setting_page_notifications_action_ago_seconds">%1$d 秒前</string>
   <string name="setting_page_notifications_default_chat_set">デフォルトの Telegram チャット：%1$s</string>
   <string name="setting_page_notifications_default_chat_unset">デフォルトの Telegram チャット：未設定（自動ルーティング無効）</string>
-  <string name="setting_page_notifications_desc">通知アクセスのステータス、最近のアクティビティログ、Telegram に自動転送するアプリごとのホワイトリスト。</string>
   <string name="setting_page_notifications_open_settings">通知アクセス設定を開く</string>
   <string name="setting_page_notifications_recent_empty">まだ通知をキャプチャしていません。</string>
   <string name="setting_page_notifications_recent_section">最近のアクティビティ</string>
@@ -1886,7 +1878,6 @@ mDNSアドレス: .localホスト名を使用し、IPを知らなくても同じ
   <string name="reasoning_max">極致</string>
   <string name="backup_page_import_overwrite_confirm">バックアップをインポートするとアプリデータが上書きされます。続行しますか？</string>
   <string name="setting_page_preferences_network">ネットワーク</string>
-  <string name="setting_page_preferences_network_desc">User-Agentとネットワークリクエストの設定</string>
   <string name="setting_page_preferences_network_user_agent">User-Agent</string>
   <string name="setting_page_preferences_network_user_agent_desc">空欄の場合は%1$sを使用</string>
   <string name="setting_page_preferences_network_proxy">プロキシ</string>

@@ -474,8 +474,6 @@
   <string name="extensions_page_prompts">提示词</string>
   <string name="extensions_page_prompts_desc">管理和使用自定义提示词</string>
   <string name="extensions_page_quick_messages_desc">管理共享的快速消息模板</string>
-  <string name="extensions_page_section_extensions">扩展</string>
-  <string name="extensions_page_title">扩展管理</string>
   <string name="favorite_page_no_favorites">暂无收藏</string>
   <string name="favorite_page_removed">收藏已移除</string>
   <string name="favorite_page_title">收藏</string>
@@ -1014,37 +1012,19 @@
   <string name="setting_model_page_translate_model">翻译模型</string>
   <string name="setting_model_page_translate_model_desc">用于翻译功能的模型</string>
   <string name="setting_model_page_translate_prompt_vars">变量: 原始文本: {source_text}, 目标语言: {target_lang}</string>
-  <string name="setting_page_group_appearance">外观与交互</string>
 
   <string name="setting_page_hub_chat_display">聊天显示</string>
-  <string name="setting_page_hub_chat_display_desc">布局、气泡、思考步骤、字体、代码块</string>
   <string name="setting_page_hub_chat_actions">聊天操作</string>
-  <string name="setting_page_hub_chat_actions_desc">发送、滚动、粘贴、触感、加载指示</string>
   <string name="setting_page_hub_app_alerts">应用提醒</string>
-  <string name="setting_page_hub_app_alerts_desc">更新提醒与生成完成通知</string>
   <string name="setting_page_hub_notif_access">通知读取</string>
   <string name="setting_page_hub_notif_access_desc">读取系统通知与 Telegram 自动转发白名单</string>
   <string name="setting_page_hub_network_desc">代理、User-Agent、重试与流式超时</string>
-  <string name="setting_page_group_appearance_reorg">外观与聊天</string>
-  <string name="setting_page_group_models_reorg">模型与语音</string>
-  <string name="setting_page_group_connections_reorg">网络与连接</string>
-  <string name="setting_page_ui_style_section">界面风格</string>
-  <string name="setting_page_settings_hub_style_title">设置页布局</string>
-  <string name="setting_page_settings_hub_style_desc">新版：更清晰的命名，网络归入连接。原版：保留旧入口分组</string>
-  <string name="setting_page_settings_hub_style_classic">原版</string>
-  <string name="setting_page_settings_hub_style_reorganized">新版</string>
 
   <string name="setting_page_general_group_conversation">会话</string>
   <string name="setting_page_general_group_navigation">滚动与导航</string>
   <string name="setting_page_general_group_feedback">反馈效果</string>
   <string name="setting_page_general_group_input_media">输入与媒体</string>
-  <string name="setting_page_general_group_advanced">高级</string>
-  <string name="setting_page_group_models">模型与 AI</string>
   <string name="setting_page_group_assistant">助手与自动化</string>
-  <string name="setting_page_group_device">设备与权限</string>
-  <string name="setting_page_group_connections">连接与集成</string>
-  <string name="setting_page_group_data">数据</string>
-  <string name="setting_page_group_about">关于与诊断</string>
   <string name="setting_page_about">关于</string>
   <string name="setting_page_about_desc">关于本APP</string>
   <string name="setting_page_assistant">助手</string>
@@ -1072,7 +1052,6 @@
   <string name="setting_page_built_in_tools_search_desc">启用 Google 搜索集成</string>
   <string name="setting_page_built_in_tools_url_context">URL 上下文</string>
   <string name="setting_page_built_in_tools_url_context_desc">启用 URL 内容处理</string>
-  <string name="setting_page_chat_storage_desc">%1$d 个文件，%2$.2f MB</string>
   <string name="setting_page_code_display_settings">代码显示</string>
   <string name="setting_page_color_mode">颜色模式</string>
   <string name="setting_page_color_mode_dark">深色</string>
@@ -1090,7 +1069,6 @@
   <string name="setting_page_dynamic_color">动态颜色</string>
   <string name="setting_page_dynamic_color_desc">是否基于壁纸动态生成 app 主题配色</string>
   <string name="setting_page_extensions">扩展管理</string>
-  <string name="setting_page_extensions_desc">管理提示词注入、技能等扩展</string>
   <string name="setting_page_general_settings">通用设置</string>
   <string name="setting_page_interaction_notification_settings">互动与通知</string>
   <string name="setting_page_mcp">MCP</string>
@@ -1452,13 +1430,10 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="setting_page_preferences">偏好设置</string>
   <string name="setting_page_preferences_desc">主题、通知、界面和常规设置</string>
   <string name="setting_page_preferences_theme">主题</string>
-  <string name="setting_page_preferences_theme_desc">动态配色、主题、AMOLED深色模式</string>
   <string name="setting_page_preferences_notification">通知提醒</string>
   <string name="setting_page_preferences_notification_desc">更新提醒、消息生成通知</string>
   <string name="setting_page_preferences_general">交互行为</string>
-  <string name="setting_page_preferences_general_desc">交互行为、滚动、输入设置</string>
   <string name="setting_page_preferences_ui">界面偏好设置</string>
-  <string name="setting_page_preferences_ui_desc">消息显示、字体、代码块</string>
   <string name="skills_page_import_from_file">从文件导入</string>
   <string name="skills_page_add_manually">手动添加</string>
   <string name="setting_model_page_tab_model">模型</string>
@@ -1825,7 +1800,6 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="setting_page_notifications_action_ago_seconds">%1$d 秒前</string>
   <string name="setting_page_notifications_default_chat_set">默认 Telegram 聊天：%1$s</string>
   <string name="setting_page_notifications_default_chat_unset">默认 Telegram 聊天：未设置（自动路由已禁用）</string>
-  <string name="setting_page_notifications_desc">通知访问状态、最近活动日志，以及自动转发到 Telegram 的逐应用白名单。</string>
   <string name="setting_page_notifications_open_settings">打开通知使用权设置</string>
   <string name="setting_page_notifications_recent_empty">尚未捕获任何通知。</string>
   <string name="setting_page_notifications_recent_section">最近活动</string>
@@ -2622,7 +2596,6 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="setting_sub_agents_page_palette_disable">禁用</string>
   <string name="backup_page_import_overwrite_confirm">导入备份会覆盖 App 数据，是否继续</string>
   <string name="setting_page_preferences_network">网络</string>
-  <string name="setting_page_preferences_network_desc">User-Agent 和网络请求设置</string>
   <string name="setting_page_preferences_network_user_agent">User-Agent</string>
   <string name="setting_page_preferences_network_user_agent_desc">留空以使用 %1$s</string>
   <string name="setting_page_preferences_network_proxy">代理</string>

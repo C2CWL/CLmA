@@ -390,8 +390,6 @@
   <string name="extensions_page_prompts">提示</string>
   <string name="extensions_page_prompts_desc">管理及使用自訂提示</string>
   <string name="extensions_page_quick_messages_desc">管理共用的快速訊息範本</string>
-  <string name="extensions_page_section_extensions">擴充功能</string>
-  <string name="extensions_page_title">擴充功能</string>
   <string name="favorite_page_no_favorites">尚無收藏</string>
   <string name="favorite_page_removed">已移除最愛</string>
   <string name="favorite_page_title">收藏</string>
@@ -825,37 +823,19 @@
   <string name="setting_model_page_translate_model">翻譯模型</string>
   <string name="setting_model_page_translate_model_desc">用於翻譯功能的模型</string>
   <string name="setting_model_page_translate_prompt_vars">變數: 原始文字: {source_text}, 目標語言: {target_lang}</string>
-  <string name="setting_page_group_appearance">外觀與互動</string>
 
   <string name="setting_page_hub_chat_display">聊天顯示</string>
-  <string name="setting_page_hub_chat_display_desc">版面、氣泡、思考步驟、字型、程式碼區塊</string>
   <string name="setting_page_hub_chat_actions">聊天操作</string>
-  <string name="setting_page_hub_chat_actions_desc">傳送、捲動、貼上、觸感、載入指示</string>
   <string name="setting_page_hub_app_alerts">應用提醒</string>
-  <string name="setting_page_hub_app_alerts_desc">更新提醒與生成完成通知</string>
   <string name="setting_page_hub_notif_access">通知讀取</string>
   <string name="setting_page_hub_notif_access_desc">讀取系統通知與 Telegram 自動轉發白名單</string>
   <string name="setting_page_hub_network_desc">代理、User-Agent、重試與串流逾時</string>
-  <string name="setting_page_group_appearance_reorg">外觀與聊天</string>
-  <string name="setting_page_group_models_reorg">模型與語音</string>
-  <string name="setting_page_group_connections_reorg">網路與連線</string>
-  <string name="setting_page_ui_style_section">介面風格</string>
-  <string name="setting_page_settings_hub_style_title">設定頁版面</string>
-  <string name="setting_page_settings_hub_style_desc">新版：更清楚的命名，網路歸入連線。原版：保留舊入口分組</string>
-  <string name="setting_page_settings_hub_style_classic">原版</string>
-  <string name="setting_page_settings_hub_style_reorganized">新版</string>
 
   <string name="setting_page_general_group_conversation">對話</string>
   <string name="setting_page_general_group_navigation">捲動與導覽</string>
   <string name="setting_page_general_group_feedback">回饋效果</string>
   <string name="setting_page_general_group_input_media">輸入與媒體</string>
-  <string name="setting_page_general_group_advanced">進階</string>
-  <string name="setting_page_group_models">模型與 AI</string>
   <string name="setting_page_group_assistant">助手與自動化</string>
-  <string name="setting_page_group_device">裝置與權限</string>
-  <string name="setting_page_group_connections">連接與整合</string>
-  <string name="setting_page_group_data">資料</string>
-  <string name="setting_page_group_about">關於與診斷</string>
   <string name="setting_page_about">關於</string>
   <string name="setting_page_about_desc">關於本APP</string>
   <string name="setting_page_assistant">助手</string>
@@ -868,7 +848,6 @@
   <string name="setting_page_built_in_tools_search_desc">啟用 Google 搜尋整合</string>
   <string name="setting_page_built_in_tools_url_context">URL 上下文</string>
   <string name="setting_page_built_in_tools_url_context_desc">啟用 URL 內容處理</string>
-  <string name="setting_page_chat_storage_desc">%1$d 個檔案，%2$.2f MB</string>
   <string name="setting_page_code_display_settings">程式碼顯示</string>
   <string name="setting_page_color_mode">顏色模式</string>
   <string name="setting_page_color_mode_dark">深色</string>
@@ -886,7 +865,6 @@
   <string name="setting_page_dynamic_color">動態顏色</string>
   <string name="setting_page_dynamic_color_desc">是否基於桌布動態生成 app 主題配色</string>
   <string name="setting_page_extensions">擴充功能</string>
-  <string name="setting_page_extensions_desc">管理提示注入、技能等功能</string>
   <string name="setting_page_general_settings">通用設定</string>
   <string name="setting_page_interaction_notification_settings">互動與通知</string>
   <string name="setting_page_mcp">MCP</string>
@@ -1215,13 +1193,10 @@
   <string name="setting_page_preferences">偏好設定</string>
   <string name="setting_page_preferences_desc">主題、通知、介面與一般設定</string>
   <string name="setting_page_preferences_theme">主題</string>
-  <string name="setting_page_preferences_theme_desc">動態色彩、主題、AMOLED 深色模式</string>
   <string name="setting_page_preferences_notification">通知提醒</string>
   <string name="setting_page_preferences_notification_desc">更新提醒、訊息產生通知</string>
   <string name="setting_page_preferences_general">互動行為</string>
-  <string name="setting_page_preferences_general_desc">互動行為、捲動、輸入設定</string>
   <string name="setting_page_preferences_ui">UI 偏好設定</string>
-  <string name="setting_page_preferences_ui_desc">訊息顯示、字型、程式碼區塊</string>
   <string name="skills_page_import_from_file">從檔案匯入</string>
   <string name="skills_page_add_manually">手動新增</string>
   <string name="setting_model_page_tab_model">模型</string>
@@ -1536,7 +1511,6 @@
   <string name="setting_page_notifications_action_ago_seconds">%1$d 秒前</string>
   <string name="setting_page_notifications_default_chat_set">預設 Telegram 聊天：%1$s</string>
   <string name="setting_page_notifications_default_chat_unset">預設 Telegram 聊天：未設定（自動路由已停用）</string>
-  <string name="setting_page_notifications_desc">通知存取狀態、最近活動記錄，以及自動轉發到 Telegram 的逐應用程式白名單。</string>
   <string name="setting_page_notifications_open_settings">開啟通知存取權設定</string>
   <string name="setting_page_notifications_recent_empty">尚未擷取任何通知。</string>
   <string name="setting_page_notifications_recent_section">最近活動</string>
@@ -2320,7 +2294,6 @@
   <string name="setting_sub_agents_page_palette_disable">停用</string>
   <string name="backup_page_import_overwrite_confirm">匯入備份將覆寫應用程式資料。是否繼續？</string>
   <string name="setting_page_preferences_network">網路</string>
-  <string name="setting_page_preferences_network_desc">User-Agent 和網路請求設定</string>
   <string name="setting_page_preferences_network_user_agent">User-Agent</string>
   <string name="setting_page_preferences_network_user_agent_desc">留空以使用 %1$s</string>
   <string name="setting_page_preferences_network_proxy">代理</string>

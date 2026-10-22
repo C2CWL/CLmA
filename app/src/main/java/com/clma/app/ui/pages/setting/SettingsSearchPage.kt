@@ -81,11 +81,8 @@ fun SettingsSearchPage(vm: SettingVM = koinViewModel()) {
     val text = remember(context) { cachedStrings(context) }
     val englishText = remember(context) { cachedStrings(englishContext(context)) }
 
-    val entries = remember(settings.developerMode, settings.displaySetting.settingsHubStyle) {
-        settingsSearchIndex(
-            developerMode = settings.developerMode,
-            hubStyle = settings.displaySetting.settingsHubStyle,
-        )
+    val entries = remember(settings.developerMode) {
+        settingsSearchIndex(developerMode = settings.developerMode)
     }
     val dynamicEntries = remember(entries, settings, workspaces, skills) {
         settingsSearchDynamicEntries(userContentOf(settings, workspaces, skills), entries)

@@ -55,7 +55,7 @@ fun SettingPreferencesNotificationPage(vm: SettingVM = koinViewModel()) {
         topBar = {
             LargeFlexibleTopAppBar(
                 title = {
-                    Text(stringResource(R.string.setting_page_preferences_notification))
+                    Text(stringResource(R.string.setting_hub_message_notification))
                 },
                 navigationIcon = {
                     BackButton()

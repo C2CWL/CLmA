@@ -507,8 +507,6 @@
   <string name="extensions_page_prompts">Prompts</string>
   <string name="extensions_page_prompts_desc">Manage and use custom prompts</string>
   <string name="extensions_page_quick_messages_desc">Manage shared quick message templates</string>
-  <string name="extensions_page_section_extensions">Extensions</string>
-  <string name="extensions_page_title">Extensions</string>
   <string name="favorite_page_no_favorites">No favorites yet</string>
   <string name="favorite_page_removed">Favorite removed</string>
   <string name="favorite_page_title">Favorites</string>
@@ -1057,37 +1055,19 @@
   <string name="setting_model_page_translate_model">Translation Model</string>
   <string name="setting_model_page_translate_model_desc">The model used for translation features</string>
   <string name="setting_model_page_translate_prompt_vars">Variables: Source text: {source_text}, Target language: {target_lang}</string>
-  <string name="setting_page_group_appearance">Appearance &amp; interaction</string>
 
   <string name="setting_page_hub_chat_display">Chat display</string>
-  <string name="setting_page_hub_chat_display_desc">Layout, bubbles, thinking steps, fonts, code blocks</string>
   <string name="setting_page_hub_chat_actions">Chat actions</string>
-  <string name="setting_page_hub_chat_actions_desc">Send, scroll, paste, haptics, loading indicator</string>
   <string name="setting_page_hub_app_alerts">App alerts</string>
-  <string name="setting_page_hub_app_alerts_desc">Update reminders and generation notifications</string>
   <string name="setting_page_hub_notif_access">Notification access</string>
   <string name="setting_page_hub_notif_access_desc">Read system notifications and Telegram auto-forward whitelist</string>
   <string name="setting_page_hub_network_desc">Proxy, User-Agent, retries and stream timeouts</string>
-  <string name="setting_page_group_appearance_reorg">Look &amp; chat</string>
-  <string name="setting_page_group_models_reorg">Models &amp; speech</string>
-  <string name="setting_page_group_connections_reorg">Network &amp; connections</string>
-  <string name="setting_page_ui_style_section">UI style</string>
-  <string name="setting_page_settings_hub_style_title">Settings layout</string>
-  <string name="setting_page_settings_hub_style_desc">Reorganized uses clearer names and puts network under connections. Classic keeps the previous hub layout</string>
-  <string name="setting_page_settings_hub_style_classic">Classic</string>
-  <string name="setting_page_settings_hub_style_reorganized">Reorganized</string>
 
   <string name="setting_page_general_group_conversation">Conversation</string>
   <string name="setting_page_general_group_navigation">Scrolling &amp; navigation</string>
   <string name="setting_page_general_group_feedback">Feedback</string>
   <string name="setting_page_general_group_input_media">Input &amp; media</string>
-  <string name="setting_page_general_group_advanced">Advanced</string>
-  <string name="setting_page_group_models">Models &amp; AI</string>
   <string name="setting_page_group_assistant">Assistant &amp; automation</string>
-  <string name="setting_page_group_device">Device &amp; permissions</string>
-  <string name="setting_page_group_connections">Connections</string>
-  <string name="setting_page_group_data">Data</string>
-  <string name="setting_page_group_about">About &amp; diagnostics</string>
   <string name="setting_page_about">About</string>
   <string name="setting_page_about_desc">About this app</string>
   <string name="setting_page_assistant">Assistant</string>
@@ -1115,7 +1095,6 @@
   <string name="setting_page_built_in_tools_search_desc">Enable Google Search integration</string>
   <string name="setting_page_built_in_tools_url_context">URL Context</string>
   <string name="setting_page_built_in_tools_url_context_desc">Enable URL content processing</string>
-  <string name="setting_page_chat_storage_desc">%1$d files, %2$.2f MB</string>
   <string name="setting_page_code_display_settings">Code Display</string>
   <string name="setting_page_color_mode">Color Mode</string>
   <string name="setting_page_color_mode_dark">Dark</string>
@@ -1133,15 +1112,11 @@
   <string name="setting_page_preferences">Preferences</string>
   <string name="setting_page_preferences_desc">Theme, notifications, UI and general settings</string>
   <string name="setting_page_preferences_theme">Theme</string>
-  <string name="setting_page_preferences_theme_desc">Dynamic color, theme, AMOLED dark mode</string>
   <string name="setting_page_preferences_notification">Notification alerts</string>
   <string name="setting_page_preferences_notification_desc">Update alerts, message generation notifications</string>
   <string name="setting_page_preferences_general">Interaction</string>
-  <string name="setting_page_preferences_general_desc">Interaction behavior, scrolling, input settings</string>
   <string name="setting_page_preferences_ui">UI Preferences</string>
-  <string name="setting_page_preferences_ui_desc">Message display, fonts, code blocks</string>
   <string name="setting_page_preferences_network">Network</string>
-  <string name="setting_page_preferences_network_desc">User-Agent and network request settings</string>
   <string name="setting_page_preferences_network_user_agent">User-Agent</string>
   <string name="setting_page_preferences_network_user_agent_desc">Leave blank to use %1$s</string>
   <string name="setting_page_preferences_network_proxy">Proxy</string>
@@ -1158,7 +1133,6 @@
   <string name="setting_page_dynamic_color">Dynamic Color</string>
   <string name="setting_page_dynamic_color_desc">Generate the app theme colors dynamically from your wallpaper</string>
   <string name="setting_page_extensions">Extensions</string>
-  <string name="setting_page_extensions_desc">Manage prompt injections, skills and more</string>
   <string name="setting_page_general_settings">General Settings</string>
   <string name="setting_page_interaction_notification_settings">Interaction &amp;amp; Notifications</string>
   <string name="setting_page_mcp">MCP</string>
@@ -1864,7 +1838,6 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="setting_provider_aicore_release_stage">Release stage</string>
   <string name="setting_provider_aicore_status_help">On-device. Requires Pixel 8/9/10 with the AICore app installed AND enrollment in the GenAI Prompt-API early-access program (separate opt-in). If you see ErrorCode 606 / FEATURE_NOT_FOUND on first run, you have AICore installed but not the Prompt-API channel — request access via the GenAI Prompt-API early-access form, then reboot. Tool calling is supported via prompt engineering — Gemini Nano emits &lt;tool_call&gt; markup which RikkaHub parses and dispatches.</string>
   <string name="setting_page_notifications">Notification access</string>
-  <string name="setting_page_notifications_desc">Notification access status, recent activity log, and the per-app whitelist that auto-forwards to Telegram.</string>
   <string name="setting_page_notifications_status_section">Status</string>
   <string name="setting_page_notifications_status_connected">Service: Connected</string>
   <string name="setting_page_notifications_status_not_connected">Service: Not connected</string>

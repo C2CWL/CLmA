@@ -1,7 +1,6 @@
 package com.clma.app.ui.pages.setting
 
 import com.clma.app.Screen
-import com.clma.app.data.datastore.SettingsHubStyle
 import java.io.File
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
@@ -60,7 +59,7 @@ class SettingsSearchCoverageTest {
     private val Screen.name: String get() = javaClass.simpleName
 
     private fun allStaticEntries(): List<SettingsSearchEntry> =
-        SettingsHubStyle.entries.flatMap { settingsSearchIndex(developerMode = true, hubStyle = it) }
+        settingsSearchIndex(developerMode = true)
 
     private fun dynamicTargetNames(): Set<String> {
         val one = listOf(SettingsSearchUserItem("id", "name"))
@@ -152,16 +151,19 @@ class SettingsSearchCoverageTest {
     private val pageSources: Map<String, List<String>> = mapOf(
         "SettingPreferencesTheme" to listOf("ui/pages/setting/SettingPreferencesThemePage.kt"),
         "SettingTheme" to listOf("ui/pages/setting/SettingThemePage.kt"),
+        "SettingColorMode" to listOf("ui/pages/setting/SettingColorModePage.kt"),
+        "SettingFonts" to listOf("ui/pages/setting/SettingFontsPage.kt"),
+        "SettingChatLayout" to listOf("ui/pages/setting/SettingChatLayoutPage.kt"),
         "SettingPreferencesUI" to listOf("ui/pages/setting/SettingPreferencesUIPage.kt"),
         "SettingPreferencesGeneral" to listOf("ui/pages/setting/SettingPreferencesGeneralPage.kt"),
         "SettingPreferencesNotification" to listOf("ui/pages/setting/SettingPreferencesNotificationPage.kt"),
         "SettingModels" to listOf("ui/pages/setting/SettingModelPage.kt", "ui/pages/setting/SettingModelPromptPage.kt"),
+        "SettingRuntime" to listOf("ui/pages/setting/SettingRuntimePage.kt"),
         "SettingProvider" to listOf("ui/pages/setting/SettingProviderPage.kt"),
         "SettingSearch" to listOf("ui/pages/setting/SettingSearchPage.kt"),
         "SettingSpeech" to listOf("ui/pages/setting/SettingSpeechPage.kt"),
         "SettingPreferencesNetwork" to listOf("ui/pages/setting/SettingPreferencesNetworkPage.kt"),
         "Assistant" to listOf("ui/pages/assistant/AssistantPage.kt"),
-        "Extensions" to listOf("ui/pages/extensions/ExtensionsPage.kt"),
         "QuickMessages" to listOf("ui/pages/extensions/QuickMessagesPage.kt"),
         "Prompts" to listOf("ui/pages/extensions/PromptPage.kt"),
         "Skills" to listOf("ui/pages/extensions/skills/SkillsPage.kt"),
