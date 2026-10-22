@@ -1,11 +1,12 @@
 package com.clma.app.ui.components.ai
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -43,10 +44,12 @@ import me.rerere.hugeicons.stroke.Tick02
 import com.clma.app.R
 import com.clma.app.data.ai.tools.ApprovalMode
 import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.datastore.getCurrentAssistant
 import com.clma.app.data.preferences.ToolApprovalPreferences
 import com.clma.app.subagent.SubAgentDispatchProfile
 import org.koin.compose.koinInject
 import kotlin.math.roundToInt
+import kotlin.uuid.Uuid
 
 private val levels = ReasoningLevel.entries
 private val levelCount = levels.size
@@ -64,6 +67,10 @@ private val levelCount = levels.size
  * The two chips are compact mirrors of Settings → Tool approvals / Settings → Sub-agents; the
  * settings pages stay the canonical detail surfaces (blacklist, caps readout). The slider only
  * renders when the current model can reason; the chips always do.
+ *
+ * When the sheet is opened from a chat ([conversationId] non-null) a third chip, 🔓 本对话授权 · N,
+ * opens [ChatToolPresetSheet] to pre-allow high-risk / MCP / blacklisted tools for that chat only.
+ * The chip row scrolls horizontally rather than squeezing the depth word on narrow screens.
  */
 @Composable
 fun AgentControlCard(
@@ -71,6 +78,7 @@ fun AgentControlCard(
     showReasoning: Boolean,
     onUpdateReasoningLevel: (ReasoningLevel) -> Unit,
     modifier: Modifier = Modifier,
+    conversationId: Uuid? = null,
 ) {
     val approvalPrefs = koinInject<ToolApprovalPreferences>()
     val settingsStore = koinInject<SettingsStore>()
@@ -78,6 +86,14 @@ fun AgentControlCard(
     val approvalMode by approvalPrefs.modeFlow.collectAsStateWithLifecycle(initialValue = ApprovalMode.MANUAL)
     val liveSettings by settingsStore.settingsFlow.collectAsStateWithLifecycle()
     val dispatchProfile = liveSettings.subAgentDispatchProfile
+    var showPresetSheet by remember { mutableStateOf(false) }
+    if (showPresetSheet && conversationId != null) {
+        ChatToolPresetSheet(
+            conversationId = conversationId,
+            assistant = liveSettings.getCurrentAssistant(),
+            onDismiss = { showPresetSheet = false },
+        )
+    }
 
     // Same gate as Settings → Tool approvals: switching INTO Auto confirms first.
     var pendingAuto by remember { mutableStateOf(false) }
@@ -133,23 +149,36 @@ fun AgentControlCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                ApprovalModeChip(
-                    mode = approvalMode,
-                    onSelect = { mode ->
-                        if (mode == ApprovalMode.AUTO && approvalMode != ApprovalMode.AUTO) {
-                            pendingAuto = true
-                        } else {
-                            scope.launch { approvalPrefs.setMode(mode) }
-                        }
-                    },
-                )
-                DispatchProfileChip(
-                    profile = dispatchProfile,
-                    onSelect = { profile ->
-                        scope.launch { settingsStore.update { it.copy(subAgentDispatchProfile = profile) } }
-                    },
-                )
-                Spacer(Modifier.weight(1f))
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .horizontalScroll(rememberScrollState()),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    ApprovalModeChip(
+                        mode = approvalMode,
+                        onSelect = { mode ->
+                            if (mode == ApprovalMode.AUTO && approvalMode != ApprovalMode.AUTO) {
+                                pendingAuto = true
+                            } else {
+                                scope.launch { approvalPrefs.setMode(mode) }
+                            }
+                        },
+                    )
+                    DispatchProfileChip(
+                        profile = dispatchProfile,
+                        onSelect = { profile ->
+                            scope.launch { settingsStore.update { it.copy(subAgentDispatchProfile = profile) } }
+                        },
+                    )
+                    if (conversationId != null) {
+                        ChatPresetChip(
+                            count = rememberChatGrantCount(conversationId),
+                            onClick = { showPresetSheet = true },
+                        )
+                    }
+                }
                 if (showReasoning) {
                     ReasoningIcon(previewLevel, Modifier.size(18.dp))
                     ReasoningLevelWord(
@@ -192,6 +221,32 @@ fun AgentControlCard(
                 )
             }
         }
+    }
+}
+
+/** 🔓 本对话授权 · N — opens the per-chat preset sheet; N = tools pre-allowed for this chat. */
+@Composable
+private fun ChatPresetChip(
+    count: Int,
+    onClick: () -> Unit,
+) {
+    val label = if (count > 0) {
+        stringResource(R.string.setting_page_tool_approvals_preset_chip_count, count)
+    } else {
+        stringResource(R.string.setting_page_tool_approvals_preset_chip)
+    }
+    Surface(
+        onClick = onClick,
+        shape = CircleShape,
+        color = if (count > 0) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceContainerHighest,
+        contentColor = if (count > 0) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurface,
+    ) {
+        Text(
+            text = "\uD83D\uDD13 $label",
+            style = MaterialTheme.typography.labelMedium,
+            maxLines = 1,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+        )
     }
 }
 

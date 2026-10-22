@@ -147,6 +147,7 @@ fun ChatInput(
     onUpdateAssistant: (Assistant) -> Unit,
     enableSearch: Boolean,
     conversationChatModelId: Uuid? = null,
+    conversationId: Uuid? = null,
     onUpdateChatModel: (Model) -> Unit,
     onUpdateModelReasoningLevel: (Model, ReasoningLevel) -> Unit,
     onUpdateSearchMode: (SearchMode) -> Unit,
@@ -410,6 +411,7 @@ fun ChatInput(
                                     settings = settings,
                                     assistant = assistant,
                                     conversationChatModelId = conversationChatModelId,
+                                    conversationId = conversationId,
                                     expanded = expanded,
                                     onUpdateChatModel = onUpdateChatModel,
                                     onUpdateModelReasoningLevel = onUpdateModelReasoningLevel,
@@ -523,6 +525,7 @@ private fun ModelReasoningChip(
     settings: Settings,
     assistant: Assistant,
     conversationChatModelId: Uuid? = null,
+    conversationId: Uuid? = null,
     expanded: Boolean,
     onUpdateChatModel: (Model) -> Unit,
     onUpdateModelReasoningLevel: (Model, ReasoningLevel) -> Unit,
@@ -612,6 +615,7 @@ private fun ModelReasoningChip(
                         onUpdateModelReasoningLevel(model, it)
                     }
                 },
+                conversationId = conversationId,
             )
         },
     )

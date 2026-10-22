@@ -441,11 +441,11 @@ fun SettingToolApprovalsPage() {
 
 /** Sentinel [FloorWaiverDialog] target for the "MCP server tools ask" switch. Not a tool name:
  *  real tool names never contain spaces or angle brackets. */
-private const val MCP_WAIVER_TARGET = "<mcp relayed tools>"
+internal const val MCP_WAIVER_TARGET = "<mcp relayed tools>"
 
 /** Small red "high risk" chip next to a default-ask floor tool's name. */
 @Composable
-private fun HighRiskTag() {
+internal fun HighRiskTag() {
     Text(
         text = stringResource(R.string.setting_page_tool_approvals_high_risk_tag),
         style = MaterialTheme.typography.labelSmall,
@@ -470,7 +470,7 @@ private fun WaivedText() {
 
 /** Tool-specific risk line for [FloorWaiverDialog]. */
 @Composable
-private fun waiverRiskText(target: String): String = stringResource(
+internal fun waiverRiskText(target: String): String = stringResource(
     when (target) {
         MCP_WAIVER_TARGET -> R.string.setting_page_tool_approvals_waiver_risk_mcp_relayed
         "mcp_add", "mcp_update" -> R.string.setting_page_tool_approvals_waiver_risk_mcp_install
