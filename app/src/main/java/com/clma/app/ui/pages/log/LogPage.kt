@@ -61,7 +61,6 @@ import java.util.Locale
 @Composable
 fun LogPage() {
     var logs by remember { mutableStateOf(Logging.getRecentLogs()) }
-    var requestLoggingEnabled by remember { mutableStateOf(Logging.isRequestLoggingEnabled()) }
     val settingsStore = koinInject<SettingsStore>()
     val settings by settingsStore.settingsFlow.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
@@ -110,10 +109,13 @@ fun LogPage() {
     ) { contentPadding ->
         UnifiedLogList(
             logs = logs,
-            requestLoggingEnabled = requestLoggingEnabled,
-            onRequestLoggingChange = {
-                requestLoggingEnabled = it
-                Logging.setRequestLoggingEnabled(it)
+            requestLoggingEnabled = settings.recordRequests,
+            onRequestLoggingChange = { enabled ->
+                // Apply right away; the persisted value is what survives a restart.
+                Logging.setRequestLoggingEnabled(enabled)
+                scope.launch {
+                    settingsStore.update { it.copy(recordRequests = enabled) }
+                }
             },
             errorCardAutoDismiss = settings.errorCardAutoDismiss,
             onErrorCardAutoDismissChange = { enabled ->

@@ -38,4 +38,10 @@ class SettingsReadBackCoverageTest {
     fun `dynamic color is read back from its key`() {
         assertEquals(true, source.contains("dynamicColor = preferences[DYNAMIC_COLOR] != false"))
     }
+
+    @Test
+    fun `record requests is read back from its key and defaults to on`() {
+        // 日志页「记录请求」开关: 曾经只存在内存里, 重启就变回关闭。缺失 key 时默认开启。
+        assertEquals(true, source.contains("recordRequests = preferences[RECORD_REQUESTS] ?: true"))
+    }
 }

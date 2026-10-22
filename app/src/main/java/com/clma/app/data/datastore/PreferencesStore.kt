@@ -189,6 +189,7 @@ class SettingsStore(
         val TRANSLATE_MODEL = stringPreferencesKey("translate_model")
         val ENABLE_SUGGESTION = booleanPreferencesKey("enable_suggestion")
         val ERROR_CARD_AUTO_DISMISS = booleanPreferencesKey("error_card_auto_dismiss")
+        val RECORD_REQUESTS = booleanPreferencesKey("record_requests")
         val IMAGE_GENERATION_MODEL = stringPreferencesKey("image_generation_model")
         val VIDEO_GENERATION_MODEL = stringPreferencesKey("video_generation_model")
         val TITLE_PROMPT = stringPreferencesKey("title_prompt")
@@ -324,6 +325,7 @@ class SettingsStore(
                 preferences[TRANSLATE_MODEL] = settings.translateModeId.toString()
                 preferences[ENABLE_SUGGESTION] = settings.enableSuggestion
                 preferences[ERROR_CARD_AUTO_DISMISS] = settings.errorCardAutoDismiss
+                preferences[RECORD_REQUESTS] = settings.recordRequests
                 preferences[IMAGE_GENERATION_MODEL] = settings.imageGenerationModelId.toString()
                 preferences[VIDEO_GENERATION_MODEL] = settings.videoGenerationModelId.toString()
                 preferences[TITLE_PROMPT] = settings.titlePrompt
@@ -443,6 +445,8 @@ class SettingsStore(
                     ?: DEFAULT_AUTO_MODEL_ID,
                 enableSuggestion = preferences[ENABLE_SUGGESTION] != false,
                 errorCardAutoDismiss = preferences[ERROR_CARD_AUTO_DISMISS] == true,
+                // 缺失 key 视为开启: 新装和从未保存过该开关的老用户都默认记录请求
+                recordRequests = preferences[RECORD_REQUESTS] ?: true,
                 imageGenerationModelId = preferences[IMAGE_GENERATION_MODEL]?.let { runCatching { Uuid.parse(it) }.getOrNull() } ?: Uuid.random(),
                 videoGenerationModelId = preferences[VIDEO_GENERATION_MODEL]?.let { runCatching { Uuid.parse(it) }.getOrNull() } ?: Uuid.random(),
                 titlePrompt = preferences[TITLE_PROMPT] ?: DEFAULT_TITLE_PROMPT,
@@ -1120,6 +1124,12 @@ data class Settings(
      * non-technical user needs, and 5s is not enough to read it.
      */
     val errorCardAutoDismiss: Boolean = false,
+    /**
+     * Logs screen "记录请求" switch: keep successful HTTP requests (with bodies) in the log.
+     * Failed requests are always logged regardless. On by default. Persisted here so it
+     * survives a restart; RikkaHubApp pushes the value into [com.clma.common.android.Logging].
+     */
+    val recordRequests: Boolean = true,
     val backupReminderConfig: BackupReminderConfig = BackupReminderConfig(),
     val launchCount: Int = 0,
 ) {

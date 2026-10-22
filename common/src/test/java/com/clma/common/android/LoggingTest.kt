@@ -1,5 +1,6 @@
 package com.clma.common.android
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -27,4 +28,39 @@ class LoggingTest {
         Logging.setDebugLoggingEnabled(false)
         assertFalse(Logging.isDebugLoggingEnabled())
     }
+
+    @Test
+    fun `setRequestLoggingEnabled toggles what isRequestLoggingEnabled reports`() {
+        Logging.setRequestLoggingEnabled(false)
+        assertFalse(Logging.isRequestLoggingEnabled())
+
+        Logging.setRequestLoggingEnabled(true)
+        assertTrue(Logging.isRequestLoggingEnabled())
+    }
+
+    @Test
+    fun `logRequest drops entries while recording is off unless forced`() {
+        try {
+            Logging.clear()
+            Logging.setRequestLoggingEnabled(false)
+
+            Logging.logRequest(request("https://example.com/ok"))
+            assertTrue(Logging.getRequestLogs().isEmpty())
+
+            Logging.logRequest(request("https://example.com/failed"), force = true)
+            assertEquals(listOf("https://example.com/failed"), Logging.getRequestLogs().map { it.url })
+
+            Logging.setRequestLoggingEnabled(true)
+            Logging.logRequest(request("https://example.com/ok2"))
+            assertEquals(
+                listOf("https://example.com/ok2", "https://example.com/failed"),
+                Logging.getRequestLogs().map { it.url },
+            )
+        } finally {
+            Logging.setRequestLoggingEnabled(true)
+            Logging.clear()
+        }
+    }
+
+    private fun request(url: String) = LogEntry.RequestLog(tag = "HTTP", url = url, method = "GET")
 }

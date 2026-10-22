@@ -28,6 +28,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import com.clma.common.android.LogLevel
 import com.clma.common.android.Logging
 import com.clma.common.android.appTempFolder
@@ -105,6 +108,12 @@ class RikkaHubApp : Application() {
         }
         initWorkManager()
         this.createNotificationChannel()
+
+        // Restore the Logs screen "record requests" switch from settings (and keep it in sync):
+        // Logging lives in :common and has no access to the DataStore, so the persisted value
+        // is pushed into it here. settingsFlowRaw (not settingsFlow) so the dummy pre-load
+        // snapshot is never applied.
+        restoreRequestLoggingSetting()
 
         // Restore any headless conversation IDs that survived a process kill; must run
         // before any cron worker fires so mark/unmark are consistent.
@@ -224,6 +233,16 @@ class RikkaHubApp : Application() {
         invalidateLocalLlmDecisionsOnSdkUpgrade()
 
         // Composer.setDiagnosticStackTraceMode(ComposeStackTraceMode.Auto)
+    }
+
+    private fun restoreRequestLoggingSetting() {
+        get<AppScope>().launch(Dispatchers.IO) {
+            get<SettingsStore>().settingsFlowRaw
+                .map { it.recordRequests }
+                .distinctUntilChanged()
+                .catch { e -> Log.w(TAG, "Failed to restore request logging setting", e) }
+                .collect(Logging::setRequestLoggingEnabled)
+        }
     }
 
     /**
