@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <!-- Edge bar floating chat box (tap the bar). -->
+  <string name="agent_overlay_working">The agent is working</string>
+  <string name="generation_notification_stop">Stop</string>
+  <string name="chat_box_new_conversation">New chat</string>
+  <string name="chat_box_open">Open in app</string>
+  <string name="chat_box_collapse">Collapse</string>
+  <string name="chat_box_send">Send</string>
+  <string name="chat_box_stop">Stop</string>
+  <string name="chat_box_input_hint">Message…</string>
+  <string name="chat_box_interject_hint">Add a note for the AI…</string>
+  <string name="chat_box_interject_failed">Can\'t add a note right now, try again later</string>
+  <string name="chat_box_send_failed">Couldn\'t send, try again</string>
+  <string name="chat_box_untitled">New chat</string>
+  <string name="chat_box_assistant_default">Assistant</string>
+  <string name="chat_box_subtitle_idle">%1$s · %2$s</string>
+  <string name="chat_box_just_now">just now</string>
+  <string name="chat_box_subtitle_working">Replying</string>
+  <string name="chat_box_subtitle_working_step">Replying · step %d</string>
+  <string name="chat_box_subtitle_done">✓ Done · took %s</string>
+  <string name="chat_box_status_thinking">Thinking</string>
+  <string name="chat_box_status_writing">Writing</string>
+  <string name="chat_box_status_tool">Tool: %s</string>
+  <string name="chat_box_elapsed">Elapsed %s</string>
+  <string name="chat_box_tool_done">✓ Called tool: %s</string>
+  <string name="chat_box_tool_running">… Calling tool: %s</string>
+  <string name="chat_box_image">[Image]</string>
+  <string name="chat_box_file">[File]</string>
+</resources>

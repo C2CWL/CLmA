@@ -50,6 +50,7 @@ import com.clma.ai.ui.StreamChunkHandler
 import com.clma.ai.ui.handleTextGenerationResult
 import com.clma.ai.ui.limitContext
 import com.clma.ai.util.HttpException
+import com.clma.ai.util.isFatalForRetry
 import com.clma.ai.util.redactSecrets
 import com.clma.app.data.repository.ConversationRepository
 import com.clma.app.data.ai.limits.ConversationReasoningOverrides
@@ -151,6 +152,11 @@ internal fun shouldRetryGenerationStreamFailure(
     if (receivedMeaningfulOutput || retryAttempt >= maxRetries.coerceAtLeast(0).toLong()) {
         return false
     }
+    // Out of memory (anywhere in the cause chain) or a request refused as too large: the next
+    // attempt rebuilds the very same request and fails the same way, only slower.
+    if (failure.isFatalForRetry()) {
+        return false
+    }
     if (failure is ResponseStreamErrorException || isContextLimitFailure(failure)) {
         return false
     }
@@ -185,6 +191,7 @@ internal fun shouldContinueGenerationStream(
     if (!receivedMeaningfulOutput) return false
     if (continuationsUsed >= maxContinuations.coerceAtLeast(0)) return false
     if (isCancellationFailure(failure)) return false
+    if (failure.isFatalForRetry()) return false
     if (failure is ResponseStreamErrorException || isContextLimitFailure(failure)) return false
     if (isNonRetryableClientError(failure)) return false
     if (isQuotaExhaustedFailure(failure)) return false
@@ -239,6 +246,7 @@ internal fun shouldRestartGenerationStreamAfterPartial(
 ): Boolean {
     if (!receivedMeaningfulOutput || alreadyRestarted) return false
     if (isCancellationFailure(failure)) return false
+    if (failure.isFatalForRetry()) return false
     if (failure is ResponseStreamErrorException || isContextLimitFailure(failure)) return false
     if (isNonRetryableClientError(failure)) return false
     if (isQuotaExhaustedFailure(failure)) return false
@@ -424,7 +432,7 @@ private suspend fun <T> retryGenerationTransportRequest(
  * (model image-gen output) are also kept verbatim as those are visible product, not
  * intermediate reasoning state.
  */
-private fun List<UIMessage>.ageOldToolImages(): List<UIMessage> {
+internal fun List<UIMessage>.ageOldToolImages(): List<UIMessage> {
     var toolResultsWithImagesSeen = 0
     return this.asReversed().map { msg ->
         if (msg.role == MessageRole.USER) return@map msg
@@ -1629,7 +1637,11 @@ class GenerationLoop(
             // upstream's isSynthetic marker (keeps this built-up system prompt out of
             // TemplateTransformer) and its stepped truncation (which now preserves
             // prompt caching instead of trimming one message at a time).
-            addAll(messages.limitContext(assistant.contextMessageLimit).ageOldToolImages())
+            addAll(
+                messages.limitContext(assistant.contextMessageLimit)
+                    .ageOldToolImages()
+                    .ageOldUserImages()
+            )
             // Cross-model continuation: when the previous model's generation failed
             // mid-stream and routing switched to this model, append a synthetic user
             // instruction so the new model continues from the partial assistant text

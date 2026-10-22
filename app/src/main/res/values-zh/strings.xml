@@ -370,6 +370,8 @@
   <string name="chat_size_dialog_content">当前消息数：%1$d。这可能导致应用崩溃或卡顿，甚至丢失本次对话数据。请尽快新建对话以继续聊天。</string>
   <string name="chat_size_dialog_title">此对话数据过大</string>
   <string name="chat_suggestion_continue">继续</string>
+  <string name="chat_suggestion_compress_continue">压缩后继续</string>
+  <string name="chat_request_too_large_detail">这次请求估计约 %1$s MB，超过了应用在内存里能安全组装的上限（%2$s MB）。</string>
   <string name="citations_count">%1$d 条引用</string>
   <string name="code_block_collapse">折叠</string>
   <string name="code_block_copy">复制代码</string>
@@ -412,6 +414,10 @@
   <string name="error_explain_server_reason">这是对方服务器的问题，不是你的设置，稍后再试。</string>
   <string name="error_explain_context_title">对话太长了</string>
   <string name="error_explain_context_reason">模型的上下文窗口满了，压缩一下对话或者开新对话。</string>
+  <string name="error_explain_request_too_large_title">请求太大，内存不够</string>
+  <string name="error_explain_request_too_large_reason">请求太大、内存不够，请压缩历史或新开一个聊天。可以点对话下方的「压缩后继续」。</string>
+  <string name="error_explain_media_too_large_title">视频或音频太大</string>
+  <string name="error_explain_media_too_large_reason">单个视频或音频超过 20 MB，没法发给模型。请截短或压缩后再发送。</string>
   <string name="error_explain_ssl_title">安全连接失败</string>
   <string name="error_explain_ssl_reason">证书校验没通过，可能有代理或 VPN 在拦截连接。</string>
   <string name="error_explain_format_title">返回内容看不懂</string>
@@ -2960,7 +2966,7 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="setting_page_floating_ball_desc">屏幕边缘的一根细条，在任意应用上点一下就能回到本应用</string>
   <string name="setting_floating_ball_page_title">边缘细条</string>
   <string name="setting_floating_ball_enable_title">显示边缘细条</string>
-  <string name="setting_floating_ball_enable_desc">在其他应用上层的屏幕边缘保留一根细条。点一下打开应用；长按后拖动可上下移动（拖到另一侧松手可换边）。</string>
+  <string name="setting_floating_ball_enable_desc">在其他应用上层的屏幕边缘保留一根细条。点一下打开悬浮聊天框；长按后可随意拖动，松手后吸附到左边、右边或顶部。</string>
   <string name="setting_floating_ball_overlay_title">在其他应用上层显示</string>
   <string name="setting_floating_ball_overlay_granted">已授权</string>
   <string name="setting_floating_ball_overlay_required">必须授权，否则边缘细条无法显示</string>
@@ -2974,6 +2980,12 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="setting_floating_ball_color_blue">蓝色</string>
   <string name="setting_floating_ball_color_teal">青绿</string>
   <string name="setting_floating_ball_preview_title">预览</string>
+  <string name="setting_floating_ball_task_card_title">点细条打开聊天框</string>
+  <string name="setting_floating_ball_task_card_desc">空闲时直接在悬浮框里和最近的对话聊天；AI 回复时可看实时进度、补充一句或停止。关闭后点细条返回 App。</string>
+  <string name="setting_floating_ball_done_tap_title">变绿后点细条</string>
+  <string name="setting_floating_ball_done_tap_desc">AI 回复完成、细条变绿时，点一下做什么</string>
+  <string name="setting_floating_ball_done_tap_chat_box">打开聊天框</string>
+  <string name="setting_floating_ball_done_tap_app">返回 App</string>
   <string name="setting_floating_ball_preview_desc">AI 回复时，一道彩色流光会沿着细条的边缘绕圈；回复完成但你还没看时，细条变成绿色并显示对勾，点一下细条后恢复原样。</string>
   <string name="setting_floating_ball_bar_a11y">打开应用（边缘细条）</string>
 

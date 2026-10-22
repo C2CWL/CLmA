@@ -3,6 +3,7 @@ package com.clma.app.ui.pages.setting
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -59,6 +61,7 @@ import com.clma.app.service.EdgeBarLook
 import com.clma.app.service.FloatingBallService
 import com.clma.app.ui.components.nav.BackButton
 import com.clma.app.ui.components.ui.CardGroup
+import com.clma.app.ui.components.ui.Select
 import com.clma.app.ui.theme.CustomColors
 import com.clma.app.utils.plus
 import org.koin.androidx.compose.koinViewModel
@@ -141,6 +144,59 @@ fun SettingFloatingBallPage(vm: SettingVM = koinViewModel()) {
                             Switch(
                                 checked = settings.floatingBallEnabled,
                                 onCheckedChange = { applyEnabled(it) },
+                            )
+                        },
+                    )
+                    item(
+                        headlineContent = {
+                            Text(stringResource(R.string.setting_floating_ball_task_card_title))
+                        },
+                        supportingContent = {
+                            Text(stringResource(R.string.setting_floating_ball_task_card_desc))
+                        },
+                        trailingContent = {
+                            Switch(
+                                checked = settings.displaySetting.edgeBarTaskCard,
+                                onCheckedChange = { checked ->
+                                    vm.updateSettings {
+                                        it.copy(displaySetting = it.displaySetting.copy(edgeBarTaskCard = checked))
+                                    }
+                                },
+                            )
+                        },
+                    )
+                    item(
+                        headlineContent = {
+                            Text(stringResource(R.string.setting_floating_ball_done_tap_title))
+                        },
+                        supportingContent = {
+                            Text(stringResource(R.string.setting_floating_ball_done_tap_desc))
+                        },
+                        trailingContent = {
+                            Select(
+                                options = listOf(true, false),
+                                selectedOption = settings.displaySetting.edgeBarDoneTapOpensChatBox,
+                                onOptionSelected = { opensChatBox ->
+                                    vm.updateSettings {
+                                        it.copy(
+                                            displaySetting = it.displaySetting.copy(
+                                                edgeBarDoneTapOpensChatBox = opensChatBox,
+                                            )
+                                        )
+                                    }
+                                },
+                                optionToString = { opensChatBox ->
+                                    stringResource(
+                                        if (opensChatBox) {
+                                            R.string.setting_floating_ball_done_tap_chat_box
+                                        } else {
+                                            R.string.setting_floating_ball_done_tap_app
+                                        }
+                                    )
+                                },
+                                containerColor = CustomColors.listItemColors.containerColor,
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                                modifier = Modifier.width(130.dp),
                             )
                         },
                     )

@@ -13,6 +13,7 @@ import android.util.TypedValue
 import android.view.Gravity
 import android.view.WindowManager
 import android.widget.TextView
+import com.clma.app.R
 
 /**
  * Lightweight top-of-screen pill that shows while a generation turn is active so the
@@ -32,8 +33,9 @@ object AgentOverlay {
 
     fun canShow(context: Context): Boolean = Settings.canDrawOverlays(context)
 
-    fun show(context: Context, text: String = "The agent is working") {
+    fun show(context: Context, text: String? = null) {
         val app = context.applicationContext
+        val label = text ?: app.getString(R.string.agent_overlay_working)
         if (!canShow(app)) {
             Log.d(TAG, "show: SYSTEM_ALERT_WINDOW not granted, no-op")
             return
@@ -44,7 +46,7 @@ object AgentOverlay {
             FloatingBallService.setWorking(app, true)
             return
         }
-        mainHandler.post { showInternal(app, text) }
+        mainHandler.post { showInternal(app, label) }
     }
 
     fun hide(context: Context) {

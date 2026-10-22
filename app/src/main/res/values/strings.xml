@@ -402,6 +402,8 @@
   <string name="chat_size_dialog_content">Current message count: %1$d. This may cause the application to crash or lag, or even lose this conversation data. Please create a new conversation as soon as possible to continue chatting.</string>
   <string name="chat_size_dialog_title">This conversation data is too large</string>
   <string name="chat_suggestion_continue">Continue</string>
+  <string name="chat_suggestion_compress_continue">Compress and continue</string>
+  <string name="chat_request_too_large_detail">This request is estimated at about %1$s MB, over the %2$s MB the app can safely build in memory.</string>
   <string name="citations_count">%1$d Citations</string>
   <string name="code_block_collapse">Collapse</string>
   <string name="code_block_copy">Copy Code</string>
@@ -444,6 +446,10 @@
   <string name="error_explain_server_reason">This is a server-side error, not your settings. Retry later.</string>
   <string name="error_explain_context_title">Conversation is too long</string>
   <string name="error_explain_context_reason">The model\'s context window is full. Compress the conversation or start a new one.</string>
+  <string name="error_explain_request_too_large_title">Request too large for memory</string>
+  <string name="error_explain_request_too_large_reason">This request is too big for the app\'s memory. Compress the history or start a new chat; tap “Compress and continue” under the conversation.</string>
+  <string name="error_explain_media_too_large_title">Video or audio file too large</string>
+  <string name="error_explain_media_too_large_reason">A single video or audio file over 20 MB cannot be sent to a model. Shorten or compress it and send again.</string>
   <string name="error_explain_ssl_title">Secure connection failed</string>
   <string name="error_explain_ssl_reason">The certificate check failed. A proxy or VPN may be intercepting the connection.</string>
   <string name="error_explain_format_title">Unexpected reply</string>
@@ -3244,7 +3250,7 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="setting_page_floating_ball_desc">A slim bar on the screen edge — tap it to jump back into the app from anywhere</string>
   <string name="setting_floating_ball_page_title">Edge bar</string>
   <string name="setting_floating_ball_enable_title">Show edge bar</string>
-  <string name="setting_floating_ball_enable_desc">Keeps a slim bar on the screen edge, on top of other apps. Tap it to open the app. Long-press, then drag to move it up or down (drop it on the other side to switch edges).</string>
+  <string name="setting_floating_ball_enable_desc">Keeps a slim bar on the screen edge, on top of other apps. Tap it to open a small chat box. Long-press, then drag to move it anywhere; it snaps to the left, right or top edge when you let go.</string>
   <string name="setting_floating_ball_overlay_title">Display over other apps</string>
   <string name="setting_floating_ball_overlay_granted">Granted</string>
   <string name="setting_floating_ball_overlay_required">Required — the edge bar cannot show without it</string>
@@ -3258,6 +3264,12 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="setting_floating_ball_color_blue">Blue</string>
   <string name="setting_floating_ball_color_teal">Teal</string>
   <string name="setting_floating_ball_preview_title">Preview</string>
+  <string name="setting_floating_ball_task_card_title">Tap the bar to open the chat box</string>
+  <string name="setting_floating_ball_task_card_desc">Idle: chat with the latest conversation right there. While the AI replies: see live progress, add a note or stop. When off, a tap returns to the app.</string>
+  <string name="setting_floating_ball_done_tap_title">Tap the bar after it turns green</string>
+  <string name="setting_floating_ball_done_tap_desc">When a reply has finished and the bar is green</string>
+  <string name="setting_floating_ball_done_tap_chat_box">Open the chat box</string>
+  <string name="setting_floating_ball_done_tap_app">Return to the app</string>
   <string name="setting_floating_ball_preview_desc">While the AI is replying, a colourful light runs around the edge of the bar. When a reply finishes and you have not seen it yet, the bar turns green with a check mark until you tap it.</string>
   <string name="setting_floating_ball_bar_a11y">Open the app (edge bar)</string>
 

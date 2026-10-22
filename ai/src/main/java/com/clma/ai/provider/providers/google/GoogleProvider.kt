@@ -80,6 +80,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import com.clma.ai.util.toJsonRequestBody
 import okhttp3.Response
 import okhttp3.sse.EventSource
 import okhttp3.sse.EventSourceListener
@@ -221,7 +222,7 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
                 .headers(providerSetting.mergeCustomHeaders(params.customHeaders))
                 .configureSessionHeaders(url.toString(), params.sessionId)
                 .post(
-                    json.encodeToString(requestBody).toRequestBody("application/json".toMediaType())
+                    requestBody.toJsonRequestBody()
                 )
                 .configureReferHeaders(providerSetting.baseUrl)
                 .build()
@@ -269,7 +270,7 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
                 .headers(providerSetting.mergeCustomHeaders(params.customHeaders))
                 .configureSessionHeaders(url.toString(), params.sessionId)
                 .post(
-                    json.encodeToString(requestBody).toRequestBody("application/json".toMediaType())
+                    requestBody.toJsonRequestBody()
                 )
                 .configureReferHeaders(providerSetting.baseUrl)
                 .build()
