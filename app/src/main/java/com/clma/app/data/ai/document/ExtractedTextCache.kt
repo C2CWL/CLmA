@@ -1,6 +1,7 @@
 package com.clma.app.data.ai.document
 
 import java.io.File
+import java.nio.charset.Charset
 
 /**
  * Disk cache of the text extracted from uploaded documents.
@@ -36,6 +37,38 @@ object ExtractedTextCache {
         val cache = cacheFileFor(source) ?: return null
         if (!cache.isFile) return null
         return runCatching { cache.readText(Charsets.UTF_8) }.getOrNull()
+    }
+
+    /**
+     * Like [write], but transcodes [source] (a plain-text file in [charset], [bomBytes] skipped)
+     * into the cache as a stream, so a huge text file never has to be in memory as one String.
+     */
+    fun writeStreaming(source: File, charset: Charset, bomBytes: Int): File? {
+        val cache = cacheFileFor(source) ?: return null
+        return runCatching {
+            val dir = cache.parentFile!!
+            dir.mkdirs()
+            dir.listFiles()?.forEach { old ->
+                if (old.name != cache.name && old.name.startsWith("${source.name}.")) old.delete()
+            }
+            val tmp = File(dir, "${cache.name}.tmp")
+            source.inputStream().use { input ->
+                var toSkip = bomBytes.toLong()
+                while (toSkip > 0) {
+                    val skipped = input.skip(toSkip)
+                    if (skipped <= 0) break
+                    toSkip -= skipped
+                }
+                input.reader(charset).use { reader ->
+                    tmp.writer(Charsets.UTF_8).use { writer -> reader.copyTo(writer) }
+                }
+            }
+            if (!tmp.renameTo(cache)) {
+                tmp.delete()
+                return null
+            }
+            cache
+        }.getOrNull()
     }
 
     /**

@@ -329,6 +329,8 @@
   <string name="chat_size_dialog_content">目前訊息數：%1$d。這可能導致應用程式崩潰或延遲，甚至遺失此對話資料。請盡快建立新對話以繼續聊天。</string>
   <string name="chat_size_dialog_title">此對話資料過大</string>
   <string name="chat_suggestion_continue">繼續</string>
+  <string name="chat_suggestion_compress_continue">壓縮後繼續</string>
+  <string name="chat_request_too_large_detail">這次請求估計約 %1$s MB，超過了應用程式在記憶體裡能安全組裝的上限（%2$s MB）。</string>
   <string name="citations_count">%1$d 條引用</string>
   <string name="code_block_collapse">摺疊</string>
   <string name="code_block_copy">複製代碼</string>

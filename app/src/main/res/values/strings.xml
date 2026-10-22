@@ -402,6 +402,8 @@
   <string name="chat_size_dialog_content">Current message count: %1$d. This may cause the application to crash or lag, or even lose this conversation data. Please create a new conversation as soon as possible to continue chatting.</string>
   <string name="chat_size_dialog_title">This conversation data is too large</string>
   <string name="chat_suggestion_continue">Continue</string>
+  <string name="chat_suggestion_compress_continue">Compress and continue</string>
+  <string name="chat_request_too_large_detail">This request is estimated at about %1$s MB, over the %2$s MB the app can safely build in memory.</string>
   <string name="citations_count">%1$d Citations</string>
   <string name="code_block_collapse">Collapse</string>
   <string name="code_block_copy">Copy Code</string>
@@ -444,6 +446,10 @@
   <string name="error_explain_server_reason">This is a server-side error, not your settings. Retry later.</string>
   <string name="error_explain_context_title">Conversation is too long</string>
   <string name="error_explain_context_reason">The model\'s context window is full. Compress the conversation or start a new one.</string>
+  <string name="error_explain_request_too_large_title">Request too large for memory</string>
+  <string name="error_explain_request_too_large_reason">This request is too big for the app\'s memory. Compress the history or start a new chat; tap “Compress and continue” under the conversation.</string>
+  <string name="error_explain_media_too_large_title">Video or audio file too large</string>
+  <string name="error_explain_media_too_large_reason">A single video or audio file over 20 MB cannot be sent to a model. Shorten or compress it and send again.</string>
   <string name="error_explain_ssl_title">Secure connection failed</string>
   <string name="error_explain_ssl_reason">The certificate check failed. A proxy or VPN may be intercepting the connection.</string>
   <string name="error_explain_format_title">Unexpected reply</string>

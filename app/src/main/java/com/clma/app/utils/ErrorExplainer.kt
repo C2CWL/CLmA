@@ -3,6 +3,8 @@ package com.clma.app.utils
 import androidx.annotation.StringRes
 import kotlinx.serialization.SerializationException
 import com.clma.app.R
+import com.clma.ai.util.isMediaTooLarge
+import com.clma.ai.util.isRequestTooLarge
 import java.io.IOException
 import java.net.ConnectException
 import java.net.SocketTimeoutException
@@ -76,6 +78,21 @@ fun Throwable.explainForUser(): UserFacingError {
     val text = chain.mapNotNull { it.message }.joinToString(" | ").lowercase()
 
     return when {
+        // --- the request itself did not fit in memory: retrying cannot help --------------
+        this@explainForUser.isMediaTooLarge() -> UserFacingError(
+            R.string.error_explain_media_too_large_title,
+            R.string.error_explain_media_too_large_reason,
+            null,
+            detail,
+        )
+
+        this@explainForUser.isRequestTooLarge() -> UserFacingError(
+            R.string.error_explain_request_too_large_title,
+            R.string.error_explain_request_too_large_reason,
+            null,
+            detail,
+        )
+
         // --- transport-level failures: the type itself is unambiguous -------------------
         chain.any { it is UnknownHostException } -> UserFacingError(
             R.string.error_explain_network_title,

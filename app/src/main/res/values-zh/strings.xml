@@ -370,6 +370,8 @@
   <string name="chat_size_dialog_content">当前消息数：%1$d。这可能导致应用崩溃或卡顿，甚至丢失本次对话数据。请尽快新建对话以继续聊天。</string>
   <string name="chat_size_dialog_title">此对话数据过大</string>
   <string name="chat_suggestion_continue">继续</string>
+  <string name="chat_suggestion_compress_continue">压缩后继续</string>
+  <string name="chat_request_too_large_detail">这次请求估计约 %1$s MB，超过了应用在内存里能安全组装的上限（%2$s MB）。</string>
   <string name="citations_count">%1$d 条引用</string>
   <string name="code_block_collapse">折叠</string>
   <string name="code_block_copy">复制代码</string>
@@ -412,6 +414,10 @@
   <string name="error_explain_server_reason">这是对方服务器的问题，不是你的设置，稍后再试。</string>
   <string name="error_explain_context_title">对话太长了</string>
   <string name="error_explain_context_reason">模型的上下文窗口满了，压缩一下对话或者开新对话。</string>
+  <string name="error_explain_request_too_large_title">请求太大，内存不够</string>
+  <string name="error_explain_request_too_large_reason">请求太大、内存不够，请压缩历史或新开一个聊天。可以点对话下方的「压缩后继续」。</string>
+  <string name="error_explain_media_too_large_title">视频或音频太大</string>
+  <string name="error_explain_media_too_large_reason">单个视频或音频超过 20 MB，没法发给模型。请截短或压缩后再发送。</string>
   <string name="error_explain_ssl_title">安全连接失败</string>
   <string name="error_explain_ssl_reason">证书校验没通过，可能有代理或 VPN 在拦截连接。</string>
   <string name="error_explain_format_title">返回内容看不懂</string>

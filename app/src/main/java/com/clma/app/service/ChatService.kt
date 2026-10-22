@@ -78,6 +78,11 @@ import com.clma.app.data.ai.ModelRouter
 import com.clma.app.data.ai.ContextBudgetPlanner
 import com.clma.app.data.ai.PreSendContextDecision
 import com.clma.app.data.ai.PreSendContextGuard
+import com.clma.app.data.ai.shouldCompact
+import com.clma.app.data.ai.document.DocumentSizeEstimator
+import com.clma.ai.util.MediaTooLargeException
+import com.clma.ai.util.RequestTooLargeException
+import com.clma.ai.util.isRequestTooLarge
 import com.clma.app.data.ai.ContextCompactionPlanner
 import com.clma.app.data.ai.ContextCompactionPresentation
 import com.clma.app.data.ai.CompactedMessageView
@@ -2227,7 +2232,9 @@ class ChatService(
             messageRange == null &&
             settings.enableAutoCompaction &&
             generationFailure != null &&
-            generationFailure.isContextLimitError() &&
+            // Out of memory while building the request is the same problem seen from the
+            // client side: the history is too big. Compact once and retry once.
+            (generationFailure.isContextLimitError() || generationFailure.isRequestTooLarge()) &&
             canRetryAfterContextLimit
         ) {
             // Some providers omit context_length metadata or reject requests because their
@@ -2282,7 +2289,9 @@ class ChatService(
         if (
             messageRange == null &&
             generationFailure != null &&
-            generationFailure !is CancellationException
+            generationFailure !is CancellationException &&
+            // Another model gets the same oversized request and runs out of memory the same way.
+            !generationFailure.isRequestTooLarge()
         ) {
             val routeExclude = routeAttempts + model.id
             val routedModel = modelRouter.nextRouteCandidate(
@@ -2341,8 +2350,15 @@ class ChatService(
                 // A failed turn is always "stalled" (see isStalledTurn) - surface the continue
                 // chip via the same chatSuggestions field generateSuggestion writes, so
                 // ChatSuggestionsRow shows it even when enableSuggestion is off.
+                // Too large for memory: a plain "继续" would rebuild the same request, so offer
+                // "压缩后继续" (compressAndContinue) instead.
+                val suggestion = if (it.isRequestTooLarge()) {
+                    R.string.chat_suggestion_compress_continue
+                } else {
+                    R.string.chat_suggestion_continue
+                }
                 val final = getConversationFlow(conversationId).value.copy(
-                    chatSuggestions = listOf(context.getString(R.string.chat_suggestion_continue))
+                    chatSuggestions = listOf(context.getString(suggestion))
                 )
                 saveConversation(conversationId, final)
             }.onFailure { saveErr ->
@@ -2776,6 +2792,7 @@ class ChatService(
                     )
                 )
             }
+            throwIfRequestTooLarge(decision)
             return requestView
         }
 
@@ -2787,13 +2804,14 @@ class ChatService(
         // before that message to summarize.
         val preSend = !force
         if (preSend) {
+            val decision = preSendContextDecision(view, settings, model)
+            if (decision is PreSendContextDecision.MediaTooLarge) throwIfRequestTooLarge(decision)
             val hasOlderRawMessages =
                 conversation.currentMessages.lastIndex > view.rawTailStartIndex
-            if (!hasOlderRawMessages ||
-                preSendContextDecision(view, settings, model) !is PreSendContextDecision.Compact
-            ) {
-                return view
-            }
+            // Over the byte cap with nothing older to compress: send anyway. If it really does
+            // not fit, the OutOfMemoryError is caught, not retried, and offers "compress and
+            // continue" (see handleMessageComplete).
+            if (!hasOlderRawMessages || !decision.shouldCompact) return view
         }
 
         Log.i(
@@ -2917,12 +2935,33 @@ class ChatService(
                 },
                 hardLimitTokens = PreSendContextGuard.hardContextLimit(model),
                 compactedAt = view.compaction?.let { ContextCompactionView.summaryMessage(it).createdAt },
+                fileSize = ::localFileSize,
             )
         }.getOrElse { error ->
             if (error is CancellationException) throw error
             // An estimation bug must never block sending.
             Log.w(TAG, "pre-send context check failed; sending as is", error)
             PreSendContextDecision.Send
+        }
+    }
+
+    /** Size of a local `file:` URL without reading it; null for anything else. */
+    private fun localFileSize(url: String): Long? =
+        DocumentSizeEstimator.fileFromUrl(url)?.takeIf { it.isFile }?.length()
+
+    /** Turns the pre-send size refusals into the errors the chat explains to the user. */
+    private fun throwIfRequestTooLarge(decision: PreSendContextDecision) {
+        when (decision) {
+            is PreSendContextDecision.MediaTooLarge ->
+                throw MediaTooLargeException(decision.fileName, decision.sizeBytes)
+            is PreSendContextDecision.OverByteLimit -> throw RequestTooLargeException(
+                context.getString(
+                    R.string.chat_request_too_large_detail,
+                    (decision.estimatedBytes / (1024 * 1024)).toString(),
+                    (decision.limitBytes / (1024 * 1024)).toString(),
+                )
+            )
+            else -> Unit
         }
     }
 
@@ -3181,6 +3220,68 @@ class ChatService(
                 title = context.getString(R.string.error_title_compress_conversation),
             )
         }
+    }
+
+    /**
+     * 「压缩后继续」: compress the history, keeping only the latest message raw, then resume the
+     * turn. Offered (as the chat suggestion chip) after a request was too large for memory,
+     * where a plain 「继续」 would rebuild the same oversized request and fail again.
+     *
+     * The failed request is not referenced here: only the stored conversation is read, so the
+     * memory the failed attempt used can be reclaimed before the summary request is built.
+     */
+    fun compressAndContinue(conversationId: Uuid) = synchronized(getOrCreateSession(conversationId)) {
+        val session = getOrCreateSession(conversationId)
+        val previousJob = session.getJob()
+
+        val releaseForegroundWork = foregroundWorkTracker.acquire()
+        val job = appScope.launch {
+            try {
+                awaitForegroundWorkReady()
+                previousJob?.join()
+                ensureHydrated(conversationId)
+                val conversation = session.state.value
+                val settings = settingsStore.settingsFlow.first()
+                val model = resolveGenerationModel(settings, conversation)
+                val targetTokens = settings.getContextCompactionTargetTokens(
+                    model?.let { compactionContextLength(settings, it) },
+                )
+                updateConversationState(conversationId) { it.copy(chatSuggestions = emptyList()) }
+                session.processingStatus.value = context.getString(R.string.chat_page_compressing)
+                try {
+                    compressConversation(
+                        conversationId = conversationId,
+                        conversation = conversation,
+                        additionalPrompt = "",
+                        targetTokens = targetTokens,
+                        keepRecentMessages = 1,
+                    ).getOrThrow()
+                } finally {
+                    session.processingStatus.value = null
+                }
+                val last = getConversationFlow(conversationId).value.currentMessages.lastOrNull()
+                if (last?.role == MessageRole.USER) {
+                    // The user's message never got a reply: answer it now, from the summary.
+                    handleMessageComplete(conversationId)
+                } else {
+                    // The turn left a (partial) reply: resume it exactly like the 「继续」 chip.
+                    // Queued, so it is sent once this job has finished (onGenerationFinished).
+                    session.messageQueue.resume()
+                    session.messageQueue.enqueue(
+                        listOf(UIMessagePart.Text(context.getString(R.string.chat_suggestion_continue))),
+                    )
+                }
+                _generationDoneFlow.emit(conversationId)
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                session.messageQueue.pause()
+                addError(e, conversationId, title = context.getString(R.string.error_title_compress_conversation))
+            } finally {
+                releaseForegroundWork()
+            }
+        }
+        auxJobs.cancelAll(conversationId)
+        session.setJob(job)
     }
 
     /**

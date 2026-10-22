@@ -4,6 +4,7 @@ import com.clma.ai.core.MessageRole
 import com.clma.ai.ui.UIMessage
 import com.clma.ai.ui.UIMessagePart
 import com.clma.app.data.ai.DocumentTokenEstimates
+import com.clma.app.data.ai.document.DocumentInlineBudget
 import com.clma.app.data.ai.document.DocumentInlineNotices
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -174,4 +175,55 @@ class DocumentAsPromptTransformerTest {
         assertTrue(path!!.startsWith("/upload/.extracted/big.txt."))
         assertTrue(File(upload, ".extracted").listFiles()!!.single().readText() == "line\n".repeat(10))
     }
+
+    @Test
+    fun `large plain text upload is read only up to the cap and measured exactly`() {
+        val upload = tmp.newFolder("upload")
+        val text = "row of a large log file\n".repeat(20_000)
+        val source = File(upload, "huge.log.txt").apply { writeText(text) }
+        val loaded = DocumentAsPromptTransformer.loadDocumentFile(source, "huge.log.txt", "text/plain", maxChars = 5_000)
+        assertEquals(text.substring(0, 5_000), loaded.text)
+        assertEquals(text.length, loaded.totalChars)
+        assertEquals(DocumentInlineBudget.estimateTokens(text), loaded.totalTokens)
+        assertEquals(DocumentInlineBudget.lineCount(text), loaded.totalLines)
+        // The full text was copied to the cache as a stream, and the model is pointed at it.
+        val path = loaded.fullTextPath()
+        assertNotNull(path)
+        assertEquals(text, File(upload, ".extracted").listFiles()!!.single().readText())
+        // Second load goes through the cache, still bounded.
+        val again = DocumentAsPromptTransformer.loadDocumentFile(source, "huge.log.txt", "text/plain", maxChars = 5_000)
+        assertEquals(5_000, again.text.length)
+        assertEquals(text.length, again.totalChars)
+    }
+
+    @Test
+    fun `bounded load keeps the truncation notice totals of the whole document`() {
+        val full = "abc\n".repeat(50_000)
+        val head = full.substring(0, 9_000)
+        val bounded = { document: UIMessagePart.Document, maxChars: Int ->
+            DocumentAsPromptTransformer.LoadedDocument(
+                text = head.take(maxChars),
+                workspacePath = "/upload/${document.fileName}",
+                fullTextPath = { "/upload/.extracted/${document.fileName}.1-2.txt" },
+                fullSize = BoundedTextReaderFullSize(full),
+            )
+        }
+        val result = DocumentAsPromptTransformer.inlineDocuments(
+            messages = listOf(user(doc("file:///upload/a.txt"))),
+            contextLength = 4_000,
+            maxOutputTokens = null,
+            load = { error("unbounded load must not be used") },
+            loadBounded = bounded,
+        )
+        val prompt = promptOf(result.single())
+        assertTrue(prompt.contains("of ${full.length} characters"))
+        assertTrue(prompt.contains("(${DocumentInlineBudget.lineCount(full)} lines;"))
+    }
+
+    private fun BoundedTextReaderFullSize(text: String) =
+        com.clma.app.data.ai.document.BoundedTextReader.FullSize(
+            chars = text.length,
+            tokens = DocumentInlineBudget.estimateTokens(text),
+            lines = DocumentInlineBudget.lineCount(text),
+        )
 }

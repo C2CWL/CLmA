@@ -62,10 +62,27 @@ fun UIMessagePart.Image.encodeBase64(withPrefix: Boolean = true): Result<Encoded
                 throw IllegalArgumentException("File does not exist: ${this.url}")
             }
             val mimeType = file.guessMimeType().getOrThrow()
+            // The same history images are re-sent on every request, tool step and retry; decoding,
+            // re-compressing and base64-encoding them each time costs CPU and transient memory.
+            // Cache the final string (keyed by file identity + parameters).
+            val cacheKey = EncodedMediaCache.keyFor(
+                path = file.absolutePath,
+                length = file.length(),
+                lastModified = file.lastModified(),
+                params = "image|$mimeType|$withPrefix|$DEFAULT_IMAGE_MAX_DIMENSION",
+            )
+            EncodedMediaCache.images.get(cacheKey)?.let { cached ->
+                return@runCatching EncodedImage(
+                    base64 = cached,
+                    mimeType = if (mimeType == "image/gif") mimeType else "image/jpeg",
+                )
+            }
             // 统一进行压缩处理
             val (encoded, outputMimeType) = file.compressAndEncode(mimeType)
+            val base64 = if (withPrefix) "data:$outputMimeType;base64,$encoded" else encoded
+            EncodedMediaCache.images.put(cacheKey, base64)
             EncodedImage(
-                base64 = if (withPrefix) "data:$outputMimeType;base64,$encoded" else encoded,
+                base64 = base64,
                 mimeType = outputMimeType
             )
         }
@@ -227,6 +244,7 @@ fun UIMessagePart.Video.encodeBase64(withPrefix: Boolean = true): Result<String>
             if (!file.exists()) {
                 throw IllegalArgumentException("File does not exist: ${this.url}")
             }
+            file.requireInlineMediaSize()
             val encoded = file.encodeToBase64Streaming()
             if (withPrefix) "data:video/mp4;base64,$encoded" else encoded
         }
@@ -244,6 +262,7 @@ fun UIMessagePart.Audio.encodeBase64(withPrefix: Boolean = true): Result<String>
             if (!file.exists()) {
                 throw IllegalArgumentException("File does not exist: ${this.url}")
             }
+            file.requireInlineMediaSize()
             val encoded = file.encodeToBase64Streaming()
             if (withPrefix) "data:audio/mp3;base64,$encoded" else encoded
         }
@@ -252,9 +271,22 @@ fun UIMessagePart.Audio.encodeBase64(withPrefix: Boolean = true): Result<String>
     }
 }
 
+/**
+ * Longest edge of an image sent to a model. Was 10,000 px, which let a single photo become a
+ * multi-MB base64 string on every request. 4096 keeps text in screenshots and documents legible
+ * (vision APIs downscale to ~1.5-3K internally anyway) while bounding the size.
+ */
+internal const val DEFAULT_IMAGE_MAX_DIMENSION = 4096
+
+/** Refuses to base64 a video/audio file above [MediaLimits.MAX_INLINE_MEDIA_BYTES] into memory. */
+private fun File.requireInlineMediaSize() {
+    val size = length()
+    if (size > MediaLimits.MAX_INLINE_MEDIA_BYTES) throw MediaTooLargeException(name, size)
+}
+
 private fun File.compressAndEncode(
     mimeType: String,
-    maxDimension: Int = 10_000,
+    maxDimension: Int = DEFAULT_IMAGE_MAX_DIMENSION,
     maxPixels: Long = 16_000_000L,
     quality: Int = 85
 ): Pair<String, String> {

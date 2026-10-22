@@ -66,10 +66,9 @@ import com.clma.common.http.await
 import com.clma.common.http.jsonObjectOrNull
 import com.clma.common.http.jsonPrimitiveOrNull
 import okhttp3.HttpUrl.Companion.toHttpUrl
-import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
+import com.clma.ai.util.toJsonRequestBody
 import okhttp3.Response
 import okhttp3.sse.EventSource
 import okhttp3.sse.EventSourceListener
@@ -203,7 +202,7 @@ class ResponseAPI(
         val request = Request.Builder()
             .url("${providerSetting.baseUrl}${providerSetting.responsesPath}")
             .headers(providerSetting.mergeCustomHeaders(params.customHeaders))
-            .post(json.encodeToString(requestBody).toRequestBody("application/json".toMediaType()))
+            .post(requestBody.toJsonRequestBody())
             .addHeader(
                 "Authorization",
                 "Bearer ${keyRoulette.next(providerSetting.apiKey, providerSetting.id.toString())}"
@@ -244,7 +243,7 @@ class ResponseAPI(
         val request = Request.Builder()
             .url("${providerSetting.baseUrl}${providerSetting.responsesPath}")
             .headers(providerSetting.mergeCustomHeaders(params.customHeaders))
-            .post(json.encodeToString(requestBody).toRequestBody("application/json".toMediaType()))
+            .post(requestBody.toJsonRequestBody())
             .addHeader(
                 "Authorization",
                 "Bearer ${keyRoulette.next(providerSetting.apiKey, providerSetting.id.toString())}"

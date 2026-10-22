@@ -4,6 +4,8 @@ import com.clma.ai.core.MessageRole
 import com.clma.ai.provider.Model
 import com.clma.ai.registry.ModelRegistry
 import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessagePart
+import com.clma.ai.util.MediaLimits
 import kotlinx.datetime.LocalDateTime
 
 /** What to do with a new user turn before its request goes out. */
@@ -19,7 +21,26 @@ sealed interface PreSendContextDecision {
      * would only come back as a "context too long" error (and be paid for), so do not send it.
      */
     data class OverHardLimit(val estimatedTokens: Int, val limitTokens: Int) : PreSendContextDecision
+
+    /**
+     * The request would be too large to build in memory (text plus base64 media), independent
+     * of tokens: images count as ~1K tokens each but can be MBs of base64. [compact] is true when
+     * automatic compaction is on and should run first; otherwise the turn is refused.
+     */
+    data class OverByteLimit(
+        val estimatedBytes: Long,
+        val limitBytes: Long,
+        val compact: Boolean,
+    ) : PreSendContextDecision
+
+    /** A video/audio file in the message being sent is over [MediaLimits.MAX_INLINE_MEDIA_BYTES]. */
+    data class MediaTooLarge(val fileName: String, val sizeBytes: Long) : PreSendContextDecision
 }
+
+/** True when the decision asks for a compaction before sending. */
+val PreSendContextDecision.shouldCompact: Boolean
+    get() = this is PreSendContextDecision.Compact ||
+        (this is PreSendContextDecision.OverByteLimit && compact)
 
 /**
  * Pre-send check for a new user turn.
@@ -46,6 +67,70 @@ sealed interface PreSendContextDecision {
  */
 object PreSendContextGuard {
     const val HARD_LIMIT_TOLERANCE_PERCENT = 110
+
+    /** Upper bound of the request-size cap: 64 MB. */
+    const val MAX_REQUEST_BYTES_CEILING: Long = 64L * 1024 * 1024
+
+    /**
+     * An image is re-encoded as JPEG (longest edge 4096 px) before it is sent, so its base64 is
+     * usually far smaller than the original file (a 12 MB PNG screenshot becomes ~1-2 MB). Count
+     * at most this much per image instead of the raw file size.
+     */
+    const val MAX_ESTIMATED_IMAGE_BYTES: Long = 4L * 1024 * 1024
+
+    /** Documents are inlined at most up to the context window; count at most this much each. */
+    const val MAX_ESTIMATED_DOCUMENT_BYTES: Long = 8L * 1024 * 1024
+
+    /** min(64 MB, heap / 6): building a request briefly needs a few times its size. */
+    fun defaultMaxRequestBytes(maxHeapBytes: Long = Runtime.getRuntime().maxMemory()): Long =
+        minOf(MAX_REQUEST_BYTES_CEILING, maxHeapBytes / 6)
+
+    /**
+     * Rough in-memory size of the request built from [messages]: text characters plus media file
+     * sizes x 4/3 (base64). Applies the same request-only image ageing the generation loop does
+     * ([ageOldToolImages], [ageOldUserImages]) so aged-out images are not counted. [fileSize]
+     * returns the size of a `file:` URL, or null when unknown.
+     */
+    @Suppress("DEPRECATION")
+    fun estimateRequestBytes(messages: List<UIMessage>, fileSize: (String) -> Long?): Long {
+        fun base64(bytes: Long) = bytes / 3 * 4 + 4
+        fun media(url: String, cap: Long = Long.MAX_VALUE): Long = when {
+            url.startsWith("data:") || url.startsWith("http") -> url.length.toLong()
+            else -> base64(minOf(fileSize(url) ?: 0L, cap))
+        }
+        fun part(part: UIMessagePart): Long = when (part) {
+            is UIMessagePart.Text -> part.text.length.toLong()
+            is UIMessagePart.Reasoning -> part.reasoning.length.toLong()
+            is UIMessagePart.Image -> media(part.url, MAX_ESTIMATED_IMAGE_BYTES)
+            is UIMessagePart.Video -> media(part.url)
+            is UIMessagePart.Audio -> media(part.url)
+            is UIMessagePart.Document -> minOf(fileSize(part.url) ?: 0L, MAX_ESTIMATED_DOCUMENT_BYTES)
+            is UIMessagePart.Tool -> part.input.length.toLong() + part.output.sumOf(::part)
+            is UIMessagePart.ToolCall -> part.arguments.length.toLong()
+            is UIMessagePart.ToolResult -> part.content.toString().length.toLong()
+            else -> 0L
+        }
+        return messages.ageOldToolImages().ageOldUserImages().sumOf { message ->
+            message.parts.sumOf(::part)
+        }
+    }
+
+    /** The first video/audio in the last (user) message whose file is over the inline limit. */
+    fun oversizedMedia(messages: List<UIMessage>, fileSize: (String) -> Long?): PreSendContextDecision.MediaTooLarge? {
+        val last = messages.lastOrNull() ?: return null
+        last.parts.forEach { part ->
+            val (url, name) = when (part) {
+                is UIMessagePart.Video -> part.url to part.url.substringAfterLast('/')
+                is UIMessagePart.Audio -> part.url to part.url.substringAfterLast('/')
+                else -> return@forEach
+            }
+            val size = fileSize(url) ?: return@forEach
+            if (size > MediaLimits.MAX_INLINE_MEDIA_BYTES) {
+                return PreSendContextDecision.MediaTooLarge(name, size)
+            }
+        }
+        return null
+    }
 
     /**
      * The model's real window for the hard-limit check: provider metadata, else the registry.
@@ -81,9 +166,23 @@ object PreSendContextGuard {
         triggerTokens: Int?,
         hardLimitTokens: Int?,
         compactedAt: LocalDateTime? = null,
+        // Byte-size checks run only when a file-size lookup is supplied.
+        fileSize: ((String) -> Long?)? = null,
+        maxRequestBytes: Long = defaultMaxRequestBytes(),
     ): PreSendContextDecision {
         // Only a brand-new user turn; tool resumes / approvals keep the usage-driven path.
         if (messages.lastOrNull()?.role != MessageRole.USER) return PreSendContextDecision.Send
+        if (fileSize != null) {
+            oversizedMedia(messages, fileSize)?.let { return it }
+            val bytes = estimateRequestBytes(messages, fileSize)
+            if (bytes > maxRequestBytes) {
+                return PreSendContextDecision.OverByteLimit(
+                    estimatedBytes = bytes,
+                    limitBytes = maxRequestBytes,
+                    compact = autoCompactionEnabled,
+                )
+            }
+        }
         if (autoCompactionEnabled) {
             val trigger = triggerTokens?.takeIf { it > 0 } ?: return PreSendContextDecision.Send
             val estimated = estimateTokens(messages, compactedAt)
