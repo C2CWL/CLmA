@@ -354,6 +354,7 @@
   <string name="chat_page_compress_target_tokens">Target Token Size</string>
   <string name="chat_page_compress_warning">Compaction only updates the context summary sent to the model. Original messages are preserved.</string>
   <string name="chat_page_compressing">Compressing...</string>
+  <string name="chat_page_context_over_limit">This request is estimated at about %1$s tokens, more than the model\'s context window (%2$s tokens). It would only fail, so it was not sent. Turn on “Enable automatic context compaction” in Settings → Model Settings → Model, compress this conversation, or start a new chat.</string>
   <string name="chat_stream_waiting_first_output">Waiting for the model to start responding — %1$d s so far (slower on a long context)</string>
   <string name="chat_stream_stalled">No new content for %1$d s — this looks stalled; stop and retry</string>
   <string name="chat_page_retrying">Retrying (%1$d/%2$d). Previous failure: %3$s</string>
