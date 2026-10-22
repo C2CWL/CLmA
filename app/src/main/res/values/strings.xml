@@ -920,7 +920,7 @@
   <string name="setting_display_page_show_updates_title">Show Updates</string>
   <string name="setting_display_page_show_user_avatar_desc">Whether to display user avatar in chat messages</string>
   <string name="setting_display_page_clean_layout_title">Clean layout</string>
-  <string name="setting_display_page_clean_layout_desc">Flat top bar with the model name under the title, and a two-row input box with the tools below the text field</string>
+  <string name="setting_display_page_clean_layout_desc">Flat top bar with the model name under the title; the input box rests as one row and opens into two rows with the tools below the text field</string>
   <string name="setting_display_page_chat_layout_title">Chat layout</string>
   <string name="setting_display_page_chat_layout_desc">Overall look of the chat page: top bar, composer and message chrome</string>
   <string name="setting_display_page_chat_layout_original">Original</string>
@@ -929,13 +929,13 @@
   <string name="setting_display_page_loading_indicator_style_claude">Warm sun</string>
   <string name="setting_display_page_clean_layout_glass_title">Liquid glass</string>
   <string name="setting_display_page_clean_layout_glass_desc">Use liquid glass material for the clean layout input bar and header; when disabled, both use a flat solid card</string>
-  <string name="setting_display_page_clean_layout_opacity_desc">0% is fully clear, 100% is the material\'s default strength</string>
+  <string name="setting_display_page_clean_layout_opacity_desc">0% is fully clear, 100% is close to a solid card. Default 40%</string>
   <string name="setting_display_page_clean_layout_top_opacity_title">Header panel opacity</string>
   <string name="setting_display_page_clean_layout_bottom_opacity_title">Input panel opacity</string>
   <string name="setting_display_page_clean_layout_top_height_title">Header height</string>
-  <string name="setting_display_page_clean_layout_top_height_desc">40 to 72 dp. Shorter leaves more of the wallpaper; the status bar stays clear either way</string>
+  <string name="setting_display_page_clean_layout_top_height_desc">40 to 72 dp. Shorter leaves more of the wallpaper; when two lines no longer fit, only the title is shown (the model / token line is hidden). The status bar stays clear either way</string>
   <string name="setting_display_page_clean_layout_bottom_padding_title">Input box padding</string>
-  <string name="setting_display_page_clean_layout_bottom_padding_desc">0 to 24 dp of space above and below the text. Smaller makes the box shorter</string>
+  <string name="setting_display_page_clean_layout_bottom_padding_desc">0 to 24 dp of space above and below the text. Smaller makes the box shorter. Default 6 dp; a few dp either way is subtle, so try both ends to compare</string>
   <string name="setting_display_page_drawer_capsules_title">Drawer capsules</string>
   <string name="setting_display_page_drawer_capsules_desc">Drop the two floating cards at the top and bottom of the drawer: identity, shortcuts, folders and bottom actions become small capsules sitting on the frosted panel. Turn off to get the two cards back</string>
   <string name="setting_display_page_show_user_avatar_title">Show User Avatar</string>
