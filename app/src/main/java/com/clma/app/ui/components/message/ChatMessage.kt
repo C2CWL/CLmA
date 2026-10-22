@@ -100,6 +100,7 @@ import com.clma.app.data.model.MessageNode
 import com.clma.app.data.usage.TurnFooter
 import com.clma.app.data.model.replaceRegexes
 import com.clma.app.ui.components.richtext.MarkdownBlock
+import com.clma.app.ui.components.richtext.ProvideWorkspaceImageResolver
 import com.clma.app.ui.components.richtext.ZoomableAsyncImage
 import com.clma.app.ui.components.richtext.buildMarkdownPreviewHtml
 import com.clma.app.ui.components.webview.WebViewContentCache
@@ -203,19 +204,22 @@ fun ChatMessage(
             }
         }
         ProvideTextStyle(textStyle) {
-            MessagePartsBlock(
-                assistant = assistant,
-                role = message.role,
-                parts = message.parts,
-                annotations = message.annotations,
-                loading = loading,
-                generationActive = generationActive,
-                model = model,
-                onToolApproval = onToolApproval,
-                onToolAnswer = onToolAnswer,
-                onRerunTool = onRerunTool,
-                onUserMessageClick = if (message.role == MessageRole.USER) onEdit else null,
-            )
+            // 让消息里引用工作区路径的图片 (AI 在工作区生成的图) 能映射到真实文件
+            ProvideWorkspaceImageResolver(workspaceId = assistant?.workspaceId?.toString()) {
+                MessagePartsBlock(
+                    assistant = assistant,
+                    role = message.role,
+                    parts = message.parts,
+                    annotations = message.annotations,
+                    loading = loading,
+                    generationActive = generationActive,
+                    model = model,
+                    onToolApproval = onToolApproval,
+                    onToolAnswer = onToolAnswer,
+                    onRerunTool = onRerunTool,
+                    onUserMessageClick = if (message.role == MessageRole.USER) onEdit else null,
+                )
+            }
 
             message.translation?.let { translation ->
                 CollapsibleTranslationText(

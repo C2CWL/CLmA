@@ -21,6 +21,7 @@ import com.clma.workspace.WorkspaceShellStatus
 import com.clma.workspace.WorkspaceStorageArea
 import com.clma.workspace.WorkspaceTreeResult
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
 import kotlin.uuid.Uuid
@@ -266,6 +267,15 @@ class WorkspaceRepository(
         val workspace = dao.getById(id) ?: error("Workspace not found: $id")
         manager.ensureWorkspace(workspace.root)
         manager.rootfsFileSize(workspace.root, path)
+    }
+
+    /** 按 Rootfs 内绝对路径找到宿主机上的文件 (如聊天中 AI 生成的图片); 工作区或文件不存在时返回 null */
+    suspend fun resolveRootfsFileOrNull(
+        id: String,
+        path: String,
+    ): File? = withContext(Dispatchers.IO) {
+        val workspace = dao.getById(id) ?: return@withContext null
+        manager.resolveRootfsFileOrNull(workspace.root, path)
     }
 
     /** Rootfs 内执行命令实际使用的 shell 路径 (/bin/bash 或 /bin/sh) */
