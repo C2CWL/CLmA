@@ -311,6 +311,11 @@ class ChatVM(
         )
     }
 
+    /** 「压缩后继续」 chip: compress the history, then resume the turn (see ChatService). */
+    fun compressAndContinue() {
+        chatService.compressAndContinue(_conversationId)
+    }
+
     suspend fun forkMessage(message: UIMessage): Conversation {
         return chatService.forkConversationAtMessage(_conversationId, message.id)
     }

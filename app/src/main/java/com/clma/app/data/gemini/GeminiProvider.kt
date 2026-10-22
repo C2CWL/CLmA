@@ -44,6 +44,7 @@ import com.clma.ai.ui.StreamChunkHandler
 import com.clma.ai.ui.UIMessage
 import com.clma.ai.ui.UIMessagePart
 import com.clma.ai.util.HttpException
+import com.clma.ai.util.JsonRequestBody
 import com.clma.ai.util.stringSafe
 import com.clma.ai.util.toHeaders
 import com.clma.common.android.Logging
@@ -129,7 +130,8 @@ class GeminiProvider(
                 )
             )
         }
-        val requestBodyText = json.encodeToString(requestBody)
+        // Streamed per attempt instead of held as one big String (see JsonRequestBody).
+        val streamedRequestBody = JsonRequestBody(requestBody, json)
         val adapter = GeminiStreamChunkAdapter()
         var lastFailure: Throwable? = null
 
@@ -149,7 +151,7 @@ class GeminiProvider(
                     .antigravityHeaders(account.accessToken)
                     .addHeader("Content-Type", "application/json")
                     .addHeader("Accept", "text/event-stream")
-                    .post(requestBodyText.toRequestBody(JSON_MEDIA_TYPE))
+                    .post(streamedRequestBody)
                     .build()
 
                 when (val outcome = runStreamAttempt(request, adapter, account, params)) {

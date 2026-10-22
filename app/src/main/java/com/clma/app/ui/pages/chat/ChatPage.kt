@@ -404,6 +404,7 @@ private fun ChatPageContent(
     val turnFooters by vm.turnFooters.collectAsStateWithLifecycle()
     var previewMode by rememberSaveable { mutableStateOf(false) }
     val assistant = setting.getCurrentAssistant()
+    val compressAndContinueLabel = stringResource(R.string.chat_suggestion_compress_continue)
     var showFilesSheet by remember { mutableStateOf(false) }
     val attachmentPickerActions = rememberChatAttachmentPickerActions(
         inputState = inputState,
@@ -651,8 +652,13 @@ private fun ChatPageContent(
                         vm.saveConversationAsync()
                     },
                     onClickSuggestion = { suggestion ->
-                        inputState.editingMessage = null
-                        inputState.setMessageText(suggestion)
+                        if (suggestion == compressAndContinueLabel) {
+                            // Not a message: compress the history, then resume the turn.
+                            vm.compressAndContinue()
+                        } else {
+                            inputState.editingMessage = null
+                            inputState.setMessageText(suggestion)
+                        }
                     },
                     onTranslate = { message, locale ->
                         vm.translateMessage(message, locale)

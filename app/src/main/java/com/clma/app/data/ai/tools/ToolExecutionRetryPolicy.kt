@@ -15,6 +15,7 @@ import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import com.clma.ai.ui.UIMessagePart
 import com.clma.ai.util.HttpException
+import com.clma.ai.util.isFatalForRetry
 
 /**
  * T-05 / (3) — execution-layer retry policy for locally dispatched tool calls.
@@ -213,6 +214,8 @@ object ToolExecutionRetryPolicy {
         val chain = causeChain(failure)
         if (chain.any { it is CancellationException }) return false
         if (chain.any { it is FileNotFoundException }) return false
+        // Out of memory / request too large: a retry repeats the same allocation.
+        if (failure.isFatalForRetry()) return false
         if (isQuotaExhaustedFailure(chain)) return false
         if (isContextLimitFailure(chain)) return false
         for (cause in chain) {

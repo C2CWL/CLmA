@@ -3,6 +3,7 @@ package com.clma.app.data.ai
 import com.clma.common.android.LogEntry
 import com.clma.common.android.LogLevel
 import com.clma.common.android.Logging
+import com.clma.ai.util.RequestTooLargeException
 import java.io.IOException
 import okhttp3.Interceptor
 import okhttp3.Request
@@ -123,7 +124,13 @@ class RequestLoggingInterceptor : Interceptor {
          * pass through untouched; anything else is wrapped so OkHttp reports it to the
          * callback instead of rethrowing it on the dispatcher thread.
          */
-        internal fun asIOException(e: Throwable): IOException =
-            e as? IOException ?: IOException("${e.javaClass.name}: ${e.message}", e)
+        internal fun asIOException(e: Throwable): IOException = when (e) {
+            is IOException -> e
+            // Still an IOException (so OkHttp's dispatcher thread never rethrows it and kills
+            // the process), but a marked one: the retry policy refuses RequestTooLargeException,
+            // because rebuilding the same request runs out of memory again.
+            is OutOfMemoryError -> RequestTooLargeException("${e.javaClass.name}: ${e.message}", e)
+            else -> IOException("${e.javaClass.name}: ${e.message}", e)
+        }
     }
 }
