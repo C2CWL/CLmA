@@ -44,6 +44,7 @@ import com.clma.app.data.ai.prompts.DEFAULT_SUGGESTION_PROMPT
 import com.clma.app.data.ai.prompts.DEFAULT_TITLE_PROMPT
 import com.clma.app.data.ai.prompts.DEFAULT_TRANSLATION_PROMPT
 import com.clma.app.data.ai.prompts.LEARNING_MODE_PROMPT
+import com.clma.app.data.ai.prompts.upgradeLegacyCompressPrompt
 import com.clma.asr.ASRProviderSetting
 import com.clma.app.data.datastore.migration.PreferenceStoreV1Migration
 import com.clma.app.data.datastore.migration.PreferenceStoreV2Migration
@@ -452,7 +453,7 @@ class SettingsStore(
                 ocrModelId = preferences[OCR_MODEL]?.let { runCatching { Uuid.parse(it) }.getOrNull() } ?: Uuid.random(),
                 ocrPrompt = preferences[OCR_PROMPT] ?: DEFAULT_OCR_PROMPT,
                 compressModelId = preferences[COMPRESS_MODEL]?.let { runCatching { Uuid.parse(it) }.getOrNull() } ?: DEFAULT_AUTO_MODEL_ID,
-                compressPrompt = preferences[COMPRESS_PROMPT] ?: DEFAULT_COMPRESS_PROMPT,
+                compressPrompt = upgradeLegacyCompressPrompt(preferences[COMPRESS_PROMPT]),
                 assistantId = preferences[SELECT_ASSISTANT]?.let { runCatching { Uuid.parse(it) }.getOrNull() }
                     ?: DEFAULT_ASSISTANT_ID,
                 enableAutoCompaction = preferences[ENABLE_AUTO_COMPACTION] == true,
