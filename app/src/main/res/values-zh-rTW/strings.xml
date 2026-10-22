@@ -2523,6 +2523,6 @@
   <string name="setting_floating_ball_color_blue">藍色</string>
   <string name="setting_floating_ball_color_teal">青綠</string>
   <string name="setting_floating_ball_preview_title">預覽</string>
-  <string name="setting_floating_ball_preview_desc">AI 回覆時，細條裡會有一道柔和的流光上下滑動；回覆完成但你還沒看時，細條變成綠色並顯示勾號，點一下細條後恢復原樣。</string>
+  <string name="setting_floating_ball_preview_desc">AI 回覆時，一道彩色流光會沿著細條的邊緣繞圈；回覆完成但你還沒看時，細條變成綠色並顯示勾號，點一下細條後恢復原樣。</string>
   <string name="setting_floating_ball_bar_a11y">開啟應用程式（邊緣細條）</string>
 </resources>

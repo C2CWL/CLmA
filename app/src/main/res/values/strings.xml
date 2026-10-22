@@ -3249,7 +3249,7 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="setting_floating_ball_color_blue">Blue</string>
   <string name="setting_floating_ball_color_teal">Teal</string>
   <string name="setting_floating_ball_preview_title">Preview</string>
-  <string name="setting_floating_ball_preview_desc">While the AI is replying, a soft light glides up and down inside the bar. When a reply finishes and you have not seen it yet, the bar turns green with a check mark until you tap it.</string>
+  <string name="setting_floating_ball_preview_desc">While the AI is replying, a colourful light runs around the edge of the bar. When a reply finishes and you have not seen it yet, the bar turns green with a check mark until you tap it.</string>
   <string name="setting_floating_ball_bar_a11y">Open the app (edge bar)</string>
 
   <string name="chat_page_continuing">Connection lost — continuing the reply (%1$d/%2$d)</string>

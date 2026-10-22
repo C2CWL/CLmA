@@ -2965,7 +2965,7 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="setting_floating_ball_color_blue">蓝色</string>
   <string name="setting_floating_ball_color_teal">青绿</string>
   <string name="setting_floating_ball_preview_title">预览</string>
-  <string name="setting_floating_ball_preview_desc">AI 回复时，细条里会有一道柔和的流光上下滑动；回复完成但你还没看时，细条变成绿色并显示对勾，点一下细条后恢复原样。</string>
+  <string name="setting_floating_ball_preview_desc">AI 回复时，一道彩色流光会沿着细条的边缘绕圈；回复完成但你还没看时，细条变成绿色并显示对勾，点一下细条后恢复原样。</string>
   <string name="setting_floating_ball_bar_a11y">打开应用（边缘细条）</string>
 
   <string name="chat_page_continuing">连接中断，正在续写回复（%1$d/%2$d）</string>
