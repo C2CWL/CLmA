@@ -150,13 +150,16 @@ class ToolCatalogTest {
 
     @Test
     fun `activate caps the total number of active schemas`() {
-        val catalog = ToolCatalog((1..10).map { entry("t_$it") })
+        // The per-call budget is 4, so reaching the total cap needs several calls.
+        val catalog = ToolCatalog((1..16).map { entry("t_$it") })
         val activation = ToolActivationState()
         activation.activate(catalog, listOf("t_1", "t_2", "t_3", "t_4"))
-        val outcome = activation.activate(catalog, listOf("t_5", "t_6", "t_7"))
-        assertEquals(listOf("t_5", "t_6"), outcome.activated)
-        assertEquals(listOf("t_7"), outcome.rejectedOverCap)
-        assertEquals(6, outcome.activeCount)
+        activation.activate(catalog, listOf("t_5", "t_6", "t_7", "t_8"))
+        activation.activate(catalog, listOf("t_9", "t_10", "t_11", "t_12"))
+        val outcome = activation.activate(catalog, listOf("t_13", "t_14"))
+        assertTrue(outcome.activated.isEmpty())
+        assertEquals(listOf("t_13", "t_14"), outcome.rejectedOverCap)
+        assertEquals(12, outcome.activeCount)
     }
 
     @Test
