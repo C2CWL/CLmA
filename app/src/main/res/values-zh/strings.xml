@@ -2958,7 +2958,7 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="setting_floating_ball_overlay_grant">去授权</string>
   <string name="setting_floating_ball_notes">边缘细条以前台服务运行，开启期间会保留一条低优先级通知。在此关闭开关即可同时停止两者。</string>
   <string name="setting_floating_ball_color_title">细条颜色</string>
-  <string name="setting_floating_ball_color_dark_gray">深灰半透明</string>
+  <string name="setting_floating_ball_color_follow_theme">跟随系统（米白 / 暖深灰）</string>
   <string name="setting_floating_ball_color_light_gray">浅灰</string>
   <string name="setting_floating_ball_color_black">黑色</string>
   <string name="setting_floating_ball_color_white">白色带描边</string>

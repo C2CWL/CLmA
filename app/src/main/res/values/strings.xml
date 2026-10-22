@@ -3242,7 +3242,7 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="setting_floating_ball_overlay_grant">Grant</string>
   <string name="setting_floating_ball_notes">The edge bar runs as a foreground service and keeps a low-priority notification while it is on. Turn the switch off here to stop both.</string>
   <string name="setting_floating_ball_color_title">Bar colour</string>
-  <string name="setting_floating_ball_color_dark_gray">Dark grey (translucent)</string>
+  <string name="setting_floating_ball_color_follow_theme">Follow system (cream white / warm dark grey)</string>
   <string name="setting_floating_ball_color_light_gray">Light grey</string>
   <string name="setting_floating_ball_color_black">Black</string>
   <string name="setting_floating_ball_color_white">White with outline</string>

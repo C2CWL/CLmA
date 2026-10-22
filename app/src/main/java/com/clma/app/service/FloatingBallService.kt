@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.ServiceInfo
 import android.content.res.Configuration
 import android.graphics.PixelFormat
@@ -35,6 +36,7 @@ import com.clma.app.FLOATING_BALL_NOTIFICATION_CHANNEL_ID
 import com.clma.app.R
 import com.clma.app.RouteActivity
 import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.ui.hooks.COLOR_MODE_KEY
 import com.clma.app.ui.hooks.readStringPreference
 import com.clma.app.ui.hooks.writeStringPreference
 import org.koin.core.component.KoinComponent
@@ -81,6 +83,9 @@ class FloatingBallService : Service(), KoinComponent {
         // Same keys the floating ball used, so the bar opens on the side / height the ball was on.
         private const val PREF_X = "floating_ball_x"
         private const val PREF_Y = "floating_ball_y"
+
+        /** The app's SharedPreferences file (see ui/hooks/SharedPreferences.kt). */
+        private const val PREFS_NAME = "rikkahub.preferences"
 
         /** Starts (or re-starts) the bar. Idempotent — a running service just re-shows its view. */
         fun start(context: Context) {
@@ -140,6 +145,14 @@ class FloatingBallService : Service(), KoinComponent {
     /** A turn finished and the user has not tapped the bar (opened the app) since. */
     private var unseenDone = false
 
+    /**
+     * The app's colour-mode setting changed (Settings → theme): the "follow theme" swatch repaints.
+     * Held in a field because SharedPreferences only keeps a weak reference to its listeners.
+     */
+    private val colorModeListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        if (key == COLOR_MODE_KEY) mainHandler.post { applyDarkMode(resources.configuration) }
+    }
+
     /** Set by the long-press timer; from then on the gesture moves the bar instead of tapping. */
     private var dragArmed = false
 
@@ -157,6 +170,19 @@ class FloatingBallService : Service(), KoinComponent {
                 barView?.barColor = settings.floatingBallBarColor
             }
         }
+        // Same preferences file the app's theme reads its colour mode from (see ui/hooks).
+        getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .registerOnSharedPreferenceChangeListener(colorModeListener)
+    }
+
+    /** Light / dark look of the bar, decided like the app's own theme; see [EdgeBarLook.isDarkMode]. */
+    private fun isDarkMode(config: Configuration): Boolean = EdgeBarLook.isDarkMode(
+        colorMode = readStringPreference(COLOR_MODE_KEY),
+        systemNight = (config.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES,
+    )
+
+    private fun applyDarkMode(config: Configuration) {
+        barView?.darkMode = isDarkMode(config)
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -203,6 +229,8 @@ class FloatingBallService : Service(), KoinComponent {
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
+        // System light / dark switch: the "follow theme" swatch repaints.
+        applyDarkMode(newConfig)
         // Rotation / resize: keep the side, re-clamp the height against the new screen.
         mainHandler.post {
             val view = barView ?: return@post
@@ -214,6 +242,8 @@ class FloatingBallService : Service(), KoinComponent {
     }
 
     override fun onDestroy() {
+        getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .unregisterOnSharedPreferenceChangeListener(colorModeListener)
         scope.cancel()
         hideBar()
         runCatching { ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE) }
@@ -261,6 +291,7 @@ class FloatingBallService : Service(), KoinComponent {
         val view = EdgeBarView(this).apply {
             this.onRight = onRight
             barColor = settingsStore.settingsFlow.value.floatingBallBarColor
+            darkMode = isDarkMode(resources.configuration)
             contentDescription = getString(R.string.setting_floating_ball_bar_a11y)
             isClickable = true
             isHapticFeedbackEnabled = true

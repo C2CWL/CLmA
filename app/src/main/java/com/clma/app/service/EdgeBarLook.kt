@@ -1,5 +1,6 @@
 package com.clma.app.service
 
+import com.clma.app.ui.theme.ColorMode
 import kotlin.math.PI
 import kotlin.math.cos
 
@@ -69,6 +70,31 @@ internal object EdgeBarLook {
         val phase = nowMs.mod(period).toFloat() / period
         return (1f - cos(phase * 2f * PI.toFloat())) / 2f
     }
+
+    /**
+     * Whether the bar should use its dark-mode look, decided the same way the app's own theme is
+     * (see `RikkahubTheme`): the app's colour-mode setting ([colorMode], a [ColorMode] name stored
+     * under `colorMode`) wins when it is LIGHT or DARK; SYSTEM, missing or unknown follow the
+     * system night mode ([systemNight], from `Configuration.uiMode`).
+     */
+    fun isDarkMode(colorMode: String?, systemNight: Boolean): Boolean = when (colorMode) {
+        ColorMode.LIGHT.name -> false
+        ColorMode.DARK.name -> true
+        else -> systemNight
+    }
+
+    /**
+     * True for a light fill (cream / light grey / white), which gets the toned-down "light" look of
+     * the working streak. Perceived brightness of the RGB part; alpha is ignored.
+     */
+    fun isLightFill(argb: Int): Boolean {
+        val r = (argb shr 16) and 0xFF
+        val g = (argb shr 8) and 0xFF
+        val b = argb and 0xFF
+        return (0.299f * r + 0.587f * g + 0.114f * b) / 255f > LIGHT_FILL_THRESHOLD
+    }
+
+    private const val LIGHT_FILL_THRESHOLD = 0.6f
 
     /**
      * Side the bar is on, from the saved window x. Both the old ball (resting / tucked) and the

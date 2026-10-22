@@ -19,7 +19,8 @@ import com.clma.app.service.EdgeBarLook.Signal
  * the screen edge it sits on ([onRight]), vertically centred in a slightly larger touch area (the
  * view's own bounds). Everything is drawn inside the pill, never outside it:
  *
- *  - [Signal.IDLE]: the plain pill in the chosen [barColor];
+ *  - [Signal.IDLE]: the plain pill in the chosen [barColor] (light / dark per [darkMode] for the
+ *    "follow theme" swatch);
  *  - [Signal.WORKING]: a soft white light band gliding up and down inside the pill;
  *  - [Signal.DONE]: the pill turns green with a white check mark.
  *
@@ -54,6 +55,14 @@ internal class EdgeBarView(context: Context) : View(context) {
             invalidate()
         }
 
+    /** Light / dark look for the "follow theme" swatch ([EdgeBarColor.FOLLOW_THEME]). */
+    var darkMode: Boolean = false
+        set(value) {
+            if (field == value) return
+            field = value
+            invalidate()
+        }
+
     var signal: Signal = Signal.IDLE
         set(value) {
             if (field == value) return
@@ -81,10 +90,10 @@ internal class EdgeBarView(context: Context) : View(context) {
         pill.set(left, top, left + barW, top + barH)
 
         val signal = signal
-        fillPaint.color = if (signal == Signal.DONE) EdgeBarLook.DONE_GREEN else barColor.argb
+        fillPaint.color = if (signal == Signal.DONE) EdgeBarLook.DONE_GREEN else barColor.argb(darkMode)
         canvas.drawRoundRect(pill, radius, radius, fillPaint)
         if (signal != Signal.DONE) {
-            barColor.outlineArgb?.let { outline ->
+            barColor.outlineArgb(darkMode)?.let { outline ->
                 outlinePaint.color = outline
                 val inset = outlinePaint.strokeWidth / 2f
                 pill.inset(inset, inset)
