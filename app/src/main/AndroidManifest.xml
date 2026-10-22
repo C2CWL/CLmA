@@ -173,7 +173,7 @@
       android:configChanges="keyboardHidden|orientation|screenSize|uiMode|screenLayout|smallestScreenSize|density"
       android:exported="true"
       android:importantForAutofill="noExcludeDescendants"
-      android:theme="@style/Theme.Rikkahub"
+      android:theme="@style/Theme.CLmA.Splash.Claude"
       android:windowSoftInputMode="adjustResize">
       <intent-filter>
         <action android:name="android.intent.action.SEND" />

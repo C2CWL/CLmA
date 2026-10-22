@@ -40,6 +40,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavKey
@@ -78,6 +79,7 @@ import com.clma.app.ui.hooks.readBooleanPreference
 import com.clma.app.ui.hooks.readStringPreference
 import com.clma.app.ui.hooks.rememberCustomTtsState
 import com.clma.app.ui.hooks.rememberCustomAsrState
+import com.clma.app.ui.hooks.rememberCurrentColorMode
 import com.clma.app.ui.pages.assistant.AssistantPage
 import com.clma.app.ui.pages.assistant.detail.AssistantBasicPage
 import com.clma.app.ui.pages.assistant.detail.AssistantDetailPage
@@ -143,6 +145,8 @@ import com.clma.app.ui.pages.translator.TranslatorPage
 import com.clma.app.ui.pages.webview.WebViewPage
 import com.clma.app.ui.theme.LocalDarkMode
 import com.clma.app.ui.theme.RikkahubTheme
+import com.clma.app.ui.theme.SplashStyle
+import com.clma.app.ui.theme.syncSplashTheme
 import com.clma.app.utils.CrashHandler
 import com.clma.app.utils.openUsageAccessSettings
 import com.clma.app.utils.resolveInitialChatStack
@@ -182,6 +186,10 @@ class RouteActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Launch screen (core-splashscreen): must run before super.onCreate. It switches the
+        // activity from Theme.CLmA.Splash.* to postSplashScreenTheme (Theme.Rikkahub). No
+        // keep-on-screen condition, so it never delays startup.
+        installSplashScreen()
         enableEdgeToEdge()
         disableNavigationBarContrast()
         super.onCreate(savedInstanceState)
@@ -267,6 +275,12 @@ class RouteActivity : ComponentActivity() {
     fun AppRoutes() {
         val toastState = rememberToasterState()
         val settings by settingsStore.settingsFlow.collectAsStateWithLifecycle()
+        val colorMode = rememberCurrentColorMode()
+        // Tell the system which splash to show on the next cold start (API 31+), so it follows
+        // the in-app light/dark setting. Runs on start and whenever the colour mode changes.
+        LaunchedEffect(colorMode) {
+            syncSplashTheme(SplashStyle.resolve(colorMode))
+        }
         val tts = rememberCustomTtsState()
         val asr = rememberCustomAsrState()
         val eventBus = koinInject<AppEventBus>()

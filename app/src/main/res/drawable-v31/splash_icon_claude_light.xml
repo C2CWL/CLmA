@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Animated launch-screen icon (API 31+): the launcher glyph recoloured for this palette, fading
+  in from 40% and scaling from 90% to 100% over 300ms. It starts partly visible on purpose, so a
+  splash that never starts the animation still shows the icon. Does not delay startup: the
+  splash leaves as soon as the first frame is ready.
+-->
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt">
+    <aapt:attr name="android:drawable">
+        <vector
+            android:name="root"
+            android:width="108dp"
+            android:height="108dp"
+            android:alpha="0.4"
+            android:viewportWidth="108"
+            android:viewportHeight="108">
+            <group
+                android:name="glyph"
+                android:pivotX="54"
+                android:pivotY="54"
+                android:scaleX="0.9"
+                android:scaleY="0.9">
+            <path
+                android:strokeColor="@color/splash_claude_light_ink"
+                android:strokeWidth="5.6"
+                android:strokeLineCap="round"
+                android:pathData="M76.01,49.32 A22.5,22.5 0 1,1 58.68,31.99" />
+            <path
+                android:fillColor="@color/splash_claude_light_accent"
+                android:pathData="M61.65,38.1 a8.25,8.25 0 1,0 16.5,0 a8.25,8.25 0 1,0 -16.5,0 Z" />
+            <path
+                android:fillColor="@color/splash_claude_light_ink"
+                android:pathData="M49.5,54 a4.5,4.5 0 1,0 9,0 a4.5,4.5 0 1,0 -9,0 Z" />
+            </group>
+        </vector>
+    </aapt:attr>
+    <target android:name="root">
+        <aapt:attr name="android:animation">
+            <objectAnimator
+                android:duration="300"
+                android:interpolator="@android:interpolator/fast_out_slow_in"
+                android:propertyName="alpha"
+                android:valueFrom="0.4"
+                android:valueTo="1"
+                android:valueType="floatType" />
+        </aapt:attr>
+    </target>
+    <target android:name="glyph">
+        <aapt:attr name="android:animation">
+            <set>
+                <objectAnimator
+                    android:duration="300"
+                    android:interpolator="@android:interpolator/fast_out_slow_in"
+                    android:propertyName="scaleX"
+                    android:valueFrom="0.9"
+                    android:valueTo="1"
+                    android:valueType="floatType" />
+                <objectAnimator
+                    android:duration="300"
+                    android:interpolator="@android:interpolator/fast_out_slow_in"
+                    android:propertyName="scaleY"
+                    android:valueFrom="0.9"
+                    android:valueTo="1"
+                    android:valueType="floatType" />
+            </set>
+        </aapt:attr>
+    </target>
+</animated-vector>
