@@ -270,14 +270,20 @@ object ModelRegistry {
         )
     }
 
+    // V2.5 → V3.2-era DeepSeek models (and the legacy API names deepseek-chat / deepseek-reasoner,
+    // which served them until DeepSeek retired the names on 2026-07-24, see
+    // api-docs.deepseek.com/updates): 128K context. Without a value the window was unknown, so
+    // percent-based compaction and the pre-send check were off for them.
     private val DEEPSEEK_V3_MODEL = defineModel {
         tokens("deepseek", "v", "3")
         toolAbility()
+        contextLength(128.k)
     }
 
     private val DEEPSEEK_CHAT = defineModel {
         tokens("deepseek", "chat")
         toolAbility()
+        contextLength(128.k)
     }
 
     private val DEEPSEEK_V3 = defineGroup {
@@ -287,11 +293,13 @@ object ModelRegistry {
     private val DEEPSEEK_R1_MODEL = defineModel {
         tokens("deepseek", "r", "1")
         toolReasoningAbility()
+        contextLength(128.k)
     }
 
     private val DEEPSEEK_REASONER = defineModel {
         tokens("deepseek", "reasoner")
         toolReasoningAbility()
+        contextLength(128.k)
     }
 
     // Official model table (api-docs.deepseek.com/quick_start/pricing): deepseek-flash has a
@@ -337,11 +345,13 @@ object ModelRegistry {
     private val DEEPSEEK_V3_1 = defineModel {
         tokens("deepseek", "v", "3", "1")
         toolReasoningAbility()
+        contextLength(128.k)
     }
 
     private val DEEPSEEK_V3_2 = defineModel {
         tokens("deepseek", "v", "3", "2")
         toolReasoningAbility()
+        contextLength(128.k)
     }
 
     private val QWEN_3 = defineModel {

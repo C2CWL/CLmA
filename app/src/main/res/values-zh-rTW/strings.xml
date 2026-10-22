@@ -284,6 +284,7 @@
   <string name="chat_page_compress_target_tokens">目標 Token 大小</string>
   <string name="chat_page_compress_warning">壓縮只會更新傳送給模型的上下文摘要，原始訊息會保留。</string>
   <string name="chat_page_compressing">正在壓縮...</string>
+  <string name="chat_page_context_over_limit">這次請求估計約 %1$s tokens，超過了模型的上下文上限（%2$s tokens），送出也只會失敗，所以沒有送出。請在「設定 → 模型設定 → 模型」中開啟「啟用自動上下文壓縮」，或者壓縮對話歷史、新建對話後再試。</string>
   <string name="chat_page_retrying">正在重試（第 %1$d/%2$d 次）。上次失敗原因：%3$s</string>
   <string name="chat_page_model_routing">正在切換到 %1$s（模型路由）</string>
   <string name="chat_page_conversation_system_prompt">對話系統提示</string>
