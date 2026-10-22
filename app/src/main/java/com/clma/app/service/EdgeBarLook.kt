@@ -48,7 +48,7 @@ internal object EdgeBarLook {
 
     /**
      * What the bar shows. [WORKING]: a light sweep glides through the pill; [DONE]: the pill turns
-     * green with a white check until the user opens the quick-chat panel; [IDLE]: plain pill.
+     * green with a white check until the user taps the bar (opening the app); [IDLE]: plain pill.
      */
     enum class Signal { IDLE, WORKING, DONE }
 

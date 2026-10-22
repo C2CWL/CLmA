@@ -11,14 +11,4 @@
     <item name="android:backgroundDimEnabled">false</item>
 </style>
 
-<!-- Bottom quick-chat panel opened from the edge bar. Translucent so whatever app the
-     user is in stays visible behind the panel, no dim, no window animation (the panel does
-     its own slide-in in Compose). -->
-<style name="Theme.Rikkahub.QuickChat" parent="Theme.Rikkahub">
-    <item name="android:windowBackground">@android:color/transparent</item>
-    <item name="android:windowIsTranslucent">true</item>
-    <item name="android:windowNoTitle">true</item>
-    <item name="android:windowAnimationStyle">@null</item>
-    <item name="android:backgroundDimEnabled">false</item>
-</style>
 </resources>
