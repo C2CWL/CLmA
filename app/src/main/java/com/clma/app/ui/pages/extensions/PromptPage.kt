@@ -105,9 +105,10 @@ import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
 @Composable
-fun PromptPage(vm: PromptVM = koinViewModel()) {
+fun PromptPage(initialTab: Int = 0, vm: PromptVM = koinViewModel()) {
     val settings by vm.settings.collectAsStateWithLifecycle()
-    val pagerState = rememberPagerState { 2 }
+    // initialTab: 0 = mode injections, 1 = lorebooks (settings search deep-links here).
+    val pagerState = rememberPagerState(initialPage = initialTab.coerceIn(0, 1)) { 2 }
     val scope = rememberCoroutineScope()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 

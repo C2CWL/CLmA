@@ -278,7 +278,7 @@ fun ChatDrawerContent(
     val drawerBanners: @Composable () -> Unit = {
         BackupReminderCard(
             settings = settings,
-            onClick = { navController.navigate(Screen.Backup) },
+            onClick = { navController.navigate(Screen.Backup()) },
             modifier = if (drawerFrost != null) {
                 Modifier.frostedPlate(hazeState, MaterialTheme.shapes.medium, drawerFrost)
             } else {

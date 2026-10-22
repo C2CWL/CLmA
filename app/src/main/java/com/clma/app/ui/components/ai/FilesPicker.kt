@@ -448,7 +448,7 @@ private fun InjectionQuickConfigSheet(
                 },
                 onNavigateToPrompts = {
                     onDismissAll()
-                    navController.navigate(Screen.Prompts)
+                    navController.navigate(Screen.Prompts())
                 },
                 onNavigateToSkills = {
                     onDismissAll()

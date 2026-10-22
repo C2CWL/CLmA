@@ -458,8 +458,8 @@ class RouteActivity : ComponentActivity() {
                                 SettingsSearchPage()
                             }
 
-                            entry<Screen.Backup> {
-                                BackupPage()
+                            entry<Screen.Backup> { key ->
+                                BackupPage(initialTab = key.initialTab)
                             }
 
                             entry<Screen.ImageGen> {
@@ -507,8 +507,8 @@ class RouteActivity : ComponentActivity() {
                                 SettingProviderDetailPage(id = id)
                             }
 
-                            entry<Screen.SettingModels> {
-                                SettingModelPage()
+                            entry<Screen.SettingModels> { key ->
+                                SettingModelPage(initialTab = key.initialTab)
                             }
 
                             entry<Screen.SettingAbout> {
@@ -524,8 +524,8 @@ class RouteActivity : ComponentActivity() {
                                 SettingSearchDetailPage(id)
                             }
 
-                            entry<Screen.SettingSpeech> {
-                                SettingSpeechPage()
+                            entry<Screen.SettingSpeech> { key ->
+                                SettingSpeechPage(initialTab = key.initialTab)
                             }
 
                             entry<Screen.SettingMcp> {
@@ -632,8 +632,8 @@ class RouteActivity : ComponentActivity() {
                                 QuickMessagesPage()
                             }
 
-                            entry<Screen.Prompts> {
-                                PromptPage()
+                            entry<Screen.Prompts> { key ->
+                                PromptPage(initialTab = key.initialTab)
                             }
 
                             entry<Screen.Skills> {
@@ -777,7 +777,7 @@ sealed interface Screen : NavKey {
     data object SettingsSearch : Screen
 
     @Serializable
-    data object Backup : Screen
+    data class Backup(val initialTab: Int = 0) : Screen
 
     @Serializable
     data object ImageGen : Screen
@@ -813,7 +813,7 @@ sealed interface Screen : NavKey {
     data class SettingProviderDetail(val providerId: String) : Screen
 
     @Serializable
-    data object SettingModels : Screen
+    data class SettingModels(val initialTab: Int = 0) : Screen
 
     @Serializable
     data object SettingAbout : Screen
@@ -825,7 +825,7 @@ sealed interface Screen : NavKey {
     data class SettingSearchDetail(val serviceId: String) : Screen
 
     @Serializable
-    data object SettingSpeech : Screen
+    data class SettingSpeech(val initialTab: Int = 0) : Screen
 
     @Serializable
     data object SettingMcp : Screen
@@ -906,7 +906,7 @@ sealed interface Screen : NavKey {
     data object QuickMessages : Screen
 
     @Serializable
-    data object Prompts : Screen
+    data class Prompts(val initialTab: Int = 0) : Screen
 
     @Serializable
     data object Skills : Screen

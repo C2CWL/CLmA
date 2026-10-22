@@ -200,7 +200,7 @@ fun ErrorCard(
                     TextButton(
                         onClick = {
                             when (action) {
-                                ErrorAction.OpenModelSettings -> navController.navigate(Screen.SettingModels)
+                                ErrorAction.OpenModelSettings -> navController.navigate(Screen.SettingModels())
                                 ErrorAction.OpenLogs -> navController.navigate(Screen.Log)
                             }
                         },

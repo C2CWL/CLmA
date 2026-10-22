@@ -1,5 +1,7 @@
 package com.clma.app.ui.pages.setting
 
+import android.content.Context
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -18,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -27,14 +30,27 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clma.app.R
+import com.clma.app.data.datastore.Settings
+import com.clma.app.data.db.entity.WorkspaceEntity
+import com.clma.app.data.files.SkillManager
+import com.clma.app.data.files.SkillMetadata
+import com.clma.app.data.repository.WorkspaceRepository
 import com.clma.app.ui.components.nav.BackButton
 import com.clma.app.ui.components.ui.CardGroup
 import com.clma.app.ui.context.LocalNavController
 import com.clma.app.ui.theme.CustomColors
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.koinInject
+import java.util.Locale
+
+/** Rendering a few hundred rows inside one CardGroup is fine; thousands is not. */
+private const val MAX_RESULTS = 200
 
 @Composable
 fun SettingsSearchPage(vm: SettingVM = koinViewModel()) {
@@ -49,21 +65,38 @@ fun SettingsSearchPage(vm: SettingVM = koinViewModel()) {
         focusRequester.requestFocus()
     }
 
+    // User-created content that does not live in Settings.
+    val workspaceRepository: WorkspaceRepository = koinInject()
+    val skillManager: SkillManager = koinInject()
+    val workspaceFlow = remember(workspaceRepository) { workspaceRepository.listFlow() }
+    val workspaces by workspaceFlow.collectAsStateWithLifecycle(initialValue = emptyList())
+    val skills by produceState(initialValue = emptyList<SkillMetadata>(), skillManager) {
+        value = withContext(Dispatchers.IO) {
+            runCatching { skillManager.listSkills() }.getOrDefault(emptyList())
+        }
+    }
+
+    // Current-language strings plus English, both memoised: ranking reads every entry's strings
+    // on each keystroke.
+    val text = remember(context) { cachedStrings(context) }
+    val englishText = remember(context) { cachedStrings(englishContext(context)) }
+
     val entries = remember(settings.developerMode, settings.displaySetting.settingsHubStyle) {
         settingsSearchIndex(
             developerMode = settings.developerMode,
             hubStyle = settings.displaySetting.settingsHubStyle,
         )
     }
-    val filtered = remember(entries, query) {
+    val dynamicEntries = remember(entries, settings, workspaces, skills) {
+        settingsSearchDynamicEntries(userContentOf(settings, workspaces, skills), entries)
+    }
+    val filtered: List<SettingsSearchItem> = remember(entries, dynamicEntries, query) {
         val q = query.trim()
         if (q.isEmpty()) {
             // Empty query: hub pages only — nested rows would drown the list.
             entries.filter { it.parentTitleRes == null }
         } else {
-            entries.filter { entry ->
-                entry.matchesSearchQuery(q) { id -> context.getString(id) }
-            }
+            rankSettingsSearch(q, entries + dynamicEntries, text, englishText).take(MAX_RESULTS)
         }
     }
 
@@ -117,22 +150,40 @@ fun SettingsSearchPage(vm: SettingVM = koinViewModel()) {
                             CardGroup {
                                 // CardGroupScope.item is a plain builder — stringResource must
                                 // live inside the @Composable content lambdas, not the forEach body.
-                                filtered.forEach { entry ->
+                                filtered.forEach { result ->
+                                    val descriptionRes = (result as? SettingsSearchEntry)?.descriptionRes
+                                    val subtitle = (result as? SettingsSearchDynamicEntry)?.subtitle
                                     item(
-                                        onClick = { navController.navigate(entry.route) },
+                                        onClick = { navController.navigate(result.route) },
                                         overlineContent = {
-                                            val groupLabel = stringResource(entry.groupRes)
-                                            val parentLabel = entry.parentTitleRes?.let { stringResource(it) }
-                                            val overline = if (parentLabel != null) {
-                                                "$groupLabel · $parentLabel"
-                                            } else {
-                                                groupLabel
-                                            }
-                                            Text(overline)
+                                            val group = stringResource(result.groupRes)
+                                            val crumbs = result.breadcrumbRes.map { stringResource(it) }
+                                            Text(
+                                                text = (listOf(group) + crumbs).joinToString(" · "),
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis,
+                                            )
                                         },
-                                        headlineContent = { Text(stringResource(entry.titleRes)) },
-                                        supportingContent = entry.descriptionRes?.let { desc ->
-                                            { Text(stringResource(desc)) }
+                                        headlineContent = {
+                                            Text(
+                                                when (result) {
+                                                    is SettingsSearchEntry -> stringResource(result.titleRes)
+                                                    is SettingsSearchDynamicEntry -> result.title
+                                                }
+                                            )
+                                        },
+                                        supportingContent = if (descriptionRes != null) {
+                                            { Text(stringResource(descriptionRes)) }
+                                        } else if (subtitle != null) {
+                                            {
+                                                Text(
+                                                    text = subtitle,
+                                                    maxLines = 2,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                )
+                                            }
+                                        } else {
+                                            null
                                         },
                                     )
                                 }
@@ -144,3 +195,32 @@ fun SettingsSearchPage(vm: SettingVM = koinViewModel()) {
         }
     }
 }
+
+private fun cachedStrings(context: Context): (Int) -> String {
+    val cache = HashMap<Int, String>()
+    return { id -> cache.getOrPut(id) { context.getString(id) } }
+}
+
+private fun englishContext(context: Context): Context {
+    val config = Configuration(context.resources.configuration)
+    config.setLocale(Locale.ENGLISH)
+    return context.createConfigurationContext(config)
+}
+
+private fun userContentOf(
+    settings: Settings,
+    workspaces: List<WorkspaceEntity>,
+    skills: List<SkillMetadata>,
+) = SettingsSearchUserContent(
+    workspaces = workspaces.map { SettingsSearchUserItem(it.id, it.name, it.root) },
+    skills = skills.map { SettingsSearchUserItem(it.name, it.name, it.description) },
+    quickMessages = settings.quickMessages.map { SettingsSearchUserItem(it.id.toString(), it.title, it.content) },
+    modeInjections = settings.modeInjections.map { SettingsSearchUserItem(it.id.toString(), it.name) },
+    lorebooks = settings.lorebooks.map { SettingsSearchUserItem(it.id.toString(), it.name, it.description) },
+    mcpServers = settings.mcpServers.map { SettingsSearchUserItem(it.id.toString(), it.commonOptions.name) },
+    providers = settings.providers.map { SettingsSearchUserItem(it.id.toString(), it.name) },
+    searchServices = settings.searchServices.map { SettingsSearchUserItem(it.id.toString(), it.displayName) },
+    assistants = settings.assistants.map { SettingsSearchUserItem(it.id.toString(), it.name) },
+    ttsProviders = settings.ttsProviders.map { SettingsSearchUserItem(it.id.toString(), it.name) },
+    asrProviders = settings.asrProviders.map { SettingsSearchUserItem(it.id.toString(), it.name) },
+)
