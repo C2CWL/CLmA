@@ -203,12 +203,14 @@
       Two launcher entries over the same activity, so the user can switch the home-screen
       icon without a second install. Exactly one alias is enabled at a time; the switch is
       done in AppIconManager with setComponentEnabledSetting(..., DONT_KILL_APP), which is
-      the same no-kill swap ReFra / Halcyon use. The alias component names are declared in
-      the source namespace (me.rerere.rikkahub), not the applicationId, because the aliases
-      live in the same package as RouteActivity.
+      the same no-kill swap ReFra / Halcyon use. The alias names are spelled out in full with
+      the PRE-RENAME package (me.rerere.rikkahub.*) on purpose: the launcher and the package
+      manager remember the enabled alias by component name, so keeping it stable preserves
+      the user's icon choice and home-screen shortcuts across the me.rerere -> com.clma.app
+      package move. AppIconManager uses the same full strings. Do not shorten to ".Launcher_*".
     -->
     <activity-alias
-      android:name=".Launcher_Default"
+      android:name="me.rerere.rikkahub.Launcher_Default"
       android:enabled="true"
       android:exported="true"
       android:icon="@mipmap/ic_launcher_clma"
@@ -222,7 +224,7 @@
       </intent-filter>
     </activity-alias>
     <activity-alias
-      android:name=".Launcher_Ring"
+      android:name="me.rerere.rikkahub.Launcher_Ring"
       android:enabled="false"
       android:exported="true"
       android:icon="@mipmap/ic_launcher_ring"
@@ -377,8 +379,12 @@
       </intent-filter>
     </receiver>
 
+    <!-- Accessibility service + notification listener are declared under their PRE-RENAME
+         class names (thin shims in me.rerere.rikkahub.service extending the com.clma.app
+         implementations). Android stores these user grants by component name, so this keeps
+         them enabled across the package move. See LegacyComponentNames. -->
     <service
-      android:name=".service.RikkaAccessibilityService"
+      android:name="me.rerere.rikkahub.service.RikkaAccessibilityService"
       android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
       android:exported="true"
       android:label="@string/app_name">
@@ -391,7 +397,7 @@
     </service>
 
     <service
-      android:name=".service.RikkaNotificationListenerService"
+      android:name="me.rerere.rikkahub.service.RikkaNotificationListenerService"
       android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
       android:exported="true"
       android:label="@string/app_name">

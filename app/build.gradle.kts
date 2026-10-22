@@ -22,7 +22,7 @@ plugins {
 val skipLintVital = providers.gradleProperty("skipLintVital").isPresent
 
 android {
-    namespace = "me.rerere.rikkahub"
+    namespace = "com.clma.app"
     compileSdk = 37
 
     defaultConfig {
