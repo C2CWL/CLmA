@@ -31,7 +31,7 @@ import java.util.Locale
 import kotlin.math.roundToInt
 
 private const val SCREENSHOT_CACHE_DIR = "screenshots"
-private const val PICTURES_SUBDIR = "RikkaHub/Screenshots"
+private const val PICTURES_SUBDIR = "CLmA/Screenshots"
 private const val PRUNE_OLDER_THAN_MS = 60L * 60L * 1000L  // 1 hour — cache only
 
 /**
@@ -65,7 +65,7 @@ private fun pruneOldCacheScreenshots(dir: File) {
 
 fun takeScreenshotTool(context: Context): Tool = Tool(
     name = "take_screenshot",
-    description = "Capture the current display via AccessibilityService and return it as a vision attachment. The image is downscaled for the model. By default the screenshot is a transient working copy: it is deleted when this turn ends, so pass keep=true when the user wants the picture saved — that also writes a full-resolution copy to Pictures/RikkaHub/Screenshots/ and fills gallery_path. Secure surfaces (banking, DRM, password fields) error gracefully. OS-rate-limited to ~1/sec. The result includes screen_state (foreground package, shade_open, display size). For \"did my action work\" checks prefer the \"after\" object that action tools already return; screenshot only when you need visual detail.",
+    description = "Capture the current display via AccessibilityService and return it as a vision attachment. The image is downscaled for the model. By default the screenshot is a transient working copy: it is deleted when this turn ends, so pass keep=true when the user wants the picture saved — that also writes a full-resolution copy to Pictures/CLmA/Screenshots/ and fills gallery_path. Secure surfaces (banking, DRM, password fields) error gracefully. OS-rate-limited to ~1/sec. The result includes screen_state (foreground package, shade_open, display size). For \"did my action work\" checks prefer the \"after\" object that action tools already return; screenshot only when you need visual detail.",
     parameters = {
         InputSchema.Obj(
             properties = buildJsonObject {
@@ -334,7 +334,7 @@ private fun captureVirtualDisplay(
 
 /**
  * Persist already-encoded [pngBytes] as a PNG into the device gallery at
- * Pictures/RikkaHub/Screenshots/.
+ * Pictures/CLmA/Screenshots/.
  *
  * Q+ (API 29+): use MediaStore (no permission required for own-app inserts; visible to
  * the user's Gallery app via media indexing). The returned [GallerySave.remove] goes back

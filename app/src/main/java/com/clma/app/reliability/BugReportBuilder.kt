@@ -44,7 +44,7 @@ class BugReportBuilder(private val context: Context) {
     suspend fun build(): File = withContext(Dispatchers.IO) {
         val ts = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(Date())
         val outDir = File(context.cacheDir, "bug_reports").apply { mkdirs() }
-        val zipFile = File(outDir, "rikkahub-agent-bug-$ts.zip")
+        val zipFile = File(outDir, "CLmA-bug-$ts.zip")
 
         ZipOutputStream(FileOutputStream(zipFile)).use { zip ->
             zip.putEntry("meta.txt", buildMeta())

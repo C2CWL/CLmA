@@ -32,7 +32,7 @@ class S3Sync(
     suspend fun backupToS3(config: S3Config) = withContext(Dispatchers.IO) {
         val file = prepareBackupFile(config)
         val client = getS3Client(config)
-        val key = "rikkahub_backups/${file.name}"
+        val key = BackupNaming.s3Key(file.name)
 
         client.putObject(
             key = key,
@@ -48,13 +48,21 @@ class S3Sync(
 
     suspend fun listBackupFiles(config: S3Config): List<S3BackupItem> = withContext(Dispatchers.IO) {
         val client = getS3Client(config)
-        val result = client.listObjects(
-            prefix = "rikkahub_backups/",
-            maxKeys = 1000
-        ).getOrThrow()
+        // List the new CLmA folder and the old rikkahub folder so older backups stay restorable.
+        // One folder failing (e.g. a bucket policy limited to one prefix) is tolerated as long as
+        // the other one lists; if every folder fails, the first error is reported as before.
+        val results = BackupNaming.CLOUD_FOLDERS.map { folder ->
+            client.listObjects(
+                prefix = "$folder/",
+                maxKeys = 1000
+            )
+        }
+        if (results.all { it.isFailure }) results.first().getOrThrow()
+        val objects = results.flatMap { it.getOrNull()?.objects.orEmpty() }
 
-        result.objects
-            .filter { it.key.startsWith("rikkahub_backups/backup_") && it.key.endsWith(".zip") }
+        objects
+            .filter { BackupNaming.isS3BackupKey(it.key) }
+            .distinctBy { it.key }
             .map { obj ->
                 S3BackupItem(
                     key = obj.key,

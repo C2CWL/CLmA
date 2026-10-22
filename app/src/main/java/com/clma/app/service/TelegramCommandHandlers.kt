@@ -522,7 +522,7 @@ internal suspend fun TelegramBotService.autoCancelStuckTurn(chatId: Long) {
  * photo to Telegram, false if there was nothing to rescue.
  *
  * Covered tools (and the JSON-output key they each use for the file path):
- *  - `take_screenshot` — writes `gallery_path` (Pictures/RikkaHub/Screenshots) +
+ *  - `take_screenshot` — writes `gallery_path` (Pictures/CLmA/Screenshots) +
  *    `file_path` (cache).
  *  - `take_photo` — writes `gallery_path` (cache).
  *  - `browser_screenshot` — writes `file_path` (cache/browser-shots).

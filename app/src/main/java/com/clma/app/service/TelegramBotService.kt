@@ -1330,7 +1330,7 @@ class TelegramBotService : Service() {
     private suspend fun trySendReplyAsDocument(chatId: Long, text: String, replyTo: Long?): Boolean {
         var file: java.io.File? = null
         return try {
-            file = java.io.File.createTempFile("rikkahub_reply_", ".md", cacheDir).apply { writeText(text) }
+            file = java.io.File.createTempFile("CLmA_reply_", ".md", cacheDir).apply { writeText(text) }
             val preview = text.take(500).let { if (text.length > 500) "$it…" else it }
             sendWithFloodRetry(
                 chatId,

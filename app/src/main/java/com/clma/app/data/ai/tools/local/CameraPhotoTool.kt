@@ -22,13 +22,13 @@ import java.util.Date
 import java.util.Locale
 import java.util.UUID
 
-private const val PICTURES_SUBDIR = "RikkaHub"
+private const val PICTURES_SUBDIR = "CLmA"
 
 fun cameraPhotoTool(context: Context, buffer: CameraResultBuffer): Tool = Tool(
     name = "take_photo",
     description = """
         Open the system camera so the user can take a photo. The captured image is saved to the
-        device's Pictures/RikkaHub folder and is returned to you as a visible image attachment
+        device's Pictures/CLmA folder and is returned to you as a visible image attachment
         so you can see what was photographed. The user must explicitly take the photo.
     """.trimIndent().replace("\n", " "),
     parameters = { InputSchema.Obj(properties = buildJsonObject {}) },
@@ -42,7 +42,7 @@ fun cameraPhotoTool(context: Context, buffer: CameraResultBuffer): Tool = Tool(
         }
 
         val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-        val displayName = "RikkaHub_${timestamp}_${UUID.randomUUID().toString().take(8)}.jpg"
+        val displayName = "CLmA_${timestamp}_${UUID.randomUUID().toString().take(8)}.jpg"
 
         val useMediaStore = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
         val mediaStoreUri: Uri?
