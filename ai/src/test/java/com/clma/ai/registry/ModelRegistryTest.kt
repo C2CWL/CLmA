@@ -139,6 +139,8 @@ class ModelRegistryTest {
         assertEquals(1_000_000, ModelRegistry.MODEL_CONTEXT_LENGTH.getData("deepseek-v4-pro"))
         assertEquals(1_000_000, ModelRegistry.MODEL_CONTEXT_LENGTH.getData("deepseek-v4-flash-vision-exp"))
         assertEquals(null, ModelRegistry.MODEL_CONTEXT_LENGTH.getData("deepseek-v3"))
+        // deepseek-flash: 1M per the official model table.
+        assertEquals(1_000_000, ModelRegistry.MODEL_CONTEXT_LENGTH.getData("deepseek-flash"))
     }
 
     @Test

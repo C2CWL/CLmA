@@ -294,10 +294,14 @@ object ModelRegistry {
         toolReasoningAbility()
     }
 
+    // Official model table (api-docs.deepseek.com/quick_start/pricing): deepseek-flash has a
+    // 1M context window. Without it the window was unknown and context budgeting fell back to
+    // defaults for the model most DeepSeek users select.
     private val DEEPSEEK_FLASH = defineModel {
         tokens("deepseek", "flash")
         visionInput()
         toolReasoningAbility()
+        contextLength(1.m)
     }
 
     private val DEEPSEEK_V4_FLASH = defineModel {
