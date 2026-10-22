@@ -272,7 +272,7 @@ class SettingsStore(
         val WEB_SERVER_ACCESS_PASSWORD = stringPreferencesKey("web_server_access_password")
         val WEB_SERVER_LOCALHOST_ONLY = booleanPreferencesKey("web_server_localhost_only")
 
-        // Edge bar (always-available quick chat; the key names predate it, from the floating ball)
+        // Edge bar (always-available shortcut into the app; the key names predate it, from the floating ball)
         val FLOATING_BALL_ENABLED = booleanPreferencesKey("floating_ball_enabled")
         // EdgeBarColor.id, 1..6
         val FLOATING_BALL_BAR_COLOR = intPreferencesKey("floating_ball_bar_color")
@@ -1115,7 +1115,7 @@ data class Settings(
     val webServerAccessPassword: String = "",
     val webServerLocalhostOnly: Boolean = false,
     /**
-     * Always-available edge bar (quick chat overlay; it replaced the floating ball and keeps its
+     * Always-available edge bar (overlay that opens the app; it replaced the floating ball and keeps its
      * setting name). Off by default: it needs SYSTEM_ALERT_WINDOW and a persistent foreground
      * service, so it stays strictly opt-in.
      */
