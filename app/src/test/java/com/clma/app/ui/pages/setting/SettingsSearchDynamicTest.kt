@@ -28,15 +28,16 @@ class SettingsSearchDynamicTest {
     }
 
     @Test
-    fun `workspace breadcrumb is extensions then workspace`() {
+    fun `workspace breadcrumb is the hub title`() {
         val entries = settingsSearchDynamicEntries(
             SettingsSearchUserContent(workspaces = listOf(SettingsSearchUserItem("w", "Thesis"))),
             index,
         )
         val entry = entries.single()
         assertEquals(Screen.WorkspaceDetail("w"), entry.route)
-        assertEquals(listOf(R.string.setting_page_extensions, R.string.extensions_page_workspace), entry.breadcrumbRes)
-        assertEquals(R.string.setting_page_group_assistant, entry.groupRes)
+        // Workspaces is a hub row now (extensions intermediate page is gone).
+        assertEquals(listOf(R.string.extensions_page_workspace), entry.breadcrumbRes)
+        assertEquals(R.string.setting_hub_group_agent, entry.groupRes)
     }
 
     @Test
