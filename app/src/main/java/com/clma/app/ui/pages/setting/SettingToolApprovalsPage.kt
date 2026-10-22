@@ -1,6 +1,9 @@
 package com.clma.app.ui.pages.setting
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -11,6 +14,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
@@ -35,6 +40,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -62,21 +72,44 @@ import org.koin.compose.koinInject
  * time), so the names shown can never drift from the surface the model actually receives, and a
  * switch is simply "is this tool on the blacklist".
  *
- * Two things cannot be switched off: the non-waivable floor
- * ([ToolApprovalDefaults.NO_ALWAYS_ALLOW] — privilege-escalation surfaces) and every opaque
- * `mcp__*` relayed tool. Their rows render an on, disabled switch. The three-mode selector at
- * the top picks the posture: Auto (everything but the floor auto-approves), Semi (blacklist
- * decides), Manual (every call asks).
+ * Two things ask by default: the floor ([ToolApprovalDefaults.NO_ALWAYS_ALLOW] —
+ * privilege-escalation surfaces, one row each, tagged "high risk") and every opaque `mcp__*`
+ * relayed tool (one switch in the "MCP server tools" card). Turning either OFF opens
+ * [FloorWaiverDialog] — a risk list plus a liability disclaimer the user must tick before the
+ * red confirm button enables; dismissing changes nothing. Turning them back ON is immediate.
+ * The three-mode selector at the top picks the posture: Auto (everything but the un-waived
+ * floor auto-approves), Semi (blacklist decides), Manual (every call asks).
  */
 @Composable
 fun SettingToolApprovalsPage() {
     val prefs: ToolApprovalPreferences = koinInject()
     val blacklist by prefs.blacklistFlow.collectAsStateWithLifecycle(initialValue = emptySet())
     val mode by prefs.modeFlow.collectAsStateWithLifecycle(initialValue = ApprovalMode.MANUAL)
+    val floorWaived by prefs.floorWaivedFlow.collectAsStateWithLifecycle(initialValue = emptySet())
+    val mcpRequireApproval by prefs.mcpRequireApprovalFlow.collectAsStateWithLifecycle(initialValue = true)
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val scope = rememberCoroutineScope()
 
     var pendingAuto by remember { mutableStateOf(false) }
+    // Which default-ask approval the user is about to turn off; null = no dialog. A tool name
+    // from NO_ALWAYS_ALLOW, or [MCP_WAIVER_TARGET] for the MCP card's switch.
+    var pendingWaiver by remember { mutableStateOf<String?>(null) }
+    pendingWaiver?.let { target ->
+        FloorWaiverDialog(
+            target = target,
+            onConfirm = {
+                pendingWaiver = null
+                scope.launch {
+                    if (target == MCP_WAIVER_TARGET) {
+                        prefs.setMcpRequireApproval(false)
+                    } else {
+                        prefs.setFloorWaived(target, true)
+                    }
+                }
+            },
+            onDismiss = { pendingWaiver = null },
+        )
+    }
     if (pendingAuto) {
         AlertDialog(
             onDismissRequest = { pendingAuto = false },
@@ -288,27 +321,50 @@ fun SettingToolApprovalsPage() {
                                     title = { Text(stringResource(localToolTitleRes(group))) },
                                 ) {
                                     rows.forEach { hit ->
-                                        val floor = ToolApprovalDefaults.isHardFloor(hit.name)
-                                        val checked = floor || hit.name in blacklist
+                                        // Local tools only: relayed mcp__* tools are covered by the MCP card.
+                                        val floor = hit.name in ToolApprovalDefaults.NO_ALWAYS_ALLOW
+                                        val waived = floor && hit.name in floorWaived
+                                        val checked = if (floor) !waived else hit.name in blacklist
                                         item(
-                                            headlineContent = { Text(hit.name) },
+                                            headlineContent = {
+                                                if (floor) {
+                                                    Row(
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                                    ) {
+                                                        Text(hit.name)
+                                                        HighRiskTag()
+                                                    }
+                                                } else {
+                                                    Text(hit.name)
+                                                }
+                                            },
                                             supportingContent = {
-                                                Text(
-                                                    text = if (floor) {
-                                                        stringResource(R.string.setting_page_tool_approvals_floor_badge)
-                                                    } else {
-                                                        stringResource(R.string.setting_page_tool_approvals_switch_desc)
-                                                    },
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                )
+                                                when {
+                                                    waived -> WaivedText()
+                                                    else -> Text(
+                                                        text = if (floor) {
+                                                            stringResource(R.string.setting_page_tool_approvals_floor_badge)
+                                                        } else {
+                                                            stringResource(R.string.setting_page_tool_approvals_switch_desc)
+                                                        },
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    )
+                                                }
                                             },
                                             trailingContent = {
                                                 Switch(
                                                     checked = checked,
-                                                    enabled = !floor,
                                                     onCheckedChange = { next ->
-                                                        scope.launch { prefs.setBlacklisted(hit.name, next) }
+                                                        if (!floor) {
+                                                            scope.launch { prefs.setBlacklisted(hit.name, next) }
+                                                        } else if (next) {
+                                                            // Restoring approval is the safe direction: no dialog.
+                                                            scope.launch { prefs.setFloorWaived(hit.name, false) }
+                                                        } else {
+                                                            pendingWaiver = hit.name
+                                                        }
                                                     },
                                                 )
                                             },
@@ -326,12 +382,48 @@ fun SettingToolApprovalsPage() {
                             val names = toolPalette.hits
                                 .map { it.name }
                                 .filter { it in ToolApprovalDefaults.DANGEROUS_TOOLS }
-                            scope.launch { prefs.addAllToBlacklist(names) }
+                            // Also restores every waived default (floor waivers, MCP approval).
+                            scope.launch { prefs.restoreRecommended(names) }
                         },
                         modifier = Modifier.padding(horizontal = 8.dp),
                     ) {
                         Text(stringResource(R.string.setting_page_tool_approvals_add_recommended))
                     }
+                }
+            }
+
+            item(key = "mcp-approval-card") {
+                CardGroup(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp),
+                    title = { Text(stringResource(R.string.setting_page_tool_approvals_mcp_group)) },
+                ) {
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_page_tool_approvals_mcp_switch)) },
+                        supportingContent = {
+                            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                if (!mcpRequireApproval) WaivedText()
+                                Text(
+                                    text = stringResource(R.string.setting_page_tool_approvals_mcp_switch_desc),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        },
+                        trailingContent = {
+                            Switch(
+                                checked = mcpRequireApproval,
+                                onCheckedChange = { next ->
+                                    if (next) {
+                                        scope.launch { prefs.setMcpRequireApproval(true) }
+                                    } else {
+                                        pendingWaiver = MCP_WAIVER_TARGET
+                                    }
+                                },
+                            )
+                        },
+                    )
                 }
             }
 
@@ -345,4 +437,161 @@ fun SettingToolApprovalsPage() {
             }
         }
     }
+}
+
+/** Sentinel [FloorWaiverDialog] target for the "MCP server tools ask" switch. Not a tool name:
+ *  real tool names never contain spaces or angle brackets. */
+private const val MCP_WAIVER_TARGET = "<mcp relayed tools>"
+
+/** Small red "high risk" chip next to a default-ask floor tool's name. */
+@Composable
+private fun HighRiskTag() {
+    Text(
+        text = stringResource(R.string.setting_page_tool_approvals_high_risk_tag),
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onErrorContainer,
+        modifier = Modifier
+            .clip(RoundedCornerShape(4.dp))
+            .background(MaterialTheme.colorScheme.errorContainer)
+            .padding(horizontal = 6.dp, vertical = 1.dp),
+    )
+}
+
+/** Red "approval turned off (at your own risk)" supporting line for a waived default. */
+@Composable
+private fun WaivedText() {
+    Text(
+        text = stringResource(R.string.setting_page_tool_approvals_floor_waived),
+        style = MaterialTheme.typography.bodySmall,
+        fontWeight = FontWeight.Medium,
+        color = MaterialTheme.colorScheme.error,
+    )
+}
+
+/** Tool-specific risk line for [FloorWaiverDialog]. */
+@Composable
+private fun waiverRiskText(target: String): String = stringResource(
+    when (target) {
+        MCP_WAIVER_TARGET -> R.string.setting_page_tool_approvals_waiver_risk_mcp_relayed
+        "mcp_add", "mcp_update" -> R.string.setting_page_tool_approvals_waiver_risk_mcp_install
+        "eval_javascript" -> R.string.setting_page_tool_approvals_waiver_risk_eval_js
+        "skill_install_from_url", "skill_install_from_text" ->
+            R.string.setting_page_tool_approvals_waiver_risk_skill_install
+        "browser_eval_js" -> R.string.setting_page_tool_approvals_waiver_risk_browser_eval_js
+        "keystore_generate_key" -> R.string.setting_page_tool_approvals_waiver_risk_keystore_generate
+        "keystore_decrypt" -> R.string.setting_page_tool_approvals_waiver_risk_keystore_decrypt
+        "nfc_write_tag" -> R.string.setting_page_tool_approvals_waiver_risk_nfc_write
+        "grant_directory_access" -> R.string.setting_page_tool_approvals_waiver_risk_grant_directory
+        else -> R.string.setting_page_tool_approvals_waiver_risk_generic
+    }
+)
+
+/**
+ * Risk warning + liability disclaimer shown before a default-ask approval (a floor tool, or all
+ * relayed MCP tools) is turned off. The red confirm button stays disabled until the user ticks
+ * the disclaimer; dismissing or cancelling leaves the setting unchanged.
+ */
+@Composable
+private fun FloorWaiverDialog(
+    target: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var accepted by remember(target) { mutableStateOf(false) }
+    val displayName = if (target == MCP_WAIVER_TARGET) {
+        stringResource(R.string.setting_page_tool_approvals_mcp_group)
+    } else {
+        target
+    }
+    val bodyTemplate = stringResource(R.string.setting_page_tool_approvals_waiver_dialog_body, displayName)
+    val nameStart = bodyTemplate.indexOf(displayName)
+    val body = buildAnnotatedString {
+        if (nameStart < 0) {
+            append(bodyTemplate)
+        } else {
+            append(bodyTemplate.substring(0, nameStart))
+            withStyle(SpanStyle(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.SemiBold)) {
+                append(displayName)
+            }
+            append(bodyTemplate.substring(nameStart + displayName.length))
+        }
+    }
+    val risks = listOf(
+        waiverRiskText(target) to true,
+        stringResource(R.string.setting_page_tool_approvals_waiver_risk_remote) to false,
+        stringResource(R.string.setting_page_tool_approvals_waiver_risk_injection) to false,
+        stringResource(R.string.setting_page_tool_approvals_waiver_risk_unattended) to false,
+    )
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = { Text("⚠", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.error) },
+        title = {
+            Text(
+                text = stringResource(R.string.setting_page_tool_approvals_waiver_dialog_title),
+                textAlign = TextAlign.Center,
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Text(body, style = MaterialTheme.typography.bodyMedium)
+                risks.forEach { (line, primary) ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(
+                            text = "•",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (primary) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            text = line,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = if (primary) FontWeight.Medium else null,
+                            color = if (primary) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                Spacer(Modifier.height(4.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f))
+                        .clickable { accepted = !accepted }
+                        .padding(8.dp),
+                    verticalAlignment = Alignment.Top,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Checkbox(
+                        checked = accepted,
+                        onCheckedChange = { accepted = it },
+                        colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.error),
+                    )
+                    Text(
+                        text = stringResource(R.string.setting_page_tool_approvals_waiver_disclaimer),
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(top = 12.dp),
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm, enabled = accepted) {
+                Text(
+                    text = stringResource(R.string.setting_page_tool_approvals_waiver_confirm),
+                    color = if (accepted) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                    },
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.setting_page_tool_approvals_waiver_cancel))
+            }
+        },
+    )
 }

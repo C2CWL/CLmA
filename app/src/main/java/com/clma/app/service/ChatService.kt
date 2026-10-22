@@ -1357,8 +1357,21 @@ class ChatService(
         if (approved && toolName != null && scope == ApprovalScope.ChatScope) {
             appScope.launch(NonCancellable) {
                 runCatching {
-                    com.clma.app.data.ai.tools
-                        .ToolApprovalAllowList.grantForChat(conversationId, toolName)
+                    // A chat grant now also covers the default-ask floor and mcp__* tools, so
+                    // only grant the tool the approved call actually is: `toolName` arrives
+                    // from the caller (in-app card, Telegram, web API) and must match the tool
+                    // call being approved in THIS conversation. Read-only hydration is safe
+                    // outside the mutex (it only fills an empty in-memory session from disk).
+                    ensureHydrated(conversationId)
+                    val matchesCall = session.state.value.currentMessages.any { message ->
+                        message.getTools().any { it.toolCallId == toolCallId && it.toolName == toolName }
+                    }
+                    if (matchesCall) {
+                        com.clma.app.data.ai.tools
+                            .ToolApprovalAllowList.grantForChat(conversationId, toolName)
+                    } else {
+                        Log.w(TAG, "ignoring chat grant for '$toolName': not the tool of call $toolCallId")
+                    }
                 }.onFailure { Log.w(TAG, "approval grant write failed", it) }
             }
         }
@@ -1823,8 +1836,9 @@ class ChatService(
                     // The decision itself is pure — see ToolApprovalPolicy (unit-tested). Here
                     // we only supply the async inputs: the persisted blacklist + mode (one
                     // DataStore read), whether this conversation is headless, and any in-memory
-                    // "allow for this chat" grant. The mode decides the posture: Auto approves
-                    // everything but the named floor (relayed mcp__* tools are waived in Auto);
+                    // "allow for this chat" grant, plus the user's floor / MCP waivers. The mode
+                    // decides the posture: Auto approves everything but the named floor unless
+                    // waived (relayed mcp__* tools are waived in Auto);
                     // Semi consults the blacklist; Manual asks on every call. The HARDLINE
                     // command floor still blocks rm -rf / et al because GenerationLoop checks
                     // it before this.
@@ -1837,6 +1851,11 @@ class ChatService(
                             .shouldAutoApprove(conversationId),
                         allowedForChat = com.clma.app.data.ai.tools.ToolApprovalAllowList
                             .isAllowedForChat(conversationId, toolName),
+                        // User-acknowledged waivers of the default-ask floor / MCP approval.
+                        // Headless runs never reach them (headless returns early above, and
+                        // HeadlessToolApprovalPolicy still refuses the floor at execution).
+                        floorWaived = snapshot.floorWaived,
+                        mcpRequireApproval = snapshot.mcpRequireApproval,
                     )
                 },
                 onAfterToolExecution = { generatedMessages ->

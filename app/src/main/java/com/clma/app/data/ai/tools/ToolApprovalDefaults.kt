@@ -7,13 +7,17 @@ package com.clma.app.data.ai.tools
  * into the build. Instead every tool is routed through the runtime decision
  * ([ToolApprovalPolicy.shouldAutoApprove] via `ChatService.isToolAutoApproved`) and the user
  * says which tools must ask by putting them on a **blacklist** (Settings → Tool approvals).
- * By default that blacklist is empty: nothing asks. Two things cannot be waived by leaving
- * them off the blacklist, because they are not the user's to waive at the call site:
+ * By default that blacklist is empty: nothing asks. Two things are not waived by leaving
+ * them off the blacklist — they **ask by default** and can only be turned off by an explicit,
+ * risk-acknowledged switch in Settings (the user accepts responsibility in a dialog):
  *
- *  - [NO_ALWAYS_ALLOW] — a small, hard floor of privilege-escalation surfaces. Never
- *    auto-approved, cannot be removed from the asking set, no "always" shortcut.
+ *  - [NO_ALWAYS_ALLOW] — a small floor of privilege-escalation surfaces. Asks on every call
+ *    unless the user waived that specific tool; no "allow for this chat" shortcut otherwise.
  *  - Every `mcp__*` relayed tool — an MCP server's surface is opaque to us, so a call to one
- *    always asks (again, no blanket grant).
+ *    asks unless the user turned MCP approval off (Auto mode waives it as well).
+ *
+ * Headless runs (cron / sub-agent / workflow) never inherit a waiver: they keep refusing the
+ * floor via [HeadlessToolApprovalPolicy] and [com.clma.app.subagent.SubAgentToolSurface].
  *
  * [DANGEROUS_TOOLS] is the curated list of side-effecting / privacy-reading tools. It no
  * longer gates anything; it is what the Settings screen offers as a one-tap "add the usual
@@ -304,9 +308,11 @@ object ToolApprovalDefaults {
      * adding an MCP server is exactly that, since a hostile server can exfiltrate anything
      * reachable through the assistant's tool set.
      *
-     * These are neither removable from the asking set (leaving them off the blacklist does
-     * not waive them) nor eligible for the per-call shortcut. Only YOLO — and the command
-     * floor [HardlineCommandGuard] — sit above this set.
+     * Leaving them off the blacklist does not waive them, and they are not eligible for the
+     * per-chat shortcut. The user can still waive one explicitly (Settings → Tool approvals,
+     * behind a risk + liability confirmation); a waived tool then follows the ordinary mode
+     * rules (Manual still asks). The command floor [HardlineCommandGuard] sits above this set
+     * unconditionally.
      */
     val NO_ALWAYS_ALLOW: Set<String> = setOf(
         "mcp_add",
@@ -342,10 +348,12 @@ object ToolApprovalDefaults {
     )
 
     /**
-     * True when [toolName] is on the non-waivable floor: a member of [NO_ALWAYS_ALLOW] or an
-     * opaque relayed MCP tool (`mcp__*`). Such a tool asks on every call regardless of the
-     * user's blacklist; the only exception is Auto mode, which waives relayed `mcp__*` calls
-     * (拍板 2026-10-16) but never the named [NO_ALWAYS_ALLOW] set.
+     * True when [toolName] **asks by default**: a member of [NO_ALWAYS_ALLOW] or an opaque
+     * relayed MCP tool (`mcp__*`). Such a tool asks on every call regardless of the user's
+     * blacklist, unless the user explicitly waived it in Settings → Tool approvals after
+     * accepting a risk + liability dialog (per tool for [NO_ALWAYS_ALLOW], one switch for all
+     * `mcp__*` tools). Auto mode also waives relayed `mcp__*` calls (拍板 2026-10-16). Headless
+     * runs never get a waiver: [HeadlessToolApprovalPolicy] keeps refusing these tools there.
      */
     fun isHardFloor(toolName: String): Boolean =
         toolName in NO_ALWAYS_ALLOW || toolName.startsWith(MCP_TOOL_PREFIX)

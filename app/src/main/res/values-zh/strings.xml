@@ -1903,8 +1903,8 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="setting_page_tool_approvals_revoke">移除</string>
   <string name="setting_page_tool_approvals_revoke_all">清空黑名单</string>
   <string name="setting_page_tool_approvals_switch_desc">运行前询问</string>
-  <string name="setting_page_tool_approvals_floor_badge">始终需要审批 — 无法关闭</string>
-  <string name="setting_page_tool_approvals_mcp_note">来自 MCP 服务器的工具在通用/手动模式下需要审批（自动模式豁免）；少数高权限工具始终需要审批，无法关闭。</string>
+  <string name="setting_page_tool_approvals_floor_badge">运行前询问（高风险工具，默认开启）</string>
+  <string name="setting_page_tool_approvals_mcp_note">高风险工具（添加 MCP 服务器、技能安装、代码执行、浏览器脚本、密钥库、NFC 写入、目录授权）默认每次需要审批；你可以关闭，但需确认风险并自行承担后果。手动模式下仍每次询问；无人值守任务（定时/子代理/工作流）仍拒绝这些工具，HARDLINE 拦截（rm -rf / 等）始终生效。</string>
   <string name="setting_page_tool_approvals_search">搜索工具</string>
   <string name="setting_page_tool_approvals_add_recommended">加入常见危险工具</string>
   <string name="setting_page_tool_approvals_no_match">没有匹配的工具。</string>
@@ -1914,19 +1914,42 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="setting_page_tool_approvals_mode_auto">自动</string>
   <string name="setting_page_tool_approvals_mode_semi">通用</string>
   <string name="setting_page_tool_approvals_mode_manual">手动</string>
-  <string name="setting_page_tool_approvals_auto_desc">所有工具无需询问直接运行 — 包括 MCP 服务器提供的工具。仅提权类操作（添加 MCP 服务器、技能安装、代码执行、密钥库、NFC 写入）仍每次询问。</string>
+  <string name="setting_page_tool_approvals_auto_desc">所有工具无需询问直接运行 — 包括 MCP 服务器提供的工具。仅提权类操作（添加 MCP 服务器、技能安装、代码执行、密钥库、NFC 写入）仍每次询问，除非你已在下方手动关闭其审批。</string>
   <string name="setting_page_tool_approvals_semi_desc">只有下方黑名单中的工具在运行前会询问。</string>
   <string name="setting_page_tool_approvals_manual_desc">每个工具调用都会询问确认。在提示上点「本次对话允许」可减少可信工具的打扰。</string>
-  <string name="setting_page_tool_approvals_blacklist_ignored">自动模式下黑名单被忽略 — 所有工具无需询问（提权类除外）。</string>
+  <string name="setting_page_tool_approvals_blacklist_ignored">自动模式下黑名单被忽略 — 所有工具无需询问（仍开启审批的高风险工具除外）。</string>
   <string name="setting_page_tool_approvals_blacklist_manual">手动模式下每个工具都会询问。下方黑名单仅在通用模式下生效。</string>
   <string name="setting_page_tool_approvals_auto_dialog_title">切换到自动模式？</string>
   <string name="setting_page_tool_approvals_auto_dialog_body">每个工具 — 本地 shell、SSH、文件写入、屏幕自动化、Telegram 外发、MCP 服务器工具、以及黑名单里的全部工具 — 都将无需询问你直接运行。
 
-提权类工具（添加 MCP 服务器、安装技能、eval_js、密钥库操作、NFC 写入、目录授权）仍每次需要确认。
+提权类工具（添加 MCP 服务器、安装技能、eval_js、密钥库操作、NFC 写入、目录授权）仍每次需要确认，除非你已手动关闭其审批。
 
 HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备 dd、fork 炸弹、编码载荷管道 — 这些仍会被拦截。</string>
   <string name="setting_page_tool_approvals_auto_dialog_confirm">切换到自动</string>
   <string name="setting_page_tool_approvals_auto_dialog_cancel">取消</string>
+  <string name="setting_page_tool_approvals_high_risk_tag">高风险</string>
+  <string name="setting_page_tool_approvals_floor_waived">⚠ 已关闭审批（风险自担）</string>
+  <string name="setting_page_tool_approvals_mcp_group">MCP 服务器工具</string>
+  <string name="setting_page_tool_approvals_mcp_switch">MCP 服务器工具运行前询问</string>
+  <string name="setting_page_tool_approvals_mcp_switch_desc">适用于所有来自 MCP 服务器的 mcp__* 工具，在通用模式下生效（手动模式始终询问，自动模式不询问）。关闭需确认风险。</string>
+  <string name="setting_page_tool_approvals_waiver_dialog_title">关闭高风险工具的审批？</string>
+  <string name="setting_page_tool_approvals_waiver_dialog_body">你正在关闭 %1$s 的运行前审批。关闭后，AI 调用它时将不再询问你：</string>
+  <string name="setting_page_tool_approvals_waiver_risk_mcp_install">可接入未知 MCP 服务器，可能外泄 AI 能访问的所有数据</string>
+  <string name="setting_page_tool_approvals_waiver_risk_eval_js">可执行任意代码</string>
+  <string name="setting_page_tool_approvals_waiver_risk_skill_install">可从任意来源安装技能并扩展 AI 的能力</string>
+  <string name="setting_page_tool_approvals_waiver_risk_browser_eval_js">可在已登录的网页中执行任意脚本，读取或操作你的账号、Cookie 与隐私数据</string>
+  <string name="setting_page_tool_approvals_waiver_risk_keystore_generate">可创建硬件密钥，之后的签名 / 加密调用会信任它</string>
+  <string name="setting_page_tool_approvals_waiver_risk_keystore_decrypt">可解密密文并交给模型读取</string>
+  <string name="setting_page_tool_approvals_waiver_risk_nfc_write">会永久改写实体 NFC 标签</string>
+  <string name="setting_page_tool_approvals_waiver_risk_grant_directory">会获得整个目录的长期读写权限</string>
+  <string name="setting_page_tool_approvals_waiver_risk_mcp_relayed">第三方服务器的工具行为不透明，可能读写、删除或外发数据</string>
+  <string name="setting_page_tool_approvals_waiver_risk_generic">该工具属于高权限操作，默认每次都需要你确认</string>
+  <string name="setting_page_tool_approvals_waiver_risk_remote">Telegram 等远程会话同样不再询问，任何被允许的聊天对象都可能触发</string>
+  <string name="setting_page_tool_approvals_waiver_risk_injection">模型可能被网页、文件或消息中的恶意内容诱导（提示词注入）</string>
+  <string name="setting_page_tool_approvals_waiver_risk_unattended">无人值守任务（定时/子代理/工作流）仍会拒绝此类工具；HARDLINE 拦截（rm -rf / 等）仍然生效</string>
+  <string name="setting_page_tool_approvals_waiver_disclaimer">我已阅读并理解上述风险，自愿关闭审批，并对由此产生的一切后果（包括数据丢失、隐私泄露、账号或财产损失）自行承担全部责任，与本应用及其开发者无关。</string>
+  <string name="setting_page_tool_approvals_waiver_confirm">我已知晓风险，确认关闭</string>
+  <string name="setting_page_tool_approvals_waiver_cancel">保持审批</string>
   <string name="setting_page_tool_approvals_yolo_dialog_cancel">保持授权开启</string>
   <string name="setting_page_tool_approvals_yolo_dialog_confirm">是的，我很蠢，启用</string>
   <string name="setting_page_tool_approvals_yolo_dialog_title">关闭所有授权提示？</string>
