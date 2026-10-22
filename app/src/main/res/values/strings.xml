@@ -132,6 +132,9 @@
   <string name="assistant_page_context_reminder_threshold">Context reminder threshold</string>
   <string name="assistant_page_context_reminder_threshold_desc">When the estimated context reaches this share of the model window, a &lt;context_reminder&gt; is injected so the model can decide whether to compact before automatic compaction kicks in. Keep it below the compaction threshold.</string>
   <string name="assistant_page_context_reminder_threshold_value">%1$d%%</string>
+  <string name="assistant_page_context_reminder_threshold_desc_tokens_mode">Auto-compaction is in token mode, so this is a share of your token ceiling (not the model\'s own window): when the estimated context reaches it, a &lt;context_reminder&gt; is injected so the model can decide whether to compact first.</string>
+  <string name="assistant_page_context_reminder_threshold_value_tokens">%1$d%% (≈ %2$s tokens of %3$s)</string>
+  <string name="assistant_page_context_reminder_threshold_window_unknown">%1$d%% (context window unknown, the reminder will not fire)</string>
   <string name="assistant_page_cold_memory">Cold memory (Markdown)</string>
   <string name="assistant_page_cold_memory_desc">Adds memory_index / memory_read / memory_write tools that work on a folder of Markdown files inside the bound workspace. Unlike the records above, these documents stay on disk and are pulled in on demand, so a large knowledge base costs nothing until it is read. Off by default.</string>
   <string name="assistant_page_cold_memory_no_workspace">No workspace bound</string>

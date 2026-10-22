@@ -2739,6 +2739,9 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="assistant_page_context_reminder_threshold">上下文提醒阈值</string>
   <string name="assistant_page_context_reminder_threshold_desc">当估算上下文达到模型窗口的这个比例时，注入 &lt;context_reminder&gt;，让模型赶在自动压缩触发之前自行决定是否需要压缩。建议低于自动压缩阈值，否则会被客户端的强制压缩抢先。</string>
   <string name="assistant_page_context_reminder_threshold_value">%1$d%%</string>
+  <string name="assistant_page_context_reminder_threshold_desc_tokens_mode">自动压缩当前是「按 Token」模式，所以这里的百分比是相对于你设置的 Token 上限（不是模型本身的窗口）：估算上下文达到这个比例时注入 &lt;context_reminder&gt;，让模型先自行决定是否压缩。</string>
+  <string name="assistant_page_context_reminder_threshold_value_tokens">%1$d%%（约 %2$s tokens，共 %3$s）</string>
+  <string name="assistant_page_context_reminder_threshold_window_unknown">%1$d%%（模型上下文窗口未知，提醒不会触发）</string>
   <string name="assistant_page_tool_surface_mode">渐进式 MCP 工具目录</string>
   <string name="assistant_page_tool_surface_mode_desc">用 tool_search / tool_open 一对工具替换每次请求里的 MCP 工具，因此只发送模型实际打开的那些 schema。可减少首轮工具 token，但工具列表会在回合间变化，可能损失提示缓存命中。本地工具不会被编入目录。默认关闭。</string>
   <string name="assistant_page_subagent_context_refs">子智能体上下文引用</string>
