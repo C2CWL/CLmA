@@ -12,7 +12,7 @@ import org.junit.Test
  */
 class AccessibilityRepairTest {
 
-    private val comp = "excp.rikkahub.debug/com.clma.app.service.RikkaAccessibilityService"
+    private val comp = "com.clma.app.debug/me.rerere.rikkahub.service.RikkaAccessibilityService"
 
     @Test
     fun `an unset list - null, blank or the string null - becomes just our component`() {

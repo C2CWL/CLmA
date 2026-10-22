@@ -41,7 +41,9 @@ private const val ACTIVE_LIST_CACHE_TTL_MS = 1_000L
  * Bound by the OS once the user enables RikkaHub in Settings -> Notification access.
  * The companion singleton lets tool factories reach the live instance synchronously.
  */
-class RikkaNotificationListenerService : NotificationListenerService() {
+// `open` only so the legacy-name shim [me.rerere.rikkahub.service.RikkaNotificationListenerService]
+// can extend it; the manifest declares the shim (see [LegacyComponentNames]).
+open class RikkaNotificationListenerService : NotificationListenerService() {
 
     private val whitelistPrefs: NotificationListenerPreferences by inject()
     private val telegramPrefs: TelegramBotPreferences by inject()

@@ -48,7 +48,7 @@ class CronBootReceiver : BroadcastReceiver(), KoinComponent {
 
                 // Re-start Telegram bot if it was enabled (existing behavior) AND
                 // re-arm the periodic health probe. Both are idempotent — the probe uses
-                // ExistingPeriodicWorkPolicy.KEEP so re-arming on every boot is harmless.
+                // ExistingPeriodicWorkPolicy.UPDATE so re-arming on every boot is harmless.
                 val cfg = try { telegramPrefs.current() } catch (_: Throwable) { null }
                 if (cfg != null && cfg.isUsable) {
                     com.clma.app.service.TelegramBotService.start(context)

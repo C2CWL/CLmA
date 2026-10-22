@@ -30,7 +30,9 @@ data class ActionLogEntry(
     val timestampMs: Long,
 )
 
-class RikkaAccessibilityService : AccessibilityService() {
+// `open` only so the legacy-name shim [me.rerere.rikkahub.service.RikkaAccessibilityService]
+// can extend it; the manifest declares the shim (see [LegacyComponentNames]).
+open class RikkaAccessibilityService : AccessibilityService() {
 
     private val gestureExecutor = Executors.newSingleThreadExecutor { r ->
         Thread(r, "RikkaAcc-Gesture").apply { isDaemon = true }

@@ -1,12 +1,12 @@
 package com.clma.app.data.ai.tools.local
 
-import android.content.ComponentName
 import android.content.Context
 import android.provider.Settings
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import com.clma.app.service.RikkaNotificationListenerService
+import com.clma.app.service.LegacyComponentNames
 
 /**
  * Bridge between the LLM tool factories and the live notification listener service.
@@ -17,7 +17,7 @@ object NotificationListenerHandle {
 
     /** True iff our component is listed in Settings.Secure.ENABLED_NOTIFICATION_LISTENERS. */
     fun isEnabledInSettings(ctx: Context): Boolean {
-        val expected = ComponentName(ctx, RikkaNotificationListenerService::class.java).flattenToString()
+        val expected = LegacyComponentNames.notificationListener(ctx).flattenToString()
         val enabled = Settings.Secure.getString(
             ctx.contentResolver,
             "enabled_notification_listeners"

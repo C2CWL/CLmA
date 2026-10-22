@@ -13,6 +13,9 @@ import androidx.compose.runtime.tooling.ComposeStackTraceMode
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import androidx.work.Configuration
+import androidx.work.DelegatingWorkerFactory
+import androidx.work.WorkManager
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
@@ -41,6 +44,7 @@ import com.clma.app.data.sync.BackupManager
 import com.clma.app.data.sync.RestoreFailedException
 import com.clma.app.utils.JsonInstant
 import com.clma.app.service.FloatingBallService
+import com.clma.app.service.LegacyWorkerFactory
 import com.clma.app.service.WebServerService
 import com.clma.app.utils.CrashHandler
 import com.clma.app.utils.DatabaseUtil
@@ -51,7 +55,7 @@ import com.clma.app.ui.hooks.writeBooleanPreference
 import org.koin.android.ext.android.get
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
-import org.koin.androidx.workmanager.koin.workManagerFactory
+import org.koin.androidx.workmanager.factory.KoinWorkerFactory
 import org.koin.core.context.startKoin
 
 private const val TAG = "RikkaHubApp"
@@ -97,9 +101,9 @@ class RikkaHubApp : Application() {
         startKoin {
             androidLogger()
             androidContext(this@RikkaHubApp)
-            workManagerFactory()
             modules(appModule, viewModelModule, dataSourceModule, repositoryModule)
         }
+        initWorkManager()
         this.createNotificationChannel()
 
         // Restore any headless conversation IDs that survived a process kill; must run
@@ -427,6 +431,25 @@ class RikkaHubApp : Application() {
         }
     }
 
+    /**
+     * Same setup Koin's `workManagerFactory()` does (the manifest removes the default
+     * WorkManagerInitializer), plus [LegacyWorkerFactory] so work enqueued before the
+     * me.rerere.rikkahub -> com.clma.app package move — persisted with the old worker class
+     * names — still resolves to the moved workers instead of failing with
+     * ClassNotFoundException.
+     */
+    private fun initWorkManager() {
+        if (WorkManager.isInitialized()) return
+        val factory = DelegatingWorkerFactory().apply {
+            addFactory(KoinWorkerFactory())
+            addFactory(LegacyWorkerFactory())
+        }
+        WorkManager.initialize(
+            this,
+            Configuration.Builder().setWorkerFactory(factory).build(),
+        )
+    }
+
     private fun startTelegramBotIfEnabled() {
         get<AppScope>().launch(Dispatchers.IO) {
             runCatching {
@@ -436,7 +459,7 @@ class RikkaHubApp : Application() {
                     com.clma.app.service.TelegramBotService.start(this@RikkaHubApp)
                     // Defense-in-depth against OEM aggressive task-killing: a 30-min
                     // periodic health probe re-starts the service if anything killed it
-                    // outside our control. Idempotent — uses ExistingPeriodicWorkPolicy.KEEP.
+                    // outside our control. Idempotent — uses ExistingPeriodicWorkPolicy.UPDATE.
                     com.clma.app.service.TelegramBotHealthWorker.schedule(this@RikkaHubApp)
                 } else {
                     com.clma.app.service.TelegramBotHealthWorker.cancel(this@RikkaHubApp)

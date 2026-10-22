@@ -1,10 +1,10 @@
 package com.clma.app.data.ai.tools.local
 
-import android.content.ComponentName
 import android.content.Context
 import android.provider.Settings
 import kotlinx.serialization.json.JsonObject
 import com.clma.app.service.RikkaAccessibilityService
+import com.clma.app.service.LegacyComponentNames
 
 /**
  * Bridge between the LLM tool factories and the live AccessibilityService.
@@ -29,7 +29,7 @@ object AccessibilityServiceHandle {
 
     /** True iff our component is listed in Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES. */
     fun isEnabledInSettings(ctx: Context): Boolean {
-        val expected = ComponentName(ctx, RikkaAccessibilityService::class.java).flattenToString()
+        val expected = LegacyComponentNames.accessibilityService(ctx).flattenToString()
         val enabled = Settings.Secure.getString(
             ctx.contentResolver,
             Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES

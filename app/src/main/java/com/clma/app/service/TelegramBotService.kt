@@ -438,7 +438,7 @@ class TelegramBotService : Service() {
     private fun escalatePollStallToFgsRestart() {
         android.util.Log.w(TAG, "escalatePollStallToFgsRestart: poll loop flapping — requesting FGS restart")
         runCatching {
-            // The health worker is idempotent (ExistingPeriodicWorkPolicy.KEEP) and its
+            // The health worker is idempotent (ExistingPeriodicWorkPolicy.UPDATE) and its
             // next pass re-starts the service if it finds it unhealthy. Re-scheduling here
             // ensures the worker is armed even if it had been cancelled.
             TelegramBotHealthWorker.schedule(applicationContext)

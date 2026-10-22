@@ -1,6 +1,5 @@
 package com.clma.app.ui.pages.setting
 
-import android.content.ComponentName
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -44,6 +43,7 @@ import com.clma.app.data.ai.tools.local.PermissionHelper
 import com.clma.app.data.permissions.KeepAliveVendor
 import com.clma.app.data.permissions.keepAliveVendorOf
 import com.clma.app.service.ActionLogEntry
+import com.clma.app.service.LegacyComponentNames
 import com.clma.app.service.RikkaAccessibilityService
 import com.clma.app.shizuku.ACCESSIBILITY_REPAIR_TIMEOUT_MS
 import com.clma.app.shizuku.ShizukuManager
@@ -234,10 +234,8 @@ fun SettingAccessibilityPage() {
                                 toaster.show(needShizuku, type = ToastType.Error)
                                 return@launch
                             }
-                            val component = ComponentName(
-                                context,
-                                RikkaAccessibilityService::class.java,
-                            ).flattenToString()
+                            val component = LegacyComponentNames.accessibilityService(context)
+                                .flattenToString()
                             val result = ShizukuManager.exec(
                                 context,
                                 buildAccessibilityRepairCommand(component),

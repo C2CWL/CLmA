@@ -71,9 +71,12 @@ class TelegramBotHealthWorker(
 
     companion object {
         /**
-         * Schedule (or no-op-replace) the periodic health probe. Idempotent — calls from
+         * Schedule (or update in place) the periodic health probe. Idempotent — calls from
          * `RikkaHubApp.onCreate` and `CronBootReceiver` both end up with a single registered
-         * worker thanks to `ExistingPeriodicWorkPolicy.KEEP`.
+         * worker. `UPDATE` (not `KEEP`) so an entry persisted by an older build — e.g. one
+         * still carrying the pre-rename worker class name `me.rerere.rikkahub.service.
+         * TelegramBotHealthWorker` — is rewritten to the current spec, while its period
+         * timing is preserved (no extra immediate run on every app start).
          */
         fun schedule(context: Context) {
             val req = PeriodicWorkRequestBuilder<TelegramBotHealthWorker>(
@@ -81,7 +84,7 @@ class TelegramBotHealthWorker(
             ).build()
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                 HEALTH_WORK_NAME,
-                ExistingPeriodicWorkPolicy.KEEP,
+                ExistingPeriodicWorkPolicy.UPDATE,
                 req
             )
         }

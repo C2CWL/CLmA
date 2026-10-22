@@ -17,6 +17,11 @@ import android.util.Log
  * it the other way round briefly leaves the package with zero launcher entries, which
  * some launchers react to by dropping the icon from its saved layout. `DONT_KILL_APP`
  * keeps the running process alive, so switching does not look like a crash.
+ *
+ * The alias names deliberately keep the PRE-RENAME package (`me.rerere.rikkahub.*`): the
+ * system remembers which alias is enabled (and launchers pin home-screen icons) by component
+ * name, so these strings must match the manifest exactly and must not follow the source move
+ * to `com.clma.app`.
  */
 enum class AppIconStyle(val aliasName: String) {
     /** F1 — stone-paper background, fluid orb, white C holding the Y. */

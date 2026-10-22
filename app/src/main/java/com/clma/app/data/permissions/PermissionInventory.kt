@@ -2,7 +2,6 @@ package com.clma.app.data.permissions
 
 import android.Manifest
 import android.app.NotificationManager
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageInfo
@@ -14,8 +13,7 @@ import android.os.PowerManager
 import android.provider.Settings
 import androidx.core.content.ContextCompat
 import com.clma.app.R
-import com.clma.app.service.RikkaAccessibilityService
-import com.clma.app.service.RikkaNotificationListenerService
+import com.clma.app.service.LegacyComponentNames
 
 /**
  * Auto-discovered inventory of every permission this app requires, grouped by how the
@@ -218,7 +216,7 @@ object PermissionInventory {
     )
 
     private fun accessibilityServiceRow(context: Context): Row {
-        val component = ComponentName(context, RikkaAccessibilityService::class.java)
+        val component = LegacyComponentNames.accessibilityService(context)
             .flattenToString()
         val enabled = (Settings.Secure.getString(
             context.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
@@ -236,7 +234,7 @@ object PermissionInventory {
     }
 
     private fun notificationListenerRow(context: Context): Row {
-        val component = ComponentName(context, RikkaNotificationListenerService::class.java)
+        val component = LegacyComponentNames.notificationListener(context)
             .flattenToString()
         val enabled = (Settings.Secure.getString(
             context.contentResolver, "enabled_notification_listeners"
