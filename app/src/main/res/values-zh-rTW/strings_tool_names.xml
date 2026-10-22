@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Human-readable display names for built-in tools (ToolDisplayNames.kt). Kept in their own
+  file so translation edits never conflict with the big strings.xml. Keys:
+    tool_display_name_<tool id>  short name (headline)
+    tool_display_desc_<tool id>  one-line description
+  The raw tool id is still shown under the name, so these are display-only and never sent to
+  the model.
+-->
+<!-- zh-rTW: only the shared labels for now; tool names fall back to values/. -->
+<resources>
+  <!-- Shared labels used next to tool names. -->
+  <string name="tool_display_mcp_server_provided">（伺服器提供）</string>
+  <string name="tool_display_name_with_id">%1$s（%2$s）</string>
+  <string name="chat_message_tool_approve_once">允許一次</string>
+  <string name="chat_message_tool_allow_chat">本次對話允許</string>
+</resources>

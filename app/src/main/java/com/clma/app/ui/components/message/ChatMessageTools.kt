@@ -17,7 +17,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
@@ -65,6 +64,8 @@ import me.rerere.hugeicons.stroke.Lock
 import me.rerere.hugeicons.stroke.Refresh03
 import me.rerere.hugeicons.stroke.Tick01
 import me.rerere.hugeicons.stroke.Tools
+import com.clma.app.ui.components.ai.McpServerTag
+import com.clma.app.ui.components.ai.ToolDisplaySupporting
 import com.clma.app.R
 import com.clma.app.data.ai.tools.local.REQUEST_SECRET_TOOL_NAME
 import com.clma.app.data.datastore.ToolCallStyle
@@ -263,7 +264,26 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
                 // and can race the persisted state mutation. Keyed on toolCallId so a
                 // recomposition for a different tool doesn't carry the flag.
                 var inFlight by remember(tool.toolCallId) { mutableStateOf(false) }
+                // Relayed MCP tools: the server's own description (untranslated), looked up
+                // from the live tool list; display-only.
+                val mcpDescription: String? = if (tool.toolName.startsWith("mcp__")) {
+                    val mcpManager = koinInject<com.clma.app.data.ai.mcp.McpManager>()
+                    remember(tool.toolName) {
+                        runCatching {
+                            mcpManager.getAllAvailableTools().firstOrNull { (serverId, serverName, mcpTool) ->
+                                com.clma.app.data.ai.mcp.buildMcpToolName(serverId, serverName, mcpTool.name) == tool.toolName
+                            }?.third?.description
+                        }.getOrNull()
+                    }
+                } else {
+                    null
+                }
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    // What is being approved: MCP server tag, description, raw id.
+                    com.clma.app.data.ai.tools.ToolDisplayNames.mcpParts(tool.toolName)?.let {
+                        McpServerTag(it.serverName)
+                    }
+                    ToolDisplaySupporting(toolName = tool.toolName, mcpDescription = mcpDescription)
                     // schedule_job is the one approval that AUTHORISES future autonomous
                     // execution, not just one tool. Surface the consequence here so the
                     // user knows what they're approving — every tool the cron prompt
@@ -348,55 +368,46 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
                     // matches the Telegram inline-keyboard layout so the user sees the same
                     // mental model on both surfaces. There is no persistent "always" button:
                     // the blacklist (Settings → Tool approvals) is where a tool stops asking.
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        FilledTonalIconButton(
-                            onClick = {
-                                if (inFlight) return@FilledTonalIconButton
-                                inFlight = true
-                                onToolApproval(
-                                    tool.toolCallId, true, "",
-                                    com.clma.app.service.ChatService.ApprovalScope.Once,
-                                    tool.toolName,
-                                )
-                            },
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        ApprovalButton(
+                            label = stringResource(R.string.chat_message_tool_approve_once),
+                            icon = HugeIcons.Tick01,
                             enabled = !inFlight,
-                            modifier = Modifier.size(28.dp),
-                        ) {
-                            Icon(
-                                imageVector = HugeIcons.Tick01,
-                                contentDescription = stringResource(R.string.chat_message_tool_approve),
-                                modifier = Modifier.size(14.dp),
-                            )
-                        }
-                        FilledTonalIconButton(
                             onClick = {
-                                if (inFlight) return@FilledTonalIconButton
-                                inFlight = true
-                                onToolApproval(
-                                    tool.toolCallId, true, "",
-                                    com.clma.app.service.ChatService.ApprovalScope.ChatScope,
-                                    tool.toolName,
-                                )
+                                if (!inFlight) {
+                                    inFlight = true
+                                    onToolApproval(
+                                        tool.toolCallId, true, "",
+                                        com.clma.app.service.ChatService.ApprovalScope.Once,
+                                        tool.toolName,
+                                    )
+                                }
                             },
+                        )
+                        ApprovalButton(
+                            label = stringResource(R.string.chat_message_tool_allow_chat),
+                            emoji = "💬",
                             enabled = !inFlight,
-                            modifier = Modifier.size(28.dp),
-                        ) {
-                            Text("💬", style = MaterialTheme.typography.labelSmall)
-                        }
-                        FilledTonalIconButton(
                             onClick = {
-                                if (inFlight) return@FilledTonalIconButton
-                                showDenyDialog = true
+                                if (!inFlight) {
+                                    inFlight = true
+                                    onToolApproval(
+                                        tool.toolCallId, true, "",
+                                        com.clma.app.service.ChatService.ApprovalScope.ChatScope,
+                                        tool.toolName,
+                                    )
+                                }
                             },
+                        )
+                        ApprovalButton(
+                            label = stringResource(R.string.chat_message_tool_deny),
+                            icon = HugeIcons.Cancel01,
                             enabled = !inFlight,
-                            modifier = Modifier.size(28.dp),
-                        ) {
-                            Icon(
-                                imageVector = HugeIcons.Cancel01,
-                                contentDescription = stringResource(R.string.chat_message_tool_deny),
-                                modifier = Modifier.size(14.dp),
-                            )
-                        }
+                            onClick = { if (!inFlight) showDenyDialog = true },
+                        )
                     }
                 }
             }
@@ -1009,4 +1020,29 @@ private fun ToolDenyReasonDialog(
             }
         }
     )
+}
+
+/** Compact labelled approval button (icon or emoji + text) for the pending tool card. */
+@Composable
+private fun ApprovalButton(
+    label: String,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
+    emoji: String? = null,
+) {
+    FilledTonalButton(
+        onClick = onClick,
+        enabled = enabled,
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+        modifier = Modifier.height(30.dp),
+    ) {
+        if (icon != null) {
+            Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(14.dp))
+        } else if (emoji != null) {
+            Text(emoji, style = MaterialTheme.typography.labelSmall)
+        }
+        androidx.compose.foundation.layout.Spacer(Modifier.size(4.dp))
+        Text(text = label, style = MaterialTheme.typography.labelMedium, maxLines = 1)
+    }
 }

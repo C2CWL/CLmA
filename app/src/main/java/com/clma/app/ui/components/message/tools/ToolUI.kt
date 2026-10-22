@@ -27,6 +27,7 @@ import com.clma.common.http.jsonObjectOrNull
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Tools
 import com.clma.app.R
+import com.clma.app.ui.components.ai.toolDisplayName
 import com.clma.app.ui.components.richtext.HighlightCodeBlock
 import com.clma.app.ui.components.ui.FormItem
 import com.clma.app.utils.JsonInstant
@@ -62,7 +63,7 @@ interface ToolUIRenderer {
     /** 折叠步骤的标题 */
     @Composable
     fun title(context: ToolUIContext): String =
-        stringResource(R.string.chat_message_tool_call_generic, context.tool.toolName)
+        stringResource(R.string.chat_message_tool_call_generic, toolDisplayName(context.tool.toolName))
 
     /** 步骤展开时是否显示内联摘要 */
     fun hasSummary(context: ToolUIContext): Boolean = false

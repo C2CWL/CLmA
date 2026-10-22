@@ -14,6 +14,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -27,7 +28,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -68,8 +68,8 @@ private sealed interface PendingPreset {
  * (in memory, keyed by [conversationId]) exactly like tapping 💬 on a card.
  *
  * Enabling a floor / MCP row asks for a light confirmation (risk line + one-line disclaimer, no
- * checkbox); blacklisted rows and revoking are instant. Raw tool ids are shown for now; Chinese
- * display names are a separate change.
+ * checkbox); blacklisted rows and revoking are instant. Rows follow the tool display rule
+ * (name, description, raw id — see ToolDisplay.kt).
  */
 @Composable
 fun ChatToolPresetSheet(
@@ -102,7 +102,11 @@ fun ChatToolPresetSheet(
     val mcpEntries = remember(assistant.id, assistant.mcpServers) {
         runCatching {
             mcpManager.getAllAvailableTools(assistant).map { (serverId, serverName, tool) ->
-                ChatToolPresets.McpEntry(serverName, buildMcpToolName(serverId, serverName, tool.name))
+                ChatToolPresets.McpEntry(
+                    serverName = serverName,
+                    toolName = buildMcpToolName(serverId, serverName, tool.name),
+                    description = tool.description,
+                )
             }
         }.getOrDefault(emptyList())
     }
@@ -308,17 +312,18 @@ private fun PresetGroup(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        ) {
-                            Text(
-                                text = row.toolName,
-                                style = MaterialTheme.typography.bodyLarge,
-                                modifier = Modifier.weight(1f, fill = false),
+                        ProvideTextStyle(MaterialTheme.typography.bodyLarge) {
+                            ToolDisplayHeadline(
+                                toolName = row.toolName,
+                                mcpServerName = row.serverName,
+                                tag = if (row.kind == ChatToolPresets.Kind.FLOOR) {
+                                    { HighRiskTag() }
+                                } else {
+                                    null
+                                },
                             )
-                            if (row.kind == ChatToolPresets.Kind.FLOOR) HighRiskTag()
                         }
+                        ToolDisplaySupporting(toolName = row.toolName, mcpDescription = row.description)
                         val risky = ChatToolPresets.needsConfirm(row)
                         Text(
                             text = when {
@@ -367,7 +372,10 @@ private fun PresetConfirmDialog(
                 when (pending) {
                     is PendingPreset.One -> {
                         Text(
-                            text = stringResource(R.string.setting_page_tool_approvals_preset_confirm_body, pending.row.toolName),
+                            text = stringResource(
+                                R.string.setting_page_tool_approvals_preset_confirm_body,
+                                toolNameWithId(pending.row.toolName),
+                            ),
                             style = MaterialTheme.typography.bodyMedium,
                         )
                         Text(
@@ -388,13 +396,15 @@ private fun PresetConfirmDialog(
                             ),
                             style = MaterialTheme.typography.bodyMedium,
                         )
-                        Text(
-                            text = pending.rows.filter(ChatToolPresets::needsConfirm)
-                                .joinToString("\n") { "• " + it.toolName },
-                            style = MaterialTheme.typography.bodySmall,
-                            fontFamily = FontFamily.Monospace,
-                            color = MaterialTheme.colorScheme.error,
-                        )
+                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            pending.rows.filter(ChatToolPresets::needsConfirm).forEach {
+                                Text(
+                                    text = "• " + toolNameWithId(it.toolName),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.error,
+                                )
+                            }
+                        }
                     }
                 }
                 Text(
