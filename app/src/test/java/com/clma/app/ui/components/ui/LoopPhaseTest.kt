@@ -22,10 +22,20 @@ class LoopPhaseTest {
     }
 
     @Test
-    fun `static frames are meaningful`() {
-        // Shimmer: band parked off the right edge, so the label reads plainly.
-        assertEquals(100f, shimmerBandStart(SHIMMER_STATIC_PHASE, width = 100f, band = 45f), 0.001f)
-        // Sparkle: pentagon at full size.
-        assertEquals(1f, sparkleBreath(SPARKLE_STATIC_PHASE), 1e-5f)
+    fun `rising dots rest in the static frame`() {
+        for (i in 0..2) assertEquals(0f, risingDotLift(ATOM_DOTS_STATIC_PHASE, i), 1e-5f)
+    }
+
+    @Test
+    fun `rising dots lift one after another`() {
+        // Early in the loop the first dot is up while the later ones still rest.
+        assertTrue(risingDotLift(0.1f, 0) > 0.5f)
+        assertEquals(0f, risingDotLift(0.1f, 2), 1e-5f)
+        for (i in 0..2) {
+            for (step in 0..100) {
+                val lift = risingDotLift(step / 100f, i)
+                assertTrue(lift in 0f..1f)
+            }
+        }
     }
 }

@@ -105,6 +105,7 @@ import com.clma.app.ui.components.ui.bounceOverscroll
 import com.clma.app.ui.components.ui.ErrorCardsDisplay
 import com.clma.app.ui.components.ui.ListSelectableItem
 import com.clma.app.ui.components.ui.ChatLoadingIndicator
+import com.clma.app.ui.components.ui.generationPhaseOf
 import com.clma.app.ui.components.ui.Tooltip
 import com.clma.app.ui.hooks.ImeLazyListAutoScroller
 import com.clma.app.ui.theme.ChatFontProvider
@@ -445,10 +446,16 @@ private fun ChatListNormal(
                         ),
                         assistant?.useGradientBackground == true,
                     )
+                    // 当前阶段（思考中 / 回复中 / 工作中）：看最后一条消息的最后一个部分。
+                    val lastNode = conversation.messageNodes.lastOrNull()
+                    val generationPhase = generationPhaseOf(
+                        lastNode?.messages?.getOrNull(lastNode.selectIndex)
+                    )
                     // 暖阳：思考行跟消息同宽、左对齐，不居中漂浮。
                     Box(modifier = messageModifier) {
                         ChatLoadingIndicator(
                             processingStatus = processingStatus,
+                            phase = generationPhase,
                             photoShown = photoShown,
                             hazeState = hazeState,
                         )
