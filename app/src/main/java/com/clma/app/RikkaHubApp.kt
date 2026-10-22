@@ -160,6 +160,9 @@ class RikkaHubApp : Application() {
         // builds ChatService on the IO thread.
         eagerlyInitChatService()
 
+        // Top island overlay: follows ChatService generations (needs the overlay permission).
+        startTopIsland()
+
         // Start Telegram bot if previously enabled — service is START_NOT_STICKY so OS won't
         // auto-revive it after a process kill; we need to bring it back ourselves.
         startTelegramBotIfEnabled()
@@ -426,6 +429,19 @@ class RikkaHubApp : Application() {
             }.onFailure {
                 Log.e(TAG, "incrementLaunchCount failed", it)
             }
+        }
+    }
+
+    private fun startTopIsland() {
+        runCatching {
+            com.clma.app.service.island.TopIslandController.start(
+                app = this,
+                chatService = get(),
+                settingsStore = get(),
+                appScope = get(),
+            )
+        }.onFailure {
+            Log.e(TAG, "startTopIsland failed", it)
         }
     }
 

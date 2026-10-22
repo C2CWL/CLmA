@@ -241,6 +241,7 @@ fun settingsSearchIndex(
     }
     nested(notifParent, Screen.SettingPreferencesNotification, appearance, R.string.setting_display_page_notification_message_generated, R.string.setting_display_page_notification_message_generated_desc)
     nested(notifParent, Screen.SettingPreferencesNotification, appearance, R.string.setting_display_page_live_update_notification, R.string.setting_display_page_live_update_notification_desc)
+    nested(notifParent, Screen.SettingPreferencesNotification, appearance, R.string.setting_top_island_title, R.string.setting_top_island_desc)
 
     val speechParent = R.string.speech_page_title
     nested(speechParent, Screen.SettingSpeech, models, R.string.setting_display_page_auto_play_tts_title, R.string.setting_display_page_auto_play_tts_desc)

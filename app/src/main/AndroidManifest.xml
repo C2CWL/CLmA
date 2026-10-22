@@ -448,6 +448,11 @@
         android:value="local web server for LLM chat UI" />
     </service>
 
+    <!-- 停止 action on the generation notifications (top-island fallback). -->
+    <receiver
+      android:name=".service.GenerationStopReceiver"
+      android:exported="false" />
+
     <service
       android:name=".service.ChatGenerationForegroundService"
       android:exported="false"

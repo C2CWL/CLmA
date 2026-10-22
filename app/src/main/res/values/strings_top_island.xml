@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <!-- Top island: status capsule shown while a reply is generating. -->
+  <string name="top_island_status_thinking">Thinking</string>
+  <string name="top_island_status_writing">Writing</string>
+  <string name="top_island_status_tool">Tool: %s</string>
+  <string name="top_island_status_running">Running</string>
+  <string name="top_island_status_done">Done</string>
+  <string name="top_island_status_stopped">Stopped</string>
+  <string name="top_island_done_elapsed">took %s</string>
+  <string name="top_island_title">Replying: %s</string>
+  <string name="top_island_title_untitled">Replying</string>
+  <string name="top_island_subtitle">Running in background</string>
+  <string name="top_island_subtitle_step">Running in background · step %d</string>
+  <string name="top_island_step_thinking">Thinking…</string>
+  <string name="top_island_step_writing">Writing the reply…</string>
+  <string name="top_island_step_tool">Calling tool: %s</string>
+  <string name="top_island_elapsed">Elapsed %s</string>
+  <string name="top_island_input_hint">Add a note for the AI…</string>
+  <string name="top_island_input_note">The AI sees this right after the current tool call finishes</string>
+  <string name="top_island_send">Send</string>
+  <string name="top_island_stop">Stop</string>
+  <string name="top_island_open">Open</string>
+  <string name="top_island_collapse">Collapse</string>
+  <string name="top_island_interject_failed">Can\'t add a note right now, try again later</string>
+  <string name="top_island_interject_sent">Note sent</string>
+  <string name="top_island_notification_stop">Stop</string>
+  <string name="setting_top_island_title">Top island</string>
+  <string name="setting_top_island_desc">While the AI is replying, show a capsule at the top of the screen. Tap it for progress, add a note, or stop.</string>
+  <string name="setting_top_island_permission_needed">Needs the \"display over other apps\" permission</string>
+  <string name="setting_top_island_permission_grant">Grant</string>
+</resources>

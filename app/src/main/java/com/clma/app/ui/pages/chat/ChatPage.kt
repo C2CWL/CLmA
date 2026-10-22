@@ -67,6 +67,7 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.glass.hazeGlass
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
+import com.clma.app.service.island.TopIslandChatVisibilityEffect
 import com.clma.app.ui.components.ui.rikkaGlassStyle
 import com.clma.app.ui.components.ui.frostedPlate
 import com.clma.app.ui.components.ui.frostedPlateSpec
@@ -132,6 +133,8 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null) {
     )
     val filesManager: FilesManager = koinInject()
     val navController = LocalNavController.current
+    // Hide the top island while this very conversation is on screen.
+    TopIslandChatVisibilityEffect(id)
     val scope = rememberCoroutineScope()
 
     val setting by vm.settings.collectAsStateWithLifecycle()

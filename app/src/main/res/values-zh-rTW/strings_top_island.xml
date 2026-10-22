@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="top_island_status_thinking">思考中</string>
+  <string name="top_island_status_writing">正在寫</string>
+  <string name="top_island_status_tool">呼叫工具：%s</string>
+  <string name="top_island_status_running">執行中</string>
+  <string name="top_island_status_done">已完成</string>
+  <string name="top_island_status_stopped">已停止</string>
+  <string name="top_island_done_elapsed">用時 %s</string>
+  <string name="top_island_title">正在回覆：%s</string>
+  <string name="top_island_title_untitled">正在回覆</string>
+  <string name="top_island_subtitle">背景執行中</string>
+  <string name="top_island_subtitle_step">背景執行中 · 第 %d 步</string>
+  <string name="top_island_step_thinking">正在思考…</string>
+  <string name="top_island_step_writing">正在寫回覆…</string>
+  <string name="top_island_step_tool">正在呼叫工具：%s</string>
+  <string name="top_island_elapsed">已用時 %s</string>
+  <string name="top_island_input_hint">給 AI 補充一句…</string>
+  <string name="top_island_input_note">目前工具呼叫結束後，AI 會立刻看到這條補充</string>
+  <string name="top_island_send">傳送</string>
+  <string name="top_island_stop">停止</string>
+  <string name="top_island_open">開啟</string>
+  <string name="top_island_collapse">收起</string>
+  <string name="top_island_interject_failed">現在無法插話，稍後再試</string>
+  <string name="top_island_interject_sent">已傳送補充</string>
+  <string name="top_island_notification_stop">停止</string>
+  <string name="setting_top_island_title">頂部靈動島</string>
+  <string name="setting_top_island_desc">AI 回覆時在螢幕頂部顯示狀態膠囊，點開可查看進度、補充一句或停止</string>
+  <string name="setting_top_island_permission_needed">需要「懸浮窗」權限</string>
+  <string name="setting_top_island_permission_grant">去授權</string>
+</resources>

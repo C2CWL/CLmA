@@ -3463,6 +3463,15 @@ class ChatService(
             contentIntent = getPendingIntent(context, conversationId)
             requestPromotedOngoing = true
             shortCriticalText = chipText
+            // Top-island fallback: progress + a 停止 action that reaches stopGeneration.
+            indeterminateProgress = true
+            actions = listOf(
+                GenerationStopReceiver.stopAction(
+                    context,
+                    conversationId,
+                    requestCode = notificationSequenceFor(conversationId) + 2_000_001,
+                )
+            )
         }
     }
 

@@ -1270,6 +1270,8 @@ data class DisplaySetting(
     val skipCropImage: Boolean = true,
     val enableNotificationOnMessageGeneration: Boolean = false,
     val enableLiveUpdateNotification: Boolean = false,
+    // 顶部灵动岛：生成时在屏幕顶部显示状态胶囊（需要悬浮窗权限）。默认开。
+    val enableTopIsland: Boolean = true,
     val codeBlockAutoWrap: Boolean = false,
     val codeBlockAutoCollapse: Boolean = false,
     val showLineNumbers: Boolean = false,
