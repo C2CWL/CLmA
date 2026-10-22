@@ -128,6 +128,9 @@ object DocxParser {
                             isBold = formatting.first
                             isItalic = formatting.second
                         }
+                        // Text boxes are stored twice: as DrawingML in mc:Choice and as a
+                        // VML copy in mc:Fallback. Reading both duplicated their text.
+                        "Fallback" -> skipElement(parser)
                         "t" -> {
                             parser.next()
                             if (parser.eventType == XmlPullParser.TEXT) {
@@ -152,6 +155,14 @@ object DocxParser {
                     }
                 }
             }
+        }
+    }
+
+    /** Skips the element the parser is positioned on (START_TAG), including its children. */
+    private fun skipElement(parser: XmlPullParser) {
+        val startDepth = parser.depth
+        while (parser.next() != XmlPullParser.END_DOCUMENT) {
+            if (parser.eventType == XmlPullParser.END_TAG && parser.depth == startDepth) return
         }
     }
 
