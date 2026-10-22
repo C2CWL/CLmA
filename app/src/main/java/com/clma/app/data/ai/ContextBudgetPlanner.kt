@@ -2,6 +2,7 @@ package com.clma.app.data.ai
 
 import com.clma.ai.ui.UIMessage
 import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.ai.document.DocumentSizeEstimator
 
 data class ContextBudgetPlan(
     val estimatedInputTokens: Int,
@@ -20,21 +21,42 @@ data class ContextBudgetPlan(
 const val INLINED_DOCUMENT_TAG = "<UploadFile name="
 
 /**
- * Size (estimated tokens) of the text that DocumentAsPromptTransformer actually put into the most
- * recent request for a document, keyed by the document URL. Lets [ContextBudgetPlanner] count a
- * document by its real extracted text instead of a fixed guess. In-memory only: after a restart a
- * document falls back to the fixed guess until it is sent again.
+ * Size (estimated tokens) of a document in the prompt, keyed by the document URL. Lets
+ * [ContextBudgetPlanner] count a document by its real text instead of a fixed guess.
+ *
+ * - [record]: what DocumentAsPromptTransformer actually inlined in the most recent request
+ *   (already clamped to the inline budget). Always wins.
+ * - [estimate]: when nothing was recorded in this process (e.g. after an app restart), estimate
+ *   from disk via [DocumentSizeEstimator] — the extracted-text cache if present, otherwise a
+ *   file-size heuristic — and memoize it, so each document costs at most one small disk lookup.
+ *   This disk estimate is the full document size, not clamped to the inline budget (the planner
+ *   does not know the budget here), which errs on the safe side.
  */
 object DocumentTokenEstimates {
-    private val tokensByUrl = java.util.concurrent.ConcurrentHashMap<String, Long>()
+    private val recordedByUrl = java.util.concurrent.ConcurrentHashMap<String, Long>()
+    private val diskByUrl = java.util.concurrent.ConcurrentHashMap<String, Long>()
 
     fun record(url: String, tokens: Long) {
-        tokensByUrl[url] = tokens.coerceAtLeast(0L)
+        recordedByUrl[url] = tokens.coerceAtLeast(0L)
     }
 
-    fun get(url: String): Long? = tokensByUrl[url]
+    /** Recorded size only (no disk access). */
+    fun get(url: String): Long? = recordedByUrl[url]
 
-    internal fun clear() = tokensByUrl.clear()
+    /** Recorded size, else a memoized disk estimate, else null (not a local file). */
+    fun estimate(document: UIMessagePart.Document): Long? {
+        recordedByUrl[document.url]?.let { return it }
+        diskByUrl[document.url]?.let { return it }
+        val fromDisk = DocumentSizeEstimator.estimate(document.url, document.fileName, document.mime)
+            ?: return null
+        diskByUrl[document.url] = fromDisk
+        return fromDisk
+    }
+
+    internal fun clear() {
+        recordedByUrl.clear()
+        diskByUrl.clear()
+    }
 }
 
 object ContextBudgetPlanner {
@@ -165,9 +187,10 @@ object ContextBudgetPlanner {
         is UIMessagePart.ToolCall -> estimateTextTokens(part.toolName) + estimateTextTokens(part.arguments)
         is UIMessagePart.ToolResult -> estimateTextTokens(part.toolName) +
             estimateTextTokens(part.arguments.toString()) + estimateTextTokens(part.content.toString())
-        // Real size of what the transformer inlined last time (extracted text, clamped to the
-        // inline budget). Unknown documents (not sent yet in this process) keep the old guess.
-        is UIMessagePart.Document -> (DocumentTokenEstimates.get(part.url) ?: MEDIA_PART_TOKENS.toLong()) +
+        // Real size of what the transformer inlined last time (clamped to the inline budget);
+        // after a restart, estimated from the extracted-text cache or the file size. The fixed
+        // guess remains only for documents that are not local files.
+        is UIMessagePart.Document -> (DocumentTokenEstimates.estimate(part) ?: MEDIA_PART_TOKENS.toLong()) +
             estimateTextTokens(part.fileName)
         is UIMessagePart.Image,
         is UIMessagePart.Video,
