@@ -27,9 +27,10 @@ internal fun cleanPanelAlpha(opacity: Float): Float = opacity.coerceIn(0f, 1f)
 /**
  * Range of the composer's vertical inset (DisplaySetting.cleanLayoutBottomPadding), in dp.
  *
- * The card is dominated by the field's own 56dp height, so the old 4..10 window could move it by
- * 12dp at most and 4dp away from the default 6dp was invisible - the slider read as dead. 0..24
- * still keeps the text off the card's edge at the low end and can visibly shorten or grow the box.
+ * The card is dominated by the field's own 56dp height (one row at rest, field + tools row once
+ * open), so the old 4..10 window could move it by 12dp at most and 4dp away from the default 6dp
+ * was invisible - the slider read as dead. 0..24 still keeps the text off the card's edge at the
+ * low end and can visibly shorten or grow the box; 4dp makes the resting pill as low as ORIGINAL's.
  */
 internal const val CleanInputPaddingMinDp = 0f
 internal const val CleanInputPaddingMaxDp = 24f

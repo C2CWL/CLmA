@@ -253,11 +253,15 @@ fun ChatInput(
 
     // Collapsed = a one-line pill. It opens into a taller multi-line box as soon as it is focused,
     // carries attachments, or holds a multi-line draft.
-    val naturallyExpanded = isFocused ||
-        state.messageContent.isNotEmpty() ||
-        state.textContent.text.contains('\n')
-    // CLEAN / CLAUDE keep the open two-row box all the time: full-width field on top, tools
-    // underneath, "+" moved to the right next to send. ORIGINAL keeps the collapsible pill.
+    val naturallyExpanded = chatInputExpanded(
+        focused = isFocused,
+        hasAttachments = state.messageContent.isNotEmpty(),
+        multiLineDraft = state.textContent.text.contains('\n'),
+    )
+    // Every layout rests as the one-line pill and opens the same way. Once open, CLEAN / CLAUDE
+    // put the full-width field on top and the tools underneath, with "+" on the right next to
+    // send; they keep their own button order and corners while collapsed too. (They used to stay
+    // open all the time, which made the empty box ~44dp taller than ORIGINAL's.)
     val chatLayout = settings.displaySetting.effectiveChatLayout
     val cleanLayout = chatLayout != ChatLayout.ORIGINAL
     val claudeLayout = chatLayout == ChatLayout.CLAUDE
@@ -267,7 +271,7 @@ fun ChatInput(
         ChatLayout.CLEAN -> settings.displaySetting.cleanLayoutGlass
         ChatLayout.CLAUDE -> false
     }
-    val expanded = cleanLayout || naturallyExpanded
+    val expanded = naturallyExpanded
     // Animate the corner along with the layout change below, so the pill does not snap between
     // its 28dp and 16dp radii while the bar is growing. Clean = flatter 14dp; Claude = 24dp card.
     val containerCorner by animateDpAsState(
@@ -512,6 +516,14 @@ fun ChatInput(
         }
     }
 }
+
+/**
+ * Whether the input bar is open (field on its own row, tools underneath) rather than the
+ * one-line pill. Same rule for every chat layout: open while focused, carrying attachments, or
+ * holding a multi-line draft.
+ */
+internal fun chatInputExpanded(focused: Boolean, hasAttachments: Boolean, multiLineDraft: Boolean): Boolean =
+    focused || hasAttachments || multiLineDraft
 
 private val modelDateSuffix = Regex("""[-_](\d{8}|\d{4}-\d{2}-\d{2})$""")
 

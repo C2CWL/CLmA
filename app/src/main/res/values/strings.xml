@@ -918,7 +918,7 @@
   <string name="setting_display_page_show_updates_title">Show Updates</string>
   <string name="setting_display_page_show_user_avatar_desc">Whether to display user avatar in chat messages</string>
   <string name="setting_display_page_clean_layout_title">Clean layout</string>
-  <string name="setting_display_page_clean_layout_desc">Flat top bar with the model name under the title, and a two-row input box with the tools below the text field</string>
+  <string name="setting_display_page_clean_layout_desc">Flat top bar with the model name under the title; the input box rests as one row and opens into two rows with the tools below the text field</string>
   <string name="setting_display_page_chat_layout_title">Chat layout</string>
   <string name="setting_display_page_chat_layout_desc">Overall look of the chat page: top bar, composer and message chrome</string>
   <string name="setting_display_page_chat_layout_original">Original</string>
