@@ -115,7 +115,7 @@ val settingsHubItems: Map<SettingsHubItemId, SettingsHubItemDef> = listOf(
     ),
     SettingsHubItemDef(
         id = SettingsHubItemId.MODELS,
-        route = Screen.SettingModels,
+        route = Screen.SettingModels(),
         classic = SettingsHubItemCopy(R.string.setting_model_page_title, R.string.setting_page_default_model_desc),
         reorganized = SettingsHubItemCopy(R.string.setting_model_page_title, R.string.setting_page_default_model_desc),
     ),
@@ -133,7 +133,7 @@ val settingsHubItems: Map<SettingsHubItemId, SettingsHubItemDef> = listOf(
     ),
     SettingsHubItemDef(
         id = SettingsHubItemId.SPEECH,
-        route = Screen.SettingSpeech,
+        route = Screen.SettingSpeech(),
         classic = SettingsHubItemCopy(R.string.setting_page_tts_service, R.string.setting_page_tts_service_desc),
         reorganized = SettingsHubItemCopy(R.string.setting_page_tts_service, R.string.setting_page_tts_service_desc),
     ),
@@ -253,7 +253,7 @@ val settingsHubItems: Map<SettingsHubItemId, SettingsHubItemDef> = listOf(
     ),
     SettingsHubItemDef(
         id = SettingsHubItemId.BACKUP,
-        route = Screen.Backup,
+        route = Screen.Backup(),
         classic = SettingsHubItemCopy(R.string.setting_page_data_backup, R.string.setting_page_data_backup_desc),
         reorganized = SettingsHubItemCopy(R.string.setting_page_data_backup, R.string.setting_page_data_backup_desc),
     ),
