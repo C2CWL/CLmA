@@ -29,8 +29,15 @@ internal object SettingsSearchTestStrings {
         }
     }
 
-    val en: Map<String, String> by lazy { load("src/main/res/values/strings.xml") }
-    val zh: Map<String, String> by lazy { load("src/main/res/values-zh/strings.xml") }
+    /** strings.xml plus any split-out strings_*.xml in the same folder (e.g. strings_visual_style.xml). */
+    private fun loadDir(dir: String): Map<String, String> {
+        val extra = File(dir).listFiles { f -> f.name.startsWith("strings_") && f.name.endsWith(".xml") }
+            .orEmpty().sortedBy { it.name }
+        return extra.fold(load("$dir/strings.xml")) { acc, f -> acc + load(f.path) }
+    }
+
+    val en: Map<String, String> by lazy { loadDir("src/main/res/values") }
+    val zh: Map<String, String> by lazy { loadDir("src/main/res/values-zh") }
 
     fun nameOf(id: Int): String = idToName[id] ?: error("unknown string id $id")
 

@@ -38,6 +38,7 @@ import com.clma.app.ui.hooks.rememberAmoledDarkMode
 import com.clma.app.ui.hooks.rememberColorMode
 import com.clma.app.ui.theme.ColorMode
 import com.clma.app.ui.theme.CustomColors
+import com.clma.app.ui.theme.VisualStyle
 import com.clma.app.utils.plus
 import org.koin.androidx.compose.koinViewModel
 
@@ -79,6 +80,26 @@ fun SettingPreferencesThemePage(vm: SettingVM = koinViewModel()) {
                 CardGroup(
                     modifier = Modifier.padding(horizontal = 8.dp),
                 ) {
+                    // 视觉风格: a shortcut onto the existing preset themes (Claude 暖调 / Gemini 冷调).
+                    // Picking one writes themeId and turns dynamic colour off, since dynamic colour
+                    // would otherwise hide the preset. Shows "其他主题" for any other theme.
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_visual_style_title)) },
+                        supportingContent = { Text(stringResource(R.string.setting_visual_style_desc)) },
+                        trailingContent = {
+                            Select(
+                                options = VisualStyle.selectable,
+                                selectedOption = VisualStyle.current(settings.themeId, settings.dynamicColor),
+                                onOptionSelected = { style ->
+                                    style.themeId?.let { themeId ->
+                                        vm.updateSettings(settings.copy(themeId = themeId, dynamicColor = false))
+                                    }
+                                },
+                                optionToString = { stringResource(it.nameRes) },
+                                modifier = Modifier.width(160.dp)
+                            )
+                        },
+                    )
                     // Colour mode lives here now instead of on the hub: it is the first thing the
                     // theme section owns, and having it inline at the top level while the rest of
                     // the theme sat one page deeper was exactly the scatter this rebuild removes.

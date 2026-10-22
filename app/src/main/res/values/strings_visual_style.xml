@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Visual style (视觉风格) picker and the Gemini preset name. Kept in their own file so edits here
+  never conflict with the big strings.xml.
+-->
+<resources>
+  <string name="theme_name_gemini">Gemini Cool</string>
+  <string name="setting_visual_style_title">Visual style</string>
+  <string name="setting_visual_style_desc">Colours of the whole app and the launch screen; picking one turns off dynamic colour</string>
+  <string name="setting_visual_style_other">Other theme</string>
+</resources>

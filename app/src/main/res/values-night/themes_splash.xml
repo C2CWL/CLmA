@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Night half of the day/night splash styles; see values/themes_splash.xml. Never rename. -->
+<resources>
+    <style name="Theme.CLmA.Splash.Claude" parent="Theme.CLmA.Splash.ClaudeDark" />
+    <style name="Theme.CLmA.Splash.Gemini" parent="Theme.CLmA.Splash.GeminiDark" />
+</resources>

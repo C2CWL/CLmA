@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import com.clma.app.ui.theme.presets.AutumnThemePreset
 import com.clma.app.ui.theme.presets.BlackThemePreset
 import com.clma.app.ui.theme.presets.ClaudeThemePreset
+import com.clma.app.ui.theme.presets.GeminiThemePreset
 import com.clma.app.ui.theme.presets.MinimalThemePreset
 import com.clma.app.ui.theme.presets.OceanThemePreset
 import com.clma.app.ui.theme.presets.SakuraThemePreset
@@ -30,6 +31,7 @@ val PresetThemes by lazy {
         BlackThemePreset,
         MinimalThemePreset,
         ClaudeThemePreset,
+        GeminiThemePreset,
     )
 }
 

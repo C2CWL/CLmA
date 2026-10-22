@@ -111,6 +111,7 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
         route = Screen.SettingPreferencesTheme,
         altTitles = listOf(R.string.setting_page_color_mode),
         items = listOf(
+            row(R.string.setting_visual_style_title, R.string.setting_visual_style_desc),
             row(R.string.setting_page_color_mode),
             row(R.string.setting_page_dynamic_color, R.string.setting_page_dynamic_color_desc),
             row(R.string.setting_display_page_amoled_dark_mode_title, R.string.setting_display_page_amoled_dark_mode_desc),

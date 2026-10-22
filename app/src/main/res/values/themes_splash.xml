@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Launch screen (splash) themes, androidx core-splashscreen. RouteActivity uses
+  Theme.CLmA.Splash.Claude in the manifest and calls installSplashScreen(), which switches to
+  postSplashScreenTheme (Theme.Rikkahub) once the app is up.
+
+  On API 31+ the app also calls SplashScreen.setSplashScreenTheme() (ui/theme/SplashTheme.kt) so
+  the NEXT cold start uses the chosen visual style. The system stores the style by NAME:
+  never rename any Theme.CLmA.Splash.* style below.
+
+  The android:-prefixed items are what the platform splash reads; they are set explicitly
+  (besides the compat library's own mapping) so the persisted override always resolves them.
+-->
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <style name="Theme.CLmA.Splash.Base" parent="Theme.SplashScreen.IconBackground">
+        <item name="postSplashScreenTheme">@style/Theme.Rikkahub</item>
+        <item name="windowSplashScreenAnimationDuration">300</item>
+        <item name="android:windowSplashScreenAnimationDuration" tools:targetApi="31">300</item>
+    </style>
+
+    <!-- Never rename: the system persists this name (setSplashScreenTheme). -->
+    <style name="Theme.CLmA.Splash.ClaudeLight" parent="Theme.CLmA.Splash.Base">
+        <item name="windowSplashScreenBackground">@color/splash_claude_light_bg</item>
+        <item name="windowSplashScreenIconBackgroundColor">@color/splash_claude_light_circle</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon_claude_light</item>
+        <item name="android:windowSplashScreenBackground" tools:targetApi="31">@color/splash_claude_light_bg</item>
+        <item name="android:windowSplashScreenIconBackgroundColor" tools:targetApi="31">@color/splash_claude_light_circle</item>
+        <item name="android:windowSplashScreenAnimatedIcon" tools:targetApi="31">@drawable/splash_icon_claude_light</item>
+        <item name="android:windowSplashScreenBrandingImage" tools:targetApi="31">@drawable/splash_brand_claude_light</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+
+    <!-- Never rename: the system persists this name (setSplashScreenTheme). -->
+    <style name="Theme.CLmA.Splash.ClaudeDark" parent="Theme.CLmA.Splash.Base">
+        <item name="windowSplashScreenBackground">@color/splash_claude_dark_bg</item>
+        <item name="windowSplashScreenIconBackgroundColor">@color/splash_claude_dark_circle</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon_claude_dark</item>
+        <item name="android:windowSplashScreenBackground" tools:targetApi="31">@color/splash_claude_dark_bg</item>
+        <item name="android:windowSplashScreenIconBackgroundColor" tools:targetApi="31">@color/splash_claude_dark_circle</item>
+        <item name="android:windowSplashScreenAnimatedIcon" tools:targetApi="31">@drawable/splash_icon_claude_dark</item>
+        <item name="android:windowSplashScreenBrandingImage" tools:targetApi="31">@drawable/splash_brand_claude_dark</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+
+    <!-- Never rename: the system persists this name (setSplashScreenTheme). -->
+    <style name="Theme.CLmA.Splash.GeminiLight" parent="Theme.CLmA.Splash.Base">
+        <item name="windowSplashScreenBackground">@color/splash_gemini_light_bg</item>
+        <item name="windowSplashScreenIconBackgroundColor">@color/splash_gemini_light_circle</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon_gemini_light</item>
+        <item name="android:windowSplashScreenBackground" tools:targetApi="31">@color/splash_gemini_light_bg</item>
+        <item name="android:windowSplashScreenIconBackgroundColor" tools:targetApi="31">@color/splash_gemini_light_circle</item>
+        <item name="android:windowSplashScreenAnimatedIcon" tools:targetApi="31">@drawable/splash_icon_gemini_light</item>
+        <item name="android:windowSplashScreenBrandingImage" tools:targetApi="31">@drawable/splash_brand_gemini_light</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+
+    <!-- Never rename: the system persists this name (setSplashScreenTheme). -->
+    <style name="Theme.CLmA.Splash.GeminiDark" parent="Theme.CLmA.Splash.Base">
+        <item name="windowSplashScreenBackground">@color/splash_gemini_dark_bg</item>
+        <item name="windowSplashScreenIconBackgroundColor">@color/splash_gemini_dark_circle</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon_gemini_dark</item>
+        <item name="android:windowSplashScreenBackground" tools:targetApi="31">@color/splash_gemini_dark_bg</item>
+        <item name="android:windowSplashScreenIconBackgroundColor" tools:targetApi="31">@color/splash_gemini_dark_circle</item>
+        <item name="android:windowSplashScreenAnimatedIcon" tools:targetApi="31">@drawable/splash_icon_gemini_dark</item>
+        <item name="android:windowSplashScreenBrandingImage" tools:targetApi="31">@drawable/splash_brand_gemini_dark</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+
+    <!-- Day/night variants ("follow system"); values-night/themes_splash.xml points them at the dark styles. -->
+    <!-- Manifest default. Never rename. -->
+    <style name="Theme.CLmA.Splash.Claude" parent="Theme.CLmA.Splash.ClaudeLight" />
+    <!-- Never rename. -->
+    <style name="Theme.CLmA.Splash.Gemini" parent="Theme.CLmA.Splash.GeminiLight" />
+</resources>

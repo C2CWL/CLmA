@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Visual style (视觉风格) picker and the Gemini preset name. Kept in their own file so edits here
+  never conflict with the big strings.xml.
+-->
+<resources>
+  <string name="theme_name_gemini">Gemini 冷调</string>
+  <string name="setting_visual_style_title">视觉风格</string>
+  <string name="setting_visual_style_desc">整个应用和启动页的配色；选择后会关闭动态取色</string>
+  <string name="setting_visual_style_other">其他主题</string>
+</resources>
