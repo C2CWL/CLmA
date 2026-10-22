@@ -303,24 +303,6 @@
       android:hardwareAccelerated="true"
       android:theme="@style/Theme.Rikkahub" />
 
-    <!-- Always-available quick-chat panel, opened by tapping the edge bar. Translucent so whatever
-         app the user is in stays visible behind the half-screen panel, and excluded from recents
-         so it never appears as a task of its own. Launched from the overlay window, which is what
-         exempts it from the Android 14+ background activity-start restrictions.
-         taskAffinity is deliberately NOT the package default: with the default affinity,
-         FLAG_ACTIVITY_NEW_TASK folds this panel into the main app's task, so tapping the bar
-         yanked the whole RikkaHub task to the foreground instead of floating over the app the
-         user was actually in. A dedicated affinity gives the panel its own task, so it overlays
-         the current app and dismissing it returns straight to it, with no task switch. -->
-    <activity
-      android:name=".ui.pages.quickchat.QuickChatActivity"
-      android:exported="false"
-      android:excludeFromRecents="true"
-      android:launchMode="singleTop"
-      android:taskAffinity="me.rerere.rikkahub.quickchat"
-      android:theme="@style/Theme.Rikkahub.QuickChat"
-      android:windowSoftInputMode="adjustResize" />
-
     <!-- Phase 13: External Automation Intent API. Exported activity that accepts
          RUN_TASK / RUN_CHAT intents from Tasker / MacroDroid / Locale / app callers.
          Translucent + NoTitleBar so trusted-caller fires don't flash a window. The
@@ -436,7 +418,7 @@
       android:foregroundServiceType="specialUse">
       <property
         android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-        android:value="always-available quick-chat edge bar overlay" />
+        android:value="always-available edge bar overlay (tap to open the app)" />
     </service>
 
     <service

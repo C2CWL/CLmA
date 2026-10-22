@@ -85,11 +85,12 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 import kotlin.math.roundToInt
 
 @Composable
-fun SettingSpeechPage(vm: SettingVM = koinViewModel()) {
+fun SettingSpeechPage(initialTab: Int = 0, vm: SettingVM = koinViewModel()) {
     val settings by vm.settings.collectAsStateWithLifecycle()
     var editingTTSProvider by remember { mutableStateOf<TTSProviderSetting?>(null) }
     var editingASRProvider by remember { mutableStateOf<ASRProviderSetting?>(null) }
-    var selectedPage by remember { mutableIntStateOf(0) }
+    // initialTab: 0 = TTS, 1 = ASR (settings search deep-links here).
+    var selectedPage by remember { mutableIntStateOf(initialTab.coerceIn(0, 1)) }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     Scaffold(

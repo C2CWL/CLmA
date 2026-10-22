@@ -24,8 +24,6 @@
   <string name="top_island_interject_failed">現在無法插話，稍後再試</string>
   <string name="top_island_interject_sent">已傳送補充</string>
   <string name="top_island_notification_stop">停止</string>
-  <string name="setting_top_island_title">頂部靈動島</string>
-  <string name="setting_top_island_desc">AI 回覆時在螢幕頂部顯示狀態膠囊，點開可查看進度、補充一句或停止</string>
   <string name="setting_top_island_permission_needed">需要「懸浮窗」權限</string>
   <string name="setting_top_island_permission_grant">去授權</string>
 </resources>

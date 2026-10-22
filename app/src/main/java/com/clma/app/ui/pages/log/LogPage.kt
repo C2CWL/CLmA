@@ -3,6 +3,8 @@ package com.clma.app.ui.pages.log
 import android.content.ClipData
 import androidx.compose.ui.platform.ClipEntry
 import me.rerere.hugeicons.HugeIcons
+import me.rerere.hugeicons.stroke.ArrowDown01
+import me.rerere.hugeicons.stroke.ArrowUp01
 import me.rerere.hugeicons.stroke.Copy01
 import me.rerere.hugeicons.stroke.Delete01
 import androidx.compose.foundation.clickable
@@ -16,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Card
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -30,7 +33,9 @@ import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Switch
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -41,7 +46,10 @@ import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import com.clma.common.android.LogEntry
 import com.clma.common.android.LogLevel
 import com.clma.common.android.Logging
@@ -61,6 +69,22 @@ import java.util.Locale
 @Composable
 fun LogPage() {
     var logs by remember { mutableStateOf(Logging.getRecentLogs()) }
+    // Live: Logging.version is bumped on every new entry and on clear. StateFlow conflates,
+    // so the delay below caps re-reads at ~5/s during log bursts (e.g. streaming) while the
+    // last change is never missed.
+    LaunchedEffect(Unit) {
+        Logging.version.collect {
+            logs = Logging.getRecentLogs()
+            delay(200)
+        }
+    }
+    // Lines left on disk by earlier app sessions. Read once off the main thread (the files
+    // can be a few MB); re-read after Clear via clearCount.
+    var clearCount by remember { mutableIntStateOf(0) }
+    var earlierLogs by remember { mutableStateOf<List<String>>(emptyList()) }
+    LaunchedEffect(clearCount) {
+        earlierLogs = withContext(Dispatchers.IO) { Logging.readEarlierSessionLogs() }
+    }
     val settingsStore = koinInject<SettingsStore>()
     val settings by settingsStore.settingsFlow.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
@@ -95,6 +119,8 @@ fun LogPage() {
                         onClick = {
                             Logging.clear()
                             logs = Logging.getRecentLogs()
+                            earlierLogs = emptyList()
+                            clearCount++
                         }
                     ) {
                         Icon(HugeIcons.Delete01, null)
@@ -109,6 +135,7 @@ fun LogPage() {
     ) { contentPadding ->
         UnifiedLogList(
             logs = logs,
+            earlierLogs = earlierLogs,
             requestLoggingEnabled = settings.recordRequests,
             onRequestLoggingChange = { enabled ->
                 // Apply right away; the persisted value is what survives a restart.
@@ -133,6 +160,7 @@ fun LogPage() {
 @Composable
 private fun UnifiedLogList(
     logs: List<LogEntry>,
+    earlierLogs: List<String>,
     requestLoggingEnabled: Boolean,
     onRequestLoggingChange: (Boolean) -> Unit,
     errorCardAutoDismiss: Boolean,
@@ -143,6 +171,9 @@ private fun UnifiedLogList(
     val sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded))
     val scope = rememberCoroutineScope()
     val sortedLogs = remember(logs) { logs.sortedByDescending { it.timestamp } }
+    // Collapsed by default: a full log file is thousands of lines, and the live list above
+    // is what users usually want first.
+    var earlierExpanded by remember { mutableStateOf(false) }
 
     LazyColumn(
         modifier = modifier,
@@ -174,6 +205,26 @@ private fun UnifiedLogList(
                 )
 
                 is LogEntry.TextLog -> TextLogCard(log = log)
+            }
+        }
+
+        if (earlierLogs.isNotEmpty()) {
+            item(key = "earlier_logs_header", contentType = "earlier_logs_header") {
+                EarlierLogsHeader(
+                    lineCount = earlierLogs.size,
+                    expanded = earlierExpanded,
+                    onToggle = { earlierExpanded = !earlierExpanded }
+                )
+            }
+            if (earlierExpanded) {
+                // One lazy item per line, so only what is on screen gets composed.
+                itemsIndexed(
+                    earlierLogs,
+                    key = { index, _ -> "earlier_log_$index" },
+                    contentType = { _, _ -> "earlier_log_line" }
+                ) { _, line ->
+                    EarlierLogLine(line)
+                }
             }
         }
     }
@@ -544,5 +595,59 @@ private fun TextLogCard(log: LogEntry.TextLog) {
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun EarlierLogsHeader(
+    lineCount: Int,
+    expanded: Boolean,
+    onToggle: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onToggle),
+        colors = CustomColors.cardColorsOnSurfaceContainer,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.log_page_earlier_logs),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = stringResource(R.string.log_page_earlier_logs_desc, lineCount),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Icon(
+                imageVector = if (expanded) HugeIcons.ArrowUp01 else HugeIcons.ArrowDown01,
+                contentDescription = null
+            )
+        }
+    }
+}
+
+@Composable
+private fun EarlierLogLine(line: String) {
+    // Plain monospace text: these lines are already formatted (and redacted) on disk.
+    SelectionContainer {
+        Text(
+            text = line,
+            style = MaterialTheme.typography.bodySmall,
+            fontFamily = JetbrainsMono,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp)
+        )
     }
 }

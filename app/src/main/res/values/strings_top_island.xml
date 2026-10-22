@@ -25,8 +25,6 @@
   <string name="top_island_interject_failed">Can\'t add a note right now, try again later</string>
   <string name="top_island_interject_sent">Note sent</string>
   <string name="top_island_notification_stop">Stop</string>
-  <string name="setting_top_island_title">Top island</string>
-  <string name="setting_top_island_desc">While the AI is replying, show a capsule at the top of the screen. Tap it for progress, add a note, or stop.</string>
   <string name="setting_top_island_permission_needed">Needs the \"display over other apps\" permission</string>
   <string name="setting_top_island_permission_grant">Grant</string>
 </resources>

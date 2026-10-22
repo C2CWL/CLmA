@@ -6,7 +6,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import com.clma.app.ui.theme.ColorMode
 
-private const val COLOR_MODE_KEY = "colorMode"
+/** SharedPreferences key of the app's own light / dark / follow-system choice ([ColorMode] name). */
+const val COLOR_MODE_KEY = "colorMode"
 
 @Composable
 fun rememberColorMode(): MutableState<ColorMode> {

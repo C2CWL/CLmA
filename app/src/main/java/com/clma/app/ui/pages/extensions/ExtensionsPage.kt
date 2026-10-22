@@ -63,7 +63,7 @@ fun ExtensionsPage() {
                         supportingContent = { Text(stringResource(R.string.extensions_page_quick_messages_desc)) },
                     )
                     item(
-                        onClick = { navController.navigate(Screen.Prompts) },
+                        onClick = { navController.navigate(Screen.Prompts()) },
                         leadingContent = { Icon(HugeIcons.Book03, null) },
                         headlineContent = { Text(stringResource(R.string.extensions_page_prompts)) },
                         supportingContent = { Text(stringResource(R.string.extensions_page_prompts_desc)) },

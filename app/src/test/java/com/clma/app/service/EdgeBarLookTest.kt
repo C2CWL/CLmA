@@ -51,17 +51,65 @@ class EdgeBarLookTest {
     }
 
     @Test
-    fun `colour swatches map ids, fall back to dark grey and pack ARGB`() {
-        assertEquals(EdgeBarColor.DARK_GRAY, EdgeBarColor.DEFAULT)
-        assertEquals(EdgeBarColor.DARK_GRAY, EdgeBarColor.fromId(null))
-        assertEquals(EdgeBarColor.DARK_GRAY, EdgeBarColor.fromId(0))
-        assertEquals(EdgeBarColor.DARK_GRAY, EdgeBarColor.fromId(99))
+    fun `colour swatches map ids, fall back to follow-theme and pack ARGB`() {
+        assertEquals(EdgeBarColor.FOLLOW_THEME, EdgeBarColor.DEFAULT)
+        assertEquals(1, EdgeBarColor.DEFAULT.id)
+        assertEquals(EdgeBarColor.FOLLOW_THEME, EdgeBarColor.fromId(null))
+        assertEquals(EdgeBarColor.FOLLOW_THEME, EdgeBarColor.fromId(0))
+        assertEquals(EdgeBarColor.FOLLOW_THEME, EdgeBarColor.fromId(99))
         EdgeBarColor.entries.forEach { assertEquals(it, EdgeBarColor.fromId(it.id)) }
         assertEquals((1..6).toList(), EdgeBarColor.entries.map { it.id })
 
-        assertEquals(0x8C28282E.toInt(), EdgeBarColor.DARK_GRAY.argb) // 0.55 * 255 = 140 = 0x8C
-        assertEquals(0xCC2F80ED.toInt(), EdgeBarColor.BLUE.argb) // 0.8 * 255 = 204 = 0xCC
-        assertEquals(0xFFC8C8CD.toInt(), EdgeBarColor.WHITE.outlineArgb)
-        assertNull(EdgeBarColor.BLACK.outlineArgb)
+        assertEquals(0xCC2F80ED.toInt(), EdgeBarColor.BLUE.argb(dark = false)) // 0.8 * 255 = 204 = 0xCC
+        assertEquals(0xFFC8C8CD.toInt(), EdgeBarColor.WHITE.outlineArgb(dark = false))
+        assertNull(EdgeBarColor.BLACK.outlineArgb(dark = false))
+    }
+
+    @Test
+    fun `follow-theme swatch is cream in light mode and warm dark grey in dark mode`() {
+        val c = EdgeBarColor.FOLLOW_THEME
+        assertTrue(c.followsTheme)
+        assertEquals(0xEBF6F1E7.toInt(), c.argb(dark = false))
+        assertEquals(0xFFCDC3B5.toInt(), c.outlineArgb(dark = false))
+        assertEquals(0xC73E3934.toInt(), c.argb(dark = true))
+        assertEquals(0x1AFFF4E4, c.outlineArgb(dark = true))
+    }
+
+    @Test
+    fun `fixed swatches ignore dark mode and keep their old values`() {
+        val expected = mapOf(
+            EdgeBarColor.LIGHT_GRAY to 0xD9AAACB2.toInt(), // 0.85 -> 0xD9
+            EdgeBarColor.BLACK to 0xD9141416.toInt(),
+            EdgeBarColor.WHITE to 0xF2FAFAFC.toInt(), // 0.95 -> 0xF2
+            EdgeBarColor.BLUE to 0xCC2F80ED.toInt(),
+            EdgeBarColor.TEAL to 0xCC14A38B.toInt(),
+        )
+        expected.forEach { (color, argb) ->
+            assertFalse(color.followsTheme)
+            assertEquals(argb, color.argb(dark = false))
+            assertEquals(argb, color.argb(dark = true))
+            assertEquals(color.outlineArgb(dark = false), color.outlineArgb(dark = true))
+        }
+    }
+
+    @Test
+    fun `dark mode follows the app setting first, then the system night mode`() {
+        assertFalse(EdgeBarLook.isDarkMode("LIGHT", systemNight = true))
+        assertTrue(EdgeBarLook.isDarkMode("DARK", systemNight = false))
+        assertTrue(EdgeBarLook.isDarkMode("SYSTEM", systemNight = true))
+        assertFalse(EdgeBarLook.isDarkMode("SYSTEM", systemNight = false))
+        assertTrue(EdgeBarLook.isDarkMode(null, systemNight = true))
+        assertFalse(EdgeBarLook.isDarkMode("garbage", systemNight = false))
+    }
+
+    @Test
+    fun `light fills are told apart from dark ones`() {
+        assertTrue(EdgeBarLook.isLightFill(EdgeBarColor.FOLLOW_THEME.argb(dark = false)))
+        assertFalse(EdgeBarLook.isLightFill(EdgeBarColor.FOLLOW_THEME.argb(dark = true)))
+        assertTrue(EdgeBarLook.isLightFill(EdgeBarColor.LIGHT_GRAY.argb(dark = false)))
+        assertTrue(EdgeBarLook.isLightFill(EdgeBarColor.WHITE.argb(dark = false)))
+        assertFalse(EdgeBarLook.isLightFill(EdgeBarColor.BLACK.argb(dark = false)))
+        assertFalse(EdgeBarLook.isLightFill(EdgeBarColor.BLUE.argb(dark = false)))
+        assertFalse(EdgeBarLook.isLightFill(EdgeBarColor.TEAL.argb(dark = false)))
     }
 }

@@ -1,12 +1,12 @@
 package com.clma.app.service
 
 import android.annotation.SuppressLint
-import android.app.ActivityOptions
 import android.app.Notification
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.ServiceInfo
 import android.content.res.Configuration
 import android.graphics.PixelFormat
@@ -34,10 +34,11 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import com.clma.app.FLOATING_BALL_NOTIFICATION_CHANNEL_ID
 import com.clma.app.R
+import com.clma.app.RouteActivity
 import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.ui.hooks.COLOR_MODE_KEY
 import com.clma.app.ui.hooks.readStringPreference
 import com.clma.app.ui.hooks.writeStringPreference
-import com.clma.app.ui.pages.quickchat.QuickChatActivity
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import kotlin.math.abs
@@ -50,19 +51,19 @@ private const val TAG = "FloatingBallService"
  *
  * A slim pill ([EdgeBarView]) in a small TYPE_APPLICATION_OVERLAY window, flush with the left or
  * right screen edge, that survives across apps:
- *  - tap                 → open the half-screen [QuickChatActivity], anchored to the bar;
+ *  - tap                 → bring the main app to the front (an existing task is resumed, not
+ *                          duplicated; see [openMainApp]);
  *  - long press, drag    → move the bar up / down along its edge (dropped well across the
  *                          screen it switches edges); the position is saved on release;
  *  - anything else (a plain swipe) does nothing.
  *
- * The bar hides while the quick-chat panel is up and shows again when it closes. It is also the
- * "agent is working" light: [AgentOverlay] hands the signal here whenever the bar is on screen
- * (see [setWorking]); a reply that finished while the panel was closed turns the bar green until
- * the panel is opened.
+ * It is also the "agent is working" light: [AgentOverlay] hands the signal here whenever the bar
+ * is on screen (see [setWorking]); a finished reply turns the bar green until the bar is tapped
+ * (which opens the app, where the reply is).
  *
  * Runs as a `specialUse` foreground service so the overlay is not evicted when the app goes to
  * the background. The overlay window itself is what exempts us from Android 14+ background
- * activity-start restrictions, so the panel can be launched from here at any time.
+ * activity-start restrictions, so the app can be brought to the front from here at any time.
  *
  * Deliberately a no-op when SYSTEM_ALERT_WINDOW has not been granted: the caller (settings page /
  * boot receiver) is expected to have checked, but a stale start must never crash or leave a
@@ -74,10 +75,6 @@ class FloatingBallService : Service(), KoinComponent {
         const val ACTION_START = "me.rerere.rikkahub.action.FLOATING_BALL_START"
         const val ACTION_STOP = "me.rerere.rikkahub.action.FLOATING_BALL_STOP"
 
-        /** The quick-chat panel came up / went away: the bar hides while it is on screen. */
-        const val ACTION_PANEL_OPEN = "me.rerere.rikkahub.action.FLOATING_BALL_PANEL_OPEN"
-        const val ACTION_PANEL_CLOSE = "me.rerere.rikkahub.action.FLOATING_BALL_PANEL_CLOSE"
-
         /** A generation turn started / finished: the bar becomes the "agent is working" light. */
         const val ACTION_WORKING_ON = "me.rerere.rikkahub.action.FLOATING_BALL_WORKING_ON"
         const val ACTION_WORKING_OFF = "me.rerere.rikkahub.action.FLOATING_BALL_WORKING_OFF"
@@ -86,6 +83,9 @@ class FloatingBallService : Service(), KoinComponent {
         // Same keys the floating ball used, so the bar opens on the side / height the ball was on.
         private const val PREF_X = "floating_ball_x"
         private const val PREF_Y = "floating_ball_y"
+
+        /** The app's SharedPreferences file (see ui/hooks/SharedPreferences.kt). */
+        private const val PREFS_NAME = "rikkahub.preferences"
 
         /** Starts (or re-starts) the bar. Idempotent — a running service just re-shows its view. */
         fun start(context: Context) {
@@ -106,20 +106,6 @@ class FloatingBallService : Service(), KoinComponent {
             }
             runCatching { context.startService(intent) }
                 .onFailure { Log.w(TAG, "stop failed", it) }
-        }
-
-        /**
-         * Tells a running bar that the quick-chat panel opened / closed, so it can step out of the
-         * way while the panel is up. Deliberately a plain startService: the bar is already a
-         * foreground service whenever the panel can be open, and a no-op command on a dead
-         * instance must not resurrect it.
-         */
-        fun notifyPanel(context: Context, open: Boolean) {
-            val intent = Intent(context, FloatingBallService::class.java).apply {
-                action = if (open) ACTION_PANEL_OPEN else ACTION_PANEL_CLOSE
-            }
-            runCatching { context.startService(intent) }
-                .onFailure { Log.w(TAG, "notifyPanel failed", it) }
         }
 
         /**
@@ -153,14 +139,19 @@ class FloatingBallService : Service(), KoinComponent {
     private var barView: EdgeBarView? = null
     private var barParams: WindowManager.LayoutParams? = null
 
-    /** True while the half-screen quick-chat panel is up; the bar stays out of its way. */
-    private var panelOpen = false
-
     /** True between ACTION_WORKING_ON and ACTION_WORKING_OFF. */
     private var working = false
 
-    /** A turn finished while the panel was closed; cleared when the panel opens. */
+    /** A turn finished and the user has not tapped the bar (opened the app) since. */
     private var unseenDone = false
+
+    /**
+     * The app's colour-mode setting changed (Settings → theme): the "follow theme" swatch repaints.
+     * Held in a field because SharedPreferences only keeps a weak reference to its listeners.
+     */
+    private val colorModeListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        if (key == COLOR_MODE_KEY) mainHandler.post { applyDarkMode(resources.configuration) }
+    }
 
     /** Set by the long-press timer; from then on the gesture moves the bar instead of tapping. */
     private var dragArmed = false
@@ -179,6 +170,19 @@ class FloatingBallService : Service(), KoinComponent {
                 barView?.barColor = settings.floatingBallBarColor
             }
         }
+        // Same preferences file the app's theme reads its colour mode from (see ui/hooks).
+        getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .registerOnSharedPreferenceChangeListener(colorModeListener)
+    }
+
+    /** Light / dark look of the bar, decided like the app's own theme; see [EdgeBarLook.isDarkMode]. */
+    private fun isDarkMode(config: Configuration): Boolean = EdgeBarLook.isDarkMode(
+        colorMode = readStringPreference(COLOR_MODE_KEY),
+        systemNight = (config.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES,
+    )
+
+    private fun applyDarkMode(config: Configuration) {
+        barView?.darkMode = isDarkMode(config)
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -187,20 +191,6 @@ class FloatingBallService : Service(), KoinComponent {
         when (intent?.action) {
             ACTION_STOP -> {
                 stopSelf()
-                return START_NOT_STICKY
-            }
-
-            ACTION_PANEL_OPEN -> {
-                panelOpen = true
-                // The user is looking at the conversation now.
-                unseenDone = false
-                if (barView == null) stopSelf() else syncBar()
-                return START_NOT_STICKY
-            }
-
-            ACTION_PANEL_CLOSE -> {
-                panelOpen = false
-                if (barView == null) stopSelf() else syncBar()
                 return START_NOT_STICKY
             }
 
@@ -213,8 +203,8 @@ class FloatingBallService : Service(), KoinComponent {
 
             ACTION_WORKING_OFF -> {
                 working = false
-                // A reply the user did not watch arrive: the bar turns green until the panel opens.
-                unseenDone = !panelOpen
+                // The bar turns green until the user taps it (which opens the app).
+                unseenDone = true
                 if (barView == null) stopSelf() else syncBar()
                 return START_NOT_STICKY
             }
@@ -239,6 +229,8 @@ class FloatingBallService : Service(), KoinComponent {
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
+        // System light / dark switch: the "follow theme" swatch repaints.
+        applyDarkMode(newConfig)
         // Rotation / resize: keep the side, re-clamp the height against the new screen.
         mainHandler.post {
             val view = barView ?: return@post
@@ -250,6 +242,8 @@ class FloatingBallService : Service(), KoinComponent {
     }
 
     override fun onDestroy() {
+        getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .unregisterOnSharedPreferenceChangeListener(colorModeListener)
         scope.cancel()
         hideBar()
         runCatching { ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE) }
@@ -297,6 +291,7 @@ class FloatingBallService : Service(), KoinComponent {
         val view = EdgeBarView(this).apply {
             this.onRight = onRight
             barColor = settingsStore.settingsFlow.value.floatingBallBarColor
+            darkMode = isDarkMode(resources.configuration)
             contentDescription = getString(R.string.setting_floating_ball_bar_a11y)
             isClickable = true
             isHapticFeedbackEnabled = true
@@ -312,7 +307,7 @@ class FloatingBallService : Service(), KoinComponent {
         isShowing = true
         attachTouch(view, params)
         // Touches are handled in attachTouch; this is what TalkBack / switch access trigger.
-        view.setOnClickListener { openQuickChat() }
+        view.setOnClickListener { openMainApp() }
         syncBar()
     }
 
@@ -331,32 +326,11 @@ class FloatingBallService : Service(), KoinComponent {
             .onFailure { Log.w(TAG, "removeView failed", it) }
     }
 
-    /**
-     * Pushes visibility and status onto the bar. Hidden while the panel is up — and made
-     * untouchable then, so the invisible window cannot swallow taps meant for the panel.
-     */
+    /** Pushes the current status onto the bar. */
     private fun syncBar() {
         val view = barView ?: return
-        val params = barParams ?: return
         view.signal = EdgeBarLook.signal(working = working, unseenDone = unseenDone)
-        val hidden = panelOpen
-        view.visibility = if (hidden) View.INVISIBLE else View.VISIBLE
-        val flags = if (hidden) {
-            params.flags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
-        } else {
-            params.flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE.inv()
-        }
-        if (flags != params.flags) {
-            params.flags = flags
-            updateLayout(view, params)
-        }
-        if (hidden) {
-            mainHandler.removeCallbacks(longPressRunnable)
-            dragArmed = false
-            clearGestureExclusion(view)
-        } else {
-            updateGestureExclusion(view)
-        }
+        updateGestureExclusion(view)
     }
 
     @SuppressLint("ClickableViewAccessibility", "RtlHardcoded")
@@ -420,7 +394,7 @@ class FloatingBallService : Service(), KoinComponent {
                             savePosition(onRight, params)
                         }
                         // A cancelled gesture (e.g. taken by the system) is never a tap.
-                        !cancelled && !swiped -> openQuickChat()
+                        !cancelled && !swiped -> openMainApp()
                     }
                     dragArmed = false
                     swiped = false
@@ -438,28 +412,34 @@ class FloatingBallService : Service(), KoinComponent {
         writeStringPreference(PREF_Y, params.y.toString())
     }
 
-    private fun openQuickChat() {
-        try {
-            // No stock window animation for the panel: it plays its own unfold, and the system's
-            // launch transition fighting that made the panel stutter over the launcher.
-            @Suppress("DEPRECATION")
-            val options = ActivityOptions.makeCustomAnimation(this, 0, 0)
-            startActivity(
-                QuickChatActivity.intent(this, barSide(), barCenterY()),
-                options.toBundle(),
-            )
-        } catch (t: Throwable) {
-            Log.w(TAG, "openQuickChat failed", t)
+    /**
+     * Brings the main app to the front, the way its launcher icon does: the package's launch intent
+     * (whichever launcher alias is currently enabled) with FLAG_ACTIVITY_NEW_TASK, so an existing
+     * task is resumed instead of a second one being created; REORDER_TO_FRONT + SINGLE_TOP so a
+     * running main activity is brought up rather than duplicated. Also counts as "seen" for a
+     * finished reply, so the green done state clears.
+     */
+    private fun openMainApp() {
+        if (unseenDone) {
+            unseenDone = false
+            syncBar()
         }
-    }
-
-    /** `"left"`/`"right"` — which edge the bar sits on, so the panel can mirror itself. */
-    private fun barSide(): String = if (barView?.onRight != false) "right" else "left"
-
-    /** Vertical centre of the bar, in screen pixels; the panel anchors itself to this. */
-    private fun barCenterY(): Int {
-        val params = barParams ?: return 0
-        return params.y + params.height / 2
+        try {
+            val intent = (packageManager.getLaunchIntentForPackage(packageName)
+                ?: Intent(this, RouteActivity::class.java).apply {
+                    action = Intent.ACTION_MAIN
+                    addCategory(Intent.CATEGORY_LAUNCHER)
+                }).apply {
+                addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK or
+                        Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or
+                        Intent.FLAG_ACTIVITY_SINGLE_TOP
+                )
+            }
+            startActivity(intent)
+        } catch (t: Throwable) {
+            Log.w(TAG, "openMainApp failed", t)
+        }
     }
 
     // ---- Geometry ----

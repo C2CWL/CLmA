@@ -69,10 +69,11 @@ import org.koin.androidx.compose.koinViewModel
 import kotlin.uuid.Uuid
 
 @Composable
-fun SettingModelPage(vm: SettingVM = koinViewModel()) {
+fun SettingModelPage(initialTab: Int = 0, vm: SettingVM = koinViewModel()) {
     val settings by vm.settings.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-    val pagerState = rememberPagerState { 2 }
+    // initialTab: 0 = models, 1 = prompts (settings search deep-links here).
+    val pagerState = rememberPagerState(initialPage = initialTab.coerceIn(0, 1)) { 2 }
     val scope = rememberCoroutineScope()
 
     Scaffold(

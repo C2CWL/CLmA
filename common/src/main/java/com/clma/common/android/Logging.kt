@@ -1,9 +1,14 @@
 package com.clma.common.android
 
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.serialization.Serializable
 import kotlin.uuid.Uuid
 import java.io.File
 import java.io.IOException
+import java.io.RandomAccessFile
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -59,6 +64,16 @@ sealed class LogEntry {
 object Logging {
     private val recentLogs = arrayListOf<LogEntry>()
 
+    private val _version = MutableStateFlow(0L)
+
+    /**
+     * Bumped every time the in-memory list changes (new entry or [clear]). The Logs screen
+     * collects this and re-reads [getRecentLogs], so it updates live. A counter instead of a
+     * `StateFlow<List<LogEntry>>` keeps [addLog] cheap: no list copy per log line, and the
+     * copy only happens when someone is actually looking.
+     */
+    val version: StateFlow<Long> = _version.asStateFlow()
+
     // "Record requests" switch. Defaults to true to match Settings.recordRequests; :app
     // restores the user's saved value from SettingsStore at startup (RikkaHubApp.onCreate),
     // so this initial value only applies until settings have loaded.
@@ -88,6 +103,14 @@ object Logging {
     private val timeFormat = SimpleDateFormat("MM-dd HH:mm:ss.SSS", Locale.US)
     private val writeLock = Any()
 
+    // Where this process's log lines start on disk, so the Logs screen can show older sessions
+    // without repeating what is already in memory. Both guarded by [writeLock].
+    // - sessionStartOffset: length of app.log when [init] ran; bytes before it are older.
+    // - rotationsThisSession: how often app.log was rotated since then, i.e. which file now
+    //   holds the session start (0 = app.log, 1 = app.log.1, ...).
+    private var sessionStartOffset = 0L
+    private var rotationsThisSession = 0
+
     /** Point the rolling file log at [dir]. Safe to call more than once. */
     fun init(dir: File, minLevel: LogLevel = LogLevel.INFO) {
         logDir = dir
@@ -96,6 +119,11 @@ object Logging {
             if (!dir.exists()) dir.mkdirs()
         } catch (_: IOException) {
             // Storage problems must never crash logging itself.
+        }
+        synchronized(writeLock) {
+            // Only a stat, no read: init runs on the main thread in Application.onCreate.
+            sessionStartOffset = File(dir, LOG_FILE_NAME).length()
+            rotationsThisSession = 0
         }
     }
 
@@ -131,6 +159,7 @@ object Logging {
                 recentLogs.removeLastOrNull()
             }
         }
+        _version.update { it + 1 }
         if (entry.level >= fileLogLevel) {
             appendToFile(entry)
         }
@@ -168,11 +197,67 @@ object Logging {
         return builder.toString()
     }
 
+    /**
+     * On-disk lines written by earlier app sessions (before the last [init]), newest first.
+     * Lines from the current session are left out: they are already in [getRecentLogs].
+     * Lines on disk were redacted when written, so nothing extra is needed here.
+     *
+     * Does file I/O (up to a few MB): call it off the main thread.
+     */
+    fun readEarlierSessionLogs(): List<String> {
+        val dir = logDir ?: return emptyList()
+        val text = StringBuilder()
+        synchronized(writeLock) {
+            // Oldest file first, so the text ends up oldest-to-newest.
+            for (index in MAX_ROTATED_FILES downTo 0) {
+                if (index < rotationsThisSession) break // whole file is from this session
+                val file = logFile(dir, index)
+                if (!file.exists()) continue
+                val limit = if (index == rotationsThisSession) sessionStartOffset else Long.MAX_VALUE
+                runCatching { text.append(readPrefix(file, limit)) }
+            }
+        }
+        return text.lineSequence().filter { it.isNotBlank() }.toList().asReversed()
+    }
+
     fun clear() {
         synchronized(recentLogs) {
             recentLogs.clear()
         }
-        runCatching { logDir?.let { File(it, LOG_FILE_NAME).takeIf(File::exists)?.delete() } }
+        synchronized(writeLock) {
+            runCatching {
+                logDir?.let { dir ->
+                    for (index in 0..MAX_ROTATED_FILES) {
+                        logFile(dir, index).takeIf(File::exists)?.delete()
+                    }
+                }
+            }
+            sessionStartOffset = 0L
+            rotationsThisSession = 0
+        }
+        _version.update { it + 1 }
+    }
+
+    /** Test hook: forget the log directory so other tests see the memory-only default. */
+    internal fun resetFileLogForTest() {
+        synchronized(writeLock) {
+            logDir = null
+            fileLogLevel = LogLevel.INFO
+            sessionStartOffset = 0L
+            rotationsThisSession = 0
+        }
+    }
+
+    private fun logFile(dir: File, index: Int): File =
+        if (index == 0) File(dir, LOG_FILE_NAME) else File(dir, "$LOG_FILE_NAME.$index")
+
+    private fun readPrefix(file: File, limit: Long): String {
+        RandomAccessFile(file, "r").use { raf ->
+            val size = minOf(raf.length(), limit).toInt()
+            val bytes = ByteArray(size)
+            raf.readFully(bytes)
+            return String(bytes, Charsets.UTF_8)
+        }
     }
 
     private fun format(entry: LogEntry): String {
@@ -216,6 +301,7 @@ object Logging {
             }
         }
         file.renameTo(File(dir, "$LOG_FILE_NAME.1"))
+        rotationsThisSession++
     }
 
     /**

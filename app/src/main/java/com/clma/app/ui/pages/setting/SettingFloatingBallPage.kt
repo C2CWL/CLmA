@@ -215,7 +215,10 @@ fun SettingFloatingBallPage(vm: SettingVM = koinViewModel()) {
     }
 }
 
-/** The six colour swatches; the selected one gets a ring in the theme's primary colour. */
+/**
+ * The six colour swatches; the selected one gets a ring in the theme's primary colour. The first
+ * one follows the theme and is drawn half cream / half warm dark grey.
+ */
 @Composable
 private fun EdgeBarSwatches(
     selected: EdgeBarColor,
@@ -246,27 +249,63 @@ private fun EdgeBarSwatches(
                     },
                 contentAlignment = Alignment.Center,
             ) {
-                // A light checker-ish backing so the translucent swatches read as translucent.
-                Box(
-                    modifier = Modifier
-                        .size(30.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFFE6E6EA))
-                        .background(Color(color.argb))
-                        .then(
-                            color.outlineArgb?.let {
-                                Modifier.border(1.dp, Color(it), CircleShape)
-                            } ?: Modifier
-                        ),
-                )
+                if (color.followsTheme) {
+                    FollowThemeSwatch()
+                } else {
+                    // A light checker-ish backing so the translucent swatches read as translucent.
+                    Box(
+                        modifier = Modifier
+                            .size(30.dp)
+                            .clip(CircleShape)
+                            .background(SWATCH_BACKING)
+                            .background(Color(color.argb(dark = false)))
+                            .then(
+                                color.outlineArgb(dark = false)?.let {
+                                    Modifier.border(1.dp, Color(it), CircleShape)
+                                } ?: Modifier
+                            ),
+                    )
+                }
             }
         }
     }
 }
 
+private val SWATCH_BACKING = Color(0xFFE6E6EA)
+
+/**
+ * The "follow theme" swatch: left half the light-mode cream, right half the dark-mode warm grey,
+ * so it reads as "changes with the theme".
+ */
+@Composable
+private fun FollowThemeSwatch() {
+    Canvas(modifier = Modifier.size(30.dp)) {
+        drawCircle(color = SWATCH_BACKING)
+        drawArc(
+            color = Color(EdgeBarColor.THEME_LIGHT_FILL),
+            startAngle = 90f,
+            sweepAngle = 180f,
+            useCenter = true,
+        )
+        drawArc(
+            color = Color(EdgeBarColor.THEME_DARK_FILL),
+            startAngle = 270f,
+            sweepAngle = 180f,
+            useCenter = true,
+        )
+        val stroke = 1.dp.toPx()
+        drawCircle(
+            color = Color(EdgeBarColor.THEME_LIGHT_OUTLINE),
+            radius = size.minDimension / 2f - stroke / 2f,
+            style = Stroke(width = stroke),
+        )
+    }
+}
+
 /**
  * The bar at its real size against a light and a dark backdrop, flush with the right edge the way
- * it sits on screen by default.
+ * it sits on screen by default. The "follow theme" swatch shows its light-mode look on the light
+ * backdrop and its dark-mode look on the dark one.
  */
 @Composable
 private fun EdgeBarPreview(color: EdgeBarColor) {
@@ -274,7 +313,7 @@ private fun EdgeBarPreview(color: EdgeBarColor) {
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        listOf(Color(0xFFF1F1F4), Color(0xFF1E1E22)).forEach { backdrop ->
+        listOf(Color(0xFFF1F1F4) to false, Color(0xFF1E1E22) to true).forEach { (backdrop, dark) ->
             Canvas(
                 modifier = Modifier
                     .weight(1f)
@@ -287,12 +326,12 @@ private fun EdgeBarPreview(color: EdgeBarColor) {
                 val radius = EdgeBarLook.BAR_CORNER_DP.dp.toPx()
                 val topLeft = Offset(size.width - barW, (size.height - barH) / 2f)
                 drawRoundRect(
-                    color = Color(color.argb),
+                    color = Color(color.argb(dark)),
                     topLeft = topLeft,
                     size = Size(barW, barH),
                     cornerRadius = CornerRadius(radius, radius),
                 )
-                color.outlineArgb?.let { outline ->
+                color.outlineArgb(dark)?.let { outline ->
                     val stroke = EdgeBarLook.OUTLINE_DP.dp.toPx()
                     drawRoundRect(
                         color = Color(outline),
@@ -308,7 +347,7 @@ private fun EdgeBarPreview(color: EdgeBarColor) {
 }
 
 private fun EdgeBarColor.labelRes(): Int = when (this) {
-    EdgeBarColor.DARK_GRAY -> R.string.setting_floating_ball_color_dark_gray
+    EdgeBarColor.FOLLOW_THEME -> R.string.setting_floating_ball_color_follow_theme
     EdgeBarColor.LIGHT_GRAY -> R.string.setting_floating_ball_color_light_gray
     EdgeBarColor.BLACK -> R.string.setting_floating_ball_color_black
     EdgeBarColor.WHITE -> R.string.setting_floating_ball_color_white

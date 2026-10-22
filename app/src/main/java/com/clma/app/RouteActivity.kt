@@ -158,13 +158,6 @@ class RouteActivity : ComponentActivity() {
     companion object {
         const val EXTRA_OPEN_CODEX_SETTINGS = "open_codex_settings"
         const val EXTRA_OPEN_GEMINI_SETTINGS = "open_gemini_settings"
-
-        /**
-         * Content id of a page another window (the floating quick-chat panel) reached but cannot
-         * show itself — it is a window over whatever app the user is in, with no nav stack of its
-         * own. See [Screen.WebView] and `QuickChatActivity`.
-         */
-        const val EXTRA_OPEN_WEBVIEW_CONTENT = "open_webview_content"
     }
 
     private val okHttpClient by inject<OkHttpClient>()
@@ -252,14 +245,6 @@ class RouteActivity : ComponentActivity() {
             val destination = Screen.SettingProviderDetail(DEFAULT_GEMINI_OAUTH_PROVIDER_ID.toString())
             if (backStack.lastOrNull() != destination) backStack.add(destination)
             intent.removeExtra(EXTRA_OPEN_GEMINI_SETTINGS)
-        }
-        // A page the quick-chat panel could not open itself — tapping the eye on a code block
-        // there. The panel hands the content id over rather than pushing the screen onto a stack
-        // nothing renders, and the page is read back from the shared on-disk cache.
-        intent.getStringExtra(EXTRA_OPEN_WEBVIEW_CONTENT)?.let { contentId ->
-            val destination = Screen.WebView(contentId = contentId)
-            if (backStack.lastOrNull() != destination) backStack.add(destination)
-            intent.removeExtra(EXTRA_OPEN_WEBVIEW_CONTENT)
         }
         val destination = when (intent.action) {
             ACTION_TRANSLATE -> Screen.Translator
@@ -458,8 +443,8 @@ class RouteActivity : ComponentActivity() {
                                 SettingsSearchPage()
                             }
 
-                            entry<Screen.Backup> {
-                                BackupPage()
+                            entry<Screen.Backup> { key ->
+                                BackupPage(initialTab = key.initialTab)
                             }
 
                             entry<Screen.ImageGen> {
@@ -507,8 +492,8 @@ class RouteActivity : ComponentActivity() {
                                 SettingProviderDetailPage(id = id)
                             }
 
-                            entry<Screen.SettingModels> {
-                                SettingModelPage()
+                            entry<Screen.SettingModels> { key ->
+                                SettingModelPage(initialTab = key.initialTab)
                             }
 
                             entry<Screen.SettingAbout> {
@@ -524,8 +509,8 @@ class RouteActivity : ComponentActivity() {
                                 SettingSearchDetailPage(id)
                             }
 
-                            entry<Screen.SettingSpeech> {
-                                SettingSpeechPage()
+                            entry<Screen.SettingSpeech> { key ->
+                                SettingSpeechPage(initialTab = key.initialTab)
                             }
 
                             entry<Screen.SettingMcp> {
@@ -632,8 +617,8 @@ class RouteActivity : ComponentActivity() {
                                 QuickMessagesPage()
                             }
 
-                            entry<Screen.Prompts> {
-                                PromptPage()
+                            entry<Screen.Prompts> { key ->
+                                PromptPage(initialTab = key.initialTab)
                             }
 
                             entry<Screen.Skills> {
@@ -777,7 +762,7 @@ sealed interface Screen : NavKey {
     data object SettingsSearch : Screen
 
     @Serializable
-    data object Backup : Screen
+    data class Backup(val initialTab: Int = 0) : Screen
 
     @Serializable
     data object ImageGen : Screen
@@ -813,7 +798,7 @@ sealed interface Screen : NavKey {
     data class SettingProviderDetail(val providerId: String) : Screen
 
     @Serializable
-    data object SettingModels : Screen
+    data class SettingModels(val initialTab: Int = 0) : Screen
 
     @Serializable
     data object SettingAbout : Screen
@@ -825,7 +810,7 @@ sealed interface Screen : NavKey {
     data class SettingSearchDetail(val serviceId: String) : Screen
 
     @Serializable
-    data object SettingSpeech : Screen
+    data class SettingSpeech(val initialTab: Int = 0) : Screen
 
     @Serializable
     data object SettingMcp : Screen
@@ -906,7 +891,7 @@ sealed interface Screen : NavKey {
     data object QuickMessages : Screen
 
     @Serializable
-    data object Prompts : Screen
+    data class Prompts(val initialTab: Int = 0) : Screen
 
     @Serializable
     data object Skills : Screen

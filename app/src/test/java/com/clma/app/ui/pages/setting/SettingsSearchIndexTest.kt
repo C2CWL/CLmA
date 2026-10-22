@@ -166,6 +166,43 @@ class SettingsSearchIndexTest {
                 it.titleRes == R.string.setting_floating_ball_color_title
         }
         assertNotNull(entry.parentTitleRes)
-        assertEquals(R.string.setting_floating_ball_page_title, entry.parentTitleRes)
+        // Nested rows name their parent by the hub row the user tapped.
+        assertEquals(R.string.setting_page_floating_ball, entry.parentTitleRes)
+    }
+
+    @Test
+    fun `breadcrumbs and aliases are non-zero`() {
+        settingsSearchIndex(developerMode = true).forEach { entry ->
+            entry.breadcrumbRes.forEach { assertTrue("breadcrumb id must be non-zero for ${entry.route}", it != 0) }
+        }
+    }
+
+    @Test
+    fun `extension sub pages sit under the extensions page`() {
+        val entries = settingsSearchIndex(developerMode = false)
+        listOf(Screen.Workspaces, Screen.QuickMessages, Screen.Prompts(), Screen.Skills).forEach { route ->
+            val page = entries.first { it.route == route }
+            assertEquals("parent of $route", R.string.setting_page_extensions, page.parentTitleRes)
+            assertEquals(R.string.setting_page_group_assistant, page.groupRes)
+        }
+    }
+
+    @Test
+    fun `tab rows carry the tab route and the tab in their path`() {
+        val entries = settingsSearchIndex(developerMode = false)
+        val s3Bucket = entries.single { it.titleRes == R.string.backup_page_s3_bucket }
+        assertEquals(Screen.Backup(initialTab = 2), s3Bucket.route)
+        assertEquals(R.string.backup_page_s3_backup, s3Bucket.parentTitleRes)
+        // The same title in two tabs stays two rows.
+        assertEquals(3, entries.count { it.titleRes == R.string.backup_page_backup_items })
+    }
+
+    @Test
+    fun `nested rows keep the other hub style name as a search alias`() {
+        val classicUiRow = settingsSearchIndex(
+            developerMode = false,
+            hubStyle = com.clma.app.data.datastore.SettingsHubStyle.CLASSIC,
+        ).first { it.route == Screen.SettingPreferencesUI && it.parentTitleRes != null }
+        assertTrue(classicUiRow.altTitles.contains(R.string.setting_page_hub_chat_display))
     }
 }
