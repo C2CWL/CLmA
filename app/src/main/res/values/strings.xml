@@ -302,6 +302,8 @@
   <string name="chat_page_input_search_off">Off</string>
   <string name="chat_input_unsupported_file_type">Unsupported file type: %s</string>
   <string name="chat_input_attachment_too_large">%1$s is too large — the limit is %2$d MB</string>
+  <string name="document_truncated_title">Document too large</string>
+  <string name="document_truncated_warning">“%1$s” does not fit in the model\'s context window, so only the first %2$d%% was sent. The AI was told the document is incomplete and can read the rest with workspace tools.</string>
   <string name="chat_input_file_read_failed">Failed to read file: %s</string>
   <string name="chat_message_add_favorite">Add Favorite</string>
   <string name="chat_message_remove_favorite">Remove Favorite</string>

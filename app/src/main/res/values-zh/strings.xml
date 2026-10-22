@@ -270,6 +270,8 @@
   <string name="chat_input_hint_5">需要我做什么？</string>
   <string name="chat_input_unsupported_file_type">不支持的文件类型：%s</string>
   <string name="chat_input_attachment_too_large">%1$s 过大——上限为 %2$d MB</string>
+  <string name="document_truncated_title">文档太大</string>
+  <string name="document_truncated_warning">“%1$s”超出了模型的上下文长度，只发送了前 %2$d%%。已告知 AI 文档不完整，它可以用工作区工具分段读取剩余内容。</string>
   <string name="chat_input_file_read_failed">文件读取失败：%s</string>
   <string name="chat_message_add_favorite">添加收藏</string>
   <string name="chat_message_remove_favorite">取消收藏</string>

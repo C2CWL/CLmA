@@ -135,4 +135,35 @@ class ContextBudgetPlannerTest {
             ),
         )
     }
+
+    @Test
+    fun `document is estimated from the text that was actually inlined`() {
+        DocumentTokenEstimates.clear()
+        val message = UIMessage(
+            role = MessageRole.USER,
+            parts = listOf(UIMessagePart.Document(url = "file:///upload/a.docx", fileName = "a.docx")),
+        )
+        // Unknown document: fixed guess 1_024 + "a.docx" (2) + overhead 8.
+        assertEquals(1_034, ContextBudgetPlanner.estimateContextTokens(listOf(message)))
+
+        DocumentTokenEstimates.record("file:///upload/a.docx", 500_000)
+        assertEquals(500_010, ContextBudgetPlanner.estimateContextTokens(listOf(message)))
+        DocumentTokenEstimates.clear()
+    }
+
+    @Test
+    fun `inlined document text is not counted twice`() {
+        DocumentTokenEstimates.record("file:///upload/a.txt", 500_000)
+        val inlined = "<UploadFile name=\"a.txt\">\n```\n" + "文".repeat(100) + "\n```\n</UploadFile>"
+        val message = UIMessage(
+            role = MessageRole.USER,
+            parts = listOf(
+                UIMessagePart.Text(inlined),
+                UIMessagePart.Document(url = "file:///upload/a.txt", fileName = "a.txt"),
+            ),
+        )
+        val expected = 8L + ContextBudgetPlanner.estimateTextTokens(inlined)
+        assertEquals(expected, ContextBudgetPlanner.estimateMessageTokens(message))
+        DocumentTokenEstimates.clear()
+    }
 }
