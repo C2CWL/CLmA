@@ -11,7 +11,8 @@ import org.junit.Test
  * ★拍板 (2026-10-16): Auto waives opaque relayed `mcp__*` tools — an agent build whose MCP
  * calls all ask is not autonomous. The named privilege-escalation floor
  * ([ToolApprovalDefaults.NO_ALWAYS_ALLOW]) is still checked before the mode, so Auto cannot
- * waive it.
+ * waive it — only the user's explicit, risk-acknowledged per-tool waiver (`floorWaived`) or an
+ * in-memory "allow for this chat" grant on that tool can.
  */
 class ToolApprovalPolicyTest {
 
@@ -21,12 +22,16 @@ class ToolApprovalPolicyTest {
         mode: ApprovalMode = ApprovalMode.SEMI,
         headless: Boolean = false,
         allowedForChat: Boolean = false,
+        floorWaived: Set<String> = emptySet(),
+        mcpRequireApproval: Boolean = true,
     ): Boolean = ToolApprovalPolicy.shouldAutoApprove(
         toolName = toolName,
         blacklist = blacklist,
         mode = mode,
         headless = headless,
         allowedForChat = allowedForChat,
+        floorWaived = floorWaived,
+        mcpRequireApproval = mcpRequireApproval,
     )
 
     // --- AUTO mode ---
@@ -118,9 +123,116 @@ class ToolApprovalPolicyTest {
     }
 
     @Test
-    fun `a chat grant cannot waive the floor`() {
-        assertFalse(decide("eval_javascript", allowedForChat = true, mode = ApprovalMode.AUTO))
-        assertFalse(decide("mcp__server__tool", allowedForChat = true, mode = ApprovalMode.MANUAL))
+    fun `a chat grant approves a non-waived floor tool in every mode`() {
+        for (mode in ApprovalMode.entries) {
+            assertTrue("$mode", decide("eval_javascript", allowedForChat = true, mode = mode))
+            assertTrue("$mode", decide("keystore_decrypt", allowedForChat = true, mode = mode))
+        }
+    }
+
+    @Test
+    fun `a chat grant approves a relayed mcp tool in every mode`() {
+        for (mode in ApprovalMode.entries) {
+            assertTrue("$mode", decide("mcp__server__tool", allowedForChat = true, mode = mode))
+        }
+    }
+
+    @Test
+    fun `without a chat grant the floor and mcp tools still ask`() {
+        assertFalse(decide("eval_javascript", allowedForChat = false, mode = ApprovalMode.SEMI))
+        assertFalse(decide("eval_javascript", allowedForChat = false, mode = ApprovalMode.AUTO))
+        assertFalse(decide("mcp__server__tool", allowedForChat = false, mode = ApprovalMode.SEMI))
+        assertFalse(decide("mcp__server__tool", allowedForChat = false, mode = ApprovalMode.MANUAL))
+    }
+
+    @Test
+    fun `a chat grant never turns ask_user into an auto-approval`() {
+        assertFalse(decide("ask_user", allowedForChat = true, mode = ApprovalMode.AUTO))
+        assertFalse(decide("request_secret", allowedForChat = true, mode = ApprovalMode.SEMI))
+    }
+
+    // --- user-acknowledged waivers of the default-ask floor ---
+
+    @Test
+    fun `a waived floor tool is approved in semi when not blacklisted`() {
+        assertTrue(decide("browser_eval_js", mode = ApprovalMode.SEMI, floorWaived = setOf("browser_eval_js")))
+    }
+
+    @Test
+    fun `a waived floor tool still asks in semi when blacklisted`() {
+        assertFalse(
+            decide(
+                "browser_eval_js",
+                blacklist = setOf("browser_eval_js"),
+                mode = ApprovalMode.SEMI,
+                floorWaived = setOf("browser_eval_js"),
+            )
+        )
+    }
+
+    @Test
+    fun `a waived floor tool is approved in auto`() {
+        assertTrue(decide("mcp_add", mode = ApprovalMode.AUTO, floorWaived = setOf("mcp_add")))
+    }
+
+    @Test
+    fun `a waived floor tool still asks in manual`() {
+        assertFalse(decide("eval_javascript", mode = ApprovalMode.MANUAL, floorWaived = setOf("eval_javascript")))
+    }
+
+    @Test
+    fun `a waiver only covers the named floor tool`() {
+        val waived = setOf("eval_javascript")
+        assertTrue(decide("eval_javascript", mode = ApprovalMode.SEMI, floorWaived = waived))
+        assertFalse(decide("browser_eval_js", mode = ApprovalMode.SEMI, floorWaived = waived))
+        assertFalse(decide("keystore_decrypt", mode = ApprovalMode.AUTO, floorWaived = waived))
+    }
+
+    // --- MCP switch ---
+
+    @Test
+    fun `mcp switch off approves relayed mcp tools in semi`() {
+        assertTrue(decide("mcp__server__tool", mode = ApprovalMode.SEMI, mcpRequireApproval = false))
+    }
+
+    @Test
+    fun `mcp switch off does not affect manual`() {
+        assertFalse(decide("mcp__server__tool", mode = ApprovalMode.MANUAL, mcpRequireApproval = false))
+    }
+
+    @Test
+    fun `mcp switch on keeps auto waiving and semi asking`() {
+        assertTrue(decide("mcp__server__tool", mode = ApprovalMode.AUTO, mcpRequireApproval = true))
+        assertFalse(decide("mcp__server__tool", mode = ApprovalMode.SEMI, mcpRequireApproval = true))
+    }
+
+    @Test
+    fun `mcp switch does not waive the named mcp management floor`() {
+        assertFalse(decide("mcp_add", mode = ApprovalMode.SEMI, mcpRequireApproval = false))
+        assertFalse(decide("mcp_update", mode = ApprovalMode.SEMI, mcpRequireApproval = false))
+    }
+
+    @Test
+    fun `default parameters keep the pre-waiver behaviour`() {
+        val noWaiver = { name: String, mode: ApprovalMode ->
+            ToolApprovalPolicy.shouldAutoApprove(
+                toolName = name,
+                blacklist = emptySet(),
+                mode = mode,
+                headless = false,
+                allowedForChat = false,
+            )
+        }
+        for (mode in ApprovalMode.entries) {
+            assertFalse("$mode", noWaiver("eval_javascript", mode))
+        }
+        assertFalse(noWaiver("mcp__s__t", ApprovalMode.SEMI))
+        assertTrue(noWaiver("mcp__s__t", ApprovalMode.AUTO))
+    }
+
+    @Test
+    fun `headless ignores waivers and switches (still approves, refusal lives elsewhere)`() {
+        assertTrue(decide("eval_javascript", headless = true, mode = ApprovalMode.MANUAL, floorWaived = emptySet()))
     }
 
     @Test

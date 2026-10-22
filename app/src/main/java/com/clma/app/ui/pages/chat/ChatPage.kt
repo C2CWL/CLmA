@@ -572,6 +572,7 @@ private fun ChatPageContent(
                     },
                     enableSearch = enableWebSearch,
                     conversationChatModelId = conversation.chatModelId,
+                    conversationId = conversation.id,
                     onUpdateChatModel = onUpdateChatModel,
                     onUpdateModelReasoningLevel = { model, level ->
                         vm.setModelReasoningLevel(model, level)

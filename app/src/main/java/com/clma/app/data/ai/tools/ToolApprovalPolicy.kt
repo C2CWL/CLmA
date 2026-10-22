@@ -10,14 +10,15 @@ package com.clma.app.data.ai.tools
  * - [AUTO]: no friction. Side-effecting tools run without prompting — including opaque
  *   relayed `mcp__*` tools (拍板 2026-10-16: Auto must not nag about MCP, an agent build
  *   whose MCP tools all ask is not autonomous). The privilege-escalation floor
- *   ([ToolApprovalDefaults.NO_ALWAYS_ALLOW]) still asks on every call — Auto is "stop asking
- *   me about ordinary work", not "hand over the keystore".
+ *   ([ToolApprovalDefaults.NO_ALWAYS_ALLOW]) still asks on every call unless the user
+ *   explicitly waived that tool — Auto is "stop asking me about ordinary work", not "hand over
+ *   the keystore".
  * - [SEMI]: the blacklist decides. A tool on the blacklist asks; everything else
- *   auto-approves. This is the fine-grained mode — the user curates which specific tools
- *   need a confirmation.
+ *   auto-approves. Relayed `mcp__*` tools ask unless the user turned the MCP switch off. This
+ *   is the fine-grained mode — the user curates which specific tools need a confirmation.
  * - [MANUAL]: every tool call asks. The only exceptions are the in-memory "allow for this
  *   chat" grant (so a long agent session isn't drowned in prompts after the first OK) and
- *   `ask_user` in a headless run (nobody to answer). The floor obviously still asks too.
+ *   `ask_user` in a headless run (nobody to answer). Floor waivers do not apply in Manual.
  *
  * Ordering, top to bottom — first match wins:
  *
@@ -28,13 +29,16 @@ package com.clma.app.data.ai.tools
  *     approval channel: asking would hang the turn forever, so everything auto-approves.
  *     The tools that must never run unattended are refused separately as an error envelope
  *     by [HeadlessToolApprovalPolicy].
- *  3. **Auto** waives opaque relayed `mcp__*` tools. The named privilege-escalation floor
- *     below is NOT waived: adding MCP servers / installing skills / code eval / keystore
- *     still confirm every time.
- *  4. The **hard floor** ([ToolApprovalDefaults.isHardFloor]) asks on every call; no mode
- *     waives it.
- *  5. An in-memory **"allow for this chat"** grant suppresses the prompt for this conversation.
- *  6. The **mode** then decides: Auto → approve; Semi → blacklist; Manual → ask.
+ *  3. An in-memory **"allow for this chat"** grant suppresses the prompt for this conversation —
+ *     for every tool, including relayed `mcp__*` tools and the floor, and in every mode. It is
+ *     only ever created by the user tapping 💬 on that tool's approval card in that
+ *     conversation, and it resets on /new or process restart ([ToolApprovalAllowList]).
+ *  3b. **Relayed `mcp__*`** tools: Auto waives them; Semi waives them only when the user turned
+ *     the MCP switch off (`mcpRequireApproval = false`, risk-acknowledged); Manual asks.
+ *  4. The **default-ask floor** ([ToolApprovalDefaults.NO_ALWAYS_ALLOW]) asks on every call
+ *     unless the user waived that specific tool (`floorWaived`, risk-acknowledged). A waived
+ *     floor tool is then treated like any ordinary tool by step 5 — so Manual still asks for it.
+ *  5. The **mode** then decides: Auto → approve; Semi → blacklist; Manual → ask.
  */
 enum class ApprovalMode {
     AUTO,
@@ -67,13 +71,27 @@ object ToolApprovalPolicy {
         allowedForChat: Boolean,
         hardFloor: Set<String> = ToolApprovalDefaults.NO_ALWAYS_ALLOW,
         isMcpRelayed: Boolean = toolName.startsWith(ToolApprovalDefaults.MCP_TOOL_PREFIX),
+        floorWaived: Set<String> = emptySet(),
+        mcpRequireApproval: Boolean = true,
     ): Boolean {
         if (toolName in HUMAN_INPUT_TOOLS) return headless
         if (headless) return true
-        // Auto waives opaque relayed MCP tools (拍板 2026-10-16) but NOT the named floor below.
-        if (mode == ApprovalMode.AUTO && isMcpRelayed) return true
-        if (isMcpRelayed || toolName in hardFloor) return false
+        // An explicit "allow for this chat" grant (in-memory, this conversation only) covers
+        // every tool, including relayed mcp__* tools and the floor: the user just tapped it on
+        // this very tool's approval card. Same as for ordinary tools, it also applies in Manual.
         if (allowedForChat) return true
+        if (isMcpRelayed) {
+            // Auto waives opaque relayed MCP tools (拍板 2026-10-16); Semi only when the user
+            // explicitly turned MCP approval off. Manual always asks.
+            return when (mode) {
+                ApprovalMode.AUTO -> true
+                ApprovalMode.SEMI -> !mcpRequireApproval
+                ApprovalMode.MANUAL -> false
+            }
+        }
+        // The default-ask floor asks unless the user waived this exact tool; a waived floor
+        // tool falls through to the ordinary mode rules below.
+        if (toolName in hardFloor && toolName !in floorWaived) return false
         return when (mode) {
             ApprovalMode.AUTO -> true
             ApprovalMode.SEMI -> toolName !in blacklist

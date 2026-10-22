@@ -344,4 +344,28 @@ class HeadlessToolApprovalPolicyTest {
             assertFalse("$name must stay runnable headless", HeadlessToolApprovalPolicy.isRefused(name))
         }
     }
+
+    @Test
+    fun `a user floor waiver or chat grant never reaches a headless run`() {
+        // Even if the interactive policy would approve (the user waived the tool, or granted it
+        // for a chat), a headless run still refuses every per-call-confirmation tool: the
+        // refusal is decided here, from the tool name alone, independent of any preference.
+        HeadlessToolApprovalPolicy.PER_CALL_CONFIRM_TOOL_NAMES.forEach { name ->
+            assertTrue(
+                "interactive policy approves waived $name in Semi",
+                ToolApprovalPolicy.shouldAutoApprove(
+                    toolName = name,
+                    blacklist = emptySet(),
+                    mode = ApprovalMode.SEMI,
+                    headless = false,
+                    allowedForChat = true,
+                    floorWaived = ToolApprovalDefaults.NO_ALWAYS_ALLOW,
+                ),
+            )
+            assertNotNull(
+                "$name must still be refused headless",
+                HeadlessToolApprovalPolicy.refusalEnvelopeFor(name, headless = true),
+            )
+        }
+    }
 }
