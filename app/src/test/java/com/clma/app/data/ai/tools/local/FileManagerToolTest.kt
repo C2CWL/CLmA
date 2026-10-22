@@ -177,6 +177,21 @@ class FileManagerToolTest {
 
     // ========== write_text_file ==========
 
+    @Test fun `write_text_file auto creates CLmA shared-storage parents`() {
+        assertTrue(
+            shouldAutoCreateParent(
+                "/sdcard/Pictures/CLmA/nested/photo.jpg",
+                "/sdcard/Pictures/CLmA/nested/photo.jpg"
+            )
+        )
+        assertTrue(
+            shouldAutoCreateParent(
+                "/storage/emulated/0/Documents/CLmA/nested/note.txt",
+                "/storage/emulated/0/Documents/CLmA/nested/note.txt"
+            )
+        )
+    }
+
     @Test fun `write_text_file auto creates RikkaHub shared-storage parents`() {
         assertTrue(
             shouldAutoCreateParent(

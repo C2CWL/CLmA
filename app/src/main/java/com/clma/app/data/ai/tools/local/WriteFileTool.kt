@@ -195,4 +195,11 @@ internal fun shouldAutoCreateParent(rawPath: String, expandedPath: String): Bool
         expandedPath.startsWith("/sdcard/Pictures/RikkaHub/") ||
         expandedPath.startsWith("/storage/emulated/0/Documents/RikkaHub/") ||
         expandedPath.startsWith("/storage/emulated/0/Download/RikkaHub/") ||
-        expandedPath.startsWith("/storage/emulated/0/Pictures/RikkaHub/")
+        expandedPath.startsWith("/storage/emulated/0/Pictures/RikkaHub/") ||
+        // CLmA names (camera photos / screenshots now go to Pictures/CLmA); old RikkaHub paths kept.
+        expandedPath.startsWith("/sdcard/Documents/CLmA/") ||
+        expandedPath.startsWith("/sdcard/Download/CLmA/") ||
+        expandedPath.startsWith("/sdcard/Pictures/CLmA/") ||
+        expandedPath.startsWith("/storage/emulated/0/Documents/CLmA/") ||
+        expandedPath.startsWith("/storage/emulated/0/Download/CLmA/") ||
+        expandedPath.startsWith("/storage/emulated/0/Pictures/CLmA/")

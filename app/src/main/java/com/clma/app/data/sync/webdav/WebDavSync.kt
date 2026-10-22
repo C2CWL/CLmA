@@ -6,6 +6,7 @@ import io.ktor.client.HttpClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.clma.app.data.sync.BackupManager
+import com.clma.app.data.sync.BackupNaming
 import com.clma.app.data.datastore.WebDavConfig
 import com.clma.app.utils.fileSizeToString
 import java.io.File
@@ -55,23 +56,42 @@ class WebDavSync(
         // Ensure the backup directory exists
         client.ensureCollectionExists().getOrThrow()
 
-        val resources = client.list().getOrThrow()
+        val current = client.list().getOrThrow().toBackupItems(folder = null)
 
-        resources
-            .filter { !it.isCollection && it.displayName.startsWith("backup_") && it.displayName.endsWith(".zip") }
+        // On the new default folder, also show backups left in the old rikkahub folder so they
+        // can still be restored. A missing old folder is not an error.
+        val legacy = if (isDefaultFolder(config.path)) {
+            getClient(config.copy(path = BackupNaming.LEGACY_CLOUD_FOLDER)).list()
+                .getOrNull().orEmpty()
+                .toBackupItems(folder = BackupNaming.LEGACY_CLOUD_FOLDER)
+        } else {
+            emptyList()
+        }
+
+        (current + legacy).sortedByDescending { it.lastModified }
+    }
+
+    private fun isDefaultFolder(path: String): Boolean =
+        path.trim('/') == BackupNaming.CLOUD_FOLDER
+
+    private fun List<WebDavResourceInfo>.toBackupItems(folder: String?): List<WebDavBackupItem> =
+        filter { !it.isCollection && BackupNaming.isBackupFileName(it.displayName) }
             .map { resource ->
                 WebDavBackupItem(
                     href = resource.href,
                     displayName = resource.displayName,
                     size = resource.contentLength,
-                    lastModified = resource.lastModified ?: Instant.EPOCH
+                    lastModified = resource.lastModified ?: Instant.EPOCH,
+                    folder = folder,
                 )
             }
-            .sortedByDescending { it.lastModified }
-    }
+
+    /** Client for the folder an item was listed from (the configured one, or the old rikkahub one). */
+    private fun clientFor(config: WebDavConfig, item: WebDavBackupItem): WebDavClient =
+        getClient(item.folder?.let { config.copy(path = it) } ?: config)
 
     suspend fun restore(config: WebDavConfig, item: WebDavBackupItem) = withContext(Dispatchers.IO) {
-        val client = getClient(config)
+        val client = clientFor(config, item)
         val backupFile = File.createTempFile("restore-", ".zip", context.cacheDir)
 
         try {
@@ -93,7 +113,7 @@ class WebDavSync(
     }
 
     suspend fun deleteBackupFile(config: WebDavConfig, item: WebDavBackupItem) = withContext(Dispatchers.IO) {
-        val client = getClient(config)
+        val client = clientFor(config, item)
         client.delete(item.displayName).getOrThrow()
         Log.i(TAG, "deleteBackupFile: Deleted ${item.displayName}")
     }
@@ -116,4 +136,6 @@ data class WebDavBackupItem(
     val displayName: String,
     val size: Long,
     val lastModified: Instant,
+    /** Set when the item lives in a different folder than the configured path (the old rikkahub one). */
+    val folder: String? = null,
 )

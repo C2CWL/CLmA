@@ -31,6 +31,7 @@ import com.dokar.sonner.ToastType
 import kotlinx.coroutines.launch
 import com.clma.app.R
 import com.clma.app.data.sync.BackupItem
+import com.clma.app.data.sync.BackupNaming
 import com.clma.app.ui.components.ui.CardGroup
 import com.clma.app.ui.components.ui.StickyHeader
 import com.clma.app.ui.context.LocalToaster
@@ -210,7 +211,7 @@ fun ImportExportTab(
                         {
                             val timestamp = LocalDateTime.now()
                                 .format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
-                            createDocumentLauncher.launch("rikkahub_backup_$timestamp.zip")
+                            createDocumentLauncher.launch(BackupNaming.localExportFileName(timestamp))
                         }
                     } else null,
                     headlineContent = { Text(stringResource(R.string.backup_page_local_backup_export)) },

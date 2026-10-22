@@ -60,6 +60,7 @@ import com.clma.app.data.model.PromptInjection
 import com.clma.app.data.model.QuickMessage
 import com.clma.app.data.model.Tag
 import com.clma.app.data.sync.BackupItem
+import com.clma.app.data.sync.BackupNaming
 import com.clma.app.data.sync.s3.S3Config
 import com.clma.app.subagent.SubAgentDefaults
 import com.clma.app.subagent.SubAgentDispatchProfile
@@ -1303,7 +1304,10 @@ data class WebDavConfig(
     val url: String = "",
     val username: String = "",
     val password: String = "",
-    val path: String = "rikkahub_backups",
+    // New installs use the CLmA folder. Existing users keep whatever path is already saved
+    // (often the old "rikkahub_backups"); WebDavSync also lists that old folder when the
+    // new default is in use, so earlier backups remain restorable.
+    val path: String = BackupNaming.CLOUD_FOLDER,
     // Backed-up slices. New installs default to everything; a pre-granular `["DATABASE","FILES"]`
     // still decodes because BackupItem keeps the legacy FILES value, and is expanded on the next
     // write by BackupItem.normalize.
