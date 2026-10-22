@@ -109,6 +109,7 @@ import com.clma.app.data.files.SkillManager
 import com.clma.app.data.ai.transformers.Base64ImageToLocalFileTransformer
 import com.clma.app.data.ai.transformers.ContextBudgetReminderTransformer
 import com.clma.app.data.ai.transformers.DocumentAsPromptTransformer
+import com.clma.app.data.ai.document.DocumentInlineNotices
 import com.clma.app.data.ai.transformers.OcrTransformer
 import com.clma.app.data.ai.transformers.PlaceholderTransformer
 import com.clma.app.data.ai.transformers.PromptInjectionTransformer
@@ -659,6 +660,27 @@ class ChatService(
     ) {
         if (error is CancellationException) return
         _errors.update { it + ChatError(title = title, error = error, conversationId = conversationId, solution = solution) }
+    }
+
+    /**
+     * Tells the user when an attached document was too large for the model's context and only
+     * its beginning was sent (DocumentAsPromptTransformer reports this per document). Shown once
+     * per document, through the same card as other chat warnings.
+     */
+    private fun surfaceDocumentTruncations(conversationId: Uuid) {
+        if (!DocumentInlineNotices.hasPending()) return
+        val urls = getConversationFlow(conversationId).value.currentMessages.flatMap { message ->
+            message.parts.filterIsInstance<UIMessagePart.Document>().map { it.url }
+        }
+        DocumentInlineNotices.takeFor(urls).forEach { notice ->
+            addError(
+                IllegalStateException(
+                    context.getString(R.string.document_truncated_warning, notice.fileName, notice.shownPercent)
+                ),
+                conversationId,
+                title = context.getString(R.string.document_truncated_title),
+            )
+        }
     }
 
     fun dismissError(id: Uuid) {
@@ -2140,6 +2162,7 @@ class ChatService(
                         }
                         updateConversation(conversationId, updatedConversation, checkFiles = false)
                         markStreamingPersistence(conversationId)
+                        surfaceDocumentTruncations(conversationId)
                         persistStreamingStateIfDue(conversationId)
 
                         // Persist immediately when a tool transitions to "execution
@@ -2170,6 +2193,8 @@ class ChatService(
         }
 
         val generationFailure = generationResult.exceptionOrNull()
+        // A failed request emits no message chunk, so check here as well.
+        surfaceDocumentTruncations(conversationId)
         // Screen-automation experience memory: whatever the agent just did to an app is written
         // to that app's cold-memory playbook here, by the host — the model never has to remember
         // to do it. Best-effort and no-op unless cold memory is configured.

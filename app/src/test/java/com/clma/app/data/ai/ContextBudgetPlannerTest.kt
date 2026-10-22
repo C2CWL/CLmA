@@ -135,4 +135,70 @@ class ContextBudgetPlannerTest {
             ),
         )
     }
+
+    @Test
+    fun `document is estimated from the text that was actually inlined`() {
+        DocumentTokenEstimates.clear()
+        val message = UIMessage(
+            role = MessageRole.USER,
+            parts = listOf(UIMessagePart.Document(url = "file:///upload/a.docx", fileName = "a.docx")),
+        )
+        // Unknown document: fixed guess 1_024 + "a.docx" (2) + overhead 8.
+        assertEquals(1_034, ContextBudgetPlanner.estimateContextTokens(listOf(message)))
+
+        DocumentTokenEstimates.record("file:///upload/a.docx", 500_000)
+        assertEquals(500_010, ContextBudgetPlanner.estimateContextTokens(listOf(message)))
+        DocumentTokenEstimates.clear()
+    }
+
+    @Test
+    fun `inlined document text is not counted twice`() {
+        DocumentTokenEstimates.record("file:///upload/a.txt", 500_000)
+        val inlined = "<UploadFile name=\"a.txt\">\n```\n" + "文".repeat(100) + "\n```\n</UploadFile>"
+        val message = UIMessage(
+            role = MessageRole.USER,
+            parts = listOf(
+                UIMessagePart.Text(inlined),
+                UIMessagePart.Document(url = "file:///upload/a.txt", fileName = "a.txt"),
+            ),
+        )
+        val expected = 8L + ContextBudgetPlanner.estimateTextTokens(inlined)
+        assertEquals(expected, ContextBudgetPlanner.estimateMessageTokens(message))
+        DocumentTokenEstimates.clear()
+    }
+
+    @get:org.junit.Rule
+    val tmp = org.junit.rules.TemporaryFolder()
+
+    private fun uploadedDocument(name: String, bytes: Int): Pair<java.io.File, UIMessage> {
+        val dir = java.io.File(tmp.root, "upload").apply { mkdirs() }
+        val file = java.io.File(dir, name).apply { writeBytes(ByteArray(bytes) { 0x50 }) }
+        val message = UIMessage(
+            role = MessageRole.USER,
+            parts = listOf(UIMessagePart.Document(url = file.toURI().toString(), fileName = name)),
+        )
+        return file to message
+    }
+
+    @Test
+    fun `after a restart a document is estimated from its extracted-text cache`() {
+        DocumentTokenEstimates.clear() // nothing recorded in this "process"
+        val (file, message) = uploadedDocument("big.docx", 1_000)
+        com.clma.app.data.ai.document.ExtractedTextCache.write(file, "a".repeat(30_000))
+        // 30_000 ASCII chars = 10_000 tokens, + "big.docx" (3) + overhead 8.
+        assertEquals(10_011, ContextBudgetPlanner.estimateContextTokens(listOf(message)))
+        // A size recorded by the transformer (clamped to the inline budget) wins.
+        DocumentTokenEstimates.record(message.parts.filterIsInstance<UIMessagePart.Document>().single().url, 500)
+        assertEquals(511, ContextBudgetPlanner.estimateContextTokens(listOf(message)))
+        DocumentTokenEstimates.clear()
+    }
+
+    @Test
+    fun `after a restart without a cache the file size heuristic replaces the fixed guess`() {
+        DocumentTokenEstimates.clear()
+        val (_, message) = uploadedDocument("big.docx", 1_400_000)
+        // docx: 1 token per byte -> 1_400_000 + 3 + 8.
+        assertEquals(1_400_011, ContextBudgetPlanner.estimateContextTokens(listOf(message)))
+        DocumentTokenEstimates.clear()
+    }
 }

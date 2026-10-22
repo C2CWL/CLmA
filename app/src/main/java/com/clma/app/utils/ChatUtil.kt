@@ -38,15 +38,17 @@ fun Context.copyMessageToClipboard(message: UIMessage) {
  * MIME types that should be inlined as text (or parsed) when building the model prompt.
  * Upload itself no longer rejects other types — binary files are still attached and exposed
  * under `/upload` for workspace tools.
+ *
+ * Legacy Office (`application/msword`, `vnd.ms-excel`, `vnd.ms-powerpoint`) and `.xlsx` are
+ * deliberately absent: there is no parser for them, and reading them as text dumped the raw
+ * binary/zip bytes into the prompt (a 1.4 MB file became ~1.1M tokens of garbage). Some pickers
+ * label a real `.docx` as `application/msword`; DocumentAsPromptTransformer recognises those
+ * by their content, not by this list.
  */
 private val INLINE_TEXT_MIME_TYPES = setOf(
     "text/plain", "text/html", "text/css", "text/javascript", "text/csv", "text/xml",
     "application/json", "application/javascript", "application/pdf",
-    "application/msword",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "application/vnd.ms-excel",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    "application/vnd.ms-powerpoint",
     "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     "application/epub+zip"
 )
