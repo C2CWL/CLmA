@@ -15,6 +15,14 @@ import java.util.Locale
 
 private const val MAX_RECENT_LOGS = 300
 
+/**
+ * Upper bound (in chars) on request bodies kept by the in-memory ring buffer, summed over all
+ * entries. Agent turns resend the whole history on every step, so 300 full prompts near the
+ * model's context limit add up to hundreds of MB and ran the app out of memory. Once the
+ * budget is spent, older entries keep their metadata but lose the body.
+ */
+internal const val MAX_IN_MEMORY_BODY_CHARS = 2_000_000
+
 /** How loud a log line is. Kept small on purpose — users only ever see three colours. */
 enum class LogLevel { DEBUG, INFO, WARN, ERROR }
 
@@ -97,6 +105,7 @@ object Logging {
     private var logDir: File? = null
 
     private const val LOG_FILE_NAME = "app.log"
+    private const val MAX_CRASH_CHARS = 8_000
     private const val MAX_FILE_BYTES = 1_000_000L
     private const val MAX_ROTATED_FILES = 2
 
@@ -158,10 +167,47 @@ object Logging {
             if (recentLogs.size > MAX_RECENT_LOGS) {
                 recentLogs.removeLastOrNull()
             }
+            enforceBodyBudget()
         }
         _version.update { it + 1 }
         if (entry.level >= fileLogLevel) {
             appendToFile(entry)
+        }
+    }
+
+    /** Strips bodies of older request entries once the newest ones use up the budget. Caller holds the lock. */
+    private fun enforceBodyBudget() {
+        var used = 0L
+        for (index in recentLogs.indices) {
+            val entry = recentLogs[index] as? LogEntry.RequestLog ?: continue
+            val body = entry.requestBody ?: continue
+            if (used + body.length <= MAX_IN_MEMORY_BODY_CHARS) {
+                used += body.length
+            } else {
+                recentLogs[index] = entry.copy(requestBody = omittedBodyPlaceholder(body.length.toLong()))
+            }
+        }
+    }
+
+    /** Placeholder stored instead of a body that was too large to keep. */
+    fun omittedBodyPlaceholder(size: Long): String = "<omitted $size bytes>"
+
+    /**
+     * Records an uncaught crash in both the ring buffer and the on-disk log, so "copy all logs"
+     * still carries the stack after the process dies. Called from the uncaught-exception
+     * handler, possibly while out of memory: bounded, synchronous, and never throws.
+     */
+    fun logCrash(tag: String, stackTrace: String) {
+        try {
+            addLog(
+                LogEntry.TextLog(
+                    tag = tag,
+                    message = "CRASH\n" + stackTrace.take(MAX_CRASH_CHARS),
+                    level = LogLevel.ERROR,
+                )
+            )
+        } catch (_: Throwable) {
+            // Logging must never mask the original crash.
         }
     }
 
