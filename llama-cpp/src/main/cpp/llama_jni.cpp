@@ -13,7 +13,7 @@
 #include <nlohmann/json.hpp>
 
 extern "C" JNIEXPORT jstring JNICALL
-Java_me_rerere_llamacpp_LlamaCppJni_nativeSystemInfo(JNIEnv *env, jobject) {
+Java_com_clma_llamacpp_LlamaCppJni_nativeSystemInfo(JNIEnv *env, jobject) {
     JNI_GUARD(env, nullptr, {
         llama_backend_init();
         const std::string info = llama_print_system_info();
@@ -22,7 +22,7 @@ Java_me_rerere_llamacpp_LlamaCppJni_nativeSystemInfo(JNIEnv *env, jobject) {
 }
 
 extern "C" JNIEXPORT jlong JNICALL
-Java_me_rerere_llamacpp_LlamaCppJni_nativeLoadModel(JNIEnv *env, jobject, jstring pathIn) {
+Java_com_clma_llamacpp_LlamaCppJni_nativeLoadModel(JNIEnv *env, jobject, jstring pathIn) {
     JNI_GUARD(env, 0L, {
         llama_backend_init();
         const std::string path = jstringToUtf8(env, pathIn);
@@ -44,7 +44,7 @@ Java_me_rerere_llamacpp_LlamaCppJni_nativeLoadModel(JNIEnv *env, jobject, jstrin
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_me_rerere_llamacpp_LlamaCppJni_nativeFreeModel(JNIEnv *env, jobject, jlong handle) {
+Java_com_clma_llamacpp_LlamaCppJni_nativeFreeModel(JNIEnv *env, jobject, jlong handle) {
     JNI_GUARD_VOID(env, {
         if (handle == 0L) {
             return;
@@ -73,7 +73,7 @@ static int metaInt(const llama_model *model, const std::string &suffix, int fall
 }
 
 extern "C" JNIEXPORT jstring JNICALL
-Java_me_rerere_llamacpp_LlamaCppJni_nativeModelInfo(JNIEnv *env, jobject, jlong handle) {
+Java_com_clma_llamacpp_LlamaCppJni_nativeModelInfo(JNIEnv *env, jobject, jlong handle) {
     JNI_GUARD(env, nullptr, {
         auto *model = reinterpret_cast<llama_model *>(handle);
         if (model == nullptr) {
@@ -122,7 +122,7 @@ Java_me_rerere_llamacpp_LlamaCppJni_nativeModelInfo(JNIEnv *env, jobject, jlong 
 }
 
 extern "C" JNIEXPORT jstring JNICALL
-Java_me_rerere_llamacpp_LlamaCppJni_nativeChatTemplate(JNIEnv *env, jobject, jlong handle) {
+Java_com_clma_llamacpp_LlamaCppJni_nativeChatTemplate(JNIEnv *env, jobject, jlong handle) {
     JNI_GUARD(env, nullptr, {
         auto *model = reinterpret_cast<llama_model *>(handle);
         if (model == nullptr) {
@@ -149,7 +149,7 @@ static const char *grammarTriggerTypeName(common_grammar_trigger_type type) {
 }
 
 extern "C" JNIEXPORT jbyteArray JNICALL
-Java_me_rerere_llamacpp_LlamaCppJni_nativeApplyTemplate(
+Java_com_clma_llamacpp_LlamaCppJni_nativeApplyTemplate(
         JNIEnv *env, jobject, jlong handle, jbyteArray requestIn) {
     JNI_GUARD(env, nullptr, {
         auto *model = reinterpret_cast<llama_model *>(handle);
@@ -291,7 +291,7 @@ static bool abortIfCancelled(void *data) {
 }
 
 extern "C" JNIEXPORT jlong JNICALL
-Java_me_rerere_llamacpp_LlamaCppJni_nativeCreateContext(
+Java_com_clma_llamacpp_LlamaCppJni_nativeCreateContext(
         JNIEnv *env, jobject, jlong modelHandle, jint nCtx, jint nBatch, jint nUBatch,
         jstring cacheKIn, jstring cacheVIn, jint nThreads) {
     JNI_GUARD(env, 0L, {
@@ -329,7 +329,7 @@ Java_me_rerere_llamacpp_LlamaCppJni_nativeCreateContext(
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_me_rerere_llamacpp_LlamaCppJni_nativeFreeContext(JNIEnv *env, jobject, jlong handle) {
+Java_com_clma_llamacpp_LlamaCppJni_nativeFreeContext(JNIEnv *env, jobject, jlong handle) {
     JNI_GUARD_VOID(env, {
         if (handle == 0L) {
             return;
@@ -339,7 +339,7 @@ Java_me_rerere_llamacpp_LlamaCppJni_nativeFreeContext(JNIEnv *env, jobject, jlon
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_me_rerere_llamacpp_LlamaCppJni_nativeCancelGeneration(JNIEnv *env, jobject, jlong handle) {
+Java_com_clma_llamacpp_LlamaCppJni_nativeCancelGeneration(JNIEnv *env, jobject, jlong handle) {
     JNI_GUARD_VOID(env, {
         if (handle == 0L) {
             return;
@@ -485,7 +485,7 @@ static common_params_sampling samplingFromApplied(const nlohmann::ordered_json &
 using SamplerPtr = std::unique_ptr<common_sampler, void (*)(common_sampler *)>;
 
 extern "C" JNIEXPORT void JNICALL
-Java_me_rerere_llamacpp_LlamaCppJni_nativeGenerate(
+Java_com_clma_llamacpp_LlamaCppJni_nativeGenerate(
         JNIEnv *env, jobject, jlong ctxHandle, jlong modelHandle, jbyteArray appliedIn,
         jint maxTokens, jobject sink) {
     JNI_GUARD_VOID(env, {
@@ -686,7 +686,7 @@ static common_chat_format formatFromName(const std::string &name) {
 }
 
 extern "C" JNIEXPORT jbyteArray JNICALL
-Java_me_rerere_llamacpp_LlamaCppJni_nativeParseChat(
+Java_com_clma_llamacpp_LlamaCppJni_nativeParseChat(
         JNIEnv *env, jobject, jbyteArray textIn, jboolean isPartial, jbyteArray appliedIn) {
     JNI_GUARD(env, nullptr, {
         // Both directions are bytes for the same reason nativeApplyTemplate's are: this is

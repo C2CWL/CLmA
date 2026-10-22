@@ -44,7 +44,7 @@ export interface LoadedTraceCase extends TraceCase {
   timeoutMs: number;
 }
 
-/** 与 ai 模块的 me.rerere.ai.provider.stream.SseEvent 字段保持一致。 */
+/** 与 ai 模块的 com.clma.ai.provider.stream.SseEvent 字段保持一致。 */
 export interface SseEvent {
   id?: string;
   event?: string;

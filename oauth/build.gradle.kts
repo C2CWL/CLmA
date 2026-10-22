@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "me.rerere.oauth"
+    namespace = "com.clma.oauth"
 }
 
 dependencies {

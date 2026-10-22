@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "me.rerere.llamacpp"
+    namespace = "com.clma.llamacpp"
     compileSdk = 37
 
     defaultConfig {

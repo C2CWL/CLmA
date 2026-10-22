@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "me.rerere.document"
+    namespace = "com.clma.document"
 
     defaultConfig {
         consumerProguardFiles("consumer-rules.pro")

@@ -8,7 +8,7 @@
         android:shortcutLongLabel="@string/shortcut_take_picture">
         <intent
             android:action="android.intent.action.VIEW"
-            android:targetClass="me.rerere.rikkahub.ui.activity.ShortcutHandlerActivity"
+            android:targetClass="com.clma.app.ui.activity.ShortcutHandlerActivity"
             android:data="rikkahub://shortcut" />
         <categories android:name="android.shortcut.conversation" />
     </shortcut>
@@ -20,6 +20,6 @@
         android:shortcutLongLabel="@string/translator_page_title">
         <intent
             android:action="me.rerere.rikkahub.action.TRANSLATE"
-            android:targetClass="me.rerere.rikkahub.RouteActivity" />
+            android:targetClass="com.clma.app.RouteActivity" />
     </shortcut>
 </shortcuts>
