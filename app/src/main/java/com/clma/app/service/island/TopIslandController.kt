@@ -22,7 +22,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
@@ -234,7 +233,7 @@ private class TopIslandRuntime(
         targetStatus = null
         if (id == null) return
         bindJob = appScope.launch(Dispatchers.Main.immediate) {
-            chatService.getConversationFlow(id).conflate().collect { conversation ->
+            chatService.getConversationFlow(id).collect { conversation ->
                 if (target != id) return@collect
                 targetTitle = conversation.title
                 targetStatus = TopIslandStatusResolver.resolve(conversation.currentMessages)
