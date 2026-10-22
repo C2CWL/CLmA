@@ -1,4 +1,4 @@
-package me.rerere.locallm
+package com.clma.locallm
 
 import kotlinx.serialization.Serializable
 

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.agentrun
+package com.clma.app.data.agentrun
 
 import androidx.room.Dao
 import androidx.room.Insert

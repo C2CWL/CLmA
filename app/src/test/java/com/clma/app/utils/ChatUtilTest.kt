@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.utils
+package com.clma.app.utils
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -45,8 +45,8 @@ class ChatUtilTest {
             "app.apk",
             "application/vnd.android.package-archive",
         )
-        assertTrue(image is me.rerere.ai.ui.UIMessagePart.Image)
-        assertTrue(doc is me.rerere.ai.ui.UIMessagePart.Document)
-        assertEquals("app.apk", (doc as me.rerere.ai.ui.UIMessagePart.Document).fileName)
+        assertTrue(image is com.clma.ai.ui.UIMessagePart.Image)
+        assertTrue(doc is com.clma.ai.ui.UIMessagePart.Document)
+        assertEquals("app.apk", (doc as com.clma.ai.ui.UIMessagePart.Document).fileName)
     }
 }

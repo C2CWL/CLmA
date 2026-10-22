@@ -1,7 +1,7 @@
-package me.rerere.rikkahub.ui.pages.setting.doctor
+package com.clma.app.ui.pages.setting.doctor
 
 import android.content.Intent
-import me.rerere.rikkahub.R
+import com.clma.app.R
 
 /**
  * One diagnostic line. The Doctor screen renders these in a flat scrollable list grouped

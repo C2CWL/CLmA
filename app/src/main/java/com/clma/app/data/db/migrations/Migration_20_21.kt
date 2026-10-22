@@ -1,5 +1,5 @@
-// app/src/main/java/me/rerere/rikkahub/data/db/migrations/Migration_20_21.kt
-package me.rerere.rikkahub.data.db.migrations
+// app/src/main/java/com/clma/app/data/db/migrations/Migration_20_21.kt
+package com.clma.app.data.db.migrations
 
 import androidx.room.migration.AutoMigrationSpec
 import androidx.sqlite.SQLiteConnection

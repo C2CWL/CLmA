@@ -1,7 +1,7 @@
-package me.rerere.ai.ui
+package com.clma.ai.ui
 
 import kotlinx.serialization.json.JsonPrimitive
-import me.rerere.ai.core.MessageRole
+import com.clma.ai.core.MessageRole
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

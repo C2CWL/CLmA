@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.ai
+package com.clma.app.ui.components.ai
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -18,9 +18,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Voice
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.ui.pages.chat.VoicePhase
-import me.rerere.rikkahub.ui.pages.chat.VoiceSessionState
+import com.clma.app.R
+import com.clma.app.ui.pages.chat.VoicePhase
+import com.clma.app.ui.pages.chat.VoiceSessionState
 
 @Composable
 internal fun VoiceModeRow(

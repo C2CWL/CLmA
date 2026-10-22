@@ -1,4 +1,4 @@
-package me.rerere.asr
+package com.clma.asr
 
 /** One server-VAD utterance. A stopped event alone does not contain the final transcript. */
 data class ASRVoiceTurn(

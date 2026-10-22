@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.sync
+package com.clma.app.data.sync
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json

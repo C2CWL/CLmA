@@ -1,4 +1,4 @@
-package me.rerere.search
+package com.clma.search
 
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
@@ -10,7 +10,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.put
-import me.rerere.ai.core.InputSchema
+import com.clma.ai.core.InputSchema
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue

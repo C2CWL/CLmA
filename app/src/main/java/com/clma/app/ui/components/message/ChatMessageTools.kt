@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.message
+package com.clma.app.ui.components.message
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -55,9 +55,9 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import me.rerere.ai.ui.ToolApprovalState
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.common.http.jsonObjectOrNull
+import com.clma.ai.ui.ToolApprovalState
+import com.clma.ai.ui.UIMessagePart
+import com.clma.common.http.jsonObjectOrNull
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.BubbleChatQuestion
 import me.rerere.hugeicons.stroke.Cancel01
@@ -65,20 +65,20 @@ import me.rerere.hugeicons.stroke.Lock
 import me.rerere.hugeicons.stroke.Refresh03
 import me.rerere.hugeicons.stroke.Tick01
 import me.rerere.hugeicons.stroke.Tools
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.ai.tools.local.REQUEST_SECRET_TOOL_NAME
-import me.rerere.rikkahub.data.datastore.ToolCallStyle
-import me.rerere.rikkahub.data.secrets.AgentSecretsStore
-import me.rerere.rikkahub.ui.components.message.tools.ToolUIContext
-import me.rerere.rikkahub.ui.components.message.tools.ToolUIRegistry
-import me.rerere.rikkahub.ui.components.message.tools.ToolResultImage
-import me.rerere.rikkahub.ui.components.ui.ChainOfThoughtScope
-import me.rerere.rikkahub.ui.components.ui.DotLoading
-import me.rerere.rikkahub.ui.components.ui.LocalToolCallStyle
-import me.rerere.rikkahub.ui.context.LocalToaster
-import me.rerere.rikkahub.ui.modifier.shimmer
-import me.rerere.rikkahub.utils.JsonInstant
-import me.rerere.rikkahub.utils.jsonPrimitiveOrNull
+import com.clma.app.R
+import com.clma.app.data.ai.tools.local.REQUEST_SECRET_TOOL_NAME
+import com.clma.app.data.datastore.ToolCallStyle
+import com.clma.app.data.secrets.AgentSecretsStore
+import com.clma.app.ui.components.message.tools.ToolUIContext
+import com.clma.app.ui.components.message.tools.ToolUIRegistry
+import com.clma.app.ui.components.message.tools.ToolResultImage
+import com.clma.app.ui.components.ui.ChainOfThoughtScope
+import com.clma.app.ui.components.ui.DotLoading
+import com.clma.app.ui.components.ui.LocalToolCallStyle
+import com.clma.app.ui.context.LocalToaster
+import com.clma.app.ui.modifier.shimmer
+import com.clma.app.utils.JsonInstant
+import com.clma.app.utils.jsonPrimitiveOrNull
 import org.koin.compose.koinInject
 
 // Per-tool icon/title/summary/preview rendering now lives in ToolUIRegistry
@@ -158,9 +158,9 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
     // `loading` (which is already narrowed to false for an executed tool and can't
     // answer that question - see the rerun-button gate below).
     generationActive: Boolean = loading,
-    onToolApproval: ((toolCallId: String, approved: Boolean, reason: String, scope: me.rerere.rikkahub.service.ChatService.ApprovalScope, toolName: String) -> Unit)? = null,
+    onToolApproval: ((toolCallId: String, approved: Boolean, reason: String, scope: com.clma.app.service.ChatService.ApprovalScope, toolName: String) -> Unit)? = null,
     onToolAnswer: ((toolCallId: String, answer: String) -> Unit)? = null,
-    onRerunTool: (suspend (toolCallId: String) -> me.rerere.rikkahub.service.ChatService.RerunToolResult)? = null,
+    onRerunTool: (suspend (toolCallId: String) -> com.clma.app.service.ChatService.RerunToolResult)? = null,
     // workspace_shell：后面的思考或正文已经开始。null 表示用户还没手动拨过展开状态。
     collapseInlineOutput: Boolean = false,
 ) {
@@ -315,7 +315,7 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
                     if (tool.toolName.startsWith("mcp_")) {
                         val mcpRendered = runCatching {
                             (tool.inputAsJson() as? JsonObject)?.let {
-                                me.rerere.rikkahub.data.ai.mcp.control.McpApprovalRenderer
+                                com.clma.app.data.ai.mcp.control.McpApprovalRenderer
                                     .render(tool.toolName, it)
                             }
                         }.getOrNull()
@@ -330,10 +330,10 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
                     // Workflow_* mutators: human-readable approval body ("Create workflow X /
                     // When: WiFi connects to HomeWiFi / Do: 1. ssh_exec_saved(host=home) / …").
                     // Action arg values whose key is in the secret-redaction list are masked.
-                    if (me.rerere.rikkahub.workflow.tools.WorkflowApprovalRenderer.isWorkflowTool(tool.toolName)
+                    if (com.clma.app.workflow.tools.WorkflowApprovalRenderer.isWorkflowTool(tool.toolName)
                         && tool.toolName !in setOf("workflow_list", "workflow_get")) {
                         val workflowRendered = runCatching {
-                            me.rerere.rikkahub.workflow.tools.WorkflowApprovalRenderer
+                            com.clma.app.workflow.tools.WorkflowApprovalRenderer
                                 .renderPlain(tool.toolName, tool.input.ifBlank { "{}" })
                         }.getOrNull()
                         if (!workflowRendered.isNullOrBlank()) {
@@ -355,7 +355,7 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
                                 inFlight = true
                                 onToolApproval(
                                     tool.toolCallId, true, "",
-                                    me.rerere.rikkahub.service.ChatService.ApprovalScope.Once,
+                                    com.clma.app.service.ChatService.ApprovalScope.Once,
                                     tool.toolName,
                                 )
                             },
@@ -374,7 +374,7 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
                                 inFlight = true
                                 onToolApproval(
                                     tool.toolCallId, true, "",
-                                    me.rerere.rikkahub.service.ChatService.ApprovalScope.ChatScope,
+                                    com.clma.app.service.ChatService.ApprovalScope.ChatScope,
                                     tool.toolName,
                                 )
                             },
@@ -453,7 +453,7 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
                 showDenyDialog = false
                 onToolApproval(
                     tool.toolCallId, false, reason,
-                    me.rerere.rikkahub.service.ChatService.ApprovalScope.Once,
+                    com.clma.app.service.ChatService.ApprovalScope.Once,
                     tool.toolName,
                 )
             }
@@ -517,7 +517,7 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
                                         rerunScope.launch {
                                             val result = onRerunTool(tool.toolCallId)
                                             rerunInFlight = false
-                                            if (result is me.rerere.rikkahub.service.ChatService.RerunToolResult.Failure) {
+                                            if (result is com.clma.app.service.ChatService.RerunToolResult.Failure) {
                                                 val message = androidContext.getString(
                                                     R.string.chat_message_tool_rerun_failed,
                                                     result.message,

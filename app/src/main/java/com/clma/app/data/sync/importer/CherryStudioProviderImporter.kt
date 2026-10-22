@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.sync.importer
+package com.clma.app.data.sync.importer
 
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -7,11 +7,11 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import me.rerere.ai.provider.Model
-import me.rerere.ai.provider.ProviderSetting
-import me.rerere.ai.registry.ModelRegistry
-import me.rerere.common.http.jsonObjectOrNull
-import me.rerere.rikkahub.utils.JsonInstant
+import com.clma.ai.provider.Model
+import com.clma.ai.provider.ProviderSetting
+import com.clma.ai.registry.ModelRegistry
+import com.clma.common.http.jsonObjectOrNull
+import com.clma.app.utils.JsonInstant
 import java.io.File
 import java.util.zip.ZipFile
 

@@ -1,14 +1,14 @@
-package me.rerere.tts.controller
+package com.clma.tts.controller
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
-import me.rerere.tts.model.AudioChunk
-import me.rerere.tts.model.AudioFormat
-import me.rerere.tts.model.TTSRequest
-import me.rerere.tts.model.TTSResponse
-import me.rerere.tts.provider.TTSManager
-import me.rerere.tts.provider.TTSProviderSetting
+import com.clma.tts.model.AudioChunk
+import com.clma.tts.model.AudioFormat
+import com.clma.tts.model.TTSRequest
+import com.clma.tts.model.TTSResponse
+import com.clma.tts.provider.TTSManager
+import com.clma.tts.provider.TTSProviderSetting
 import java.io.ByteArrayOutputStream
 
 /**

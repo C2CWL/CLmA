@@ -1,8 +1,8 @@
-package me.rerere.rikkahub.ui.pages.setting
+package com.clma.app.ui.pages.setting
 
 import androidx.annotation.StringRes
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.Screen
+import com.clma.app.R
+import com.clma.app.Screen
 
 /**
  * One searchable entry in the settings hub.
@@ -53,8 +53,8 @@ fun SettingsSearchEntry.matchesSearchQuery(query: String, text: (Int) -> String)
  */
 fun settingsSearchIndex(
     developerMode: Boolean,
-    hubStyle: me.rerere.rikkahub.data.datastore.SettingsHubStyle =
-        me.rerere.rikkahub.data.datastore.SettingsHubStyle.REORGANIZED,
+    hubStyle: com.clma.app.data.datastore.SettingsHubStyle =
+        com.clma.app.data.datastore.SettingsHubStyle.REORGANIZED,
 ): List<SettingsSearchEntry> {
     val entries = mutableListOf<SettingsSearchEntry>()
 
@@ -101,10 +101,10 @@ fun settingsSearchIndex(
             // Always searchable by both classic and reorganized titles when they differ.
             val other = def.copyFor(
                 when (hubStyle) {
-                    me.rerere.rikkahub.data.datastore.SettingsHubStyle.CLASSIC ->
-                        me.rerere.rikkahub.data.datastore.SettingsHubStyle.REORGANIZED
-                    me.rerere.rikkahub.data.datastore.SettingsHubStyle.REORGANIZED ->
-                        me.rerere.rikkahub.data.datastore.SettingsHubStyle.CLASSIC
+                    com.clma.app.data.datastore.SettingsHubStyle.CLASSIC ->
+                        com.clma.app.data.datastore.SettingsHubStyle.REORGANIZED
+                    com.clma.app.data.datastore.SettingsHubStyle.REORGANIZED ->
+                        com.clma.app.data.datastore.SettingsHubStyle.CLASSIC
                 }
             )
             if (other.titleRes != copy.titleRes) add(other.titleRes)
@@ -122,18 +122,18 @@ fun settingsSearchIndex(
 
     // Nested: UI / display
     val appearance = when (hubStyle) {
-        me.rerere.rikkahub.data.datastore.SettingsHubStyle.CLASSIC -> R.string.setting_page_group_appearance
-        me.rerere.rikkahub.data.datastore.SettingsHubStyle.REORGANIZED -> R.string.setting_page_group_appearance_reorg
+        com.clma.app.data.datastore.SettingsHubStyle.CLASSIC -> R.string.setting_page_group_appearance
+        com.clma.app.data.datastore.SettingsHubStyle.REORGANIZED -> R.string.setting_page_group_appearance_reorg
     }
     val models = when (hubStyle) {
-        me.rerere.rikkahub.data.datastore.SettingsHubStyle.CLASSIC -> R.string.setting_page_group_models
-        me.rerere.rikkahub.data.datastore.SettingsHubStyle.REORGANIZED -> R.string.setting_page_group_models_reorg
+        com.clma.app.data.datastore.SettingsHubStyle.CLASSIC -> R.string.setting_page_group_models
+        com.clma.app.data.datastore.SettingsHubStyle.REORGANIZED -> R.string.setting_page_group_models_reorg
     }
     val device = R.string.setting_page_group_device
 
     val uiParent = when (hubStyle) {
-        me.rerere.rikkahub.data.datastore.SettingsHubStyle.CLASSIC -> R.string.setting_page_preferences_ui
-        me.rerere.rikkahub.data.datastore.SettingsHubStyle.REORGANIZED -> R.string.setting_page_hub_chat_display
+        com.clma.app.data.datastore.SettingsHubStyle.CLASSIC -> R.string.setting_page_preferences_ui
+        com.clma.app.data.datastore.SettingsHubStyle.REORGANIZED -> R.string.setting_page_hub_chat_display
     }
     val uiRoute = Screen.SettingPreferencesUI
     nested(uiParent, uiRoute, appearance, R.string.setting_display_page_clean_layout_title, R.string.setting_display_page_clean_layout_desc)
@@ -169,8 +169,8 @@ fun settingsSearchIndex(
 
     // Nested: General interaction
     val genParent = when (hubStyle) {
-        me.rerere.rikkahub.data.datastore.SettingsHubStyle.CLASSIC -> R.string.setting_page_preferences_general
-        me.rerere.rikkahub.data.datastore.SettingsHubStyle.REORGANIZED -> R.string.setting_page_hub_chat_actions
+        com.clma.app.data.datastore.SettingsHubStyle.CLASSIC -> R.string.setting_page_preferences_general
+        com.clma.app.data.datastore.SettingsHubStyle.REORGANIZED -> R.string.setting_page_hub_chat_actions
     }
     val genRoute = Screen.SettingPreferencesGeneral
     nested(genParent, genRoute, appearance, R.string.setting_display_page_create_new_conversation_on_start_title, R.string.setting_display_page_create_new_conversation_on_start_desc)
@@ -236,8 +236,8 @@ fun settingsSearchIndex(
 
     // Nested: Notification prefs
     val notifParent = when (hubStyle) {
-        me.rerere.rikkahub.data.datastore.SettingsHubStyle.CLASSIC -> R.string.setting_page_preferences_notification
-        me.rerere.rikkahub.data.datastore.SettingsHubStyle.REORGANIZED -> R.string.setting_page_hub_app_alerts
+        com.clma.app.data.datastore.SettingsHubStyle.CLASSIC -> R.string.setting_page_preferences_notification
+        com.clma.app.data.datastore.SettingsHubStyle.REORGANIZED -> R.string.setting_page_hub_app_alerts
     }
     nested(notifParent, Screen.SettingPreferencesNotification, appearance, R.string.setting_display_page_notification_message_generated, R.string.setting_display_page_notification_message_generated_desc)
     nested(notifParent, Screen.SettingPreferencesNotification, appearance, R.string.setting_display_page_live_update_notification, R.string.setting_display_page_live_update_notification_desc)

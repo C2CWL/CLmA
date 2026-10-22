@@ -1,4 +1,4 @@
-package me.rerere.ai.provider.providers.google
+package com.clma.ai.provider.providers.google
 
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -8,16 +8,16 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import me.rerere.ai.core.InputSchema
-import me.rerere.ai.core.MessageRole
-import me.rerere.ai.core.ReasoningLevel
-import me.rerere.ai.core.Tool
-import me.rerere.ai.provider.BuiltInTools
-import me.rerere.ai.provider.Model
-import me.rerere.ai.provider.ModelAbility
-import me.rerere.ai.provider.TextGenerationParams
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.UIMessagePart
+import com.clma.ai.core.InputSchema
+import com.clma.ai.core.MessageRole
+import com.clma.ai.core.ReasoningLevel
+import com.clma.ai.core.Tool
+import com.clma.ai.provider.BuiltInTools
+import com.clma.ai.provider.Model
+import com.clma.ai.provider.ModelAbility
+import com.clma.ai.provider.TextGenerationParams
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessagePart
 import okhttp3.OkHttpClient
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue

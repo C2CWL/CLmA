@@ -1,8 +1,8 @@
-package me.rerere.rikkahub.data.repository
+package com.clma.app.data.repository
 
 import kotlinx.coroutines.flow.Flow
-import me.rerere.rikkahub.data.db.dao.ScheduledJobDao
-import me.rerere.rikkahub.data.db.entity.ScheduledJobEntity
+import com.clma.app.data.db.dao.ScheduledJobDao
+import com.clma.app.data.db.entity.ScheduledJobEntity
 
 class ScheduledJobRepository(private val dao: ScheduledJobDao) {
     suspend fun getAll(): List<ScheduledJobEntity> = dao.getAll()

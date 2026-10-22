@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.setting.termux
+package com.clma.app.ui.pages.setting.termux
 
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -36,13 +36,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dokar.sonner.ToastType
 import kotlinx.coroutines.launch
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.ai.tools.local.PermissionHelper
-import me.rerere.rikkahub.data.ai.tools.local.TermuxIntegration
-import me.rerere.rikkahub.ui.components.nav.BackButton
-import me.rerere.rikkahub.ui.components.ui.CardGroup
-import me.rerere.rikkahub.ui.context.LocalToaster
-import me.rerere.rikkahub.ui.theme.CustomColors
+import com.clma.app.R
+import com.clma.app.data.ai.tools.local.PermissionHelper
+import com.clma.app.data.ai.tools.local.TermuxIntegration
+import com.clma.app.ui.components.nav.BackButton
+import com.clma.app.ui.components.ui.CardGroup
+import com.clma.app.ui.context.LocalToaster
+import com.clma.app.ui.theme.CustomColors
 import org.koin.androidx.compose.koinViewModel
 
 /**
@@ -342,7 +342,7 @@ private fun StatusDot(color: StatusColor) {
 
 /**
  * Compact numeric input for a timeout/cap row's trailing slot. Mirrors [TimeoutInput] in
- * [me.rerere.rikkahub.ui.pages.setting.browser.SettingBrowserPage] in shape, but uses
+ * [com.clma.app.ui.pages.setting.browser.SettingBrowserPage] in shape, but uses
  * .take(6) instead of .take(4) to accommodate the 5-digit stdout/stderr byte caps.
  *
  * `internal` (not `private`): the model page's generation-limits group reuses it for the

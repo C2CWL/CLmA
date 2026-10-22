@@ -1,4 +1,4 @@
-package me.rerere.llamacpp
+package com.clma.llamacpp
 
 /**
  * Reusable [LlamaCppNative] stub with a harmless default for every member, so a test can

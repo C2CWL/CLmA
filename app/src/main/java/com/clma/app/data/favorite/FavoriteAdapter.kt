@@ -1,7 +1,7 @@
-package me.rerere.rikkahub.data.favorite
+package com.clma.app.data.favorite
 
-import me.rerere.rikkahub.data.db.entity.FavoriteEntity
-import me.rerere.rikkahub.data.model.FavoriteType
+import com.clma.app.data.db.entity.FavoriteEntity
+import com.clma.app.data.model.FavoriteType
 
 interface FavoriteAdapter<T> {
     val type: FavoriteType

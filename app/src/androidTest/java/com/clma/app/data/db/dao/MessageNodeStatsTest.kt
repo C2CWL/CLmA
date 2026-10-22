@@ -1,13 +1,13 @@
-package me.rerere.rikkahub.data.db.dao
+package com.clma.app.data.db.dao
 
 import androidx.room.Room
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import io.requery.android.database.sqlite.RequerySQLiteOpenHelperFactory
 import kotlinx.coroutines.runBlocking
-import me.rerere.rikkahub.data.db.AppDatabase
-import me.rerere.rikkahub.data.db.entity.ConversationEntity
-import me.rerere.rikkahub.data.db.entity.MessageNodeEntity
+import com.clma.app.data.db.AppDatabase
+import com.clma.app.data.db.entity.ConversationEntity
+import com.clma.app.data.db.entity.MessageNodeEntity
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before

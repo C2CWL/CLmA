@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.ui
+package com.clma.app.ui.components.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -51,9 +51,9 @@ import androidx.compose.ui.window.PopupProperties
 import kotlinx.coroutines.launch
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Search01
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.utils.Emoji
-import me.rerere.rikkahub.utils.EmojiData
+import com.clma.app.R
+import com.clma.app.utils.Emoji
+import com.clma.app.utils.EmojiData
 import org.koin.compose.koinInject
 
 @Preview

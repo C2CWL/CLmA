@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.workflow.db
+package com.clma.app.workflow.db
 
 import androidx.room.Dao
 import androidx.room.Insert

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.backup
+package com.clma.app.ui.pages.backup
 
 import android.util.Log
 import androidx.core.net.toUri
@@ -10,19 +10,19 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import me.rerere.rikkahub.data.datastore.Settings
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.files.FilesManager
-import me.rerere.rikkahub.data.files.saveUploadFromBytes
-import me.rerere.rikkahub.data.repository.ConversationRepository
-import me.rerere.rikkahub.data.sync.BackupItem
-import me.rerere.rikkahub.data.sync.importer.ChatboxImporter
-import me.rerere.rikkahub.data.sync.importer.CherryStudioProviderImporter
-import me.rerere.rikkahub.data.sync.webdav.WebDavBackupItem
-import me.rerere.rikkahub.data.sync.webdav.WebDavSync
-import me.rerere.rikkahub.data.sync.S3BackupItem
-import me.rerere.rikkahub.data.sync.S3Sync
-import me.rerere.rikkahub.utils.UiState
+import com.clma.app.data.datastore.Settings
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.files.FilesManager
+import com.clma.app.data.files.saveUploadFromBytes
+import com.clma.app.data.repository.ConversationRepository
+import com.clma.app.data.sync.BackupItem
+import com.clma.app.data.sync.importer.ChatboxImporter
+import com.clma.app.data.sync.importer.CherryStudioProviderImporter
+import com.clma.app.data.sync.webdav.WebDavBackupItem
+import com.clma.app.data.sync.webdav.WebDavSync
+import com.clma.app.data.sync.S3BackupItem
+import com.clma.app.data.sync.S3Sync
+import com.clma.app.utils.UiState
 import java.io.File
 
 private const val TAG = "BackupVM"

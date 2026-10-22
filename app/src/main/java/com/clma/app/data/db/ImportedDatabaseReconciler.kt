@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.db
+package com.clma.app.data.db
 
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
@@ -54,7 +54,7 @@ object ImportedDatabaseReconciler {
 
     /**
      * Room's schema version and identity hash for [AppDatabase]. Both are copied verbatim
-     * from app/schemas/me.rerere.rikkahub.data.db.AppDatabase/31.json (the identity hash also
+     * from app/schemas/com.clma.app.data.db.AppDatabase/31.json (the identity hash also
      * appears in the generated AppDatabase_Impl RoomOpenDelegate). When the schema version is
      * bumped, update BOTH constants (and the table DDL below if the fork-only tables changed,
      * BACKFILL_INDEX_DDL if any entity gained/lost an index, and MODERN_COLUMN_SENTINELS if
@@ -78,7 +78,7 @@ object ImportedDatabaseReconciler {
         "CREATE TABLE IF NOT EXISTS `conversation_compaction` (`conversation_id` TEXT NOT NULL, `summary` TEXT NOT NULL, `tail_start_node_id` TEXT, `source_end_node_id` TEXT NOT NULL, `summary_model_id` TEXT NOT NULL, `is_auto` INTEGER NOT NULL, `source_token_estimate` INTEGER NOT NULL, `created_at` INTEGER NOT NULL, PRIMARY KEY(`conversation_id`), FOREIGN KEY(`conversation_id`) REFERENCES `ConversationEntity`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )"
 
     /**
-     * v31 adds this column to `workspaces` via [me.rerere.rikkahub.data.db.migrations.Migration_30_31].
+     * v31 adds this column to `workspaces` via [com.clma.app.data.db.migrations.Migration_30_31].
      * That migration never runs on the "already current" path below, so it has to be backfilled
      * here too (issue #105), same reasoning as `chat_model_id` further down. DDL byte-identical
      * to the migration's.

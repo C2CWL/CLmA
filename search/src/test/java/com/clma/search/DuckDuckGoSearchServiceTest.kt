@@ -1,6 +1,6 @@
-package me.rerere.search
+package com.clma.search
 
-import me.rerere.search.extract.ExtractMode
+import com.clma.search.extract.ExtractMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue

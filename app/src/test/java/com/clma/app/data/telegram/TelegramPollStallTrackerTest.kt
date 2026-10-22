@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.telegram
+package com.clma.app.data.telegram
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.service
+package com.clma.app.service
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
@@ -53,7 +53,7 @@ class RikkaAccessibilityService : AccessibilityService() {
     /**
      * Class name of the most recent window-state change — in practice the activity the user is
      * on. Screen automation uses it as a *structural* screen key for the app playbook
-     * (see [me.rerere.rikkahub.data.ai.AutomationRecorder]); unlike a window title it can never
+     * (see [com.clma.app.data.ai.AutomationRecorder]); unlike a window title it can never
      * be a contact or message name, so it is safe to persist.
      */
     @Volatile
@@ -102,7 +102,7 @@ class RikkaAccessibilityService : AccessibilityService() {
             event.className?.toString()?.takeIf { it.isNotBlank() }?.let { lastWindowClassName = it }
             val pkg = event.packageName?.toString()
             if (!pkg.isNullOrBlank()) {
-                me.rerere.rikkahub.workflow.trigger.AppForegroundDispatcher.onForegroundChange(pkg)
+                com.clma.app.workflow.trigger.AppForegroundDispatcher.onForegroundChange(pkg)
             }
         }
     }

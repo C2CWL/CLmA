@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.ai
+package com.clma.app.ui.components.ai
 
 import android.content.Intent
 import androidx.compose.foundation.BorderStroke
@@ -40,19 +40,19 @@ import androidx.core.net.toFile
 import androidx.core.net.toUri
 import coil3.compose.AsyncImage
 import com.dokar.sonner.ToastType
-import me.rerere.ai.ui.UIMessagePart
+import com.clma.ai.ui.UIMessagePart
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Cancel01
 import me.rerere.hugeicons.stroke.Files02
 import me.rerere.hugeicons.stroke.MusicNote03
 import me.rerere.hugeicons.stroke.Video01
-import me.rerere.rikkahub.data.files.FilesManager
-import me.rerere.rikkahub.ui.components.ui.ImagePreviewDialog
-import me.rerere.rikkahub.ui.context.LocalToaster
-import me.rerere.rikkahub.ui.hooks.ChatInputState
+import com.clma.app.data.files.FilesManager
+import com.clma.app.ui.components.ui.ImagePreviewDialog
+import com.clma.app.ui.context.LocalToaster
+import com.clma.app.ui.hooks.ChatInputState
 import org.koin.compose.koinInject
 import androidx.compose.ui.res.stringResource
-import me.rerere.rikkahub.R
+import com.clma.app.R
 
 @Composable
 internal fun MediaFileInputRow(

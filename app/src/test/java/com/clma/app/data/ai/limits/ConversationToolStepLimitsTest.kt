@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.limits
+package com.clma.app.data.ai.limits
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull

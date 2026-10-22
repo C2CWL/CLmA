@@ -1,13 +1,13 @@
-package me.rerere.highlight.languages.latex
+package com.clma.highlight.languages.latex
 
-import me.rerere.highlight.core.Language
-import me.rerere.highlight.core.Mode
-import me.rerere.highlight.core.comment
-import me.rerere.highlight.core.either
-import me.rerere.highlight.core.endSameAsBegin
-import me.rerere.highlight.core.keywords
-import me.rerere.highlight.core.mode
-import me.rerere.highlight.core.variant
+import com.clma.highlight.core.Language
+import com.clma.highlight.core.Mode
+import com.clma.highlight.core.comment
+import com.clma.highlight.core.either
+import com.clma.highlight.core.endSameAsBegin
+import com.clma.highlight.core.keywords
+import com.clma.highlight.core.mode
+import com.clma.highlight.core.variant
 
 /** LaTeX, ported from `lib/languages/latex.js` of `highlight.js` 11.11.1. */
 internal fun latex(): Language {

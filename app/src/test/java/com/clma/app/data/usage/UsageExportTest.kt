@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.usage
+package com.clma.app.data.usage
 
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals

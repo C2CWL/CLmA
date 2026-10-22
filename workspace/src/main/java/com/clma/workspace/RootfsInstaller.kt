@@ -1,4 +1,4 @@
-package me.rerere.workspace
+package com.clma.workspace
 
 import java.io.BufferedInputStream
 import java.io.EOFException

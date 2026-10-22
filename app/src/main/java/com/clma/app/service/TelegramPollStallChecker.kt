@@ -1,9 +1,9 @@
-package me.rerere.rikkahub.service
+package com.clma.app.service
 
 import android.util.Log
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
-import me.rerere.rikkahub.data.telegram.TelegramPollStallTracker
+import com.clma.app.data.telegram.TelegramPollStallTracker
 import kotlin.coroutines.coroutineContext
 
 private const val TAG = "TelegramPollStall"

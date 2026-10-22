@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.message
+package com.clma.app.ui.components.message
 
 /*
  * Styling of the action row under a message, assistant and user alike (copy, regenerate, TTS,

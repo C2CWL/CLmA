@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.service
+package com.clma.app.service
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -16,21 +16,21 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.data.agentrun.AgentRunKind
-import me.rerere.rikkahub.data.agentrun.AgentRunRepository
-import me.rerere.rikkahub.data.agentrun.AgentRunStatus
-import me.rerere.rikkahub.data.ai.tools.HeadlessConversations
-import me.rerere.rikkahub.data.ai.AssistantResolver
-import me.rerere.rikkahub.data.ai.ToolSurfaceResolver
-import me.rerere.rikkahub.data.ai.tools.LocalTools
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.db.entity.ScheduledJobEntity
-import me.rerere.rikkahub.data.db.entity.ScheduledJobRunEntity
-import me.rerere.rikkahub.data.model.Conversation
-import me.rerere.rikkahub.data.repository.ConversationRepository
-import me.rerere.rikkahub.data.repository.ScheduledJobRepository
-import me.rerere.rikkahub.data.repository.ScheduledJobRunRepository
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.agentrun.AgentRunKind
+import com.clma.app.data.agentrun.AgentRunRepository
+import com.clma.app.data.agentrun.AgentRunStatus
+import com.clma.app.data.ai.tools.HeadlessConversations
+import com.clma.app.data.ai.AssistantResolver
+import com.clma.app.data.ai.ToolSurfaceResolver
+import com.clma.app.data.ai.tools.LocalTools
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.db.entity.ScheduledJobEntity
+import com.clma.app.data.db.entity.ScheduledJobRunEntity
+import com.clma.app.data.model.Conversation
+import com.clma.app.data.repository.ConversationRepository
+import com.clma.app.data.repository.ScheduledJobRepository
+import com.clma.app.data.repository.ScheduledJobRunRepository
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 

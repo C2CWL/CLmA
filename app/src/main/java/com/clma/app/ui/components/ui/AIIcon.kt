@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.ui
+package com.clma.app.ui.components.ui
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -17,11 +17,11 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.svg.css
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.ui.hooks.rememberAvatarShape
-import me.rerere.rikkahub.ui.theme.LocalDarkMode
-import me.rerere.rikkahub.utils.computeAIIconByName
-import me.rerere.rikkahub.utils.toCssHex
+import com.clma.app.R
+import com.clma.app.ui.hooks.rememberAvatarShape
+import com.clma.app.ui.theme.LocalDarkMode
+import com.clma.app.utils.computeAIIconByName
+import com.clma.app.utils.toCssHex
 
 @Composable
 private fun rememberAIIconRequest(path: String): ImageRequest {

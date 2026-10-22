@@ -1,6 +1,6 @@
-package me.rerere.rikkahub.service
+package com.clma.app.service
 
-import me.rerere.rikkahub.data.db.entity.ScheduledJobRunEntity
+import com.clma.app.data.db.entity.ScheduledJobRunEntity
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

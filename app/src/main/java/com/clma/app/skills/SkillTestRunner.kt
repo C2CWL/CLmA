@@ -1,18 +1,18 @@
-package me.rerere.rikkahub.skills
+package com.clma.app.skills
 
 import android.util.Log
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withTimeoutOrNull
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.data.ai.tools.HeadlessConversations
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.datastore.getCurrentAssistant
-import me.rerere.rikkahub.data.files.SkillManager
-import me.rerere.rikkahub.data.model.Conversation
-import me.rerere.rikkahub.data.repository.ConversationRepository
-import me.rerere.rikkahub.service.ChatService
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.ai.tools.HeadlessConversations
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.datastore.getCurrentAssistant
+import com.clma.app.data.files.SkillManager
+import com.clma.app.data.model.Conversation
+import com.clma.app.data.repository.ConversationRepository
+import com.clma.app.service.ChatService
 import java.io.IOException
 import kotlin.uuid.Uuid
 

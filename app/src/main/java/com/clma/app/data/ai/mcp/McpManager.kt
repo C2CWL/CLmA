@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.mcp
+package com.clma.app.data.ai.mcp
 
 import android.content.Context
 import androidx.core.net.toUri
@@ -18,17 +18,17 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.oauth.CustomTabsOAuthAuthorizationLauncher
-import me.rerere.oauth.OAuthHttpClient
-import me.rerere.oauth.OAuthLoopbackCallbackServer
-import me.rerere.rikkahub.AppScope
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.datastore.getCurrentAssistant
-import me.rerere.rikkahub.data.model.Assistant
-import me.rerere.rikkahub.data.files.FilesManager
-import me.rerere.rikkahub.data.files.saveUploadFromBytes
-import me.rerere.rikkahub.utils.JsonInstant
+import com.clma.ai.ui.UIMessagePart
+import com.clma.oauth.CustomTabsOAuthAuthorizationLauncher
+import com.clma.oauth.OAuthHttpClient
+import com.clma.oauth.OAuthLoopbackCallbackServer
+import com.clma.app.AppScope
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.datastore.getCurrentAssistant
+import com.clma.app.data.model.Assistant
+import com.clma.app.data.files.FilesManager
+import com.clma.app.data.files.saveUploadFromBytes
+import com.clma.app.utils.JsonInstant
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 import kotlin.io.encoding.Base64
@@ -110,7 +110,7 @@ class McpManager(
     /**
      * P2-04 — the same list, computed for an explicit [assistant] rather than the global
      * "current" one. A sub-agent with its own surface (see
-     * [me.rerere.rikkahub.subagent.SubAgentSurface]) must see ITS OWN MCP servers, and the child
+     * [com.clma.app.subagent.SubAgentSurface]) must see ITS OWN MCP servers, and the child
      * conversation's assistant is not reachable through [getCurrentAssistant] (that pointer tracks
      * the assistant the UI is showing, not the headless run). The no-arg overload above is
      * untouched, so every existing caller keeps today's behaviour byte-for-byte.

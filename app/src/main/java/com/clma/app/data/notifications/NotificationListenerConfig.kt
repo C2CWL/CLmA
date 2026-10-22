@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.notifications
+package com.clma.app.data.notifications
 
 /**
  * Persisted preferences for the notification listener subsystem.

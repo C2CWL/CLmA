@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.subagent
+package com.clma.app.subagent
 
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.add
@@ -10,11 +10,11 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import me.rerere.ai.core.InputSchema
-import me.rerere.ai.core.Tool
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.data.agentdef.AgentDefinition
-import me.rerere.rikkahub.data.agentdef.AgentDefinitionResolver
+import com.clma.ai.core.InputSchema
+import com.clma.ai.core.Tool
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.agentdef.AgentDefinition
+import com.clma.app.data.agentdef.AgentDefinitionResolver
 
 internal fun errEnv(error: String, detail: String): List<UIMessagePart> {
     val obj = buildJsonObject {
@@ -38,8 +38,8 @@ internal fun errEnv(error: String, detail: String): List<UIMessagePart> {
 
 fun subagentDispatchTool(
     engine: SubAgentEngine,
-    callerContext: me.rerere.rikkahub.data.ai.tools.ToolInvocationContext =
-        me.rerere.rikkahub.data.ai.tools.ToolInvocationContext.EMPTY,
+    callerContext: com.clma.app.data.ai.tools.ToolInvocationContext =
+        com.clma.app.data.ai.tools.ToolInvocationContext.EMPTY,
     definitions: List<AgentDefinition> = emptyList(),
 ): Tool {
     val enabledDefinitions = AgentDefinitionResolver.enabledDefinitions(definitions)

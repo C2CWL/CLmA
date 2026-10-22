@@ -1,4 +1,4 @@
-package me.rerere.ai.ui
+package com.clma.ai.ui
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -7,7 +7,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.jsonObject
-import me.rerere.ai.util.json
+import com.clma.ai.util.json
 
 /**
  * [UIMessagePart.metadata] 的类型安全 schema

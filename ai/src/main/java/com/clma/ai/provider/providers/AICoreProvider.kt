@@ -1,4 +1,4 @@
-package me.rerere.ai.provider.providers
+package com.clma.ai.provider.providers
 
 import android.app.ActivityManager
 import android.content.Context
@@ -19,23 +19,23 @@ import com.google.mlkit.genai.prompt.modelConfig
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.flow
-import me.rerere.ai.core.Tool
-import me.rerere.ai.core.MessageRole
-import me.rerere.ai.provider.AICoreReleaseStage
-import me.rerere.ai.provider.AICORE_DEFAULT_MODELS
-import me.rerere.ai.provider.AICORE_NANO_FAST_MODEL
-import me.rerere.ai.provider.AICORE_NANO_FULL_MODEL
-import me.rerere.ai.provider.ImageGenerationParams
-import me.rerere.ai.provider.Model
-import me.rerere.ai.provider.Provider
-import me.rerere.ai.provider.ProviderSetting
-import me.rerere.ai.provider.TextGenerationParams
-import me.rerere.ai.provider.TextGenerationResult
-import me.rerere.ai.provider.stream.TextToolCallParser
-import me.rerere.ai.ui.ImageGenerationItem
-import me.rerere.ai.ui.StreamChunk
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.UIMessagePart
+import com.clma.ai.core.Tool
+import com.clma.ai.core.MessageRole
+import com.clma.ai.provider.AICoreReleaseStage
+import com.clma.ai.provider.AICORE_DEFAULT_MODELS
+import com.clma.ai.provider.AICORE_NANO_FAST_MODEL
+import com.clma.ai.provider.AICORE_NANO_FULL_MODEL
+import com.clma.ai.provider.ImageGenerationParams
+import com.clma.ai.provider.Model
+import com.clma.ai.provider.Provider
+import com.clma.ai.provider.ProviderSetting
+import com.clma.ai.provider.TextGenerationParams
+import com.clma.ai.provider.TextGenerationResult
+import com.clma.ai.provider.stream.TextToolCallParser
+import com.clma.ai.ui.ImageGenerationItem
+import com.clma.ai.ui.StreamChunk
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessagePart
 
 private const val TAG = "AICoreProvider"
 

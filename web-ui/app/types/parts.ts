@@ -1,6 +1,6 @@
 /**
  * Tool approval state
- * @see ai/src/main/java/me/rerere/ai/ui/Message.kt - ToolApprovalState
+ * @see ai/src/main/java/com/clma/ai/ui/Message.kt - ToolApprovalState
  */
 export type ToolApprovalState =
   | { type: "auto" }
@@ -58,7 +58,7 @@ export interface ToolPart extends BaseMessagePart {
 
 /**
  * Union type for all message parts
- * @see ai/src/main/java/me/rerere/ai/ui/Message.kt - UIMessagePart
+ * @see ai/src/main/java/com/clma/ai/ui/Message.kt - UIMessagePart
  */
 export type UIMessagePart =
   | TextPart

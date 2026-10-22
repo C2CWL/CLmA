@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.browser
+package com.clma.app.browser
 
 /**
  * Authoritative list of the 17 browser tools the LLM can drive, plus their default
@@ -6,7 +6,7 @@ package me.rerere.rikkahub.browser
  * write tools (mutate state, can be misused) default OFF; the loop-control tool
  * defaults ON because the AI can't escape the browser loop without it.
  *
- * Pass 1 lays the catalogue. Pass 2's [me.rerere.rikkahub.data.ai.tools.LocalTools]
+ * Pass 1 lays the catalogue. Pass 2's [com.clma.app.data.ai.tools.LocalTools]
  * registration block will gate per-tool registration on these defaults via
  * [BrowserPreferences.isToolEnabled].
  */

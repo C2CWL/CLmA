@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.preferences
+package com.clma.app.data.preferences
 
 import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -16,14 +16,14 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import me.rerere.rikkahub.data.ai.limits.ToolRuntimeLimits
+import com.clma.app.data.ai.limits.ToolRuntimeLimits
 
 private val Context.termuxDataStore by preferencesDataStore(name = "termux_prefs")
 
 /**
  * DataStore-backed settings store for Termux-specific knobs, plus the app-wide per-turn
  * wall-clock budget (surfaced here because GitHub issue #5 requested it alongside the
- * Termux timeouts). Mirrors [me.rerere.rikkahub.browser.BrowserPreferences] in shape.
+ * Termux timeouts). Mirrors [com.clma.app.browser.BrowserPreferences] in shape.
  *
  * The [init] block pushes persisted values into the runtime holders ([TermuxRuntime] and
  * [ToolRuntimeLimits]) immediately on construction so all non-suspend callers (TermuxTool,
@@ -68,7 +68,7 @@ class TermuxPreferences(private val context: Context) {
         // this, TermuxIntegration.lastVerifiedOkAtMs starts at 0 every launch and the user
         // has to re-run the verify smoke test even though nothing about the Termux
         // integration actually changed.
-        me.rerere.rikkahub.data.ai.tools.local.TermuxIntegration.restoreVerifiedAt(initial.lastVerifiedMs)
+        com.clma.app.data.ai.tools.local.TermuxIntegration.restoreVerifiedAt(initial.lastVerifiedMs)
 
         // Async collectors keep the holders live on subsequent user edits. This scope is
         // intentionally NOT stored as a field — it is process-lived and we want it to stay
@@ -77,7 +77,7 @@ class TermuxPreferences(private val context: Context) {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         // Wire the write-back path so every future markVerifiedOk()/clearVerified() persists,
         // instead of only being restorable for the run that already set it.
-        me.rerere.rikkahub.data.ai.tools.local.TermuxIntegration.persister = { ms ->
+        com.clma.app.data.ai.tools.local.TermuxIntegration.persister = { ms ->
             scope.launch { setLastVerifiedMs(ms) }
         }
         scope.launch {
@@ -235,7 +235,7 @@ class TermuxPreferences(private val context: Context) {
         )
     }
 
-    /** Blocking variant used by non-suspend callers. See [me.rerere.rikkahub.browser.BrowserPreferences.snapshotBlocking]. */
+    /** Blocking variant used by non-suspend callers. See [com.clma.app.browser.BrowserPreferences.snapshotBlocking]. */
     fun snapshotBlocking(): TermuxRuntimeConfig = kotlinx.coroutines.runBlocking { snapshot() }
 }
 

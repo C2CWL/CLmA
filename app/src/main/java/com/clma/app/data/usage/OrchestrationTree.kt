@@ -1,11 +1,11 @@
-package me.rerere.rikkahub.data.usage
+package com.clma.app.data.usage
 
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
-import me.rerere.rikkahub.data.agentrun.AgentRun
-import me.rerere.rikkahub.data.agentrun.AgentRunKind
+import com.clma.app.data.agentrun.AgentRun
+import com.clma.app.data.agentrun.AgentRunKind
 
 /**
  * P2-12d — the parent→child orchestration tree behind the statistics page's new section.
@@ -36,7 +36,7 @@ import me.rerere.rikkahub.data.agentrun.AgentRunKind
 data class OrchestrationNode(
     val runId: String,
     val label: String,
-    /** [me.rerere.rikkahub.data.agentrun.AgentRunStatus] name, shown as-is. */
+    /** [com.clma.app.data.agentrun.AgentRunStatus] name, shown as-is. */
     val status: String,
     val startedAtMs: Long,
     val finishedAtMs: Long?,
@@ -69,7 +69,7 @@ data class OrchestrationTree(
     val children: List<OrchestrationNode>,
     /**
      * P2-14d — the ceiling the parent assistant configured for orchestration, or null when none is
-     * set. Read from [me.rerere.rikkahub.data.model.Assistant.orchestrationTokenBudget]; an expert's
+     * set. Read from [com.clma.app.data.model.Assistant.orchestrationTokenBudget]; an expert's
      * own override is not recoverable from a finished ledger window, so the tree reports the
      * assistant-level ceiling only.
      */
@@ -122,7 +122,7 @@ object OrchestrationTreeFactory {
      * Only `kind == subagent` rows become tree nodes: cron / workflow / telegram / external runs
      * are not a parent's fan-out, and expert-library / price-table writes are not runs at all.
      *
-     * @param runs recent rows from [me.rerere.rikkahub.data.agentrun.AgentRunRepository.getRecent],
+     * @param runs recent rows from [com.clma.app.data.agentrun.AgentRunRepository.getRecent],
      *        any order.
      * @param records ledger rows covering at least the same window, any order. Rows with a null
      *        `run_id` (interactive turns, auxiliary calls) are ignored — they belong to no run.
@@ -205,5 +205,5 @@ object OrchestrationTreeFactory {
     }
 }
 
-/** Statuses that count as "still running" — mirrors [me.rerere.rikkahub.data.agentrun.AgentRunStatus]. */
+/** Statuses that count as "still running" — mirrors [com.clma.app.data.agentrun.AgentRunStatus]. */
 private val IN_FLIGHT_STATUS = setOf("queued", "awaiting_approval", "running")

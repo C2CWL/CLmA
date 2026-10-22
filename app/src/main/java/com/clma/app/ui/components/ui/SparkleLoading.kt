@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.ui
+package com.clma.app.ui.components.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -27,7 +27,7 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import me.rerere.rikkahub.R
+import com.clma.app.R
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.floor

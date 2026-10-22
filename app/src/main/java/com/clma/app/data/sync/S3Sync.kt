@@ -1,13 +1,13 @@
-package me.rerere.rikkahub.data.sync
+package com.clma.app.data.sync
 
 import android.content.Context
 import android.util.Log
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import me.rerere.rikkahub.data.sync.s3.S3Client
-import me.rerere.rikkahub.data.sync.s3.S3Config
-import me.rerere.rikkahub.utils.fileSizeToString
+import com.clma.app.data.sync.s3.S3Client
+import com.clma.app.data.sync.s3.S3Config
+import com.clma.app.utils.fileSizeToString
 import java.io.File
 import java.time.Instant
 

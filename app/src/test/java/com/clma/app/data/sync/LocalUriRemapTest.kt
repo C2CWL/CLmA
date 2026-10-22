@@ -1,9 +1,9 @@
-package me.rerere.rikkahub.data.sync
+package com.clma.app.data.sync
 
 import java.io.File
-import me.rerere.rikkahub.data.datastore.Settings
-import me.rerere.rikkahub.data.model.Assistant
-import me.rerere.rikkahub.data.model.Avatar
+import com.clma.app.data.datastore.Settings
+import com.clma.app.data.model.Assistant
+import com.clma.app.data.model.Avatar
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Rule

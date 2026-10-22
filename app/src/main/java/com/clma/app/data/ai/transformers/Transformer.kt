@@ -1,11 +1,11 @@
-package me.rerere.rikkahub.data.ai.transformers
+package com.clma.app.data.ai.transformers
 
 import android.content.Context
 import kotlinx.coroutines.flow.MutableStateFlow
-import me.rerere.ai.provider.Model
-import me.rerere.ai.ui.UIMessage
-import me.rerere.rikkahub.data.datastore.Settings
-import me.rerere.rikkahub.data.model.Assistant
+import com.clma.ai.provider.Model
+import com.clma.ai.ui.UIMessage
+import com.clma.app.data.datastore.Settings
+import com.clma.app.data.model.Assistant
 import kotlin.uuid.Uuid
 
 class TransformerContext(

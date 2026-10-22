@@ -1,4 +1,4 @@
-package me.rerere.material3
+package com.clma.material3
 
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.darkColorScheme

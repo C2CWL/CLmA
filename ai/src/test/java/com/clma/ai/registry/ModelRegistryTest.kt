@@ -1,7 +1,7 @@
-package me.rerere.ai.registry
+package com.clma.ai.registry
 
-import me.rerere.ai.provider.Modality
-import me.rerere.ai.provider.ModelAbility
+import com.clma.ai.provider.Modality
+import com.clma.ai.provider.ModelAbility
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

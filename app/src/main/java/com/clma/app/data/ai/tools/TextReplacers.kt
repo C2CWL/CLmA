@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.tools
+package com.clma.app.data.ai.tools
 
 /**
  * workspace_edit_file 使用的文本替换器, 按 [WorkspaceEditReplacers] 顺序逐级尝试,

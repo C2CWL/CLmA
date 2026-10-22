@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.db.entity
+package com.clma.app.data.db.entity
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey

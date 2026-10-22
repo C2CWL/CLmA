@@ -1,4 +1,4 @@
-package me.rerere.oauth
+package com.clma.oauth
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine

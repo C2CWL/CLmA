@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.gemini
+package com.clma.app.data.gemini
 
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals

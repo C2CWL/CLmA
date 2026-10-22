@@ -1,11 +1,11 @@
-package me.rerere.rikkahub.data.db
+package com.clma.app.data.db
 
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import androidx.room.Room
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import me.rerere.rikkahub.data.db.migrations.Migration_30_31
+import com.clma.app.data.db.migrations.Migration_30_31
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue

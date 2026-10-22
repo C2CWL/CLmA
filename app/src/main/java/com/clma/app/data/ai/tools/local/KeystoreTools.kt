@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.tools.local
+package com.clma.app.data.ai.tools.local
 
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyInfo
@@ -13,9 +13,9 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import me.rerere.ai.core.InputSchema
-import me.rerere.ai.core.Tool
-import me.rerere.ai.ui.UIMessagePart
+import com.clma.ai.core.InputSchema
+import com.clma.ai.core.Tool
+import com.clma.ai.ui.UIMessagePart
 import java.security.KeyFactory
 import java.security.KeyPairGenerator
 import java.security.KeyStore

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.ui
+package com.clma.app.ui.components.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.material3.MaterialTheme
@@ -14,7 +14,7 @@ import androidx.core.graphics.createBitmap
 import androidx.core.graphics.set
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
-import me.rerere.rikkahub.R
+import com.clma.app.R
 
 @Composable
 fun QRCode(

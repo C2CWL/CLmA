@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.message
+package com.clma.app.ui.components.message
 
 import android.content.Context
 import android.net.Uri
@@ -19,21 +19,21 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import me.rerere.rikkahub.R
+import com.clma.app.R
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.browser.BrowserActivity
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.browser.BrowserActivity
 import java.io.File
 import java.security.MessageDigest
 
 /**
  * Pass 3 (Phase 18B-card): chat-side renderer for `UIMessagePart.Text` parts whose
  * metadata carries a `rikkahub.webview` block. Emitted by JS skills via
- * [me.rerere.rikkahub.skills.js.RunJsTool] when a skill returns a `webview` payload.
+ * [com.clma.app.skills.js.RunJsTool] when a skill returns a `webview` payload.
  *
  * The shape we look for, written by Phase 20-audit's `runJsTool` change:
  *

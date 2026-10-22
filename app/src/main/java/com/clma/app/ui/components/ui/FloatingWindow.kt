@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.ui
+package com.clma.app.ui.components.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -12,7 +12,7 @@ import androidx.compose.ui.platform.LocalContext
 import com.petterp.floatingx.FloatingX
 import com.petterp.floatingx.assist.FxGravity
 import com.petterp.floatingx.listener.control.IFxAppControl
-import me.rerere.rikkahub.ui.theme.RikkahubTheme
+import com.clma.app.ui.theme.RikkahubTheme
 
 @Composable
 fun FloatingWindow(

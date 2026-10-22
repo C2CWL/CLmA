@@ -1,9 +1,9 @@
-package me.rerere.rikkahub.data.usage
+package com.clma.app.data.usage
 
 /**
  * P2-13 — what one sub-agent run cost, read back from the ledger once the run is over.
  *
- * [me.rerere.rikkahub.subagent.SubAgentRun] has carried `tokensIn` / `tokensOut` since Phase
+ * [com.clma.app.subagent.SubAgentRun] has carried `tokensIn` / `tokensOut` since Phase
  * 11, and the dispatch tool has always encoded them, but nothing ever wrote them: every
  * dispatch answered "0 in / 0 out". P2-12d gave each sub-agent call a `run_id` in the ledger;
  * this object turns those rows into the numbers the parent should actually see.

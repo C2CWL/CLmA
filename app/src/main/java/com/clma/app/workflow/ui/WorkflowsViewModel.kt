@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.workflow.ui
+package com.clma.app.workflow.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -9,11 +9,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import me.rerere.rikkahub.workflow.execution.WorkflowEngine
-import me.rerere.rikkahub.workflow.model.WorkflowRun
-import me.rerere.rikkahub.workflow.repository.WorkflowRepository
-import me.rerere.rikkahub.workflow.repository.WorkflowRepository.Loaded
-import me.rerere.rikkahub.workflow.secrets.WorkflowSecretsStore
+import com.clma.app.workflow.execution.WorkflowEngine
+import com.clma.app.workflow.model.WorkflowRun
+import com.clma.app.workflow.repository.WorkflowRepository
+import com.clma.app.workflow.repository.WorkflowRepository.Loaded
+import com.clma.app.workflow.secrets.WorkflowSecretsStore
 
 class WorkflowsViewModel(
     private val repository: WorkflowRepository,

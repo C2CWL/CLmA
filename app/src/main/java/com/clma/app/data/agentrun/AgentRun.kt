@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.agentrun
+package com.clma.app.data.agentrun
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
@@ -18,7 +18,7 @@ import androidx.room.PrimaryKey
  * in place as the run progresses. On app start, [AgentRunBootRecovery] flips any row that
  * was left `running` / `awaiting_approval` by a killed process to `process_lost`.
  *
- * Retention: capped at [me.rerere.rikkahub.data.agentrun.AgentRunDefaults.RETENTION_CAP]
+ * Retention: capped at [com.clma.app.data.agentrun.AgentRunDefaults.RETENTION_CAP]
  * rows total; FIFO eviction of the oldest terminal rows when the cap is hit.
  */
 @Entity(

@@ -1,4 +1,4 @@
-package me.rerere.asr
+package com.clma.asr
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

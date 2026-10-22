@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.browser
+package com.clma.app.browser
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -43,7 +43,7 @@ import me.rerere.hugeicons.stroke.CheckmarkCircle01
 import me.rerere.hugeicons.stroke.Lock
 import me.rerere.hugeicons.stroke.MoreVertical
 import me.rerere.hugeicons.stroke.Refresh01
-import me.rerere.rikkahub.R
+import com.clma.app.R
 
 /**
  * Top app bar for [BrowserActivity]. Editable URL/search bar + back + refresh + kebab.

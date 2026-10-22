@@ -1,14 +1,14 @@
-package me.rerere.highlight.languages.go
+package com.clma.highlight.languages.go
 
-import me.rerere.highlight.core.APOS_STRING_MODE
-import me.rerere.highlight.core.C_BLOCK_COMMENT_MODE
-import me.rerere.highlight.core.C_LINE_COMMENT_MODE
-import me.rerere.highlight.core.Language
-import me.rerere.highlight.core.QUOTE_STRING_MODE
-import me.rerere.highlight.core.TITLE_MODE
-import me.rerere.highlight.core.keywords
-import me.rerere.highlight.core.mode
-import me.rerere.highlight.core.variant
+import com.clma.highlight.core.APOS_STRING_MODE
+import com.clma.highlight.core.C_BLOCK_COMMENT_MODE
+import com.clma.highlight.core.C_LINE_COMMENT_MODE
+import com.clma.highlight.core.Language
+import com.clma.highlight.core.QUOTE_STRING_MODE
+import com.clma.highlight.core.TITLE_MODE
+import com.clma.highlight.core.keywords
+import com.clma.highlight.core.mode
+import com.clma.highlight.core.variant
 
 /** Go, ported from `lib/languages/go.js` of `highlight.js` 11.11.1. */
 internal fun go(): Language {

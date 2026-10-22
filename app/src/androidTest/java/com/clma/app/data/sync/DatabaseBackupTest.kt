@@ -1,10 +1,10 @@
-package me.rerere.rikkahub.data.sync
+package com.clma.app.data.sync
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import io.requery.android.database.sqlite.SQLiteDatabase
 import io.requery.android.database.sqlite.SQLiteDatabaseConfiguration
-import me.rerere.rikkahub.data.db.SQLiteConfiguration
+import com.clma.app.data.db.SQLiteConfiguration
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

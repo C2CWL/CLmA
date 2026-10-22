@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.ai
+package com.clma.app.ui.components.ai
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -26,11 +26,11 @@ import com.composables.icons.lucide.ExternalLink
 import com.composables.icons.lucide.Lucide
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Link01
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.files.SkillMetadata
-import me.rerere.rikkahub.data.model.Lorebook
-import me.rerere.rikkahub.data.model.PromptInjection
-import me.rerere.rikkahub.data.model.QuickMessage
+import com.clma.app.R
+import com.clma.app.data.files.SkillMetadata
+import com.clma.app.data.model.Lorebook
+import com.clma.app.data.model.PromptInjection
+import com.clma.app.data.model.QuickMessage
 
 @Composable
 fun ModeInjectionsContent(

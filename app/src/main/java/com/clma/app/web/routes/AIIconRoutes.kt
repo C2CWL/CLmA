@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.web.routes
+package com.clma.app.web.routes
 
 import android.content.Context
 import io.ktor.http.ContentType
@@ -9,8 +9,8 @@ import io.ktor.server.response.respondText
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.routing.route
-import me.rerere.rikkahub.utils.computeAIIconByName
-import me.rerere.rikkahub.web.BadRequestException
+import com.clma.app.utils.computeAIIconByName
+import com.clma.app.web.BadRequestException
 
 fun Route.aiIconRoutes(context: Context) {
     route("/ai-icon") {

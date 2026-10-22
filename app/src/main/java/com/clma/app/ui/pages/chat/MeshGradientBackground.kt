@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.chat
+package com.clma.app.ui.pages.chat
 
 import androidx.compose.animation.core.withInfiniteAnimationFrameMillis
 import androidx.compose.foundation.Canvas
@@ -20,7 +20,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
-import me.rerere.rikkahub.ui.theme.LocalDarkMode
+import com.clma.app.ui.theme.LocalDarkMode
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin

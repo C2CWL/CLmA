@@ -1,4 +1,4 @@
-package me.rerere.llamacpp
+package com.clma.llamacpp
 
 /**
  * The entire JNI surface for llama.cpp. Nothing else in the codebase calls native code

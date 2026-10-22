@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.skills
+package com.clma.app.skills
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull

@@ -1,4 +1,4 @@
-package me.rerere.common.js
+package com.clma.common.js
 
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Protocol

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.subagent
+package com.clma.app.subagent
 
 /**
  * Whether a finished BACKGROUND run should deliver its outcome to the parent conversation
@@ -32,7 +32,7 @@ internal fun shouldNotifyParent(run: SubAgentRun): Boolean = when (run.status) {
 
 /**
  * The text of the system notification a finished background run pushes into the parent's
- * [me.rerere.rikkahub.data.ai.tools.ConversationInjections] queue. GenerationLoop drains the
+ * [com.clma.app.data.ai.tools.ConversationInjections] queue. GenerationLoop drains the
  * queue immediately before the parent's next model request and appends the notice as a
  * request-only synthetic message — so the model learns the outcome on its very next step
  * (mid-turn when a generation is in flight) without anything ever rendering in the chat

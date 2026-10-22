@@ -1,8 +1,8 @@
-package me.rerere.highlight.languages.properties
+package com.clma.highlight.languages.properties
 
-import me.rerere.highlight.core.Language
-import me.rerere.highlight.core.comment
-import me.rerere.highlight.core.mode
+import com.clma.highlight.core.Language
+import com.clma.highlight.core.comment
+import com.clma.highlight.core.mode
 
 /**
  * `.properties`, ported from `lib/languages/properties.js` of `highlight.js` 11.11.1.

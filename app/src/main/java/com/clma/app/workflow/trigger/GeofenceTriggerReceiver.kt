@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.workflow.trigger
+package com.clma.app.workflow.trigger
 
 import android.content.BroadcastReceiver
 import android.content.Context

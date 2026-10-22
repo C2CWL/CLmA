@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.web.routes
+package com.clma.app.web.routes
 
 import android.content.Context
 import androidx.core.net.toUri
@@ -16,13 +16,13 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.utils.io.readAvailable
-import me.rerere.rikkahub.data.db.entity.ManagedFileEntity
-import me.rerere.rikkahub.data.files.FilesManager
-import me.rerere.rikkahub.data.files.saveUploadFromBytes
-import me.rerere.rikkahub.web.BadRequestException
-import me.rerere.rikkahub.web.NotFoundException
-import me.rerere.rikkahub.web.dto.UploadFilesResponseDto
-import me.rerere.rikkahub.web.dto.UploadedFileDto
+import com.clma.app.data.db.entity.ManagedFileEntity
+import com.clma.app.data.files.FilesManager
+import com.clma.app.data.files.saveUploadFromBytes
+import com.clma.app.web.BadRequestException
+import com.clma.app.web.NotFoundException
+import com.clma.app.web.dto.UploadFilesResponseDto
+import com.clma.app.web.dto.UploadedFileDto
 import java.io.ByteArrayOutputStream
 import java.io.File
 

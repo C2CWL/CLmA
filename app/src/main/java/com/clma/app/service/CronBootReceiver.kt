@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.service
+package com.clma.app.service
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -13,10 +13,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.db.entity.ScheduledJobRunEntity
-import me.rerere.rikkahub.data.repository.ScheduledJobRepository
-import me.rerere.rikkahub.data.repository.ScheduledJobRunRepository
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.db.entity.ScheduledJobRunEntity
+import com.clma.app.data.repository.ScheduledJobRepository
+import com.clma.app.data.repository.ScheduledJobRunRepository
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
@@ -31,7 +31,7 @@ class CronBootReceiver : BroadcastReceiver(), KoinComponent {
     private val scheduler: CronJobScheduler by inject()
     private val repo: ScheduledJobRepository by inject()
     private val runRepo: ScheduledJobRunRepository by inject()
-    private val telegramPrefs: me.rerere.rikkahub.data.telegram.TelegramBotPreferences by inject()
+    private val telegramPrefs: com.clma.app.data.telegram.TelegramBotPreferences by inject()
     private val settingsStore: SettingsStore by inject()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -51,15 +51,15 @@ class CronBootReceiver : BroadcastReceiver(), KoinComponent {
                 // ExistingPeriodicWorkPolicy.KEEP so re-arming on every boot is harmless.
                 val cfg = try { telegramPrefs.current() } catch (_: Throwable) { null }
                 if (cfg != null && cfg.isUsable) {
-                    me.rerere.rikkahub.service.TelegramBotService.start(context)
-                    me.rerere.rikkahub.service.TelegramBotHealthWorker.schedule(context)
+                    com.clma.app.service.TelegramBotService.start(context)
+                    com.clma.app.service.TelegramBotHealthWorker.schedule(context)
                 }
 
                 // Phase 12 — fire any boot-completed workflows. The dispatcher reads the
                 // boot trigger family which has been bound to current matching workflows
                 // by TriggerRegistry.start().
                 runCatching {
-                    me.rerere.rikkahub.workflow.trigger.WorkflowBootDispatcher.onBoot()
+                    com.clma.app.workflow.trigger.WorkflowBootDispatcher.onBoot()
                 }
 
                 // Re-show the edge bar when it was left on. The service is

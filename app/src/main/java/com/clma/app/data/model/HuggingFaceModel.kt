@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.model
+package com.clma.app.data.model
 
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable

@@ -1,4 +1,4 @@
-package me.rerere.search.extract
+package com.clma.search.extract
 
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document

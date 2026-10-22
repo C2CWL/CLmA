@@ -1,4 +1,4 @@
-package me.rerere.ai.provider.providers.openai
+package com.clma.ai.provider.providers.openai
 
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -9,14 +9,14 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import me.rerere.ai.core.MessageRole
-import me.rerere.ai.provider.Modality
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.ai.ui.OpenRouterReasoningMetadata
-import me.rerere.ai.ui.metadataAs
-import me.rerere.ai.ui.toMetadata
-import me.rerere.ai.util.KeyRoulette
+import com.clma.ai.core.MessageRole
+import com.clma.ai.provider.Modality
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessagePart
+import com.clma.ai.ui.OpenRouterReasoningMetadata
+import com.clma.ai.ui.metadataAs
+import com.clma.ai.ui.toMetadata
+import com.clma.ai.util.KeyRoulette
 import okhttp3.OkHttpClient
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

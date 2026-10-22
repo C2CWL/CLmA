@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.setting.components
+package com.clma.app.ui.pages.setting.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -34,17 +34,17 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dokar.sonner.ToastType
 import kotlinx.coroutines.launch
-import me.rerere.ai.provider.Model
-import me.rerere.ai.provider.ProviderManager
-import me.rerere.ai.provider.ProviderSetting
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.grok.GrokAccount
-import me.rerere.rikkahub.data.grok.GrokAccountRepository
-import me.rerere.rikkahub.data.grok.GrokOAuthManager
-import me.rerere.rikkahub.data.grok.GrokOAuthStatus
-import me.rerere.rikkahub.data.grok.GrokTokenStatus
-import me.rerere.rikkahub.data.grok.GrokUsageWindow
-import me.rerere.rikkahub.ui.context.LocalToaster
+import com.clma.ai.provider.Model
+import com.clma.ai.provider.ProviderManager
+import com.clma.ai.provider.ProviderSetting
+import com.clma.app.R
+import com.clma.app.data.grok.GrokAccount
+import com.clma.app.data.grok.GrokAccountRepository
+import com.clma.app.data.grok.GrokOAuthManager
+import com.clma.app.data.grok.GrokOAuthStatus
+import com.clma.app.data.grok.GrokTokenStatus
+import com.clma.app.data.grok.GrokUsageWindow
+import com.clma.app.ui.context.LocalToaster
 import org.koin.compose.koinInject
 import java.time.Instant
 import java.time.ZoneId

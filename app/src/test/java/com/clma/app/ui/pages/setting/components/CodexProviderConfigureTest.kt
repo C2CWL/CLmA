@@ -1,13 +1,13 @@
-package me.rerere.rikkahub.ui.pages.setting.components
+package com.clma.app.ui.pages.setting.components
 
 import kotlinx.serialization.json.JsonPrimitive
-import me.rerere.ai.provider.BuiltInTools
-import me.rerere.ai.provider.CustomBody
-import me.rerere.ai.provider.CustomHeader
-import me.rerere.ai.provider.Modality
-import me.rerere.ai.provider.Model
-import me.rerere.ai.provider.ModelAbility
-import me.rerere.ai.provider.ModelType
+import com.clma.ai.provider.BuiltInTools
+import com.clma.ai.provider.CustomBody
+import com.clma.ai.provider.CustomHeader
+import com.clma.ai.provider.Modality
+import com.clma.ai.provider.Model
+import com.clma.ai.provider.ModelAbility
+import com.clma.ai.provider.ModelType
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import kotlin.uuid.Uuid

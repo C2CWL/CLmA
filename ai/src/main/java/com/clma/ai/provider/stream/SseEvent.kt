@@ -1,4 +1,4 @@
-package me.rerere.ai.provider.stream
+package com.clma.ai.provider.stream
 
 import kotlinx.serialization.Serializable
 

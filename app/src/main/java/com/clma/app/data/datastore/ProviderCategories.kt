@@ -1,11 +1,11 @@
-package me.rerere.rikkahub.data.datastore
+package com.clma.app.data.datastore
 
 import androidx.annotation.StringRes
-import me.rerere.ai.provider.AICORE_PROVIDER_ID
-import me.rerere.ai.provider.LLAMACPP_PROVIDER_ID
-import me.rerere.ai.provider.LITERT_PROVIDER_ID
-import me.rerere.ai.provider.ProviderSetting
-import me.rerere.rikkahub.R
+import com.clma.ai.provider.AICORE_PROVIDER_ID
+import com.clma.ai.provider.LLAMACPP_PROVIDER_ID
+import com.clma.ai.provider.LITERT_PROVIDER_ID
+import com.clma.ai.provider.ProviderSetting
+import com.clma.app.R
 import kotlin.uuid.Uuid
 
 /**
@@ -21,7 +21,7 @@ enum class ProviderCategory(@StringRes val titleRes: Int) {
 
 /**
  * 内置服务商 id -> 分组。id 是内置服务商的稳定标识
- * （见 [DEFAULT_PROVIDERS] 与 me.rerere.ai.provider.ProviderSetting），
+ * （见 [DEFAULT_PROVIDERS] 与 com.clma.ai.provider.ProviderSetting），
  * 用户自己添加的服务商 id 是随机的，查不到即 [ProviderCategory.OTHER]。
  *
  * 分类按「模型/厂商归属」而非「接入协议」划分：

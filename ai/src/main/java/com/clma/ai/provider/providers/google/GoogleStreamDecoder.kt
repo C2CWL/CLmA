@@ -1,4 +1,4 @@
-package me.rerere.ai.provider.providers.google
+package com.clma.ai.provider.providers.google
 
 import android.util.Log
 import kotlinx.serialization.json.JsonObject
@@ -8,22 +8,22 @@ import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import me.rerere.ai.core.MessageRole
-import me.rerere.ai.core.TokenUsage
-import me.rerere.ai.provider.stream.DecodeResult
-import me.rerere.ai.provider.stream.SseEvent
-import me.rerere.ai.provider.stream.StreamChunkDecoder
-import me.rerere.ai.ui.GoogleThoughtMetadata
-import me.rerere.ai.ui.ServerToolMetadata
-import me.rerere.ai.ui.ServerToolProtocol
-import me.rerere.ai.ui.ServerToolStatus
-import me.rerere.ai.ui.StreamChunk
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.UIMessageAnnotation
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.ai.ui.toMetadata
-import me.rerere.ai.util.json
-import me.rerere.common.http.jsonPrimitiveOrNull
+import com.clma.ai.core.MessageRole
+import com.clma.ai.core.TokenUsage
+import com.clma.ai.provider.stream.DecodeResult
+import com.clma.ai.provider.stream.SseEvent
+import com.clma.ai.provider.stream.StreamChunkDecoder
+import com.clma.ai.ui.GoogleThoughtMetadata
+import com.clma.ai.ui.ServerToolMetadata
+import com.clma.ai.ui.ServerToolProtocol
+import com.clma.ai.ui.ServerToolStatus
+import com.clma.ai.ui.StreamChunk
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessageAnnotation
+import com.clma.ai.ui.UIMessagePart
+import com.clma.ai.ui.toMetadata
+import com.clma.ai.util.json
+import com.clma.common.http.jsonPrimitiveOrNull
 import kotlin.time.Clock
 
 private const val TAG = "GoogleStreamDecoder"

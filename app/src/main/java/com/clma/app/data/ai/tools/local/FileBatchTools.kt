@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.tools.local
+package com.clma.app.data.ai.tools.local
 
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.add
@@ -11,8 +11,8 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import me.rerere.ai.core.InputSchema
-import me.rerere.ai.core.Tool
+import com.clma.ai.core.InputSchema
+import com.clma.ai.core.Tool
 import java.io.File
 import java.io.IOException
 

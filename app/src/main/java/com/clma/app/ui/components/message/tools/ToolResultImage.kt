@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.message.tools
+package com.clma.app.ui.components.message.tools
 
 import android.net.Uri
 import androidx.compose.foundation.background
@@ -11,8 +11,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.ui.components.richtext.ZoomableAsyncImage
+import com.clma.app.R
+import com.clma.app.ui.components.richtext.ZoomableAsyncImage
 import java.io.File
 
 /**

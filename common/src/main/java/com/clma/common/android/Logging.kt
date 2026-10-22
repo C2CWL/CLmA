@@ -1,4 +1,4 @@
-package me.rerere.common.android
+package com.clma.common.android
 
 import kotlinx.serialization.Serializable
 import kotlin.uuid.Uuid

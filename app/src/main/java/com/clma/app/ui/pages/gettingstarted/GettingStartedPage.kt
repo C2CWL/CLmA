@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.gettingstarted
+package com.clma.app.ui.pages.gettingstarted
 
 import androidx.compose.foundation.background
 import android.os.Build
@@ -32,19 +32,19 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.Screen
-import me.rerere.rikkahub.data.ai.tools.LocalToolOption
-import me.rerere.rikkahub.data.datastore.Settings
-import me.rerere.rikkahub.data.datastore.getCurrentAssistant
-import me.rerere.rikkahub.data.permissions.PermissionInventory
-import me.rerere.rikkahub.data.permissions.isAggressive
-import me.rerere.rikkahub.data.permissions.keepAliveVendorOf
-import me.rerere.rikkahub.ui.context.LocalNavController
-import me.rerere.rikkahub.ui.context.LocalSettings
-import me.rerere.rikkahub.ui.hooks.writeBooleanPreference
-import me.rerere.rikkahub.ui.theme.CustomColors
-import me.rerere.rikkahub.utils.plus
+import com.clma.app.R
+import com.clma.app.Screen
+import com.clma.app.data.ai.tools.LocalToolOption
+import com.clma.app.data.datastore.Settings
+import com.clma.app.data.datastore.getCurrentAssistant
+import com.clma.app.data.permissions.PermissionInventory
+import com.clma.app.data.permissions.isAggressive
+import com.clma.app.data.permissions.keepAliveVendorOf
+import com.clma.app.ui.context.LocalNavController
+import com.clma.app.ui.context.LocalSettings
+import com.clma.app.ui.hooks.writeBooleanPreference
+import com.clma.app.ui.theme.CustomColors
+import com.clma.app.utils.plus
 
 /** Preference key: once the user has seen (or dismissed) the first-run guide, never show it again. */
 const val GETTING_STARTED_SEEN_KEY = "getting_started_seen"

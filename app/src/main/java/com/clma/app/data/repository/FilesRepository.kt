@@ -1,8 +1,8 @@
-package me.rerere.rikkahub.data.repository
+package com.clma.app.data.repository
 
 import kotlinx.coroutines.flow.Flow
-import me.rerere.rikkahub.data.db.dao.ManagedFileDAO
-import me.rerere.rikkahub.data.db.entity.ManagedFileEntity
+import com.clma.app.data.db.dao.ManagedFileDAO
+import com.clma.app.data.db.entity.ManagedFileEntity
 
 class FilesRepository(
     private val dao: ManagedFileDAO,

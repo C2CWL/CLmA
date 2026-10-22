@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.ui
+package com.clma.app.ui.components.ui
 
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -46,9 +46,9 @@ import kotlinx.coroutines.withContext
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.FileImport
 import me.rerere.hugeicons.stroke.Fullscreen
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.ui.context.LocalToaster
-import me.rerere.rikkahub.ui.modifier.onClick
+import com.clma.app.R
+import com.clma.app.ui.context.LocalToaster
+import com.clma.app.ui.modifier.onClick
 
 /**
  * A multi-line text input component with a header and file import functionality.

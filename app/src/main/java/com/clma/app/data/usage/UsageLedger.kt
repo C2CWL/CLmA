@@ -1,6 +1,6 @@
-package me.rerere.rikkahub.data.usage
+package com.clma.app.data.usage
 
-import me.rerere.ai.core.TokenUsage
+import com.clma.ai.core.TokenUsage
 import java.util.UUID
 
 object UsageLedgerDefaults {

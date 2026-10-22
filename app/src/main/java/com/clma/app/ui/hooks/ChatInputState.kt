@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.hooks
+package com.clma.app.ui.hooks
 
 import android.net.Uri
 import androidx.compose.foundation.text.input.TextFieldState
@@ -6,7 +6,7 @@ import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import me.rerere.ai.ui.UIMessagePart
+import com.clma.ai.ui.UIMessagePart
 import kotlin.uuid.Uuid
 
 class ChatInputState {

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.browser
+package com.clma.app.browser
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -52,13 +52,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
-import me.rerere.ai.core.MessageRole
-import me.rerere.ai.ui.UIMessagePart
+import com.clma.ai.core.MessageRole
+import com.clma.ai.ui.UIMessagePart
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Cancel01
 import me.rerere.hugeicons.stroke.Sparkles
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.service.ChatService
+import com.clma.app.R
+import com.clma.app.service.ChatService
 import org.koin.compose.koinInject
 
 /**

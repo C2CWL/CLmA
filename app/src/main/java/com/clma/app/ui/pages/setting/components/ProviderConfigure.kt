@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.setting.components
+package com.clma.app.ui.pages.setting.components
 
 import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -51,29 +51,29 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.HorizontalDivider
-import me.rerere.ai.provider.Model
-import me.rerere.ai.provider.OpenRouterRouting
+import com.clma.ai.provider.Model
+import com.clma.ai.provider.OpenRouterRouting
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Cancel01
 import me.rerere.hugeicons.stroke.Delete01
 import me.rerere.hugeicons.stroke.Edit01
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dokar.sonner.ToastType
-import me.rerere.ai.provider.ClaudePromptCacheTtl
-import me.rerere.ai.provider.ProviderSetting
-import me.rerere.llamacpp.LlamaCppCatalog
-import me.rerere.llamacpp.LlamaCppCatalogEntry
-import me.rerere.locallm.LocalRuntime
-import me.rerere.locallm.litert.LiteRtCatalog
-import me.rerere.locallm.litert.LiteRtCatalogEntry
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.api.HuggingFaceModelSearch
-import me.rerere.rikkahub.data.datastore.DEFAULT_PROVIDERS
+import com.clma.ai.provider.ClaudePromptCacheTtl
+import com.clma.ai.provider.ProviderSetting
+import com.clma.llamacpp.LlamaCppCatalog
+import com.clma.llamacpp.LlamaCppCatalogEntry
+import com.clma.locallm.LocalRuntime
+import com.clma.locallm.litert.LiteRtCatalog
+import com.clma.locallm.litert.LiteRtCatalogEntry
+import com.clma.app.R
+import com.clma.app.data.api.HuggingFaceModelSearch
+import com.clma.app.data.datastore.DEFAULT_PROVIDERS
 import me.rerere.hugeicons.stroke.View
 import me.rerere.hugeicons.stroke.ViewOff
-import me.rerere.rikkahub.ui.context.LocalToaster
-import me.rerere.rikkahub.ui.pages.setting.locallm.SettingLocalLlmViewModel
-import me.rerere.rikkahub.ui.theme.JetbrainsMono
+import com.clma.app.ui.context.LocalToaster
+import com.clma.app.ui.pages.setting.locallm.SettingLocalLlmViewModel
+import com.clma.app.ui.theme.JetbrainsMono
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.contentOrNull
@@ -857,7 +857,7 @@ private fun ColumnScope.ProviderConfigureAICore(
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(stringResource(R.string.setting_provider_aicore_release_stage), modifier = Modifier.weight(1f))
         SingleChoiceSegmentedButtonRow {
-            val stages = me.rerere.ai.provider.AICoreReleaseStage.entries
+            val stages = com.clma.ai.provider.AICoreReleaseStage.entries
             stages.forEachIndexed { index, stage ->
                 SegmentedButton(
                     shape = SegmentedButtonDefaults.itemShape(index = index, count = stages.size),
@@ -1641,7 +1641,7 @@ private fun InstalledModelRow(
     model: Model,
     visionUnavailable: Boolean,
     allowVisionRetry: Boolean,
-    perfSample: me.rerere.locallm.LocalRuntimePreferences.PerfSample?,
+    perfSample: com.clma.locallm.LocalRuntimePreferences.PerfSample?,
     onRename: (String) -> Unit,
     onDelete: () -> Unit,
     onRetryVision: () -> Unit,

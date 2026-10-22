@@ -1,6 +1,6 @@
-package me.rerere.rikkahub.data.model
+package com.clma.app.data.model
 
-import me.rerere.rikkahub.utils.JsonInstant
+import com.clma.app.utils.JsonInstant
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

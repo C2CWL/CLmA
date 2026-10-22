@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.backup.components
+package com.clma.app.ui.pages.backup.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -9,8 +9,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.sync.BackupItem
+import com.clma.app.R
+import com.clma.app.data.sync.BackupItem
 
 /**
  * Multi-select chip list of the backup slices. Replaces the two-button segmented row now that the

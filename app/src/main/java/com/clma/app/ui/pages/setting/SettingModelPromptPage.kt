@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.setting
+package com.clma.app.ui.pages.setting
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -23,19 +23,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import me.rerere.ai.core.ReasoningLevel
+import com.clma.ai.core.ReasoningLevel
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ArrowRight01
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.ai.prompts.DEFAULT_COMPRESS_PROMPT
-import me.rerere.rikkahub.data.ai.prompts.DEFAULT_OCR_PROMPT
-import me.rerere.rikkahub.data.ai.prompts.DEFAULT_SUGGESTION_PROMPT
-import me.rerere.rikkahub.data.ai.prompts.DEFAULT_TITLE_PROMPT
-import me.rerere.rikkahub.data.ai.prompts.DEFAULT_TRANSLATION_PROMPT
-import me.rerere.rikkahub.data.datastore.Settings
-import me.rerere.rikkahub.ui.components.ai.ReasoningButton
-import me.rerere.rikkahub.ui.components.ui.CardGroup
-import me.rerere.rikkahub.utils.plus
+import com.clma.app.R
+import com.clma.app.data.ai.prompts.DEFAULT_COMPRESS_PROMPT
+import com.clma.app.data.ai.prompts.DEFAULT_OCR_PROMPT
+import com.clma.app.data.ai.prompts.DEFAULT_SUGGESTION_PROMPT
+import com.clma.app.data.ai.prompts.DEFAULT_TITLE_PROMPT
+import com.clma.app.data.ai.prompts.DEFAULT_TRANSLATION_PROMPT
+import com.clma.app.data.datastore.Settings
+import com.clma.app.ui.components.ai.ReasoningButton
+import com.clma.app.ui.components.ui.CardGroup
+import com.clma.app.utils.plus
 
 @Composable
 internal fun PromptSettingsPage(settings: Settings, vm: SettingVM, contentPadding: PaddingValues) {

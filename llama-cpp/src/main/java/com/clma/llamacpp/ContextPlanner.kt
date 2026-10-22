@@ -1,4 +1,4 @@
-package me.rerere.llamacpp
+package com.clma.llamacpp
 
 import kotlin.math.roundToLong
 

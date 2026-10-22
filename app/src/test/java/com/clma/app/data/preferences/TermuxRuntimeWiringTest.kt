@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.preferences
+package com.clma.app.data.preferences
 
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -81,12 +81,12 @@ class TermuxRuntimeWiringTest {
 
     @Test
     fun toolRuntimeLimits_turnBudget_writeIsVisibleImmediately() {
-        val prev = me.rerere.rikkahub.data.ai.limits.ToolRuntimeLimits.turnBudgetMs
+        val prev = com.clma.app.data.ai.limits.ToolRuntimeLimits.turnBudgetMs
         try {
-            me.rerere.rikkahub.data.ai.limits.ToolRuntimeLimits.turnBudgetMs = 5L * 60_000L
-            assertEquals(5L * 60_000L, me.rerere.rikkahub.data.ai.limits.ToolRuntimeLimits.turnBudgetMs)
+            com.clma.app.data.ai.limits.ToolRuntimeLimits.turnBudgetMs = 5L * 60_000L
+            assertEquals(5L * 60_000L, com.clma.app.data.ai.limits.ToolRuntimeLimits.turnBudgetMs)
         } finally {
-            me.rerere.rikkahub.data.ai.limits.ToolRuntimeLimits.turnBudgetMs = prev
+            com.clma.app.data.ai.limits.ToolRuntimeLimits.turnBudgetMs = prev
         }
     }
 
@@ -105,24 +105,24 @@ class TermuxRuntimeWiringTest {
 
     @Before
     fun saveVerifiedState() {
-        origLastVerifiedOkAtMs = me.rerere.rikkahub.data.ai.tools.local.TermuxIntegration.lastVerifiedOkAtMs
-        origPersister = me.rerere.rikkahub.data.ai.tools.local.TermuxIntegration.persister
+        origLastVerifiedOkAtMs = com.clma.app.data.ai.tools.local.TermuxIntegration.lastVerifiedOkAtMs
+        origPersister = com.clma.app.data.ai.tools.local.TermuxIntegration.persister
     }
 
     @After
     fun restoreVerifiedState() {
-        me.rerere.rikkahub.data.ai.tools.local.TermuxIntegration.restoreVerifiedAt(origLastVerifiedOkAtMs)
-        me.rerere.rikkahub.data.ai.tools.local.TermuxIntegration.persister = origPersister
+        com.clma.app.data.ai.tools.local.TermuxIntegration.restoreVerifiedAt(origLastVerifiedOkAtMs)
+        com.clma.app.data.ai.tools.local.TermuxIntegration.persister = origPersister
     }
 
     @Test
     fun markVerifiedOk_setsTimestamp_andInvokesPersister() {
         val persisted = mutableListOf<Long>()
-        me.rerere.rikkahub.data.ai.tools.local.TermuxIntegration.persister = { persisted.add(it) }
+        com.clma.app.data.ai.tools.local.TermuxIntegration.persister = { persisted.add(it) }
 
-        me.rerere.rikkahub.data.ai.tools.local.TermuxIntegration.markVerifiedOk()
+        com.clma.app.data.ai.tools.local.TermuxIntegration.markVerifiedOk()
 
-        val nowMs = me.rerere.rikkahub.data.ai.tools.local.TermuxIntegration.lastVerifiedOkAtMs
+        val nowMs = com.clma.app.data.ai.tools.local.TermuxIntegration.lastVerifiedOkAtMs
         assertTrue(nowMs > 0L)
         assertEquals(listOf(nowMs), persisted)
     }
@@ -130,23 +130,23 @@ class TermuxRuntimeWiringTest {
     @Test
     fun clearVerified_resetsTimestamp_andInvokesPersisterWithZero() {
         val persisted = mutableListOf<Long>()
-        me.rerere.rikkahub.data.ai.tools.local.TermuxIntegration.markVerifiedOk()
-        me.rerere.rikkahub.data.ai.tools.local.TermuxIntegration.persister = { persisted.add(it) }
+        com.clma.app.data.ai.tools.local.TermuxIntegration.markVerifiedOk()
+        com.clma.app.data.ai.tools.local.TermuxIntegration.persister = { persisted.add(it) }
 
-        me.rerere.rikkahub.data.ai.tools.local.TermuxIntegration.clearVerified()
+        com.clma.app.data.ai.tools.local.TermuxIntegration.clearVerified()
 
-        assertEquals(0L, me.rerere.rikkahub.data.ai.tools.local.TermuxIntegration.lastVerifiedOkAtMs)
+        assertEquals(0L, com.clma.app.data.ai.tools.local.TermuxIntegration.lastVerifiedOkAtMs)
         assertEquals(listOf(0L), persisted)
     }
 
     @Test
     fun restoreVerifiedAt_setsTimestamp_withoutInvokingPersister() {
         val persisted = mutableListOf<Long>()
-        me.rerere.rikkahub.data.ai.tools.local.TermuxIntegration.persister = { persisted.add(it) }
+        com.clma.app.data.ai.tools.local.TermuxIntegration.persister = { persisted.add(it) }
 
-        me.rerere.rikkahub.data.ai.tools.local.TermuxIntegration.restoreVerifiedAt(1_700_000_000_000L)
+        com.clma.app.data.ai.tools.local.TermuxIntegration.restoreVerifiedAt(1_700_000_000_000L)
 
-        assertEquals(1_700_000_000_000L, me.rerere.rikkahub.data.ai.tools.local.TermuxIntegration.lastVerifiedOkAtMs)
+        assertEquals(1_700_000_000_000L, com.clma.app.data.ai.tools.local.TermuxIntegration.lastVerifiedOkAtMs)
         assertTrue(persisted.isEmpty())
     }
 

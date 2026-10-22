@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.assistant.detail
+package com.clma.app.ui.pages.assistant.detail
 
 import android.content.pm.PackageManager
 import androidx.compose.foundation.layout.Arrangement
@@ -35,15 +35,15 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ArrowDown01
 import me.rerere.hugeicons.stroke.ArrowUp01
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.agentdef.LocalToolGroups
-import me.rerere.rikkahub.data.ai.tools.LocalToolOption
-import me.rerere.rikkahub.data.ai.tools.LocalTools
-import me.rerere.rikkahub.data.model.Assistant
-import me.rerere.rikkahub.ui.components.nav.BackButton
-import me.rerere.rikkahub.ui.components.ui.CardGroup
-import me.rerere.rikkahub.ui.pages.setting.localToolTitleRes
-import me.rerere.rikkahub.ui.theme.CustomColors
+import com.clma.app.R
+import com.clma.app.data.agentdef.LocalToolGroups
+import com.clma.app.data.ai.tools.LocalToolOption
+import com.clma.app.data.ai.tools.LocalTools
+import com.clma.app.data.model.Assistant
+import com.clma.app.ui.components.nav.BackButton
+import com.clma.app.ui.components.ui.CardGroup
+import com.clma.app.ui.pages.setting.localToolTitleRes
+import com.clma.app.ui.theme.CustomColors
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf

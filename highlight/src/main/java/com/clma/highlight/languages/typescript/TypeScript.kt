@@ -1,19 +1,19 @@
-package me.rerere.highlight.languages.typescript
+package com.clma.highlight.languages.typescript
 
-import me.rerere.highlight.core.IDENT_RE
-import me.rerere.highlight.core.Language
-import me.rerere.highlight.core.Mode
-import me.rerere.highlight.core.concat
-import me.rerere.highlight.core.keywords
-import me.rerere.highlight.core.lookahead
-import me.rerere.highlight.core.mode
-import me.rerere.highlight.core.shebang
-import me.rerere.highlight.languages.javascript.JS_BUILT_INS
-import me.rerere.highlight.languages.javascript.JS_BUILT_IN_VARIABLES
-import me.rerere.highlight.languages.javascript.JS_IDENT_RE
-import me.rerere.highlight.languages.javascript.JS_KEYWORDS
-import me.rerere.highlight.languages.javascript.JS_LITERALS
-import me.rerere.highlight.languages.javascript.javascriptGrammar
+import com.clma.highlight.core.IDENT_RE
+import com.clma.highlight.core.Language
+import com.clma.highlight.core.Mode
+import com.clma.highlight.core.concat
+import com.clma.highlight.core.keywords
+import com.clma.highlight.core.lookahead
+import com.clma.highlight.core.mode
+import com.clma.highlight.core.shebang
+import com.clma.highlight.languages.javascript.JS_BUILT_INS
+import com.clma.highlight.languages.javascript.JS_BUILT_IN_VARIABLES
+import com.clma.highlight.languages.javascript.JS_IDENT_RE
+import com.clma.highlight.languages.javascript.JS_KEYWORDS
+import com.clma.highlight.languages.javascript.JS_LITERALS
+import com.clma.highlight.languages.javascript.javascriptGrammar
 
 /**
  * TypeScript, ported from `lib/languages/typescript.js` of `highlight.js` 11.11.1.

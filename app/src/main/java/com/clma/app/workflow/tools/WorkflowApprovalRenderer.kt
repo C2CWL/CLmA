@@ -1,15 +1,15 @@
-package me.rerere.rikkahub.workflow.tools
+package com.clma.app.workflow.tools
 
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
-import me.rerere.rikkahub.workflow.model.ConditionSpec
-import me.rerere.rikkahub.workflow.model.TriggerSpec
-import me.rerere.rikkahub.workflow.model.WorkflowAction
-import me.rerere.rikkahub.workflow.model.WorkflowDefinition
-import me.rerere.rikkahub.workflow.model.WorkflowJson
+import com.clma.app.workflow.model.ConditionSpec
+import com.clma.app.workflow.model.TriggerSpec
+import com.clma.app.workflow.model.WorkflowAction
+import com.clma.app.workflow.model.WorkflowDefinition
+import com.clma.app.workflow.model.WorkflowJson
 
 /**
  * Phase 12 — human-readable approval prompt renderer for `workflow_create` /

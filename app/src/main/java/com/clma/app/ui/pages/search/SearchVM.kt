@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.search
+package com.clma.app.ui.pages.search
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -13,13 +13,13 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.datastore.getCurrentAssistant
-import me.rerere.rikkahub.data.db.fts.MessageSearchResult
-import me.rerere.rikkahub.data.db.fts.MessageSearchSort
-import me.rerere.rikkahub.data.repository.ConversationRepository
-import me.rerere.rikkahub.ui.hooks.readStringPreference
-import me.rerere.rikkahub.ui.hooks.writeStringPreference
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.datastore.getCurrentAssistant
+import com.clma.app.data.db.fts.MessageSearchResult
+import com.clma.app.data.db.fts.MessageSearchSort
+import com.clma.app.data.repository.ConversationRepository
+import com.clma.app.ui.hooks.readStringPreference
+import com.clma.app.ui.hooks.writeStringPreference
 import kotlin.uuid.Uuid
 
 private const val SORT_ORDER_PREF_KEY = "search_page_sort_order"

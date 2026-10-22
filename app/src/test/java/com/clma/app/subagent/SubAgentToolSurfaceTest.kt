@@ -1,6 +1,6 @@
-package me.rerere.rikkahub.subagent
+package com.clma.app.subagent
 
-import me.rerere.rikkahub.data.ai.tools.ToolApprovalDefaults
+import com.clma.app.data.ai.tools.ToolApprovalDefaults
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull

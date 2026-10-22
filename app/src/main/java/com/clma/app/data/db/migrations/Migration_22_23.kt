@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.db.migrations
+package com.clma.app.data.db.migrations
 
 import androidx.room.migration.AutoMigrationSpec
 

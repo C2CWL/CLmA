@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.theme
+package com.clma.app.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
@@ -9,7 +9,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.Density
-import me.rerere.rikkahub.data.datastore.DisplaySetting
+import com.clma.app.data.datastore.DisplaySetting
 
 /**
  * The app typography: [Typography] unchanged, or every baseline and emphasized style with the

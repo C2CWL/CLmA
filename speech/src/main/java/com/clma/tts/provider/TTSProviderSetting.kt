@@ -1,4 +1,4 @@
-package me.rerere.tts.provider
+package com.clma.tts.provider
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

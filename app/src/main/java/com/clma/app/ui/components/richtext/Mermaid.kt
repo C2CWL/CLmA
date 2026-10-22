@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.richtext
+package com.clma.app.ui.components.richtext
 
 import android.graphics.BitmapFactory
 import android.util.Base64
@@ -26,19 +26,19 @@ import com.dokar.sonner.ToastType
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Download01
 import me.rerere.hugeicons.stroke.View
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.Screen
-import me.rerere.rikkahub.ui.components.webview.WEB_VIEW_ASSET_URL
-import me.rerere.rikkahub.ui.components.webview.WEB_VIEW_BASE_URL
-import me.rerere.rikkahub.ui.components.webview.WebView
-import me.rerere.rikkahub.ui.components.webview.WebViewContentCache
-import me.rerere.rikkahub.ui.components.webview.rememberWebViewState
-import me.rerere.rikkahub.ui.context.LocalNavController
-import me.rerere.rikkahub.ui.context.LocalToaster
-import me.rerere.rikkahub.ui.theme.LocalDarkMode
-import me.rerere.rikkahub.utils.escapeHtml
-import me.rerere.rikkahub.utils.exportImage
-import me.rerere.rikkahub.utils.toCssHex
+import com.clma.app.R
+import com.clma.app.Screen
+import com.clma.app.ui.components.webview.WEB_VIEW_ASSET_URL
+import com.clma.app.ui.components.webview.WEB_VIEW_BASE_URL
+import com.clma.app.ui.components.webview.WebView
+import com.clma.app.ui.components.webview.WebViewContentCache
+import com.clma.app.ui.components.webview.rememberWebViewState
+import com.clma.app.ui.context.LocalNavController
+import com.clma.app.ui.context.LocalToaster
+import com.clma.app.ui.theme.LocalDarkMode
+import com.clma.app.utils.escapeHtml
+import com.clma.app.utils.exportImage
+import com.clma.app.utils.toCssHex
 
 @Composable
 fun Mermaid(

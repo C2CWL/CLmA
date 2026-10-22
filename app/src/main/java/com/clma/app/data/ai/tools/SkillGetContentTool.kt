@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.tools
+package com.clma.app.data.ai.tools
 
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
@@ -6,11 +6,11 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import me.rerere.ai.core.InputSchema
-import me.rerere.ai.core.Tool
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.data.files.SkillContent
-import me.rerere.rikkahub.data.files.SkillMetadata
+import com.clma.ai.core.InputSchema
+import com.clma.ai.core.Tool
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.files.SkillContent
+import com.clma.app.data.files.SkillMetadata
 
 /**
  * Phase 16 audit fix — `skill_get_content` LLM tool.

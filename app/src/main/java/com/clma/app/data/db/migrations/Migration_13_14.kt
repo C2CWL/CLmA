@@ -1,9 +1,9 @@
-package me.rerere.rikkahub.data.db.migrations
+package com.clma.app.data.db.migrations
 
 import android.util.Log
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
-import me.rerere.rikkahub.data.db.DatabaseMigrationTracker
+import com.clma.app.data.db.DatabaseMigrationTracker
 
 private const val TAG = "Migration_13_14"
 

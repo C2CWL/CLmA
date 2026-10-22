@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.usage
+package com.clma.app.data.usage
 
 /**
  * P2-07 — per-orchestration budget arithmetic (decision D8).
@@ -10,9 +10,9 @@ package me.rerere.rikkahub.data.usage
  * returns the structured envelope; this file only owns the comparison it makes.
  *
  * Two budgets can be in play, and their precedence is the whole point:
- *  - the assistant's [me.rerere.rikkahub.data.model.Assistant.orchestrationTokenBudget],
+ *  - the assistant's [com.clma.app.data.model.Assistant.orchestrationTokenBudget],
  *    the default ceiling for every dispatch that assistant makes, and
- *  - an expert's [me.rerere.rikkahub.data.agentdef.AgentDefinition.tokenBudget], which
+ *  - an expert's [com.clma.app.data.agentdef.AgentDefinition.tokenBudget], which
  *    **overrides** the assistant's value for the run that names that expert.
  *
  * `null` always means "unlimited", so the defaults cost nothing: with both values null

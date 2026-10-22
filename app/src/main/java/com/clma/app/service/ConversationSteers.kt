@@ -1,13 +1,13 @@
-package me.rerere.rikkahub.service
+package com.clma.app.service
 
 import java.util.concurrent.ConcurrentHashMap
-import me.rerere.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessage
 import kotlin.uuid.Uuid
 
 /**
  * 生成中插话的暂存队列（per-conversation）。
  *
- * 与 [me.rerere.rikkahub.data.ai.tools.ConversationInjections] 的区别：那里的通知是
+ * 与 [com.clma.app.data.ai.tools.ConversationInjections] 的区别：那里的通知是
  * request-only 的（不渲染、不持久化），而插话是**真实的用户消息**——GenerationLoop
  * 在下一次模型请求前把它并入 messages 并 emit，于是它既进入请求上下文，也作为普通
  * 用户气泡落盘。

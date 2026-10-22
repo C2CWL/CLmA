@@ -1,4 +1,4 @@
-package me.rerere.ai.util
+package com.clma.ai.util
 
 import android.content.Context
 import android.media.ExifInterface
@@ -9,7 +9,7 @@ import android.net.Uri
 import android.util.Base64
 import android.util.Base64OutputStream
 import androidx.core.net.toUri
-import me.rerere.ai.ui.UIMessagePart
+import com.clma.ai.ui.UIMessagePart
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.InputStream

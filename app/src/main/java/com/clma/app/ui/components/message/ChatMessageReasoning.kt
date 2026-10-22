@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.message
+package com.clma.app.ui.components.message
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
@@ -39,20 +39,20 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
-import me.rerere.ai.provider.Model
-import me.rerere.ai.ui.UIMessagePart
+import com.clma.ai.provider.Model
+import com.clma.ai.ui.UIMessagePart
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Idea01
 import me.rerere.hugeicons.stroke.Message01
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.model.Assistant
-import me.rerere.rikkahub.data.model.AssistantAffectScope
-import me.rerere.rikkahub.data.model.replaceRegexes
-import me.rerere.rikkahub.ui.components.richtext.MarkdownBlock
-import me.rerere.rikkahub.ui.components.ui.ChainOfThoughtScope
-import me.rerere.rikkahub.ui.context.LocalSettings
-import me.rerere.rikkahub.ui.modifier.shimmer
-import me.rerere.rikkahub.utils.extractThinkingTitle
+import com.clma.app.R
+import com.clma.app.data.model.Assistant
+import com.clma.app.data.model.AssistantAffectScope
+import com.clma.app.data.model.replaceRegexes
+import com.clma.app.ui.components.richtext.MarkdownBlock
+import com.clma.app.ui.components.ui.ChainOfThoughtScope
+import com.clma.app.ui.context.LocalSettings
+import com.clma.app.ui.modifier.shimmer
+import com.clma.app.utils.extractThinkingTitle
 import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds

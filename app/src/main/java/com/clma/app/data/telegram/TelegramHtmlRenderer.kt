@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.telegram
+package com.clma.app.data.telegram
 
 import org.intellij.markdown.flavours.gfm.GFMFlavourDescriptor
 import org.intellij.markdown.html.HtmlGenerator

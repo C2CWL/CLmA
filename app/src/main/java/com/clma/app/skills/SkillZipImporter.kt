@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.skills
+package com.clma.app.skills
 
 import android.util.Log
 import java.io.File

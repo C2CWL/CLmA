@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.assistant.detail
+package com.clma.app.ui.pages.assistant.detail
 
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -32,12 +32,12 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.model.AssistantBackgroundMode
-import me.rerere.rikkahub.data.files.FilesManager
-import me.rerere.rikkahub.ui.components.ui.FormItem
-import me.rerere.rikkahub.ui.components.ui.Select
-import me.rerere.rikkahub.ui.theme.CustomColors
+import com.clma.app.R
+import com.clma.app.data.model.AssistantBackgroundMode
+import com.clma.app.data.files.FilesManager
+import com.clma.app.ui.components.ui.FormItem
+import com.clma.app.ui.components.ui.Select
+import com.clma.app.ui.theme.CustomColors
 import org.koin.compose.koinInject
 
 /** Which wallpaper slot the user is editing. */

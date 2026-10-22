@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.activity
+package com.clma.app.ui.activity
 
 import android.Manifest
 import android.content.Intent
@@ -7,8 +7,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.FileProvider
-import me.rerere.rikkahub.BuildConfig
-import me.rerere.rikkahub.RouteActivity
+import com.clma.app.BuildConfig
+import com.clma.app.RouteActivity
 import java.io.File
 
 class ShortcutHandlerActivity : ComponentActivity() {

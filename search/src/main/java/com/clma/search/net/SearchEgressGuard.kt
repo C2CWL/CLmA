@@ -1,4 +1,4 @@
-package me.rerere.search.net
+package com.clma.search.net
 
 import okhttp3.Dns
 import okhttp3.OkHttpClient
@@ -8,7 +8,7 @@ import java.net.InetAddress
 import java.net.UnknownHostException
 import java.util.concurrent.TimeUnit
 
-// This intentionally parallels me.rerere.rikkahub.data.ai.net.GuardedDns in the app module:
+// This intentionally parallels com.clma.app.data.ai.net.GuardedDns in the app module:
 // :search cannot depend on :app, so the scrape() egress guard for SearXNG/Bing is duplicated
 // here rather than shared.
 

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai
+package com.clma.app.data.ai
 
 /**
  * Per-turn record of "did the agent take the user out of RikkaHub?" — used by the

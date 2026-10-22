@@ -1,7 +1,7 @@
-package me.rerere.search.extract
+package com.clma.search.extract
 
-import me.rerere.search.SearchServiceOptions
-import me.rerere.search.SearXNGService
+import com.clma.search.SearchServiceOptions
+import com.clma.search.SearXNGService
 import org.junit.Assert.assertNotNull
 import org.junit.Test
 

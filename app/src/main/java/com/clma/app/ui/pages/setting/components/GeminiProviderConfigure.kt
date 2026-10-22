@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.setting.components
+package com.clma.app.ui.pages.setting.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -33,16 +33,16 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dokar.sonner.ToastType
 import kotlinx.coroutines.launch
-import me.rerere.ai.provider.ProviderManager
-import me.rerere.ai.provider.ProviderSetting
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.gemini.GeminiAccount
-import me.rerere.rikkahub.data.gemini.GeminiAccountRepository
-import me.rerere.rikkahub.data.gemini.GeminiOAuthManager
-import me.rerere.rikkahub.data.gemini.GeminiOAuthStatus
-import me.rerere.rikkahub.data.gemini.GeminiTokenStatus
-import me.rerere.rikkahub.data.gemini.GeminiUsageWindow
-import me.rerere.rikkahub.ui.context.LocalToaster
+import com.clma.ai.provider.ProviderManager
+import com.clma.ai.provider.ProviderSetting
+import com.clma.app.R
+import com.clma.app.data.gemini.GeminiAccount
+import com.clma.app.data.gemini.GeminiAccountRepository
+import com.clma.app.data.gemini.GeminiOAuthManager
+import com.clma.app.data.gemini.GeminiOAuthStatus
+import com.clma.app.data.gemini.GeminiTokenStatus
+import com.clma.app.data.gemini.GeminiUsageWindow
+import com.clma.app.ui.context.LocalToaster
 import org.koin.compose.koinInject
 import java.time.Instant
 import java.time.ZoneId

@@ -1,7 +1,7 @@
-package me.rerere.tts.provider.providers
+package com.clma.tts.provider.providers
 
-import me.rerere.common.http.SseEvent
-import me.rerere.tts.model.AudioFormat
+import com.clma.common.http.SseEvent
+import com.clma.tts.model.AudioFormat
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

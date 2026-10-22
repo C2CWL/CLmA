@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.service
+package com.clma.app.service
 
 import android.util.Log
 import kotlinx.coroutines.cancelAndJoin
@@ -10,20 +10,20 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import me.rerere.ai.core.MessageRole
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.data.datastore.getCurrentAssistant
-import me.rerere.rikkahub.data.telegram.TelegramCallbackQuery
-import me.rerere.rikkahub.data.telegram.TelegramHtmlRenderer
-import me.rerere.rikkahub.data.telegram.TelegramIncomingMessage
-import me.rerere.rikkahub.service.TelegramBotService.Companion.ApprovalPromptRegistry
-import me.rerere.rikkahub.service.TelegramBotService.Companion.BUILT_IN_COMMANDS
-import me.rerere.rikkahub.service.TelegramBotService.Companion.DOCTOR_FIX_CB_PREFIX
-import me.rerere.rikkahub.service.TelegramBotService.Companion.MAX_CHARS
-import me.rerere.rikkahub.service.TelegramBotService.Companion.PARSE_MODE_HTML
-import me.rerere.rikkahub.service.TelegramBotService.Companion.SlashCommandLog
-import me.rerere.rikkahub.service.TelegramBotService.Companion.TAG
-import me.rerere.rikkahub.service.TelegramBotService.Companion.isRunning
+import com.clma.ai.core.MessageRole
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.datastore.getCurrentAssistant
+import com.clma.app.data.telegram.TelegramCallbackQuery
+import com.clma.app.data.telegram.TelegramHtmlRenderer
+import com.clma.app.data.telegram.TelegramIncomingMessage
+import com.clma.app.service.TelegramBotService.Companion.ApprovalPromptRegistry
+import com.clma.app.service.TelegramBotService.Companion.BUILT_IN_COMMANDS
+import com.clma.app.service.TelegramBotService.Companion.DOCTOR_FIX_CB_PREFIX
+import com.clma.app.service.TelegramBotService.Companion.MAX_CHARS
+import com.clma.app.service.TelegramBotService.Companion.PARSE_MODE_HTML
+import com.clma.app.service.TelegramBotService.Companion.SlashCommandLog
+import com.clma.app.service.TelegramBotService.Companion.TAG
+import com.clma.app.service.TelegramBotService.Companion.isRunning
 import kotlin.uuid.Uuid
 
 /**
@@ -47,7 +47,7 @@ import kotlin.uuid.Uuid
  * the LLM. Built-in commands NEVER spend tokens.
  */
 internal suspend fun TelegramBotService.handleBuiltInCommand(
-    cfg: me.rerere.rikkahub.data.telegram.TelegramBotConfig,
+    cfg: com.clma.app.data.telegram.TelegramBotConfig,
     m: TelegramIncomingMessage,
 ): Boolean {
     val raw = m.text.trim()
@@ -161,10 +161,10 @@ internal suspend fun TelegramBotService.handleResetCommand(chatId: Long) {
             // a fresh conversation starts with a clean approval slate. "Always Allow"
             // grants persist (they live in DataStore, scoped globally — the user
             // revokes them via Settings → Tool approvals).
-            me.rerere.rikkahub.data.ai.tools.ToolApprovalAllowList.clearChat(convId)
+            com.clma.app.data.ai.tools.ToolApprovalAllowList.clearChat(convId)
             // Drop the system-prompt addendum too; the next inbound message rebuilds
             // it with the firstTurnOfChat hint set, matching a true fresh chat.
-            me.rerere.rikkahub.data.ai.tools.ConversationSystemAddendum.clear(convId)
+            com.clma.app.data.ai.tools.ConversationSystemAddendum.clear(convId)
             // Drop the in-memory ChatService session entry so a straggler can't
             // resurrect the conversation by writing back via getOrCreateSession.
             chatService.dropSession(convId)
@@ -173,8 +173,8 @@ internal suspend fun TelegramBotService.handleResetCommand(chatId: Long) {
             // the user's explicit close signal. Releases ~30 MB and unbinds the
             // BrowserController so the next browser_open starts fresh.
             runCatching {
-                me.rerere.rikkahub.browser.BrowserController.unbindHeadless(convId.toString())
-                me.rerere.rikkahub.browser.HeadlessBrowserSessionPool.release(convId.toString())
+                com.clma.app.browser.BrowserController.unbindHeadless(convId.toString())
+                com.clma.app.browser.HeadlessBrowserSessionPool.release(convId.toString())
             }
         }
     }
@@ -220,7 +220,7 @@ internal suspend fun TelegramBotService.handleStopCommand(chatId: Long) {
     // parent conversation. Spec hard constraint 8: "every model stops" — single tick.
     val cancelledSubAgents = runCatching {
         org.koin.java.KoinJavaComponent.getKoin()
-            .get<me.rerere.rikkahub.subagent.SubAgentRegistry>()
+            .get<com.clma.app.subagent.SubAgentRegistry>()
             .cancelAllForParent(convId.toString())
     }.getOrDefault(0)
     val msg = if (cancelledSubAgents > 0) {
@@ -275,7 +275,7 @@ internal fun TelegramBotService.activeModelDisplay(): Pair<String, String> {
     return modelName to providerName
 }
 
-internal suspend fun TelegramBotService.cfgSafe(): me.rerere.rikkahub.data.telegram.TelegramBotConfig? = try {
+internal suspend fun TelegramBotService.cfgSafe(): com.clma.app.data.telegram.TelegramBotConfig? = try {
     prefs.current()
 } catch (_: Throwable) { null }
 
@@ -284,10 +284,10 @@ internal suspend fun TelegramBotService.handleModelCommand(chatId: Long, arg: St
     val assistant = s.getCurrentAssistant()
     val enabledProviders = s.providers
         .filter { it.enabled }
-        .filter { p -> p.models.any { it.type == me.rerere.ai.provider.ModelType.CHAT } }
+        .filter { p -> p.models.any { it.type == com.clma.ai.provider.ModelType.CHAT } }
     val allModels = enabledProviders
         .flatMap { p -> p.models.map { p to it } }
-        .filter { (_, m) -> m.type == me.rerere.ai.provider.ModelType.CHAT }
+        .filter { (_, m) -> m.type == com.clma.ai.provider.ModelType.CHAT }
 
     if (arg.isBlank()) {
         // No arg — interactive picker. Two-step when 2+ providers expose chat models
@@ -511,7 +511,7 @@ internal suspend fun TelegramBotService.autoCancelStuckTurn(chatId: Long) {
     cancelStaleApprovalKeyboards(chatId, reason = "auto-cancelled by new message")
     runCatching {
         org.koin.java.KoinJavaComponent.getKoin()
-            .get<me.rerere.rikkahub.subagent.SubAgentRegistry>()
+            .get<com.clma.app.subagent.SubAgentRegistry>()
             .cancelAllForParent(convId.toString())
     }
 }
@@ -616,7 +616,7 @@ internal suspend fun TelegramBotService.handleDoctorCommand(chatId: Long) {
         } catch (_: Throwable) {}
         return
     }
-    val report = me.rerere.rikkahub.ui.pages.setting.doctor.DoctorReport.format(applicationContext, results)
+    val report = com.clma.app.ui.pages.setting.doctor.DoctorReport.format(applicationContext, results)
     // Chunk on raw text and send each chunk wrapped in <pre>...</pre> for monospace
     // rendering. Skip sendChunked's markdown→HTML pass (it would mangle the report's
     // existing layout); use the HTML parse mode directly with our own escaping.
@@ -640,9 +640,9 @@ internal suspend fun TelegramBotService.handleDoctorCommand(chatId: Long) {
     // rejects. Author-controlled (DoctorChecks ids) so this is future-proofing; today's
     // ids leave ~33 bytes of headroom.
     val fixable = results.filter { c ->
-        val matchesSeverity = c.severity == me.rerere.rikkahub.ui.pages.setting.doctor.Severity.FAIL ||
-            c.severity == me.rerere.rikkahub.ui.pages.setting.doctor.Severity.WARN
-        val hasAutoFix = c.fix is me.rerere.rikkahub.ui.pages.setting.doctor.FixAction.AutoFix
+        val matchesSeverity = c.severity == com.clma.app.ui.pages.setting.doctor.Severity.FAIL ||
+            c.severity == com.clma.app.ui.pages.setting.doctor.Severity.WARN
+        val hasAutoFix = c.fix is com.clma.app.ui.pages.setting.doctor.FixAction.AutoFix
         if (!matchesSeverity || !hasAutoFix) return@filter false
         val payloadBytes = (DOCTOR_FIX_CB_PREFIX + c.id).toByteArray(Charsets.UTF_8).size
         if (payloadBytes > 64) {
@@ -658,7 +658,7 @@ internal suspend fun TelegramBotService.handleDoctorCommand(chatId: Long) {
         val markup = buildJsonObject {
             put("inline_keyboard", buildJsonArray {
                 fixable.forEach { c ->
-                    val af = c.fix as me.rerere.rikkahub.ui.pages.setting.doctor.FixAction.AutoFix
+                    val af = c.fix as com.clma.app.ui.pages.setting.doctor.FixAction.AutoFix
                     add(buildJsonArray {
                         addJsonObject {
                             put("text", "🔧 ${af.label}")
@@ -701,7 +701,7 @@ internal suspend fun TelegramBotService.handleDoctorFixCallback(cq: TelegramCall
         return
     }
     val match = results.firstOrNull { it.id == checkId }
-    val af = match?.fix as? me.rerere.rikkahub.ui.pages.setting.doctor.FixAction.AutoFix
+    val af = match?.fix as? com.clma.app.ui.pages.setting.doctor.FixAction.AutoFix
     if (af == null) {
         val msg = "✅ ${match?.label ?: checkId}: no longer needs a fix."
         runCatching { client.editMessageText(cq.chatId, msgId, msg) }

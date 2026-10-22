@@ -204,7 +204,7 @@
       icon without a second install. Exactly one alias is enabled at a time; the switch is
       done in AppIconManager with setComponentEnabledSetting(..., DONT_KILL_APP), which is
       the same no-kill swap ReFra / Halcyon use. The alias component names are declared in
-      the source namespace (me.rerere.rikkahub), not the applicationId, because the aliases
+      the source namespace (com.clma.app), not the applicationId, because the aliases
       live in the same package as RouteActivity.
     -->
     <activity-alias

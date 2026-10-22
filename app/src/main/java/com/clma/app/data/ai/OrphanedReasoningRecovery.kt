@@ -1,13 +1,13 @@
-package me.rerere.rikkahub.data.ai
+package com.clma.app.data.ai
 
 import android.util.Log
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Instant
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.data.db.dao.ConversationDAO
-import me.rerere.rikkahub.data.db.dao.MessageNodeDAO
-import me.rerere.rikkahub.utils.JsonInstant
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.db.dao.ConversationDAO
+import com.clma.app.data.db.dao.MessageNodeDAO
+import com.clma.app.utils.JsonInstant
 
 private const val TAG = "OrphanedReasoning"
 

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.ai
+package com.clma.app.ui.components.ai
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -29,10 +29,10 @@ import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ArrowRight01
 import me.rerere.hugeicons.stroke.Codesandbox
 import me.rerere.hugeicons.stroke.Tick02
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.db.entity.WorkspaceEntity
-import me.rerere.rikkahub.data.model.Assistant
-import me.rerere.rikkahub.ui.pages.extensions.workspace.toShellStatusLabel
+import com.clma.app.R
+import com.clma.app.data.db.entity.WorkspaceEntity
+import com.clma.app.data.model.Assistant
+import com.clma.app.ui.pages.extensions.workspace.toShellStatusLabel
 
 @Composable
 internal fun WorkspaceSelectSheet(

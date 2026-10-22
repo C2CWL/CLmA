@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.workflow.condition
+package com.clma.app.workflow.condition
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -12,7 +12,7 @@ import android.os.BatteryManager
 import android.os.PowerManager
 import android.util.Log
 import androidx.core.content.ContextCompat
-import me.rerere.rikkahub.workflow.model.WorkflowContext
+import com.clma.app.workflow.model.WorkflowContext
 
 /**
  * Phase 12 — builds a [WorkflowContext] snapshot at evaluation time.
@@ -29,7 +29,7 @@ class ContextProvider(private val context: Context) {
         val (level, charging) = batteryStatus()
         val ssid = currentWifiSsid()
         val screenOn = isScreenOn()
-        val foregroundPackage = me.rerere.rikkahub.workflow.trigger.AppForegroundLastKnown.value
+        val foregroundPackage = com.clma.app.workflow.trigger.AppForegroundLastKnown.value
         val (lat, lng) = if (needsLocation) lastKnownLocation() else (null to null)
         return WorkflowContext(
             nowMs = now,

@@ -1,11 +1,11 @@
-package me.rerere.rikkahub.data.db.dao
+package com.clma.app.data.db.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
-import me.rerere.rikkahub.data.db.entity.MemoryEntity
+import com.clma.app.data.db.entity.MemoryEntity
 
 @Dao
 interface MemoryDAO {

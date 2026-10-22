@@ -1,4 +1,4 @@
-package me.rerere.asr.providers
+package com.clma.asr.providers
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -18,19 +18,19 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
-import me.rerere.asr.VOLCENGINE_ASR_WEBSOCKET_URL
+import com.clma.asr.VOLCENGINE_ASR_WEBSOCKET_URL
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import me.rerere.asr.ASRController
-import me.rerere.asr.ASRProviderSetting
-import me.rerere.asr.ASRState
-import me.rerere.asr.ASRStatus
-import me.rerere.asr.appendAmplitude
-import me.rerere.asr.calculateRmsAmplitude
+import com.clma.asr.ASRController
+import com.clma.asr.ASRProviderSetting
+import com.clma.asr.ASRState
+import com.clma.asr.ASRStatus
+import com.clma.asr.appendAmplitude
+import com.clma.asr.calculateRmsAmplitude
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response

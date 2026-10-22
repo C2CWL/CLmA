@@ -1,4 +1,4 @@
-package me.rerere.locallm.litert
+package com.clma.locallm.litert
 
 import android.util.Log
 import com.google.ai.edge.litertlm.OpenApiTool
@@ -7,8 +7,8 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import me.rerere.ai.core.InputSchema
-import me.rerere.ai.core.Tool as RikkaTool
+import com.clma.ai.core.InputSchema
+import com.clma.ai.core.Tool as RikkaTool
 
 private const val TAG = "LiteRtToolDeclaration"
 

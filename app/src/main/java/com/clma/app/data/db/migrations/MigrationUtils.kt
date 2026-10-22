@@ -1,14 +1,14 @@
-package me.rerere.rikkahub.data.db.migrations
+package com.clma.app.data.db.migrations
 
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.migrateToolNodes
-import me.rerere.rikkahub.utils.JsonInstant
-import me.rerere.rikkahub.utils.jsonPrimitiveOrNull
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.migrateToolNodes
+import com.clma.app.utils.JsonInstant
+import com.clma.app.utils.jsonPrimitiveOrNull
 
 internal val partTypeMapping = mapOf(
     "Text" to "text",

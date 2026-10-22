@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.chat
+package com.clma.app.ui.pages.chat
 
 /**
  * 「流式输出时自动跟随到底部」的纯逻辑状态机。

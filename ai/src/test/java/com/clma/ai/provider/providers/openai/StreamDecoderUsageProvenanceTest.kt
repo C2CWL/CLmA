@@ -1,9 +1,9 @@
-package me.rerere.ai.provider.providers.openai
+package com.clma.ai.provider.providers.openai
 
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
-import me.rerere.ai.core.TokenUsage
+import com.clma.ai.core.TokenUsage
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test

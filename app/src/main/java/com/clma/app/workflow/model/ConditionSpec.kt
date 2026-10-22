@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.workflow.model
+package com.clma.app.workflow.model
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -10,7 +10,7 @@ import kotlinx.serialization.Serializable
  * Every variant carries an optional `invert` flag (default false). When true, the
  * evaluator negates that single condition's boolean result — so "WiFi is NOT HomeWiFi"
  * or "NOT charging at night" become expressible without new variants. The negation is
- * applied generically at the top of [me.rerere.rikkahub.workflow.condition.ConditionEvaluator.evaluate],
+ * applied generically at the top of [com.clma.app.workflow.condition.ConditionEvaluator.evaluate],
  * so it works uniformly for all condition types including the time/sun/day variants.
  *
  * `invert` is additive and forward-compatible: a stored definition that predates this

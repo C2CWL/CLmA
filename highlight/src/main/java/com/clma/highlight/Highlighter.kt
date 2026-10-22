@@ -1,4 +1,4 @@
-package me.rerere.highlight
+package com.clma.highlight
 
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
@@ -17,8 +17,8 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import me.rerere.highlight.core.HighlightEngine
-import me.rerere.highlight.languages.builtinLanguages
+import com.clma.highlight.core.HighlightEngine
+import com.clma.highlight.languages.builtinLanguages
 
 /**
  * Below this length, highlighting runs synchronously during composition - it's cheap enough that

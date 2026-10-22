@@ -1,11 +1,11 @@
-package me.rerere.rikkahub.data.ai
+package com.clma.app.data.ai
 
-import me.rerere.ai.core.MessageRole
-import me.rerere.ai.provider.Model
-import me.rerere.ai.ui.StreamChunk
-import me.rerere.ai.ui.StreamChunkHandler
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.UIMessagePart
+import com.clma.ai.core.MessageRole
+import com.clma.ai.provider.Model
+import com.clma.ai.ui.StreamChunk
+import com.clma.ai.ui.StreamChunkHandler
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessagePart
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Test

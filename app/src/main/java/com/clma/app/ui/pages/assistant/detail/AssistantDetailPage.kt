@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.assistant.detail
+package com.clma.app.ui.pages.assistant.detail
 
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.BookOpen01
@@ -32,16 +32,16 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.Screen
-import me.rerere.rikkahub.data.model.Assistant
-import me.rerere.rikkahub.ui.components.nav.BackButton
-import me.rerere.rikkahub.ui.components.ui.CardGroup
-import me.rerere.rikkahub.ui.components.ui.AssistantAvatar
-import me.rerere.rikkahub.ui.context.LocalNavController
-import me.rerere.rikkahub.ui.hooks.heroAnimation
-import me.rerere.rikkahub.ui.theme.CustomColors
-import me.rerere.rikkahub.utils.plus
+import com.clma.app.R
+import com.clma.app.Screen
+import com.clma.app.data.model.Assistant
+import com.clma.app.ui.components.nav.BackButton
+import com.clma.app.ui.components.ui.CardGroup
+import com.clma.app.ui.components.ui.AssistantAvatar
+import com.clma.app.ui.context.LocalNavController
+import com.clma.app.ui.hooks.heroAnimation
+import com.clma.app.ui.theme.CustomColors
+import com.clma.app.utils.plus
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 

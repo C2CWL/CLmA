@@ -1,4 +1,4 @@
-package me.rerere.search.net
+package com.clma.search.net
 
 import okhttp3.Dns
 import org.junit.Assert.assertEquals

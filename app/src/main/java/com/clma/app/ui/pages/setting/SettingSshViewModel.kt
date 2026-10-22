@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.setting
+package com.clma.app.ui.pages.setting
 
 import android.content.Context
 import androidx.lifecycle.ViewModel
@@ -12,19 +12,19 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
-import me.rerere.rikkahub.data.ai.tools.local.SshAuth
-import me.rerere.rikkahub.data.ai.tools.local.forgetHostKey
-import me.rerere.rikkahub.data.ai.tools.local.isUsable
-import me.rerere.rikkahub.data.ai.tools.local.knownHostsFile
-import me.rerere.rikkahub.data.ai.tools.local.networkRaceSocketFactory
-import me.rerere.rikkahub.data.ai.tools.local.newJSch
-import me.rerere.rikkahub.data.ai.tools.local.openSshSession
-import me.rerere.rikkahub.data.ai.tools.local.wrapConnectError
-import me.rerere.rikkahub.data.db.entity.SshHostEntity
-import me.rerere.rikkahub.data.repository.SshHostRepository
-import me.rerere.rikkahub.data.ssh.KnownHostEntry
-import me.rerere.rikkahub.data.ssh.SshHostDraft
-import me.rerere.rikkahub.data.ssh.parseKnownHosts
+import com.clma.app.data.ai.tools.local.SshAuth
+import com.clma.app.data.ai.tools.local.forgetHostKey
+import com.clma.app.data.ai.tools.local.isUsable
+import com.clma.app.data.ai.tools.local.knownHostsFile
+import com.clma.app.data.ai.tools.local.networkRaceSocketFactory
+import com.clma.app.data.ai.tools.local.newJSch
+import com.clma.app.data.ai.tools.local.openSshSession
+import com.clma.app.data.ai.tools.local.wrapConnectError
+import com.clma.app.data.db.entity.SshHostEntity
+import com.clma.app.data.repository.SshHostRepository
+import com.clma.app.data.ssh.KnownHostEntry
+import com.clma.app.data.ssh.SshHostDraft
+import com.clma.app.data.ssh.parseKnownHosts
 
 /** Outcome of the "test connection" button: a real JSch handshake, never a bare TCP probe. */
 data class SshTestResult(
@@ -41,7 +41,7 @@ data class SshTestResult(
  * human-facing surface for that data.
  *
  * The connection test uses [openSshSession] rather than
- * [me.rerere.rikkahub.data.ai.tools.local.execOneShot] — a test opens no channel and runs no
+ * [com.clma.app.data.ai.tools.local.execOneShot] — a test opens no channel and runs no
  * command — but it deliberately walks the same candidate transports, because otherwise the
  * page can report a failure for a host the tools reach without trouble (the tools spend their
  * first candidate on the default route too, then fall back to a physical network; a test

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.setting.doctor
+package com.clma.app.ui.pages.setting.doctor
 
 import android.Manifest
 import android.content.Context
@@ -7,37 +7,37 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import me.rerere.ai.provider.ProviderSetting
-import me.rerere.rikkahub.BuildConfig
-import me.rerere.rikkahub.data.ai.AssistantResolver
-import me.rerere.rikkahub.data.ai.mcp.McpManager
-import me.rerere.rikkahub.data.ai.mcp.McpStatus
-import me.rerere.rikkahub.data.ai.tools.LocalToolOption
-import me.rerere.rikkahub.data.ai.tools.local.AccessibilityServiceHandle
-import me.rerere.rikkahub.data.ai.tools.local.AgentWorkspace
-import me.rerere.rikkahub.data.ai.tools.local.NotificationListenerHandle
-import me.rerere.rikkahub.data.ai.tools.local.PermissionHelper
-import me.rerere.rikkahub.data.datastore.AutoCompactionThresholdMode
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.datastore.getCurrentAssistant
-import me.rerere.rikkahub.data.db.AppDatabase
-import me.rerere.rikkahub.data.files.SkillManager
-import me.rerere.rikkahub.data.repository.ConversationRepository
-import me.rerere.rikkahub.data.repository.ScheduledJobRepository
-import me.rerere.rikkahub.data.repository.ScheduledJobRunRepository
-import me.rerere.rikkahub.data.telegram.TelegramBotPreferences
-import me.rerere.rikkahub.service.TelegramBotService
-import me.rerere.rikkahub.shizuku.ShizukuManager
-import me.rerere.rikkahub.shizuku.ShizukuStatus
-import me.rerere.rikkahub.subagent.SubAgentModelResolver
-import me.rerere.rikkahub.data.agentdef.AgentDefinition
-import me.rerere.rikkahub.data.agentdef.AgentDefinitionRepository
-import me.rerere.rikkahub.workflow.repository.WorkflowRepository
-import me.rerere.rikkahub.browser.BrowserPreferences
-import me.rerere.rikkahub.browser.BrowserToolDefaults
+import com.clma.ai.provider.ProviderSetting
+import com.clma.app.BuildConfig
+import com.clma.app.data.ai.AssistantResolver
+import com.clma.app.data.ai.mcp.McpManager
+import com.clma.app.data.ai.mcp.McpStatus
+import com.clma.app.data.ai.tools.LocalToolOption
+import com.clma.app.data.ai.tools.local.AccessibilityServiceHandle
+import com.clma.app.data.ai.tools.local.AgentWorkspace
+import com.clma.app.data.ai.tools.local.NotificationListenerHandle
+import com.clma.app.data.ai.tools.local.PermissionHelper
+import com.clma.app.data.datastore.AutoCompactionThresholdMode
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.datastore.getCurrentAssistant
+import com.clma.app.data.db.AppDatabase
+import com.clma.app.data.files.SkillManager
+import com.clma.app.data.repository.ConversationRepository
+import com.clma.app.data.repository.ScheduledJobRepository
+import com.clma.app.data.repository.ScheduledJobRunRepository
+import com.clma.app.data.telegram.TelegramBotPreferences
+import com.clma.app.service.TelegramBotService
+import com.clma.app.shizuku.ShizukuManager
+import com.clma.app.shizuku.ShizukuStatus
+import com.clma.app.subagent.SubAgentModelResolver
+import com.clma.app.data.agentdef.AgentDefinition
+import com.clma.app.data.agentdef.AgentDefinitionRepository
+import com.clma.app.workflow.repository.WorkflowRepository
+import com.clma.app.browser.BrowserPreferences
+import com.clma.app.browser.BrowserToolDefaults
 import java.net.InetAddress
 import java.io.File
-import me.rerere.rikkahub.R
+import com.clma.app.R
 
 /**
  * Each row that depends on a system capability (a permission, an OS-level service binding,
@@ -170,11 +170,11 @@ class DoctorChecks(
     private val browserPreferences: BrowserPreferences? = null,
     // Phase 25 — SAF tree-grant store, backs the "granted directories" Doctor row.
     // Nullable + defaulted so legacy test paths that don't build the full DI graph compile.
-    private val storageVolumeGrantStore: me.rerere.rikkahub.data.storage.StorageVolumeGrantStore? = null,
+    private val storageVolumeGrantStore: com.clma.app.data.storage.StorageVolumeGrantStore? = null,
     // Surface the persisted LiteRT accelerator decision so the user can see whether their
     // local models actually engaged GPU/NPU or silently fell back to CPU.
     // Nullable + defaulted same as the others above for legacy test path compatibility.
-    private val localRuntimePreferences: me.rerere.locallm.LocalRuntimePreferences? = null,
+    private val localRuntimePreferences: com.clma.locallm.LocalRuntimePreferences? = null,
     // Doctor refresh: backs the skills.* rows. Nullable + defaulted same as the others.
     private val skillManager: SkillManager? = null,
     // Doctor refresh: backs the service.mcp_servers row. Nullable + defaulted same as the others.
@@ -573,7 +573,7 @@ class DoctorChecks(
             // The post-action screen state depends on getWindows() returning real data; a
             // service bound with a pre-update config (missing flagRetrieveInteractiveWindows)
             // reports bound=true but windows stays empty.
-            val windowsOk = bound && me.rerere.rikkahub.service.RikkaAccessibilityService.instance
+            val windowsOk = bound && com.clma.app.service.RikkaAccessibilityService.instance
                 ?.let { runCatching { it.windows.isNotEmpty() }.getOrDefault(false) } == true
             add(
                 DoctorCheck(
@@ -745,7 +745,7 @@ class DoctorChecks(
      */
     private fun toolGroupChecks(
         enabled: Set<LocalToolOption>,
-        assistants: List<me.rerere.rikkahub.data.model.Assistant>,
+        assistants: List<com.clma.app.data.model.Assistant>,
     ): List<DoctorCheck> = buildList {
         fun enabledBy(option: LocalToolOption): String {
             val names = assistants.filter { option in it.localTools }.map { it.name.ifBlank { context.getString(R.string.doctor_unnamed) } }
@@ -811,8 +811,8 @@ class DoctorChecks(
                 fix = null,
             )
         )
-        val kbInstalled = me.rerere.rikkahub.data.keyboard.KeyboardApiClient(context).isKeyboardInstalled()
-        val kbIme = me.rerere.rikkahub.data.keyboard.KeyboardApiClient.isEnabledAsIme(context)
+        val kbInstalled = com.clma.app.data.keyboard.KeyboardApiClient(context).isKeyboardInstalled()
+        val kbIme = com.clma.app.data.keyboard.KeyboardApiClient.isEnabledAsIme(context)
         add(
             groupRow(
                 id = "tools.keyboard",
@@ -1083,20 +1083,20 @@ class DoctorChecks(
             val provs = settings.providers
             val configured = provs.count { p ->
                 when (p) {
-                    is me.rerere.ai.provider.ProviderSetting.OpenAI -> p.apiKey.isNotBlank()
-                    is me.rerere.ai.provider.ProviderSetting.Google -> p.apiKey.isNotBlank()
-                    is me.rerere.ai.provider.ProviderSetting.Claude -> p.apiKey.isNotBlank()
-                    is me.rerere.ai.provider.ProviderSetting.AICore -> p.enabled  // on-device, no API key
+                    is com.clma.ai.provider.ProviderSetting.OpenAI -> p.apiKey.isNotBlank()
+                    is com.clma.ai.provider.ProviderSetting.Google -> p.apiKey.isNotBlank()
+                    is com.clma.ai.provider.ProviderSetting.Claude -> p.apiKey.isNotBlank()
+                    is com.clma.ai.provider.ProviderSetting.AICore -> p.enabled  // on-device, no API key
                     // Local provider (LiteRT): usable when enabled AND at least one model has
                     // been loaded/downloaded. A disabled provider with no models is the factory
                     // default — don't count it.
-                    is me.rerere.ai.provider.ProviderSetting.LiteRtLocal -> p.enabled && p.models.isNotEmpty()
+                    is com.clma.ai.provider.ProviderSetting.LiteRtLocal -> p.enabled && p.models.isNotEmpty()
                     // Local provider (llama.cpp): usable when enabled AND at least one model
                     // has been loaded, same criterion as LiteRT above.
-                    is me.rerere.ai.provider.ProviderSetting.LlamaCppLocal -> p.enabled && p.models.isNotEmpty()
-                    is me.rerere.ai.provider.ProviderSetting.Codex -> p.enabled  // OAuth, no API key
-                    is me.rerere.ai.provider.ProviderSetting.Grok -> p.enabled  // OAuth, no API key
-                    is me.rerere.ai.provider.ProviderSetting.GeminiOAuth -> p.enabled  // OAuth, no API key
+                    is com.clma.ai.provider.ProviderSetting.LlamaCppLocal -> p.enabled && p.models.isNotEmpty()
+                    is com.clma.ai.provider.ProviderSetting.Codex -> p.enabled  // OAuth, no API key
+                    is com.clma.ai.provider.ProviderSetting.Grok -> p.enabled  // OAuth, no API key
+                    is com.clma.ai.provider.ProviderSetting.GeminiOAuth -> p.enabled  // OAuth, no API key
                 }
             }
             add(
@@ -1119,8 +1119,8 @@ class DoctorChecks(
         runCatching {
             val prefs = localRuntimePreferences
             if (prefs != null) {
-                val accel = prefs.acceleratorFlow(me.rerere.locallm.LocalRuntime.LiteRT).first()
-                val forceCpu = prefs.forceCpu(me.rerere.locallm.LocalRuntime.LiteRT)
+                val accel = prefs.acceleratorFlow(com.clma.locallm.LocalRuntime.LiteRT).first()
+                val forceCpu = prefs.forceCpu(com.clma.locallm.LocalRuntime.LiteRT)
                 val detail = when {
                     accel == null -> context.getString(R.string.doctor_detail_accel_not_probed)
                     forceCpu && accel == "CPU" ->
@@ -1155,7 +1155,7 @@ class DoctorChecks(
                 // can see at a glance whether the runtime is hitting expected rates. We
                 // INFO when present; WARN never (the model could legitimately be slow on a
                 // weak device — the user knows their hardware better than we do).
-                val perfMap = prefs.perfTelemetryFlow(me.rerere.locallm.LocalRuntime.LiteRT).first()
+                val perfMap = prefs.perfTelemetryFlow(com.clma.locallm.LocalRuntime.LiteRT).first()
                 if (perfMap.isNotEmpty()) {
                     val rows = perfMap.values.sortedByDescending { it.sampledAtMs }
                     val detail = rows.joinToString("\n") { s ->
@@ -1183,7 +1183,7 @@ class DoctorChecks(
                 // OEM linker namespace (One UI / OriginOS) hitting upstream LiteRT-LM
                 // issue #2292 (gpu_backend_opengl.cc:CreateSharedMemoryManager UNIMPLEMENTED).
                 val visionUnavailable = prefs
-                    .visionUnavailableFlow(me.rerere.locallm.LocalRuntime.LiteRT).first()
+                    .visionUnavailableFlow(com.clma.locallm.LocalRuntime.LiteRT).first()
                 if (visionUnavailable.isNotEmpty()) {
                     add(
                         DoctorCheck(
@@ -1211,7 +1211,7 @@ class DoctorChecks(
         runCatching {
             val prefs = localRuntimePreferences
             if (prefs != null) {
-                val installed = prefs.installedModels(me.rerere.locallm.LocalRuntime.LlamaCpp)
+                val installed = prefs.installedModels(com.clma.locallm.LocalRuntime.LlamaCpp)
                 val status = llamaCppModelStatus(installed)
                 val detail = when {
                     status.total == 0 -> context.getString(R.string.doctor_detail_no_llama_models)
@@ -1304,7 +1304,7 @@ class DoctorChecks(
      *
      * All three derive their severity from a single [ShizukuStatus], computed once via
      * [ShizukuManager.status] (which itself delegates to
-     * [me.rerere.rikkahub.shizuku.ShizukuStatusMapper.compute]) rather than re-deriving the
+     * [com.clma.app.shizuku.ShizukuStatusMapper.compute]) rather than re-deriving the
      * installed/running/permission precedence here.
      */
     private fun shizukuChecks(enabled: Set<LocalToolOption>): List<DoctorCheck> = buildList {
@@ -1444,7 +1444,7 @@ class DoctorChecks(
      * health, whether the on-disk `.core-bundled-hash` sentinel still matches what the
      * currently-installed APK would seed. A stale sentinel is what froze bundled skill
      * updates before; it means seeding failed silently rather than that a re-seed is merely
-     * pending, since [me.rerere.rikkahub.RikkaHubApp] runs the seed pass on every launch.
+     * pending, since [com.clma.app.RikkaHubApp] runs the seed pass on every launch.
      */
     private fun skillsChecks(): List<DoctorCheck> = buildList {
         val mgr = skillManager ?: return@buildList
@@ -1534,7 +1534,7 @@ class DoctorChecks(
     /**
      * Doctor refresh: two read-only storage rows.
      *  - `storage.gallery_orphans`: the #39 bug class made visible, generated-image DB
-     *    records ([me.rerere.rikkahub.data.db.entity.GenMediaEntity]) whose backing file
+     *    records ([com.clma.app.data.db.entity.GenMediaEntity]) whose backing file
      *    under `filesDir/images/` no longer exists.
      *  - `storage.workspace`: health of the agent's `~` sandbox ([AgentWorkspace]), exists,
      *    is a directory, is writable, plus file count and size via the existing
@@ -1822,7 +1822,7 @@ class DoctorChecks(
 
 /**
  * Pure decision logic backing the "net.llamacpp_models" row: given the filename ->
- * absolute-path map from [me.rerere.locallm.LocalRuntimePreferences.installedModels],
+ * absolute-path map from [com.clma.locallm.LocalRuntimePreferences.installedModels],
  * report the total installed count and which filenames' backing file is no longer on
  * disk. Extracted to a top-level function (rather than left inline) so it's unit-testable
  * on the JVM without an Android Context — [DoctorChecks] itself needs one for every other
@@ -1898,7 +1898,7 @@ internal fun mcpServerSummary(servers: List<Triple<String, Boolean, Boolean>>): 
  * `.core-bundled-hash` sentinel is stale when it's missing, unreadable, or doesn't match
  * the hash of what the app would currently seed. Non-bundled (user-added) entries are
  * never flagged: [isBundled] gates them out entirely, mirroring
- * [me.rerere.rikkahub.data.files.decideSeedAction]'s "never touch a directory we didn't
+ * [com.clma.app.data.files.decideSeedAction]'s "never touch a directory we didn't
  * create" rule.
  */
 internal data class SkillSeedEntry(

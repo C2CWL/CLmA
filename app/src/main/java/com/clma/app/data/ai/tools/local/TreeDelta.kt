@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.tools.local
+package com.clma.app.data.ai.tools.local
 
 /**
  * Pure diff of two node-signature lists, behind `read_window_tree(diff = true)`.

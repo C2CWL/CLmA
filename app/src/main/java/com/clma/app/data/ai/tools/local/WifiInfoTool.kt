@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.tools.local
+package com.clma.app.data.ai.tools.local
 
 import android.Manifest
 import android.content.Context
@@ -9,9 +9,9 @@ import android.text.format.Formatter
 import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import me.rerere.ai.core.InputSchema
-import me.rerere.ai.core.Tool
-import me.rerere.ai.ui.UIMessagePart
+import com.clma.ai.core.InputSchema
+import com.clma.ai.core.Tool
+import com.clma.ai.ui.UIMessagePart
 import java.net.Inet4Address
 
 fun wifiInfoTool(context: Context): Tool = Tool(

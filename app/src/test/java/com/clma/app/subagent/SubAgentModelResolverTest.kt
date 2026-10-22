@@ -1,8 +1,8 @@
-package me.rerere.rikkahub.subagent
+package com.clma.app.subagent
 
-import me.rerere.ai.provider.Model
-import me.rerere.ai.provider.ModelType
-import me.rerere.ai.provider.ProviderSetting
+import com.clma.ai.provider.Model
+import com.clma.ai.provider.ModelType
+import com.clma.ai.provider.ProviderSetting
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

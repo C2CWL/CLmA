@@ -1,8 +1,8 @@
-package me.rerere.rikkahub.data.usage
+package com.clma.app.data.usage
 
-import me.rerere.ai.core.TokenUsage
-import me.rerere.ai.provider.ModelPricing
-import me.rerere.ai.provider.PeakWindow
+import com.clma.ai.core.TokenUsage
+import com.clma.ai.provider.ModelPricing
+import com.clma.ai.provider.PeakWindow
 import java.security.MessageDigest
 
 /** The four rates that decide what one call costs, per million tokens. */

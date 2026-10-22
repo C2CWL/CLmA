@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "me.rerere.highlight"
+    namespace = "com.clma.highlight"
 }
 
 dependencies {

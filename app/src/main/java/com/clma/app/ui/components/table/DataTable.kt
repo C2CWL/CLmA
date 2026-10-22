@@ -1,6 +1,6 @@
 @file:Suppress("unused")
 
-package me.rerere.rikkahub.ui.components.table
+package com.clma.app.ui.components.table
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -36,9 +36,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import me.rerere.rikkahub.data.datastore.Settings
-import me.rerere.rikkahub.ui.components.richtext.MarkdownBlock
-import me.rerere.rikkahub.ui.context.LocalSettings
+import com.clma.app.data.datastore.Settings
+import com.clma.app.ui.components.richtext.MarkdownBlock
+import com.clma.app.ui.context.LocalSettings
 import kotlin.math.max
 
 /**

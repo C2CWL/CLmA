@@ -1,4 +1,4 @@
-package me.rerere.tts.provider.providers
+package com.clma.tts.provider.providers
 
 import android.content.Context
 import android.speech.tts.TextToSpeech
@@ -7,11 +7,11 @@ import android.util.Log
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.suspendCancellableCoroutine
-import me.rerere.common.android.appTempFolder
-import me.rerere.tts.model.AudioChunk
-import me.rerere.tts.model.TTSRequest
-import me.rerere.tts.provider.TTSProvider
-import me.rerere.tts.provider.TTSProviderSetting
+import com.clma.common.android.appTempFolder
+import com.clma.tts.model.AudioChunk
+import com.clma.tts.model.TTSRequest
+import com.clma.tts.provider.TTSProvider
+import com.clma.tts.provider.TTSProviderSetting
 import java.io.File
 import java.util.Locale
 import java.util.UUID
@@ -117,7 +117,7 @@ class SystemTTSProvider : TTSProvider<TTSProviderSetting.SystemTTS> {
         emit(
             AudioChunk(
                 data = audioData,
-                format = me.rerere.tts.model.AudioFormat.WAV,
+                format = com.clma.tts.model.AudioFormat.WAV,
                 isLast = true,
                 metadata = mapOf(
                     "provider" to "system",

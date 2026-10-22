@@ -1,19 +1,19 @@
-package me.rerere.ai.provider.stream
+package com.clma.ai.provider.stream
 
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
-import me.rerere.ai.core.InputSchema
-import me.rerere.ai.core.Tool
-import me.rerere.ai.ui.UIMessagePart
+import com.clma.ai.core.InputSchema
+import com.clma.ai.core.Tool
+import com.clma.ai.ui.UIMessagePart
 
 /**
  * Fallback parser for models that emit tool calls as **literal text** in the message content
  * instead of as structured tool calls.
  *
- * Two shipping examples: Gemini Nano on-device ([me.rerere.ai.provider.providers.AICoreProvider])
+ * Two shipping examples: Gemini Nano on-device ([com.clma.ai.provider.providers.AICoreProvider])
  * and MiniMax-style models served through OpenAI-compatible gateways, where the chat template asks
  * for `<tool_call>{"name":…,"input":…}</tool_call>` and the gateway streams that block as ordinary
  * content text. Without this, the markup is shown to the user verbatim *and* the tool never runs —

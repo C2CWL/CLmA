@@ -1,7 +1,7 @@
-package me.rerere.rikkahub.data.ai
+package com.clma.app.data.ai
 
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.UIMessagePart
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessagePart
 
 data class ContextBudgetPlan(
     val estimatedInputTokens: Int,

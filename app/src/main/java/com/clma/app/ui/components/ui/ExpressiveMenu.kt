@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.ui
+package com.clma.app.ui.components.ui
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -19,8 +19,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import me.rerere.rikkahub.data.datastore.PopupMenuStyle
-import me.rerere.rikkahub.ui.context.LocalSettings
+import com.clma.app.data.datastore.PopupMenuStyle
+import com.clma.app.ui.context.LocalSettings
 
 /** One row in an [AppDropdownMenu]. */
 data class AppMenuEntry(

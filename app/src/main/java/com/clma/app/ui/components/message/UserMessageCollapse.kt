@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.message
+package com.clma.app.ui.components.message
 
 /**
  * Long user messages collapse to a fixed preview height, with a round chevron

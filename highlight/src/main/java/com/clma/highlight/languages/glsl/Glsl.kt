@@ -1,11 +1,11 @@
-package me.rerere.highlight.languages.glsl
+package com.clma.highlight.languages.glsl
 
-import me.rerere.highlight.core.C_BLOCK_COMMENT_MODE
-import me.rerere.highlight.core.C_LINE_COMMENT_MODE
-import me.rerere.highlight.core.C_NUMBER_MODE
-import me.rerere.highlight.core.Language
-import me.rerere.highlight.core.keywords
-import me.rerere.highlight.core.mode
+import com.clma.highlight.core.C_BLOCK_COMMENT_MODE
+import com.clma.highlight.core.C_LINE_COMMENT_MODE
+import com.clma.highlight.core.C_NUMBER_MODE
+import com.clma.highlight.core.Language
+import com.clma.highlight.core.keywords
+import com.clma.highlight.core.mode
 
 /** GLSL, ported from `lib/languages/glsl.js` of `highlight.js` 11.11.1. */
 internal fun glsl(): Language = Language(

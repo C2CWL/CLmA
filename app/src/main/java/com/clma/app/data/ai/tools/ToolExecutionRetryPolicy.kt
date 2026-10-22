@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.tools
+package com.clma.app.data.ai.tools
 
 import java.io.FileNotFoundException
 import java.io.IOException
@@ -13,8 +13,8 @@ import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.ai.util.HttpException
+import com.clma.ai.ui.UIMessagePart
+import com.clma.ai.util.HttpException
 
 /**
  * T-05 / (3) — execution-layer retry policy for locally dispatched tool calls.

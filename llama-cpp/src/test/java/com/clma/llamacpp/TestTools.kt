@@ -1,9 +1,9 @@
-package me.rerere.llamacpp
+package com.clma.llamacpp
 
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
-import me.rerere.ai.core.InputSchema
-import me.rerere.ai.core.Tool
+import com.clma.ai.core.InputSchema
+import com.clma.ai.core.Tool
 
 object TestTools {
     fun two(): List<Tool> = listOf(

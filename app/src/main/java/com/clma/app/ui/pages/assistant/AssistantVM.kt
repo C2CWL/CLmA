@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.assistant
+package com.clma.app.ui.pages.assistant
 
 import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
@@ -7,13 +7,13 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import me.rerere.rikkahub.data.datastore.Settings
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.files.FilesManager
-import me.rerere.rikkahub.data.model.Assistant
-import me.rerere.rikkahub.data.model.Avatar
-import me.rerere.rikkahub.data.repository.ConversationRepository
-import me.rerere.rikkahub.data.repository.MemoryRepository
+import com.clma.app.data.datastore.Settings
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.files.FilesManager
+import com.clma.app.data.model.Assistant
+import com.clma.app.data.model.Avatar
+import com.clma.app.data.repository.ConversationRepository
+import com.clma.app.data.repository.MemoryRepository
 import kotlin.uuid.Uuid
 
 class AssistantVM(

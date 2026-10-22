@@ -1,11 +1,11 @@
-package me.rerere.rikkahub.workflow.trigger
+package com.clma.app.workflow.trigger
 
 import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import me.rerere.rikkahub.workflow.model.TriggerSpec
-import me.rerere.rikkahub.workflow.model.WorkflowDefinition
+import com.clma.app.workflow.model.TriggerSpec
+import com.clma.app.workflow.model.WorkflowDefinition
 
 /**
  * Phase 12 — `app_launched` / `app_closed` triggers, fed by the existing accessibility
@@ -78,7 +78,7 @@ internal class AppForegroundTriggerFamily(
     companion object { private const val TAG = "WorkflowTrigger" }
 }
 
-/** Bridge from [me.rerere.rikkahub.service.RikkaAccessibilityService] to the family. */
+/** Bridge from [com.clma.app.service.RikkaAccessibilityService] to the family. */
 object AppForegroundDispatcher {
     @Volatile private var family: AppForegroundTriggerFamily? = null
     @Volatile private var foregroundConsumerCount: Int = 0

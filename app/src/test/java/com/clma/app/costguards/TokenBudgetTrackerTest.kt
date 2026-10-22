@@ -1,10 +1,10 @@
-package me.rerere.rikkahub.costguards
+package com.clma.app.costguards
 
-import me.rerere.ai.core.MessageRole
-import me.rerere.ai.core.TokenUsage
-import me.rerere.ai.ui.UIMessage
-import me.rerere.rikkahub.data.model.Conversation
-import me.rerere.rikkahub.data.model.MessageNode
+import com.clma.ai.core.MessageRole
+import com.clma.ai.core.TokenUsage
+import com.clma.ai.ui.UIMessage
+import com.clma.app.data.model.Conversation
+import com.clma.app.data.model.MessageNode
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import kotlin.uuid.Uuid

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.ui
+package com.clma.app.ui.components.ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -42,9 +42,9 @@ import androidx.compose.ui.util.fastForEach
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ArrowDown01
 import me.rerere.hugeicons.stroke.ArrowUp01
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.datastore.PopupMenuStyle
-import me.rerere.rikkahub.ui.context.LocalSettings
+import com.clma.app.R
+import com.clma.app.data.datastore.PopupMenuStyle
+import com.clma.app.ui.context.LocalSettings
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable

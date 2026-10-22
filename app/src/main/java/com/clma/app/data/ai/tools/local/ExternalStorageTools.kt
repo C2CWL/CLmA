@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.tools.local
+package com.clma.app.data.ai.tools.local
 
 import android.content.Context
 import android.content.Intent
@@ -14,12 +14,12 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import me.rerere.ai.core.InputSchema
-import me.rerere.ai.core.Tool
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.data.ai.tools.HeadlessConversations
-import me.rerere.rikkahub.data.ai.tools.ToolInvocationContext
-import me.rerere.rikkahub.data.storage.StorageVolumeGrantStore
+import com.clma.ai.core.InputSchema
+import com.clma.ai.core.Tool
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.ai.tools.HeadlessConversations
+import com.clma.app.data.ai.tools.ToolInvocationContext
+import com.clma.app.data.storage.StorageVolumeGrantStore
 import java.util.UUID
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid

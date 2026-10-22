@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.debug
+package com.clma.app.ui.pages.debug
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -8,16 +8,16 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import me.rerere.ai.core.MessageRole
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.data.datastore.DEFAULT_ASSISTANT_ID
-import me.rerere.rikkahub.data.datastore.Settings
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.model.Assistant
-import me.rerere.rikkahub.data.model.Conversation
-import me.rerere.rikkahub.data.model.MessageNode
-import me.rerere.rikkahub.data.repository.ConversationRepository
+import com.clma.ai.core.MessageRole
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.datastore.DEFAULT_ASSISTANT_ID
+import com.clma.app.data.datastore.Settings
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.model.Assistant
+import com.clma.app.data.model.Conversation
+import com.clma.app.data.model.MessageNode
+import com.clma.app.data.repository.ConversationRepository
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock

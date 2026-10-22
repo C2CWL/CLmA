@@ -1,9 +1,9 @@
-package me.rerere.rikkahub.data.db.migrations
+package com.clma.app.data.db.migrations
 
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import me.rerere.rikkahub.utils.JsonInstant
+import com.clma.app.utils.JsonInstant
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.favorite
+package com.clma.app.ui.pages.favorite
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -6,10 +6,10 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import me.rerere.rikkahub.data.db.entity.FavoriteEntity
-import me.rerere.rikkahub.data.favorite.NodeFavoriteAdapter
-import me.rerere.rikkahub.data.model.FavoriteType
-import me.rerere.rikkahub.data.repository.FavoriteRepository
+import com.clma.app.data.db.entity.FavoriteEntity
+import com.clma.app.data.favorite.NodeFavoriteAdapter
+import com.clma.app.data.model.FavoriteType
+import com.clma.app.data.repository.FavoriteRepository
 import kotlin.uuid.Uuid
 
 data class NodeFavoriteListItem(

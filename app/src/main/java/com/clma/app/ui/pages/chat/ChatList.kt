@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.chat
+package com.clma.app.ui.pages.chat
 
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Tick01
@@ -9,7 +9,7 @@ import me.rerere.hugeicons.stroke.ArrowUpDouble
 import me.rerere.hugeicons.stroke.CursorPointer01
 import me.rerere.hugeicons.stroke.Search01
 import me.rerere.hugeicons.stroke.Cancel01
-import me.rerere.rikkahub.data.usage.TurnFooter
+import com.clma.app.data.usage.TurnFooter
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
@@ -90,26 +90,26 @@ import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import me.rerere.ai.ui.UIMessage
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.datastore.ChatLayout
-import me.rerere.rikkahub.data.datastore.Settings
-import me.rerere.rikkahub.data.datastore.effectiveChatLayout
-import me.rerere.rikkahub.data.ai.AssistantResolver
-import me.rerere.rikkahub.data.model.AssistantBackgroundMode
-import me.rerere.rikkahub.data.model.Conversation
-import me.rerere.rikkahub.data.model.MessageNode
-import me.rerere.rikkahub.service.ChatError
-import me.rerere.rikkahub.ui.components.message.ChatMessage
-import me.rerere.rikkahub.ui.components.ui.bounceOverscroll
-import me.rerere.rikkahub.ui.components.ui.ErrorCardsDisplay
-import me.rerere.rikkahub.ui.components.ui.ListSelectableItem
-import me.rerere.rikkahub.ui.components.ui.ChatLoadingIndicator
-import me.rerere.rikkahub.ui.components.ui.Tooltip
-import me.rerere.rikkahub.ui.hooks.ImeLazyListAutoScroller
-import me.rerere.rikkahub.ui.theme.ChatFontProvider
-import me.rerere.rikkahub.ui.theme.LocalDarkMode
-import me.rerere.rikkahub.utils.plus
+import com.clma.ai.ui.UIMessage
+import com.clma.app.R
+import com.clma.app.data.datastore.ChatLayout
+import com.clma.app.data.datastore.Settings
+import com.clma.app.data.datastore.effectiveChatLayout
+import com.clma.app.data.ai.AssistantResolver
+import com.clma.app.data.model.AssistantBackgroundMode
+import com.clma.app.data.model.Conversation
+import com.clma.app.data.model.MessageNode
+import com.clma.app.service.ChatError
+import com.clma.app.ui.components.message.ChatMessage
+import com.clma.app.ui.components.ui.bounceOverscroll
+import com.clma.app.ui.components.ui.ErrorCardsDisplay
+import com.clma.app.ui.components.ui.ListSelectableItem
+import com.clma.app.ui.components.ui.ChatLoadingIndicator
+import com.clma.app.ui.components.ui.Tooltip
+import com.clma.app.ui.hooks.ImeLazyListAutoScroller
+import com.clma.app.ui.theme.ChatFontProvider
+import com.clma.app.ui.theme.LocalDarkMode
+import com.clma.app.utils.plus
 import kotlin.uuid.Uuid
 
 private const val TAG = "ChatList"
@@ -138,9 +138,9 @@ fun ChatList(
     onTranslate: ((UIMessage, java.util.Locale) -> Unit)? = null,
     onClearTranslation: (UIMessage) -> Unit = {},
     onJumpToMessage: (Int) -> Unit = {},
-    onToolApproval: ((toolCallId: String, approved: Boolean, reason: String, scope: me.rerere.rikkahub.service.ChatService.ApprovalScope, toolName: String) -> Unit)? = null,
+    onToolApproval: ((toolCallId: String, approved: Boolean, reason: String, scope: com.clma.app.service.ChatService.ApprovalScope, toolName: String) -> Unit)? = null,
     onToolAnswer: ((toolCallId: String, answer: String) -> Unit)? = null,
-    onRerunTool: (suspend (toolCallId: String) -> me.rerere.rikkahub.service.ChatService.RerunToolResult)? = null,
+    onRerunTool: (suspend (toolCallId: String) -> com.clma.app.service.ChatService.RerunToolResult)? = null,
     onToggleFavorite: ((MessageNode) -> Unit)? = null,
     onConversationSystemPromptChange: ((String?) -> Unit)? = null,
     turnFooters: Map<String, TurnFooter> = emptyMap(),
@@ -214,9 +214,9 @@ private fun ChatListNormal(
     onTranslate: ((UIMessage, java.util.Locale) -> Unit)?,
     onClearTranslation: (UIMessage) -> Unit,
     animatedVisibilityScope: AnimatedVisibilityScope,
-    onToolApproval: ((toolCallId: String, approved: Boolean, reason: String, scope: me.rerere.rikkahub.service.ChatService.ApprovalScope, toolName: String) -> Unit)? = null,
+    onToolApproval: ((toolCallId: String, approved: Boolean, reason: String, scope: com.clma.app.service.ChatService.ApprovalScope, toolName: String) -> Unit)? = null,
     onToolAnswer: ((toolCallId: String, answer: String) -> Unit)? = null,
-    onRerunTool: (suspend (toolCallId: String) -> me.rerere.rikkahub.service.ChatService.RerunToolResult)? = null,
+    onRerunTool: (suspend (toolCallId: String) -> com.clma.app.service.ChatService.RerunToolResult)? = null,
     onToggleFavorite: ((MessageNode) -> Unit)? = null,
     onConversationSystemPromptChange: ((String?) -> Unit)? = null,
     turnFooters: Map<String, TurnFooter> = emptyMap(),
@@ -226,7 +226,7 @@ private fun ChatListNormal(
     var isRecentScroll by remember { mutableStateOf(false) }
     val conversationUpdated by rememberUpdatedState(conversation)
     val density = LocalDensity.current
-    val activity = LocalContext.current as? me.rerere.rikkahub.RouteActivity
+    val activity = LocalContext.current as? com.clma.app.RouteActivity
 
     DisposableEffect(Unit) {
         val listener: (Boolean) -> Boolean = { isVolumeUp ->
@@ -723,7 +723,7 @@ private fun ChatListPreview(
                 key = { index, item -> item.second.id },
             ) { _, (originalIndex, node) ->
                 val message = node.currentMessage
-                val isUser = message.role == me.rerere.ai.core.MessageRole.USER
+                val isUser = message.role == com.clma.ai.core.MessageRole.USER
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()

@@ -1,7 +1,7 @@
-package me.rerere.rikkahub.data.model
+package com.clma.app.data.model
 
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.UIMessagePart
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessagePart
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Test

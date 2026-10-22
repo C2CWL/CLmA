@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.backup.tabs
+package com.clma.app.ui.pages.backup.tabs
 
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.File01
@@ -29,13 +29,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dokar.sonner.ToastType
 import kotlinx.coroutines.launch
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.sync.BackupItem
-import me.rerere.rikkahub.ui.components.ui.CardGroup
-import me.rerere.rikkahub.ui.components.ui.StickyHeader
-import me.rerere.rikkahub.ui.context.LocalToaster
-import me.rerere.rikkahub.ui.pages.backup.BackupVM
-import me.rerere.rikkahub.ui.pages.backup.components.BackupItemPicker
+import com.clma.app.R
+import com.clma.app.data.sync.BackupItem
+import com.clma.app.ui.components.ui.CardGroup
+import com.clma.app.ui.components.ui.StickyHeader
+import com.clma.app.ui.context.LocalToaster
+import com.clma.app.ui.pages.backup.BackupVM
+import com.clma.app.ui.pages.backup.components.BackupItemPicker
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream

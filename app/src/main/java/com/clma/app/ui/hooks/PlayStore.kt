@@ -1,9 +1,9 @@
-package me.rerere.rikkahub.ui.hooks
+package com.clma.app.ui.hooks
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
-import me.rerere.rikkahub.utils.PlayStoreUtil
+import com.clma.app.utils.PlayStoreUtil
 
 @Composable
 fun rememberIsPlayStoreVersion(): Boolean {

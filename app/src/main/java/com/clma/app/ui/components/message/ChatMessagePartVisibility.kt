@@ -1,6 +1,6 @@
-package me.rerere.rikkahub.ui.components.message
+package com.clma.app.ui.components.message
 
-import me.rerere.ai.ui.UIMessagePart
+import com.clma.ai.ui.UIMessagePart
 
 /**
  * 这个 Text part 在界面上是不是什么都显示不出来。

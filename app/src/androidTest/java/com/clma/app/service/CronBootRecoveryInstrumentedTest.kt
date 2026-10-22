@@ -1,15 +1,15 @@
-package me.rerere.rikkahub.service
+package com.clma.app.service
 
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.runBlocking
-import me.rerere.rikkahub.data.db.AppDatabase
-import me.rerere.rikkahub.data.db.entity.ScheduledJobEntity
-import me.rerere.rikkahub.data.db.entity.ScheduledJobRunEntity
-import me.rerere.rikkahub.data.repository.ScheduledJobRepository
-import me.rerere.rikkahub.data.repository.ScheduledJobRunRepository
+import com.clma.app.data.db.AppDatabase
+import com.clma.app.data.db.entity.ScheduledJobEntity
+import com.clma.app.data.db.entity.ScheduledJobRunEntity
+import com.clma.app.data.repository.ScheduledJobRepository
+import com.clma.app.data.repository.ScheduledJobRunRepository
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull

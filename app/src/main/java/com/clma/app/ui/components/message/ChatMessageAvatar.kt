@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.message
+package com.clma.app.ui.components.message
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -11,17 +11,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import me.rerere.ai.core.MessageRole
-import me.rerere.ai.provider.Model
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.isEmptyUIMessage
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.model.Assistant
-import me.rerere.rikkahub.data.model.Avatar
-import me.rerere.rikkahub.ui.components.ui.AssistantAvatar
-import me.rerere.rikkahub.ui.components.ui.AutoAIIcon
-import me.rerere.rikkahub.ui.components.ui.UIAvatar
-import me.rerere.rikkahub.ui.context.LocalSettings
+import com.clma.ai.core.MessageRole
+import com.clma.ai.provider.Model
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.isEmptyUIMessage
+import com.clma.app.R
+import com.clma.app.data.model.Assistant
+import com.clma.app.data.model.Avatar
+import com.clma.app.ui.components.ui.AssistantAvatar
+import com.clma.app.ui.components.ui.AutoAIIcon
+import com.clma.app.ui.components.ui.UIAvatar
+import com.clma.app.ui.context.LocalSettings
 
 @Composable
 fun ChatMessageUserAvatar(

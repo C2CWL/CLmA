@@ -1,6 +1,6 @@
-package me.rerere.rikkahub.data.agentdef
+package com.clma.app.data.agentdef
 
-import me.rerere.rikkahub.data.ai.tools.LocalToolOption
+import com.clma.app.data.ai.tools.LocalToolOption
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test

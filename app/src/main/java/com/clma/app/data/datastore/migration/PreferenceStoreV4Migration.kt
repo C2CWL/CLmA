@@ -1,8 +1,8 @@
-package me.rerere.rikkahub.data.datastore.migration
+package com.clma.app.data.datastore.migration
 
 import androidx.datastore.core.DataMigration
 import androidx.datastore.preferences.core.Preferences
-import me.rerere.rikkahub.data.datastore.SettingsStore
+import com.clma.app.data.datastore.SettingsStore
 
 /**
  * Persists defaults for the automatic compaction and response retry settings introduced after

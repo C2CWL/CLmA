@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.browser
+package com.clma.app.browser
 
 /**
  * Search-engine catalogue + address-bar input normalisation for the in-app browser.

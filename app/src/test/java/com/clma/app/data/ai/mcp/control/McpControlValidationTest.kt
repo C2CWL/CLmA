@@ -1,7 +1,7 @@
-package me.rerere.rikkahub.data.ai.mcp.control
+package com.clma.app.data.ai.mcp.control
 
-import me.rerere.rikkahub.data.ai.mcp.McpCommonOptions
-import me.rerere.rikkahub.data.ai.mcp.McpServerConfig
+import com.clma.app.data.ai.mcp.McpCommonOptions
+import com.clma.app.data.ai.mcp.McpServerConfig
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

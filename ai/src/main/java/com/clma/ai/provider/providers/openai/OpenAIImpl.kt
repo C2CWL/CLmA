@@ -1,11 +1,11 @@
-package me.rerere.ai.provider.providers.openai
+package com.clma.ai.provider.providers.openai
 
 import kotlinx.coroutines.flow.Flow
-import me.rerere.ai.provider.ProviderSetting
-import me.rerere.ai.provider.TextGenerationResult
-import me.rerere.ai.provider.TextGenerationParams
-import me.rerere.ai.ui.StreamChunk
-import me.rerere.ai.ui.UIMessage
+import com.clma.ai.provider.ProviderSetting
+import com.clma.ai.provider.TextGenerationResult
+import com.clma.ai.provider.TextGenerationParams
+import com.clma.ai.ui.StreamChunk
+import com.clma.ai.ui.UIMessage
 
 interface OpenAIImpl {
     suspend fun generateText(

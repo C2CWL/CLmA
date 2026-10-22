@@ -1,8 +1,8 @@
-package me.rerere.rikkahub.skills
+package com.clma.app.skills
 
-import me.rerere.rikkahub.data.files.SkillFrontmatterParser
-import me.rerere.rikkahub.data.files.SkillMetadata
-import me.rerere.rikkahub.data.files.SkillPaths
+import com.clma.app.data.files.SkillFrontmatterParser
+import com.clma.app.data.files.SkillMetadata
+import com.clma.app.data.files.SkillPaths
 import java.io.File
 import java.nio.file.Files
 

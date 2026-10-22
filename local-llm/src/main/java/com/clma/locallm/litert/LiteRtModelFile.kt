@@ -1,4 +1,4 @@
-package me.rerere.locallm.litert
+package com.clma.locallm.litert
 
 import android.util.Log
 import java.io.File

@@ -1,11 +1,11 @@
-package me.rerere.rikkahub.data.preferences
+package com.clma.app.data.preferences
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**
  * Pure-Kotlin coverage for the Termux configurable-knob clamping helpers introduced for
- * GitHub issue #5. Mirrors [me.rerere.rikkahub.browser.BrowserTimeoutClampTest] in
+ * GitHub issue #5. Mirrors [com.clma.app.browser.BrowserTimeoutClampTest] in
  * structure — every clamp function gets floor / ceiling / in-range / default tests.
  */
 class TermuxDefaultsTest {

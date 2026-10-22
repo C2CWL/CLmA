@@ -1,6 +1,6 @@
-package me.rerere.rikkahub.data.datastore
+package com.clma.app.data.datastore
 
-import me.rerere.ai.provider.ProviderSetting
+import com.clma.ai.provider.ProviderSetting
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

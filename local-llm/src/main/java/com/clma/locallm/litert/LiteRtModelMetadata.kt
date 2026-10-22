@@ -1,7 +1,7 @@
-package me.rerere.locallm.litert
+package com.clma.locallm.litert
 
-import me.rerere.ai.provider.Modality
-import me.rerere.ai.provider.ModelAbility
+import com.clma.ai.provider.Modality
+import com.clma.ai.provider.ModelAbility
 
 /**
  * Derives `Model.inputModalities` + `Model.abilities` for a LiteRT model file from the

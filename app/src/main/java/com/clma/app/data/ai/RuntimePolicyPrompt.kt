@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai
+package com.clma.app.data.ai
 
 /**
  * Renders the runtime-policy block that [SystemPromptBuilder] appends to the volatile section

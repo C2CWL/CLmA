@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai
+package com.clma.app.data.ai
 
 import android.content.Context
 import android.content.Intent
@@ -6,7 +6,7 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.widget.Toast
-import me.rerere.rikkahub.BuildConfig
+import com.clma.app.BuildConfig
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
@@ -24,8 +24,8 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import me.rerere.rikkahub.service.AgentOverlay
-import me.rerere.rikkahub.service.RikkaAccessibilityService
+import com.clma.app.service.AgentOverlay
+import com.clma.app.service.RikkaAccessibilityService
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
@@ -33,51 +33,51 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
-import me.rerere.ai.core.MessageRole
-import me.rerere.ai.core.Tool
-import me.rerere.ai.provider.Model
-import me.rerere.ai.provider.Provider
-import me.rerere.ai.provider.ProviderManager
-import me.rerere.ai.provider.ProviderSetting
-import me.rerere.ai.provider.TextGenerationParams
-import me.rerere.ai.provider.providers.openai.ResponseStreamErrorException
-import me.rerere.ai.registry.ModelRegistry
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.ai.ui.ToolApprovalState
-import me.rerere.ai.ui.StreamChunk
-import me.rerere.ai.ui.StreamChunkHandler
-import me.rerere.ai.ui.handleTextGenerationResult
-import me.rerere.ai.ui.limitContext
-import me.rerere.ai.util.HttpException
-import me.rerere.ai.util.redactSecrets
-import me.rerere.rikkahub.data.repository.ConversationRepository
-import me.rerere.rikkahub.data.ai.limits.ConversationReasoningOverrides
-import me.rerere.rikkahub.data.ai.tools.ConversationInjections
-import me.rerere.rikkahub.data.ai.transformers.InputMessageTransformer
-import me.rerere.rikkahub.data.ai.transformers.MessageTransformer
-import me.rerere.rikkahub.data.ai.transformers.OutputMessageTransformer
-import me.rerere.rikkahub.data.files.FileFolders
-import me.rerere.rikkahub.data.ai.transformers.onGenerationFinish
-import me.rerere.rikkahub.data.ai.transformers.transforms
-import me.rerere.rikkahub.data.ai.transformers.visualTransforms
-import me.rerere.rikkahub.data.ai.limits.ToolRuntimeLimits
-import me.rerere.rikkahub.data.ai.tools.ToolExecutionRetryPolicy
-import me.rerere.rikkahub.data.ai.tools.buildMemoryTools
-import me.rerere.rikkahub.data.ai.tools.truncateToolResult
-import me.rerere.rikkahub.data.datastore.NetworkSetting
-import me.rerere.rikkahub.data.datastore.Settings
-import me.rerere.rikkahub.data.datastore.findProvider
-import me.rerere.rikkahub.data.model.Assistant
-import me.rerere.rikkahub.data.model.AssistantMemory
-import me.rerere.rikkahub.data.repository.MemoryRepository
+import com.clma.ai.core.MessageRole
+import com.clma.ai.core.Tool
+import com.clma.ai.provider.Model
+import com.clma.ai.provider.Provider
+import com.clma.ai.provider.ProviderManager
+import com.clma.ai.provider.ProviderSetting
+import com.clma.ai.provider.TextGenerationParams
+import com.clma.ai.provider.providers.openai.ResponseStreamErrorException
+import com.clma.ai.registry.ModelRegistry
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessagePart
+import com.clma.ai.ui.ToolApprovalState
+import com.clma.ai.ui.StreamChunk
+import com.clma.ai.ui.StreamChunkHandler
+import com.clma.ai.ui.handleTextGenerationResult
+import com.clma.ai.ui.limitContext
+import com.clma.ai.util.HttpException
+import com.clma.ai.util.redactSecrets
+import com.clma.app.data.repository.ConversationRepository
+import com.clma.app.data.ai.limits.ConversationReasoningOverrides
+import com.clma.app.data.ai.tools.ConversationInjections
+import com.clma.app.data.ai.transformers.InputMessageTransformer
+import com.clma.app.data.ai.transformers.MessageTransformer
+import com.clma.app.data.ai.transformers.OutputMessageTransformer
+import com.clma.app.data.files.FileFolders
+import com.clma.app.data.ai.transformers.onGenerationFinish
+import com.clma.app.data.ai.transformers.transforms
+import com.clma.app.data.ai.transformers.visualTransforms
+import com.clma.app.data.ai.limits.ToolRuntimeLimits
+import com.clma.app.data.ai.tools.ToolExecutionRetryPolicy
+import com.clma.app.data.ai.tools.buildMemoryTools
+import com.clma.app.data.ai.tools.truncateToolResult
+import com.clma.app.data.datastore.NetworkSetting
+import com.clma.app.data.datastore.Settings
+import com.clma.app.data.datastore.findProvider
+import com.clma.app.data.model.Assistant
+import com.clma.app.data.model.AssistantMemory
+import com.clma.app.data.repository.MemoryRepository
 import java.io.File
 import java.io.IOException
 import kotlin.time.Clock
 import kotlin.uuid.Uuid
-import me.rerere.rikkahub.data.usage.UsageCallContext
-import me.rerere.rikkahub.data.usage.UsageRunContexts
-import me.rerere.rikkahub.data.usage.UsagePurpose
+import com.clma.app.data.usage.UsageCallContext
+import com.clma.app.data.usage.UsageRunContexts
+import com.clma.app.data.usage.UsagePurpose
 
 private const val TAG = "GenerationHandler"
 private const val MAX_TOOL_OUTPUT_CHARS = 32 * 1024
@@ -254,7 +254,7 @@ private fun continueStatusText(
     context: Context,
     number: Int,
     max: Int,
-): String = context.getString(me.rerere.rikkahub.R.string.chat_page_continuing, number, max)
+): String = context.getString(com.clma.app.R.string.chat_page_continuing, number, max)
 
 // A 4xx other than the RETRYABLE_4XX_STATUS_CODES exceptions is deterministic: the same
 // request will fail the same way on every retry. 5xx and failures with no known status code
@@ -327,7 +327,7 @@ private fun retryStatusText(
     maxRetries: Int,
     failure: Throwable,
 ): String = context.getString(
-    me.rerere.rikkahub.R.string.chat_page_retrying,
+    com.clma.app.R.string.chat_page_retrying,
     retryNumber,
     maxRetries,
     retryFailureReason(failure),
@@ -351,11 +351,11 @@ private suspend fun watchStreamIdle(
             null -> Unit
             StreamIdleNotice.Clear -> processingStatus.value = null
             is StreamIdleNotice.Waiting -> processingStatus.value = context.getString(
-                me.rerere.rikkahub.R.string.chat_stream_waiting_first_output,
+                com.clma.app.R.string.chat_stream_waiting_first_output,
                 notice.idleMs / 1000,
             )
             is StreamIdleNotice.Stalled -> processingStatus.value = context.getString(
-                me.rerere.rikkahub.R.string.chat_stream_stalled,
+                com.clma.app.R.string.chat_stream_stalled,
                 notice.idleMs / 1000,
             )
         }
@@ -1009,7 +1009,7 @@ class GenerationLoop(
                     // these through. Result: tool is marked Denied with the hardline
                     // reason, the regular Denied branch downstream emits an error
                     // envelope to the model without executing.
-                    val hardlineReason = me.rerere.rikkahub.data.ai.tools
+                    val hardlineReason = com.clma.app.data.ai.tools
                         .HardlineCommandGuard.checkTool(tool.toolName, tool.input)
                     val transformed = when {
                         hardlineReason != null && tool.approvalState is ToolApprovalState.Auto -> {
@@ -1124,7 +1124,7 @@ class GenerationLoop(
                         // Re-check here so that a hardline-matched tool persisted in Approved
                         // state from an old DB row (pre-hardline schema, direct DB edit) can
                         // never execute via the resume path.
-                        val resumeHardlineReason = me.rerere.rikkahub.data.ai.tools
+                        val resumeHardlineReason = com.clma.app.data.ai.tools
                             .HardlineCommandGuard.checkTool(tool.toolName, tool.input)
                         if (resumeHardlineReason != null) {
                             Log.w(TAG, "generateText: resume-path hardline re-check blocked ${tool.toolName}: $resumeHardlineReason")
@@ -1155,11 +1155,11 @@ class GenerationLoop(
                         // sees a structured refusal and can pivot. Sitting here rather than in
                         // the approval lookup is deliberate: it also covers the resume path,
                         // where tools arrive already Approved.
-                        val headlessRefusal = me.rerere.rikkahub.data.ai.tools.HeadlessToolApprovalPolicy
+                        val headlessRefusal = com.clma.app.data.ai.tools.HeadlessToolApprovalPolicy
                             .refusalEnvelopeFor(
                                 toolName = tool.toolName,
                                 headless = conversationId?.let { id ->
-                                    me.rerere.rikkahub.data.ai.tools.HeadlessConversations
+                                    com.clma.app.data.ai.tools.HeadlessConversations
                                         .shouldAutoApprove(id)
                                 } ?: false,
                             )
@@ -1956,7 +1956,7 @@ class GenerationLoop(
      * attempt fails transiently.
      *
      * Only reached when the assistant opted in via
-     * [me.rerere.rikkahub.data.model.Assistant.enableToolExecutionRetry] AND
+     * [com.clma.app.data.model.Assistant.enableToolExecutionRetry] AND
      * [ToolExecutionRetryPolicy.isIdempotentReadOnly] accepts the call — for `web_fetch` that
      * means its arguments were inspected and the verb is GET/HEAD (T-11). With the flag off the
      * caller's single-attempt path stays byte-identical. Two failure shapes are retried:

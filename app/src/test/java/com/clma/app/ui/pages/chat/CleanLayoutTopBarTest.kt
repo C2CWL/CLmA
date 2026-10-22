@@ -1,6 +1,6 @@
-package me.rerere.rikkahub.ui.pages.chat
+package com.clma.app.ui.pages.chat
 
-import me.rerere.rikkahub.ui.components.ui.cleanPanelAlpha
+import com.clma.app.ui.components.ui.cleanPanelAlpha
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

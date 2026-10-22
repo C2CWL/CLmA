@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.codex
+package com.clma.app.data.codex
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,7 +11,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import me.rerere.common.http.await
+import com.clma.common.http.await
 import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request

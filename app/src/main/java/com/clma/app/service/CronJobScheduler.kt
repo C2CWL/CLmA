@@ -1,12 +1,12 @@
-package me.rerere.rikkahub.service
+package com.clma.app.service
 
 import android.content.Context
 import androidx.work.Data
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
-import me.rerere.rikkahub.data.db.entity.ScheduledJobEntity
-import me.rerere.rikkahub.data.repository.ScheduledJobRepository
+import com.clma.app.data.db.entity.ScheduledJobEntity
+import com.clma.app.data.repository.ScheduledJobRepository
 import java.time.Instant
 import java.time.ZoneId
 import java.util.concurrent.TimeUnit

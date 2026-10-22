@@ -1,4 +1,4 @@
-package me.rerere.ai.util
+package com.clma.ai.util
 
 import android.content.Context
 import android.util.Log

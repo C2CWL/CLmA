@@ -1,4 +1,4 @@
-package me.rerere.ai.provider.providers.openai
+package com.clma.ai.provider.providers.openai
 
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -7,18 +7,18 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import me.rerere.ai.core.TokenUsage
-import me.rerere.ai.provider.stream.DecodeResult
-import me.rerere.ai.provider.stream.SseEvent
-import me.rerere.ai.provider.stream.StreamChunkDecoder
-import me.rerere.ai.ui.OpenAIReasoningMetadata
-import me.rerere.ai.ui.ReasoningType
-import me.rerere.ai.ui.ServerToolStatus
-import me.rerere.ai.ui.StreamChunk
-import me.rerere.ai.ui.toMetadata
-import me.rerere.ai.util.json
-import me.rerere.ai.util.parseErrorDetail
-import me.rerere.common.http.jsonObjectOrNull
+import com.clma.ai.core.TokenUsage
+import com.clma.ai.provider.stream.DecodeResult
+import com.clma.ai.provider.stream.SseEvent
+import com.clma.ai.provider.stream.StreamChunkDecoder
+import com.clma.ai.ui.OpenAIReasoningMetadata
+import com.clma.ai.ui.ReasoningType
+import com.clma.ai.ui.ServerToolStatus
+import com.clma.ai.ui.StreamChunk
+import com.clma.ai.ui.toMetadata
+import com.clma.ai.util.json
+import com.clma.ai.util.parseErrorDetail
+import com.clma.common.http.jsonObjectOrNull
 
 internal class ResponseApiStreamDecoder : StreamChunkDecoder {
     private val state = ResponseStreamState()
@@ -304,7 +304,7 @@ internal class ResponseApiStreamDecoder : StreamChunkDecoder {
             listOf(StreamChunk.ToolCallEnd(id))
         } else emptyList()
 
-        fun startServerTool(tool: me.rerere.ai.ui.UIMessagePart.ServerTool): List<StreamChunk> =
+        fun startServerTool(tool: com.clma.ai.ui.UIMessagePart.ServerTool): List<StreamChunk> =
             startServerTool(tool.toolCallId, tool.toolName, tool.input, tool.metadata)
 
         fun startServerTool(

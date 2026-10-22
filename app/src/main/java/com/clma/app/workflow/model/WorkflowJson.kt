@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.workflow.model
+package com.clma.app.workflow.model
 
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
@@ -234,7 +234,7 @@ object WorkflowJson {
     }
 
     /**
-     * Round-trip parse — used when reading [me.rerere.rikkahub.workflow.db.WorkflowEntity.definitionJson]
+     * Round-trip parse — used when reading [com.clma.app.workflow.db.WorkflowEntity.definitionJson]
      * back into a domain object.
      *
      * Permissive: only fails on truly unparseable JSON. Length / range / sanity checks are
@@ -375,8 +375,8 @@ object WorkflowJson {
             // the trigger family's own subset (@hourly/@daily/@weekly/@every Nx) or a
             // 5-field expression the shared scheduled-jobs parser accepts.
             !t.cron.isNullOrBlank()
-                && me.rerere.rikkahub.workflow.trigger.TimeCronTriggerFamily.derivePeriodMs(t) == null
-                && me.rerere.rikkahub.service.CronExpressionParser.parse(t.cron.trim()).isFailure ->
+                && com.clma.app.workflow.trigger.TimeCronTriggerFamily.derivePeriodMs(t) == null
+                && com.clma.app.service.CronExpressionParser.parse(t.cron.trim()).isFailure ->
                 ParseResult.Err("invalid_trigger",
                     "time_cron.cron is not a valid cron expression (5-field UNIX dialect, @hourly/@daily/@weekly, or @every Ns/Nm/Nh)")
             else -> null

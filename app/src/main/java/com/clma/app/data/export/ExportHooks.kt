@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.export
+package com.clma.app.data.export
 
 import android.content.Context
 import android.content.Intent

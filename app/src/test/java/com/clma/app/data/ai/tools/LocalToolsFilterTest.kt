@@ -1,6 +1,6 @@
-package me.rerere.rikkahub.data.ai.tools
+package com.clma.app.data.ai.tools
 
-import me.rerere.ai.core.Tool
+import com.clma.ai.core.Tool
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue

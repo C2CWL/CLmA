@@ -1,4 +1,4 @@
-package me.rerere.document
+package com.clma.document
 
 import org.junit.Assert.assertEquals
 import org.junit.Test

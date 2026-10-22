@@ -1,7 +1,7 @@
-package me.rerere.rikkahub.data.repository
+package com.clma.app.data.repository
 
-import me.rerere.rikkahub.data.db.dao.ScheduledJobRunDao
-import me.rerere.rikkahub.data.db.entity.ScheduledJobRunEntity
+import com.clma.app.data.db.dao.ScheduledJobRunDao
+import com.clma.app.data.db.entity.ScheduledJobRunEntity
 
 class ScheduledJobRunRepository(private val dao: ScheduledJobRunDao) {
     suspend fun getRecent(jobId: String, limit: Int) = dao.getRecent(jobId, limit)

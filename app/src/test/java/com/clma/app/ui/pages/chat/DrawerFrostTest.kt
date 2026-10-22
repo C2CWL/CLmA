@@ -1,7 +1,7 @@
-package me.rerere.rikkahub.ui.pages.chat
+package com.clma.app.ui.pages.chat
 
-import me.rerere.rikkahub.ui.components.ui.FROSTED_PLATE_BLUR_DP
-import me.rerere.rikkahub.ui.components.ui.FROSTED_PLATE_TINT_ALPHA
+import com.clma.app.ui.components.ui.FROSTED_PLATE_BLUR_DP
+import com.clma.app.ui.components.ui.FROSTED_PLATE_TINT_ALPHA
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue

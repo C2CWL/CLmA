@@ -1,12 +1,12 @@
-package me.rerere.highlight.languages.cmake
+package com.clma.highlight.languages.cmake
 
-import me.rerere.highlight.core.HASH_COMMENT_MODE
-import me.rerere.highlight.core.Language
-import me.rerere.highlight.core.NUMBER_MODE
-import me.rerere.highlight.core.QUOTE_STRING_MODE
-import me.rerere.highlight.core.comment
-import me.rerere.highlight.core.keywords
-import me.rerere.highlight.core.mode
+import com.clma.highlight.core.HASH_COMMENT_MODE
+import com.clma.highlight.core.Language
+import com.clma.highlight.core.NUMBER_MODE
+import com.clma.highlight.core.QUOTE_STRING_MODE
+import com.clma.highlight.core.comment
+import com.clma.highlight.core.keywords
+import com.clma.highlight.core.mode
 
 /** CMake, ported from `lib/languages/cmake.js` of `highlight.js` 11.11.1. */
 internal fun cmake(): Language = Language(

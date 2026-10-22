@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.ui
+package com.clma.app.ui.components.ui
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
@@ -47,8 +47,8 @@ import me.rerere.hugeicons.stroke.ArrowRight01
 import me.rerere.hugeicons.stroke.ArrowUp01
 import me.rerere.hugeicons.stroke.Search01
 import me.rerere.hugeicons.stroke.Sparkles
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.datastore.ToolCallStyle
+import com.clma.app.R
+import com.clma.app.data.datastore.ToolCallStyle
 
 private val LocalCardColor = staticCompositionLocalOf { Color.White }
 

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.agentdef
+package com.clma.app.data.agentdef
 
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
@@ -6,8 +6,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import me.rerere.rikkahub.AppScope
-import me.rerere.rikkahub.data.ai.tools.LocalToolOption
+import com.clma.app.AppScope
+import com.clma.app.data.ai.tools.LocalToolOption
 
 /**
  * P2-06 — the single reader/writer for the expert library.

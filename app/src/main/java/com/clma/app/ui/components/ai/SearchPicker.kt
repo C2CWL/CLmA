@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.ai
+package com.clma.app.ui.components.ai
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
@@ -52,9 +52,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import me.rerere.ai.provider.BuiltInTools
-import me.rerere.ai.provider.Model
-import me.rerere.ai.provider.ProviderSetting
+import com.clma.ai.provider.BuiltInTools
+import com.clma.ai.provider.Model
+import com.clma.ai.provider.ProviderSetting
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.AiSearch02
 import me.rerere.hugeicons.stroke.ArrowLeft01
@@ -64,15 +64,15 @@ import me.rerere.hugeicons.stroke.CheckmarkCircle02
 import me.rerere.hugeicons.stroke.GlobalSearch
 import me.rerere.hugeicons.stroke.Search01
 import me.rerere.hugeicons.stroke.Settings03
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.Screen
-import me.rerere.rikkahub.data.datastore.Settings
-import me.rerere.rikkahub.data.datastore.findProvider
-import me.rerere.rikkahub.ui.components.ui.AutoAIIcon
-import me.rerere.rikkahub.ui.components.ui.AutoAIIconFill
-import me.rerere.rikkahub.ui.components.ui.ToggleSurface
-import me.rerere.rikkahub.ui.context.LocalNavController
-import me.rerere.rikkahub.ui.pages.setting.SearchAbilityTagLine
+import com.clma.app.R
+import com.clma.app.Screen
+import com.clma.app.data.datastore.Settings
+import com.clma.app.data.datastore.findProvider
+import com.clma.app.ui.components.ui.AutoAIIcon
+import com.clma.app.ui.components.ui.AutoAIIconFill
+import com.clma.app.ui.components.ui.ToggleSurface
+import com.clma.app.ui.context.LocalNavController
+import com.clma.app.ui.pages.setting.SearchAbilityTagLine
 
 enum class SearchMode {
     OFF,

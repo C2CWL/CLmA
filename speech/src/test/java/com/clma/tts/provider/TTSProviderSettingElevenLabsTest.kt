@@ -1,4 +1,4 @@
-package me.rerere.tts.provider
+package com.clma.tts.provider
 
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals

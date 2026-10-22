@@ -1,12 +1,12 @@
-package me.rerere.rikkahub.data.db.fts
+package com.clma.app.data.db.fts
 
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.data.db.AppDatabase
-import me.rerere.rikkahub.data.model.Conversation
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.db.AppDatabase
+import com.clma.app.data.model.Conversation
 import java.time.Instant
 
 data class MessageSearchResult(
@@ -53,7 +53,7 @@ class MessageFtsManager(private val database: AppDatabase) {
      * a malformed inverted index (PRAGMA integrity_check) — DELETE-from-FTS5 doesn't
      * free corrupted index pages, only DROP TABLE does. Safe because message_fts is a
      * standalone search projection; the actual content lives in `messages` and gets
-     * reinserted by the caller (see [me.rerere.rikkahub.data.repository.ConversationRepository.rebuildAllIndexes]).
+     * reinserted by the caller (see [com.clma.app.data.repository.ConversationRepository.rebuildAllIndexes]).
      */
     suspend fun dropAndRecreate() = withContext(Dispatchers.IO) {
         db.execSQL("DROP TABLE IF EXISTS message_fts")

@@ -1,8 +1,8 @@
-package me.rerere.rikkahub.data.agentdef
+package com.clma.app.data.agentdef
 
 import kotlin.uuid.Uuid
-import me.rerere.rikkahub.data.ai.tools.LocalToolOption
-import me.rerere.rikkahub.data.model.Assistant
+import com.clma.app.data.ai.tools.LocalToolOption
+import com.clma.app.data.model.Assistant
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue

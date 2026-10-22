@@ -1,8 +1,8 @@
-package me.rerere.rikkahub
+package com.clma.app
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -17,6 +17,9 @@ class ExampleInstrumentedTest {
     fun useAppContext() {
         // Context of the app under test.
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        assertEquals("me.rerere.rikkahub", appContext.packageName)
+        // Compare against the applicationId (com.clma.app, debug adds ".debug"), not the
+        // Gradle namespace — the two only coincide by choice.
+        val pkg = appContext.packageName
+        assertTrue(pkg, pkg == "com.clma.app" || pkg == "com.clma.app.debug")
     }
 }

@@ -1,4 +1,4 @@
-package me.rerere.common
+package com.clma.common
 
 import org.junit.Test
 

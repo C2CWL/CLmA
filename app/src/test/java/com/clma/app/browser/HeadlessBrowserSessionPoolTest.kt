@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.browser
+package com.clma.app.browser
 
 import org.junit.After
 import org.junit.Assert.assertEquals

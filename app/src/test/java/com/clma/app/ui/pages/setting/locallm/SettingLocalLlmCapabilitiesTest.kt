@@ -1,11 +1,11 @@
-package me.rerere.rikkahub.ui.pages.setting.locallm
+package com.clma.app.ui.pages.setting.locallm
 
-import me.rerere.ai.provider.Modality
-import me.rerere.ai.provider.Model
-import me.rerere.ai.provider.ModelAbility
-import me.rerere.ai.provider.ProviderSetting
-import me.rerere.locallm.LocalRuntime
-import me.rerere.locallm.litert.LiteRtModelMetadata
+import com.clma.ai.provider.Modality
+import com.clma.ai.provider.Model
+import com.clma.ai.provider.ModelAbility
+import com.clma.ai.provider.ProviderSetting
+import com.clma.locallm.LocalRuntime
+import com.clma.locallm.litert.LiteRtModelMetadata
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

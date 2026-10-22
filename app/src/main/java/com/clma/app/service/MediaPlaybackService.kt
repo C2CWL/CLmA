@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.service
+package com.clma.app.service
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -22,7 +22,7 @@ import android.support.v4.media.session.PlaybackStateCompat
 import androidx.core.app.NotificationCompat
 import androidx.media.app.NotificationCompat.MediaStyle
 import androidx.media.session.MediaButtonReceiver
-import me.rerere.rikkahub.R
+import com.clma.app.R
 
 private const val TAG = "MediaPlaybackSvc"
 

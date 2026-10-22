@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.assistant.detail
+package com.clma.app.ui.pages.assistant.detail
 
 import android.util.Log
 import androidx.core.net.toUri
@@ -13,22 +13,22 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import me.rerere.rikkahub.data.ai.AssistantResolver
-import me.rerere.rikkahub.data.datastore.Settings
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.model.Folder
-import me.rerere.rikkahub.data.db.entity.WorkspaceEntity
-import me.rerere.rikkahub.data.files.FilesManager
-import me.rerere.rikkahub.data.files.SkillManager
-import me.rerere.rikkahub.data.files.SkillMetadata
-import me.rerere.rikkahub.data.model.Assistant
-import me.rerere.rikkahub.data.model.AssistantMemory
-import me.rerere.rikkahub.data.model.Avatar
-import me.rerere.rikkahub.data.model.Tag
-import me.rerere.rikkahub.data.repository.FolderRepository
-import me.rerere.rikkahub.data.repository.MemoryRepository
-import me.rerere.rikkahub.data.repository.WorkspaceRepository
-import me.rerere.rikkahub.subagent.SubAgentArchiveRules
+import com.clma.app.data.ai.AssistantResolver
+import com.clma.app.data.datastore.Settings
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.model.Folder
+import com.clma.app.data.db.entity.WorkspaceEntity
+import com.clma.app.data.files.FilesManager
+import com.clma.app.data.files.SkillManager
+import com.clma.app.data.files.SkillMetadata
+import com.clma.app.data.model.Assistant
+import com.clma.app.data.model.AssistantMemory
+import com.clma.app.data.model.Avatar
+import com.clma.app.data.model.Tag
+import com.clma.app.data.repository.FolderRepository
+import com.clma.app.data.repository.MemoryRepository
+import com.clma.app.data.repository.WorkspaceRepository
+import com.clma.app.subagent.SubAgentArchiveRules
 import kotlin.uuid.Uuid
 
 private const val TAG = "AssistantDetailVM"

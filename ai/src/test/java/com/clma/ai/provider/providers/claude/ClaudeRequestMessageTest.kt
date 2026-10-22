@@ -1,4 +1,4 @@
-package me.rerere.ai.provider.providers.claude
+package com.clma.ai.provider.providers.claude
 
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.buildJsonArray
@@ -7,15 +7,15 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import me.rerere.ai.core.MessageRole
-import me.rerere.ai.provider.ClaudePromptCacheTtl
-import me.rerere.ai.ui.ClaudeReasoningMetadata
-import me.rerere.ai.ui.ServerToolMetadata
-import me.rerere.ai.ui.ServerToolProtocol
-import me.rerere.ai.ui.ServerToolStatus
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.ai.ui.toMetadata
+import com.clma.ai.core.MessageRole
+import com.clma.ai.provider.ClaudePromptCacheTtl
+import com.clma.ai.ui.ClaudeReasoningMetadata
+import com.clma.ai.ui.ServerToolMetadata
+import com.clma.ai.ui.ServerToolProtocol
+import com.clma.ai.ui.ServerToolStatus
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessagePart
+import com.clma.ai.ui.toMetadata
 import okhttp3.OkHttpClient
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue

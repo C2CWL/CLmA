@@ -1,7 +1,7 @@
-package me.rerere.rikkahub.ui.pages.setting.doctor
+package com.clma.app.ui.pages.setting.doctor
 
-import me.rerere.rikkahub.browser.BrowserToolDefaults
-import me.rerere.rikkahub.data.ai.tools.LocalToolOption
+import com.clma.app.browser.BrowserToolDefaults
+import com.clma.app.data.ai.tools.LocalToolOption
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue

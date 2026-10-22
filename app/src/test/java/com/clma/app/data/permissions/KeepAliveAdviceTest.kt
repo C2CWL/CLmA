@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.permissions
+package com.clma.app.data.permissions
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.tools.local
+package com.clma.app.data.ai.tools.local
 
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -172,7 +172,7 @@ class ScheduleJobToolValidationTest {
         val r = ScheduleJobValidator.validate(buildJsonObject {
             put("name", "x"); put("mode", "llm"); put("prompt", "p")
             put("schedule_type", "cron"); put("cron_expression", "@hourly")
-            put("max_runs", me.rerere.rikkahub.service.MAX_HISTORY_RETENTION + 1)
+            put("max_runs", com.clma.app.service.MAX_HISTORY_RETENTION + 1)
         }, knownTools)
         assertEquals("max_runs_invalid", r!!.code)
     }
@@ -182,7 +182,7 @@ class ScheduleJobToolValidationTest {
         val r = ScheduleJobValidator.validate(buildJsonObject {
             put("name", "x"); put("mode", "llm"); put("prompt", "p")
             put("schedule_type", "cron"); put("cron_expression", "@hourly")
-            put("max_runs", me.rerere.rikkahub.service.MAX_HISTORY_RETENTION)
+            put("max_runs", com.clma.app.service.MAX_HISTORY_RETENTION)
         }, knownTools)
         assertNull(r)
     }

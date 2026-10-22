@@ -1,7 +1,7 @@
-package me.rerere.rikkahub.service
+package com.clma.app.service
 
-import me.rerere.ai.core.MessageRole
-import me.rerere.ai.ui.UIMessage
+import com.clma.ai.core.MessageRole
+import com.clma.ai.ui.UIMessage
 
 /**
  * Pure helpers for ChatService.generateTitle. Extracted so a title always ends up set,

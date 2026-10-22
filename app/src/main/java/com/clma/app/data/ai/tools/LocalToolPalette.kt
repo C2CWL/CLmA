@@ -1,6 +1,6 @@
-package me.rerere.rikkahub.data.ai.tools
+package com.clma.app.data.ai.tools
 
-import me.rerere.ai.core.Tool
+import com.clma.ai.core.Tool
 
 /**
  * P2-05 — the LOCAL producer for [ToolCatalog].

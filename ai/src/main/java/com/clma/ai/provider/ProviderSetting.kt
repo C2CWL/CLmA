@@ -1,4 +1,4 @@
-package me.rerere.ai.provider
+package com.clma.ai.provider
 
 import androidx.compose.runtime.Composable
 import kotlinx.serialization.SerialName

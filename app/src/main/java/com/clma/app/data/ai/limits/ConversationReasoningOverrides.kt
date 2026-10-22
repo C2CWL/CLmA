@@ -1,8 +1,8 @@
-package me.rerere.rikkahub.data.ai.limits
+package com.clma.app.data.ai.limits
 
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.uuid.Uuid
-import me.rerere.ai.core.ReasoningLevel
+import com.clma.ai.core.ReasoningLevel
 
 /**
  * Process-scoped per-conversation override for the assistant's [ReasoningLevel].
@@ -12,7 +12,7 @@ import me.rerere.ai.core.ReasoningLevel
  * a research task may want it). The engine owns the run's lifecycle but not the
  * generation call site, so the override travels through this holder — the same way
  * [ConversationToolStepLimits] carries the run's `max_trips` cap and
- * [me.rerere.rikkahub.data.ai.tools.ConversationSystemAddendum] carries per-conversation
+ * [com.clma.app.data.ai.tools.ConversationSystemAddendum] carries per-conversation
  * runtime context without plumbing a parameter through `sendMessage`.
  *
  * Lifecycle: the writer (SubAgentEngine) `set`s after creating the run's conversation and

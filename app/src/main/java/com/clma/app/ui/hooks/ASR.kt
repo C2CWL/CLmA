@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.hooks
+package com.clma.app.ui.hooks
 
 import android.content.Context
 import android.media.AudioAttributes
@@ -12,17 +12,17 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import me.rerere.asr.ASRController
-import me.rerere.asr.ASRProviderSetting
-import me.rerere.asr.ASRState
-import me.rerere.asr.providers.DashScopeASRController
-import me.rerere.asr.providers.DashScopeStreamingASRController
-import me.rerere.asr.providers.MiMoASRController
-import me.rerere.asr.providers.OpenAIRealtimeASRController
-import me.rerere.asr.providers.StepASRController
-import me.rerere.asr.providers.VolcengineASRController
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.datastore.getSelectedASRProvider
+import com.clma.asr.ASRController
+import com.clma.asr.ASRProviderSetting
+import com.clma.asr.ASRState
+import com.clma.asr.providers.DashScopeASRController
+import com.clma.asr.providers.DashScopeStreamingASRController
+import com.clma.asr.providers.MiMoASRController
+import com.clma.asr.providers.OpenAIRealtimeASRController
+import com.clma.asr.providers.StepASRController
+import com.clma.asr.providers.VolcengineASRController
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.datastore.getSelectedASRProvider
 import okhttp3.OkHttpClient
 import org.koin.compose.koinInject
 

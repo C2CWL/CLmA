@@ -1,7 +1,7 @@
-package me.rerere.rikkahub.ui.context
+package com.clma.app.ui.context
 
 import androidx.compose.runtime.staticCompositionLocalOf
-import me.rerere.rikkahub.data.datastore.Settings
+import com.clma.app.data.datastore.Settings
 
 val LocalSettings = staticCompositionLocalOf<Settings> {
     error("No SettingsStore provided")

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.event
+package com.clma.app.data.event
 
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow

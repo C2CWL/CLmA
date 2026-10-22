@@ -1,6 +1,6 @@
-package me.rerere.rikkahub.data.agentdef
+package com.clma.app.data.agentdef
 
-import me.rerere.rikkahub.data.ai.tools.LocalToolOption
+import com.clma.app.data.ai.tools.LocalToolOption
 
 /**
  * P2-06c — the edit-time state of one expert definition.

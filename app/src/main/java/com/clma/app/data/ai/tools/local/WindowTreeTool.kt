@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.tools.local
+package com.clma.app.data.ai.tools.local
 
 import android.graphics.Rect
 import android.os.Build
@@ -14,12 +14,12 @@ import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import me.rerere.ai.core.InputSchema
-import me.rerere.ai.core.Tool
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.data.ai.tools.ToolInvocationContext
-import me.rerere.rikkahub.service.ActionLogEntry
-import me.rerere.rikkahub.service.RikkaAccessibilityService
+import com.clma.ai.core.InputSchema
+import com.clma.ai.core.Tool
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.ai.tools.ToolInvocationContext
+import com.clma.app.service.ActionLogEntry
+import com.clma.app.service.RikkaAccessibilityService
 
 private const val DEFAULT_MAX_NODES = 300
 private const val MAX_NODES_HARD_CEILING = 2000
@@ -140,7 +140,7 @@ fun readWindowTreeTool(
         )
     },
     execute = { input ->
-        me.rerere.rikkahub.service.RikkaAccessibilityService.instance?.let { wakeScreenIfNeeded(it) }
+        com.clma.app.service.RikkaAccessibilityService.instance?.let { wakeScreenIfNeeded(it) }
         val verbose = input.jsonObject["verbose"]?.jsonPrimitive?.booleanOrNull ?: false
         val maxNodesRaw = input.jsonObject["max_nodes"]?.jsonPrimitive?.intOrNull ?: DEFAULT_MAX_NODES
         val maxNodes = maxNodesRaw.coerceIn(1, MAX_NODES_HARD_CEILING)

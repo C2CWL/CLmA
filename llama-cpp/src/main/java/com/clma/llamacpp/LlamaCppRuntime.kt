@@ -1,8 +1,8 @@
-package me.rerere.llamacpp
+package com.clma.llamacpp
 
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import me.rerere.locallm.MemoryGuard
+import com.clma.locallm.MemoryGuard
 import org.json.JSONObject
 
 /**

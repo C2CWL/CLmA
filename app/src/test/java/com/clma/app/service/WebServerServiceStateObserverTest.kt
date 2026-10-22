@@ -1,11 +1,11 @@
-package me.rerere.rikkahub.service
+package com.clma.app.service
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import me.rerere.rikkahub.web.WebServerState
+import com.clma.app.web.WebServerState
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test

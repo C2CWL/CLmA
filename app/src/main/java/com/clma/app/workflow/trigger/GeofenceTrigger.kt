@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.workflow.trigger
+package com.clma.app.workflow.trigger
 
 import android.Manifest
 import android.app.PendingIntent
@@ -19,11 +19,11 @@ import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import me.rerere.rikkahub.AppScope
-import me.rerere.rikkahub.workflow.execution.WorkflowEngine
-import me.rerere.rikkahub.workflow.model.TriggerSpec
-import me.rerere.rikkahub.workflow.model.WorkflowDefinition
-import me.rerere.rikkahub.workflow.repository.WorkflowRepository
+import com.clma.app.AppScope
+import com.clma.app.workflow.execution.WorkflowEngine
+import com.clma.app.workflow.model.TriggerSpec
+import com.clma.app.workflow.model.WorkflowDefinition
+import com.clma.app.workflow.repository.WorkflowRepository
 import org.koin.java.KoinJavaComponent
 
 /**
@@ -262,14 +262,14 @@ object GeofenceTriggerDispatcher {
 }
 
 /**
- * Cold-process fallback. Mirrors [me.rerere.rikkahub.workflow.trigger.TimeCronWorkerHelper]:
+ * Cold-process fallback. Mirrors [com.clma.app.workflow.trigger.TimeCronWorkerHelper]:
  * resolves the repository + engine callback via Koin so the family can stay free of Koin
  * lookups. Keyed on the geofence requestId, which is the workflow id. Null if the workflow
  * row is gone or Koin isn't ready.
  */
 internal object GeofenceTriggerHelper {
     data class Loaded(
-        val entity: me.rerere.rikkahub.workflow.db.WorkflowEntity,
+        val entity: com.clma.app.workflow.db.WorkflowEntity,
         val definition: WorkflowDefinition,
         val fire: TriggerFireCallback,
     )

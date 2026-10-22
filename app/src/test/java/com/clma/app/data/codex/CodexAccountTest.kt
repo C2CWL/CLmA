@@ -1,7 +1,7 @@
-package me.rerere.rikkahub.data.codex
+package com.clma.app.data.codex
 
 import kotlinx.serialization.json.Json
-import me.rerere.ai.core.ReasoningLevel
+import com.clma.ai.core.ReasoningLevel
 import okhttp3.Headers
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.ui
+package com.clma.app.ui.components.ui
 
 /**
  * A frosted plate over a photo wallpaper: the page behind it is blurred, then a translucent

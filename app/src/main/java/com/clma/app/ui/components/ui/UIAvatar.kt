@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.ui
+package com.clma.app.ui.components.ui
 
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -51,16 +51,16 @@ import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
-import me.rerere.common.android.appTempFolder
+import com.clma.common.android.appTempFolder
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Edit03
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.files.FilesManager
-import me.rerere.rikkahub.data.model.Assistant
-import me.rerere.rikkahub.data.model.Avatar
-import me.rerere.rikkahub.ui.components.ai.useCropLauncher
-import me.rerere.rikkahub.ui.hooks.rememberAvatarShape
+import com.clma.app.R
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.files.FilesManager
+import com.clma.app.data.model.Assistant
+import com.clma.app.data.model.Avatar
+import com.clma.app.ui.components.ai.useCropLauncher
+import com.clma.app.ui.hooks.rememberAvatarShape
 import org.koin.compose.koinInject
 import java.io.File
 

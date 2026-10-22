@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.setting
+package com.clma.app.ui.pages.setting
 
 import android.content.Context
 import android.content.pm.ApplicationInfo
@@ -51,17 +51,17 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.notifications.NotificationEntry
-import me.rerere.rikkahub.data.notifications.NotificationListenerConfig
-import me.rerere.rikkahub.data.notifications.NotificationListenerPreferences
-import me.rerere.rikkahub.data.telegram.TelegramBotConfig
-import me.rerere.rikkahub.data.telegram.TelegramBotPreferences
-import me.rerere.rikkahub.service.RikkaNotificationListenerService
-import me.rerere.rikkahub.ui.components.nav.BackButton
-import me.rerere.rikkahub.ui.components.ui.CardGroup
-import me.rerere.rikkahub.ui.context.LocalToaster
-import me.rerere.rikkahub.ui.theme.CustomColors
+import com.clma.app.R
+import com.clma.app.data.notifications.NotificationEntry
+import com.clma.app.data.notifications.NotificationListenerConfig
+import com.clma.app.data.notifications.NotificationListenerPreferences
+import com.clma.app.data.telegram.TelegramBotConfig
+import com.clma.app.data.telegram.TelegramBotPreferences
+import com.clma.app.service.RikkaNotificationListenerService
+import com.clma.app.ui.components.nav.BackButton
+import com.clma.app.ui.components.ui.CardGroup
+import com.clma.app.ui.context.LocalToaster
+import com.clma.app.ui.theme.CustomColors
 import org.koin.compose.koinInject
 
 /**
@@ -134,7 +134,7 @@ fun SettingNotificationsPage() {
                 item(
                     onClick = {
                         context.startActivity(
-                            me.rerere.rikkahub.data.ai.tools.local.PermissionHelper
+                            com.clma.app.data.ai.tools.local.PermissionHelper
                                 .notificationListenerSettingsIntent()
                         )
                     },

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.reliability
+package com.clma.app.reliability
 
 import okhttp3.OkHttpClient
 import org.junit.Assert.assertEquals

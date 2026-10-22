@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "me.rerere.workspace"
+    namespace = "com.clma.workspace"
 
     defaultConfig {
         externalNativeBuild {

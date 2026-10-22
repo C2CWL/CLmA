@@ -1,9 +1,9 @@
-package me.rerere.rikkahub.data.gemini
+package com.clma.app.data.gemini
 
 import kotlinx.serialization.json.Json
-import me.rerere.ai.provider.Modality
-import me.rerere.ai.provider.Model
-import me.rerere.ai.provider.ModelAbility
+import com.clma.ai.provider.Modality
+import com.clma.ai.provider.Model
+import com.clma.ai.provider.ModelAbility
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -17,7 +17,7 @@ import org.junit.Test
  */
 class GeminiProviderAvailableModelsTest {
 
-    private val geminiProviderKt = Class.forName("me.rerere.rikkahub.data.gemini.GeminiProviderKt")
+    private val geminiProviderKt = Class.forName("com.clma.app.data.gemini.GeminiProviderKt")
     private val json = Json { ignoreUnknownKeys = true }
 
     private fun mapModels(body: String): List<Model> {

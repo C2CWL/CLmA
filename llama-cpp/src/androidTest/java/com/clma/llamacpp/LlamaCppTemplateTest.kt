@@ -1,9 +1,9 @@
-package me.rerere.llamacpp
+package com.clma.llamacpp
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import me.rerere.ai.core.MessageRole
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.UIMessagePart
+import com.clma.ai.core.MessageRole
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessagePart
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows

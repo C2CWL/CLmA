@@ -1,8 +1,8 @@
-package me.rerere.rikkahub.service
+package com.clma.app.service
 
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.runBlocking
-import me.rerere.ai.ui.UIMessagePart
+import com.clma.ai.ui.UIMessagePart
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull

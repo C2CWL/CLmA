@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.db.migrations
+package com.clma.app.data.db.migrations
 
 import android.database.sqlite.SQLiteBlobTooBigException
 import android.util.Log
@@ -8,8 +8,8 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonPrimitive
-import me.rerere.rikkahub.data.db.DatabaseMigrationTracker
-import me.rerere.rikkahub.utils.JsonInstant
+import com.clma.app.data.db.DatabaseMigrationTracker
+import com.clma.app.utils.JsonInstant
 import kotlin.uuid.Uuid
 
 private const val TAG = "Migration_11_12"

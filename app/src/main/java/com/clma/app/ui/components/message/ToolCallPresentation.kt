@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.message
+package com.clma.app.ui.components.message
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -23,11 +23,11 @@ import me.rerere.hugeicons.stroke.Settings03
 import me.rerere.hugeicons.stroke.SmartPhone01
 import me.rerere.hugeicons.stroke.Time02
 import me.rerere.hugeicons.stroke.VolumeHigh
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.datastore.CapsuleToolKind
-import me.rerere.rikkahub.data.datastore.ToolCallStyle
-import me.rerere.rikkahub.data.datastore.capsuleArgumentLabel
-import me.rerere.rikkahub.data.datastore.capsuleToolKind
+import com.clma.app.R
+import com.clma.app.data.datastore.CapsuleToolKind
+import com.clma.app.data.datastore.ToolCallStyle
+import com.clma.app.data.datastore.capsuleArgumentLabel
+import com.clma.app.data.datastore.capsuleToolKind
 
 /** Capsule step glyph size (classic timeline stays 16.dp). */
 val CapsuleToolIconSize = 22.dp

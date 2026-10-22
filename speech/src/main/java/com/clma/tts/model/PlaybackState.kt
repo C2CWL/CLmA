@@ -1,4 +1,4 @@
-package me.rerere.tts.model
+package com.clma.tts.model
 
 /**
  * 统一的播放状态（对外暴露给 app 侧使用）。

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.workflow.execution
+package com.clma.app.workflow.execution
 
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
@@ -9,20 +9,20 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import me.rerere.ai.core.Tool
-import me.rerere.rikkahub.data.ai.AssistantResolver
-import me.rerere.rikkahub.data.ai.ToolSurfaceResolver
-import me.rerere.rikkahub.data.ai.tools.HeadlessToolApprovalPolicy
-import me.rerere.rikkahub.data.ai.tools.HardlineCommandGuard
-import me.rerere.rikkahub.data.ai.tools.LocalTools
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.workflow.condition.ConditionEvaluator
-import me.rerere.rikkahub.workflow.condition.ContextProvider
-import me.rerere.rikkahub.workflow.model.WorkflowAction
-import me.rerere.rikkahub.workflow.model.WorkflowDefinition
-import me.rerere.rikkahub.workflow.model.WorkflowRunStatus
-import me.rerere.rikkahub.workflow.repository.WorkflowRepository
-import me.rerere.rikkahub.workflow.trigger.TriggerFireCallback
+import com.clma.ai.core.Tool
+import com.clma.app.data.ai.AssistantResolver
+import com.clma.app.data.ai.ToolSurfaceResolver
+import com.clma.app.data.ai.tools.HeadlessToolApprovalPolicy
+import com.clma.app.data.ai.tools.HardlineCommandGuard
+import com.clma.app.data.ai.tools.LocalTools
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.workflow.condition.ConditionEvaluator
+import com.clma.app.workflow.condition.ContextProvider
+import com.clma.app.workflow.model.WorkflowAction
+import com.clma.app.workflow.model.WorkflowDefinition
+import com.clma.app.workflow.model.WorkflowRunStatus
+import com.clma.app.workflow.repository.WorkflowRepository
+import com.clma.app.workflow.trigger.TriggerFireCallback
 import java.time.LocalDate
 import java.time.ZoneId
 
@@ -79,9 +79,9 @@ class WorkflowEngine(
      * only the (rare) fire path needs it, and a lazy lookup keeps this class's constructor
      * DI surface unchanged for every existing construction site (tests included).
      */
-    private val secretsStore: me.rerere.rikkahub.workflow.secrets.WorkflowSecretsStore by lazy {
+    private val secretsStore: com.clma.app.workflow.secrets.WorkflowSecretsStore by lazy {
         org.koin.java.KoinJavaComponent.getKoin()
-            .get<me.rerere.rikkahub.workflow.secrets.WorkflowSecretsStore>()
+            .get<com.clma.app.workflow.secrets.WorkflowSecretsStore>()
     }
 
     /**
@@ -91,8 +91,8 @@ class WorkflowEngine(
      * cheaper than threading another constructor arg through the factory. No cycle risk:
      * AgentRunRepository depends only on its DAO.
      */
-    private val agentRunRepo: me.rerere.rikkahub.data.agentrun.AgentRunRepository by lazy {
-        org.koin.java.KoinJavaComponent.getKoin().get<me.rerere.rikkahub.data.agentrun.AgentRunRepository>()
+    private val agentRunRepo: com.clma.app.data.agentrun.AgentRunRepository by lazy {
+        org.koin.java.KoinJavaComponent.getKoin().get<com.clma.app.data.agentrun.AgentRunRepository>()
     }
 
     private val perWorkflowLocks = mutableMapOf<String, Mutex>()
@@ -104,7 +104,7 @@ class WorkflowEngine(
 
     /**
      * Drop the lock entry for a deleted workflow. Wired from
-     * [me.rerere.rikkahub.workflow.repository.WorkflowRepository.deleteCascading] so the
+     * [com.clma.app.workflow.repository.WorkflowRepository.deleteCascading] so the
      * lock map can't grow unbounded across heavy LLM-driven create/delete churn.
      */
     suspend fun forgetWorkflow(id: String) {
@@ -141,7 +141,7 @@ class WorkflowEngine(
         // gate checks so a SKIPPED_* outcome is still visible in the ledger. domain_id is
         // the workflow id; the ledger row is per-fire (a fresh row each time fire() runs).
         val ledgerId = agentRunRepo.open(
-            kind = me.rerere.rikkahub.data.agentrun.AgentRunKind.Workflow,
+            kind = com.clma.app.data.agentrun.AgentRunKind.Workflow,
             domainId = workflowId,
             metadata = buildJsonObject {
                 put("name", entity.name)
@@ -240,7 +240,7 @@ class WorkflowEngine(
      * or a stable error code otherwise — the engine then records the fire as FAILED with
      * that reason and the user sees a clear "missing setup" message in workflow_get history.
      */
-    private fun triggerRuntimeCheck(trigger: me.rerere.rikkahub.workflow.model.TriggerSpec): String? {
+    private fun triggerRuntimeCheck(trigger: com.clma.app.workflow.model.TriggerSpec): String? {
         val ctx = (this as Any).let {
             // Static context lookup via Koin so we don't need to take it as a constructor arg
             // (engine is shared across cron / sub-agent surfaces; minimising its DI surface
@@ -248,8 +248,8 @@ class WorkflowEngine(
             org.koin.java.KoinJavaComponent.getKoin().get<android.content.Context>()
         }
         return when (trigger) {
-            is me.rerere.rikkahub.workflow.model.TriggerSpec.GeofenceEnter,
-            is me.rerere.rikkahub.workflow.model.TriggerSpec.GeofenceExit -> {
+            is com.clma.app.workflow.model.TriggerSpec.GeofenceEnter,
+            is com.clma.app.workflow.model.TriggerSpec.GeofenceExit -> {
                 val fineGranted = androidx.core.content.ContextCompat.checkSelfPermission(
                     ctx, android.Manifest.permission.ACCESS_FINE_LOCATION
                 ) == android.content.pm.PackageManager.PERMISSION_GRANTED
@@ -264,19 +264,19 @@ class WorkflowEngine(
                     else -> null
                 }
             }
-            is me.rerere.rikkahub.workflow.model.TriggerSpec.NotificationReceived -> {
-                if (!me.rerere.rikkahub.data.ai.tools.local.NotificationListenerHandle.isBound()) {
+            is com.clma.app.workflow.model.TriggerSpec.NotificationReceived -> {
+                if (!com.clma.app.data.ai.tools.local.NotificationListenerHandle.isBound()) {
                     "notification_listener_not_enabled: enable the RikkaHub notification listener in Settings → Apps → Special access → Notification access"
                 } else null
             }
-            is me.rerere.rikkahub.workflow.model.TriggerSpec.AppLaunched,
-            is me.rerere.rikkahub.workflow.model.TriggerSpec.AppClosed -> {
-                if (!me.rerere.rikkahub.data.ai.tools.local.AccessibilityServiceHandle.isRunning()) {
+            is com.clma.app.workflow.model.TriggerSpec.AppLaunched,
+            is com.clma.app.workflow.model.TriggerSpec.AppClosed -> {
+                if (!com.clma.app.data.ai.tools.local.AccessibilityServiceHandle.isRunning()) {
                     "accessibility_not_enabled: enable the RikkaHub accessibility service in Settings → Accessibility (required for app_launched / app_closed triggers)"
                 } else null
             }
-            is me.rerere.rikkahub.workflow.model.TriggerSpec.BluetoothDeviceConnected,
-            is me.rerere.rikkahub.workflow.model.TriggerSpec.BluetoothDeviceDisconnected -> {
+            is com.clma.app.workflow.model.TriggerSpec.BluetoothDeviceConnected,
+            is com.clma.app.workflow.model.TriggerSpec.BluetoothDeviceDisconnected -> {
                 if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
                     val granted = androidx.core.content.ContextCompat.checkSelfPermission(
                         ctx, android.Manifest.permission.BLUETOOTH_CONNECT
@@ -313,14 +313,14 @@ class WorkflowEngine(
         // succeeded; FAILED → failed; every SKIPPED_* variant → cancelled (the fire was
         // accepted but a gate stopped it — not a failure, not a success).
         val ledgerStatus = when (status) {
-            WorkflowRunStatus.SUCCESS -> me.rerere.rikkahub.data.agentrun.AgentRunStatus.succeeded
-            WorkflowRunStatus.FAILED -> me.rerere.rikkahub.data.agentrun.AgentRunStatus.failed
-            else -> me.rerere.rikkahub.data.agentrun.AgentRunStatus.cancelled
+            WorkflowRunStatus.SUCCESS -> com.clma.app.data.agentrun.AgentRunStatus.succeeded
+            WorkflowRunStatus.FAILED -> com.clma.app.data.agentrun.AgentRunStatus.failed
+            else -> com.clma.app.data.agentrun.AgentRunStatus.cancelled
         }
         agentRunRepo.markTerminal(
             id = ledgerId,
             status = ledgerStatus,
-            lastError = error ?: if (ledgerStatus == me.rerere.rikkahub.data.agentrun.AgentRunStatus.cancelled) status.name else null,
+            lastError = error ?: if (ledgerStatus == com.clma.app.data.agentrun.AgentRunStatus.cancelled) status.name else null,
         )
         return FireOutcome(status, error, summary)
     }
@@ -349,7 +349,7 @@ internal object CooldownGate {
 }
 
 /**
- * Sequential action runner — wraps [me.rerere.rikkahub.service.DirectModeActionRunner]'s
+ * Sequential action runner — wraps [com.clma.app.service.DirectModeActionRunner]'s
  * core logic but on the workflow side, since direct-mode's own runner takes a slightly
  * different action shape. Same HARDLINE-then-execute semantics.
  *
@@ -444,7 +444,7 @@ class WorkflowActionRunner {
                     outputs.joinToString("\n"))
             }
             // Surface the first ~200 chars of the tool's text output for the run history.
-            val text = out.filterIsInstance<me.rerere.ai.ui.UIMessagePart.Text>()
+            val text = out.filterIsInstance<com.clma.ai.ui.UIMessagePart.Text>()
                 .joinToString("\n") { it.text }
             outputs += "[$idx] ${action.tool}: ${text.take(200)}"
             if (dynamicArgs) captured += text.take(ActionTemplates.MAX_CAPTURED_OUTPUT_CHARS)

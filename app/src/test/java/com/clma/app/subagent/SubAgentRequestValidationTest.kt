@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.subagent
+package com.clma.app.subagent
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -97,7 +97,7 @@ class SubAgentRequestValidationTest {
         // The validator deliberately avoids depending on the :ai module; this assertion is
         // the drift alarm between the two lists.
         assertEquals(
-            me.rerere.ai.core.ReasoningLevel.entries.map { it.name.lowercase() },
+            com.clma.ai.core.ReasoningLevel.entries.map { it.name.lowercase() },
             SubAgentDefaults.VALID_REASONING_LEVELS,
         )
     }

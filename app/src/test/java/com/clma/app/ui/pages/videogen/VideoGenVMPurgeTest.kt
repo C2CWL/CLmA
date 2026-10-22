@@ -1,6 +1,6 @@
-package me.rerere.rikkahub.ui.pages.videogen
+package com.clma.app.ui.pages.videogen
 
-import me.rerere.rikkahub.data.db.entity.GenMediaEntity
+import com.clma.app.data.db.entity.GenMediaEntity
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule

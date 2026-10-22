@@ -1,4 +1,4 @@
-package me.rerere.search.net
+package com.clma.search.net
 
 /**
  * In-memory circuit breaker for a single keyless search engine. State lives only

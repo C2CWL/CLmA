@@ -4,7 +4,7 @@ import type { UIMessagePart } from "./parts";
 
 /**
  * UI Message
- * @see ai/src/main/java/me/rerere/ai/ui/Message.kt - UIMessage
+ * @see ai/src/main/java/com/clma/ai/ui/Message.kt - UIMessage
  */
 export interface UIMessage {
   id: string;

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.extensions.workspace
+package com.clma.app.ui.pages.extensions.workspace
 
 import android.content.Context
 import android.util.Log
@@ -16,7 +16,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import me.rerere.rikkahub.AppScope
+import com.clma.app.AppScope
 import java.util.concurrent.atomic.AtomicLong
 
 /**

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.usage
+package com.clma.app.data.usage
 
 import java.util.concurrent.ConcurrentHashMap
 
@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap
  * a sub-agent run enters the chat pipeline through `chatService.sendMessage(convId, …)`, which
  * launches the generation on `appScope` rather than running it inline, so the dispatcher's own
  * coroutine context never reaches the model call. This registry bridges that gap the same way
- * [me.rerere.rikkahub.data.ai.tools.HeadlessConversations] bridges the headless flag: the
+ * [com.clma.app.data.ai.tools.HeadlessConversations] bridges the headless flag: the
  * dispatcher registers the child's conversation id before handing it to `ChatService`, and
  * `GenerationLoop` looks the attribution up when it builds the call's `UsageCallContext`.
  *

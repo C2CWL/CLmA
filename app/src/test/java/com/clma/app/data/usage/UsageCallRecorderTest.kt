@@ -1,7 +1,7 @@
-package me.rerere.rikkahub.data.usage
+package com.clma.app.data.usage
 
 import kotlinx.coroutines.runBlocking
-import me.rerere.ai.core.TokenUsage
+import com.clma.ai.core.TokenUsage
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

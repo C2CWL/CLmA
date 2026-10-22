@@ -1,7 +1,7 @@
-package me.rerere.llamacpp
+package com.clma.llamacpp
 
 import kotlinx.coroutines.runBlocking
-import me.rerere.locallm.MemoryGuard
+import com.clma.locallm.MemoryGuard
 import org.junit.Assert.assertTrue
 import org.junit.Test
 

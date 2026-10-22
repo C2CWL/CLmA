@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.tools.local
+package com.clma.app.data.ai.tools.local
 
 import android.content.Context
 import kotlinx.coroutines.delay
@@ -10,10 +10,10 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
-import me.rerere.ai.core.InputSchema
-import me.rerere.ai.core.Tool
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.shizuku.ShizukuManager
+import com.clma.ai.core.InputSchema
+import com.clma.ai.core.Tool
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.shizuku.ShizukuManager
 
 // Pure helpers (validateCreateParams, build*Command) live in VirtualDisplayRules.kt
 // so they can be unit-tested without Android dependencies.

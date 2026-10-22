@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.stats
+package com.clma.app.ui.pages.stats
 
 import java.util.Locale
 import org.junit.After

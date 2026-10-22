@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.workflow.ui
+package com.clma.app.workflow.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -37,18 +37,18 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.Screen
-import me.rerere.rikkahub.ui.components.nav.BackButton
-import me.rerere.rikkahub.ui.context.LocalNavController
-import me.rerere.rikkahub.ui.theme.CustomColors
-import me.rerere.rikkahub.utils.RelativeTimeStrings
-import me.rerere.rikkahub.utils.formatRelativeAgo
-import me.rerere.rikkahub.utils.plus
-import me.rerere.rikkahub.workflow.model.TriggerSpec
-import me.rerere.rikkahub.workflow.model.WorkflowDefinition
-import me.rerere.rikkahub.workflow.model.WorkflowRunStatus
-import me.rerere.rikkahub.workflow.repository.WorkflowRepository.Loaded
+import com.clma.app.R
+import com.clma.app.Screen
+import com.clma.app.ui.components.nav.BackButton
+import com.clma.app.ui.context.LocalNavController
+import com.clma.app.ui.theme.CustomColors
+import com.clma.app.utils.RelativeTimeStrings
+import com.clma.app.utils.formatRelativeAgo
+import com.clma.app.utils.plus
+import com.clma.app.workflow.model.TriggerSpec
+import com.clma.app.workflow.model.WorkflowDefinition
+import com.clma.app.workflow.model.WorkflowRunStatus
+import com.clma.app.workflow.repository.WorkflowRepository.Loaded
 import org.koin.androidx.compose.koinViewModel
 
 @Composable

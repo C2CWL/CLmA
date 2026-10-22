@@ -1,10 +1,10 @@
-package me.rerere.asr.providers
+package com.clma.asr.providers
 
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import me.rerere.asr.ASRProviderSetting
-import me.rerere.asr.ASRVoiceTurn
+import com.clma.asr.ASRProviderSetting
+import com.clma.asr.ASRVoiceTurn
 import org.junit.Assert.*
 import org.junit.Test
 import java.io.ByteArrayOutputStream

@@ -1,12 +1,12 @@
-package me.rerere.rikkahub.data.ai
+package com.clma.app.data.ai
 
-import me.rerere.ai.core.Tool
-import me.rerere.ai.provider.Modality
-import me.rerere.ai.provider.Model
-import me.rerere.rikkahub.data.ai.tools.LocalTools
-import me.rerere.rikkahub.data.ai.tools.ToolInvocationContext
-import me.rerere.rikkahub.data.ai.tools.ToolInvocationContexts
-import me.rerere.rikkahub.data.model.Assistant
+import com.clma.ai.core.Tool
+import com.clma.ai.provider.Modality
+import com.clma.ai.provider.Model
+import com.clma.app.data.ai.tools.LocalTools
+import com.clma.app.data.ai.tools.ToolInvocationContext
+import com.clma.app.data.ai.tools.ToolInvocationContexts
+import com.clma.app.data.model.Assistant
 import kotlin.uuid.Uuid
 
 /**

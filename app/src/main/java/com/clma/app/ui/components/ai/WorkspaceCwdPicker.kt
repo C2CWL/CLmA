@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.ai
+package com.clma.app.ui.components.ai
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -44,10 +44,10 @@ import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Add01
 import me.rerere.hugeicons.stroke.ArrowTurnBackward
 import me.rerere.hugeicons.stroke.Folder01
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.repository.WorkspaceRepository
-import me.rerere.workspace.WorkspaceFileEntry
-import me.rerere.workspace.WorkspaceStorageArea
+import com.clma.app.R
+import com.clma.app.data.repository.WorkspaceRepository
+import com.clma.workspace.WorkspaceFileEntry
+import com.clma.workspace.WorkspaceStorageArea
 import org.koin.compose.koinInject
 
 @Composable

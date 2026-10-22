@@ -1,4 +1,4 @@
-package me.rerere.locallm.litert
+package com.clma.locallm.litert
 
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray

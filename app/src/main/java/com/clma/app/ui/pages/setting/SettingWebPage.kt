@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.setting
+package com.clma.app.ui.pages.setting
 
 import android.content.Intent
 import android.os.Build
@@ -51,20 +51,20 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import me.rerere.hugeicons.stroke.Stop
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.service.WebServerService
-import me.rerere.rikkahub.ui.components.nav.BackButton
-import me.rerere.rikkahub.ui.components.ui.CardGroup
-import me.rerere.rikkahub.ui.components.ui.permission.PermissionManager
-import me.rerere.rikkahub.ui.components.ui.permission.PermissionLocalNetwork
-import me.rerere.rikkahub.ui.components.ui.permission.PermissionNotification
-import me.rerere.rikkahub.ui.components.ui.permission.rememberPermissionState
-import me.rerere.rikkahub.ui.context.LocalSettings
-import me.rerere.rikkahub.ui.context.LocalToaster
-import me.rerere.rikkahub.ui.theme.CustomColors
-import me.rerere.rikkahub.utils.plus
-import me.rerere.rikkahub.web.WebServerManager
+import com.clma.app.R
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.service.WebServerService
+import com.clma.app.ui.components.nav.BackButton
+import com.clma.app.ui.components.ui.CardGroup
+import com.clma.app.ui.components.ui.permission.PermissionManager
+import com.clma.app.ui.components.ui.permission.PermissionLocalNetwork
+import com.clma.app.ui.components.ui.permission.PermissionNotification
+import com.clma.app.ui.components.ui.permission.rememberPermissionState
+import com.clma.app.ui.context.LocalSettings
+import com.clma.app.ui.context.LocalToaster
+import com.clma.app.ui.theme.CustomColors
+import com.clma.app.utils.plus
+import com.clma.app.web.WebServerManager
 import org.koin.compose.koinInject
 
 @Composable

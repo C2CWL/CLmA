@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.extensions
+package com.clma.app.ui.pages.extensions
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -44,12 +44,12 @@ import me.rerere.hugeicons.stroke.Delete01
 import me.rerere.hugeicons.stroke.Edit01
 import me.rerere.hugeicons.stroke.MoreVertical
 import me.rerere.hugeicons.stroke.Zap
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.model.QuickMessage
-import me.rerere.rikkahub.ui.components.nav.BackButton
-import me.rerere.rikkahub.ui.components.ui.RikkaConfirmDialog
-import me.rerere.rikkahub.ui.theme.CustomColors
-import me.rerere.rikkahub.utils.plus
+import com.clma.app.R
+import com.clma.app.data.model.QuickMessage
+import com.clma.app.ui.components.nav.BackButton
+import com.clma.app.ui.components.ui.RikkaConfirmDialog
+import com.clma.app.ui.theme.CustomColors
+import com.clma.app.utils.plus
 import org.koin.androidx.compose.koinViewModel
 
 @Composable

@@ -1,6 +1,6 @@
-package me.rerere.rikkahub.data.usage
+package com.clma.app.data.usage
 
-import me.rerere.ai.core.TokenUsage
+import com.clma.ai.core.TokenUsage
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test

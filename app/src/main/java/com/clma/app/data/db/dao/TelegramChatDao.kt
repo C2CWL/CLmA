@@ -1,10 +1,10 @@
-package me.rerere.rikkahub.data.db.dao
+package com.clma.app.data.db.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import me.rerere.rikkahub.data.db.entity.TelegramChatEntity
+import com.clma.app.data.db.entity.TelegramChatEntity
 
 @Dao
 interface TelegramChatDao {

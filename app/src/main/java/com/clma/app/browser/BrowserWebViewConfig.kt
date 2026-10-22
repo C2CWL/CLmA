@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.browser
+package com.clma.app.browser
 
 import android.view.View
 import android.webkit.WebSettings

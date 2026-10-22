@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.setting.scheduledjobs
+package com.clma.app.ui.pages.setting.scheduledjobs
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -41,16 +41,16 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.Screen
-import me.rerere.rikkahub.data.db.entity.ScheduledJobEntity
-import me.rerere.rikkahub.data.db.entity.ScheduledJobRunEntity
-import me.rerere.rikkahub.ui.components.nav.BackButton
-import me.rerere.rikkahub.ui.context.LocalNavController
-import me.rerere.rikkahub.ui.theme.CustomColors
-import me.rerere.rikkahub.utils.base64Encode
-import me.rerere.rikkahub.utils.formatRelativeAgo
-import me.rerere.rikkahub.utils.plus
+import com.clma.app.R
+import com.clma.app.Screen
+import com.clma.app.data.db.entity.ScheduledJobEntity
+import com.clma.app.data.db.entity.ScheduledJobRunEntity
+import com.clma.app.ui.components.nav.BackButton
+import com.clma.app.ui.context.LocalNavController
+import com.clma.app.ui.theme.CustomColors
+import com.clma.app.utils.base64Encode
+import com.clma.app.utils.formatRelativeAgo
+import com.clma.app.utils.plus
 import org.koin.androidx.compose.koinViewModel
 
 @Composable

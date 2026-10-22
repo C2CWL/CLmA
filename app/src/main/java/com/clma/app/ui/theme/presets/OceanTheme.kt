@@ -1,12 +1,12 @@
-package me.rerere.rikkahub.ui.theme.presets
+package com.clma.app.ui.theme.presets
 
 import androidx.compose.material3.Text
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.ui.theme.PresetTheme
+import com.clma.app.R
+import com.clma.app.ui.theme.PresetTheme
 
 val OceanThemePreset by lazy {
     PresetTheme(

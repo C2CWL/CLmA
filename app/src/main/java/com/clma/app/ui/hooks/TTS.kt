@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.hooks
+package com.clma.app.ui.hooks
 
 import android.content.Context
 import android.util.Log
@@ -15,14 +15,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import me.rerere.tts.model.PlaybackState
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.datastore.getSelectedTTSProvider
-import me.rerere.rikkahub.utils.stripMarkdown
-import me.rerere.tts.model.TTSResponse
-import me.rerere.tts.provider.TTSManager
-import me.rerere.tts.provider.TTSProviderSetting
-import me.rerere.tts.controller.TtsController
+import com.clma.tts.model.PlaybackState
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.datastore.getSelectedTTSProvider
+import com.clma.app.utils.stripMarkdown
+import com.clma.tts.model.TTSResponse
+import com.clma.tts.provider.TTSManager
+import com.clma.tts.provider.TTSProviderSetting
+import com.clma.tts.controller.TtsController
 import org.koin.compose.koinInject
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -127,7 +127,7 @@ private class CustomTtsStateImpl(
 ) : CustomTtsState, KoinComponent {
 
     private val ttsManager by inject<TTSManager>()
-    private val controller by lazy { me.rerere.tts.controller.TtsController(context, ttsManager) }
+    private val controller by lazy { com.clma.tts.controller.TtsController(context, ttsManager) }
 
     private val scope = CoroutineScope(Dispatchers.Main)
     private var currentJob: Job? = null

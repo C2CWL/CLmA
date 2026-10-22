@@ -1,13 +1,13 @@
-package me.rerere.ai.ui
+package com.clma.ai.ui
 
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import me.rerere.ai.core.MessageRole
-import me.rerere.ai.core.TokenUsage
-import me.rerere.ai.provider.Model
-import me.rerere.ai.provider.TextGenerationResult
+import com.clma.ai.core.MessageRole
+import com.clma.ai.core.TokenUsage
+import com.clma.ai.provider.Model
+import com.clma.ai.provider.TextGenerationResult
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Test

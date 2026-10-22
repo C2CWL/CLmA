@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.service
+package com.clma.app.service
 
 import android.app.Application
 import android.content.Context
@@ -39,123 +39,123 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.jsonObject
-import me.rerere.ai.core.MessageRole
-import me.rerere.ai.core.ReasoningLevel
-import me.rerere.ai.core.Tool
-import me.rerere.ai.provider.Model
-import me.rerere.ai.provider.ModelAbility
-import me.rerere.ai.provider.ProviderManager
-import me.rerere.ai.provider.TextGenerationParams
-import me.rerere.ai.ui.ToolApprovalState
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.ai.ui.canResumeToolExecution
-import me.rerere.ai.ui.finishPendingTools
-import me.rerere.ai.ui.finishReasoning
-import me.rerere.ai.ui.isEmptyInputMessage
-import me.rerere.ai.ui.limitContext
-import me.rerere.common.android.Logging
-import me.rerere.rikkahub.AppScope
+import com.clma.ai.core.MessageRole
+import com.clma.ai.core.ReasoningLevel
+import com.clma.ai.core.Tool
+import com.clma.ai.provider.Model
+import com.clma.ai.provider.ModelAbility
+import com.clma.ai.provider.ProviderManager
+import com.clma.ai.provider.TextGenerationParams
+import com.clma.ai.ui.ToolApprovalState
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessagePart
+import com.clma.ai.ui.canResumeToolExecution
+import com.clma.ai.ui.finishPendingTools
+import com.clma.ai.ui.finishReasoning
+import com.clma.ai.ui.isEmptyInputMessage
+import com.clma.ai.ui.limitContext
+import com.clma.common.android.Logging
+import com.clma.app.AppScope
 import android.app.PendingIntent
 import android.content.Intent
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.ProcessLifecycleOwner
-import me.rerere.rikkahub.CHAT_COMPLETED_NOTIFICATION_CHANNEL_ID
-import me.rerere.rikkahub.CHAT_LIVE_UPDATE_NOTIFICATION_CHANNEL_ID
-import me.rerere.rikkahub.RouteActivity
-import me.rerere.rikkahub.utils.cancelNotification
-import me.rerere.rikkahub.utils.sendNotification
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.ai.AssistantResolver
-import me.rerere.rikkahub.data.ai.AutomationRecorder
-import me.rerere.rikkahub.data.ai.tools.AppPlaybookFile
-import me.rerere.rikkahub.data.ai.tools.AppPlaybookRules
-import me.rerere.rikkahub.data.ai.GenerationChunk
-import me.rerere.rikkahub.data.ai.GenerationLoop
-import me.rerere.rikkahub.data.ai.ModelRouter
-import me.rerere.rikkahub.data.ai.ContextBudgetPlanner
-import me.rerere.rikkahub.data.ai.ContextCompactionPlanner
-import me.rerere.rikkahub.data.ai.ContextCompactionPresentation
-import me.rerere.rikkahub.data.ai.CompactedMessageView
-import me.rerere.rikkahub.data.ai.ContextCompactionView
-import me.rerere.rikkahub.data.ai.ToolSurfaceResolver
-import me.rerere.rikkahub.data.ai.TranslationHandler
-import me.rerere.rikkahub.data.ai.mcp.McpManager
-import me.rerere.rikkahub.data.ai.tools.TOOL_CATALOG_MAX_SUMMARY_CHARS
-import me.rerere.rikkahub.data.ai.tools.ToolActivationState
-import me.rerere.rikkahub.data.ai.tools.ToolCatalog
-import me.rerere.rikkahub.data.ai.tools.ToolCatalogEntry
-import me.rerere.rikkahub.data.ai.tools.ToolCatalogSource
-import me.rerere.rikkahub.data.ai.tools.ToolSurfaceMode
-import me.rerere.rikkahub.data.ai.tools.buildToolCatalogTools
-import me.rerere.rikkahub.data.ai.tools.ChatToolFactory
-import me.rerere.rikkahub.data.ai.tools.InvalidMcpServerNamesException
-import me.rerere.rikkahub.data.ai.tools.LocalTools
-import me.rerere.rikkahub.data.ai.tools.createSearchTools
-import me.rerere.rikkahub.data.ai.tools.createSkillTools
-import me.rerere.rikkahub.data.datastore.SkillGroupRules
-import me.rerere.rikkahub.data.ai.tools.CompactionToolResult
-import me.rerere.rikkahub.data.ai.tools.buildCompactionTools
-import me.rerere.rikkahub.data.ai.tools.createWorkspaceTools
-import me.rerere.rikkahub.data.ai.tools.buildColdMemoryTools
-import me.rerere.rikkahub.data.ai.tools.ColdMemoryDoc
-import me.rerere.rikkahub.data.ai.tools.ColdMemoryRules
-import me.rerere.rikkahub.data.ai.tools.ColdMemoryWriteResult
-import me.rerere.rikkahub.data.ai.tools.shouldUseExternalWebSearch
-import me.rerere.rikkahub.data.preferences.isWorkspaceToolName
-import me.rerere.rikkahub.data.files.SkillManager
-import me.rerere.rikkahub.data.ai.transformers.Base64ImageToLocalFileTransformer
-import me.rerere.rikkahub.data.ai.transformers.ContextBudgetReminderTransformer
-import me.rerere.rikkahub.data.ai.transformers.DocumentAsPromptTransformer
-import me.rerere.rikkahub.data.ai.transformers.OcrTransformer
-import me.rerere.rikkahub.data.ai.transformers.PlaceholderTransformer
-import me.rerere.rikkahub.data.ai.transformers.PromptInjectionTransformer
-import me.rerere.rikkahub.data.ai.transformers.RegexOutputTransformer
-import me.rerere.rikkahub.data.ai.transformers.TemplateTransformer
-import me.rerere.rikkahub.data.ai.transformers.ThinkTagTransformer
-import me.rerere.rikkahub.data.ai.transformers.TimeReminderTransformer
-import me.rerere.rikkahub.data.ai.transformers.WorkspaceReminderTransformer
-import me.rerere.rikkahub.data.event.AppEvent
-import me.rerere.rikkahub.data.event.AppEventBus
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.datastore.Settings
-import me.rerere.rikkahub.data.datastore.AutoCompactionThresholdMode
-import me.rerere.rikkahub.data.datastore.DEFAULT_AUTO_MODEL_ID
-import me.rerere.rikkahub.data.datastore.findModelById
-import me.rerere.rikkahub.data.datastore.findProvider
-import me.rerere.rikkahub.data.datastore.getContextCompactionTargetTokens
-import me.rerere.rikkahub.data.datastore.getCurrentAssistant
-import me.rerere.rikkahub.data.datastore.getCurrentChatModel
-import me.rerere.rikkahub.data.datastore.getEffectiveContextLength
-import me.rerere.rikkahub.data.datastore.resolveChatModel
-import me.rerere.rikkahub.data.files.FilesManager
-import me.rerere.rikkahub.data.model.Assistant
-import me.rerere.rikkahub.data.model.Conversation
-import me.rerere.rikkahub.data.model.ConversationCompaction
-import me.rerere.rikkahub.data.model.MessageNode
-import me.rerere.rikkahub.data.model.AssistantAffectScope
-import me.rerere.rikkahub.data.model.localFileUrls
-import me.rerere.rikkahub.data.model.replaceRegexes
-import me.rerere.rikkahub.data.model.toMessageNode
-import me.rerere.rikkahub.data.repository.ConversationRepository
-import me.rerere.rikkahub.data.repository.FolderRepository
-import me.rerere.rikkahub.data.repository.MemoryRepository
-import me.rerere.rikkahub.data.repository.WorkspaceRepository
-import me.rerere.workspace.WorkspaceShellStatus
-import me.rerere.workspace.WorkspaceStorageArea
-import me.rerere.rikkahub.web.BadRequestException
-import me.rerere.rikkahub.web.NotFoundException
-import me.rerere.rikkahub.utils.applyPlaceholders
+import com.clma.app.CHAT_COMPLETED_NOTIFICATION_CHANNEL_ID
+import com.clma.app.CHAT_LIVE_UPDATE_NOTIFICATION_CHANNEL_ID
+import com.clma.app.RouteActivity
+import com.clma.app.utils.cancelNotification
+import com.clma.app.utils.sendNotification
+import com.clma.app.R
+import com.clma.app.data.ai.AssistantResolver
+import com.clma.app.data.ai.AutomationRecorder
+import com.clma.app.data.ai.tools.AppPlaybookFile
+import com.clma.app.data.ai.tools.AppPlaybookRules
+import com.clma.app.data.ai.GenerationChunk
+import com.clma.app.data.ai.GenerationLoop
+import com.clma.app.data.ai.ModelRouter
+import com.clma.app.data.ai.ContextBudgetPlanner
+import com.clma.app.data.ai.ContextCompactionPlanner
+import com.clma.app.data.ai.ContextCompactionPresentation
+import com.clma.app.data.ai.CompactedMessageView
+import com.clma.app.data.ai.ContextCompactionView
+import com.clma.app.data.ai.ToolSurfaceResolver
+import com.clma.app.data.ai.TranslationHandler
+import com.clma.app.data.ai.mcp.McpManager
+import com.clma.app.data.ai.tools.TOOL_CATALOG_MAX_SUMMARY_CHARS
+import com.clma.app.data.ai.tools.ToolActivationState
+import com.clma.app.data.ai.tools.ToolCatalog
+import com.clma.app.data.ai.tools.ToolCatalogEntry
+import com.clma.app.data.ai.tools.ToolCatalogSource
+import com.clma.app.data.ai.tools.ToolSurfaceMode
+import com.clma.app.data.ai.tools.buildToolCatalogTools
+import com.clma.app.data.ai.tools.ChatToolFactory
+import com.clma.app.data.ai.tools.InvalidMcpServerNamesException
+import com.clma.app.data.ai.tools.LocalTools
+import com.clma.app.data.ai.tools.createSearchTools
+import com.clma.app.data.ai.tools.createSkillTools
+import com.clma.app.data.datastore.SkillGroupRules
+import com.clma.app.data.ai.tools.CompactionToolResult
+import com.clma.app.data.ai.tools.buildCompactionTools
+import com.clma.app.data.ai.tools.createWorkspaceTools
+import com.clma.app.data.ai.tools.buildColdMemoryTools
+import com.clma.app.data.ai.tools.ColdMemoryDoc
+import com.clma.app.data.ai.tools.ColdMemoryRules
+import com.clma.app.data.ai.tools.ColdMemoryWriteResult
+import com.clma.app.data.ai.tools.shouldUseExternalWebSearch
+import com.clma.app.data.preferences.isWorkspaceToolName
+import com.clma.app.data.files.SkillManager
+import com.clma.app.data.ai.transformers.Base64ImageToLocalFileTransformer
+import com.clma.app.data.ai.transformers.ContextBudgetReminderTransformer
+import com.clma.app.data.ai.transformers.DocumentAsPromptTransformer
+import com.clma.app.data.ai.transformers.OcrTransformer
+import com.clma.app.data.ai.transformers.PlaceholderTransformer
+import com.clma.app.data.ai.transformers.PromptInjectionTransformer
+import com.clma.app.data.ai.transformers.RegexOutputTransformer
+import com.clma.app.data.ai.transformers.TemplateTransformer
+import com.clma.app.data.ai.transformers.ThinkTagTransformer
+import com.clma.app.data.ai.transformers.TimeReminderTransformer
+import com.clma.app.data.ai.transformers.WorkspaceReminderTransformer
+import com.clma.app.data.event.AppEvent
+import com.clma.app.data.event.AppEventBus
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.datastore.Settings
+import com.clma.app.data.datastore.AutoCompactionThresholdMode
+import com.clma.app.data.datastore.DEFAULT_AUTO_MODEL_ID
+import com.clma.app.data.datastore.findModelById
+import com.clma.app.data.datastore.findProvider
+import com.clma.app.data.datastore.getContextCompactionTargetTokens
+import com.clma.app.data.datastore.getCurrentAssistant
+import com.clma.app.data.datastore.getCurrentChatModel
+import com.clma.app.data.datastore.getEffectiveContextLength
+import com.clma.app.data.datastore.resolveChatModel
+import com.clma.app.data.files.FilesManager
+import com.clma.app.data.model.Assistant
+import com.clma.app.data.model.Conversation
+import com.clma.app.data.model.ConversationCompaction
+import com.clma.app.data.model.MessageNode
+import com.clma.app.data.model.AssistantAffectScope
+import com.clma.app.data.model.localFileUrls
+import com.clma.app.data.model.replaceRegexes
+import com.clma.app.data.model.toMessageNode
+import com.clma.app.data.repository.ConversationRepository
+import com.clma.app.data.repository.FolderRepository
+import com.clma.app.data.repository.MemoryRepository
+import com.clma.app.data.repository.WorkspaceRepository
+import com.clma.workspace.WorkspaceShellStatus
+import com.clma.workspace.WorkspaceStorageArea
+import com.clma.app.web.BadRequestException
+import com.clma.app.web.NotFoundException
+import com.clma.app.utils.applyPlaceholders
 import java.time.Instant
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.uuid.Uuid
-import me.rerere.rikkahub.data.usage.UsageCallContext
-import me.rerere.rikkahub.data.usage.UsagePurpose
+import com.clma.app.data.usage.UsageCallContext
+import com.clma.app.data.usage.UsagePurpose
 
 private const val TAG = "ChatService"
 private const val COMPACTION_REQUEST_TIMEOUT_MS = 3 * 60_000L
@@ -333,7 +333,7 @@ internal fun automaticCompactionNoOpResult(existingCompaction: ConversationCompa
  * [ChatService.createAutomaticCompaction] returns null for a no-op boundary rather than the
  * pre-existing compaction (see its kdoc), specifically so its callers can tell a no-op apart
  * from a freshly created compaction when populating
- * [me.rerere.rikkahub.data.ai.CompactedMessageView.newlyCreatedAutoCompaction] -- recording a
+ * [com.clma.app.data.ai.CompactedMessageView.newlyCreatedAutoCompaction] -- recording a
  * no-op there would attach a "context compacted" tool card announcing a compaction that never
  * happened. Pure so the capture rule is unit-testable without constructing a [ChatService].
  */
@@ -464,7 +464,7 @@ class ChatService(
     val mcpManager: McpManager,
     private val filesManager: FilesManager,
     private val skillManager: SkillManager,
-    private val toolApprovalPreferences: me.rerere.rikkahub.data.preferences.ToolApprovalPreferences,
+    private val toolApprovalPreferences: com.clma.app.data.preferences.ToolApprovalPreferences,
     private val workspaceRepository: WorkspaceRepository,
     private val folderRepository: FolderRepository,
 ) {
@@ -527,7 +527,7 @@ class ChatService(
     private fun buildMcpTool(
         serverId: Uuid,
         serverName: String,
-        tool: me.rerere.rikkahub.data.ai.mcp.McpTool,
+        tool: com.clma.app.data.ai.mcp.McpTool,
     ): Tool {
         // Namespace MCP tools by a server-id slug so two enabled servers that each expose a tool
         // of the same name don't collide (which would 400 or mis-route to whichever server
@@ -535,7 +535,7 @@ class ChatService(
         // advertise this name to the model (#88), so the two can never drift. The execute lambda
         // below still calls callTool with the REAL tool.name, since the namespacing exists only
         // on the model-facing surface.
-        val mcpToolName = me.rerere.rikkahub.data.ai.mcp.buildMcpToolName(serverId, serverName, tool.name)
+        val mcpToolName = com.clma.app.data.ai.mcp.buildMcpToolName(serverId, serverName, tool.name)
         return Tool(
             name = mcpToolName,
             description = tool.description ?: "",
@@ -559,7 +559,7 @@ class ChatService(
      * `[untrusted]` marker matters - an MCP server's description is data we did not author, and
      * it is now the only thing the model sees before deciding to open the tool.
      */
-    private fun mcpCatalogSummary(tool: me.rerere.rikkahub.data.ai.mcp.McpTool): String {
+    private fun mcpCatalogSummary(tool: com.clma.app.data.ai.mcp.McpTool): String {
         val firstLine = tool.description
             .orEmpty()
             .lineSequence()
@@ -592,7 +592,7 @@ class ChatService(
     /**
      * P2-08 — a foreground-service claim for work that is not a chat generation.
      *
-     * [me.rerere.rikkahub.subagent.SubAgentEngine] holds one claim for the whole life of a
+     * [com.clma.app.subagent.SubAgentEngine] holds one claim for the whole life of a
      * sub-agent run, because a background dispatch can outlive the parent turn and spans gaps —
      * tool execution, a concurrency-slot wait, the parent-notification wait — where none of our
      * generations is in flight, so the service would otherwise stop and the process become
@@ -1134,12 +1134,12 @@ class ChatService(
     private suspend fun tryFastPathRoute(
         conversationId: Uuid,
         userParts: List<UIMessagePart>,
-        afterUserSave: me.rerere.rikkahub.data.model.Conversation,
+        afterUserSave: com.clma.app.data.model.Conversation,
         assistant: Assistant,
     ): Boolean {
         // Headless paths (cron / sub-agent / external-automation / workflow) must always go
         // through the LLM — the fast-path is a per-user-turn optimisation, not a system-flow.
-        if (me.rerere.rikkahub.data.ai.tools.HeadlessConversations.isHeadless(conversationId)) return false
+        if (com.clma.app.data.ai.tools.HeadlessConversations.isHeadless(conversationId)) return false
 
         // assistant is resolved from the conversation's own assistantId by the caller — do NOT
         // re-read the global getCurrentAssistant() here or a mid-turn assistant switch makes the
@@ -1149,14 +1149,14 @@ class ChatService(
         val userText = userParts.filterIsInstance<UIMessagePart.Text>().joinToString(" ") { it.text }.trim()
         if (userText.isBlank()) return false
 
-        val match = me.rerere.rikkahub.skills.FastPathRouter.route(userText) ?: return false
+        val match = com.clma.app.skills.FastPathRouter.route(userText) ?: return false
 
         // Tool list construction is non-trivial on assistants with many enabled categories
         // (allocates a fresh List<Tool> each call). Defer until AFTER a router match so the
         // common no-match path stays at a single regex scan + an early return.
         // Fast-path is gated on !isHeadless above; pass the caller context so any tools the
         // router fires inherit the right assistant id (workflows / sub-agents / etc).
-        me.rerere.rikkahub.subagent.SubAgentDispatchProfileRules
+        com.clma.app.subagent.SubAgentDispatchProfileRules
             .setLiveDispatchProfile(settingsStore.settingsFlow.first().subAgentDispatchProfile)
         val tools = ToolSurfaceResolver.resolve(
             localTools = localTools,
@@ -1171,7 +1171,7 @@ class ChatService(
         // Defence-in-depth — even though v1's intent set is read-only, run HARDLINE here so
         // that adding a side-effecting intent later (e.g. "set brightness 50%") can't bypass
         // the floor by routing around the LLM-tool-call path that normally enforces it.
-        val hardlineReason = me.rerere.rikkahub.data.ai.tools.HardlineCommandGuard
+        val hardlineReason = com.clma.app.data.ai.tools.HardlineCommandGuard
             .checkTool(match.toolName, match.args.toString())
         if (hardlineReason != null) {
             android.util.Log.w("FastPathRouter", "hardline-blocked intent=${match.intent} tool=${match.toolName}: $hardlineReason; falling through to LLM")
@@ -1193,8 +1193,8 @@ class ChatService(
             formatted?.takeIf { it.isNotBlank() } ?: rawText
         } catch (t: Throwable) {
             android.util.Log.w("FastPathRouter", "tool ${match.toolName} threw, falling back to LLM", t)
-            me.rerere.rikkahub.skills.FastPathRouterLog.record(
-                me.rerere.rikkahub.skills.FastPathRouterLog.Entry(
+            com.clma.app.skills.FastPathRouterLog.record(
+                com.clma.app.skills.FastPathRouterLog.Entry(
                     whenMs = System.currentTimeMillis(),
                     intent = match.intent,
                     toolName = match.toolName,
@@ -1214,8 +1214,8 @@ class ChatService(
             ).toMessageNode(),
         )
         saveConversation(conversationId, withAssistant)
-        me.rerere.rikkahub.skills.FastPathRouterLog.record(
-            me.rerere.rikkahub.skills.FastPathRouterLog.Entry(
+        com.clma.app.skills.FastPathRouterLog.record(
+            com.clma.app.skills.FastPathRouterLog.Entry(
                 whenMs = System.currentTimeMillis(),
                 intent = match.intent,
                 toolName = match.toolName,
@@ -1357,7 +1357,7 @@ class ChatService(
         if (approved && toolName != null && scope == ApprovalScope.ChatScope) {
             appScope.launch(NonCancellable) {
                 runCatching {
-                    me.rerere.rikkahub.data.ai.tools
+                    com.clma.app.data.ai.tools
                         .ToolApprovalAllowList.grantForChat(conversationId, toolName)
                 }.onFailure { Log.w(TAG, "approval grant write failed", it) }
             }
@@ -1499,7 +1499,7 @@ class ChatService(
                     return RerunToolResult.Failure("tool has not completed its first run yet")
                 }
 
-                val hardlineReason = me.rerere.rikkahub.data.ai.tools.HardlineCommandGuard
+                val hardlineReason = com.clma.app.data.ai.tools.HardlineCommandGuard
                     .checkTool(toolPart.toolName, toolPart.input)
                 if (hardlineReason != null) {
                     return RerunToolResult.Failure("blocked: $hardlineReason")
@@ -1597,7 +1597,7 @@ class ChatService(
         // P2-04 — a sub-agent run may carry its OWN tool surface ([SubAgentSurface]). For every
         // other conversation this is the `assistant` argument itself, so the list built below is
         // exactly what it was before.
-        val surfaceAssistant = me.rerere.rikkahub.subagent.SubAgentSurface
+        val surfaceAssistant = com.clma.app.subagent.SubAgentSurface
             .assistantFor(conversationId) ?: assistant
         if (surfaceAssistant.enableWebSearch) {
             addAll(createSearchTools(settings))
@@ -1605,7 +1605,7 @@ class ChatService(
         // T-04 / (4) + T-09 / (8) - the rebuild path (regenerate) must offer the SAME tool
         // surface as the first pass, otherwise the subagent_dispatch definition would
         // silently lose its `include_recent_turns` / `tools` parameters on a re-run.
-        me.rerere.rikkahub.subagent.SubAgentDispatchProfileRules
+        com.clma.app.subagent.SubAgentDispatchProfileRules
             .setLiveDispatchProfile(settingsStore.settingsFlow.first().subAgentDispatchProfile)
         addAll(
             ToolSurfaceResolver.resolve(
@@ -1615,7 +1615,7 @@ class ChatService(
                     assistant = surfaceAssistant,
                     conversationId = conversationId,
                     model = model,
-                    isHeadless = me.rerere.rikkahub.data.ai.tools.HeadlessConversations.isHeadless(conversationId),
+                    isHeadless = com.clma.app.data.ai.tools.HeadlessConversations.isHeadless(conversationId),
                     appPlaybook = coldMemoryPlaybookReader(surfaceAssistant),
                 ),
             )
@@ -1643,7 +1643,7 @@ class ChatService(
             mcpManager.getAllAvailableTools(surfaceAssistant)
         }
         mcpTools.forEach { (serverId, serverName, mcpTool) ->
-            val mcpToolName = me.rerere.rikkahub.data.ai.mcp.buildMcpToolName(serverId, serverName, mcpTool.name)
+            val mcpToolName = com.clma.app.data.ai.mcp.buildMcpToolName(serverId, serverName, mcpTool.name)
             add(
                 Tool(
                     name = mcpToolName,
@@ -1658,7 +1658,7 @@ class ChatService(
         // T-09 / (8) - a sub-agent conversation sees its frozen, headless-safe surface; every
         // other conversation gets this exact list back by reference (apply is an identity when
         // the conversation was never frozen).
-    }.let { me.rerere.rikkahub.subagent.SubAgentSurface.apply(conversationId, it) }
+    }.let { com.clma.app.subagent.SubAgentSurface.apply(conversationId, it) }
 
     // ---- 处理消息补全 ----
 
@@ -1681,7 +1681,7 @@ class ChatService(
         // A generation is one "turn" for read_window_tree's snapshot: within it a re-read can be
         // answered with "unchanged" or a delta, but a diff never spans two turns — so a model
         // coming back to a screen (possibly after a compaction) always gets the whole tree.
-        me.rerere.rikkahub.data.ai.tools.local.TreeSnapshotCache.clear()
+        com.clma.app.data.ai.tools.local.TreeSnapshotCache.clear()
         val settings = settingsStore.settingsFlow.first()
         // Resolve the assistant from this conversation's own assistantId — the global
         // current-assistant pointer can have moved if the user switched assistants while
@@ -1810,14 +1810,14 @@ class ChatService(
                 // here for exactly its own lifetime (see ConversationToolStepLimits); every
                 // other conversation falls through to the global default, read live so a
                 // settings change applies to the next turn.
-                maxSteps = me.rerere.rikkahub.data.ai.limits.ConversationToolStepLimits
+                maxSteps = com.clma.app.data.ai.limits.ConversationToolStepLimits
                     .get(conversation.id)
-                    ?: me.rerere.rikkahub.data.ai.limits.ToolRuntimeLimits.maxToolSteps,
+                    ?: com.clma.app.data.ai.limits.ToolRuntimeLimits.maxToolSteps,
                 // Read once per call so the surface that wrote the addendum (Telegram bot,
                 // anything else) gets its runtime context into the system prompt without
                 // having to plumb a parameter all the way through sendMessage. Returns null
                 // for in-app conversations that didn't register one.
-                systemAddendum = me.rerere.rikkahub.data.ai.tools
+                systemAddendum = com.clma.app.data.ai.tools
                     .ConversationSystemAddendum.get(conversationId),
                 isToolAutoApproved = { toolName ->
                     // The decision itself is pure — see ToolApprovalPolicy (unit-tested). Here
@@ -1829,13 +1829,13 @@ class ChatService(
                     // command floor still blocks rm -rf / et al because GenerationLoop checks
                     // it before this.
                     val snapshot = toolApprovalPreferences.snapshot()
-                    me.rerere.rikkahub.data.ai.tools.ToolApprovalPolicy.shouldAutoApprove(
+                    com.clma.app.data.ai.tools.ToolApprovalPolicy.shouldAutoApprove(
                         toolName = toolName,
                         blacklist = snapshot.blacklist,
                         mode = snapshot.mode,
-                        headless = me.rerere.rikkahub.data.ai.tools.HeadlessConversations
+                        headless = com.clma.app.data.ai.tools.HeadlessConversations
                             .shouldAutoApprove(conversationId),
-                        allowedForChat = me.rerere.rikkahub.data.ai.tools.ToolApprovalAllowList
+                        allowedForChat = com.clma.app.data.ai.tools.ToolApprovalAllowList
                             .isAllowedForChat(conversationId, toolName),
                     )
                 },
@@ -1923,11 +1923,11 @@ class ChatService(
                     // subagent_dispatch is registered when the profile != NEVER.
                     // generateText was the missing third call site (fast-path and
                     // buildToolsForRerun already do this).
-                    me.rerere.rikkahub.subagent.SubAgentDispatchProfileRules
+                    com.clma.app.subagent.SubAgentDispatchProfileRules
                         .setLiveDispatchProfile(settings.subAgentDispatchProfile)
                     // P2-04 — the child's own tool surface when this conversation is a sub-agent
                     // run that has one; otherwise this is the resolved assistant itself.
-                    val surfaceAssistant = me.rerere.rikkahub.subagent.SubAgentSurface
+                    val surfaceAssistant = com.clma.app.subagent.SubAgentSurface
                         .assistantFor(conversationId) ?: assistant
                     if (useExternalWebSearch) {
                         addAll(createSearchTools(settings))
@@ -1944,7 +1944,7 @@ class ChatService(
                                 assistant = surfaceAssistant,
                                 conversationId = conversationId,
                                 model = model,
-                                isHeadless = me.rerere.rikkahub.data.ai.tools.HeadlessConversations
+                                isHeadless = com.clma.app.data.ai.tools.HeadlessConversations
                                     .isHeadless(conversationId),
                                 appPlaybook = coldMemoryPlaybookReader(surfaceAssistant),
                             ),
@@ -2021,7 +2021,7 @@ class ChatService(
                         val mcpCatalog = ToolCatalog(
                             entries = allMcpTools.map { (serverId, serverName, tool) ->
                                 ToolCatalogEntry(
-                                    name = me.rerere.rikkahub.data.ai.mcp.buildMcpToolName(
+                                    name = com.clma.app.data.ai.mcp.buildMcpToolName(
                                         serverId = serverId,
                                         serverName = serverName,
                                         toolName = tool.name,
@@ -2046,7 +2046,7 @@ class ChatService(
                             add(buildMcpTool(serverId, serverName, tool))
                         }
                     }
-                }.let { me.rerere.rikkahub.subagent.SubAgentSurface.apply(conversationId, it) },
+                }.let { com.clma.app.subagent.SubAgentSurface.apply(conversationId, it) },
                 continuationFromPartial = continuationFromPartial,
             ).onCompletion { completionCause ->
                 // 本轮结束时仍有未消费的插话（通常是最后一个 chunk 之后才到）：
@@ -3577,7 +3577,7 @@ class ChatService(
         }
         ids.forEach { conversationId ->
             val full = conversationRepo.getConversationById(conversationId) ?: return@forEach
-            me.rerere.rikkahub.data.ai.tools.ToolApprovalAllowList.clearChat(conversationId)
+            com.clma.app.data.ai.tools.ToolApprovalAllowList.clearChat(conversationId)
             conversationRepo.updateConversation(
                 full.copy(assistantId = targetAssistantId, folderId = null)
             )

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.tools.local
+package com.clma.app.data.ai.tools.local
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -9,7 +9,7 @@ import org.junit.Test
  * navigation this browser performs, since none carry a real user gesture) as skippable, so
  * `canGoBack()`/`canGoForward()` can be false even though `copyBackForwardList()` proves a
  * real entry exists in that direction. Same rationale as
- * [me.rerere.rikkahub.browser.BrowserWaitForPredicateTest]'s sibling for browser_wait_for:
+ * [com.clma.app.browser.BrowserWaitForPredicateTest]'s sibling for browser_wait_for:
  * pure function, unit-testable without Robolectric.
  */
 class HistoryNavResolutionTest {

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.chat
+package com.clma.app.ui.pages.chat
 
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Alert01
@@ -10,9 +10,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.res.stringResource
-import me.rerere.ai.core.MessageRole
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.model.Conversation
+import com.clma.ai.core.MessageRole
+import com.clma.app.R
+import com.clma.app.data.model.Conversation
 
 // 消息节点数量警告阈值
 const val MESSAGE_NODE_WARNING_THRESHOLD = 768

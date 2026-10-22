@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.tools.local
+package com.clma.app.data.ai.tools.local
 
 import android.content.Context
 import android.graphics.Bitmap
@@ -20,25 +20,25 @@ import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import me.rerere.ai.core.InputSchema
-import me.rerere.ai.core.Tool
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.browser.BrowserAiActionKind
-import me.rerere.rikkahub.browser.BrowserBackgroundHost
-import me.rerere.rikkahub.browser.BrowserController
-import me.rerere.rikkahub.browser.BrowserControllerHandle
-import me.rerere.rikkahub.browser.BrowserDiffHelper
-import me.rerere.rikkahub.browser.BrowserToolDefaults
-import me.rerere.rikkahub.browser.HeadlessBrowserSessionPool
-import me.rerere.rikkahub.browser.ReadabilityRunner.runReadability
-import me.rerere.rikkahub.browser.amCommandSucceeded
-import me.rerere.rikkahub.browser.awaitReadyState
-import me.rerere.rikkahub.browser.backgroundUnavailableEnvelope
-import me.rerere.rikkahub.browser.decideBackgroundHost
-import me.rerere.rikkahub.browser.BackgroundHostKind
-import me.rerere.rikkahub.browser.evaluateJavascriptAsync
-import me.rerere.rikkahub.data.ai.tools.HeadlessConversations
-import me.rerere.rikkahub.data.ai.tools.ToolInvocationContext
+import com.clma.ai.core.InputSchema
+import com.clma.ai.core.Tool
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.browser.BrowserAiActionKind
+import com.clma.app.browser.BrowserBackgroundHost
+import com.clma.app.browser.BrowserController
+import com.clma.app.browser.BrowserControllerHandle
+import com.clma.app.browser.BrowserDiffHelper
+import com.clma.app.browser.BrowserToolDefaults
+import com.clma.app.browser.HeadlessBrowserSessionPool
+import com.clma.app.browser.ReadabilityRunner.runReadability
+import com.clma.app.browser.amCommandSucceeded
+import com.clma.app.browser.awaitReadyState
+import com.clma.app.browser.backgroundUnavailableEnvelope
+import com.clma.app.browser.decideBackgroundHost
+import com.clma.app.browser.BackgroundHostKind
+import com.clma.app.browser.evaluateJavascriptAsync
+import com.clma.app.data.ai.tools.HeadlessConversations
+import com.clma.app.data.ai.tools.ToolInvocationContext
 import java.io.File
 import java.io.FileOutputStream
 import kotlin.uuid.ExperimentalUuidApi
@@ -52,8 +52,8 @@ import kotlin.uuid.Uuid
  * MUST have a hard timeout" rule); every state-changing write tool also calls
  * [awaitReadyState] post-action so the next read tool sees the new page.
  *
- * Tool registration is gated by [me.rerere.rikkahub.browser.BrowserPreferences] in
- * [me.rerere.rikkahub.data.ai.tools.LocalTools.getTools] — toggling a tool off in
+ * Tool registration is gated by [com.clma.app.browser.BrowserPreferences] in
+ * [com.clma.app.data.ai.tools.LocalTools.getTools] — toggling a tool off in
  * Settings → Browser unregisters it entirely, so YOLO can't accidentally run a tool the
  * user has explicitly disabled.
  */
@@ -71,7 +71,7 @@ private const val EVAL_JS_MAX_RESULT_CHARS = 64 * 1024
 /**
  * Per-tool timeout budget every browser tool wraps its dispatch in. User-configurable via
  * Settings → Browser (GitHub issue #4) — resolved fresh on each tool call from
- * [BrowserController.perToolTimeoutMs], which [me.rerere.rikkahub.browser.BrowserPreferences]
+ * [BrowserController.perToolTimeoutMs], which [com.clma.app.browser.BrowserPreferences]
  * keeps in sync with the persisted value.
  */
 private val toolTimeoutMs: Long get() = BrowserController.perToolTimeoutMs
@@ -134,7 +134,7 @@ private fun textPart(obj: JsonObject): List<UIMessagePart> =
 private fun jsString(s: String): String = JsonPrimitive(s).toString()
 
 /**
- * Wrap a tool's dispatch with a RUNNING -> OK/FAILED [me.rerere.rikkahub.browser.BrowserAiAction]
+ * Wrap a tool's dispatch with a RUNNING -> OK/FAILED [com.clma.app.browser.BrowserAiAction]
  * entry. [beginAction] fires before [block] runs (so the stripe's spinner covers the actual
  * WebView work, not just the instant the envelope is built); [ok] reads the outcome off
  * [block]'s returned envelope — by convention `success == true`. The `try/finally` guarantees
@@ -348,7 +348,7 @@ fun browserOpenTool(context: Context, invocationContext: ToolInvocationContext? 
                         val wasAlreadyBound = BrowserController.isBound()
                         if (!wasAlreadyBound) {
                             context.startActivity(
-                                me.rerere.rikkahub.browser.BrowserActivity.intent(
+                                com.clma.app.browser.BrowserActivity.intent(
                                     context,
                                     url,
                                     conversationId = callerConvId,
@@ -1624,7 +1624,7 @@ private suspend fun runHistoryNav(toolName: String, forward: Boolean): JsonObjec
 
 /**
  * Factory dispatch for a given browser tool name. Used by
- * [me.rerere.rikkahub.data.ai.tools.LocalTools.getTools] which iterates the per-tool
+ * [com.clma.app.data.ai.tools.LocalTools.getTools] which iterates the per-tool
  * preference map and only constructs the ones currently enabled.
  *
  * Pass 3: [invocationContext] flows through to the two tool factories that consult it:

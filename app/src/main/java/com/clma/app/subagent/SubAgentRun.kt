@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.subagent
+package com.clma.app.subagent
 
 import kotlinx.serialization.Serializable
 
@@ -79,7 +79,7 @@ object SubAgentDefaults {
 
     /**
      * Accepted values for `subagent_dispatch`'s `reasoning_level` — the lowercase serial names
-     * of `me.rerere.ai.core.ReasoningLevel`, listed here so [SubAgentRequestValidator] stays
+     * of `com.clma.ai.core.ReasoningLevel`, listed here so [SubAgentRequestValidator] stays
      * free of the :ai module. The local test harness pins this list against the real enum, so
      * a new level added upstream fails loudly instead of silently being rejected here.
      */
@@ -95,7 +95,7 @@ object SubAgentDefaults {
     /**
      * How many times a sub-agent retries its generation after a non-cancellation failure
      * (all internal retries + model routing exhausted). Each retry re-runs the generation
-     * via [me.rerere.rikkahub.service.ChatService.regenerateAtMessage], which means each
+     * via [com.clma.app.service.ChatService.regenerateAtMessage], which means each
      * retry also benefits from model routing — a model that failed is in cooldown, so the
      * next attempt automatically tries a different favourite model.
      *
@@ -127,8 +127,8 @@ data class SubAgentRequest(
     val modelId: String? = null,
     /**
      * #36, re-homed onto the expert library by P2-06b: name of a stored
-     * [me.rerere.rikkahub.data.agentdef.AgentDefinition], resolved case-insensitively by
-     * [me.rerere.rikkahub.data.agentdef.AgentDefinitionResolver]. `modelId` above wins over the
+     * [com.clma.app.data.agentdef.AgentDefinition], resolved case-insensitively by
+     * [com.clma.app.data.agentdef.AgentDefinitionResolver]. `modelId` above wins over the
      * expert's model when both are given; see [SubAgentEngine.executeRun].
      */
     val agentName: String? = null,
@@ -151,7 +151,7 @@ data class SubAgentRequest(
      * Per-run thinking depth: one of [SubAgentDefaults.VALID_REASONING_LEVELS], validated by
      * [SubAgentRequestValidator]. Null = inherit the assistant's own reasoning level (the
      * pre-feature behaviour). Applied through
-     * [me.rerere.rikkahub.data.ai.limits.ConversationReasoningOverrides] for exactly the run's
+     * [com.clma.app.data.ai.limits.ConversationReasoningOverrides] for exactly the run's
      * lifetime; providers whose model lacks the reasoning ability ignore it downstream.
      */
     val reasoningLevel: String? = null,

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.workflow.condition
+package com.clma.app.workflow.condition
 
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull

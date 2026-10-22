@@ -1,4 +1,4 @@
-package me.rerere.ai.core
+package com.clma.ai.core
 
 import kotlinx.serialization.Serializable
 

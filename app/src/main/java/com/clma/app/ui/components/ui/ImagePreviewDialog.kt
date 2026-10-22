@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.ui
+package com.clma.app.ui.components.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,9 +25,9 @@ import com.jvziyaoyao.scale.zoomable.pager.rememberZoomablePagerState
 import kotlinx.coroutines.launch
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Download01
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.files.FilesManager
-import me.rerere.rikkahub.ui.context.LocalToaster
+import com.clma.app.R
+import com.clma.app.data.files.FilesManager
+import com.clma.app.ui.context.LocalToaster
 import org.koin.compose.koinInject
 
 @Composable

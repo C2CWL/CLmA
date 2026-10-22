@@ -1,13 +1,13 @@
-package me.rerere.rikkahub.ui.theme
+package com.clma.app.ui.theme
 
-import me.rerere.rikkahub.data.datastore.ChatFontFamily
+import com.clma.app.data.datastore.ChatFontFamily
 import kotlin.math.roundToInt
 
 /**
  * Pure rules behind the two font size controls on the display settings page:
- *  - the existing chat font size ([me.rerere.rikkahub.data.datastore.DisplaySetting.fontSizeRatio],
+ *  - the existing chat font size ([com.clma.app.data.datastore.DisplaySetting.fontSizeRatio],
  *    chat messages only), and
- *  - the app-wide UI font size ([me.rerere.rikkahub.data.datastore.DisplaySetting.uiFontScale]),
+ *  - the app-wide UI font size ([com.clma.app.data.datastore.DisplaySetting.uiFontScale]),
  *    applied as a multiplier on `Density.fontScale` so `sp` text scales while `dp` layout does not.
  *
  * Both sliders are continuous with 1% granularity, and the percentage next to each can be typed

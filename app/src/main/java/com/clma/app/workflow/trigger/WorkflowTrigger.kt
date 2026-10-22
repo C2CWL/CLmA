@@ -1,11 +1,11 @@
-package me.rerere.rikkahub.workflow.trigger
+package com.clma.app.workflow.trigger
 
-import me.rerere.rikkahub.workflow.model.TriggerSpec
-import me.rerere.rikkahub.workflow.model.WorkflowDefinition
+import com.clma.app.workflow.model.TriggerSpec
+import com.clma.app.workflow.model.WorkflowDefinition
 
 /**
  * Callback the trigger family fires when its underlying signal arrives. The registry
- * routes this to [me.rerere.rikkahub.workflow.execution.WorkflowEngine.fire].
+ * routes this to [com.clma.app.workflow.execution.WorkflowEngine.fire].
  *
  * [matchSpec] is the trigger spec that fired (used to discriminate between, e.g.,
  * `wifi_connected` and `wifi_disconnected` on the same receiver). The engine still

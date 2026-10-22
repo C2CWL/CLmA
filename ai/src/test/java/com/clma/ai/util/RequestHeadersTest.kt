@@ -1,7 +1,7 @@
-package me.rerere.ai.util
+package com.clma.ai.util
 
-import me.rerere.ai.provider.CustomHeader
-import me.rerere.ai.provider.ProviderSetting
+import com.clma.ai.provider.CustomHeader
+import com.clma.ai.provider.ProviderSetting
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

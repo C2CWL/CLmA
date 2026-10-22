@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.search
+package com.clma.app.ui.pages.search
 
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Refresh01
@@ -51,15 +51,15 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.db.fts.MessageSearchResult
-import me.rerere.rikkahub.data.db.fts.MessageSearchSort
-import me.rerere.rikkahub.ui.components.nav.BackButton
-import me.rerere.rikkahub.ui.context.LocalNavController
-import me.rerere.rikkahub.ui.theme.CustomColors
-import me.rerere.rikkahub.utils.navigateToChatPage
-import me.rerere.rikkahub.utils.plus
-import me.rerere.rikkahub.utils.toLocalDateTime
+import com.clma.app.R
+import com.clma.app.data.db.fts.MessageSearchResult
+import com.clma.app.data.db.fts.MessageSearchSort
+import com.clma.app.ui.components.nav.BackButton
+import com.clma.app.ui.context.LocalNavController
+import com.clma.app.ui.theme.CustomColors
+import com.clma.app.utils.navigateToChatPage
+import com.clma.app.utils.plus
+import com.clma.app.utils.toLocalDateTime
 import org.koin.androidx.compose.koinViewModel
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter

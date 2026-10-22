@@ -1,4 +1,4 @@
-package me.rerere.workspace
+package com.clma.workspace
 
 import com.sun.net.httpserver.HttpServer
 import org.junit.Assert.*

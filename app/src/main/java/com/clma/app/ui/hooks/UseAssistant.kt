@@ -1,13 +1,13 @@
-package me.rerere.rikkahub.ui.hooks
+package com.clma.app.ui.hooks
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import me.rerere.rikkahub.data.datastore.Settings
-import me.rerere.rikkahub.data.datastore.getCurrentAssistant
-import me.rerere.rikkahub.data.model.Assistant
+import com.clma.app.data.datastore.Settings
+import com.clma.app.data.datastore.getCurrentAssistant
+import com.clma.app.data.model.Assistant
 
 @Composable
 fun rememberAssistantState(

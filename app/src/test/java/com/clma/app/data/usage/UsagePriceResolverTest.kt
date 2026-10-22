@@ -1,9 +1,9 @@
-package me.rerere.rikkahub.data.usage
+package com.clma.app.data.usage
 
-import me.rerere.ai.core.TokenUsage
-import me.rerere.ai.provider.ModelPricing
-import me.rerere.ai.provider.OffPeakRates
-import me.rerere.ai.provider.PeakWindow
+import com.clma.ai.core.TokenUsage
+import com.clma.ai.provider.ModelPricing
+import com.clma.ai.provider.OffPeakRates
+import com.clma.ai.provider.PeakWindow
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull

@@ -1,6 +1,6 @@
-package me.rerere.highlight.languages
+package com.clma.highlight.languages
 
-import me.rerere.highlight.HljsFixtures
+import com.clma.highlight.HljsFixtures
 import org.junit.Test
 
 /** Every bundled grammar is checked against the token stream `highlight.js` produces. */

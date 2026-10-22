@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.message
+package com.clma.app.ui.components.message
 
 import android.os.Build
 import androidx.compose.foundation.LocalIndication
@@ -40,10 +40,10 @@ import androidx.compose.ui.unit.dp
 import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.delay
 import kotlinx.datetime.toJavaLocalDateTime
-import me.rerere.ai.core.MessageRole
-import me.rerere.ai.provider.Model
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.UIMessagePart
+import com.clma.ai.core.MessageRole
+import com.clma.ai.provider.Model
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessagePart
 import kotlinx.datetime.LocalDateTime
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Copy01
@@ -59,18 +59,18 @@ import me.rerere.hugeicons.stroke.TextSelection
 import me.rerere.hugeicons.stroke.Translate
 import me.rerere.hugeicons.stroke.VolumeHigh
 import me.rerere.hugeicons.stroke.WebDesign01
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.model.MessageNode
-import me.rerere.rikkahub.ui.components.ui.FrostedPlateSpec
-import me.rerere.rikkahub.ui.components.ui.RikkaConfirmDialog
-import me.rerere.rikkahub.ui.components.ui.frostedPlate
-import me.rerere.rikkahub.ui.context.LocalSettings
-import me.rerere.rikkahub.ui.context.LocalTTSState
-import me.rerere.rikkahub.utils.copyMessageToClipboard
-import me.rerere.rikkahub.utils.extractQuotedContentAsText
-import me.rerere.rikkahub.utils.removeBracketedContent
-import me.rerere.rikkahub.utils.toLocalString
-import me.rerere.rikkahub.utils.toMessageTimeString
+import com.clma.app.R
+import com.clma.app.data.model.MessageNode
+import com.clma.app.ui.components.ui.FrostedPlateSpec
+import com.clma.app.ui.components.ui.RikkaConfirmDialog
+import com.clma.app.ui.components.ui.frostedPlate
+import com.clma.app.ui.context.LocalSettings
+import com.clma.app.ui.context.LocalTTSState
+import com.clma.app.utils.copyMessageToClipboard
+import com.clma.app.utils.extractQuotedContentAsText
+import com.clma.app.utils.removeBracketedContent
+import com.clma.app.utils.toLocalString
+import com.clma.app.utils.toMessageTimeString
 import java.util.Locale
 
 @Composable

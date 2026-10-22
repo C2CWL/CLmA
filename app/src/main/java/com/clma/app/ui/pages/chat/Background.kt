@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.chat
+package com.clma.app.ui.pages.chat
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -10,9 +10,9 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import coil3.compose.AsyncImage
-import me.rerere.rikkahub.data.datastore.Settings
-import me.rerere.rikkahub.data.datastore.getCurrentAssistant
-import me.rerere.rikkahub.ui.theme.LocalDarkMode
+import com.clma.app.data.datastore.Settings
+import com.clma.app.data.datastore.getCurrentAssistant
+import com.clma.app.ui.theme.LocalDarkMode
 
 @Composable
 fun AssistantBackground(setting: Settings, modifier: Modifier) {

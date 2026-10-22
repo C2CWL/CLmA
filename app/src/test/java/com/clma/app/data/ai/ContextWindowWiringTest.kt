@@ -1,9 +1,9 @@
-package me.rerere.rikkahub.data.ai
+package com.clma.app.data.ai
 
-import me.rerere.ai.provider.Model
-import me.rerere.rikkahub.data.datastore.AutoCompactionThresholdMode
-import me.rerere.rikkahub.data.datastore.Settings
-import me.rerere.rikkahub.data.datastore.getEffectiveContextLength
+import com.clma.ai.provider.Model
+import com.clma.app.data.datastore.AutoCompactionThresholdMode
+import com.clma.app.data.datastore.Settings
+import com.clma.app.data.datastore.getEffectiveContextLength
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test

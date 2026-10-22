@@ -1,12 +1,12 @@
-package me.rerere.highlight.languages.powershell
+package com.clma.highlight.languages.powershell
 
-import me.rerere.highlight.core.Language
-import me.rerere.highlight.core.Mode
-import me.rerere.highlight.core.NUMBER_MODE
-import me.rerere.highlight.core.TITLE_MODE
-import me.rerere.highlight.core.comment
-import me.rerere.highlight.core.keywords
-import me.rerere.highlight.core.mode
+import com.clma.highlight.core.Language
+import com.clma.highlight.core.Mode
+import com.clma.highlight.core.NUMBER_MODE
+import com.clma.highlight.core.TITLE_MODE
+import com.clma.highlight.core.comment
+import com.clma.highlight.core.keywords
+import com.clma.highlight.core.mode
 
 /** PowerShell, ported from `lib/languages/powershell.js` of `highlight.js` 11.11.1. */
 internal fun powershell(): Language {

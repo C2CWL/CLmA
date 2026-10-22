@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.secrets
+package com.clma.app.data.secrets
 
 import android.content.Context
 import android.content.SharedPreferences
@@ -21,7 +21,7 @@ import javax.crypto.spec.GCMParameterSpec
  * Keystore master key). The model sees the *name* (`webdav_pass`, `ssh_vps_key`, …) and
  * tools resolve it locally at execute time (`password_secret`, `stdin_secret`, …).
  *
- * Mirrors [me.rerere.rikkahub.workflow.secrets.WorkflowSecretsStore] / SkillSecretsStore
+ * Mirrors [com.clma.app.workflow.secrets.WorkflowSecretsStore] / SkillSecretsStore
  * storage discipline: device-bound key, prefs excluded from cloud backup by the
  * sharedpref deny-by-default rules, fallback obfuscation if the keystore is unavailable.
  */

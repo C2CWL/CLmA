@@ -1,12 +1,12 @@
-package me.rerere.highlight.languages.dockerfile
+package com.clma.highlight.languages.dockerfile
 
-import me.rerere.highlight.core.APOS_STRING_MODE
-import me.rerere.highlight.core.HASH_COMMENT_MODE
-import me.rerere.highlight.core.Language
-import me.rerere.highlight.core.NUMBER_MODE
-import me.rerere.highlight.core.QUOTE_STRING_MODE
-import me.rerere.highlight.core.keywords
-import me.rerere.highlight.core.mode
+import com.clma.highlight.core.APOS_STRING_MODE
+import com.clma.highlight.core.HASH_COMMENT_MODE
+import com.clma.highlight.core.Language
+import com.clma.highlight.core.NUMBER_MODE
+import com.clma.highlight.core.QUOTE_STRING_MODE
+import com.clma.highlight.core.keywords
+import com.clma.highlight.core.mode
 
 /** Dockerfile, ported from `lib/languages/dockerfile.js` of `highlight.js` 11.11.1. */
 internal fun dockerfile(): Language = Language(

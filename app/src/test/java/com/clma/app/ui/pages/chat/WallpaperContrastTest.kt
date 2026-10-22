@@ -1,6 +1,6 @@
-package me.rerere.rikkahub.ui.pages.chat
+package com.clma.app.ui.pages.chat
 
-import me.rerere.rikkahub.data.model.AssistantBackgroundMode
+import com.clma.app.data.model.AssistantBackgroundMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull

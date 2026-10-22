@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.setting
+package com.clma.app.ui.pages.setting
 
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Add01
@@ -49,20 +49,20 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.Screen
-import me.rerere.rikkahub.ui.components.nav.BackButton
-import me.rerere.rikkahub.ui.components.ui.AutoAIIcon
-import me.rerere.rikkahub.ui.components.ui.FormItem
-import me.rerere.rikkahub.ui.components.ui.OutlinedNumberInput
-import me.rerere.rikkahub.ui.components.ui.Tag
-import me.rerere.rikkahub.ui.components.ui.TagType
-import me.rerere.rikkahub.ui.context.LocalNavController
-import me.rerere.rikkahub.ui.theme.CustomColors
-import me.rerere.rikkahub.utils.plus
-import me.rerere.search.SearchCommonOptions
-import me.rerere.search.SearchService
-import me.rerere.search.SearchServiceOptions
+import com.clma.app.R
+import com.clma.app.Screen
+import com.clma.app.ui.components.nav.BackButton
+import com.clma.app.ui.components.ui.AutoAIIcon
+import com.clma.app.ui.components.ui.FormItem
+import com.clma.app.ui.components.ui.OutlinedNumberInput
+import com.clma.app.ui.components.ui.Tag
+import com.clma.app.ui.components.ui.TagType
+import com.clma.app.ui.context.LocalNavController
+import com.clma.app.ui.theme.CustomColors
+import com.clma.app.utils.plus
+import com.clma.search.SearchCommonOptions
+import com.clma.search.SearchService
+import com.clma.search.SearchServiceOptions
 import org.koin.androidx.compose.koinViewModel
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
@@ -374,7 +374,7 @@ fun SearchAbilityTagLine(
 
 @Composable
 private fun CommonOptions(
-    settings: me.rerere.rikkahub.data.datastore.Settings,
+    settings: com.clma.app.data.datastore.Settings,
     onUpdate: (SearchCommonOptions) -> Unit,
     onUpdateWebFetchTools: (Boolean) -> Unit
 ) {

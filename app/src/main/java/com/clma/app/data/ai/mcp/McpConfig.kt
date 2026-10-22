@@ -1,8 +1,8 @@
-package me.rerere.rikkahub.data.ai.mcp
+package com.clma.app.data.ai.mcp
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import me.rerere.ai.core.InputSchema
+import com.clma.ai.core.InputSchema
 import kotlin.uuid.Uuid
 
 @Serializable

@@ -1,6 +1,6 @@
-package me.rerere.rikkahub.data.event
+package com.clma.app.data.event
 
-import me.rerere.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessage
 import kotlin.uuid.Uuid
 
 sealed class AppEvent {

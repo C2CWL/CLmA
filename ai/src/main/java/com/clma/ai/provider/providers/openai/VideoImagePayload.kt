@@ -1,4 +1,4 @@
-package me.rerere.ai.provider.providers.openai
+package com.clma.ai.provider.providers.openai
 
 /**
  * Normalises a local first-frame image for the video vendors that accept an **inline** image.

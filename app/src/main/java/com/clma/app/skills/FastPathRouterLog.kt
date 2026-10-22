@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.skills
+package com.clma.app.skills
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.db.dao
+package com.clma.app.data.db.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
@@ -8,7 +8,7 @@ import androidx.room.RawQuery
 import androidx.room.Update
 import androidx.sqlite.db.SimpleSQLiteQuery
 import androidx.sqlite.db.SupportSQLiteQuery
-import me.rerere.rikkahub.data.db.entity.MessageNodeEntity
+import com.clma.app.data.db.entity.MessageNodeEntity
 
 @Dao
 interface MessageNodeDAO {

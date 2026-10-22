@@ -1,10 +1,10 @@
-package me.rerere.ai.provider.providers.openai
+package com.clma.ai.provider.providers.openai
 
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
-import me.rerere.ai.provider.Modality
-import me.rerere.ai.provider.ModelAbility
-import me.rerere.ai.provider.ModelType
+import com.clma.ai.provider.Modality
+import com.clma.ai.provider.ModelAbility
+import com.clma.ai.provider.ModelType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

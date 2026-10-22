@@ -1,11 +1,11 @@
-package me.rerere.rikkahub.data.ai
+package com.clma.app.data.ai
 
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.data.model.Conversation
-import me.rerere.rikkahub.data.model.ConversationCompaction
-import me.rerere.rikkahub.data.model.MessageNode
-import me.rerere.rikkahub.data.model.toMessageNode
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.model.Conversation
+import com.clma.app.data.model.ConversationCompaction
+import com.clma.app.data.model.MessageNode
+import com.clma.app.data.model.toMessageNode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
@@ -123,7 +123,7 @@ class ContextCompactionViewTest {
                 createdAt = Instant.now(),
             ),
         )
-        val updatedTail = nodes[2].currentMessage.copy(parts = listOf(me.rerere.ai.ui.UIMessagePart.Text("updated three")))
+        val updatedTail = nodes[2].currentMessage.copy(parts = listOf(com.clma.ai.ui.UIMessagePart.Text("updated three")))
 
         val merged = ContextCompactionView.mergeGeneratedMessages(
             conversation = conversation,
@@ -148,7 +148,7 @@ class ContextCompactionViewTest {
             )
         }
         val toolNode = MessageNode(
-            messages = listOf(UIMessage(role = me.rerere.ai.core.MessageRole.ASSISTANT, parts = tools))
+            messages = listOf(UIMessage(role = com.clma.ai.core.MessageRole.ASSISTANT, parts = tools))
         )
         val conversation = Conversation(
             assistantId = Uuid.random(),

@@ -1,15 +1,15 @@
-package me.rerere.rikkahub.workflow.trigger
+package com.clma.app.workflow.trigger
 
 import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import me.rerere.rikkahub.workflow.model.TriggerSpec
-import me.rerere.rikkahub.workflow.model.WorkflowDefinition
+import com.clma.app.workflow.model.TriggerSpec
+import com.clma.app.workflow.model.WorkflowDefinition
 
 /**
  * Phase 12 — `notification_received` trigger. Hooks into the existing
- * [me.rerere.rikkahub.service.RikkaNotificationListenerService] via
+ * [com.clma.app.service.RikkaNotificationListenerService] via
  * [NotificationTriggerDispatcher]. We don't register a second listener; the existing
  * one calls our dispatcher on every posted notification, and the family decides whether
  * any workflow matches.

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.tools.local
+package com.clma.app.data.ai.tools.local
 
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals

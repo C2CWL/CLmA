@@ -1,10 +1,10 @@
-package me.rerere.ai.ui
+package com.clma.ai.ui
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
-import me.rerere.ai.core.TokenUsage
+import com.clma.ai.core.TokenUsage
 
 /**
  * Provider-independent streaming events.

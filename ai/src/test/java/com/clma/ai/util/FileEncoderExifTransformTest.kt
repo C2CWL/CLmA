@@ -1,6 +1,6 @@
-package me.rerere.ai.util
+package com.clma.ai.util
 
-import me.rerere.ai.ui.UIMessagePart
+import com.clma.ai.ui.UIMessagePart
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

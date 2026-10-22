@@ -1,17 +1,17 @@
-package me.rerere.rikkahub.data.model
+package com.clma.app.data.model
 
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import me.rerere.ai.core.MessageRole
-import me.rerere.ai.provider.CustomBody
-import me.rerere.ai.provider.CustomHeader
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.core.ReasoningLevel
-import me.rerere.rikkahub.data.ai.tools.LenientLocalToolListSerializer
-import me.rerere.rikkahub.data.ai.tools.LocalToolOption
-import me.rerere.rikkahub.data.ai.tools.ToolSurfaceMode
-import me.rerere.rikkahub.utils.SimpleCache
+import com.clma.ai.core.MessageRole
+import com.clma.ai.provider.CustomBody
+import com.clma.ai.provider.CustomHeader
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.core.ReasoningLevel
+import com.clma.app.data.ai.tools.LenientLocalToolListSerializer
+import com.clma.app.data.ai.tools.LocalToolOption
+import com.clma.app.data.ai.tools.ToolSurfaceMode
+import com.clma.app.utils.SimpleCache
 import java.util.concurrent.TimeUnit
 import kotlin.uuid.Uuid
 

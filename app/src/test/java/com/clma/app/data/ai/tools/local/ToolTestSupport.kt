@@ -1,11 +1,11 @@
-package me.rerere.rikkahub.data.ai.tools.local
+package com.clma.app.data.ai.tools.local
 
 import android.content.Context
 import android.content.ContextWrapper
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
-import me.rerere.ai.core.Tool
-import me.rerere.ai.ui.UIMessagePart
+import com.clma.ai.core.Tool
+import com.clma.ai.ui.UIMessagePart
 import sun.misc.Unsafe
 
 /**

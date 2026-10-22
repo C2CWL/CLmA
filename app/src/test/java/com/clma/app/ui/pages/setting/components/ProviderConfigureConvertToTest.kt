@@ -1,9 +1,9 @@
-package me.rerere.rikkahub.ui.pages.setting.components
+package com.clma.app.ui.pages.setting.components
 
-import me.rerere.ai.provider.BalanceOption
-import me.rerere.ai.provider.CustomHeader
-import me.rerere.ai.provider.Model
-import me.rerere.ai.provider.ProviderSetting
+import com.clma.ai.provider.BalanceOption
+import com.clma.ai.provider.CustomHeader
+import com.clma.ai.provider.Model
+import com.clma.ai.provider.ProviderSetting
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame

@@ -1,6 +1,6 @@
-package me.rerere.rikkahub.ui.components.ui
+package com.clma.app.ui.components.ui
 
-import me.rerere.rikkahub.ui.pages.chat.PHOTO_TITLE_PLATE_ALPHA
+import com.clma.app.ui.pages.chat.PHOTO_TITLE_PLATE_ALPHA
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull

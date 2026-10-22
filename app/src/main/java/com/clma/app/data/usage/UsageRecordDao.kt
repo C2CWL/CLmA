@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.usage
+package com.clma.app.data.usage
 
 import androidx.room.Dao
 import androidx.room.Insert

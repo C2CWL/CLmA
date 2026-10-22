@@ -1,4 +1,4 @@
-package me.rerere.common.android
+package com.clma.common.android
 
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.web
+package com.clma.app.web
 
 import org.junit.Test
 

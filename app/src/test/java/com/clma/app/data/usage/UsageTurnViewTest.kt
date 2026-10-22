@@ -1,6 +1,6 @@
-package me.rerere.rikkahub.data.usage
+package com.clma.app.data.usage
 
-import me.rerere.ai.core.MessageRole
+import com.clma.ai.core.MessageRole
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull

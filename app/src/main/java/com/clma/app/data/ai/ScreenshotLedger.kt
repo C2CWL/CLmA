@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai
+package com.clma.app.data.ai
 
 /**
  * Files produced by `take_screenshot` during the current turn that should not outlive it.

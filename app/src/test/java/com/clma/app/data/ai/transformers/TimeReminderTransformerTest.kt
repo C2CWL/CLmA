@@ -1,13 +1,13 @@
-package me.rerere.rikkahub.data.ai.transformers
+package com.clma.app.data.ai.transformers
 
 import kotlinx.datetime.LocalDateTime
-import me.rerere.ai.core.MessageRole
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.data.ai.ContextCompactionView
-import me.rerere.rikkahub.data.model.Conversation
-import me.rerere.rikkahub.data.model.ConversationCompaction
-import me.rerere.rikkahub.data.model.MessageNode
+import com.clma.ai.core.MessageRole
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.ai.ContextCompactionView
+import com.clma.app.data.model.Conversation
+import com.clma.app.data.model.ConversationCompaction
+import com.clma.app.data.model.MessageNode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

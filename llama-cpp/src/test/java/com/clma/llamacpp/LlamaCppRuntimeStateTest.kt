@@ -1,4 +1,4 @@
-package me.rerere.llamacpp
+package com.clma.llamacpp
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

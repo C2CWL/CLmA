@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.ui
+package com.clma.app.ui.components.ui
 
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.LocalIndication
@@ -31,7 +31,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEachIndexed
-import me.rerere.rikkahub.ui.theme.CustomColors
+import com.clma.app.ui.theme.CustomColors
 
 private val CardGroupCorner = 20.dp
 private val CardGroupItemSpacing = 2.dp

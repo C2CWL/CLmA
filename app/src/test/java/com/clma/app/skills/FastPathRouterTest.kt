@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.skills
+package com.clma.app.skills
 
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject

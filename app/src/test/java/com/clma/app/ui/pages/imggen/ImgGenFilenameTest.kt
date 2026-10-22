@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.imggen
+package com.clma.app.ui.pages.imggen
 
 import org.junit.Assert.assertEquals
 import org.junit.Test

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.preferences
+package com.clma.app.data.preferences
 
 import android.content.Context
 import android.util.Log
@@ -10,8 +10,8 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import me.rerere.rikkahub.data.ai.tools.ApprovalMode
-import me.rerere.rikkahub.data.ai.tools.ToolApprovalDefaults
+import com.clma.app.data.ai.tools.ApprovalMode
+import com.clma.app.data.ai.tools.ToolApprovalDefaults
 
 private const val TAG = "ToolApprovalPreferences"
 
@@ -56,7 +56,7 @@ data class ToolApprovalSnapshot(
  * 1. **Blacklist** — the user's list of tools that must ask before running. Only consulted in
  *    Semi mode; in Auto it is ignored, in Manual every tool asks anyway. Configured from
  *    Settings → Tool approvals. The non-waivable floor
- *    ([me.rerere.rikkahub.data.ai.tools.ToolApprovalDefaults.NO_ALWAYS_ALLOW]) asks regardless
+ *    ([com.clma.app.data.ai.tools.ToolApprovalDefaults.NO_ALWAYS_ALLOW]) asks regardless
  *    of this set and regardless of the mode; opaque relayed `mcp__*` tools ask too, except in
  *    Auto mode which waives them (拍板 2026-10-16).
  *
@@ -66,7 +66,7 @@ data class ToolApprovalSnapshot(
  *    the YOLO scheme resets every user to the safest posture.
  *
  * The companion in-memory "Allow for this chat" allow-list lives in
- * [me.rerere.rikkahub.data.ai.tools.ToolApprovalAllowList] and resets on /new or app
+ * [com.clma.app.data.ai.tools.ToolApprovalAllowList] and resets on /new or app
  * process restart.
  */
 class ToolApprovalPreferences(private val context: Context) {

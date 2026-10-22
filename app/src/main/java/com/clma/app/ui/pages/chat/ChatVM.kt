@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.chat
+package com.clma.app.ui.pages.chat
 
 import android.app.Application
 import android.content.Context
@@ -26,33 +26,33 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
-import me.rerere.ai.core.MessageRole
-import me.rerere.ai.core.ReasoningLevel
-import me.rerere.ai.provider.Model
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.ai.ui.isEmptyInputMessage
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.datastore.Settings
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.datastore.getCurrentAssistant
-import me.rerere.rikkahub.data.datastore.resolveChatModel
-import me.rerere.rikkahub.data.usage.TurnFooter
-import me.rerere.rikkahub.data.usage.TurnNode
-import me.rerere.rikkahub.data.usage.UsageLedger
-import me.rerere.rikkahub.data.usage.UsageTurnViewFactory
-import me.rerere.rikkahub.data.files.FilesManager
-import me.rerere.rikkahub.data.model.Assistant
-import me.rerere.rikkahub.data.model.Avatar
-import me.rerere.rikkahub.data.model.Conversation
-import me.rerere.rikkahub.data.model.MessageNode
-import me.rerere.rikkahub.data.model.NodeFavoriteTarget
-import me.rerere.rikkahub.data.repository.ConversationRepository
-import me.rerere.rikkahub.data.repository.FavoriteRepository
-import me.rerere.rikkahub.service.ChatError
-import me.rerere.rikkahub.service.ChatService
-import me.rerere.rikkahub.ui.hooks.writeStringPreference
-import me.rerere.rikkahub.ui.hooks.ChatInputState
+import com.clma.ai.core.MessageRole
+import com.clma.ai.core.ReasoningLevel
+import com.clma.ai.provider.Model
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessagePart
+import com.clma.ai.ui.isEmptyInputMessage
+import com.clma.app.R
+import com.clma.app.data.datastore.Settings
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.datastore.getCurrentAssistant
+import com.clma.app.data.datastore.resolveChatModel
+import com.clma.app.data.usage.TurnFooter
+import com.clma.app.data.usage.TurnNode
+import com.clma.app.data.usage.UsageLedger
+import com.clma.app.data.usage.UsageTurnViewFactory
+import com.clma.app.data.files.FilesManager
+import com.clma.app.data.model.Assistant
+import com.clma.app.data.model.Avatar
+import com.clma.app.data.model.Conversation
+import com.clma.app.data.model.MessageNode
+import com.clma.app.data.model.NodeFavoriteTarget
+import com.clma.app.data.repository.ConversationRepository
+import com.clma.app.data.repository.FavoriteRepository
+import com.clma.app.service.ChatError
+import com.clma.app.service.ChatService
+import com.clma.app.ui.hooks.writeStringPreference
+import com.clma.app.ui.hooks.ChatInputState
 import java.util.Locale
 import kotlin.uuid.Uuid
 
@@ -340,8 +340,8 @@ class ChatVM(
         toolCallId: String,
         approved: Boolean,
         reason: String = "",
-        scope: me.rerere.rikkahub.service.ChatService.ApprovalScope =
-            me.rerere.rikkahub.service.ChatService.ApprovalScope.Once,
+        scope: com.clma.app.service.ChatService.ApprovalScope =
+            com.clma.app.service.ChatService.ApprovalScope.Once,
         toolName: String? = null,
     ) {
         chatService.handleToolApproval(
@@ -361,7 +361,7 @@ class ChatVM(
         chatService.handleToolApproval(_conversationId, toolCallId, approved = true, answer = answer)
     }
 
-    suspend fun rerunTool(toolCallId: String): me.rerere.rikkahub.service.ChatService.RerunToolResult =
+    suspend fun rerunTool(toolCallId: String): com.clma.app.service.ChatService.RerunToolResult =
         chatService.rerunTool(_conversationId, toolCallId)
 
     fun stopGeneration() {
@@ -401,7 +401,7 @@ class ChatVM(
             // (different prompt, different tool list), and the user authorised them under
             // the old persona's behaviour, not this one's. Persistent "Always Allow" grants
             // stay (they were granted globally) but ChatScope is reset.
-            me.rerere.rikkahub.data.ai.tools.ToolApprovalAllowList.clearChat(conversation.id)
+            com.clma.app.data.ai.tools.ToolApprovalAllowList.clearChat(conversation.id)
             if (conversation.id == _conversationId) {
                 chatService.saveConversation(_conversationId, updatedConversation)
                 settingsStore.updateAssistant(targetAssistantId)

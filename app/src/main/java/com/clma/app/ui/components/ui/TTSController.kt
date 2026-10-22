@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.ui
+package com.clma.app.ui.components.ui
 
 import androidx.compose.animation.AnimatedVisibility
 import com.dokar.sonner.ToastType
@@ -33,13 +33,13 @@ import me.rerere.hugeicons.stroke.Cancel01
 import me.rerere.hugeicons.stroke.Forward02
 import me.rerere.hugeicons.stroke.Pause
 import me.rerere.hugeicons.stroke.Play
-import me.rerere.rikkahub.ui.context.LocalTTSState
-import me.rerere.rikkahub.ui.context.LocalToaster
-import me.rerere.rikkahub.ui.hooks.CustomTtsState
-import me.rerere.tts.model.PlaybackState
-import me.rerere.tts.model.PlaybackStatus
+import com.clma.app.ui.context.LocalTTSState
+import com.clma.app.ui.context.LocalToaster
+import com.clma.app.ui.hooks.CustomTtsState
+import com.clma.tts.model.PlaybackState
+import com.clma.tts.model.PlaybackStatus
 import androidx.compose.ui.res.stringResource
-import me.rerere.rikkahub.R
+import com.clma.app.R
 
 @Composable
 fun TTSController() {

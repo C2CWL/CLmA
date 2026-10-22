@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.extensions.skills
+package com.clma.app.ui.pages.extensions.skills
 
 import android.content.Context
 import androidx.lifecycle.ViewModel
@@ -8,10 +8,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.files.SkillFrontmatterParser
-import me.rerere.rikkahub.data.files.SkillManager
-import me.rerere.rikkahub.data.files.SkillMetadata
+import com.clma.app.R
+import com.clma.app.data.files.SkillFrontmatterParser
+import com.clma.app.data.files.SkillManager
+import com.clma.app.data.files.SkillMetadata
 import java.io.File
 
 data class SkillFile(

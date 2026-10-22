@@ -1,8 +1,8 @@
-package me.rerere.rikkahub.subagent
+package com.clma.app.subagent
 
-import me.rerere.ai.core.MessageRole
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.UIMessagePart
+import com.clma.ai.core.MessageRole
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessagePart
 
 /**
  * One parent-conversation turn, already reduced to the text the sub-agent will see.

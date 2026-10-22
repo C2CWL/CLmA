@@ -1,16 +1,16 @@
-package me.rerere.ai.provider
+package com.clma.ai.provider
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
-import me.rerere.ai.core.ReasoningLevel
-import me.rerere.ai.core.Tool
-import me.rerere.ai.core.TokenUsage
-import me.rerere.ai.ui.ImageAspectRatio
-import me.rerere.ai.ui.ImageGenerationItem
-import me.rerere.ai.ui.StreamChunk
-import me.rerere.ai.ui.VideoGenerationItem
-import me.rerere.ai.ui.UIMessage
+import com.clma.ai.core.ReasoningLevel
+import com.clma.ai.core.Tool
+import com.clma.ai.core.TokenUsage
+import com.clma.ai.ui.ImageAspectRatio
+import com.clma.ai.ui.ImageGenerationItem
+import com.clma.ai.ui.StreamChunk
+import com.clma.ai.ui.VideoGenerationItem
+import com.clma.ai.ui.UIMessage
 import kotlin.uuid.Uuid
 
 // 提供商实现

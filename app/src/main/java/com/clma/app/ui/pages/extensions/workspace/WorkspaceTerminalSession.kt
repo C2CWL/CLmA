@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.extensions.workspace
+package com.clma.app.ui.pages.extensions.workspace
 
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -15,10 +15,10 @@ import com.termux.terminal.TerminalSession
 import com.termux.terminal.TerminalSessionClient
 import com.termux.view.TerminalView
 import com.termux.view.TerminalViewClient
-import me.rerere.rikkahub.data.files.FileFolders
-import me.rerere.workspace.RootfsPatchOptions
-import me.rerere.workspace.RootfsPatcher
-import me.rerere.workspace.WorkspaceManager
+import com.clma.app.data.files.FileFolders
+import com.clma.workspace.RootfsPatchOptions
+import com.clma.workspace.RootfsPatcher
+import com.clma.workspace.WorkspaceManager
 import java.io.File
 
 internal fun createWorkspaceTerminalSession(

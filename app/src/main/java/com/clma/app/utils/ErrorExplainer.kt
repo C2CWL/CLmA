@@ -1,8 +1,8 @@
-package me.rerere.rikkahub.utils
+package com.clma.app.utils
 
 import androidx.annotation.StringRes
 import kotlinx.serialization.SerializationException
-import me.rerere.rikkahub.R
+import com.clma.app.R
 import java.io.IOException
 import java.net.ConnectException
 import java.net.SocketTimeoutException

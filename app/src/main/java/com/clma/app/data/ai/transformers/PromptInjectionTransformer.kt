@@ -1,14 +1,14 @@
-package me.rerere.rikkahub.data.ai.transformers
+package com.clma.app.data.ai.transformers
 
-import me.rerere.ai.core.MessageRole
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.data.model.Assistant
-import me.rerere.rikkahub.data.model.InjectionPosition
-import me.rerere.rikkahub.data.model.PromptInjection
-import me.rerere.rikkahub.data.model.Lorebook
-import me.rerere.rikkahub.data.model.extractContextForMatching
-import me.rerere.rikkahub.data.model.isTriggered
+import com.clma.ai.core.MessageRole
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.model.Assistant
+import com.clma.app.data.model.InjectionPosition
+import com.clma.app.data.model.PromptInjection
+import com.clma.app.data.model.Lorebook
+import com.clma.app.data.model.extractContextForMatching
+import com.clma.app.data.model.isTriggered
 import kotlin.uuid.Uuid
 
 /**

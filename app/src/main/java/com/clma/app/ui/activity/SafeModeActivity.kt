@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.activity
+package com.clma.app.ui.activity
 
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -47,18 +47,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import me.rerere.rikkahub.R
+import com.clma.app.R
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
-import me.rerere.rikkahub.data.datastore.Settings
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.datastore.getCurrentAssistant
-import me.rerere.rikkahub.ui.hooks.writeStringPreference
-import me.rerere.rikkahub.ui.theme.RikkahubTheme
-import me.rerere.rikkahub.RouteActivity
-import me.rerere.rikkahub.utils.CrashHandler
+import com.clma.app.data.datastore.Settings
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.datastore.getCurrentAssistant
+import com.clma.app.ui.hooks.writeStringPreference
+import com.clma.app.ui.theme.RikkahubTheme
+import com.clma.app.RouteActivity
+import com.clma.app.utils.CrashHandler
 import org.koin.android.ext.android.inject
 import kotlin.uuid.Uuid
 

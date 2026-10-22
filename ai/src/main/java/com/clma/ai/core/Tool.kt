@@ -1,12 +1,12 @@
-package me.rerere.ai.core
+package com.clma.ai.core
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
-import me.rerere.ai.provider.Model
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.UIMessagePart
+import com.clma.ai.provider.Model
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessagePart
 
 @Serializable
 data class Tool(

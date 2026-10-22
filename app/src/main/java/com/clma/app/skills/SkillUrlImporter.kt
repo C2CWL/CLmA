@@ -1,9 +1,9 @@
-package me.rerere.rikkahub.skills
+package com.clma.app.skills
 
-import me.rerere.rikkahub.data.files.SkillFrontmatterParser
-import me.rerere.rikkahub.data.files.SkillManager
-import me.rerere.rikkahub.data.files.SkillMetadata
-import me.rerere.rikkahub.data.files.SkillNameRules
+import com.clma.app.data.files.SkillFrontmatterParser
+import com.clma.app.data.files.SkillManager
+import com.clma.app.data.files.SkillMetadata
+import com.clma.app.data.files.SkillNameRules
 import kotlinx.serialization.json.contentOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -28,7 +28,7 @@ interface SkillSaver {
  *    required, `license` / `compatibility` / `metadata` / `allowed-tools` optional. Stored
  *    as-is, so a community skill keeps every field its author declared. A `name` that is
  *    merely off-spec (uppercase, `_`, over 64 characters) is normalised — see
- *    [me.rerere.rikkahub.data.files.SkillNameRules] — and the frontmatter's `name:` line is
+ *    [com.clma.app.data.files.SkillNameRules] — and the frontmatter's `name:` line is
  *    rewritten to match, keeping the spec's "name equals the directory name" layout rule.
  *  - **openclaw** — markdown skill with `## When to use` / `## Steps` / `## Tools used`
  *    sections. We synthesise a frontmatter block (`name:` from the first H1, `description:`
@@ -354,7 +354,7 @@ class SkillUrlImporter(
             .readTimeout(15, TimeUnit.SECONDS)
             .followRedirects(true)
             .build()
-            .also { me.rerere.rikkahub.utils.NetworkChangeMonitor.register(it) }
+            .also { com.clma.app.utils.NetworkChangeMonitor.register(it) }
     }
 }
 

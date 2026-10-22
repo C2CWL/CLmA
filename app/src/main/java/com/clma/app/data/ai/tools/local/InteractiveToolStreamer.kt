@@ -1,6 +1,6 @@
-package me.rerere.rikkahub.data.ai.tools.local
+package com.clma.app.data.ai.tools.local
 
-import me.rerere.rikkahub.data.ai.tools.ToolInvocationContext
+import com.clma.app.data.ai.tools.ToolInvocationContext
 
 /**
  * Side-effect surface for interactive tools to stream a post-action screenshot back

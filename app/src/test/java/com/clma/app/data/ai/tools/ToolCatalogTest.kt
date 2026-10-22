@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.tools
+package com.clma.app.data.ai.tools
 
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonNull
@@ -9,8 +9,8 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.JsonObject
-import me.rerere.ai.core.Tool
-import me.rerere.ai.ui.UIMessagePart
+import com.clma.ai.core.Tool
+import com.clma.ai.ui.UIMessagePart
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull

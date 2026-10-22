@@ -1,12 +1,12 @@
-package me.rerere.rikkahub.data.db.entity
+package com.clma.app.data.db.entity
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import me.rerere.rikkahub.utils.JsonInstant
-import me.rerere.workspace.Workspace
-import me.rerere.workspace.WorkspaceShellStatus
+import com.clma.app.utils.JsonInstant
+import com.clma.workspace.Workspace
+import com.clma.workspace.WorkspaceShellStatus
 
 @Entity(
     tableName = "workspaces",

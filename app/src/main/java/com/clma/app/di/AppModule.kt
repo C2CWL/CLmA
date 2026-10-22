@@ -1,29 +1,29 @@
-package me.rerere.rikkahub.di
+package com.clma.app.di
 
 import kotlinx.serialization.json.Json
-import me.rerere.rikkahub.AppScope
-import me.rerere.rikkahub.data.ai.AILoggingManager
-import me.rerere.rikkahub.data.ai.tools.ChatToolFactory
-import me.rerere.rikkahub.data.ai.tools.LocalTools
-import me.rerere.rikkahub.data.ai.tools.local.BiometricResultBuffer
-import me.rerere.rikkahub.data.ai.tools.local.CameraResultBuffer
-import me.rerere.rikkahub.data.event.AppEventBus
-import me.rerere.rikkahub.data.ai.tools.local.InteractiveToolStreamer
-import me.rerere.rikkahub.data.repository.ScheduledJobRepository
-import me.rerere.rikkahub.data.repository.SshHostRepository
-import me.rerere.rikkahub.data.repository.TelegramChatRepository
-import me.rerere.rikkahub.data.notifications.NotificationListenerPreferences
-import me.rerere.rikkahub.data.telegram.TelegramBotClient
-import me.rerere.rikkahub.data.telegram.TelegramBotPreferences
-import me.rerere.rikkahub.service.ChatService
-import me.rerere.rikkahub.service.CronJobScheduler
-import me.rerere.rikkahub.ui.pages.extensions.workspace.WorkspaceTerminalSessionManager
-import me.rerere.rikkahub.utils.EmojiData
-import me.rerere.rikkahub.utils.EmojiUtils
-import me.rerere.rikkahub.utils.JsonInstant
-import me.rerere.rikkahub.utils.SoundEffectPlayer
-import me.rerere.rikkahub.web.WebServerManager
-import me.rerere.tts.provider.TTSManager
+import com.clma.app.AppScope
+import com.clma.app.data.ai.AILoggingManager
+import com.clma.app.data.ai.tools.ChatToolFactory
+import com.clma.app.data.ai.tools.LocalTools
+import com.clma.app.data.ai.tools.local.BiometricResultBuffer
+import com.clma.app.data.ai.tools.local.CameraResultBuffer
+import com.clma.app.data.event.AppEventBus
+import com.clma.app.data.ai.tools.local.InteractiveToolStreamer
+import com.clma.app.data.repository.ScheduledJobRepository
+import com.clma.app.data.repository.SshHostRepository
+import com.clma.app.data.repository.TelegramChatRepository
+import com.clma.app.data.notifications.NotificationListenerPreferences
+import com.clma.app.data.telegram.TelegramBotClient
+import com.clma.app.data.telegram.TelegramBotPreferences
+import com.clma.app.service.ChatService
+import com.clma.app.service.CronJobScheduler
+import com.clma.app.ui.pages.extensions.workspace.WorkspaceTerminalSessionManager
+import com.clma.app.utils.EmojiData
+import com.clma.app.utils.EmojiUtils
+import com.clma.app.utils.JsonInstant
+import com.clma.app.utils.SoundEffectPlayer
+import com.clma.app.web.WebServerManager
+import com.clma.tts.provider.TTSManager
 import org.koin.dsl.module
 
 val appModule = module {
@@ -37,53 +37,53 @@ val appModule = module {
     single { BiometricResultBuffer() }
     // Phase 25 — NFC reader-mode + SAF directory-picker Activity bridges, and the SAF
     // tree-grant store backing the ExternalStorage tools.
-    single { me.rerere.rikkahub.data.ai.tools.local.NfcResultBuffer() }
-    single { me.rerere.rikkahub.data.ai.tools.local.SafPickerResultBuffer() }
-    single { me.rerere.rikkahub.data.storage.StorageVolumeGrantStore(get()) }
+    single { com.clma.app.data.ai.tools.local.NfcResultBuffer() }
+    single { com.clma.app.data.ai.tools.local.SafPickerResultBuffer() }
+    single { com.clma.app.data.storage.StorageVolumeGrantStore(get()) }
 
-    single { ScheduledJobRepository(get<me.rerere.rikkahub.data.db.AppDatabase>().scheduledJobDao()) }
-    single { me.rerere.rikkahub.data.repository.ScheduledJobRunRepository(get<me.rerere.rikkahub.data.db.AppDatabase>().scheduledJobRunDao()) }
-    single { me.rerere.rikkahub.service.DirectModeActionRunner(get()) }
+    single { ScheduledJobRepository(get<com.clma.app.data.db.AppDatabase>().scheduledJobDao()) }
+    single { com.clma.app.data.repository.ScheduledJobRunRepository(get<com.clma.app.data.db.AppDatabase>().scheduledJobRunDao()) }
+    single { com.clma.app.service.DirectModeActionRunner(get()) }
     single { CronJobScheduler(get(), get()) }
-    single { SshHostRepository(get<me.rerere.rikkahub.data.db.AppDatabase>().sshHostDao()) }
-    single { TelegramChatRepository(get<me.rerere.rikkahub.data.db.AppDatabase>().telegramChatDao()) }
+    single { SshHostRepository(get<com.clma.app.data.db.AppDatabase>().sshHostDao()) }
+    single { TelegramChatRepository(get<com.clma.app.data.db.AppDatabase>().telegramChatDao()) }
     single { TelegramBotPreferences(get()) }
-    single { me.rerere.rikkahub.browser.BrowserPreferences(get()) }
-    single { me.rerere.rikkahub.data.preferences.TermuxPreferences(get()) }
+    single { com.clma.app.browser.BrowserPreferences(get()) }
+    single { com.clma.app.data.preferences.TermuxPreferences(get()) }
     // Pass 3: Telegram-bound screenshot streamer for headless browser mode. Bound to the
     // [BrowserScreenshotStreamer] interface so [BrowserController.streamScreenshotIfHeadless]
     // can resolve it lazily via Koin without taking a constructor dep — avoids a cycle
     // through TelegramBotClient → TelegramBotPreferences → ... → LocalTools → controller.
-    single<me.rerere.rikkahub.browser.BrowserScreenshotStreamer> {
-        me.rerere.rikkahub.data.telegram.TelegramBrowserScreenshotStreamer(get(), get(), get())
+    single<com.clma.app.browser.BrowserScreenshotStreamer> {
+        com.clma.app.data.telegram.TelegramBrowserScreenshotStreamer(get(), get(), get())
     }
     // Interactive-tool post-action screenshot streamer for headless mode (Telegram bot /
     // cron / sub-agent). Resolves lazily inside each interactive tool's execute lambda so
     // there's no DI cycle through LocalTools → ChatService → ... → TelegramBotClient.
     single<InteractiveToolStreamer> {
-        me.rerere.rikkahub.data.telegram.TelegramInteractiveToolStreamer(get(), get(), get(), get())
+        com.clma.app.data.telegram.TelegramInteractiveToolStreamer(get(), get(), get(), get())
     }
-    single { me.rerere.rikkahub.data.preferences.ToolApprovalPreferences(get()) }
+    single { com.clma.app.data.preferences.ToolApprovalPreferences(get()) }
     single {
         TelegramBotClient(
             tokenProvider = { runCatching { kotlinx.coroutines.runBlocking { get<TelegramBotPreferences>().current().token } }.getOrDefault("") },
             proxyConfigProvider = {
                 runCatching {
                     kotlinx.coroutines.runBlocking { get<TelegramBotPreferences>().current() }
-                }.getOrDefault(me.rerere.rikkahub.data.telegram.TelegramBotConfig())
+                }.getOrDefault(com.clma.app.data.telegram.TelegramBotConfig())
             },
         )
     }
     // Phase 24 — Telegram long-poll stall tracker. Shared singleton: TelegramBotService's
     // poll loop calls markUpdate() on every getUpdates; the in-service stall checker and
     // DoctorChecks read it. No cross-dependencies, so no DI-cycle risk.
-    single { me.rerere.rikkahub.data.telegram.TelegramPollStallTracker() }
+    single { com.clma.app.data.telegram.TelegramPollStallTracker() }
     single { NotificationListenerPreferences(get()) }
 
     // Phase 13: External Automation Intent API
-    single { me.rerere.rikkahub.automation.ExternalAutomationConfig(get()) }
+    single { com.clma.app.automation.ExternalAutomationConfig(get()) }
     single {
-        me.rerere.rikkahub.automation.ExternalAutomationDispatcher(
+        com.clma.app.automation.ExternalAutomationDispatcher(
             context = get(),
             config = get(),
             chatService = get(),
@@ -96,13 +96,13 @@ val appModule = module {
     }
 
     // Phase 14: Reliability bundle
-    single { me.rerere.rikkahub.reliability.GitHubReleaseChecker(get()) }
-    single { me.rerere.rikkahub.reliability.BugReportBuilder(get()) }
+    single { com.clma.app.reliability.GitHubReleaseChecker(get()) }
+    single { com.clma.app.reliability.BugReportBuilder(get()) }
 
     // Phase 11: Sub-agents
-    single { me.rerere.rikkahub.subagent.SubAgentRegistry() }
+    single { com.clma.app.subagent.SubAgentRegistry() }
     single {
-        me.rerere.rikkahub.subagent.SubAgentEngine(
+        com.clma.app.subagent.SubAgentEngine(
             registry = get(),
             // chatService is resolved lazily inside SubAgentEngine to break the
             // ChatService→LocalTools→SubAgentEngine→ChatService cycle. See SubAgentEngine kdoc.
@@ -123,15 +123,15 @@ val appModule = module {
 
     // Phase 16: Skill URL-import
     single {
-        me.rerere.rikkahub.skills.SkillUrlImporter(
-            skillManager = get<me.rerere.rikkahub.data.files.SkillManager>(),
+        com.clma.app.skills.SkillUrlImporter(
+            skillManager = get<com.clma.app.data.files.SkillManager>(),
         )
     }
 
     // Phase 19B: Skill isolation tester. Eager construction is safe here — ChatService
     // doesn't reach back into SkillTestRunner anywhere, so no DI cycle.
     single {
-        me.rerere.rikkahub.skills.SkillTestRunner(
+        com.clma.app.skills.SkillTestRunner(
             chatService = get(),
             skillManager = get(),
             conversationRepo = get(),
@@ -140,25 +140,25 @@ val appModule = module {
     }
 
     // Phase 18: JS skills (run_js + secrets store)
-    single { me.rerere.rikkahub.skills.js.JsSkillRunner(get()) }
-    single { me.rerere.rikkahub.skills.js.SkillSecretsStore(get()) }
+    single { com.clma.app.skills.js.JsSkillRunner(get()) }
+    single { com.clma.app.skills.js.SkillSecretsStore(get()) }
 
     // T-07: named secrets a workflow action can reference as {{secret:NAME}} — keystore-backed
     // so the token never has to live inside the (plaintext, model-visible) workflow JSON.
-    single { me.rerere.rikkahub.workflow.secrets.WorkflowSecretsStore(get()) }
-    single { me.rerere.rikkahub.data.secrets.AgentSecretsStore(get()) }
+    single { com.clma.app.workflow.secrets.WorkflowSecretsStore(get()) }
+    single { com.clma.app.data.secrets.AgentSecretsStore(get()) }
 
     // Phase 12: Workflows
     single {
-        me.rerere.rikkahub.workflow.repository.WorkflowRepository(
-            workflowDao = get<me.rerere.rikkahub.data.db.AppDatabase>().workflowDao(),
-            workflowRunDao = get<me.rerere.rikkahub.data.db.AppDatabase>().workflowRunDao(),
+        com.clma.app.workflow.repository.WorkflowRepository(
+            workflowDao = get<com.clma.app.data.db.AppDatabase>().workflowDao(),
+            workflowRunDao = get<com.clma.app.data.db.AppDatabase>().workflowRunDao(),
         )
     }
-    single { me.rerere.rikkahub.workflow.condition.ContextProvider(get()) }
-    single { me.rerere.rikkahub.workflow.execution.WorkflowActionRunner() }
+    single { com.clma.app.workflow.condition.ContextProvider(get()) }
+    single { com.clma.app.workflow.execution.WorkflowActionRunner() }
     single {
-        me.rerere.rikkahub.workflow.execution.WorkflowEngine(
+        com.clma.app.workflow.execution.WorkflowEngine(
             repository = get(),
             settingsStore = get(),
             contextProvider = get(),
@@ -166,18 +166,18 @@ val appModule = module {
         ).also { engine ->
             // Bridge for the repo to notify the engine on delete so the engine's per-workflow
             // lock map doesn't leak. Lazy because both singletons have to exist first.
-            get<me.rerere.rikkahub.workflow.repository.WorkflowRepository>().bindEngine(engine)
+            get<com.clma.app.workflow.repository.WorkflowRepository>().bindEngine(engine)
         }
     }
     single {
-        me.rerere.rikkahub.workflow.trigger.TriggerRegistry(
+        com.clma.app.workflow.trigger.TriggerRegistry(
             context = get(),
             appScope = get(),
             workflowRepository = get(),
         )
     }
 
-    single { me.rerere.rikkahub.data.keyboard.KeyboardApiClient(get()) }
+    single { com.clma.app.data.keyboard.KeyboardApiClient(get()) }
 
     single {
         LocalTools(
@@ -253,9 +253,9 @@ val appModule = module {
     }
 
     // Phase 22A: Local-LLM on-device providers
-    single { me.rerere.locallm.LocalRuntimePreferences(get()) }
-    single { me.rerere.locallm.litert.LiteRtRuntime(get()) }
-    single { me.rerere.llamacpp.LlamaCppRuntime() }
+    single { com.clma.locallm.LocalRuntimePreferences(get()) }
+    single { com.clma.locallm.litert.LiteRtRuntime(get()) }
+    single { com.clma.llamacpp.LlamaCppRuntime() }
 
     single {
         ChatToolFactory(
@@ -305,7 +305,7 @@ val appModule = module {
     }
 
     single {
-        me.rerere.rikkahub.ui.pages.setting.doctor.DoctorChecks(
+        com.clma.app.ui.pages.setting.doctor.DoctorChecks(
             context = get(),
             settingsStore = get(),
             telegramPrefs = get(),

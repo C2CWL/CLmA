@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.automation
+package com.clma.app.automation
 
 import android.content.BroadcastReceiver
 import android.content.Context

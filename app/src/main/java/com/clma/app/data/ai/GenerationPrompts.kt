@@ -1,13 +1,13 @@
-package me.rerere.rikkahub.data.ai
+package com.clma.app.data.ai
 
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import me.rerere.rikkahub.data.model.Assistant
-import me.rerere.rikkahub.data.model.AssistantMemory
-import me.rerere.rikkahub.data.repository.ConversationRepository
-import me.rerere.rikkahub.utils.JsonInstantPretty
-import me.rerere.rikkahub.utils.toLocalDate
+import com.clma.app.data.model.Assistant
+import com.clma.app.data.model.AssistantMemory
+import com.clma.app.data.repository.ConversationRepository
+import com.clma.app.utils.JsonInstantPretty
+import com.clma.app.utils.toLocalDate
 
 internal fun buildMemoryPrompt(memories: List<AssistantMemory>) =
     buildString {

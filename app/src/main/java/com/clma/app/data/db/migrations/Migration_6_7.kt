@@ -1,12 +1,12 @@
-package me.rerere.rikkahub.data.db.migrations
+package com.clma.app.data.db.migrations
 
 import android.util.Log
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
-import me.rerere.ai.ui.UIMessage
-import me.rerere.rikkahub.data.model.MessageNode
-import me.rerere.rikkahub.data.db.DatabaseMigrationTracker
-import me.rerere.rikkahub.utils.JsonInstant
+import com.clma.ai.ui.UIMessage
+import com.clma.app.data.model.MessageNode
+import com.clma.app.data.db.DatabaseMigrationTracker
+import com.clma.app.utils.JsonInstant
 
 private const val TAG = "Migration_6_7"
 

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.utils
+package com.clma.app.utils
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -10,7 +10,7 @@ import androidx.annotation.RequiresPermission
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import me.rerere.rikkahub.R
+import com.clma.app.R
 
 /**
  * 通知构建器的配置 DSL

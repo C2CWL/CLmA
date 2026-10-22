@@ -1,4 +1,4 @@
-package me.rerere.common.http
+package com.clma.common.http
 
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow

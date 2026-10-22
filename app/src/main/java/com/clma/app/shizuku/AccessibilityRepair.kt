@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.shizuku
+package com.clma.app.shizuku
 
 /** Wall-clock budget for [buildAccessibilityRepairCommand]: a handful of local
  *  `settings` / `content` calls plus one `am force-stop`. */
@@ -41,7 +41,7 @@ fun mergeEnabledAccessibilityServices(current: String?, component: String): Stri
  * cannot land on top of ours.
  *
  * The last statement echoes the resulting value as a cheap trace. Callers must still re-read
- * [me.rerere.rikkahub.data.ai.tools.local.AccessibilityServiceHandle.isEnabledInSettings] to
+ * [com.clma.app.data.ai.tools.local.AccessibilityServiceHandle.isEnabledInSettings] to
  * decide whether the repair actually took: this command cannot report that reliably, because the
  * whole point of the fallback is that a "successful" write may have been dropped.
  */

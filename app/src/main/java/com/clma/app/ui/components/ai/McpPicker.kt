@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.ai
+package com.clma.app.ui.components.ai
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
@@ -46,14 +46,14 @@ import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Alert01
 import me.rerere.hugeicons.stroke.Icon1stBracket
 import me.rerere.hugeicons.stroke.McpServer
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.ai.mcp.McpManager
-import me.rerere.rikkahub.data.ai.mcp.McpServerConfig
-import me.rerere.rikkahub.data.ai.mcp.McpStatus
-import me.rerere.rikkahub.data.model.Assistant
-import me.rerere.rikkahub.ui.components.ui.Tag
-import me.rerere.rikkahub.ui.components.ui.TagType
-import me.rerere.rikkahub.ui.components.ui.ToggleSurface
+import com.clma.app.R
+import com.clma.app.data.ai.mcp.McpManager
+import com.clma.app.data.ai.mcp.McpServerConfig
+import com.clma.app.data.ai.mcp.McpStatus
+import com.clma.app.data.model.Assistant
+import com.clma.app.ui.components.ui.Tag
+import com.clma.app.ui.components.ui.TagType
+import com.clma.app.ui.components.ui.ToggleSurface
 import org.koin.compose.koinInject
 
 @Composable

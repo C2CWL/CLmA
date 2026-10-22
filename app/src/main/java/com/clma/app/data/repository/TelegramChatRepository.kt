@@ -1,7 +1,7 @@
-package me.rerere.rikkahub.data.repository
+package com.clma.app.data.repository
 
-import me.rerere.rikkahub.data.db.dao.TelegramChatDao
-import me.rerere.rikkahub.data.db.entity.TelegramChatEntity
+import com.clma.app.data.db.dao.TelegramChatDao
+import com.clma.app.data.db.entity.TelegramChatEntity
 
 class TelegramChatRepository(private val dao: TelegramChatDao) {
     suspend fun getByChatId(chatId: Long): TelegramChatEntity? = dao.getByChatId(chatId)

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.share.handler
+package com.clma.app.ui.pages.share.handler
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,11 +27,11 @@ import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.launch
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.ui.context.LocalNavController
-import me.rerere.rikkahub.utils.base64Encode
-import me.rerere.rikkahub.utils.navigateToChatPage
-import me.rerere.rikkahub.utils.plus
+import com.clma.app.R
+import com.clma.app.ui.context.LocalNavController
+import com.clma.app.utils.base64Encode
+import com.clma.app.utils.navigateToChatPage
+import com.clma.app.utils.plus
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 

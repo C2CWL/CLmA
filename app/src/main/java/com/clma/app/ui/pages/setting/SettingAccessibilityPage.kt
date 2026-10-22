@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.setting
+package com.clma.app.ui.pages.setting
 
 import android.content.ComponentName
 import android.content.Intent
@@ -38,21 +38,21 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.ai.tools.local.AccessibilityServiceHandle
-import me.rerere.rikkahub.data.ai.tools.local.PermissionHelper
-import me.rerere.rikkahub.data.permissions.KeepAliveVendor
-import me.rerere.rikkahub.data.permissions.keepAliveVendorOf
-import me.rerere.rikkahub.service.ActionLogEntry
-import me.rerere.rikkahub.service.RikkaAccessibilityService
-import me.rerere.rikkahub.shizuku.ACCESSIBILITY_REPAIR_TIMEOUT_MS
-import me.rerere.rikkahub.shizuku.ShizukuManager
-import me.rerere.rikkahub.shizuku.ShizukuStatus
-import me.rerere.rikkahub.shizuku.buildAccessibilityRepairCommand
-import me.rerere.rikkahub.ui.components.nav.BackButton
-import me.rerere.rikkahub.ui.components.ui.CardGroup
-import me.rerere.rikkahub.ui.context.LocalToaster
-import me.rerere.rikkahub.ui.theme.CustomColors
+import com.clma.app.R
+import com.clma.app.data.ai.tools.local.AccessibilityServiceHandle
+import com.clma.app.data.ai.tools.local.PermissionHelper
+import com.clma.app.data.permissions.KeepAliveVendor
+import com.clma.app.data.permissions.keepAliveVendorOf
+import com.clma.app.service.ActionLogEntry
+import com.clma.app.service.RikkaAccessibilityService
+import com.clma.app.shizuku.ACCESSIBILITY_REPAIR_TIMEOUT_MS
+import com.clma.app.shizuku.ShizukuManager
+import com.clma.app.shizuku.ShizukuStatus
+import com.clma.app.shizuku.buildAccessibilityRepairCommand
+import com.clma.app.ui.components.nav.BackButton
+import com.clma.app.ui.components.ui.CardGroup
+import com.clma.app.ui.context.LocalToaster
+import com.clma.app.ui.theme.CustomColors
 import java.io.File
 import java.io.FileOutputStream
 

@@ -1,10 +1,10 @@
-package me.rerere.rikkahub.data.agentrun
+package com.clma.app.data.agentrun
 
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.runBlocking
-import me.rerere.rikkahub.data.db.AppDatabase
+import com.clma.app.data.db.AppDatabase
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull

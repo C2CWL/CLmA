@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.message
+package com.clma.app.ui.components.message
 
 /** 设置里“折叠时显示的步骤数”的上限，滑块数字档是 0..这个值，再往上一档是“全部”。 */
 internal const val THINKING_STEPS_VISIBLE_MAX = 10

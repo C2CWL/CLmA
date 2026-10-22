@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.browser
+package com.clma.app.browser
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -50,7 +50,7 @@ data class BrowserAiAction(
 
 /**
  * Singleton bridge between the LLM browser tools and the live WebView.
- * Mirrors the [me.rerere.rikkahub.service.RikkaAccessibilityService.instance] pattern: the
+ * Mirrors the [com.clma.app.service.RikkaAccessibilityService.instance] pattern: the
  * Activity (or headless session host) publishes itself in on bind and clears on unbind.
  *
  * Pass 1 laid the foundation — the WeakReference, the recent-actions log, and the
@@ -671,7 +671,7 @@ object BrowserController {
 
 /**
  * Handle / dispatch helper for the browser tools. Mirrors
- * [me.rerere.rikkahub.data.ai.tools.local.AccessibilityServiceHandle.withService] in
+ * [com.clma.app.data.ai.tools.local.AccessibilityServiceHandle.withService] in
  * shape: tools wrap their entire execute body in [withController], get the WebView if
  * one is bound, and uniformly fall back to the [BrowserController.notOpenEnvelope] error
  * shape if not.
@@ -685,7 +685,7 @@ object BrowserControllerHandle {
     /**
      * Scope passed into [withController]'s block. Carries the controller (for
      * beginAction/completeAction / startTaskWindow) and the live WebView. Helpers that need the main
-     * thread should use [me.rerere.rikkahub.browser.evaluateJavascriptAsync] which posts
+     * thread should use [com.clma.app.browser.evaluateJavascriptAsync] which posts
      * onto the WebView's looper directly.
      */
     data class WithControllerScope(

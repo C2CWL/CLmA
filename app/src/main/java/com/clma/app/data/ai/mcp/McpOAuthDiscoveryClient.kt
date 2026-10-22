@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.mcp
+package com.clma.app.data.ai.mcp
 
 import android.util.Log
 import kotlinx.coroutines.Dispatchers

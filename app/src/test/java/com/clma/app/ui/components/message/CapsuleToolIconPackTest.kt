@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.message
+package com.clma.app.ui.components.message
 
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.AiMagic
@@ -19,7 +19,7 @@ import me.rerere.hugeicons.stroke.Settings03
 import me.rerere.hugeicons.stroke.SmartPhone01
 import me.rerere.hugeicons.stroke.Time02
 import me.rerere.hugeicons.stroke.VolumeHigh
-import me.rerere.rikkahub.data.datastore.ToolCallStyle
+import com.clma.app.data.datastore.ToolCallStyle
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Test

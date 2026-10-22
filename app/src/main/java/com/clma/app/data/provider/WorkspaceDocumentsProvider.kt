@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.provider
+package com.clma.app.data.provider
 
 import android.database.Cursor
 import android.database.MatrixCursor
@@ -10,10 +10,10 @@ import android.provider.DocumentsContract.Root
 import android.provider.DocumentsProvider
 import android.webkit.MimeTypeMap
 import kotlinx.coroutines.runBlocking
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.db.dao.WorkspaceDAO
-import me.rerere.rikkahub.data.db.entity.WorkspaceEntity
-import me.rerere.workspace.WorkspaceManager
+import com.clma.app.R
+import com.clma.app.data.db.dao.WorkspaceDAO
+import com.clma.app.data.db.entity.WorkspaceEntity
+import com.clma.workspace.WorkspaceManager
 import org.koin.core.context.GlobalContext
 import java.io.File
 

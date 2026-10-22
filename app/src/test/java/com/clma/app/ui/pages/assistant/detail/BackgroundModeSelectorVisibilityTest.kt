@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.assistant.detail
+package com.clma.app.ui.pages.assistant.detail
 
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

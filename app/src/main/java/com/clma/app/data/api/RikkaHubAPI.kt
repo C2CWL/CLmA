@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.api
+package com.clma.app.data.api
 
 interface RikkaHubAPI {
 

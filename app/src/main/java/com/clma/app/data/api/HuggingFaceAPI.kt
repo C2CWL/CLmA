@@ -1,8 +1,8 @@
-package me.rerere.rikkahub.data.api
+package com.clma.app.data.api
 
-import me.rerere.rikkahub.data.model.HfModelDetail
-import me.rerere.rikkahub.data.model.HfModelSearchResult
-import me.rerere.rikkahub.utils.JsonInstant
+import com.clma.app.data.model.HfModelDetail
+import com.clma.app.data.model.HfModelSearchResult
+import com.clma.app.utils.JsonInstant
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit

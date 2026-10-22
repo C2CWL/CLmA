@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.tools
+package com.clma.app.data.ai.tools
 
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -6,14 +6,14 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
-import me.rerere.ai.core.Tool
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.data.datastore.Settings
-import me.rerere.rikkahub.utils.JsonInstantPretty
-import me.rerere.rikkahub.utils.toLocalString
-import me.rerere.search.SearchService
-import me.rerere.search.SearchServiceOptions
-import me.rerere.search.limitedBy
+import com.clma.ai.core.Tool
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.datastore.Settings
+import com.clma.app.utils.JsonInstantPretty
+import com.clma.app.utils.toLocalString
+import com.clma.search.SearchService
+import com.clma.search.SearchServiceOptions
+import com.clma.search.limitedBy
 import java.time.LocalDate
 import kotlin.time.Clock
 import kotlin.uuid.Uuid

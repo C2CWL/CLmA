@@ -1,9 +1,9 @@
-package me.rerere.rikkahub.ui.hooks
+package com.clma.app.ui.hooks
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
-import me.rerere.rikkahub.ui.context.LocalSharedTransitionScope
+import com.clma.app.ui.context.LocalSharedTransitionScope
 
 @Composable
 fun Modifier.heroAnimation(

@@ -1,17 +1,17 @@
-package me.rerere.highlight.languages.rust
+package com.clma.highlight.languages.rust
 
-import me.rerere.highlight.core.BACKSLASH_ESCAPE
-import me.rerere.highlight.core.C_LINE_COMMENT_MODE
-import me.rerere.highlight.core.IDENT_RE
-import me.rerere.highlight.core.Language
-import me.rerere.highlight.core.Mode
-import me.rerere.highlight.core.QUOTE_STRING_MODE
-import me.rerere.highlight.core.UNDERSCORE_IDENT_RE
-import me.rerere.highlight.core.comment
-import me.rerere.highlight.core.concat
-import me.rerere.highlight.core.keywords
-import me.rerere.highlight.core.lookahead
-import me.rerere.highlight.core.mode
+import com.clma.highlight.core.BACKSLASH_ESCAPE
+import com.clma.highlight.core.C_LINE_COMMENT_MODE
+import com.clma.highlight.core.IDENT_RE
+import com.clma.highlight.core.Language
+import com.clma.highlight.core.Mode
+import com.clma.highlight.core.QUOTE_STRING_MODE
+import com.clma.highlight.core.UNDERSCORE_IDENT_RE
+import com.clma.highlight.core.comment
+import com.clma.highlight.core.concat
+import com.clma.highlight.core.keywords
+import com.clma.highlight.core.lookahead
+import com.clma.highlight.core.mode
 
 /** Rust, ported from `lib/languages/rust.js` of `highlight.js` 11.11.1. */
 internal fun rust(): Language {

@@ -1,8 +1,8 @@
-package me.rerere.llamacpp
+package com.clma.llamacpp
 
 /**
  * A curated GGUF the Settings -> Local · llama.cpp picker offers. Mirrors
- * `me.rerere.locallm.litert.LiteRtCatalogEntry`'s shape, minus its `config()`, which returns a
+ * `com.clma.locallm.litert.LiteRtCatalogEntry`'s shape, minus its `config()`, which returns a
  * LiteRT-specific config type llama.cpp has no equivalent for.
  */
 data class LlamaCppCatalogEntry(

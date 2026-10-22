@@ -1,9 +1,9 @@
-package me.rerere.rikkahub.ui.activity
+package com.clma.app.ui.activity
 
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import me.rerere.rikkahub.RouteActivity
+import com.clma.app.RouteActivity
 
 class CodexOAuthRedirectActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

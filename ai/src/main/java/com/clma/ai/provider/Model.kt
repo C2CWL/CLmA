@@ -1,9 +1,9 @@
-package me.rerere.ai.provider
+package com.clma.ai.provider
 
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import me.rerere.ai.core.ReasoningLevel
+import com.clma.ai.core.ReasoningLevel
 import kotlin.uuid.Uuid
 
 @Serializable

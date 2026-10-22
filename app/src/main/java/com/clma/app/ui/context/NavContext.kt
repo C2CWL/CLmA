@@ -1,8 +1,8 @@
-package me.rerere.rikkahub.ui.context
+package com.clma.app.ui.context
 
 import androidx.compose.runtime.compositionLocalOf
 import androidx.navigation3.runtime.NavKey
-import me.rerere.rikkahub.Screen
+import com.clma.app.Screen
 
 class Navigator(private val backStack: MutableList<NavKey>) {
     fun navigate(screen: Screen, builder: NavigateOptionsBuilder.() -> Unit = {}) {

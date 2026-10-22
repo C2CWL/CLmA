@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.tools
+package com.clma.app.data.ai.tools
 
 /**
  * The pure contract for a **per-app screen-automation playbook**: one cold-memory Markdown

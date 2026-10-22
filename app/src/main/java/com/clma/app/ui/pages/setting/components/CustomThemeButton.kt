@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.setting.components
+package com.clma.app.ui.pages.setting.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.LocalIndication
@@ -29,8 +29,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Tick01
-import me.rerere.rikkahub.ui.theme.CustomTheme
-import me.rerere.rikkahub.ui.theme.LocalDarkMode
+import com.clma.app.ui.theme.CustomTheme
+import com.clma.app.ui.theme.LocalDarkMode
 
 @Composable
 fun CustomThemeButtonGroup(

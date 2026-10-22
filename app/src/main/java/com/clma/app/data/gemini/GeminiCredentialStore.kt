@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.gemini
+package com.clma.app.data.gemini
 
 import android.content.Context
 import android.security.keystore.KeyGenParameterSpec

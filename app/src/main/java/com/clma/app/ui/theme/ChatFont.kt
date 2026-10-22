@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.theme
+package com.clma.app.ui.theme
 
 import android.content.Context
 import android.graphics.Typeface
@@ -9,8 +9,8 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
-import me.rerere.rikkahub.data.datastore.ChatFontFamily
-import me.rerere.rikkahub.data.datastore.DisplaySetting
+import com.clma.app.data.datastore.ChatFontFamily
+import com.clma.app.data.datastore.DisplaySetting
 import java.io.File
 
 val LocalChatFontFamily = staticCompositionLocalOf<FontFamily?> { null }

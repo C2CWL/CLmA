@@ -1,10 +1,10 @@
-package me.rerere.rikkahub.ui.pages.developer
+package com.clma.app.ui.pages.developer
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
-import me.rerere.rikkahub.data.ai.AILoggingManager
-import me.rerere.rikkahub.data.datastore.AiLogLevel
+import com.clma.app.data.ai.AILoggingManager
+import com.clma.app.data.datastore.AiLogLevel
 
 class DeveloperVM(
     private val aiLoggingManager: AILoggingManager,

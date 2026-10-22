@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.utils
+package com.clma.app.utils
 
 sealed class UiState<out T> {
     object Idle : UiState<Nothing>()

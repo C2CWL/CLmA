@@ -1,13 +1,13 @@
-package me.rerere.rikkahub.ui.pages.extensions
+package com.clma.app.ui.pages.extensions
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import me.rerere.rikkahub.data.datastore.Settings
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.model.QuickMessage
+import com.clma.app.data.datastore.Settings
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.model.QuickMessage
 import kotlin.uuid.Uuid
 
 class QuickMessagesVM(

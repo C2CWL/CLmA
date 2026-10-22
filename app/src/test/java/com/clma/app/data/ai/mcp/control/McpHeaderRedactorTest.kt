@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.mcp.control
+package com.clma.app.data.ai.mcp.control
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

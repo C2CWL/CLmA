@@ -1,22 +1,22 @@
-package me.rerere.highlight.languages.php
+package com.clma.highlight.languages.php
 
-import me.rerere.highlight.core.APOS_STRING_MODE
-import me.rerere.highlight.core.BACKSLASH_ESCAPE
-import me.rerere.highlight.core.C_BLOCK_COMMENT_MODE
-import me.rerere.highlight.core.HASH_COMMENT_MODE
-import me.rerere.highlight.core.Language
-import me.rerere.highlight.core.MATCH_NOTHING_RE
-import me.rerere.highlight.core.Mode
-import me.rerere.highlight.core.QUOTE_STRING_MODE
-import me.rerere.highlight.core.UNDERSCORE_TITLE_MODE
-import me.rerere.highlight.core.comment
-import me.rerere.highlight.core.concat
-import me.rerere.highlight.core.either
-import me.rerere.highlight.core.endSameAsBegin
-import me.rerere.highlight.core.keywords
-import me.rerere.highlight.core.lookahead
-import me.rerere.highlight.core.mode
-import me.rerere.highlight.core.variant
+import com.clma.highlight.core.APOS_STRING_MODE
+import com.clma.highlight.core.BACKSLASH_ESCAPE
+import com.clma.highlight.core.C_BLOCK_COMMENT_MODE
+import com.clma.highlight.core.HASH_COMMENT_MODE
+import com.clma.highlight.core.Language
+import com.clma.highlight.core.MATCH_NOTHING_RE
+import com.clma.highlight.core.Mode
+import com.clma.highlight.core.QUOTE_STRING_MODE
+import com.clma.highlight.core.UNDERSCORE_TITLE_MODE
+import com.clma.highlight.core.comment
+import com.clma.highlight.core.concat
+import com.clma.highlight.core.either
+import com.clma.highlight.core.endSameAsBegin
+import com.clma.highlight.core.keywords
+import com.clma.highlight.core.lookahead
+import com.clma.highlight.core.mode
+import com.clma.highlight.core.variant
 
 /** PHP, ported from `lib/languages/php.js` of `highlight.js` 11.11.1. */
 internal fun php(): Language {

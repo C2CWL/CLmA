@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.theme
+package com.clma.app.ui.theme
 
 import android.app.Activity
 import android.os.Build
@@ -22,9 +22,9 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import kotlinx.serialization.Serializable
-import me.rerere.rikkahub.ui.hooks.rememberAmoledDarkMode
-import me.rerere.rikkahub.ui.hooks.rememberCurrentColorMode
-import me.rerere.rikkahub.ui.hooks.rememberUserSettingsState
+import com.clma.app.ui.hooks.rememberAmoledDarkMode
+import com.clma.app.ui.hooks.rememberCurrentColorMode
+import com.clma.app.ui.hooks.rememberUserSettingsState
 
 private val ExtendLightColors = lightExtendColors()
 private val ExtendDarkColors = darkExtendColors()

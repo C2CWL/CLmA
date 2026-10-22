@@ -1,21 +1,21 @@
-package me.rerere.rikkahub.data.usage
+package com.clma.app.data.usage
 
 import android.util.Log
 import kotlinx.coroutines.flow.Flow
-import me.rerere.ai.core.TokenUsage
-import me.rerere.ai.provider.Provider
-import me.rerere.ai.provider.ProviderSetting
-import me.rerere.ai.provider.TextGenerationParams
-import me.rerere.ai.provider.TextGenerationResult
-import me.rerere.ai.ui.StreamChunk
-import me.rerere.ai.ui.UIMessage
+import com.clma.ai.core.TokenUsage
+import com.clma.ai.provider.Provider
+import com.clma.ai.provider.ProviderSetting
+import com.clma.ai.provider.TextGenerationParams
+import com.clma.ai.provider.TextGenerationResult
+import com.clma.ai.ui.StreamChunk
+import com.clma.ai.ui.UIMessage
 
 private const val TAG = "UsageLedger"
 
 /**
  * P2-11c2 - the single collection point.
  *
- * Wraps whatever provider [me.rerere.ai.provider.ProviderManager] would have returned, so
+ * Wraps whatever provider [com.clma.ai.provider.ProviderManager] would have returned, so
  * every text generation in the app - chat turn, tool-loop follow-ups, title, suggestion,
  * compaction, translation - is accounted for without changing a single call site.
  *

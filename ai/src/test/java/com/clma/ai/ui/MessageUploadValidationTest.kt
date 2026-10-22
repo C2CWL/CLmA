@@ -1,6 +1,6 @@
-package me.rerere.ai.ui
+package com.clma.ai.ui
 
-import me.rerere.ai.core.MessageRole
+import com.clma.ai.core.MessageRole
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test

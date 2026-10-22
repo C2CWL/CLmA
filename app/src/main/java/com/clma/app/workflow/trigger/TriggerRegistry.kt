@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.workflow.trigger
+package com.clma.app.workflow.trigger
 
 import android.content.Context
 import android.util.Log
@@ -13,10 +13,10 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import me.rerere.rikkahub.AppScope
-import me.rerere.rikkahub.workflow.model.TriggerSpec
-import me.rerere.rikkahub.workflow.model.WorkflowDefinition
-import me.rerere.rikkahub.workflow.repository.WorkflowRepository
+import com.clma.app.AppScope
+import com.clma.app.workflow.model.TriggerSpec
+import com.clma.app.workflow.model.WorkflowDefinition
+import com.clma.app.workflow.repository.WorkflowRepository
 
 /**
  * Phase 12 — orchestrates all trigger families.
@@ -108,14 +108,14 @@ class TriggerRegistry(
         //  - workflows with app_launched / app_closed triggers
         //  - workflows whose conditions reference foreground_app_is / foreground_app_in
         val foregroundConsumerCount = enabled.count { wf ->
-            wf.trigger is me.rerere.rikkahub.workflow.model.TriggerSpec.AppLaunched
-                || wf.trigger is me.rerere.rikkahub.workflow.model.TriggerSpec.AppClosed
+            wf.trigger is com.clma.app.workflow.model.TriggerSpec.AppLaunched
+                || wf.trigger is com.clma.app.workflow.model.TriggerSpec.AppClosed
                 || wf.conditions.any {
-                    it is me.rerere.rikkahub.workflow.model.ConditionSpec.ForegroundAppIs
-                        || it is me.rerere.rikkahub.workflow.model.ConditionSpec.ForegroundAppIn
+                    it is com.clma.app.workflow.model.ConditionSpec.ForegroundAppIs
+                        || it is com.clma.app.workflow.model.ConditionSpec.ForegroundAppIn
                 }
         }
-        me.rerere.rikkahub.workflow.trigger.AppForegroundDispatcher
+        com.clma.app.workflow.trigger.AppForegroundDispatcher
             .setForegroundConsumerCount(foregroundConsumerCount)
     }
 

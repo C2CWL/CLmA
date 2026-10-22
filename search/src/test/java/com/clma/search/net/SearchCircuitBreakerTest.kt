@@ -1,4 +1,4 @@
-package me.rerere.search.net
+package com.clma.search.net
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

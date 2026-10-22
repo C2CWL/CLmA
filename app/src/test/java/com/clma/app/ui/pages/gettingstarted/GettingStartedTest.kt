@@ -1,11 +1,11 @@
-package me.rerere.rikkahub.ui.pages.gettingstarted
+package com.clma.app.ui.pages.gettingstarted
 
-import me.rerere.ai.provider.Model
-import me.rerere.ai.provider.ModelType
-import me.rerere.ai.provider.ProviderSetting
-import me.rerere.rikkahub.data.ai.tools.LocalToolOption
-import me.rerere.rikkahub.data.datastore.Settings
-import me.rerere.rikkahub.data.model.Assistant
+import com.clma.ai.provider.Model
+import com.clma.ai.provider.ModelType
+import com.clma.ai.provider.ProviderSetting
+import com.clma.app.data.ai.tools.LocalToolOption
+import com.clma.app.data.datastore.Settings
+import com.clma.app.data.model.Assistant
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test

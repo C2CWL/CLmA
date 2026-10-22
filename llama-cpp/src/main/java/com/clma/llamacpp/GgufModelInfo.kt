@@ -1,4 +1,4 @@
-package me.rerere.llamacpp
+package com.clma.llamacpp
 
 /**
  * The metadata the planner needs, read from a loaded model. Kept as a plain data class with
@@ -21,7 +21,7 @@ data class GgufModelInfo(
 ) {
     /** Every field the KV cache formula reads must be positive to be usable. [weightsBytes]
      *  is included even though the KV formula doesn't read it: it's the figure
-     *  [MemoryGuard][me.rerere.locallm.MemoryGuard] and [ContextPlanner.estimateBytes] use to
+     *  [MemoryGuard][com.clma.locallm.MemoryGuard] and [ContextPlanner.estimateBytes] use to
      *  size the model file's own footprint, and a 0 there would let both silently underrate
      *  a model that is actually huge. */
     val isComplete: Boolean

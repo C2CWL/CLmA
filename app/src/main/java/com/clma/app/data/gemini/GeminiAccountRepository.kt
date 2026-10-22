@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.gemini
+package com.clma.app.data.gemini
 
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
@@ -22,7 +22,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import me.rerere.common.http.await
+import com.clma.common.http.await
 import okhttp3.FormBody
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.mcp.control
+package com.clma.app.data.ai.mcp.control
 
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -17,18 +17,18 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
-import me.rerere.ai.core.InputSchema
-import me.rerere.ai.core.Tool
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.data.ai.mcp.McpCommonOptions
-import me.rerere.rikkahub.data.ai.mcp.McpManager
-import me.rerere.rikkahub.data.ai.mcp.McpServerConfig
-import me.rerere.rikkahub.data.ai.mcp.McpStatus
-import me.rerere.rikkahub.data.ai.mcp.McpTool
-import me.rerere.rikkahub.data.ai.mcp.buildMcpToolName
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.datastore.getCurrentAssistant
-import me.rerere.rikkahub.data.model.Assistant
+import com.clma.ai.core.InputSchema
+import com.clma.ai.core.Tool
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.ai.mcp.McpCommonOptions
+import com.clma.app.data.ai.mcp.McpManager
+import com.clma.app.data.ai.mcp.McpServerConfig
+import com.clma.app.data.ai.mcp.McpStatus
+import com.clma.app.data.ai.mcp.McpTool
+import com.clma.app.data.ai.mcp.buildMcpToolName
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.datastore.getCurrentAssistant
+import com.clma.app.data.model.Assistant
 import kotlin.uuid.Uuid
 
 /**
@@ -131,7 +131,7 @@ private fun parseUuid(raw: String?): Uuid? = raw?.let { runCatching { Uuid.parse
 
 /**
  * #88: whether [serverId] is in the calling assistant's per-assistant MCP allowlist — the
- * same test [me.rerere.rikkahub.data.ai.mcp.McpManager.getAllAvailableTools] applies to decide
+ * same test [com.clma.app.data.ai.mcp.McpManager.getAllAvailableTools] applies to decide
  * what actually gets dispatched. Shared by mcp_list / mcp_get / mcp_list_tools so their
  * `enabled_for_assistant` field can't drift from each other. Pure.
  */

@@ -1,11 +1,11 @@
-package me.rerere.rikkahub.subagent
+package com.clma.app.subagent
 
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import me.rerere.rikkahub.data.ai.tools.LocalToolOption
+import com.clma.app.data.ai.tools.LocalToolOption
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

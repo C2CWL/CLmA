@@ -1,18 +1,18 @@
-package me.rerere.rikkahub.workflow.trigger
+package com.clma.app.workflow.trigger
 
 import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import me.rerere.rikkahub.workflow.execution.WorkflowEngine
-import me.rerere.rikkahub.workflow.model.TriggerSpec
-import me.rerere.rikkahub.workflow.model.WorkflowDefinition
-import me.rerere.rikkahub.workflow.repository.WorkflowRepository
+import com.clma.app.workflow.execution.WorkflowEngine
+import com.clma.app.workflow.model.TriggerSpec
+import com.clma.app.workflow.model.WorkflowDefinition
+import com.clma.app.workflow.repository.WorkflowRepository
 import org.koin.java.KoinJavaComponent
 
 /**
  * Phase 12 — boot-completed family. The actual receiver is the existing
- * [me.rerere.rikkahub.service.CronBootReceiver] in the manifest, which already handles
+ * [com.clma.app.service.CronBootReceiver] in the manifest, which already handles
  * BOOT_COMPLETED, MY_PACKAGE_REPLACED, and QUICKBOOT_POWERON. We hook into it via
  * [WorkflowBootDispatcher.onBoot] (called from the receiver's coroutine) — see the
  * receiver file for the wiring.
@@ -76,7 +76,7 @@ internal class BootTriggerFamily(
 
 /**
  * Bridge from the existing CronBootReceiver to the BootTriggerFamily. The cron boot
- * receiver already calls into [me.rerere.rikkahub.service.CronJobScheduler] on boot for
+ * receiver already calls into [com.clma.app.service.CronJobScheduler] on boot for
  * its own purposes — we add a single side-call that asks the workflow registry to fire
  * any boot-triggered workflows. No second manifest receiver.
  */
@@ -89,7 +89,7 @@ object WorkflowBootDispatcher {
 }
 
 /**
- * Cold-boot fallback. Mirrors [me.rerere.rikkahub.workflow.trigger.TimeCronWorkerHelper]:
+ * Cold-boot fallback. Mirrors [com.clma.app.workflow.trigger.TimeCronWorkerHelper]:
  * resolves the repository + engine callback via Koin so the family can stay free of Koin
  * lookups. Returns the engine fire callback plus the currently-enabled workflow definitions
  * (boot family filters to BootCompleted at the call site). Null if Koin isn't ready.

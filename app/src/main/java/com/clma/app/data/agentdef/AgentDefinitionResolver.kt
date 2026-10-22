@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.agentdef
+package com.clma.app.data.agentdef
 
 /**
  * P2-06 — resolves `subagent_dispatch`'s `agent` argument (an [AgentDefinition] name) against

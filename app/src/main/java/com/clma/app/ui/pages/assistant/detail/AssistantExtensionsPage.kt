@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.assistant.detail
+package com.clma.app.ui.pages.assistant.detail
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,17 +21,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import me.rerere.rikkahub.R
+import com.clma.app.R
 import kotlinx.coroutines.launch
-import me.rerere.rikkahub.Screen
-import me.rerere.rikkahub.ui.components.ai.ExtensionEmptyState
-import me.rerere.rikkahub.ui.components.ai.LorebooksContent
-import me.rerere.rikkahub.ui.components.ai.ModeInjectionsContent
-import me.rerere.rikkahub.ui.components.ai.QuickMessagesContent
-import me.rerere.rikkahub.ui.components.ai.SkillsContent
-import me.rerere.rikkahub.ui.components.nav.BackButton
-import me.rerere.rikkahub.ui.context.LocalNavController
-import me.rerere.rikkahub.ui.theme.CustomColors
+import com.clma.app.Screen
+import com.clma.app.ui.components.ai.ExtensionEmptyState
+import com.clma.app.ui.components.ai.LorebooksContent
+import com.clma.app.ui.components.ai.ModeInjectionsContent
+import com.clma.app.ui.components.ai.QuickMessagesContent
+import com.clma.app.ui.components.ai.SkillsContent
+import com.clma.app.ui.components.nav.BackButton
+import com.clma.app.ui.context.LocalNavController
+import com.clma.app.ui.theme.CustomColors
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 

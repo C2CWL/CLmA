@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.ui
+package com.clma.app.ui.components.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -33,8 +33,8 @@ import androidx.compose.ui.util.fastForEach
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Add01
 import me.rerere.hugeicons.stroke.Cancel01
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.model.Tag
+import com.clma.app.R
+import com.clma.app.data.model.Tag
 import kotlin.uuid.Uuid
 
 @Composable

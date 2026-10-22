@@ -1,28 +1,28 @@
-package me.rerere.highlight.languages.javascript
+package com.clma.highlight.languages.javascript
 
-import me.rerere.highlight.core.APOS_STRING_MODE
-import me.rerere.highlight.core.BACKSLASH_ESCAPE
-import me.rerere.highlight.core.C_BLOCK_COMMENT_MODE
-import me.rerere.highlight.core.C_LINE_COMMENT_MODE
-import me.rerere.highlight.core.Keywords
-import me.rerere.highlight.core.Language
-import me.rerere.highlight.core.MatchData
-import me.rerere.highlight.core.Mode
-import me.rerere.highlight.core.ModeCallback
-import me.rerere.highlight.core.QUOTE_STRING_MODE
-import me.rerere.highlight.core.REGEXP_MODE
-import me.rerere.highlight.core.RE_STARTERS_RE
-import me.rerere.highlight.core.TITLE_MODE
-import me.rerere.highlight.core.UNDERSCORE_IDENT_RE
-import me.rerere.highlight.core.comment
-import me.rerere.highlight.core.concat
-import me.rerere.highlight.core.either
-import me.rerere.highlight.core.keywords
-import me.rerere.highlight.core.lookahead
-import me.rerere.highlight.core.mode
-import me.rerere.highlight.core.shebang
-import me.rerere.highlight.core.value
-import me.rerere.highlight.core.variant
+import com.clma.highlight.core.APOS_STRING_MODE
+import com.clma.highlight.core.BACKSLASH_ESCAPE
+import com.clma.highlight.core.C_BLOCK_COMMENT_MODE
+import com.clma.highlight.core.C_LINE_COMMENT_MODE
+import com.clma.highlight.core.Keywords
+import com.clma.highlight.core.Language
+import com.clma.highlight.core.MatchData
+import com.clma.highlight.core.Mode
+import com.clma.highlight.core.ModeCallback
+import com.clma.highlight.core.QUOTE_STRING_MODE
+import com.clma.highlight.core.REGEXP_MODE
+import com.clma.highlight.core.RE_STARTERS_RE
+import com.clma.highlight.core.TITLE_MODE
+import com.clma.highlight.core.UNDERSCORE_IDENT_RE
+import com.clma.highlight.core.comment
+import com.clma.highlight.core.concat
+import com.clma.highlight.core.either
+import com.clma.highlight.core.keywords
+import com.clma.highlight.core.lookahead
+import com.clma.highlight.core.mode
+import com.clma.highlight.core.shebang
+import com.clma.highlight.core.value
+import com.clma.highlight.core.variant
 
 /** `IDENT_RE` of `lib/languages/javascript.js`, which is wider than the shared one. */
 internal const val JS_IDENT_RE = "[A-Za-z\$_][0-9A-Za-z\$_]*"

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.browser
+package com.clma.app.browser
 
 /**
  * Pass 3 outbound hook the [BrowserController] uses to push a screenshot + caption into
@@ -10,7 +10,7 @@ package me.rerere.rikkahub.browser
  * by future cron / sub-agent surfaces that want their own screenshot stream.
  *
  * Implementations:
- *  - [me.rerere.rikkahub.data.telegram.TelegramBrowserScreenshotStreamer]: looks up the
+ *  - [com.clma.app.data.telegram.TelegramBrowserScreenshotStreamer]: looks up the
  *    Telegram chat id bound to [callerConvId] via TelegramChatRepository and posts the
  *    screenshot file + URL caption via TelegramBotClient.sendPhoto.
  *  - [NoOp]: no-op default — used in JVM unit tests and any context where Koin hasn't

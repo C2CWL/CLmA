@@ -1,7 +1,7 @@
-package me.rerere.rikkahub.data.ai.tools
+package com.clma.app.data.ai.tools
 
-import me.rerere.workspace.WorkspaceTreeEntry
-import me.rerere.workspace.WorkspaceTreeResult
+import com.clma.workspace.WorkspaceTreeEntry
+import com.clma.workspace.WorkspaceTreeResult
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

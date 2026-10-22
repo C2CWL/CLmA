@@ -1,6 +1,6 @@
-package me.rerere.rikkahub.data.network
+package com.clma.app.data.network
 
-import me.rerere.rikkahub.data.datastore.SettingsStore
+import com.clma.app.data.datastore.SettingsStore
 import java.io.IOException
 import java.net.InetSocketAddress
 import java.net.PasswordAuthentication

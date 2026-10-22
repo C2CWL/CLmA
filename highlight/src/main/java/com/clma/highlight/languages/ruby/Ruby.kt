@@ -1,19 +1,19 @@
-package me.rerere.highlight.languages.ruby
+package com.clma.highlight.languages.ruby
 
-import me.rerere.highlight.core.BACKSLASH_ESCAPE
-import me.rerere.highlight.core.IDENT_RE
-import me.rerere.highlight.core.Language
-import me.rerere.highlight.core.MATCH_NOTHING_RE
-import me.rerere.highlight.core.RE_STARTERS_RE
-import me.rerere.highlight.core.UNDERSCORE_IDENT_RE
-import me.rerere.highlight.core.comment
-import me.rerere.highlight.core.concat
-import me.rerere.highlight.core.either
-import me.rerere.highlight.core.endSameAsBegin
-import me.rerere.highlight.core.keywords
-import me.rerere.highlight.core.lookahead
-import me.rerere.highlight.core.mode
-import me.rerere.highlight.core.shebang
+import com.clma.highlight.core.BACKSLASH_ESCAPE
+import com.clma.highlight.core.IDENT_RE
+import com.clma.highlight.core.Language
+import com.clma.highlight.core.MATCH_NOTHING_RE
+import com.clma.highlight.core.RE_STARTERS_RE
+import com.clma.highlight.core.UNDERSCORE_IDENT_RE
+import com.clma.highlight.core.comment
+import com.clma.highlight.core.concat
+import com.clma.highlight.core.either
+import com.clma.highlight.core.endSameAsBegin
+import com.clma.highlight.core.keywords
+import com.clma.highlight.core.lookahead
+import com.clma.highlight.core.mode
+import com.clma.highlight.core.shebang
 
 /** Ruby, ported from `lib/languages/ruby.js` of `highlight.js` 11.11.1. */
 internal fun ruby(): Language {

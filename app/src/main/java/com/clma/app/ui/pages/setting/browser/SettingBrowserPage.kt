@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.setting.browser
+package com.clma.app.ui.pages.setting.browser
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -34,14 +34,14 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dokar.sonner.ToastType
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.browser.BrowserActivity
-import me.rerere.rikkahub.browser.BrowserSearchEngines
-import me.rerere.rikkahub.browser.BrowserToolDefaults
-import me.rerere.rikkahub.ui.components.nav.BackButton
-import me.rerere.rikkahub.ui.components.ui.CardGroup
-import me.rerere.rikkahub.ui.context.LocalToaster
-import me.rerere.rikkahub.ui.theme.CustomColors
+import com.clma.app.R
+import com.clma.app.browser.BrowserActivity
+import com.clma.app.browser.BrowserSearchEngines
+import com.clma.app.browser.BrowserToolDefaults
+import com.clma.app.ui.components.nav.BackButton
+import com.clma.app.ui.components.ui.CardGroup
+import com.clma.app.ui.context.LocalToaster
+import com.clma.app.ui.theme.CustomColors
 import org.koin.androidx.compose.koinViewModel
 
 /**

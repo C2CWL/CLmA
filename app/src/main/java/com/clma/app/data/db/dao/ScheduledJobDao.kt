@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.db.dao
+package com.clma.app.data.db.dao
 
 import androidx.room.Dao
 import androidx.room.Delete
@@ -7,7 +7,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
-import me.rerere.rikkahub.data.db.entity.ScheduledJobEntity
+import com.clma.app.data.db.entity.ScheduledJobEntity
 
 @Dao
 interface ScheduledJobDao {

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.extensions.skills
+package com.clma.app.ui.pages.extensions.skills
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -61,25 +61,25 @@ import com.composables.icons.lucide.Globe
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.X
 import com.dokar.sonner.ToastType
-import me.rerere.rikkahub.R
+import com.clma.app.R
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Add01
 import me.rerere.hugeicons.stroke.Delete01
 import me.rerere.hugeicons.stroke.Download01
 import me.rerere.hugeicons.stroke.MoreVertical
 import me.rerere.hugeicons.stroke.Puzzle
-import me.rerere.rikkahub.data.datastore.SkillGroup
-import me.rerere.rikkahub.data.datastore.SkillGroupRules
-import me.rerere.rikkahub.data.files.SkillFrontmatterParser
-import me.rerere.rikkahub.data.files.SkillMetadata
-import me.rerere.rikkahub.Screen
-import me.rerere.rikkahub.skills.CatalogEntry
-import me.rerere.rikkahub.ui.components.nav.BackButton
-import me.rerere.rikkahub.ui.components.ui.RikkaConfirmDialog
-import me.rerere.rikkahub.ui.context.LocalNavController
-import me.rerere.rikkahub.ui.context.LocalToaster
-import me.rerere.rikkahub.ui.theme.CustomColors
-import me.rerere.rikkahub.utils.plus
+import com.clma.app.data.datastore.SkillGroup
+import com.clma.app.data.datastore.SkillGroupRules
+import com.clma.app.data.files.SkillFrontmatterParser
+import com.clma.app.data.files.SkillMetadata
+import com.clma.app.Screen
+import com.clma.app.skills.CatalogEntry
+import com.clma.app.ui.components.nav.BackButton
+import com.clma.app.ui.components.ui.RikkaConfirmDialog
+import com.clma.app.ui.context.LocalNavController
+import com.clma.app.ui.context.LocalToaster
+import com.clma.app.ui.theme.CustomColors
+import com.clma.app.utils.plus
 import org.koin.androidx.compose.koinViewModel
 
 @Composable

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.automation
+package com.clma.app.automation
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull

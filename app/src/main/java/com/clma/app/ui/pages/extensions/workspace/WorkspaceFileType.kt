@@ -1,6 +1,6 @@
-package me.rerere.rikkahub.ui.pages.extensions.workspace
+package com.clma.app.ui.pages.extensions.workspace
 
-import me.rerere.workspace.WorkspaceFileEntry
+import com.clma.workspace.WorkspaceFileEntry
 
 /**
  * 工作区文件的粗略分类, 用于决定点击文件时的行为:

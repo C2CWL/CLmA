@@ -1,10 +1,10 @@
-package me.rerere.rikkahub.data.ai.limits
+package com.clma.app.data.ai.limits
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 import kotlin.uuid.Uuid
-import me.rerere.ai.core.ReasoningLevel
+import com.clma.ai.core.ReasoningLevel
 
 /**
  * Pins the per-conversation reasoning-level override holder: set/get/clear round-trips and

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.ui
+package com.clma.app.ui.components.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -25,8 +25,8 @@ import androidx.compose.ui.unit.dp
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Cancel01
 import me.rerere.hugeicons.stroke.DatabaseRestore
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.datastore.Settings
+import com.clma.app.R
+import com.clma.app.data.datastore.Settings
 
 @Composable
 fun BackupReminderCard(

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.utils
+package com.clma.app.utils
 
 import android.app.DownloadManager
 import android.content.Context
@@ -15,11 +15,11 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import me.rerere.common.http.await
-import me.rerere.rikkahub.AppScope
-import me.rerere.rikkahub.BuildConfig
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.reliability.GitHubReleaseChecker
+import com.clma.common.http.await
+import com.clma.app.AppScope
+import com.clma.app.BuildConfig
+import com.clma.app.R
+import com.clma.app.reliability.GitHubReleaseChecker
 import okhttp3.OkHttpClient
 import okhttp3.Request
 

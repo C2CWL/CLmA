@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.assistant
+package com.clma.app.ui.pages.assistant
 
 import org.junit.Assert.assertEquals
 import org.junit.Test

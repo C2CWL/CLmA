@@ -1,8 +1,8 @@
-package me.rerere.rikkahub.data.ai.model
+package com.clma.app.data.ai.model
 
-import me.rerere.ai.provider.Model
-import me.rerere.ai.provider.ModelType
-import me.rerere.ai.provider.ProviderSetting
+import com.clma.ai.provider.Model
+import com.clma.ai.provider.ModelType
+import com.clma.ai.provider.ProviderSetting
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
@@ -13,8 +13,8 @@ import org.junit.Test
  * UUID or by name/id) plus the type / provider-kind wire conversions.
  *
  * The four tool bodies themselves are not reachable from a JVM test — they take a concrete
- * [me.rerere.rikkahub.data.datastore.SettingsStore] and a Room-backed
- * [me.rerere.rikkahub.data.agentrun.AgentRunRepository] — so what is pinned here is the
+ * [com.clma.app.data.datastore.SettingsStore] and a Room-backed
+ * [com.clma.app.data.agentrun.AgentRunRepository] — so what is pinned here is the
  * resolution logic the bodies delegate to, which is where a wrong match would bite. CI covers
  * the wiring.
  */

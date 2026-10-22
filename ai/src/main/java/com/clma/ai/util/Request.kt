@@ -1,4 +1,4 @@
-package me.rerere.ai.util
+package com.clma.ai.util
 
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -6,10 +6,10 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import me.rerere.ai.provider.CustomBody
-import me.rerere.ai.provider.CustomHeader
-import me.rerere.ai.provider.ProviderSetting
-import me.rerere.common.android.Logging
+import com.clma.ai.provider.CustomBody
+import com.clma.ai.provider.CustomHeader
+import com.clma.ai.provider.ProviderSetting
+import com.clma.common.android.Logging
 import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.ai
+package com.clma.app.ui.components.ai
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -50,15 +50,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import me.rerere.ai.core.ReasoningLevel
+import com.clma.ai.core.ReasoningLevel
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Idea
 import me.rerere.hugeicons.stroke.Idea01
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.ui.components.ui.ToggleSurface
-import me.rerere.rikkahub.ui.components.ui.icons.ReasoningHigh
-import me.rerere.rikkahub.ui.components.ui.icons.ReasoningLow
-import me.rerere.rikkahub.ui.components.ui.icons.ReasoningMedium
+import com.clma.app.R
+import com.clma.app.ui.components.ui.ToggleSurface
+import com.clma.app.ui.components.ui.icons.ReasoningHigh
+import com.clma.app.ui.components.ui.icons.ReasoningLow
+import com.clma.app.ui.components.ui.icons.ReasoningMedium
 import kotlin.math.PI
 import kotlin.math.roundToInt
 import kotlin.math.sin

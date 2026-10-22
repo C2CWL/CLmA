@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.files
+package com.clma.app.data.files
 
 /**
  * The Agent Skills spec's `name` rules, in one place.

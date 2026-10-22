@@ -1,17 +1,17 @@
-package me.rerere.rikkahub.data.agentdef
+package com.clma.app.data.agentdef
 
 import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
-import me.rerere.rikkahub.data.db.SQLiteConfiguration
+import com.clma.app.data.db.SQLiteConfiguration
 
 /**
  * P2-06 — the expert library database.
  *
  * A **separate** database file rather than one more table inside
- * [me.rerere.rikkahub.data.db.AppDatabase], for the same reason the P2-11c usage ledger is:
+ * [com.clma.app.data.db.AppDatabase], for the same reason the P2-11c usage ledger is:
  *
  *  - `ImportedDatabaseReconciler` pins `AppDatabase`'s schema version, its Room **identity
  *    hash** and the fork-only table DDL list, and its unit test asserts those constants match

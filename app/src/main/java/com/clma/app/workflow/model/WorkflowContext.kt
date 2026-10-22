@@ -1,9 +1,9 @@
-package me.rerere.rikkahub.workflow.model
+package com.clma.app.workflow.model
 
 /**
  * Snapshot of device state at condition-evaluation time. Lazy fields (location, foreground app,
  * recent notifications) are filled only when at least one condition needs them — see
- * [me.rerere.rikkahub.workflow.condition.ContextProvider].
+ * [com.clma.app.workflow.condition.ContextProvider].
  *
  * Time zone for [time_between] / day-of-week / sunrise-sunset condition evaluation is device-local.
  * Daily-cap rollover also keys off the device-local "yyyy-MM-dd" date.

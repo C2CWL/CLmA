@@ -1,15 +1,15 @@
-package me.rerere.rikkahub.ui.pages.chat
+package com.clma.app.ui.pages.chat
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
-import me.rerere.ai.core.MessageRole
-import me.rerere.rikkahub.data.datastore.Settings
-import me.rerere.rikkahub.data.model.Conversation
-import me.rerere.rikkahub.ui.context.LocalTTSState
-import me.rerere.rikkahub.utils.extractQuotedContentAsText
-import me.rerere.rikkahub.utils.removeBracketedContent
+import com.clma.ai.core.MessageRole
+import com.clma.app.data.datastore.Settings
+import com.clma.app.data.model.Conversation
+import com.clma.app.ui.context.LocalTTSState
+import com.clma.app.utils.extractQuotedContentAsText
+import com.clma.app.utils.removeBracketedContent
 
 @Composable
 fun TTSAutoPlay(vm: ChatVM, setting: Settings, conversation: Conversation) {

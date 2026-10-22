@@ -1,8 +1,8 @@
-package me.rerere.rikkahub.data.sync.importer
+package com.clma.app.data.sync.importer
 
 import kotlinx.coroutines.runBlocking
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.data.model.Conversation
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.model.Conversation
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull

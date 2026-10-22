@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.tools.local
+package com.clma.app.data.ai.tools.local
 
 import android.content.ComponentName
 import android.content.Context
@@ -6,7 +6,7 @@ import android.provider.Settings
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import me.rerere.rikkahub.service.RikkaNotificationListenerService
+import com.clma.app.service.RikkaNotificationListenerService
 
 /**
  * Bridge between the LLM tool factories and the live notification listener service.

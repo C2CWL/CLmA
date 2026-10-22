@@ -1,8 +1,8 @@
-package me.rerere.rikkahub.data.preferences
+package com.clma.app.data.preferences
 
 /**
  * Authoritative defaults and clamp helpers for every Termux-configurable knob. Mirrors
- * [me.rerere.rikkahub.browser.BrowserToolDefaults] in shape — one object, constants +
+ * [com.clma.app.browser.BrowserToolDefaults] in shape — one object, constants +
  * clamp functions. All ceilings are deliberate hard limits per the CLAUDE.md rule that
  * every tool MUST have a hard timeout.
  */

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.datastore
+package com.clma.app.data.datastore
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue

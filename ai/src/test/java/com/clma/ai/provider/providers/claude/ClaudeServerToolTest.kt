@@ -1,4 +1,4 @@
-package me.rerere.ai.provider.providers.claude
+package com.clma.ai.provider.providers.claude
 
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
@@ -10,24 +10,24 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import me.rerere.ai.core.MessageRole
-import me.rerere.ai.core.TokenUsage
-import me.rerere.ai.provider.BuiltInTools
-import me.rerere.ai.provider.Model
-import me.rerere.ai.provider.ProviderSetting
-import me.rerere.ai.provider.TextGenerationResult
-import me.rerere.ai.provider.TextGenerationParams
-import me.rerere.ai.provider.stream.SseEvent
-import me.rerere.ai.ui.ServerToolMetadata
-import me.rerere.ai.ui.ServerToolProtocol
-import me.rerere.ai.ui.ServerToolStatus
-import me.rerere.ai.ui.StreamChunk
-import me.rerere.ai.ui.StreamChunkHandler
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.ai.ui.metadataAs
-import me.rerere.ai.ui.toMetadata
-import me.rerere.ai.util.json
+import com.clma.ai.core.MessageRole
+import com.clma.ai.core.TokenUsage
+import com.clma.ai.provider.BuiltInTools
+import com.clma.ai.provider.Model
+import com.clma.ai.provider.ProviderSetting
+import com.clma.ai.provider.TextGenerationResult
+import com.clma.ai.provider.TextGenerationParams
+import com.clma.ai.provider.stream.SseEvent
+import com.clma.ai.ui.ServerToolMetadata
+import com.clma.ai.ui.ServerToolProtocol
+import com.clma.ai.ui.ServerToolStatus
+import com.clma.ai.ui.StreamChunk
+import com.clma.ai.ui.StreamChunkHandler
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessagePart
+import com.clma.ai.ui.metadataAs
+import com.clma.ai.ui.toMetadata
+import com.clma.ai.util.json
 import okhttp3.OkHttpClient
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -421,14 +421,14 @@ class ClaudeServerToolTest {
             "buildMessages",
             List::class.java,
             Boolean::class.javaPrimitiveType,
-            me.rerere.ai.provider.ClaudePromptCacheTtl::class.java,
+            com.clma.ai.provider.ClaudePromptCacheTtl::class.java,
         )
         method.isAccessible = true
         return method.invoke(
             provider,
             messages,
             false,
-            me.rerere.ai.provider.ClaudePromptCacheTtl.FIVE_MINUTES,
+            com.clma.ai.provider.ClaudePromptCacheTtl.FIVE_MINUTES,
         ) as JsonArray
     }
 

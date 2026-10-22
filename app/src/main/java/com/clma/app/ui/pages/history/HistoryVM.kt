@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.history
+package com.clma.app.ui.pages.history
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -10,10 +10,10 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.datastore.getCurrentAssistant
-import me.rerere.rikkahub.data.model.Conversation
-import me.rerere.rikkahub.data.repository.ConversationRepository
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.datastore.getCurrentAssistant
+import com.clma.app.data.model.Conversation
+import com.clma.app.data.repository.ConversationRepository
 import kotlin.uuid.Uuid
 
 private const val TAG = "HistoryVM"

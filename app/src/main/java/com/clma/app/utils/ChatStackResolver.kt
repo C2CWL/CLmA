@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.utils
+package com.clma.app.utils
 
 /**
  * Resolves the ordered conversation ids for RouteActivity's initial chat back stack.

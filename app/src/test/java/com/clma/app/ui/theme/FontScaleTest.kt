@@ -1,7 +1,7 @@
-package me.rerere.rikkahub.ui.theme
+package com.clma.app.ui.theme
 
-import me.rerere.rikkahub.data.datastore.ChatFontFamily
-import me.rerere.rikkahub.data.datastore.DisplaySetting
+import com.clma.app.data.datastore.ChatFontFamily
+import com.clma.app.data.datastore.DisplaySetting
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull

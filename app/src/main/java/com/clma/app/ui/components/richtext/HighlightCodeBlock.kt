@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.richtext
+package com.clma.app.ui.components.richtext
 
 import android.content.ClipData
 import android.net.Uri
@@ -58,10 +58,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import me.rerere.highlight.HighlightTextColorPalette
-import me.rerere.highlight.buildHighlightText
-import me.rerere.highlight.CodeHighlightText
-import me.rerere.highlight.CodeHighlighter
+import com.clma.highlight.HighlightTextColorPalette
+import com.clma.highlight.buildHighlightText
+import com.clma.highlight.CodeHighlightText
+import com.clma.highlight.CodeHighlighter
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ArrowDown01
 import me.rerere.hugeicons.stroke.ArrowUp01
@@ -70,20 +70,20 @@ import me.rerere.hugeicons.stroke.Copy01
 import me.rerere.hugeicons.stroke.Download04
 import me.rerere.hugeicons.stroke.Eye
 import me.rerere.hugeicons.stroke.View
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.Screen
-import me.rerere.rikkahub.ui.components.webview.WebView
-import me.rerere.rikkahub.ui.components.webview.WebViewContentCache
-import me.rerere.rikkahub.ui.components.webview.rememberWebViewState
-import me.rerere.rikkahub.ui.context.LocalNavController
-import me.rerere.rikkahub.ui.context.LocalSettings
-import me.rerere.rikkahub.ui.context.Navigator
-import me.rerere.rikkahub.ui.modifier.onClick
-import me.rerere.rikkahub.ui.theme.AtomOneDarkPalette
-import me.rerere.rikkahub.ui.theme.AtomOneLightPalette
-import me.rerere.rikkahub.ui.theme.JetbrainsMono
-import me.rerere.rikkahub.ui.theme.LocalDarkMode
-import me.rerere.rikkahub.utils.toDp
+import com.clma.app.R
+import com.clma.app.Screen
+import com.clma.app.ui.components.webview.WebView
+import com.clma.app.ui.components.webview.WebViewContentCache
+import com.clma.app.ui.components.webview.rememberWebViewState
+import com.clma.app.ui.context.LocalNavController
+import com.clma.app.ui.context.LocalSettings
+import com.clma.app.ui.context.Navigator
+import com.clma.app.ui.modifier.onClick
+import com.clma.app.ui.theme.AtomOneDarkPalette
+import com.clma.app.ui.theme.AtomOneLightPalette
+import com.clma.app.ui.theme.JetbrainsMono
+import com.clma.app.ui.theme.LocalDarkMode
+import com.clma.app.utils.toDp
 import kotlin.time.Clock
 
 private const val TAG = "HighlightCodeBlock"

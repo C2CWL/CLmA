@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.notifications
+package com.clma.app.data.notifications
 
 import android.content.Context
 import androidx.datastore.preferences.core.edit

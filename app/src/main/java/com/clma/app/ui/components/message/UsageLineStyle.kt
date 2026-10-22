@@ -1,6 +1,6 @@
-package me.rerere.rikkahub.ui.components.message
+package com.clma.app.ui.components.message
 
-import me.rerere.rikkahub.ui.pages.chat.PHOTO_TITLE_PLATE_ALPHA
+import com.clma.app.ui.pages.chat.PHOTO_TITLE_PLATE_ALPHA
 
 /*
  * Styling of the per-turn usage line under an assistant reply. Pure (no Compose / Android types)

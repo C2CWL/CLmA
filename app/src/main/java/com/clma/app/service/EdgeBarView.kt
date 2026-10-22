@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.service
+package com.clma.app.service
 
 import android.animation.ValueAnimator
 import android.content.Context
@@ -11,8 +11,8 @@ import android.graphics.RectF
 import android.graphics.Shader
 import android.os.SystemClock
 import android.view.View
-import me.rerere.rikkahub.data.datastore.EdgeBarColor
-import me.rerere.rikkahub.service.EdgeBarLook.Signal
+import com.clma.app.data.datastore.EdgeBarColor
+import com.clma.app.service.EdgeBarLook.Signal
 
 /**
  * The edge bar: a [EdgeBarLook.BAR_WIDTH_DP] x [EdgeBarLook.BAR_HEIGHT_DP] pill drawn flush with

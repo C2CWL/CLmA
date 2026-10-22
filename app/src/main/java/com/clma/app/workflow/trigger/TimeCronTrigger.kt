@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.workflow.trigger
+package com.clma.app.workflow.trigger
 
 import android.content.Context
 import android.util.Log
@@ -14,8 +14,8 @@ import androidx.work.workDataOf
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import me.rerere.rikkahub.workflow.model.TriggerSpec
-import me.rerere.rikkahub.workflow.model.WorkflowDefinition
+import com.clma.app.workflow.model.TriggerSpec
+import com.clma.app.workflow.model.WorkflowDefinition
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit
  * v1 supports the time_of_day + days_of_week subset. The `cron` field is also accepted
  * (per spec — same dialect as scheduled jobs): `@every Ns`, `@hourly`, `@daily`, `@weekly`
  * map to fixed periods, and arbitrary 5-field cron runs on the one-shot chain with the next
- * fire computed exactly via [me.rerere.rikkahub.service.CronExpressionParser] (shared with
+ * fire computed exactly via [com.clma.app.service.CronExpressionParser] (shared with
  * scheduled jobs). The validator rejects anything neither path can handle.
  *
  * We use [WorkflowTimeCronWorker] (separate file) which receives the workflow id and
@@ -133,7 +133,7 @@ internal class TimeCronTriggerFamily(
         // The engine still re-checks enabled / cooldown / conditions, so this is safe.
         val wf = lastSnapshot.firstOrNull { it.id == workflowId }
             ?: run {
-                val loaded = me.rerere.rikkahub.workflow.trigger.TimeCronWorkerHelper
+                val loaded = com.clma.app.workflow.trigger.TimeCronWorkerHelper
                     .repositoryLookup(workflowId)
                 if (loaded == null) return
                 if (!loaded.entity.enabled) return
@@ -226,8 +226,8 @@ internal class TimeCronTriggerFamily(
             // (same dialect as scheduled jobs). Without this, "0 9 * * 1" style
             // expressions silently degraded to hourly fires.
             spec.cron?.trim()?.takeIf { it.isNotBlank() }?.let { cron ->
-                me.rerere.rikkahub.service.CronExpressionParser.parse(cron).getOrNull()?.let { parsed ->
-                    me.rerere.rikkahub.service.CronExpressionParser.nextExecution(parsed, now)
+                com.clma.app.service.CronExpressionParser.parse(cron).getOrNull()?.let { parsed ->
+                    com.clma.app.service.CronExpressionParser.nextExecution(parsed, now)
                         ?.let { return it.toInstant().toEpochMilli() }
                 }
             }

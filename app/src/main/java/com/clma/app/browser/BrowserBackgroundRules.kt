@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.browser
+package com.clma.app.browser
 
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
@@ -54,7 +54,7 @@ fun shellQuoteSingle(s: String): String = "'" + s.replace("'", "'\\''") + "'"
  * as [BrowserActivity.intent] would for the foreground path.
  *
  * [packageName] is the runtime application id (Context.getPackageName) — the activity class
- * name is fixed (`me.rerere.rikkahub.browser.BrowserActivity`) regardless of flavor/brand.
+ * name is fixed (`com.clma.app.browser.BrowserActivity`) regardless of flavor/brand.
  */
 fun buildBrowserLaunchCommand(
     packageName: String,
@@ -64,7 +64,7 @@ fun buildBrowserLaunchCommand(
 ): String = buildString {
     append("am start -n ")
     append(packageName)
-    append("/me.rerere.rikkahub.browser.BrowserActivity")
+    append("/com.clma.app.browser.BrowserActivity")
     append(" --display ")
     append(displayId)
     // Shell-launched activities get NEW_TASK implicitly; make it explicit for clarity.

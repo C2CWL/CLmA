@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.chat
+package com.clma.app.ui.pages.chat
 
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -9,13 +9,13 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.asr.ASRController
-import me.rerere.asr.ASRState
-import me.rerere.asr.ASRStatus
-import me.rerere.asr.ASRVoiceTurn
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.service.MessageQueue
+import com.clma.ai.ui.UIMessagePart
+import com.clma.asr.ASRController
+import com.clma.asr.ASRState
+import com.clma.asr.ASRStatus
+import com.clma.asr.ASRVoiceTurn
+import com.clma.app.R
+import com.clma.app.service.MessageQueue
 import org.junit.Assert.*
 import org.junit.Test
 

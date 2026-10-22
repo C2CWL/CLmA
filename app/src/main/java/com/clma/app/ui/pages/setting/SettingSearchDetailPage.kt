@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.setting
+package com.clma.app.ui.pages.setting
 
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Play
@@ -46,22 +46,22 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import me.rerere.highlight.LocalCodeHighlighter
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.ui.components.nav.BackButton
-import me.rerere.rikkahub.ui.components.richtext.HighlightCodeVisualTransformation
-import me.rerere.rikkahub.ui.components.ui.FormItem
-import me.rerere.rikkahub.ui.context.LocalNavController
-import me.rerere.rikkahub.ui.theme.CustomColors
-import me.rerere.rikkahub.ui.theme.JetbrainsMono
-import me.rerere.rikkahub.ui.theme.LocalDarkMode
-import me.rerere.rikkahub.utils.plus
-import me.rerere.search.DoubaoSearchMode
-import me.rerere.search.SearchCommonOptions
-import me.rerere.search.SearchResult
-import me.rerere.search.SearchService
-import me.rerere.search.SearchServiceOptions
-import me.rerere.search.limitedBy
+import com.clma.highlight.LocalCodeHighlighter
+import com.clma.app.R
+import com.clma.app.ui.components.nav.BackButton
+import com.clma.app.ui.components.richtext.HighlightCodeVisualTransformation
+import com.clma.app.ui.components.ui.FormItem
+import com.clma.app.ui.context.LocalNavController
+import com.clma.app.ui.theme.CustomColors
+import com.clma.app.ui.theme.JetbrainsMono
+import com.clma.app.ui.theme.LocalDarkMode
+import com.clma.app.utils.plus
+import com.clma.search.DoubaoSearchMode
+import com.clma.search.SearchCommonOptions
+import com.clma.search.SearchResult
+import com.clma.search.SearchService
+import com.clma.search.SearchServiceOptions
+import com.clma.search.limitedBy
 import org.koin.androidx.compose.koinViewModel
 import kotlin.uuid.Uuid
 

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.tools.local
+package com.clma.app.data.ai.tools.local
 
 /**
  * The node tree as of the last `read_window_tree` in each conversation.

@@ -1,12 +1,12 @@
-package me.rerere.rikkahub.service
+package com.clma.app.service
 
 import android.util.Log
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.data.telegram.AttachmentKind
-import me.rerere.rikkahub.data.telegram.TelegramAttachment
-import me.rerere.rikkahub.data.telegram.TelegramBotClient
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.telegram.AttachmentKind
+import com.clma.app.data.telegram.TelegramAttachment
+import com.clma.app.data.telegram.TelegramBotClient
 import java.io.File
 
 /**

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.usage
+package com.clma.app.data.usage
 
 /**
  * D10 — the coarse buckets the statistics page shows a purpose ranking under.

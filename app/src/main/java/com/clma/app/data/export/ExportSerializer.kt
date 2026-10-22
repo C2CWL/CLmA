@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.export
+package com.clma.app.data.export
 
 import android.content.Context
 import android.net.Uri
@@ -8,10 +8,10 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
-import me.rerere.rikkahub.data.model.InjectionPosition
-import me.rerere.rikkahub.data.model.Lorebook
-import me.rerere.rikkahub.data.model.PromptInjection
-import me.rerere.rikkahub.utils.toLocalString
+import com.clma.app.data.model.InjectionPosition
+import com.clma.app.data.model.Lorebook
+import com.clma.app.data.model.PromptInjection
+import com.clma.app.utils.toLocalString
 import java.time.LocalDateTime
 import kotlin.uuid.Uuid
 

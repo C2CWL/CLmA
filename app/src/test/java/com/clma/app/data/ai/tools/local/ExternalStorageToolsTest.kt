@@ -1,6 +1,6 @@
-package me.rerere.rikkahub.data.ai.tools.local
+package com.clma.app.data.ai.tools.local
 
-import me.rerere.rikkahub.data.storage.StorageVolumeGrantStore
+import com.clma.app.data.storage.StorageVolumeGrantStore
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull

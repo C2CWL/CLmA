@@ -1,12 +1,12 @@
-package me.rerere.rikkahub.data.telegram
+package com.clma.app.data.telegram
 
 import android.content.Context
 import android.graphics.Bitmap
 import android.util.Log
-import me.rerere.rikkahub.data.ai.tools.ToolInvocationContext
-import me.rerere.rikkahub.data.ai.tools.local.InteractiveToolStreamer
-import me.rerere.rikkahub.data.repository.TelegramChatRepository
-import me.rerere.rikkahub.service.RikkaAccessibilityService
+import com.clma.app.data.ai.tools.ToolInvocationContext
+import com.clma.app.data.ai.tools.local.InteractiveToolStreamer
+import com.clma.app.data.repository.TelegramChatRepository
+import com.clma.app.service.RikkaAccessibilityService
 import java.io.File
 import java.io.FileOutputStream
 

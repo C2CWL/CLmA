@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.grok
+package com.clma.app.data.grok
 
 import android.content.Context
 import android.security.keystore.KeyGenParameterSpec

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.browser
+package com.clma.app.browser
 
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
@@ -34,7 +34,7 @@ class BrowserBackgroundRulesTest {
 
     @Test fun `launch command includes display and extras`() {
         val cmd = buildBrowserLaunchCommand("excp.rikkahub.debug", 7, "https://x.com/q?a=1", "conv-1")
-        assertTrue(cmd.startsWith("am start -n excp.rikkahub.debug/me.rerere.rikkahub.browser.BrowserActivity "))
+        assertTrue(cmd.startsWith("am start -n excp.rikkahub.debug/com.clma.app.browser.BrowserActivity "))
         assertTrue(cmd.contains(" --display 7 "))
         assertTrue(cmd.contains(" -f 268435456"))
         assertTrue(cmd.contains("--es me.rerere.rikkahub.browser.EXTRA_INITIAL_URL 'https://x.com/q?a=1'"))

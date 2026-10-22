@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.setting.components
+package com.clma.app.ui.pages.setting.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -33,17 +33,17 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dokar.sonner.ToastType
 import kotlinx.coroutines.launch
-import me.rerere.ai.provider.Model
-import me.rerere.ai.provider.ProviderManager
-import me.rerere.ai.provider.ProviderSetting
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.codex.CodexAccount
-import me.rerere.rikkahub.data.codex.CodexAccountRepository
-import me.rerere.rikkahub.data.codex.CodexOAuthManager
-import me.rerere.rikkahub.data.codex.CodexOAuthStatus
-import me.rerere.rikkahub.data.codex.CodexTokenStatus
-import me.rerere.rikkahub.data.codex.CodexUsageWindow
-import me.rerere.rikkahub.ui.context.LocalToaster
+import com.clma.ai.provider.Model
+import com.clma.ai.provider.ProviderManager
+import com.clma.ai.provider.ProviderSetting
+import com.clma.app.R
+import com.clma.app.data.codex.CodexAccount
+import com.clma.app.data.codex.CodexAccountRepository
+import com.clma.app.data.codex.CodexOAuthManager
+import com.clma.app.data.codex.CodexOAuthStatus
+import com.clma.app.data.codex.CodexTokenStatus
+import com.clma.app.data.codex.CodexUsageWindow
+import com.clma.app.ui.context.LocalToaster
 import org.koin.compose.koinInject
 import java.time.Instant
 import java.time.ZoneId

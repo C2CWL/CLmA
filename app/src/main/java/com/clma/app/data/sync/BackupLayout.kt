@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.sync
+package com.clma.app.data.sync
 
 /**
  * Where each file-backed [BackupItem] lives on disk and inside the backup archive.
@@ -28,7 +28,7 @@ internal object BackupLayout {
     const val WORKSPACE_FILES_DIR = "files"
 
     /**
-     * The on-device agent's `~` ([me.rerere.rikkahub.data.ai.tools.local.AgentWorkspace]),
+     * The on-device agent's `~` ([com.clma.app.data.ai.tools.local.AgentWorkspace]),
      * archived as `workspace/<relative>`.
      */
     const val AGENT_WORKSPACE_DIR = "workspace"

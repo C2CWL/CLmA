@@ -1,4 +1,4 @@
-package me.rerere.locallm.litert
+package com.clma.locallm.litert
 
 /** A single curated entry the Settings → Local · LiteRT picker shows. Joins the
  *  download identity (HuggingFace repo + file) with the config defaults so picking

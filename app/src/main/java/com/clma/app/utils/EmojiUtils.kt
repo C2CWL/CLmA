@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.utils
+package com.clma.app.utils
 
 import android.content.Context
 import kotlinx.serialization.json.jsonArray

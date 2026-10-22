@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai
+package com.clma.app.data.ai
 
 /**
  * Single place for assembling the system prompt that is sent to every provider.

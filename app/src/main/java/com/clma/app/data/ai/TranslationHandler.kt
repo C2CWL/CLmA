@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai
+package com.clma.app.data.ai
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -7,20 +7,20 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import me.rerere.ai.core.ReasoningLevel
-import me.rerere.ai.provider.CustomBody
-import me.rerere.ai.provider.ProviderManager
-import me.rerere.ai.provider.TextGenerationParams
-import me.rerere.ai.registry.ModelRegistry
-import me.rerere.ai.ui.StreamChunkHandler
-import me.rerere.ai.ui.UIMessage
-import me.rerere.rikkahub.data.datastore.Settings
-import me.rerere.rikkahub.data.datastore.findModelById
-import me.rerere.rikkahub.data.datastore.findProvider
-import me.rerere.rikkahub.utils.applyPlaceholders
+import com.clma.ai.core.ReasoningLevel
+import com.clma.ai.provider.CustomBody
+import com.clma.ai.provider.ProviderManager
+import com.clma.ai.provider.TextGenerationParams
+import com.clma.ai.registry.ModelRegistry
+import com.clma.ai.ui.StreamChunkHandler
+import com.clma.ai.ui.UIMessage
+import com.clma.app.data.datastore.Settings
+import com.clma.app.data.datastore.findModelById
+import com.clma.app.data.datastore.findProvider
+import com.clma.app.utils.applyPlaceholders
 import java.util.Locale
-import me.rerere.rikkahub.data.usage.UsageCallContext
-import me.rerere.rikkahub.data.usage.UsagePurpose
+import com.clma.app.data.usage.UsageCallContext
+import com.clma.app.data.usage.UsagePurpose
 import kotlinx.coroutines.withContext
 
 class TranslationHandler(

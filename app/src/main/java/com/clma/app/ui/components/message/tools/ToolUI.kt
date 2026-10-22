@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.message.tools
+package com.clma.app.ui.components.message.tools
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -22,16 +22,16 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.contentOrNull
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.common.http.jsonObjectOrNull
+import com.clma.ai.ui.UIMessagePart
+import com.clma.common.http.jsonObjectOrNull
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Tools
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.ui.components.richtext.HighlightCodeBlock
-import me.rerere.rikkahub.ui.components.ui.FormItem
-import me.rerere.rikkahub.utils.JsonInstant
-import me.rerere.rikkahub.utils.JsonInstantPretty
-import me.rerere.rikkahub.utils.jsonPrimitiveOrNull
+import com.clma.app.R
+import com.clma.app.ui.components.richtext.HighlightCodeBlock
+import com.clma.app.ui.components.ui.FormItem
+import com.clma.app.utils.JsonInstant
+import com.clma.app.utils.JsonInstantPretty
+import com.clma.app.utils.jsonPrimitiveOrNull
 
 /**
  * 工具调用的渲染上下文, 预解析好工具入参与输出, 避免各渲染器重复解析

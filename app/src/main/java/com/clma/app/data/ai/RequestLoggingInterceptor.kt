@@ -1,8 +1,8 @@
-package me.rerere.rikkahub.data.ai
+package com.clma.app.data.ai
 
-import me.rerere.common.android.LogEntry
-import me.rerere.common.android.LogLevel
-import me.rerere.common.android.Logging
+import com.clma.common.android.LogEntry
+import com.clma.common.android.LogLevel
+import com.clma.common.android.Logging
 import okhttp3.Interceptor
 import okhttp3.Response
 import okio.Buffer

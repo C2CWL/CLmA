@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.modifier
+package com.clma.app.ui.modifier
 
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable

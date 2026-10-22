@@ -1,6 +1,6 @@
 @file:Suppress("DEPRECATION")  // FlowRowOverflow deprecated; no replacement in current Compose
 
-package me.rerere.rikkahub.ui.pages.setting
+package com.clma.app.ui.pages.setting
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.clickable
@@ -82,7 +82,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import me.rerere.ai.core.InputSchema
+import com.clma.ai.core.InputSchema
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Add01
 import me.rerere.hugeicons.stroke.AlertCircle
@@ -96,24 +96,24 @@ import me.rerere.hugeicons.stroke.MessageBlocked
 import me.rerere.hugeicons.stroke.View
 import me.rerere.hugeicons.stroke.ViewOff
 import me.rerere.hugeicons.stroke.Settings03
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.ai.mcp.McpCommonOptions
-import me.rerere.rikkahub.data.ai.mcp.McpManager
-import me.rerere.rikkahub.data.ai.mcp.McpServerConfig
-import me.rerere.rikkahub.data.ai.mcp.McpStatus
-import me.rerere.rikkahub.data.ai.mcp.McpTool
-import me.rerere.rikkahub.ui.components.nav.BackButton
-import me.rerere.rikkahub.ui.components.ui.FormItem
-import me.rerere.rikkahub.ui.components.ui.Switch
-import me.rerere.rikkahub.ui.components.ui.SwitchSize
-import me.rerere.rikkahub.ui.components.ui.Tag
-import me.rerere.rikkahub.ui.components.ui.TagType
-import me.rerere.rikkahub.ui.hooks.EditState
-import me.rerere.rikkahub.ui.hooks.EditStateContent
-import me.rerere.rikkahub.ui.hooks.useEditState
-import me.rerere.rikkahub.ui.theme.CustomColors
-import me.rerere.rikkahub.ui.theme.extendColors
-import me.rerere.rikkahub.utils.writeClipboardText
+import com.clma.app.R
+import com.clma.app.data.ai.mcp.McpCommonOptions
+import com.clma.app.data.ai.mcp.McpManager
+import com.clma.app.data.ai.mcp.McpServerConfig
+import com.clma.app.data.ai.mcp.McpStatus
+import com.clma.app.data.ai.mcp.McpTool
+import com.clma.app.ui.components.nav.BackButton
+import com.clma.app.ui.components.ui.FormItem
+import com.clma.app.ui.components.ui.Switch
+import com.clma.app.ui.components.ui.SwitchSize
+import com.clma.app.ui.components.ui.Tag
+import com.clma.app.ui.components.ui.TagType
+import com.clma.app.ui.hooks.EditState
+import com.clma.app.ui.hooks.EditStateContent
+import com.clma.app.ui.hooks.useEditState
+import com.clma.app.ui.theme.CustomColors
+import com.clma.app.ui.theme.extendColors
+import com.clma.app.utils.writeClipboardText
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 

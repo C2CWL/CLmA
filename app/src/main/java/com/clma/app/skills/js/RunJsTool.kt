@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.skills.js
+package com.clma.app.skills.js
 
 import android.content.Context
 import androidx.core.net.toUri
@@ -8,10 +8,10 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import me.rerere.ai.core.InputSchema
-import me.rerere.ai.core.Tool
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.data.files.SkillManager
+import com.clma.ai.core.InputSchema
+import com.clma.ai.core.Tool
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.files.SkillManager
 
 /**
  * Phase 18 — `run_js` tool. The LLM uses this to invoke a JS skill that lives in the

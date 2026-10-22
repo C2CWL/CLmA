@@ -1,7 +1,7 @@
-package me.rerere.rikkahub.data.ai
+package com.clma.app.data.ai
 
-import me.rerere.ai.ui.ToolApprovalState
-import me.rerere.ai.ui.UIMessagePart
+import com.clma.ai.ui.ToolApprovalState
+import com.clma.ai.ui.UIMessagePart
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

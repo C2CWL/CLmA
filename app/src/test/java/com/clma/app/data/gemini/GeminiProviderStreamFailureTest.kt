@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.gemini
+package com.clma.app.data.gemini
 
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
@@ -17,7 +17,7 @@ import java.io.IOException
  */
 class GeminiProviderStreamFailureTest {
 
-    private val geminiProviderKt = Class.forName("me.rerere.rikkahub.data.gemini.GeminiProviderKt")
+    private val geminiProviderKt = Class.forName("com.clma.app.data.gemini.GeminiProviderKt")
     private val json = Json { ignoreUnknownKeys = true }
 
     private fun resolve(

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.tools.local
+package com.clma.app.data.ai.tools.local
 
 import android.graphics.BitmapFactory
 import android.util.Log
@@ -14,19 +14,19 @@ import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import me.rerere.ai.core.InputSchema
-import me.rerere.ai.core.Tool
-import me.rerere.ai.provider.ImageEditParams
-import me.rerere.ai.provider.ImageGenerationParams
-import me.rerere.ai.provider.ProviderManager
-import me.rerere.ai.ui.ImageAspectRatio
-import me.rerere.ai.ui.ImageGenerationItem
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.datastore.findProvider
-import me.rerere.rikkahub.data.db.entity.GenMediaEntity
-import me.rerere.rikkahub.data.files.FilesManager
-import me.rerere.rikkahub.data.repository.GenMediaRepository
+import com.clma.ai.core.InputSchema
+import com.clma.ai.core.Tool
+import com.clma.ai.provider.ImageEditParams
+import com.clma.ai.provider.ImageGenerationParams
+import com.clma.ai.provider.ProviderManager
+import com.clma.ai.ui.ImageAspectRatio
+import com.clma.ai.ui.ImageGenerationItem
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.datastore.findProvider
+import com.clma.app.data.db.entity.GenMediaEntity
+import com.clma.app.data.files.FilesManager
+import com.clma.app.data.repository.GenMediaRepository
 import java.io.File
 import kotlin.coroutines.cancellation.CancellationException
 

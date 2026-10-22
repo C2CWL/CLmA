@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.nav
+package com.clma.app.ui.components.nav
 
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
@@ -8,9 +8,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ArrowLeft01
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.ui.context.LocalNavController
-import me.rerere.rikkahub.ui.theme.CustomColors
+import com.clma.app.R
+import com.clma.app.ui.context.LocalNavController
+import com.clma.app.ui.theme.CustomColors
 
 @Composable
 fun BackButton(modifier: Modifier = Modifier) {

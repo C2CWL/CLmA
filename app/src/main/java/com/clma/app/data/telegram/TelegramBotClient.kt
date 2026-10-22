@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.telegram
+package com.clma.app.data.telegram
 
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
@@ -110,7 +110,7 @@ class TelegramBotClient(
         .callTimeout(10, TimeUnit.MINUTES)
         .applyTelegramProxy()
         .build()
-        .also { me.rerere.rikkahub.utils.NetworkChangeMonitor.register(it) }
+        .also { com.clma.app.utils.NetworkChangeMonitor.register(it) }
 
     private val pollClient: OkHttpClient = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
@@ -125,7 +125,7 @@ class TelegramBotClient(
         .callTimeout(120, TimeUnit.SECONDS)
         .applyTelegramProxy()
         .build()
-        .also { me.rerere.rikkahub.utils.NetworkChangeMonitor.register(it) }
+        .also { com.clma.app.utils.NetworkChangeMonitor.register(it) }
 
     private fun base() = "https://api.telegram.org/bot${tokenProvider()}"
 

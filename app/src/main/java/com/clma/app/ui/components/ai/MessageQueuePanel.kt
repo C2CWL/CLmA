@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.ai
+package com.clma.app.ui.components.ai
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -29,11 +29,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlin.uuid.Uuid
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.service.MessageQueueState
-import me.rerere.rikkahub.service.QueuedMessage
-import me.rerere.rikkahub.ui.hooks.ChatInputState
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.R
+import com.clma.app.service.MessageQueueState
+import com.clma.app.service.QueuedMessage
+import com.clma.app.ui.hooks.ChatInputState
 
 @Composable
 internal fun MessageQueuePanel(

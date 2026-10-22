@@ -1,11 +1,11 @@
-package me.rerere.rikkahub.workflow.model
+package com.clma.app.workflow.model
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 
 /**
  * Single action in a workflow. Identical wire shape to scheduled-jobs direct-mode actions —
- * we reuse [me.rerere.rikkahub.service.DirectModeActionRunner] for execution.
+ * we reuse [com.clma.app.service.DirectModeActionRunner] for execution.
  */
 @Serializable
 data class WorkflowAction(

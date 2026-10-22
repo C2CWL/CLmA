@@ -1,7 +1,7 @@
-package me.rerere.rikkahub.data.ai.tools.local
+package com.clma.app.data.ai.tools.local
 
 import kotlinx.serialization.json.jsonPrimitive
-import me.rerere.rikkahub.data.telegram.TelegramApiException
+import com.clma.app.data.telegram.TelegramApiException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

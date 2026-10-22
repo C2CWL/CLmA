@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.theme
+package com.clma.app.ui.theme
 
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults

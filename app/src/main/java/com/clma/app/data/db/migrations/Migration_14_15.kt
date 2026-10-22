@@ -1,8 +1,8 @@
-package me.rerere.rikkahub.data.db.migrations
+package com.clma.app.data.db.migrations
 
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
-import me.rerere.rikkahub.data.db.DatabaseMigrationTracker
+import com.clma.app.data.db.DatabaseMigrationTracker
 
 val Migration_14_15 = object : Migration(14, 15) {
     override fun migrate(db: SupportSQLiteDatabase) {

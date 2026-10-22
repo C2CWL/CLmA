@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.shizuku
+package com.clma.app.shizuku
 
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals

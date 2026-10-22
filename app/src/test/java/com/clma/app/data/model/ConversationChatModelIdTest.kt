@@ -1,7 +1,7 @@
-package me.rerere.rikkahub.data.model
+package com.clma.app.data.model
 
 import kotlinx.serialization.decodeFromString
-import me.rerere.rikkahub.utils.JsonInstant
+import com.clma.app.utils.JsonInstant
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test

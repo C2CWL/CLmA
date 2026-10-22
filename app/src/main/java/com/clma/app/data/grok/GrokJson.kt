@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.grok
+package com.clma.app.data.grok
 
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject

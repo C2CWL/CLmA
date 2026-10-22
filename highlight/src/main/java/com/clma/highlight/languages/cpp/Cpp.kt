@@ -1,18 +1,18 @@
-package me.rerere.highlight.languages.cpp
+package com.clma.highlight.languages.cpp
 
-import me.rerere.highlight.core.BACKSLASH_ESCAPE
-import me.rerere.highlight.core.C_BLOCK_COMMENT_MODE
-import me.rerere.highlight.core.IDENT_RE
-import me.rerere.highlight.core.Language
-import me.rerere.highlight.core.Mode
-import me.rerere.highlight.core.comment
-import me.rerere.highlight.core.concat
-import me.rerere.highlight.core.endSameAsBegin
-import me.rerere.highlight.core.keywords
-import me.rerere.highlight.core.lookahead
-import me.rerere.highlight.core.mode
-import me.rerere.highlight.core.optional
-import me.rerere.highlight.core.variant
+import com.clma.highlight.core.BACKSLASH_ESCAPE
+import com.clma.highlight.core.C_BLOCK_COMMENT_MODE
+import com.clma.highlight.core.IDENT_RE
+import com.clma.highlight.core.Language
+import com.clma.highlight.core.Mode
+import com.clma.highlight.core.comment
+import com.clma.highlight.core.concat
+import com.clma.highlight.core.endSameAsBegin
+import com.clma.highlight.core.keywords
+import com.clma.highlight.core.lookahead
+import com.clma.highlight.core.mode
+import com.clma.highlight.core.optional
+import com.clma.highlight.core.variant
 
 /** C++, ported from `lib/languages/cpp.js` of `highlight.js` 11.11.1. */
 internal fun cpp(): Language {

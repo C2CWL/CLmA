@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.service
+package com.clma.app.service
 
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.addJsonArray
@@ -6,10 +6,10 @@ import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import me.rerere.ai.provider.Model
-import me.rerere.ai.provider.ModelType
-import me.rerere.ai.provider.ProviderSetting
-import me.rerere.rikkahub.data.telegram.TelegramHtmlRenderer
+import com.clma.ai.provider.Model
+import com.clma.ai.provider.ModelType
+import com.clma.ai.provider.ProviderSetting
+import com.clma.app.data.telegram.TelegramHtmlRenderer
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.uuid.Uuid

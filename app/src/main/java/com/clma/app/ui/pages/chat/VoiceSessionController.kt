@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.chat
+package com.clma.app.ui.pages.chat
 
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -19,10 +19,10 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
-import me.rerere.asr.ASRController
-import me.rerere.asr.ASRStatus
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.service.MessageQueuePausedException
+import com.clma.asr.ASRController
+import com.clma.asr.ASRStatus
+import com.clma.app.R
+import com.clma.app.service.MessageQueuePausedException
 
 enum class VoicePhase { Off, Connecting, Listening, Transcribing, Speaking, Error }
 

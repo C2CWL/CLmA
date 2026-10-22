@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.sync.webdav
+package com.clma.app.data.sync.webdav
 
 import android.util.Log
 import android.util.Xml
@@ -20,7 +20,7 @@ import io.ktor.utils.io.readAvailable
 import io.ktor.util.cio.readChannel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import me.rerere.rikkahub.data.datastore.WebDavConfig
+import com.clma.app.data.datastore.WebDavConfig
 import org.xmlpull.v1.XmlPullParser
 import java.io.File
 import java.io.InputStream

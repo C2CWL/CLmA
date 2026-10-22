@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.subagent
+package com.clma.app.subagent
 
 /**
  * The five-level sub-agent dispatch posture the device owner picks in Settings → Sub-agents.
@@ -59,7 +59,7 @@ object SubAgentDispatchProfileRules {
 
     /**
      * Process-scoped live profile, set by ChatService before tool construction (non-suspend
-     * factory reads this). Mirrors [me.rerere.rikkahub.data.ai.limits.ToolRuntimeLimits] pattern.
+     * factory reads this). Mirrors [com.clma.app.data.ai.limits.ToolRuntimeLimits] pattern.
      */
     @Volatile private var liveProfile: SubAgentDispatchProfile = SubAgentDispatchProfile.NEVER
 
@@ -76,7 +76,7 @@ object SubAgentDispatchProfileRules {
 
     /**
      * The effective per-assistant cap, combining the profile ceiling with the assistant's own
-     * [me.rerere.rikkahub.data.model.Assistant.maxConcurrentSubAgents] field as a further tighten.
+     * [com.clma.app.data.model.Assistant.maxConcurrentSubAgents] field as a further tighten.
      * `min(profile cap, assistant field)` so the assistant can never exceed the profile, but can
      * be more restrictive. Returns 0 when the profile disables dispatch.
      */

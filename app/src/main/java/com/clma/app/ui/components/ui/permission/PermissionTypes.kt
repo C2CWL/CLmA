@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.ui.permission
+package com.clma.app.ui.components.ui.permission
 
 import android.Manifest
 import android.os.Build
@@ -6,7 +6,7 @@ import androidx.annotation.RequiresApi
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
-import me.rerere.rikkahub.R
+import com.clma.app.R
 
 /**
  * 权限信息数据类

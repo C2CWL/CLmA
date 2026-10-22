@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.tools.local
+package com.clma.app.data.ai.tools.local
 
 /**
  * Pure-logic command builders and parameter validators for virtual display tools.

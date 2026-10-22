@@ -1,4 +1,4 @@
-package me.rerere.common.cache
+package com.clma.common.cache
 
 interface CacheStore<K, V> {
     fun loadEntry(key: K): CacheEntry<V>?

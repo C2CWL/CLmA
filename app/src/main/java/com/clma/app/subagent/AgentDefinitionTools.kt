@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.subagent
+package com.clma.app.subagent
 
 import java.util.UUID
 import kotlinx.serialization.json.JsonArray
@@ -14,24 +14,24 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.put
-import me.rerere.ai.core.InputSchema
-import me.rerere.ai.core.Tool
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.data.agentdef.AgentDefinition
-import me.rerere.rikkahub.data.agentdef.AgentDefinitionDefaults
-import me.rerere.rikkahub.data.agentdef.AgentDefinitionRepository
-import me.rerere.rikkahub.data.agentdef.AgentNamespace
-import me.rerere.rikkahub.data.agentdef.LocalToolGroups
-import me.rerere.rikkahub.data.agentrun.AgentRunKind
-import me.rerere.rikkahub.data.agentrun.AgentRunRepository
-import me.rerere.rikkahub.data.agentrun.AgentRunStatus
-import me.rerere.rikkahub.data.ai.mcp.McpServerConfig
-import me.rerere.rikkahub.data.ai.tools.HeadlessToolApprovalPolicy
-import me.rerere.rikkahub.data.ai.tools.LenientLocalToolListSerializer
-import me.rerere.rikkahub.data.ai.tools.LocalToolOption
-import me.rerere.rikkahub.data.ai.tools.ToolInvocationContext
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.utils.JsonInstant
+import com.clma.ai.core.InputSchema
+import com.clma.ai.core.Tool
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.agentdef.AgentDefinition
+import com.clma.app.data.agentdef.AgentDefinitionDefaults
+import com.clma.app.data.agentdef.AgentDefinitionRepository
+import com.clma.app.data.agentdef.AgentNamespace
+import com.clma.app.data.agentdef.LocalToolGroups
+import com.clma.app.data.agentrun.AgentRunKind
+import com.clma.app.data.agentrun.AgentRunRepository
+import com.clma.app.data.agentrun.AgentRunStatus
+import com.clma.app.data.ai.mcp.McpServerConfig
+import com.clma.app.data.ai.tools.HeadlessToolApprovalPolicy
+import com.clma.app.data.ai.tools.LenientLocalToolListSerializer
+import com.clma.app.data.ai.tools.LocalToolOption
+import com.clma.app.data.ai.tools.ToolInvocationContext
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.utils.JsonInstant
 
 /**
  * P2-06b — the expert-library WRITE tools: `subagent_create` / `subagent_update` /

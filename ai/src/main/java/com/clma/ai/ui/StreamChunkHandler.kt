@@ -1,15 +1,15 @@
-package me.rerere.ai.ui
+package com.clma.ai.ui
 
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import me.rerere.ai.core.MessageRole
-import me.rerere.ai.core.TokenUsage
-import me.rerere.ai.core.merge
-import me.rerere.ai.provider.Model
-import me.rerere.ai.provider.TextGenerationResult
-import me.rerere.ai.util.json
+import com.clma.ai.core.MessageRole
+import com.clma.ai.core.TokenUsage
+import com.clma.ai.core.merge
+import com.clma.ai.provider.Model
+import com.clma.ai.provider.TextGenerationResult
+import com.clma.ai.util.json
 import kotlin.time.Clock
 
 /**

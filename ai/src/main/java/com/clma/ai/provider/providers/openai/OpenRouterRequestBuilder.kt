@@ -1,4 +1,4 @@
-package me.rerere.ai.provider.providers.openai
+package com.clma.ai.provider.providers.openai
 
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.JsonArray
@@ -14,14 +14,14 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
-import me.rerere.ai.provider.Modality
-import me.rerere.ai.provider.Model
-import me.rerere.ai.provider.ModelAbility
-import me.rerere.ai.provider.ModelType
-import me.rerere.ai.provider.OpenRouterRouting
-import me.rerere.ai.ui.ImageAspectRatio
-import me.rerere.ai.ui.ImageGenerationItem
-import me.rerere.ai.util.json
+import com.clma.ai.provider.Modality
+import com.clma.ai.provider.Model
+import com.clma.ai.provider.ModelAbility
+import com.clma.ai.provider.ModelType
+import com.clma.ai.provider.OpenRouterRouting
+import com.clma.ai.ui.ImageAspectRatio
+import com.clma.ai.ui.ImageGenerationItem
+import com.clma.ai.util.json
 
 /**
  * OpenRouter-specific request-building helpers, isolated from [ChatCompletionsAPI] so the

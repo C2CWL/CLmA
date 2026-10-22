@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.ai
+package com.clma.app.ui.components.ai
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -36,15 +36,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
-import me.rerere.ai.core.ReasoningLevel
+import com.clma.ai.core.ReasoningLevel
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ArrowDown01
 import me.rerere.hugeicons.stroke.Tick02
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.ai.tools.ApprovalMode
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.preferences.ToolApprovalPreferences
-import me.rerere.rikkahub.subagent.SubAgentDispatchProfile
+import com.clma.app.R
+import com.clma.app.data.ai.tools.ApprovalMode
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.preferences.ToolApprovalPreferences
+import com.clma.app.subagent.SubAgentDispatchProfile
 import org.koin.compose.koinInject
 import kotlin.math.roundToInt
 

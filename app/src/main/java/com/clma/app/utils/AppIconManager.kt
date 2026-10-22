@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.utils
+package com.clma.app.utils
 
 import android.content.ComponentName
 import android.content.Context
@@ -9,7 +9,7 @@ import android.util.Log
  * Home-screen icon switching between the two `activity-alias` entries declared in the
  * manifest.
  *
- * Both aliases point at the same [me.rerere.rikkahub.RouteActivity], so this is a real
+ * Both aliases point at the same [com.clma.app.RouteActivity], so this is a real
  * icon replacement, not a shortcut: the launcher entry itself is swapped and the old one
  * disappears from the home screen / app drawer.
  *

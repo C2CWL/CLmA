@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.utils
+package com.clma.app.utils
 
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.translator
+package com.clma.app.ui.pages.translator
 
 import android.content.ClipData
 import me.rerere.hugeicons.HugeIcons
@@ -54,12 +54,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dokar.sonner.ToastType
 import kotlinx.coroutines.launch
-import me.rerere.ai.provider.ModelType
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.ui.components.ai.ModelSelector
-import me.rerere.rikkahub.ui.components.nav.BackButton
-import me.rerere.rikkahub.ui.context.LocalToaster
-import me.rerere.rikkahub.utils.getText
+import com.clma.ai.provider.ModelType
+import com.clma.app.R
+import com.clma.app.ui.components.ai.ModelSelector
+import com.clma.app.ui.components.nav.BackButton
+import com.clma.app.ui.context.LocalToaster
+import com.clma.app.utils.getText
 import org.koin.androidx.compose.koinViewModel
 import java.util.Locale
 

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.limits
+package com.clma.app.data.ai.limits
 
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.uuid.Uuid
@@ -7,12 +7,12 @@ import kotlin.uuid.Uuid
  * Process-scoped per-conversation override for [ToolRuntimeLimits.maxToolSteps].
  *
  * Why this exists: `subagent_dispatch` has always accepted `max_trips` (default
- * [me.rerere.rikkahub.subagent.SubAgentDefaults.DEFAULT_MAX_TRIPS]) and echoed it back in
+ * [com.clma.app.subagent.SubAgentDefaults.DEFAULT_MAX_TRIPS]) and echoed it back in
  * the run envelope, but nothing ever enforced it — a sub-agent actually ran up to the
  * global tool-step budget (default far higher), so a dispatch the parent sized for a
  * dozen steps could burn several times that. The engine owns the run's lifecycle but not
  * the generation call site, so the cap travels through this holder, the same way
- * [me.rerere.rikkahub.data.ai.tools.ConversationSystemAddendum] carries per-conversation
+ * [com.clma.app.data.ai.tools.ConversationSystemAddendum] carries per-conversation
  * runtime context without plumbing a parameter through `sendMessage`.
  *
  * Lifecycle: the writer (SubAgentEngine) `set`s after creating the run's conversation and

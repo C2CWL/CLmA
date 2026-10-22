@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.files
+package com.clma.app.data.files
 
 import android.content.Context
 import android.util.Log
@@ -6,7 +6,7 @@ import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
-import me.rerere.rikkahub.data.datastore.SettingsStore
+import com.clma.app.data.datastore.SettingsStore
 
 class SkillManager(
     private val context: Context,
@@ -561,7 +561,7 @@ internal fun deletedBundledSkillsAfterDelete(
  * skills (a directory that exists with no `.seeded` sentinel was never created by us and is
  * user-owned).
  * @param targetDirNonEmpty ignored when [ownedByUs] is `true`.
- * @param deletedByUser #84: `true` when this skill's name is in [me.rerere.rikkahub.data.datastore.Settings.deletedBundledSkills]
+ * @param deletedByUser #84: `true` when this skill's name is in [com.clma.app.data.datastore.Settings.deletedBundledSkills]
  * (the user explicitly deleted it via [SkillManager.deleteSkill]). Checked first and skips
  * unconditionally, in both the core and non-core branches, so a deliberate delete is never
  * mistaken for "never seeded" and silently re-created.

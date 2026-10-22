@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.service
+package com.clma.app.service
 
 import com.cronutils.model.Cron
 import com.cronutils.model.definition.CronDefinitionBuilder

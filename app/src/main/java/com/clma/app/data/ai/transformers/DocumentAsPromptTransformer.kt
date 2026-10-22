@@ -1,16 +1,16 @@
-package me.rerere.rikkahub.data.ai.transformers
+package com.clma.app.data.ai.transformers
 
 import androidx.core.net.toFile
 import androidx.core.net.toUri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.document.DocxParser
-import me.rerere.document.EpubParser
-import me.rerere.document.PdfParser
-import me.rerere.document.PptxParser
-import me.rerere.rikkahub.utils.isAllowedFileType
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessagePart
+import com.clma.document.DocxParser
+import com.clma.document.EpubParser
+import com.clma.document.PdfParser
+import com.clma.document.PptxParser
+import com.clma.app.utils.isAllowedFileType
 import java.io.File
 
 object DocumentAsPromptTransformer : InputMessageTransformer {

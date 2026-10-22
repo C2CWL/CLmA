@@ -1,16 +1,16 @@
-package me.rerere.rikkahub.data.ai.tools
+package com.clma.app.data.ai.tools
 
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import me.rerere.ai.core.InputSchema
-import me.rerere.ai.core.Tool
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.data.files.SkillFrontmatterParser
-import me.rerere.rikkahub.data.files.SkillManager
-import me.rerere.rikkahub.data.files.SkillMetadata
-import me.rerere.rikkahub.data.files.SkillPaths
+import com.clma.ai.core.InputSchema
+import com.clma.ai.core.Tool
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.files.SkillFrontmatterParser
+import com.clma.app.data.files.SkillManager
+import com.clma.app.data.files.SkillMetadata
+import com.clma.app.data.files.SkillPaths
 
 fun createSkillTools(
     enabledSkills: Set<String>,
@@ -25,7 +25,7 @@ fun createSkillTools(
     skillManager: SkillManager? = null,
     /**
      * Skill names suppressed by a disabled group (see
-     * [me.rerere.rikkahub.data.datastore.SkillGroupRules.disabledSkillNames]). A skill in
+     * [com.clma.app.data.datastore.SkillGroupRules.disabledSkillNames]). A skill in
      * this set never surfaces to the model even if the assistant has it enabled — this is
      * the whole-group on/off switch. Default empty so existing callers are unchanged.
      */

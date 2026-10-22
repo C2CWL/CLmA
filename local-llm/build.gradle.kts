@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "me.rerere.locallm"
+    namespace = "com.clma.locallm"
     compileSdk = 37
     defaultConfig {
         minSdk = 26

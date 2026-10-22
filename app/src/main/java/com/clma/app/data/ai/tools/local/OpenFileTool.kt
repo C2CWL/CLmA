@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.tools.local
+package com.clma.app.data.ai.tools.local
 
 import android.content.Context
 import android.content.Intent
@@ -9,10 +9,10 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.put
-import me.rerere.ai.core.InputSchema
-import me.rerere.ai.core.Tool
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.data.ai.tools.ToolInvocationContext
+import com.clma.ai.core.InputSchema
+import com.clma.ai.core.Tool
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.ai.tools.ToolInvocationContext
 import java.io.File
 
 /**
@@ -25,7 +25,7 @@ import java.io.File
  * across the sandbox boundary. For public-storage paths (/sdcard/...) we use a
  * direct file:// URI which the OS handles.
  *
- * Approval-gated (in [me.rerere.rikkahub.data.ai.tools.ToolApprovalDefaults.DANGEROUS_TOOLS])
+ * Approval-gated (in [com.clma.app.data.ai.tools.ToolApprovalDefaults.DANGEROUS_TOOLS])
  * because launching arbitrary apps on a user-supplied path is a privilege surface —
  * same reasoning as `launch_app`.
  */

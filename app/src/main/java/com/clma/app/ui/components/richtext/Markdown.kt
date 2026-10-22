@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.richtext
+package com.clma.app.ui.components.richtext
 
 import android.content.ClipData
 import android.content.Intent
@@ -98,13 +98,13 @@ import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Copy01
 import me.rerere.hugeicons.stroke.Download04
 import me.rerere.hugeicons.stroke.Tick01
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.datastore.Settings
-import me.rerere.rikkahub.ui.components.table.DataTable
-import me.rerere.rikkahub.ui.context.LocalSettings
-import me.rerere.rikkahub.ui.modifier.onClick
-import me.rerere.rikkahub.ui.theme.JetbrainsMono
-import me.rerere.rikkahub.utils.toDp
+import com.clma.app.R
+import com.clma.app.data.datastore.Settings
+import com.clma.app.ui.components.table.DataTable
+import com.clma.app.ui.context.LocalSettings
+import com.clma.app.ui.modifier.onClick
+import com.clma.app.ui.theme.JetbrainsMono
+import com.clma.app.utils.toDp
 import org.intellij.markdown.IElementType
 import org.intellij.markdown.MarkdownElementTypes
 import org.intellij.markdown.MarkdownTokenTypes

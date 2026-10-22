@@ -1,15 +1,15 @@
-package me.rerere.highlight.languages.python
+package com.clma.highlight.languages.python
 
-import me.rerere.highlight.core.APOS_STRING_MODE
-import me.rerere.highlight.core.BACKSLASH_ESCAPE
-import me.rerere.highlight.core.HASH_COMMENT_MODE
-import me.rerere.highlight.core.Language
-import me.rerere.highlight.core.Mode
-import me.rerere.highlight.core.QUOTE_STRING_MODE
-import me.rerere.highlight.core.keywords
-import me.rerere.highlight.core.lookahead
-import me.rerere.highlight.core.mode
-import me.rerere.highlight.core.variant
+import com.clma.highlight.core.APOS_STRING_MODE
+import com.clma.highlight.core.BACKSLASH_ESCAPE
+import com.clma.highlight.core.HASH_COMMENT_MODE
+import com.clma.highlight.core.Language
+import com.clma.highlight.core.Mode
+import com.clma.highlight.core.QUOTE_STRING_MODE
+import com.clma.highlight.core.keywords
+import com.clma.highlight.core.lookahead
+import com.clma.highlight.core.mode
+import com.clma.highlight.core.variant
 
 /** Python, ported from `lib/languages/python.js` of `highlight.js` 11.11.1. */
 internal fun python(): Language {

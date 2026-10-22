@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.di
+package com.clma.app.di
 
 import android.content.Context
 import io.ktor.client.HttpClient
@@ -6,45 +6,45 @@ import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.http.HttpHeaders
 import io.pebbletemplates.pebble.PebbleEngine
 import kotlinx.serialization.json.Json
-import me.rerere.ai.provider.ProviderManager
-import me.rerere.common.http.AcceptLanguageBuilder
-import me.rerere.rikkahub.BuildConfig
-import me.rerere.rikkahub.AppScope
-import me.rerere.rikkahub.data.ai.AIRequestInterceptor
-import me.rerere.rikkahub.data.ai.RequestLoggingInterceptor
-import me.rerere.rikkahub.data.ai.transformers.AssistantTemplateLoader
-import me.rerere.rikkahub.data.ai.GenerationLoop
-import me.rerere.rikkahub.data.ai.TranslationHandler
-import me.rerere.rikkahub.data.ai.transformers.TemplateTransformer
-import me.rerere.rikkahub.data.api.HuggingFaceAPI
-import me.rerere.rikkahub.data.api.RikkaHubAPI
-import me.rerere.rikkahub.data.codex.CodexAccountRepository
-import me.rerere.rikkahub.data.codex.CodexCredentialStore
-import me.rerere.rikkahub.data.codex.CodexOAuthManager
-import me.rerere.rikkahub.data.codex.CodexProvider
-import me.rerere.rikkahub.data.grok.GrokAccountRepository
-import me.rerere.rikkahub.data.grok.GrokCredentialStore
-import me.rerere.rikkahub.data.grok.GrokOAuthManager
-import me.rerere.rikkahub.data.gemini.GeminiAccountRepository
-import me.rerere.rikkahub.data.gemini.GeminiCredentialStore
-import me.rerere.rikkahub.data.gemini.GeminiOAuthManager
-import me.rerere.rikkahub.data.gemini.GeminiProvider
-import me.rerere.rikkahub.data.grok.GrokProvider
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.sync.BackupManager
-import me.rerere.rikkahub.data.db.AppDatabaseFactory
-import me.rerere.rikkahub.data.db.AppDatabase
-import me.rerere.rikkahub.data.db.fts.MessageFtsManager
-import me.rerere.rikkahub.data.ai.mcp.McpManager
-import me.rerere.rikkahub.data.agentrun.AgentRunBootRecovery
-import me.rerere.rikkahub.data.agentrun.AgentRunRepository
-import me.rerere.rikkahub.data.ai.OrphanedReasoningRecovery
-import me.rerere.rikkahub.data.network.SettingsProxySelector
-import me.rerere.rikkahub.data.network.SettingsProxyAuthenticator
-import me.rerere.rikkahub.data.network.SettingsSocks5Authenticator
-import me.rerere.rikkahub.data.sync.webdav.WebDavSync
-import me.rerere.search.SearchService
-import me.rerere.rikkahub.data.sync.S3Sync
+import com.clma.ai.provider.ProviderManager
+import com.clma.common.http.AcceptLanguageBuilder
+import com.clma.app.BuildConfig
+import com.clma.app.AppScope
+import com.clma.app.data.ai.AIRequestInterceptor
+import com.clma.app.data.ai.RequestLoggingInterceptor
+import com.clma.app.data.ai.transformers.AssistantTemplateLoader
+import com.clma.app.data.ai.GenerationLoop
+import com.clma.app.data.ai.TranslationHandler
+import com.clma.app.data.ai.transformers.TemplateTransformer
+import com.clma.app.data.api.HuggingFaceAPI
+import com.clma.app.data.api.RikkaHubAPI
+import com.clma.app.data.codex.CodexAccountRepository
+import com.clma.app.data.codex.CodexCredentialStore
+import com.clma.app.data.codex.CodexOAuthManager
+import com.clma.app.data.codex.CodexProvider
+import com.clma.app.data.grok.GrokAccountRepository
+import com.clma.app.data.grok.GrokCredentialStore
+import com.clma.app.data.grok.GrokOAuthManager
+import com.clma.app.data.gemini.GeminiAccountRepository
+import com.clma.app.data.gemini.GeminiCredentialStore
+import com.clma.app.data.gemini.GeminiOAuthManager
+import com.clma.app.data.gemini.GeminiProvider
+import com.clma.app.data.grok.GrokProvider
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.sync.BackupManager
+import com.clma.app.data.db.AppDatabaseFactory
+import com.clma.app.data.db.AppDatabase
+import com.clma.app.data.db.fts.MessageFtsManager
+import com.clma.app.data.ai.mcp.McpManager
+import com.clma.app.data.agentrun.AgentRunBootRecovery
+import com.clma.app.data.agentrun.AgentRunRepository
+import com.clma.app.data.ai.OrphanedReasoningRecovery
+import com.clma.app.data.network.SettingsProxySelector
+import com.clma.app.data.network.SettingsProxyAuthenticator
+import com.clma.app.data.network.SettingsSocks5Authenticator
+import com.clma.app.data.sync.webdav.WebDavSync
+import com.clma.search.SearchService
+import com.clma.app.data.sync.S3Sync
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -55,13 +55,13 @@ import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
-import me.rerere.rikkahub.data.agentdef.AgentDefinitionDatabase
-import me.rerere.rikkahub.data.agentdef.AgentDefinitionDatabaseFactory
-import me.rerere.rikkahub.data.agentdef.AgentDefinitionRepository
-import me.rerere.rikkahub.data.usage.UsageLedger
-import me.rerere.rikkahub.data.usage.UsageLedgerDatabase
-import me.rerere.rikkahub.data.usage.UsageLedgerDatabaseFactory
-import me.rerere.rikkahub.data.usage.decorateForUsage
+import com.clma.app.data.agentdef.AgentDefinitionDatabase
+import com.clma.app.data.agentdef.AgentDefinitionDatabaseFactory
+import com.clma.app.data.agentdef.AgentDefinitionRepository
+import com.clma.app.data.usage.UsageLedger
+import com.clma.app.data.usage.UsageLedgerDatabase
+import com.clma.app.data.usage.UsageLedgerDatabaseFactory
+import com.clma.app.data.usage.decorateForUsage
 
 val dataSourceModule = module {
     single {
@@ -168,7 +168,7 @@ val dataSourceModule = module {
         )
     }
 
-    single { me.rerere.rikkahub.data.ai.SystemPromptBuilder() }
+    single { com.clma.app.data.ai.SystemPromptBuilder() }
 
     single {
         TranslationHandler(providerManager = get())
@@ -361,7 +361,7 @@ val dataSourceModule = module {
     }
 
     single {
-        val settingsStore: me.rerere.rikkahub.data.datastore.SettingsStore = get()
+        val settingsStore: com.clma.app.data.datastore.SettingsStore = get()
         val codexRepository: CodexAccountRepository = get()
         val json: Json = get()
         val usageLedger: UsageLedger = get()
@@ -372,7 +372,7 @@ val dataSourceModule = module {
             pm.providerDecorator = { provider -> decorateForUsage(provider, usageLedger) }
             pm.registerProvider(
                 "local_litert",
-                me.rerere.locallm.litert.LiteRtProvider(
+                com.clma.locallm.litert.LiteRtProvider(
                     context = get(),
                     runtime = get(),
                     prefs = get(),
@@ -383,7 +383,7 @@ val dataSourceModule = module {
             )
             pm.registerProvider(
                 "local_llamacpp",
-                me.rerere.llamacpp.LlamaCppProvider(
+                com.clma.llamacpp.LlamaCppProvider(
                     context = get(),
                     runtime = get(),
                     prefs = get(),

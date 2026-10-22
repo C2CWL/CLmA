@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.codex
+package com.clma.app.data.codex
 
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.theme
+package com.clma.app.ui.theme
 
 import androidx.compose.material3.ColorScheme
 import dynamiccolor.ColorSpecs
@@ -6,7 +6,7 @@ import dynamiccolor.DynamicScheme
 import dynamiccolor.Variant
 import hct.Hct
 import kotlinx.serialization.Serializable
-import me.rerere.material3.toColorScheme
+import com.clma.material3.toColorScheme
 import palettes.TonalPalette
 import kotlin.uuid.Uuid
 

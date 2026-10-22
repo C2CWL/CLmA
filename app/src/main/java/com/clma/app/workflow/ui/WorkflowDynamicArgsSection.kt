@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.workflow.ui
+package com.clma.app.workflow.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -26,7 +26,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import me.rerere.rikkahub.R
+import com.clma.app.R
 
 /**
  * T-07 — the two halves of the "make a workflow talk to a real API" story that have no

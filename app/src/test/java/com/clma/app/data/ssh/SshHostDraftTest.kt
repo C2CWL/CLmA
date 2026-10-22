@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ssh
+package com.clma.app.data.ssh
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

@@ -1,16 +1,16 @@
-package me.rerere.rikkahub.data.usage
+package com.clma.app.data.usage
 
 import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import me.rerere.rikkahub.data.db.SQLiteConfiguration
+import com.clma.app.data.db.SQLiteConfiguration
 
 /**
  * P2-11c — the usage ledger database.
  *
  * It is deliberately a **separate** database file rather than one more table inside
- * me.rerere.rikkahub.data.db.AppDatabase:
+ * com.clma.app.data.db.AppDatabase:
  *
  *  - The ledger is pure telemetry. Keeping it out of `rikka_hub.db` means a retention sweep
  *    can never touch a user message, and the fork restore path (ImportedDatabaseReconciler,

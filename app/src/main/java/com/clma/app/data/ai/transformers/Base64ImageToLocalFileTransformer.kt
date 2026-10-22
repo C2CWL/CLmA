@@ -1,7 +1,7 @@
-package me.rerere.rikkahub.data.ai.transformers
+package com.clma.app.data.ai.transformers
 
-import me.rerere.ai.ui.UIMessage
-import me.rerere.rikkahub.data.files.FilesManager
+import com.clma.ai.ui.UIMessage
+import com.clma.app.data.files.FilesManager
 import org.koin.java.KoinJavaComponent.getKoin
 
 object Base64ImageToLocalFileTransformer : OutputMessageTransformer {

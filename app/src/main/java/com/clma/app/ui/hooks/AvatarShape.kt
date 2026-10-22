@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.hooks
+package com.clma.app.ui.hooks
 
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat

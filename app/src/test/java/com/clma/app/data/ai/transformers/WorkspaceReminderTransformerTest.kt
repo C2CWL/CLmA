@@ -1,7 +1,7 @@
-package me.rerere.rikkahub.data.ai.transformers
+package com.clma.app.data.ai.transformers
 
-import me.rerere.rikkahub.data.db.entity.WorkspaceEntity
-import me.rerere.workspace.WorkspaceShellStatus
+import com.clma.app.data.db.entity.WorkspaceEntity
+import com.clma.workspace.WorkspaceShellStatus
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull

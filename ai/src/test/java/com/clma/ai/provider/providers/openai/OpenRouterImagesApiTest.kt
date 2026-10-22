@@ -1,11 +1,11 @@
-package me.rerere.ai.provider.providers.openai
+package com.clma.ai.provider.providers.openai
 
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import me.rerere.ai.provider.Model
-import me.rerere.ai.ui.ImageAspectRatio
+import com.clma.ai.provider.Model
+import com.clma.ai.ui.ImageAspectRatio
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -226,7 +226,7 @@ class OpenRouterImagesApiTest {
              "supported_parameters":["output_format"]}
         """.trimIndent()
         val m = openRouterModelFromJson(kotlinx.serialization.json.Json.parseToJsonElement(json).jsonObject)!!
-        assertTrue(m.type != me.rerere.ai.provider.ModelType.IMAGE)
+        assertTrue(m.type != com.clma.ai.provider.ModelType.IMAGE)
     }
 
     @Test
@@ -237,7 +237,7 @@ class OpenRouterImagesApiTest {
              "supported_parameters":["n","aspect_ratio"]}
         """.trimIndent()
         val m = openRouterModelFromJson(kotlinx.serialization.json.Json.parseToJsonElement(json).jsonObject)!!
-        assertEquals(me.rerere.ai.provider.ModelType.IMAGE, m.type)
+        assertEquals(com.clma.ai.provider.ModelType.IMAGE, m.type)
     }
 
     // ---- chat-completions fallback body (used by both generate and edit) ----

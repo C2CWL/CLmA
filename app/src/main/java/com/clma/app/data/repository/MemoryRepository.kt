@@ -1,10 +1,10 @@
-package me.rerere.rikkahub.data.repository
+package com.clma.app.data.repository
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import me.rerere.rikkahub.data.db.dao.MemoryDAO
-import me.rerere.rikkahub.data.db.entity.MemoryEntity
-import me.rerere.rikkahub.data.model.AssistantMemory
+import com.clma.app.data.db.dao.MemoryDAO
+import com.clma.app.data.db.entity.MemoryEntity
+import com.clma.app.data.model.AssistantMemory
 
 class MemoryRepository(private val memoryDAO: MemoryDAO) {
     companion object {

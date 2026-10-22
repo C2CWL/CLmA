@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.workflow.secrets
+package com.clma.app.workflow.secrets
 
 import android.content.Context
 import android.content.SharedPreferences

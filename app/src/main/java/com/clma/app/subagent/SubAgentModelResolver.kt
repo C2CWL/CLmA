@@ -1,9 +1,9 @@
-package me.rerere.rikkahub.subagent
+package com.clma.app.subagent
 
-import me.rerere.ai.provider.Model
-import me.rerere.ai.provider.ModelType
-import me.rerere.ai.provider.ProviderSetting
-import me.rerere.rikkahub.data.agentdef.AgentDefinition
+import com.clma.ai.provider.Model
+import com.clma.ai.provider.ModelType
+import com.clma.ai.provider.ProviderSetting
+import com.clma.app.data.agentdef.AgentDefinition
 import kotlin.uuid.Uuid
 
 /**

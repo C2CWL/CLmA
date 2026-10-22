@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.gemini
+package com.clma.app.data.gemini
 
 import android.content.Context
 import android.content.Intent
@@ -22,8 +22,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
-import me.rerere.common.http.await
-import me.rerere.rikkahub.R
+import com.clma.common.http.await
+import com.clma.app.R
 import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request

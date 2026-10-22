@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.tools.local
+package com.clma.app.data.ai.tools.local
 
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
@@ -18,12 +18,12 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import me.rerere.ai.core.InputSchema
-import me.rerere.ai.core.Tool
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.data.ai.AgentTurnTracker
-import me.rerere.rikkahub.data.preferences.TermuxDefaults
-import me.rerere.rikkahub.data.preferences.TermuxRuntime
+import com.clma.ai.core.InputSchema
+import com.clma.ai.core.Tool
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.ai.AgentTurnTracker
+import com.clma.app.data.preferences.TermuxDefaults
+import com.clma.app.data.preferences.TermuxRuntime
 import java.util.UUID
 
 private const val TERMUX_PACKAGE = "com.termux"
@@ -66,7 +66,7 @@ internal object TermuxIntegration {
         private set
 
     /**
-     * Write-path for [lastVerifiedOkAtMs] set by [me.rerere.rikkahub.data.preferences.TermuxPreferences]
+     * Write-path for [lastVerifiedOkAtMs] set by [com.clma.app.data.preferences.TermuxPreferences]
      * at startup, so every [markVerifiedOk] / [clearVerified] persists to DataStore without
      * this object needing an Android [android.content.Context] of its own.
      */
@@ -85,7 +85,7 @@ internal object TermuxIntegration {
 
     /**
      * Restore a timestamp persisted in a previous process, called once from
-     * [me.rerere.rikkahub.data.preferences.TermuxPreferences]'s init block before any user
+     * [com.clma.app.data.preferences.TermuxPreferences]'s init block before any user
      * interaction. Does not invoke [persister] — the value already came from disk, so there
      * is nothing new to write back.
      */
@@ -225,7 +225,7 @@ internal suspend fun runCommandCapture(
     // flap its notification and the listener forwards each flap to the user's chat.
     // The touch here covers ALL callers of runCommandCapture, so individual tool
     // factories don't have to remember to call it themselves.
-    me.rerere.rikkahub.data.ai.AgentTurnTracker.touchPackage(TERMUX_PACKAGE, "com.termux.api")
+    com.clma.app.data.ai.AgentTurnTracker.touchPackage(TERMUX_PACKAGE, "com.termux.api")
     val resultDeferred = CompletableDeferred<Bundle>()
     val resultAction = "${ctx.packageName}.TERMUX_RESULT_${UUID.randomUUID()}"
     // Per-call completion marker (see buildMarkerWrappedArgv / isTerminalResult). Termux's

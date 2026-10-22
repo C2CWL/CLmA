@@ -1,4 +1,4 @@
-package me.rerere.ai.provider.providers.openai
+package com.clma.ai.provider.providers.openai
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.message
+package com.clma.app.ui.components.message
 
 import android.os.Build
 import androidx.annotation.VisibleForTesting
@@ -25,10 +25,10 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.blur.HazeBlurStyle
 import dev.chrisbanes.haze.blur.HazeColorEffect
 import dev.chrisbanes.haze.blur.hazeBlur
-import me.rerere.ai.ui.UIMessage
-import me.rerere.rikkahub.data.usage.TurnFooter
-import me.rerere.rikkahub.ui.context.LocalSettings
-import me.rerere.rikkahub.ui.pages.chat.CHAT_WALLPAPER_HAZE_KEY
+import com.clma.ai.ui.UIMessage
+import com.clma.app.data.usage.TurnFooter
+import com.clma.app.ui.context.LocalSettings
+import com.clma.app.ui.pages.chat.CHAT_WALLPAPER_HAZE_KEY
 
 /**
  * 显示消息的技术统计信息（如 token 使用量）。

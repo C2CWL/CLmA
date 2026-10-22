@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.datastore.migration
+package com.clma.app.data.datastore.migration
 
 import androidx.datastore.core.DataMigration
 import androidx.datastore.preferences.core.Preferences
@@ -7,8 +7,8 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.utils.JsonInstant
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.utils.JsonInstant
 
 class PreferenceStoreV1Migration : DataMigration<Preferences> {
     override suspend fun shouldMigrate(currentData: Preferences): Boolean {

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.setting.components
+package com.clma.app.ui.pages.setting.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -22,11 +22,11 @@ import androidx.compose.ui.unit.dp
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.View
 import me.rerere.hugeicons.stroke.ViewOff
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.ui.components.ui.FormItem
-import me.rerere.rikkahub.ui.components.ui.OutlinedNumberInput
-import me.rerere.rikkahub.ui.components.ui.SelectTextField
-import me.rerere.tts.provider.TTSProviderSetting
+import com.clma.app.R
+import com.clma.app.ui.components.ui.FormItem
+import com.clma.app.ui.components.ui.OutlinedNumberInput
+import com.clma.app.ui.components.ui.SelectTextField
+import com.clma.tts.provider.TTSProviderSetting
 
 @Composable
 fun TTSProviderConfigure(

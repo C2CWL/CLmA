@@ -1,11 +1,11 @@
-package me.rerere.rikkahub.data.ai.mcp
+package com.clma.app.data.ai.mcp
 
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import me.rerere.ai.core.InputSchema
+import com.clma.ai.core.InputSchema
 
 private const val REF = "\$ref"
 

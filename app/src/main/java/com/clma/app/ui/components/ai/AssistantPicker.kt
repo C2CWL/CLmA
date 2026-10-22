@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.ai
+package com.clma.app.ui.components.ai
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -43,13 +43,13 @@ import kotlinx.coroutines.launch
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Edit03
 import me.rerere.hugeicons.stroke.LookTop
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.Screen
-import me.rerere.rikkahub.data.datastore.Settings
-import me.rerere.rikkahub.data.model.Assistant
-import me.rerere.rikkahub.ui.components.ui.AssistantAvatar
-import me.rerere.rikkahub.ui.context.LocalNavController
-import me.rerere.rikkahub.ui.hooks.rememberAssistantState
+import com.clma.app.R
+import com.clma.app.Screen
+import com.clma.app.data.datastore.Settings
+import com.clma.app.data.model.Assistant
+import com.clma.app.ui.components.ui.AssistantAvatar
+import com.clma.app.ui.context.LocalNavController
+import com.clma.app.ui.hooks.rememberAssistantState
 import kotlin.uuid.Uuid
 
 @Composable

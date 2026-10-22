@@ -1,11 +1,11 @@
-package me.rerere.rikkahub.skills
+package com.clma.app.skills
 
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.data.files.SkillManager
-import me.rerere.rikkahub.data.model.Conversation
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.files.SkillManager
+import com.clma.app.data.model.Conversation
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

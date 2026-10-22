@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.stats
+package com.clma.app.ui.pages.stats
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -9,17 +9,17 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import me.rerere.rikkahub.data.db.dao.ConversationDAO
-import me.rerere.rikkahub.data.db.dao.MessageNodeDAO
-import me.rerere.rikkahub.data.db.dao.getTokenStats
-import me.rerere.rikkahub.data.agentrun.AgentRunRepository
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.usage.LedgerStatsView
-import me.rerere.rikkahub.data.usage.OrchestrationTree
-import me.rerere.rikkahub.data.usage.OrchestrationTreeFactory
-import me.rerere.rikkahub.data.usage.UsageLedger
-import me.rerere.rikkahub.data.usage.UsageLedgerDefaults
-import me.rerere.rikkahub.data.usage.UsageStatsFactory
+import com.clma.app.data.db.dao.ConversationDAO
+import com.clma.app.data.db.dao.MessageNodeDAO
+import com.clma.app.data.db.dao.getTokenStats
+import com.clma.app.data.agentrun.AgentRunRepository
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.usage.LedgerStatsView
+import com.clma.app.data.usage.OrchestrationTree
+import com.clma.app.data.usage.OrchestrationTreeFactory
+import com.clma.app.data.usage.UsageLedger
+import com.clma.app.data.usage.UsageLedgerDefaults
+import com.clma.app.data.usage.UsageStatsFactory
 
 data class AppStats(
     val isLoading: Boolean = true,

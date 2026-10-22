@@ -1,9 +1,9 @@
-package me.rerere.rikkahub.ui.pages.setting
+package com.clma.app.ui.pages.setting
 
 import androidx.annotation.StringRes
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.Screen
-import me.rerere.rikkahub.data.datastore.SettingsHubStyle
+import com.clma.app.R
+import com.clma.app.Screen
+import com.clma.app.data.datastore.SettingsHubStyle
 
 /**
  * Stable id for one hub row. Icons and special actions (share) live in [SettingPage];

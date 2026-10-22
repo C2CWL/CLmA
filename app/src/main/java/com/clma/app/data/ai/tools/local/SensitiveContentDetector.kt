@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.tools.local
+package com.clma.app.data.ai.tools.local
 
 /**
  * Heuristic detector for content the LLM should not casually echo back to the user

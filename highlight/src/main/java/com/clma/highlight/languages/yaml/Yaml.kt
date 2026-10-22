@@ -1,12 +1,12 @@
-package me.rerere.highlight.languages.yaml
+package com.clma.highlight.languages.yaml
 
-import me.rerere.highlight.core.BACKSLASH_ESCAPE
-import me.rerere.highlight.core.C_NUMBER_RE
-import me.rerere.highlight.core.HASH_COMMENT_MODE
-import me.rerere.highlight.core.Language
-import me.rerere.highlight.core.UNDERSCORE_IDENT_RE
-import me.rerere.highlight.core.keywords
-import me.rerere.highlight.core.mode
+import com.clma.highlight.core.BACKSLASH_ESCAPE
+import com.clma.highlight.core.C_NUMBER_RE
+import com.clma.highlight.core.HASH_COMMENT_MODE
+import com.clma.highlight.core.Language
+import com.clma.highlight.core.UNDERSCORE_IDENT_RE
+import com.clma.highlight.core.keywords
+import com.clma.highlight.core.mode
 
 /** YAML, ported from `lib/languages/yaml.js` of `highlight.js` 11.11.1. */
 internal fun yaml(): Language {

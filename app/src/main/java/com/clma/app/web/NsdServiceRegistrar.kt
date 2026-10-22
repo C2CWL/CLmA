@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.web
+package com.clma.app.web
 
 import android.content.Context
 import android.net.wifi.WifiManager

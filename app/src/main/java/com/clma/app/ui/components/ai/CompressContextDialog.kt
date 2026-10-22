@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.ai
+package com.clma.app.ui.components.ai
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -26,9 +26,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Deferred
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.ui.components.ui.OutlinedNumberInput
-import me.rerere.rikkahub.ui.components.ui.AppLoadingIndicator
+import com.clma.app.R
+import com.clma.app.ui.components.ui.OutlinedNumberInput
+import com.clma.app.ui.components.ui.AppLoadingIndicator
 
 @Composable
 fun CompressContextDialog(

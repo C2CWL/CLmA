@@ -1,11 +1,11 @@
-package me.rerere.rikkahub.data.datastore
+package com.clma.app.data.datastore
 
 import androidx.compose.material3.Text
 import androidx.compose.ui.res.stringResource
-import me.rerere.ai.provider.BalanceOption
-import me.rerere.ai.provider.ProviderSetting
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.ui.components.richtext.MarkdownBlock
+import com.clma.ai.provider.BalanceOption
+import com.clma.ai.provider.ProviderSetting
+import com.clma.app.R
+import com.clma.app.ui.components.richtext.MarkdownBlock
 import kotlin.uuid.Uuid
 
 /**

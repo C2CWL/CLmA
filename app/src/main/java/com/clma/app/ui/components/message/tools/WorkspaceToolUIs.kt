@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.message.tools
+package com.clma.app.ui.components.message.tools
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -26,25 +26,25 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.longOrNull
-import me.rerere.ai.ui.DiffMetadata
-import me.rerere.ai.ui.metadataAs
-import me.rerere.common.http.jsonObjectOrNull
-import me.rerere.highlight.CodeHighlightText
+import com.clma.ai.ui.DiffMetadata
+import com.clma.ai.ui.metadataAs
+import com.clma.common.http.jsonObjectOrNull
+import com.clma.highlight.CodeHighlightText
 import androidx.compose.ui.res.stringResource
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ComputerTerminal01
 import me.rerere.hugeicons.stroke.FileAdd
 import me.rerere.hugeicons.stroke.FileEdit
 import me.rerere.hugeicons.stroke.FileView
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.ui.components.richtext.DiffAddedColor
-import me.rerere.rikkahub.ui.components.richtext.DiffRemovedColor
-import me.rerere.rikkahub.ui.components.richtext.DiffView
-import me.rerere.rikkahub.ui.components.richtext.HighlightCodeBlock
-import me.rerere.rikkahub.ui.components.richtext.parseDiffStats
-import me.rerere.rikkahub.ui.modifier.shimmer
-import me.rerere.rikkahub.utils.generateUnifiedDiff
-import me.rerere.rikkahub.utils.jsonPrimitiveOrNull
+import com.clma.app.R
+import com.clma.app.ui.components.richtext.DiffAddedColor
+import com.clma.app.ui.components.richtext.DiffRemovedColor
+import com.clma.app.ui.components.richtext.DiffView
+import com.clma.app.ui.components.richtext.HighlightCodeBlock
+import com.clma.app.ui.components.richtext.parseDiffStats
+import com.clma.app.ui.modifier.shimmer
+import com.clma.app.utils.generateUnifiedDiff
+import com.clma.app.utils.jsonPrimitiveOrNull
 
 /**
  * 工作空间编辑文件: 摘要显示增删统计与精简 diff, 详情为完整 diff view

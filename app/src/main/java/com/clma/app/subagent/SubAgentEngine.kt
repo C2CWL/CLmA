@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.subagent
+package com.clma.app.subagent
 
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
@@ -11,32 +11,32 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import me.rerere.ai.core.MessageRole
-import me.rerere.ai.core.ReasoningLevel
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.AppScope
-import me.rerere.rikkahub.data.agentdef.AgentDefinitionRepository
-import me.rerere.rikkahub.data.agentdef.AgentDefinitionResolver
-import me.rerere.rikkahub.data.agentrun.AgentRunKind
-import me.rerere.rikkahub.data.agentrun.AgentRunRepository
-import me.rerere.rikkahub.data.agentrun.AgentRunStatus
-import me.rerere.rikkahub.data.ai.tools.HeadlessConversations
-import me.rerere.rikkahub.data.ai.tools.ConversationInjections
-import me.rerere.rikkahub.data.ai.tools.ConversationSystemAddendum
-import me.rerere.rikkahub.data.ai.limits.ConversationReasoningOverrides
-import me.rerere.rikkahub.data.ai.limits.ConversationToolStepLimits
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.usage.OrchestrationBudget
-import me.rerere.rikkahub.data.usage.OrchestrationGate
-import me.rerere.rikkahub.data.usage.RunUsageSummary
-import me.rerere.rikkahub.data.usage.RunUsageSummaryFactory
-import me.rerere.rikkahub.data.usage.UsageLedger
-import me.rerere.rikkahub.data.usage.UsageRunContexts
-import me.rerere.rikkahub.data.ai.AssistantResolver
-import me.rerere.rikkahub.data.model.Conversation
-import me.rerere.rikkahub.data.repository.ConversationRepository
-import me.rerere.rikkahub.data.repository.FolderRepository
-import me.rerere.rikkahub.service.ChatService
+import com.clma.ai.core.MessageRole
+import com.clma.ai.core.ReasoningLevel
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.AppScope
+import com.clma.app.data.agentdef.AgentDefinitionRepository
+import com.clma.app.data.agentdef.AgentDefinitionResolver
+import com.clma.app.data.agentrun.AgentRunKind
+import com.clma.app.data.agentrun.AgentRunRepository
+import com.clma.app.data.agentrun.AgentRunStatus
+import com.clma.app.data.ai.tools.HeadlessConversations
+import com.clma.app.data.ai.tools.ConversationInjections
+import com.clma.app.data.ai.tools.ConversationSystemAddendum
+import com.clma.app.data.ai.limits.ConversationReasoningOverrides
+import com.clma.app.data.ai.limits.ConversationToolStepLimits
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.usage.OrchestrationBudget
+import com.clma.app.data.usage.OrchestrationGate
+import com.clma.app.data.usage.RunUsageSummary
+import com.clma.app.data.usage.RunUsageSummaryFactory
+import com.clma.app.data.usage.UsageLedger
+import com.clma.app.data.usage.UsageRunContexts
+import com.clma.app.data.ai.AssistantResolver
+import com.clma.app.data.model.Conversation
+import com.clma.app.data.repository.ConversationRepository
+import com.clma.app.data.repository.FolderRepository
+import com.clma.app.service.ChatService
 import kotlin.uuid.Uuid
 
 private const val TAG = "SubAgentEngine"
@@ -69,13 +69,13 @@ internal suspend fun finishSubAgentWait(completed: Boolean, stop: suspend () -> 
  *
  * The engine reuses the existing cron-headless dispatch pattern (mark conv headless,
  * sendMessage, await generation flow's terminal state). It deliberately does NOT
- * re-implement [me.rerere.rikkahub.data.ai.GenerationHandler] — that path is already
+ * re-implement [com.clma.app.data.ai.GenerationHandler] — that path is already
  * battle-tested and any duplicate would diverge.
  *
  * Recursion guard: SubAgentEngine refuses to dispatch if the calling conversation is
  * itself headless (i.e. we're already inside a sub-agent / cron / external-automation
  * run). The `subagent_*` tools stay REGISTERED inside a headless conversation — the older
- * claim that [me.rerere.rikkahub.data.ai.tools.LocalTools]' standard gating removes them
+ * claim that [com.clma.app.data.ai.tools.LocalTools]' standard gating removes them
  * was wrong: registration keys off `LocalToolOption.SubAgents`, and a sub-agent run reuses
  * its parent's assistant, so that option is still in the list. The load-bearing guard is
  * the trio of `isHeadless` checks (the dispatch tool's entry guard, this engine's dispatch
@@ -86,7 +86,7 @@ internal suspend fun finishSubAgentWait(completed: Boolean, stop: suspend () -> 
  * them. v1: no recursion.
  *
  * Concurrency caps:
- *  - Per-assistant cap from [me.rerere.rikkahub.data.model.Assistant.maxConcurrentSubAgents]
+ *  - Per-assistant cap from [com.clma.app.data.model.Assistant.maxConcurrentSubAgents]
  *  - Global cap from `Settings.subAgentGlobalConcurrencyCap` (default
  *    [SubAgentDefaults.GLOBAL_CONCURRENCY_CAP])
  *  - Both enforced at dispatch entry as a BOUNDED WAIT: an over-cap dispatch queues for a free
@@ -104,7 +104,7 @@ class SubAgentEngine(
      * so a backgrounded sub-agent does NOT survive process death — its registry entry is
      * gone on restart. Writing each sub-agent run to the persistent ledger closes that gap:
      * a run left `running` when the process dies is flipped to `process_lost` by
-     * [me.rerere.rikkahub.data.agentrun.AgentRunBootRecovery] on next start, so the user
+     * [com.clma.app.data.agentrun.AgentRunBootRecovery] on next start, so the user
      * (and `subagent_get`, via the ledger) can see what actually happened. No DI-cycle
      * risk: AgentRunRepository depends only on its DAO.
      */
@@ -131,7 +131,7 @@ class SubAgentEngine(
      *   - [LocalTools] constructor takes [SubAgentEngine] (so subagent_dispatch can fire)
      *   - [SubAgentEngine] needs [ChatService] only at dispatch time (sendMessage), so
      *     eager constructor injection here would close the cycle.
-     * Same lazy-Koin pattern as [me.rerere.rikkahub.workflow.execution.WorkflowEngine.localTools].
+     * Same lazy-Koin pattern as [com.clma.app.workflow.execution.WorkflowEngine.localTools].
      * Verified post-DI-fix 2026-05-08 — installed APK reaches MainActivity without crash.
      */
     private val chatService: ChatService by lazy {

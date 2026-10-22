@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.setting
+package com.clma.app.ui.pages.setting
 
 import android.content.ClipData
 import androidx.compose.foundation.Canvas
@@ -71,15 +71,15 @@ import me.rerere.hugeicons.stroke.Edit02
 import me.rerere.hugeicons.stroke.FileImport
 import me.rerere.hugeicons.stroke.PlusSign
 import me.rerere.hugeicons.stroke.Tick01
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.ui.components.nav.BackButton
-import me.rerere.rikkahub.ui.components.ui.RikkaConfirmDialog
-import me.rerere.rikkahub.ui.context.LocalToaster
-import me.rerere.rikkahub.ui.pages.setting.components.PresetThemeButtonGroup
-import me.rerere.rikkahub.ui.theme.CustomColors
-import me.rerere.rikkahub.ui.theme.CustomTheme
-import me.rerere.rikkahub.ui.theme.LocalDarkMode
-import me.rerere.rikkahub.utils.plus
+import com.clma.app.R
+import com.clma.app.ui.components.nav.BackButton
+import com.clma.app.ui.components.ui.RikkaConfirmDialog
+import com.clma.app.ui.context.LocalToaster
+import com.clma.app.ui.pages.setting.components.PresetThemeButtonGroup
+import com.clma.app.ui.theme.CustomColors
+import com.clma.app.ui.theme.CustomTheme
+import com.clma.app.ui.theme.LocalDarkMode
+import com.clma.app.utils.plus
 import org.koin.androidx.compose.koinViewModel
 import kotlin.math.roundToInt
 import kotlin.uuid.Uuid

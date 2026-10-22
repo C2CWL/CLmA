@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.permissions
+package com.clma.app.data.permissions
 
 import android.Manifest
 import android.app.NotificationManager
@@ -13,9 +13,9 @@ import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
 import androidx.core.content.ContextCompat
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.service.RikkaAccessibilityService
-import me.rerere.rikkahub.service.RikkaNotificationListenerService
+import com.clma.app.R
+import com.clma.app.service.RikkaAccessibilityService
+import com.clma.app.service.RikkaNotificationListenerService
 
 /**
  * Auto-discovered inventory of every permission this app requires, grouped by how the

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.workflow.condition
+package com.clma.app.workflow.condition
 
 import java.time.LocalDate
 import java.time.LocalTime

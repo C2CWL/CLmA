@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.quickchat
+package com.clma.app.ui.pages.quickchat
 
 import android.app.Activity
 import android.content.Context
@@ -31,16 +31,16 @@ import coil3.request.crossfade
 import coil3.svg.SvgDecoder
 import com.dokar.sonner.Toaster
 import com.dokar.sonner.rememberToasterState
-import me.rerere.rikkahub.RouteActivity
-import me.rerere.rikkahub.Screen
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.service.FloatingBallService
-import me.rerere.rikkahub.ui.context.LocalNavController
-import me.rerere.rikkahub.ui.context.LocalSettings
-import me.rerere.rikkahub.ui.context.LocalToaster
-import me.rerere.rikkahub.ui.context.Navigator
-import me.rerere.rikkahub.ui.theme.LocalDarkMode
-import me.rerere.rikkahub.ui.theme.RikkahubTheme
+import com.clma.app.RouteActivity
+import com.clma.app.Screen
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.service.FloatingBallService
+import com.clma.app.ui.context.LocalNavController
+import com.clma.app.ui.context.LocalSettings
+import com.clma.app.ui.context.LocalToaster
+import com.clma.app.ui.context.Navigator
+import com.clma.app.ui.theme.LocalDarkMode
+import com.clma.app.ui.theme.RikkahubTheme
 import okhttp3.OkHttpClient
 import org.koin.android.ext.android.inject
 import org.koin.compose.koinInject
@@ -239,7 +239,7 @@ class QuickChatActivity : ComponentActivity() {
 
 /**
  * Installs the same singleton Coil loader the main activity does. The panel needs it because
- * [me.rerere.rikkahub.ui.components.ui.AssistantAvatar] falls back to the assistant's model brand
+ * [com.clma.app.ui.components.ui.AssistantAvatar] falls back to the assistant's model brand
  * icon for a default avatar, and those live in `assets/icons` as SVG — with no [SvgDecoder] the
  * header avatar comes up as a blank circle instead. `setSingletonImageLoaderFactory` is a no-op
  * once a singleton exists, so whichever activity gets there first installs an identical loader.

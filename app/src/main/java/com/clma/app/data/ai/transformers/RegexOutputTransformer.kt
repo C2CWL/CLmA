@@ -1,10 +1,10 @@
-package me.rerere.rikkahub.data.ai.transformers
+package com.clma.app.data.ai.transformers
 
-import me.rerere.ai.core.MessageRole
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.data.model.AssistantAffectScope
-import me.rerere.rikkahub.data.model.replaceRegexes
+import com.clma.ai.core.MessageRole
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.model.AssistantAffectScope
+import com.clma.app.data.model.replaceRegexes
 import org.koin.core.component.KoinComponent
 
 object RegexOutputTransformer : OutputMessageTransformer, KoinComponent {

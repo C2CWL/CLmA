@@ -1,11 +1,11 @@
-package me.rerere.rikkahub.data.preferences
+package com.clma.app.data.preferences
 
 /**
  * Process-scoped @Volatile runtime holder for Termux-specific knobs. Pushed from
  * [TermuxPreferences.init] so non-suspend callers (TermuxTool.execute) always read the
  * latest persisted value without needing a coroutine context.
  *
- * Mirrors [me.rerere.rikkahub.browser.BrowserController]'s perToolTimeoutMs / singleTaskTimeoutMs
+ * Mirrors [com.clma.app.browser.BrowserController]'s perToolTimeoutMs / singleTaskTimeoutMs
  * pattern. Initial values are the defaults so the very first tool call (before the
  * TermuxPreferences collector has emitted) gets sensible behavior.
  */

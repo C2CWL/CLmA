@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.setting
+package com.clma.app.ui.pages.setting
 
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Code
@@ -39,16 +39,16 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
-import me.rerere.rikkahub.BuildConfig
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.Screen
-import me.rerere.rikkahub.ui.components.nav.BackButton
-import me.rerere.rikkahub.ui.components.easteregg.EmojiBurstHost
-import me.rerere.rikkahub.ui.components.ui.CardGroup
-import me.rerere.rikkahub.ui.context.LocalNavController
-import me.rerere.rikkahub.ui.theme.CustomColors
-import me.rerere.rikkahub.utils.openUrl
-import me.rerere.rikkahub.utils.plus
+import com.clma.app.BuildConfig
+import com.clma.app.R
+import com.clma.app.Screen
+import com.clma.app.ui.components.nav.BackButton
+import com.clma.app.ui.components.easteregg.EmojiBurstHost
+import com.clma.app.ui.components.ui.CardGroup
+import com.clma.app.ui.context.LocalNavController
+import com.clma.app.ui.theme.CustomColors
+import com.clma.app.utils.openUrl
+import com.clma.app.utils.plus
 
 @Composable
 fun SettingAboutPage() {

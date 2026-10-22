@@ -1,14 +1,14 @@
-package me.rerere.highlight.languages.ini
+package com.clma.highlight.languages.ini
 
-import me.rerere.highlight.core.BACKSLASH_ESCAPE
-import me.rerere.highlight.core.Language
-import me.rerere.highlight.core.Mode
-import me.rerere.highlight.core.NUMBER_RE
-import me.rerere.highlight.core.comment
-import me.rerere.highlight.core.concat
-import me.rerere.highlight.core.either
-import me.rerere.highlight.core.lookahead
-import me.rerere.highlight.core.mode
+import com.clma.highlight.core.BACKSLASH_ESCAPE
+import com.clma.highlight.core.Language
+import com.clma.highlight.core.Mode
+import com.clma.highlight.core.NUMBER_RE
+import com.clma.highlight.core.comment
+import com.clma.highlight.core.concat
+import com.clma.highlight.core.either
+import com.clma.highlight.core.lookahead
+import com.clma.highlight.core.mode
 
 /** TOML, also INI, ported from `lib/languages/ini.js` of `highlight.js` 11.11.1. */
 internal fun ini(): Language {

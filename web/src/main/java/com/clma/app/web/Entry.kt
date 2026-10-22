@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.web
+package com.clma.app.web
 
 import io.ktor.http.HttpHeaders
 import io.ktor.server.application.Application

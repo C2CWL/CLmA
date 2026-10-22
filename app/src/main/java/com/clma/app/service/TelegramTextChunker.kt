@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.service
+package com.clma.app.service
 
 /**
  * Split [s] into pieces no longer than [n] code units, preferring natural break

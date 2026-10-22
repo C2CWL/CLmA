@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.notifications
+package com.clma.app.data.notifications
 
 /**
  * Snapshot of a Notification at the moment it was posted. The listener service stores

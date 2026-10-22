@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.message
+package com.clma.app.ui.components.message
 
 import android.os.Build
 import androidx.compose.foundation.layout.Box

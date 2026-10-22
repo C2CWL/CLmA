@@ -1,4 +1,4 @@
-package me.rerere.workspace
+package com.clma.workspace
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

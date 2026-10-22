@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.quickchat
+package com.clma.app.ui.pages.quickchat
 
 import android.Manifest
 import android.content.Context
@@ -76,9 +76,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 import kotlinx.coroutines.launch
-import me.rerere.ai.core.MessageRole
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.UIMessagePart
+import com.clma.ai.core.MessageRole
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessagePart
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.AiBrain01
 import me.rerere.hugeicons.stroke.ArrowDown01
@@ -91,21 +91,21 @@ import me.rerere.hugeicons.stroke.PlusSign
 import me.rerere.hugeicons.stroke.Stop
 import me.rerere.hugeicons.stroke.VolumeHigh
 import me.rerere.hugeicons.stroke.Wrench01
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.RouteActivity
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.datastore.getAssistantById
-import me.rerere.rikkahub.data.datastore.getSelectedASRProvider
-import me.rerere.rikkahub.service.ChatService
-import me.rerere.rikkahub.ui.components.message.MessagePartBlock
-import me.rerere.rikkahub.ui.components.message.ThinkingStep
-import me.rerere.rikkahub.ui.components.message.groupMessageParts
-import me.rerere.rikkahub.ui.context.LocalSettings
-import me.rerere.rikkahub.ui.components.richtext.MarkdownBlock
-import me.rerere.rikkahub.ui.components.ui.AssistantAvatar
-import me.rerere.rikkahub.ui.hooks.readStringPreference
-import me.rerere.rikkahub.ui.hooks.rememberCustomAsrState
-import me.rerere.rikkahub.ui.hooks.rememberCustomTtsState
+import com.clma.app.R
+import com.clma.app.RouteActivity
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.datastore.getAssistantById
+import com.clma.app.data.datastore.getSelectedASRProvider
+import com.clma.app.service.ChatService
+import com.clma.app.ui.components.message.MessagePartBlock
+import com.clma.app.ui.components.message.ThinkingStep
+import com.clma.app.ui.components.message.groupMessageParts
+import com.clma.app.ui.context.LocalSettings
+import com.clma.app.ui.components.richtext.MarkdownBlock
+import com.clma.app.ui.components.ui.AssistantAvatar
+import com.clma.app.ui.hooks.readStringPreference
+import com.clma.app.ui.hooks.rememberCustomAsrState
+import com.clma.app.ui.hooks.rememberCustomTtsState
 import org.koin.compose.koinInject
 
 private const val LAST_CONVERSATION_KEY = "lastConversationId"

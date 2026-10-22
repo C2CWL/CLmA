@@ -1,4 +1,4 @@
-package me.rerere.search.extract
+package com.clma.search.extract
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull

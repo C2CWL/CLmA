@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.message
+package com.clma.app.ui.components.message
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
@@ -30,12 +30,12 @@ import me.rerere.hugeicons.stroke.CoinsDollar
 import me.rerere.hugeicons.stroke.Cpu
 import me.rerere.hugeicons.stroke.Download04
 import me.rerere.hugeicons.stroke.Upload02
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.usage.TurnFooter
-import me.rerere.rikkahub.data.usage.UsageCallView
-import me.rerere.rikkahub.data.usage.UsagePurpose
-import me.rerere.rikkahub.utils.formatNumber
-import me.rerere.rikkahub.utils.toFixed
+import com.clma.app.R
+import com.clma.app.data.usage.TurnFooter
+import com.clma.app.data.usage.UsageCallView
+import com.clma.app.data.usage.UsagePurpose
+import com.clma.app.utils.formatNumber
+import com.clma.app.utils.toFixed
 import kotlin.math.roundToInt
 
 /**

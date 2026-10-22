@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.ui.permission
+package com.clma.app.ui.components.ui.permission
 
 import androidx.compose.runtime.Composable
 

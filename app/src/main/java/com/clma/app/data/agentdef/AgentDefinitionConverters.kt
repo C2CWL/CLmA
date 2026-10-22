@@ -1,9 +1,9 @@
-package me.rerere.rikkahub.data.agentdef
+package com.clma.app.data.agentdef
 
 import androidx.room.TypeConverter
-import me.rerere.rikkahub.data.ai.tools.LenientLocalToolListSerializer
-import me.rerere.rikkahub.data.ai.tools.LocalToolOption
-import me.rerere.rikkahub.utils.JsonInstant
+import com.clma.app.data.ai.tools.LenientLocalToolListSerializer
+import com.clma.app.data.ai.tools.LocalToolOption
+import com.clma.app.utils.JsonInstant
 
 /**
  * P2-06 — the column encodings for [AgentDefinition]'s structured fields.

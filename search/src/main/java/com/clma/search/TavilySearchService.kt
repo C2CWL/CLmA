@@ -1,4 +1,4 @@
-package me.rerere.search
+package com.clma.search
 
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -17,11 +17,11 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import me.rerere.ai.core.InputSchema
-import me.rerere.search.SearchResult.SearchResultItem
-import me.rerere.search.SearchService.Companion.httpClient
-import me.rerere.search.SearchService.Companion.json
-import me.rerere.search.SearchService.Companion.keyRoulette
+import com.clma.ai.core.InputSchema
+import com.clma.search.SearchResult.SearchResultItem
+import com.clma.search.SearchService.Companion.httpClient
+import com.clma.search.SearchService.Companion.json
+import com.clma.search.SearchService.Companion.keyRoulette
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 

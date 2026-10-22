@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.db
+package com.clma.app.data.db
 
 import android.content.Context
 import io.requery.android.database.sqlite.RequerySQLiteOpenHelperFactory

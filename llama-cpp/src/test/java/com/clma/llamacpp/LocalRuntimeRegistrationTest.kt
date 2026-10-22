@@ -1,6 +1,6 @@
-package me.rerere.llamacpp
+package com.clma.llamacpp
 
-import me.rerere.locallm.LocalRuntime
+import com.clma.locallm.LocalRuntime
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

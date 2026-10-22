@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.model
+package com.clma.app.data.ai.model
 
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.JsonArray
@@ -13,17 +13,17 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
-import me.rerere.ai.core.InputSchema
-import me.rerere.ai.core.Tool
-import me.rerere.ai.provider.Model
-import me.rerere.ai.provider.ModelAbility
-import me.rerere.ai.provider.ModelType
-import me.rerere.ai.provider.ProviderSetting
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.data.agentrun.AgentRunKind
-import me.rerere.rikkahub.data.agentrun.AgentRunRepository
-import me.rerere.rikkahub.data.agentrun.AgentRunStatus
-import me.rerere.rikkahub.data.datastore.SettingsStore
+import com.clma.ai.core.InputSchema
+import com.clma.ai.core.Tool
+import com.clma.ai.provider.Model
+import com.clma.ai.provider.ModelAbility
+import com.clma.ai.provider.ModelType
+import com.clma.ai.provider.ProviderSetting
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.agentrun.AgentRunKind
+import com.clma.app.data.agentrun.AgentRunRepository
+import com.clma.app.data.agentrun.AgentRunStatus
+import com.clma.app.data.datastore.SettingsStore
 import kotlin.uuid.Uuid
 
 /**
@@ -42,9 +42,9 @@ import kotlin.uuid.Uuid
  * and baseUrl (secrets); this family never touches them, and an unknown or built-in synthetic
  * provider (AICore) is refused rather than half-edited.
  *
- * The write half requires approval ([me.rerere.rikkahub.data.ai.tools.ToolApprovalDefaults])
+ * The write half requires approval ([com.clma.app.data.ai.tools.ToolApprovalDefaults])
  * and is refused outright in a headless run
- * ([me.rerere.rikkahub.data.ai.tools.HeadlessToolApprovalPolicy]); each attempt is recorded in
+ * ([com.clma.app.data.ai.tools.HeadlessToolApprovalPolicy]); each attempt is recorded in
  * the `agent_runs` ledger under [AgentRunKind.ModelWrite].
  */
 

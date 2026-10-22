@@ -1,6 +1,6 @@
-package me.rerere.rikkahub.data.ai.mcp.control
+package com.clma.app.data.ai.mcp.control
 
-import me.rerere.rikkahub.data.ai.mcp.McpServerConfig
+import com.clma.app.data.ai.mcp.McpServerConfig
 
 /**
  * Argument-validation helpers for the mcp_* tools. Returns either [Ok] with a typed

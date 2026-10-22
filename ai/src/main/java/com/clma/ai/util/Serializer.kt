@@ -1,4 +1,4 @@
-package me.rerere.ai.util
+package com.clma.ai.util
 
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.PrimitiveKind

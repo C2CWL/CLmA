@@ -1,7 +1,7 @@
-package me.rerere.rikkahub.ui.components.message
+package com.clma.app.ui.components.message
 
 import androidx.compose.ui.util.fastForEachIndexed
-import me.rerere.ai.ui.UIMessagePart
+import com.clma.ai.ui.UIMessagePart
 
 /**
  * 思考步骤类型，用于分组 Reasoning、客户端 Tool、ServerTool，以及（可选）过程旁白 Text。

@@ -1,12 +1,12 @@
-package me.rerere.rikkahub.data.ai
+package com.clma.app.data.ai
 
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import me.rerere.ai.ui.UIMessage
-import me.rerere.rikkahub.data.model.Conversation
-import me.rerere.rikkahub.data.model.ConversationCompaction
-import me.rerere.rikkahub.data.model.MessageNode
-import me.rerere.rikkahub.data.model.toMessageNode
+import com.clma.ai.ui.UIMessage
+import com.clma.app.data.model.Conversation
+import com.clma.app.data.model.ConversationCompaction
+import com.clma.app.data.model.MessageNode
+import com.clma.app.data.model.toMessageNode
 import kotlin.time.toKotlinInstant
 import kotlin.uuid.Uuid
 

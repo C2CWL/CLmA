@@ -1,8 +1,8 @@
-package me.rerere.rikkahub.data.ai.tools
+package com.clma.app.data.ai.tools
 
-import me.rerere.ai.core.InputSchema
-import me.rerere.rikkahub.data.datastore.Settings
-import me.rerere.search.SearchServiceOptions
+import com.clma.ai.core.InputSchema
+import com.clma.app.data.datastore.Settings
+import com.clma.search.SearchServiceOptions
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

@@ -1,4 +1,4 @@
-package me.rerere.ai.ui
+package com.clma.ai.ui
 
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertFalse

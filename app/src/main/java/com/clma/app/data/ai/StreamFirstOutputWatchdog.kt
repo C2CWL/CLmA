@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai
+package com.clma.app.data.ai
 
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.stats
+package com.clma.app.ui.pages.stats
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -37,7 +37,7 @@ import com.patrykandpatrick.vico.compose.common.component.TextComponent
 import com.patrykandpatrick.vico.compose.common.component.rememberShapeComponent
 import com.patrykandpatrick.vico.compose.common.component.rememberTextComponent
 import com.patrykandpatrick.vico.compose.common.data.ExtraStore
-import me.rerere.rikkahub.data.usage.UsageStatBucket
+import com.clma.app.data.usage.UsageStatBucket
 
 /** Maps an _x_-index back to its ISO date, so the bottom axis can label days. */
 private val CallsDayLabelKey = ExtraStore.Key<List<String>>()

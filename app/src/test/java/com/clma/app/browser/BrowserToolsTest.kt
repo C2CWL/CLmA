@@ -1,25 +1,25 @@
-package me.rerere.rikkahub.browser
+package com.clma.app.browser
 
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.data.ai.tools.local.NULL_CONTEXT
-import me.rerere.rikkahub.data.ai.tools.local.browserBackTool
-import me.rerere.rikkahub.data.ai.tools.local.browserClickAndReadTool
-import me.rerere.rikkahub.data.ai.tools.local.browserClickTool
-import me.rerere.rikkahub.data.ai.tools.local.browserCurrentUrlTool
-import me.rerere.rikkahub.data.ai.tools.local.browserDoneTool
-import me.rerere.rikkahub.data.ai.tools.local.browserEvalJsTool
-import me.rerere.rikkahub.data.ai.tools.local.browserForwardTool
-import me.rerere.rikkahub.data.ai.tools.local.browserGetTextTool
-import me.rerere.rikkahub.data.ai.tools.local.browserOpenTool
-import me.rerere.rikkahub.data.ai.tools.local.browserPressKeyTool
-import me.rerere.rikkahub.data.ai.tools.local.browserScrollTool
-import me.rerere.rikkahub.data.ai.tools.local.browserSelectTool
-import me.rerere.rikkahub.data.ai.tools.local.browserSubmitTool
-import me.rerere.rikkahub.data.ai.tools.local.browserTypeTool
-import me.rerere.rikkahub.data.ai.tools.local.browserWaitForTool
-import me.rerere.rikkahub.data.ai.tools.local.createBrowserTool
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.ai.tools.local.NULL_CONTEXT
+import com.clma.app.data.ai.tools.local.browserBackTool
+import com.clma.app.data.ai.tools.local.browserClickAndReadTool
+import com.clma.app.data.ai.tools.local.browserClickTool
+import com.clma.app.data.ai.tools.local.browserCurrentUrlTool
+import com.clma.app.data.ai.tools.local.browserDoneTool
+import com.clma.app.data.ai.tools.local.browserEvalJsTool
+import com.clma.app.data.ai.tools.local.browserForwardTool
+import com.clma.app.data.ai.tools.local.browserGetTextTool
+import com.clma.app.data.ai.tools.local.browserOpenTool
+import com.clma.app.data.ai.tools.local.browserPressKeyTool
+import com.clma.app.data.ai.tools.local.browserScrollTool
+import com.clma.app.data.ai.tools.local.browserSelectTool
+import com.clma.app.data.ai.tools.local.browserSubmitTool
+import com.clma.app.data.ai.tools.local.browserTypeTool
+import com.clma.app.data.ai.tools.local.browserWaitForTool
+import com.clma.app.data.ai.tools.local.createBrowserTool
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -48,7 +48,7 @@ class BrowserToolsTest {
         BrowserController.clearTaskWindow()
     }
 
-    private fun execText(tool: me.rerere.ai.core.Tool, argsJson: String): String = runBlocking {
+    private fun execText(tool: com.clma.ai.core.Tool, argsJson: String): String = runBlocking {
         val parts = tool.execute(Json.parseToJsonElement(argsJson))
         (parts.first { it is UIMessagePart.Text } as UIMessagePart.Text).text
     }

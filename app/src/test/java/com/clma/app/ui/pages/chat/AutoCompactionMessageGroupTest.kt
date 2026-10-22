@@ -1,11 +1,11 @@
-package me.rerere.rikkahub.ui.pages.chat
+package com.clma.app.ui.pages.chat
 
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.data.ai.ContextCompactionPresentation
-import me.rerere.rikkahub.data.model.Conversation
-import me.rerere.rikkahub.data.model.ConversationCompaction
-import me.rerere.rikkahub.data.model.MessageNode
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.ai.ContextCompactionPresentation
+import com.clma.app.data.model.Conversation
+import com.clma.app.data.model.ConversationCompaction
+import com.clma.app.data.model.MessageNode
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.json.booleanOrNull

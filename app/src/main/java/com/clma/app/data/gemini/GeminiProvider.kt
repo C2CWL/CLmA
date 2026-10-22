@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.gemini
+package com.clma.app.data.gemini
 
 import android.util.Log
 import kotlin.coroutines.resume
@@ -26,27 +26,27 @@ import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import me.rerere.ai.core.MessageRole
-import me.rerere.ai.provider.ImageGenerationParams
-import me.rerere.ai.provider.Modality
-import me.rerere.ai.provider.Model
-import me.rerere.ai.provider.ModelAbility
-import me.rerere.ai.provider.Provider
-import me.rerere.ai.provider.ProviderSetting
-import me.rerere.ai.provider.TextGenerationParams
-import me.rerere.ai.provider.TextGenerationResult
-import me.rerere.ai.provider.providers.google.CODE_ASSIST_SAFETY_CATEGORIES
-import me.rerere.ai.provider.providers.google.GoogleProvider
-import me.rerere.ai.ui.ImageGenerationItem
-import me.rerere.ai.ui.MessageChunk
-import me.rerere.ai.ui.StreamChunk
-import me.rerere.ai.ui.StreamChunkHandler
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.ai.util.HttpException
-import me.rerere.ai.util.stringSafe
-import me.rerere.ai.util.toHeaders
-import me.rerere.common.android.Logging
+import com.clma.ai.core.MessageRole
+import com.clma.ai.provider.ImageGenerationParams
+import com.clma.ai.provider.Modality
+import com.clma.ai.provider.Model
+import com.clma.ai.provider.ModelAbility
+import com.clma.ai.provider.Provider
+import com.clma.ai.provider.ProviderSetting
+import com.clma.ai.provider.TextGenerationParams
+import com.clma.ai.provider.TextGenerationResult
+import com.clma.ai.provider.providers.google.CODE_ASSIST_SAFETY_CATEGORIES
+import com.clma.ai.provider.providers.google.GoogleProvider
+import com.clma.ai.ui.ImageGenerationItem
+import com.clma.ai.ui.MessageChunk
+import com.clma.ai.ui.StreamChunk
+import com.clma.ai.ui.StreamChunkHandler
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessagePart
+import com.clma.ai.util.HttpException
+import com.clma.ai.util.stringSafe
+import com.clma.ai.util.toHeaders
+import com.clma.common.android.Logging
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -568,7 +568,7 @@ private fun stripThinkingConfigForGptOss(modelId: String, request: JsonObject): 
  *
  * Code Assist fronts Anthropic models as well as Gemini, and Anthropic rejects any request whose
  * thinking budget is under 1024 tokens. Gemini's own reasoning levels can ask for less (e.g.
- * [me.rerere.ai.core.ReasoningLevel.LOW] is 1000), so anything in 1..1023 is raised here; `0`
+ * [com.clma.ai.core.ReasoningLevel.LOW] is 1000), so anything in 1..1023 is raised here; `0`
  * (reasoning off) and budgets already at or above the floor are left untouched, as is the
  * `thinkingLevel` string used by Gemini-3 models. Must run before
  * [raiseMaxTokensAboveThinkingBudget] so that function sees the clamped budget.

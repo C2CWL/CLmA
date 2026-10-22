@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.ui
+package com.clma.app.ui.components.ui
 
 import android.content.ClipData
 import androidx.compose.animation.AnimatedVisibility
@@ -40,14 +40,14 @@ import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Cancel01
 import me.rerere.hugeicons.stroke.Copy01
 import me.rerere.hugeicons.stroke.Delete01
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.Screen
-import me.rerere.rikkahub.service.ChatError
-import me.rerere.rikkahub.service.ChatErrorSolution
-import me.rerere.rikkahub.ui.context.LocalNavController
-import me.rerere.rikkahub.ui.context.LocalSettings
-import me.rerere.rikkahub.utils.ErrorAction
-import me.rerere.rikkahub.utils.explainForUser
+import com.clma.app.R
+import com.clma.app.Screen
+import com.clma.app.service.ChatError
+import com.clma.app.service.ChatErrorSolution
+import com.clma.app.ui.context.LocalNavController
+import com.clma.app.ui.context.LocalSettings
+import com.clma.app.utils.ErrorAction
+import com.clma.app.utils.explainForUser
 import kotlin.uuid.Uuid
 
 @Composable

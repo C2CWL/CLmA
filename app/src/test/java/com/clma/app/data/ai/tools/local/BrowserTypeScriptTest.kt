@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.tools.local
+package com.clma.app.data.ai.tools.local
 
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -6,7 +6,7 @@ import org.junit.Test
 /**
  * Locks in the JS payload browser_type dispatches ([buildTypeScript]). Pure string
  * builder, unit-testable without a WebView — same rationale as
- * [me.rerere.rikkahub.browser.BrowserWaitForPredicateTest]'s sibling for browser_wait_for.
+ * [com.clma.app.browser.BrowserWaitForPredicateTest]'s sibling for browser_wait_for.
  *
  * The fix under test: React (and similar frameworks) install their own setter on the
  * DOM node instance to track "last known value", so a plain `el.value = ...` assignment

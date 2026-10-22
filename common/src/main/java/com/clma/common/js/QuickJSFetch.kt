@@ -1,4 +1,4 @@
-package me.rerere.common.js
+package com.clma.common.js
 
 import com.whl.quickjs.wrapper.JSCallFunction
 import com.whl.quickjs.wrapper.QuickJSContext
@@ -125,7 +125,7 @@ fun QuickJSContext.injectFetch(httpClient: OkHttpClient) {
 }
 
 /**
- * Read at most [capBytes] from [response]'s body, mirroring me.rerere.search.boundedBody so a
+ * Read at most [capBytes] from [response]'s body, mirroring com.clma.search.boundedBody so a
  * huge or unbounded response can't be dragged fully into memory (and then into the JS engine's
  * own heap as a string) just because fetch() has to return the whole body synchronously.
  */

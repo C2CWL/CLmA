@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.telegram
+package com.clma.app.data.telegram
 
 /** Persisted bot configuration. Lives in TelegramBotPreferences (DataStore). */
 data class TelegramBotConfig(

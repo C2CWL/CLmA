@@ -1,6 +1,6 @@
-package me.rerere.rikkahub.ui.pages.setting.scheduledjobs
+package com.clma.app.ui.pages.setting.scheduledjobs
 
-import me.rerere.rikkahub.data.db.entity.ScheduledJobEntity
+import com.clma.app.data.db.entity.ScheduledJobEntity
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale

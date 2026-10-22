@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.subagent
+package com.clma.app.subagent
 
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.prompts
+package com.clma.app.data.ai.prompts
 
 internal val DEFAULT_SUGGESTION_PROMPT = """
     I will provide you with some chat content in the `<content>` block, including conversations between the User and the AI assistant.

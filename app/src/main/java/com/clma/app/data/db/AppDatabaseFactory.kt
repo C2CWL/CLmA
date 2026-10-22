@@ -1,17 +1,17 @@
-package me.rerere.rikkahub.data.db
+package com.clma.app.data.db
 
 import android.content.Context
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
-import me.rerere.rikkahub.data.db.fts.SimpleDictManager
-import me.rerere.rikkahub.data.db.migrations.Migration_6_7
-import me.rerere.rikkahub.data.db.migrations.Migration_11_12
-import me.rerere.rikkahub.data.db.migrations.Migration_13_14
-import me.rerere.rikkahub.data.db.migrations.Migration_14_15
-import me.rerere.rikkahub.data.db.migrations.Migration_15_16
-import me.rerere.rikkahub.data.db.migrations.Migration_23_24
-import me.rerere.rikkahub.data.db.migrations.Migration_30_31
+import com.clma.app.data.db.fts.SimpleDictManager
+import com.clma.app.data.db.migrations.Migration_6_7
+import com.clma.app.data.db.migrations.Migration_11_12
+import com.clma.app.data.db.migrations.Migration_13_14
+import com.clma.app.data.db.migrations.Migration_14_15
+import com.clma.app.data.db.migrations.Migration_15_16
+import com.clma.app.data.db.migrations.Migration_23_24
+import com.clma.app.data.db.migrations.Migration_30_31
 
 /** Shared schema, migrations and extensions for the app and staged backup validation. */
 internal object AppDatabaseFactory {
@@ -45,7 +45,7 @@ internal object AppDatabaseFactory {
                     }
 
                     try {
-                        db.execSQL(me.rerere.rikkahub.data.db.fts.MESSAGE_FTS_CREATE_SQL.trimIndent())
+                        db.execSQL(com.clma.app.data.db.fts.MESSAGE_FTS_CREATE_SQL.trimIndent())
                     } catch (e: Exception) {
                         android.util.Log.e("DataSourceModule", "onOpen: message_fts table creation failed", e)
                     }

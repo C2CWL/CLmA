@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.chat
+package com.clma.app.ui.pages.chat
 
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.BorderStroke
@@ -40,19 +40,19 @@ import me.rerere.hugeicons.stroke.Cancel01
 import me.rerere.hugeicons.stroke.LeftToRightListBullet
 import me.rerere.hugeicons.stroke.Menu03
 import me.rerere.hugeicons.stroke.MessageAdd01
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.datastore.ChatLayout
-import me.rerere.rikkahub.data.datastore.Settings
-import me.rerere.rikkahub.data.datastore.effectiveChatLayout
-import me.rerere.rikkahub.data.datastore.resolveChatModel
-import me.rerere.rikkahub.data.model.Conversation
-import me.rerere.rikkahub.data.usage.TurnFooter
-import me.rerere.rikkahub.ui.components.ui.cleanHeaderShape
-import me.rerere.rikkahub.ui.components.ui.cleanPanelFill
-import me.rerere.rikkahub.ui.components.ui.cleanPanelOutline
-import me.rerere.rikkahub.ui.components.ui.rikkaGlassStyle
-import me.rerere.rikkahub.ui.context.LocalToaster
-import me.rerere.rikkahub.ui.theme.LocalDarkMode
+import com.clma.app.R
+import com.clma.app.data.datastore.ChatLayout
+import com.clma.app.data.datastore.Settings
+import com.clma.app.data.datastore.effectiveChatLayout
+import com.clma.app.data.datastore.resolveChatModel
+import com.clma.app.data.model.Conversation
+import com.clma.app.data.usage.TurnFooter
+import com.clma.app.ui.components.ui.cleanHeaderShape
+import com.clma.app.ui.components.ui.cleanPanelFill
+import com.clma.app.ui.components.ui.cleanPanelOutline
+import com.clma.app.ui.components.ui.rikkaGlassStyle
+import com.clma.app.ui.context.LocalToaster
+import com.clma.app.ui.theme.LocalDarkMode
 import org.koin.androidx.compose.koinViewModel
 
 /**

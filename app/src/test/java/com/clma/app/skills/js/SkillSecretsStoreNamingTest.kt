@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.skills.js
+package com.clma.app.skills.js
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

@@ -1,7 +1,7 @@
-package me.rerere.rikkahub.ui.pages.setting.components
+package com.clma.app.ui.pages.setting.components
 
-import me.rerere.ai.provider.ProviderSetting
-import me.rerere.rikkahub.ui.components.ui.TagType
+import com.clma.ai.provider.ProviderSetting
+import com.clma.app.ui.components.ui.TagType
 
 /**
  * A user-facing precondition the provider needs before it can actually run inference. Rendered

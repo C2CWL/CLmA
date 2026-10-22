@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.utils
+package com.clma.app.utils
 
 fun <E> Collection<E>.checkDifferent(
     other: Collection<E>,

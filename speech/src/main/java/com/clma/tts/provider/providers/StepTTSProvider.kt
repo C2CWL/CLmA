@@ -1,4 +1,4 @@
-package me.rerere.tts.provider.providers
+package com.clma.tts.provider.providers
 
 import android.content.Context
 import android.util.Log
@@ -6,12 +6,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import me.rerere.tts.model.AudioChunk
-import me.rerere.tts.model.AudioFormat
-import me.rerere.tts.model.TTSRequest
-import me.rerere.tts.provider.TTSProvider
-import me.rerere.tts.provider.TTSProviderException
-import me.rerere.tts.provider.TTSProviderSetting
+import com.clma.tts.model.AudioChunk
+import com.clma.tts.model.AudioFormat
+import com.clma.tts.model.TTSRequest
+import com.clma.tts.provider.TTSProvider
+import com.clma.tts.provider.TTSProviderException
+import com.clma.tts.provider.TTSProviderSetting
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request

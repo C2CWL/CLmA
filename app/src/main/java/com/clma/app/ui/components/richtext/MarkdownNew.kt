@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.richtext
+package com.clma.app.ui.components.richtext
 
 import android.util.Log
 import androidx.compose.foundation.background
@@ -76,10 +76,10 @@ import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.sample
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Tick01
-import me.rerere.rikkahub.ui.components.table.DataTable
-import me.rerere.rikkahub.ui.context.LocalSettings
-import me.rerere.rikkahub.ui.theme.JetbrainsMono
-import me.rerere.rikkahub.utils.toDp
+import com.clma.app.ui.components.table.DataTable
+import com.clma.app.ui.context.LocalSettings
+import com.clma.app.ui.theme.JetbrainsMono
+import com.clma.app.utils.toDp
 import org.intellij.markdown.flavours.gfm.GFMFlavourDescriptor
 import org.intellij.markdown.html.HtmlGenerator
 import org.intellij.markdown.parser.MarkdownParser

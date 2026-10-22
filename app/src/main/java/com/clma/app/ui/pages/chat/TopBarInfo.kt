@@ -1,9 +1,9 @@
-package me.rerere.rikkahub.ui.pages.chat
+package com.clma.app.ui.pages.chat
 
-import me.rerere.rikkahub.costguards.TokenBudgetTracker
-import me.rerere.rikkahub.data.model.Conversation
-import me.rerere.rikkahub.data.usage.TurnFooter
-import me.rerere.rikkahub.ui.pages.stats.formatCompactTokens
+import com.clma.app.costguards.TokenBudgetTracker
+import com.clma.app.data.model.Conversation
+import com.clma.app.data.usage.TurnFooter
+import com.clma.app.ui.pages.stats.formatCompactTokens
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.util.Locale

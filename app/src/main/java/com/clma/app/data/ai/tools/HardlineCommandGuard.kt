@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.tools
+package com.clma.app.data.ai.tools
 
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement

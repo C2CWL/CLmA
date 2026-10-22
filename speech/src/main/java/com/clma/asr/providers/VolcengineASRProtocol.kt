@@ -1,4 +1,4 @@
-package me.rerere.asr.providers
+package com.clma.asr.providers
 
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -10,8 +10,8 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
-import me.rerere.asr.ASRProviderSetting
-import me.rerere.asr.ASRVoiceTurn
+import com.clma.asr.ASRProviderSetting
+import com.clma.asr.ASRVoiceTurn
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder

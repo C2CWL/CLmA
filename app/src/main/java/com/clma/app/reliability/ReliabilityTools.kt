@@ -1,13 +1,13 @@
-package me.rerere.rikkahub.reliability
+package com.clma.app.reliability
 
 import android.content.Context
 import android.content.Intent
 import androidx.core.content.FileProvider
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import me.rerere.ai.core.InputSchema
-import me.rerere.ai.core.Tool
-import me.rerere.ai.ui.UIMessagePart
+import com.clma.ai.core.InputSchema
+import com.clma.ai.core.Tool
+import com.clma.ai.ui.UIMessagePart
 
 /**
  * Phase 14 — Reliability bundle, surfaced as LLM tools so the assistant can drive the
@@ -23,7 +23,7 @@ import me.rerere.ai.ui.UIMessagePart
  *     telegram_send_document, or share via intent.
  *
  * Gating: `check_app_updates` is built-in and always registered — it backs the app's own
- * update path (see [me.rerere.rikkahub.data.ai.tools.LocalTools.HIDDEN_TOOL_NAMES]) and is
+ * update path (see [com.clma.app.data.ai.tools.LocalTools.HIDDEN_TOOL_NAMES]) and is
  * deliberately absent from both the group toggles and the per-tool overrides. Only
  * `generate_bug_report` is gated by the per-assistant `Reliability` Local Tools toggle.
  */

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.codex
+package com.clma.app.data.codex
 
 import android.content.Context
 import android.security.keystore.KeyGenParameterSpec

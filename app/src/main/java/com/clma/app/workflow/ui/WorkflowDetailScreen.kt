@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.workflow.ui
+package com.clma.app.workflow.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -35,17 +35,17 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.Screen
-import me.rerere.rikkahub.ui.components.nav.BackButton
-import me.rerere.rikkahub.ui.context.LocalNavController
-import me.rerere.rikkahub.ui.theme.CustomColors
-import me.rerere.rikkahub.utils.base64Encode
-import me.rerere.rikkahub.utils.formatRelativeAgo
-import me.rerere.rikkahub.utils.plus
-import me.rerere.rikkahub.workflow.model.WorkflowAction
-import me.rerere.rikkahub.workflow.model.WorkflowRun
-import me.rerere.rikkahub.workflow.repository.WorkflowRepository.Loaded
+import com.clma.app.R
+import com.clma.app.Screen
+import com.clma.app.ui.components.nav.BackButton
+import com.clma.app.ui.context.LocalNavController
+import com.clma.app.ui.theme.CustomColors
+import com.clma.app.utils.base64Encode
+import com.clma.app.utils.formatRelativeAgo
+import com.clma.app.utils.plus
+import com.clma.app.workflow.model.WorkflowAction
+import com.clma.app.workflow.model.WorkflowRun
+import com.clma.app.workflow.repository.WorkflowRepository.Loaded
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -340,24 +340,24 @@ private fun StatsBlock(loaded: Loaded) {
     }
 }
 
-private fun conditionLine(c: me.rerere.rikkahub.workflow.model.ConditionSpec): String {
+private fun conditionLine(c: com.clma.app.workflow.model.ConditionSpec): String {
     val base = when (c) {
-        is me.rerere.rikkahub.workflow.model.ConditionSpec.TimeBetween -> "between ${c.start} and ${c.end}"
-        is me.rerere.rikkahub.workflow.model.ConditionSpec.TimeAfterSunset -> "after sunset" +
+        is com.clma.app.workflow.model.ConditionSpec.TimeBetween -> "between ${c.start} and ${c.end}"
+        is com.clma.app.workflow.model.ConditionSpec.TimeAfterSunset -> "after sunset" +
             if (c.offsetMinutes != 0) " (${c.offsetMinutes}m offset)" else ""
-        is me.rerere.rikkahub.workflow.model.ConditionSpec.TimeBeforeSunrise -> "before sunrise" +
+        is com.clma.app.workflow.model.ConditionSpec.TimeBeforeSunrise -> "before sunrise" +
             if (c.offsetMinutes != 0) " (${c.offsetMinutes}m offset)" else ""
-        is me.rerere.rikkahub.workflow.model.ConditionSpec.DayOfWeekIn -> "day(s) ${c.days.joinToString(",")}"
-        is me.rerere.rikkahub.workflow.model.ConditionSpec.WifiSsidIs -> "WiFi is ${c.ssid}"
-        is me.rerere.rikkahub.workflow.model.ConditionSpec.WifiSsidIn -> "WiFi in ${c.ssids.joinToString(",")}"
-        is me.rerere.rikkahub.workflow.model.ConditionSpec.BatteryAbove -> "battery > ${c.percent}%"
-        is me.rerere.rikkahub.workflow.model.ConditionSpec.BatteryBelow -> "battery < ${c.percent}%"
-        is me.rerere.rikkahub.workflow.model.ConditionSpec.IsCharging -> "charging"
-        is me.rerere.rikkahub.workflow.model.ConditionSpec.IsNotCharging -> "not charging"
-        is me.rerere.rikkahub.workflow.model.ConditionSpec.ForegroundAppIs -> "foreground app = ${c.packageName}"
-        is me.rerere.rikkahub.workflow.model.ConditionSpec.ForegroundAppIn -> "foreground in ${c.packageNames.size} pkgs"
-        is me.rerere.rikkahub.workflow.model.ConditionSpec.ScreenIsOn -> "screen on"
-        is me.rerere.rikkahub.workflow.model.ConditionSpec.ScreenIsOff -> "screen off"
+        is com.clma.app.workflow.model.ConditionSpec.DayOfWeekIn -> "day(s) ${c.days.joinToString(",")}"
+        is com.clma.app.workflow.model.ConditionSpec.WifiSsidIs -> "WiFi is ${c.ssid}"
+        is com.clma.app.workflow.model.ConditionSpec.WifiSsidIn -> "WiFi in ${c.ssids.joinToString(",")}"
+        is com.clma.app.workflow.model.ConditionSpec.BatteryAbove -> "battery > ${c.percent}%"
+        is com.clma.app.workflow.model.ConditionSpec.BatteryBelow -> "battery < ${c.percent}%"
+        is com.clma.app.workflow.model.ConditionSpec.IsCharging -> "charging"
+        is com.clma.app.workflow.model.ConditionSpec.IsNotCharging -> "not charging"
+        is com.clma.app.workflow.model.ConditionSpec.ForegroundAppIs -> "foreground app = ${c.packageName}"
+        is com.clma.app.workflow.model.ConditionSpec.ForegroundAppIn -> "foreground in ${c.packageNames.size} pkgs"
+        is com.clma.app.workflow.model.ConditionSpec.ScreenIsOn -> "screen on"
+        is com.clma.app.workflow.model.ConditionSpec.ScreenIsOff -> "screen off"
     }
     return if (c.invert) "NOT ($base)" else base
 }

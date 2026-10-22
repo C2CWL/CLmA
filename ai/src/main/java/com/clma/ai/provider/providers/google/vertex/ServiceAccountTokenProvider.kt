@@ -1,4 +1,4 @@
-package me.rerere.ai.provider.providers.google.vertex
+package com.clma.ai.provider.providers.google.vertex
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

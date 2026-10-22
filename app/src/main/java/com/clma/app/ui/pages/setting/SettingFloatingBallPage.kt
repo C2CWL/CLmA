@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.setting
+package com.clma.app.ui.pages.setting
 
 import android.content.Intent
 import android.net.Uri
@@ -53,14 +53,14 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.datastore.EdgeBarColor
-import me.rerere.rikkahub.service.EdgeBarLook
-import me.rerere.rikkahub.service.FloatingBallService
-import me.rerere.rikkahub.ui.components.nav.BackButton
-import me.rerere.rikkahub.ui.components.ui.CardGroup
-import me.rerere.rikkahub.ui.theme.CustomColors
-import me.rerere.rikkahub.utils.plus
+import com.clma.app.R
+import com.clma.app.data.datastore.EdgeBarColor
+import com.clma.app.service.EdgeBarLook
+import com.clma.app.service.FloatingBallService
+import com.clma.app.ui.components.nav.BackButton
+import com.clma.app.ui.components.ui.CardGroup
+import com.clma.app.ui.theme.CustomColors
+import com.clma.app.utils.plus
 import org.koin.androidx.compose.koinViewModel
 
 /**

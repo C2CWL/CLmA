@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.ai
+package com.clma.app.ui.components.ai
 
 import android.content.Intent
 import android.graphics.Bitmap
@@ -16,9 +16,9 @@ import androidx.core.net.toFile
 import com.dokar.sonner.ToastType
 import com.yalantis.ucrop.UCrop
 import com.yalantis.ucrop.UCropActivity
-import me.rerere.common.android.Logging
-import me.rerere.common.android.appTempFolder
-import me.rerere.rikkahub.ui.context.LocalToaster
+import com.clma.common.android.Logging
+import com.clma.common.android.appTempFolder
+import com.clma.app.ui.context.LocalToaster
 import java.io.File
 
 @Composable

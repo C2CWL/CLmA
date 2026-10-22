@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.message
+package com.clma.app.ui.components.message
 
 import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
@@ -74,51 +74,51 @@ import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import me.rerere.ai.core.MessageRole
-import me.rerere.ai.provider.Model
-import me.rerere.ai.ui.ToolApprovalState
+import com.clma.ai.core.MessageRole
+import com.clma.ai.provider.Model
+import com.clma.ai.ui.ToolApprovalState
 import dev.chrisbanes.haze.HazeState
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.UIMessageAnnotation
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.ai.ui.isEmptyUIMessage
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessageAnnotation
+import com.clma.ai.ui.UIMessagePart
+import com.clma.ai.ui.isEmptyUIMessage
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ArrowDown01
 import me.rerere.hugeicons.stroke.ArrowUp01
 import me.rerere.hugeicons.stroke.File02
 import me.rerere.hugeicons.stroke.MusicNote03
 import me.rerere.hugeicons.stroke.Video01
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.Screen
-import me.rerere.rikkahub.data.datastore.ChatLayout
-import me.rerere.rikkahub.data.datastore.ToolCallStyle
-import me.rerere.rikkahub.data.datastore.effectiveChatLayout
-import me.rerere.rikkahub.data.model.Assistant
-import me.rerere.rikkahub.data.model.AssistantAffectScope
-import me.rerere.rikkahub.data.model.AssistantBackgroundMode
-import me.rerere.rikkahub.data.model.MessageNode
-import me.rerere.rikkahub.data.usage.TurnFooter
-import me.rerere.rikkahub.data.model.replaceRegexes
-import me.rerere.rikkahub.ui.components.richtext.MarkdownBlock
-import me.rerere.rikkahub.ui.components.richtext.ZoomableAsyncImage
-import me.rerere.rikkahub.ui.components.richtext.buildMarkdownPreviewHtml
-import me.rerere.rikkahub.ui.components.webview.WebViewContentCache
-import me.rerere.rikkahub.ui.components.ui.ChainOfThought
-import me.rerere.rikkahub.ui.components.ui.Favicon
-import me.rerere.rikkahub.ui.context.LocalNavController
-import me.rerere.rikkahub.ui.modifier.shimmer
-import me.rerere.rikkahub.ui.context.LocalSettings
-import me.rerere.rikkahub.ui.pages.chat.PHOTO_TEXT_PLATE_ALPHA
-import me.rerere.rikkahub.ui.pages.chat.assistantTextNeedsPhotoPlate
-import me.rerere.rikkahub.ui.pages.chat.chatPhotoShown
-import me.rerere.rikkahub.ui.pages.chat.effectiveBackground
-import me.rerere.rikkahub.ui.theme.LocalChatFontFamily
-import me.rerere.rikkahub.ui.theme.LocalDarkMode
-import me.rerere.rikkahub.ui.theme.rememberChatFontFamily
-import me.rerere.rikkahub.ui.theme.extendColors
-import me.rerere.rikkahub.utils.JsonInstant
-import me.rerere.rikkahub.utils.openUrl
-import me.rerere.rikkahub.utils.urlDecode
+import com.clma.app.R
+import com.clma.app.Screen
+import com.clma.app.data.datastore.ChatLayout
+import com.clma.app.data.datastore.ToolCallStyle
+import com.clma.app.data.datastore.effectiveChatLayout
+import com.clma.app.data.model.Assistant
+import com.clma.app.data.model.AssistantAffectScope
+import com.clma.app.data.model.AssistantBackgroundMode
+import com.clma.app.data.model.MessageNode
+import com.clma.app.data.usage.TurnFooter
+import com.clma.app.data.model.replaceRegexes
+import com.clma.app.ui.components.richtext.MarkdownBlock
+import com.clma.app.ui.components.richtext.ZoomableAsyncImage
+import com.clma.app.ui.components.richtext.buildMarkdownPreviewHtml
+import com.clma.app.ui.components.webview.WebViewContentCache
+import com.clma.app.ui.components.ui.ChainOfThought
+import com.clma.app.ui.components.ui.Favicon
+import com.clma.app.ui.context.LocalNavController
+import com.clma.app.ui.modifier.shimmer
+import com.clma.app.ui.context.LocalSettings
+import com.clma.app.ui.pages.chat.PHOTO_TEXT_PLATE_ALPHA
+import com.clma.app.ui.pages.chat.assistantTextNeedsPhotoPlate
+import com.clma.app.ui.pages.chat.chatPhotoShown
+import com.clma.app.ui.pages.chat.effectiveBackground
+import com.clma.app.ui.theme.LocalChatFontFamily
+import com.clma.app.ui.theme.LocalDarkMode
+import com.clma.app.ui.theme.rememberChatFontFamily
+import com.clma.app.ui.theme.extendColors
+import com.clma.app.utils.JsonInstant
+import com.clma.app.utils.openUrl
+import com.clma.app.utils.urlDecode
 import java.util.Locale
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -150,9 +150,9 @@ fun ChatMessage(
     onToggleFavorite: (() -> Unit)? = null,
     onTranslate: ((UIMessage, Locale) -> Unit)? = null,
     onClearTranslation: (UIMessage) -> Unit = {},
-    onToolApproval: ((toolCallId: String, approved: Boolean, reason: String, scope: me.rerere.rikkahub.service.ChatService.ApprovalScope, toolName: String) -> Unit)? = null,
+    onToolApproval: ((toolCallId: String, approved: Boolean, reason: String, scope: com.clma.app.service.ChatService.ApprovalScope, toolName: String) -> Unit)? = null,
     onToolAnswer: ((toolCallId: String, answer: String) -> Unit)? = null,
-    onRerunTool: (suspend (toolCallId: String) -> me.rerere.rikkahub.service.ChatService.RerunToolResult)? = null,
+    onRerunTool: (suspend (toolCallId: String) -> com.clma.app.service.ChatService.RerunToolResult)? = null,
     turnFooter: TurnFooter? = null,
     // Chat page haze state; the usage line blurs the wallpaper source under its pill.
     hazeState: HazeState? = null,
@@ -352,9 +352,9 @@ private fun MessagePartsBlock(
     annotations: List<UIMessageAnnotation>,
     loading: Boolean,
     generationActive: Boolean = loading,
-    onToolApproval: ((toolCallId: String, approved: Boolean, reason: String, scope: me.rerere.rikkahub.service.ChatService.ApprovalScope, toolName: String) -> Unit)? = null,
+    onToolApproval: ((toolCallId: String, approved: Boolean, reason: String, scope: com.clma.app.service.ChatService.ApprovalScope, toolName: String) -> Unit)? = null,
     onToolAnswer: ((toolCallId: String, answer: String) -> Unit)? = null,
-    onRerunTool: (suspend (toolCallId: String) -> me.rerere.rikkahub.service.ChatService.RerunToolResult)? = null,
+    onRerunTool: (suspend (toolCallId: String) -> com.clma.app.service.ChatService.RerunToolResult)? = null,
     onUserMessageClick: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
@@ -914,7 +914,7 @@ private fun UserMessageBubble(
 }
 
 /**
- * 插话卡片：合并渲染（[me.rerere.rikkahub.ui.pages.chat.groupAutomaticCompactionMessages] 把
+ * 插话卡片：合并渲染（[com.clma.app.ui.pages.chat.groupAutomaticCompactionMessages] 把
  * 插话三明治并成一组）时，用户插话被转成带 `rikkahub.interjection` 标记的 Text part。
  * 这里把它画成内嵌在 assistant 消息里的小卡片——前后两段在视觉上是同一条连续消息，
  * 插话本身以缩进引用的形式可见。没有标记时返回 false，调用方回落到标准 markdown 渲染。

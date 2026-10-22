@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.tools.local
+package com.clma.app.data.ai.tools.local
 
 import kotlin.uuid.Uuid
 import kotlinx.serialization.json.JsonElement
@@ -16,17 +16,17 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.put
-import me.rerere.ai.core.InputSchema
-import me.rerere.ai.core.Tool
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.data.ai.tools.HardlineCommandGuard
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.datastore.getCurrentAssistant
-import me.rerere.rikkahub.data.db.entity.ScheduledJobEntity
-import me.rerere.rikkahub.data.repository.ScheduledJobRepository
-import me.rerere.rikkahub.data.repository.ScheduledJobRunRepository
-import me.rerere.rikkahub.service.CronExpressionParser
-import me.rerere.rikkahub.service.CronJobScheduler
+import com.clma.ai.core.InputSchema
+import com.clma.ai.core.Tool
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.ai.tools.HardlineCommandGuard
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.datastore.getCurrentAssistant
+import com.clma.app.data.db.entity.ScheduledJobEntity
+import com.clma.app.data.repository.ScheduledJobRepository
+import com.clma.app.data.repository.ScheduledJobRunRepository
+import com.clma.app.service.CronExpressionParser
+import com.clma.app.service.CronJobScheduler
 import java.time.ZoneId
 
 private fun textPart(s: String) = listOf(UIMessagePart.Text(s))
@@ -133,9 +133,9 @@ object ScheduleJobValidator {
         val maxRuns = (input["max_runs"] as? JsonPrimitive)?.intOrNull
         if (maxRuns != null && maxRuns < 1)
             return ValidationError("max_runs_invalid", "max_runs must be >= 1")
-        if (maxRuns != null && maxRuns > me.rerere.rikkahub.service.MAX_HISTORY_RETENTION)
+        if (maxRuns != null && maxRuns > com.clma.app.service.MAX_HISTORY_RETENTION)
             return ValidationError("max_runs_invalid",
-                "max_runs must be <= ${me.rerere.rikkahub.service.MAX_HISTORY_RETENTION}")
+                "max_runs must be <= ${com.clma.app.service.MAX_HISTORY_RETENTION}")
 
         // catchup
         val catchup = (input["catchup"] as? JsonPrimitive)?.contentOrNull
@@ -231,7 +231,7 @@ fun scheduleJobTool(
                 put("timezone", buildJsonObject { put("type","string") })
                 put("start_at_unix_ms", buildJsonObject { put("type","integer") })
                 put("end_at_unix_ms", buildJsonObject { put("type","integer") })
-                put("max_runs", buildJsonObject { put("type","integer"); put("minimum", 1); put("maximum", me.rerere.rikkahub.service.MAX_HISTORY_RETENTION) })
+                put("max_runs", buildJsonObject { put("type","integer"); put("minimum", 1); put("maximum", com.clma.app.service.MAX_HISTORY_RETENTION) })
                 put("catchup", buildJsonObject { put("type","string"); put("enum", buildJsonArray { add("skip"); add("fire_once"); add("fire_all") }) })
             },
             required = listOf("name","mode","schedule_type"),

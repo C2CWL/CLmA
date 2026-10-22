@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.usage
+package com.clma.app.data.usage
 
 /**
  * P2-13 — the dispatch gate that turns [OrchestrationBudget]'s arithmetic into a decision,
@@ -8,7 +8,7 @@ package me.rerere.rikkahub.data.usage
  * answer the dispatcher hands back when it is: an [Decision.Allow] to proceed, or a
  * [Decision.Refuse] carrying the two numbers the caller needs to explain itself. It is pure —
  * no Room, no coroutine, no Android — so the refusal contract is unit-testable without a
- * database, and the caller ([me.rerere.rikkahub.subagent.SubAgentEngine]) stays a thin
+ * database, and the caller ([com.clma.app.subagent.SubAgentEngine]) stays a thin
  * "sum what was spent, ask the gate, raise the envelope" wrapper.
  *
  * Refusal is deliberately pre-flight and never a guess: a dispatch is judged against what the

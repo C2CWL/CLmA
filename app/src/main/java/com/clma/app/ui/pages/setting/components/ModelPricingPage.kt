@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.setting.components
+package com.clma.app.ui.pages.setting.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -24,16 +24,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import me.rerere.ai.provider.Model
-import me.rerere.ai.provider.ModelPricing
-import me.rerere.ai.provider.OffPeakRates
-import me.rerere.ai.provider.PeakWindow
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.usage.PriceEntrySpec
-import me.rerere.rikkahub.data.usage.PriceTableSpec
-import me.rerere.rikkahub.data.usage.PriceWindowSpec
-import me.rerere.rikkahub.data.usage.UsagePeakWindowText
-import me.rerere.rikkahub.data.usage.UsagePriceTable
+import com.clma.ai.provider.Model
+import com.clma.ai.provider.ModelPricing
+import com.clma.ai.provider.OffPeakRates
+import com.clma.ai.provider.PeakWindow
+import com.clma.app.R
+import com.clma.app.data.usage.PriceEntrySpec
+import com.clma.app.data.usage.PriceTableSpec
+import com.clma.app.data.usage.PriceWindowSpec
+import com.clma.app.data.usage.UsagePeakWindowText
+import com.clma.app.data.usage.UsagePriceTable
 
 /**
  * P2-11d-4 - the price editor for one model, as the fourth tab of the model form.

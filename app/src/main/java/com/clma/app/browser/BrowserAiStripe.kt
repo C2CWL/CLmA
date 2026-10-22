@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.browser
+package com.clma.app.browser
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
@@ -36,7 +36,7 @@ import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.CancelCircle
 import me.rerere.hugeicons.stroke.CheckmarkCircle01
 import me.rerere.hugeicons.stroke.Sparkles
-import me.rerere.rikkahub.R
+import com.clma.app.R
 
 /**
  * Bottom AI-status stripe. Hidden entirely when the AI hasn't recorded any actions yet

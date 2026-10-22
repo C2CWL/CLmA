@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.datastore
+package com.clma.app.data.datastore
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

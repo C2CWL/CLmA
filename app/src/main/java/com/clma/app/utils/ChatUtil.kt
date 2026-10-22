@@ -1,13 +1,13 @@
-package me.rerere.rikkahub.utils
+package com.clma.app.utils
 
 import android.content.Context
 import android.net.Uri
 import android.util.Log
 import android.webkit.MimeTypeMap
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.Screen
-import me.rerere.rikkahub.ui.context.Navigator
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.Screen
+import com.clma.app.ui.context.Navigator
 import kotlin.uuid.Uuid
 
 private const val TAG = "ChatUtil"

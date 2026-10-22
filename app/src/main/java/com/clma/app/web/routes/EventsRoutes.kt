@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.web.routes
+package com.clma.app.web.routes
 
 import io.ktor.server.routing.Route
 import io.ktor.server.sse.heartbeat
@@ -8,14 +8,14 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.repository.ConversationRepository
-import me.rerere.rikkahub.data.repository.FolderRepository
-import me.rerere.rikkahub.service.ChatService
-import me.rerere.rikkahub.utils.JsonInstant
-import me.rerere.rikkahub.web.dto.ConversationListInvalidateEvent
-import me.rerere.rikkahub.web.dto.FolderListEvent
-import me.rerere.rikkahub.web.dto.toDto
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.repository.ConversationRepository
+import com.clma.app.data.repository.FolderRepository
+import com.clma.app.service.ChatService
+import com.clma.app.utils.JsonInstant
+import com.clma.app.web.dto.ConversationListInvalidateEvent
+import com.clma.app.web.dto.FolderListEvent
+import com.clma.app.web.dto.toDto
 import kotlin.time.Duration.Companion.seconds
 
 /**

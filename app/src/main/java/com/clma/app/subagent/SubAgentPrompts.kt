@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.subagent
+package com.clma.app.subagent
 
 /**
  * Assemble the system-prompt addendum for one sub-agent run, from the three layers that
@@ -15,7 +15,7 @@ package me.rerere.rikkahub.subagent
  * The layers are joined, not replaced: a later layer refines the earlier ones rather than
  * switching them off, so an expert prompt never silently discards the assistant's standing
  * rules. The result goes into the run's system prompt via
- * [me.rerere.rikkahub.data.ai.tools.ConversationSystemAddendum] instead of being prepended
+ * [com.clma.app.data.ai.tools.ConversationSystemAddendum] instead of being prepended
  * to the task text — the archived sub-agent conversation keeps a clean first user message,
  * and the vector index never embeds the scaffolding.
  *

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.tools
+package com.clma.app.data.ai.tools
 
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
@@ -7,13 +7,13 @@ import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import me.rerere.ai.core.InputSchema
-import me.rerere.ai.core.Tool
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.data.db.fts.MessageSearchSort
-import me.rerere.rikkahub.data.repository.ConversationRepository
-import me.rerere.rikkahub.utils.JsonInstantPretty
-import me.rerere.rikkahub.utils.toLocalDate
+import com.clma.ai.core.InputSchema
+import com.clma.ai.core.Tool
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.db.fts.MessageSearchSort
+import com.clma.app.data.repository.ConversationRepository
+import com.clma.app.utils.JsonInstantPretty
+import com.clma.app.utils.toLocalDate
 import kotlin.uuid.Uuid
 
 /**

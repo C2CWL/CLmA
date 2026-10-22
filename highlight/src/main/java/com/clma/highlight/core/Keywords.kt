@@ -1,4 +1,4 @@
-package me.rerere.highlight.core
+package com.clma.highlight.core
 
 /**
  * Raw keyword declaration of a [Mode], mirroring the `keywords` property in `highlight.js`.

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.repository
+package com.clma.app.data.repository
 
 import android.database.sqlite.SQLiteBlobTooBigException
 import android.util.Log
@@ -11,23 +11,23 @@ import androidx.room.withTransaction
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import me.rerere.ai.ui.UIMessage
-import me.rerere.common.android.Logging
-import me.rerere.rikkahub.data.db.AppDatabase
-import me.rerere.rikkahub.data.db.fts.MessageFtsManager
-import me.rerere.rikkahub.data.db.fts.MessageSearchSort
-import me.rerere.rikkahub.data.db.dao.ConversationDAO
-import me.rerere.rikkahub.data.db.dao.ConversationCompactionDAO
-import me.rerere.rikkahub.data.db.dao.FavoriteDAO
-import me.rerere.rikkahub.data.db.dao.MessageNodeDAO
-import me.rerere.rikkahub.data.db.entity.ConversationEntity
-import me.rerere.rikkahub.data.db.entity.ConversationCompactionEntity
-import me.rerere.rikkahub.data.db.entity.MessageNodeEntity
-import me.rerere.rikkahub.data.files.FilesManager
-import me.rerere.rikkahub.data.model.Conversation
-import me.rerere.rikkahub.data.model.ConversationCompaction
-import me.rerere.rikkahub.data.model.MessageNode
-import me.rerere.rikkahub.utils.JsonInstant
+import com.clma.ai.ui.UIMessage
+import com.clma.common.android.Logging
+import com.clma.app.data.db.AppDatabase
+import com.clma.app.data.db.fts.MessageFtsManager
+import com.clma.app.data.db.fts.MessageSearchSort
+import com.clma.app.data.db.dao.ConversationDAO
+import com.clma.app.data.db.dao.ConversationCompactionDAO
+import com.clma.app.data.db.dao.FavoriteDAO
+import com.clma.app.data.db.dao.MessageNodeDAO
+import com.clma.app.data.db.entity.ConversationEntity
+import com.clma.app.data.db.entity.ConversationCompactionEntity
+import com.clma.app.data.db.entity.MessageNodeEntity
+import com.clma.app.data.files.FilesManager
+import com.clma.app.data.model.Conversation
+import com.clma.app.data.model.ConversationCompaction
+import com.clma.app.data.model.MessageNode
+import com.clma.app.utils.JsonInstant
 import java.time.Instant
 import kotlin.uuid.Uuid
 

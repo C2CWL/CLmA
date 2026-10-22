@@ -1,10 +1,10 @@
-package me.rerere.ai.provider.providers
+package com.clma.ai.provider.providers
 
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
-import me.rerere.ai.provider.Model
-import me.rerere.ai.provider.providers.google.GoogleProvider
-import me.rerere.ai.ui.UIMessagePart
+import com.clma.ai.provider.Model
+import com.clma.ai.provider.providers.google.GoogleProvider
+import com.clma.ai.ui.UIMessagePart
 import okhttp3.OkHttpClient
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull

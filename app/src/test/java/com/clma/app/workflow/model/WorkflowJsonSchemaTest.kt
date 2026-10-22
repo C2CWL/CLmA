@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.workflow.model
+package com.clma.app.workflow.model
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

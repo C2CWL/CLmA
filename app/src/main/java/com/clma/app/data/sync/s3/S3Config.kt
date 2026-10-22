@@ -1,7 +1,7 @@
-package me.rerere.rikkahub.data.sync.s3
+package com.clma.app.data.sync.s3
 
 import kotlinx.serialization.Serializable
-import me.rerere.rikkahub.data.sync.BackupItem
+import com.clma.app.data.sync.BackupItem
 
 @Serializable
 data class S3Config(

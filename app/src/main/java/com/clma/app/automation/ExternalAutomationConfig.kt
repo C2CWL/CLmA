@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.automation
+package com.clma.app.automation
 
 import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey

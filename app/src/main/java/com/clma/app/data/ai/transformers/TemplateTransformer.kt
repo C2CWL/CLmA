@@ -1,14 +1,14 @@
-package me.rerere.rikkahub.data.ai.transformers
+package com.clma.app.data.ai.transformers
 
 import io.pebbletemplates.pebble.PebbleEngine
 import io.pebbletemplates.pebble.loader.Loader
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.utils.toLocalDate
-import me.rerere.rikkahub.utils.toLocalTime
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.utils.toLocalDate
+import com.clma.app.utils.toLocalTime
 import java.io.Reader
 import java.io.StringReader
 import java.io.StringWriter

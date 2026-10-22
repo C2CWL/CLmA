@@ -1,4 +1,4 @@
-package me.rerere.ai.provider.providers.openai
+package com.clma.ai.provider.providers.openai
 
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
@@ -28,45 +28,45 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
-import me.rerere.ai.core.InputSchema
-import me.rerere.ai.core.MessageRole
-import me.rerere.ai.core.ReasoningLevel
-import me.rerere.ai.core.TokenUsage
-import me.rerere.ai.provider.Modality
-import me.rerere.ai.provider.Model
-import me.rerere.ai.provider.ModelAbility
-import me.rerere.ai.provider.ProviderSetting
-import me.rerere.ai.provider.TextGenerationResult
-import me.rerere.ai.provider.TextGenerationParams
-import me.rerere.ai.provider.stream.SseEvent
-import me.rerere.ai.provider.providers.PartGroup
-import me.rerere.ai.provider.providers.groupPartsByToolBoundary
-import me.rerere.ai.provider.stream.TextToolCallParser
-import me.rerere.ai.registry.ModelRegistry
-import me.rerere.ai.ui.StreamChunk
-import me.rerere.ai.ui.OpenRouterReasoningMetadata
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.UIMessageAnnotation
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.ai.ui.metadataAs
-import me.rerere.ai.ui.toMetadata
-import me.rerere.ai.util.HttpException
-import me.rerere.ai.util.KeyRoulette
-import me.rerere.ai.util.configureReferHeaders
-import me.rerere.ai.util.configureSessionHeaders
-import me.rerere.ai.util.encodeBase64
-import me.rerere.ai.util.json
-import me.rerere.ai.util.mergeCustomBody
-import me.rerere.ai.util.mergeCustomHeaders
-import me.rerere.ai.util.parseErrorDetail
-import me.rerere.ai.util.redactSecrets
-import me.rerere.ai.util.stringSafe
-import me.rerere.ai.util.toHeaders
-import me.rerere.common.android.Logging
-import me.rerere.common.http.await
-import me.rerere.common.http.jsonArrayOrNull
-import me.rerere.common.http.jsonObjectOrNull
-import me.rerere.common.http.jsonPrimitiveOrNull
+import com.clma.ai.core.InputSchema
+import com.clma.ai.core.MessageRole
+import com.clma.ai.core.ReasoningLevel
+import com.clma.ai.core.TokenUsage
+import com.clma.ai.provider.Modality
+import com.clma.ai.provider.Model
+import com.clma.ai.provider.ModelAbility
+import com.clma.ai.provider.ProviderSetting
+import com.clma.ai.provider.TextGenerationResult
+import com.clma.ai.provider.TextGenerationParams
+import com.clma.ai.provider.stream.SseEvent
+import com.clma.ai.provider.providers.PartGroup
+import com.clma.ai.provider.providers.groupPartsByToolBoundary
+import com.clma.ai.provider.stream.TextToolCallParser
+import com.clma.ai.registry.ModelRegistry
+import com.clma.ai.ui.StreamChunk
+import com.clma.ai.ui.OpenRouterReasoningMetadata
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessageAnnotation
+import com.clma.ai.ui.UIMessagePart
+import com.clma.ai.ui.metadataAs
+import com.clma.ai.ui.toMetadata
+import com.clma.ai.util.HttpException
+import com.clma.ai.util.KeyRoulette
+import com.clma.ai.util.configureReferHeaders
+import com.clma.ai.util.configureSessionHeaders
+import com.clma.ai.util.encodeBase64
+import com.clma.ai.util.json
+import com.clma.ai.util.mergeCustomBody
+import com.clma.ai.util.mergeCustomHeaders
+import com.clma.ai.util.parseErrorDetail
+import com.clma.ai.util.redactSecrets
+import com.clma.ai.util.stringSafe
+import com.clma.ai.util.toHeaders
+import com.clma.common.android.Logging
+import com.clma.common.http.await
+import com.clma.common.http.jsonArrayOrNull
+import com.clma.common.http.jsonObjectOrNull
+import com.clma.common.http.jsonPrimitiveOrNull
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -824,7 +824,7 @@ class ChatCompletionsAPI(
                                 put("name", tool.toolName)
                                 // 使用 inputAsJson() 归一化，避免流式中断导致的残缺 JSON 被发送。
                                 // redactSecrets: password / private_key / token 等不得回灌给云端模型。
-                                put("arguments", me.rerere.ai.util.redactSecrets(tool.inputAsJson()).toString())
+                                put("arguments", com.clma.ai.util.redactSecrets(tool.inputAsJson()).toString())
                             })
                         })
                     }

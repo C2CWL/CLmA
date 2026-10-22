@@ -1,12 +1,12 @@
-package me.rerere.rikkahub.data.usage
+package com.clma.app.data.usage
 
 import java.math.BigDecimal
 import java.security.MessageDigest
 import java.util.Locale
 import kotlinx.serialization.Serializable
-import me.rerere.ai.provider.ModelPricing
-import me.rerere.ai.provider.OffPeakRates
-import me.rerere.ai.provider.PeakWindow
+import com.clma.ai.provider.ModelPricing
+import com.clma.ai.provider.OffPeakRates
+import com.clma.ai.provider.PeakWindow
 
 /** One peak interval as an agent or a text field writes it: minutes from local midnight. */
 @Serializable

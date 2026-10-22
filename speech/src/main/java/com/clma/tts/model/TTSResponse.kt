@@ -1,4 +1,4 @@
-package me.rerere.tts.model
+package com.clma.tts.model
 
 import kotlinx.serialization.Serializable
 

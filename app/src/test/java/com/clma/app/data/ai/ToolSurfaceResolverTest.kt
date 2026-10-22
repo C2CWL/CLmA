@@ -1,9 +1,9 @@
-package me.rerere.rikkahub.data.ai
+package com.clma.app.data.ai
 
-import me.rerere.ai.provider.Modality
-import me.rerere.ai.provider.Model
-import me.rerere.rikkahub.data.ai.tools.ToolInvocationContext
-import me.rerere.rikkahub.data.model.Assistant
+import com.clma.ai.provider.Modality
+import com.clma.ai.provider.Model
+import com.clma.app.data.ai.tools.ToolInvocationContext
+import com.clma.app.data.model.Assistant
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

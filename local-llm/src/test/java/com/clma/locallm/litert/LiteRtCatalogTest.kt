@@ -1,4 +1,4 @@
-package me.rerere.locallm.litert
+package com.clma.locallm.litert
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -71,7 +71,7 @@ class LiteRtCatalogTest {
             )
             assertTrue(
                 "${entry.displayName} must derive the TOOL ability",
-                me.rerere.ai.provider.ModelAbility.TOOL in
+                com.clma.ai.provider.ModelAbility.TOOL in
                     LiteRtModelMetadata.deriveCapabilities(entry.modelFile).abilities,
             )
         }

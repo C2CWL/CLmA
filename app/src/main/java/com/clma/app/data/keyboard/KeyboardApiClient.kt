@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.keyboard
+package com.clma.app.data.keyboard
 
 import android.content.ComponentName
 import android.content.Context

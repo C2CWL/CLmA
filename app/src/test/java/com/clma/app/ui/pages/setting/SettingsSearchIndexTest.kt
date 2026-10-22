@@ -1,7 +1,7 @@
-package me.rerere.rikkahub.ui.pages.setting
+package com.clma.app.ui.pages.setting
 
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.Screen
+import com.clma.app.R
+import com.clma.app.Screen
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -80,11 +80,11 @@ class SettingsSearchIndexTest {
             R.string.setting_page_group_about,
             R.string.settings,
         )
-        settingsSearchIndex(developerMode = true, hubStyle = me.rerere.rikkahub.data.datastore.SettingsHubStyle.CLASSIC)
+        settingsSearchIndex(developerMode = true, hubStyle = com.clma.app.data.datastore.SettingsHubStyle.CLASSIC)
             .forEach { entry ->
                 assertTrue("unexpected classic group for ${entry.route}", classicGroups.contains(entry.groupRes))
             }
-        settingsSearchIndex(developerMode = true, hubStyle = me.rerere.rikkahub.data.datastore.SettingsHubStyle.REORGANIZED)
+        settingsSearchIndex(developerMode = true, hubStyle = com.clma.app.data.datastore.SettingsHubStyle.REORGANIZED)
             .forEach { entry ->
                 assertTrue("unexpected reorganized group for ${entry.route}", reorganizedGroups.contains(entry.groupRes))
             }
@@ -110,7 +110,7 @@ class SettingsSearchIndexTest {
     fun `nested ui rows point at the ui preferences page`() {
         val classicNested = settingsSearchIndex(
             developerMode = false,
-            hubStyle = me.rerere.rikkahub.data.datastore.SettingsHubStyle.CLASSIC,
+            hubStyle = com.clma.app.data.datastore.SettingsHubStyle.CLASSIC,
         ).filter { it.route == Screen.SettingPreferencesUI && it.parentTitleRes != null }
         assertTrue(classicNested.size > 10)
         assertTrue(classicNested.any { it.titleRes == R.string.setting_display_page_popup_menu_style_title })
@@ -121,7 +121,7 @@ class SettingsSearchIndexTest {
 
         val reorgNested = settingsSearchIndex(
             developerMode = false,
-            hubStyle = me.rerere.rikkahub.data.datastore.SettingsHubStyle.REORGANIZED,
+            hubStyle = com.clma.app.data.datastore.SettingsHubStyle.REORGANIZED,
         ).filter { it.route == Screen.SettingPreferencesUI && it.parentTitleRes != null }
         reorgNested.forEach { entry ->
             assertEquals(R.string.setting_page_hub_chat_display, entry.parentTitleRes)
@@ -130,14 +130,14 @@ class SettingsSearchIndexTest {
 
     @Test
     fun `classic and reorganized hubs share the same routes`() {
-        fun hubRoutes(style: me.rerere.rikkahub.data.datastore.SettingsHubStyle) =
+        fun hubRoutes(style: com.clma.app.data.datastore.SettingsHubStyle) =
             settingsSearchIndex(developerMode = false, hubStyle = style)
                 .filter { it.parentTitleRes == null }
                 .map { it.route }
                 .toSet()
         assertEquals(
-            hubRoutes(me.rerere.rikkahub.data.datastore.SettingsHubStyle.CLASSIC),
-            hubRoutes(me.rerere.rikkahub.data.datastore.SettingsHubStyle.REORGANIZED),
+            hubRoutes(com.clma.app.data.datastore.SettingsHubStyle.CLASSIC),
+            hubRoutes(com.clma.app.data.datastore.SettingsHubStyle.REORGANIZED),
         )
     }
 
@@ -145,7 +145,7 @@ class SettingsSearchIndexTest {
     fun `reorganized moves network under connections group`() {
         val entry = settingsSearchIndex(
             developerMode = false,
-            hubStyle = me.rerere.rikkahub.data.datastore.SettingsHubStyle.REORGANIZED,
+            hubStyle = com.clma.app.data.datastore.SettingsHubStyle.REORGANIZED,
         ).single { it.route == Screen.SettingPreferencesNetwork && it.parentTitleRes == null }
         assertEquals(R.string.setting_page_group_connections_reorg, entry.groupRes)
     }

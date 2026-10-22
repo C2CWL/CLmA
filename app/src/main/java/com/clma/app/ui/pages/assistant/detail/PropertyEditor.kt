@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.assistant.detail
+package com.clma.app.ui.pages.assistant.detail
 
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Add01
@@ -28,15 +28,15 @@ import androidx.compose.ui.unit.dp
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
-import me.rerere.ai.provider.CustomBody
-import me.rerere.ai.provider.CustomHeader
-import me.rerere.highlight.LocalCodeHighlighter
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.ui.components.ui.CardGroup
-import me.rerere.rikkahub.ui.components.ui.SelectTextField
-import me.rerere.rikkahub.ui.components.richtext.HighlightCodeVisualTransformation
-import me.rerere.rikkahub.ui.theme.JetbrainsMono
-import me.rerere.rikkahub.ui.theme.LocalDarkMode
+import com.clma.ai.provider.CustomBody
+import com.clma.ai.provider.CustomHeader
+import com.clma.highlight.LocalCodeHighlighter
+import com.clma.app.R
+import com.clma.app.ui.components.ui.CardGroup
+import com.clma.app.ui.components.ui.SelectTextField
+import com.clma.app.ui.components.richtext.HighlightCodeVisualTransformation
+import com.clma.app.ui.theme.JetbrainsMono
+import com.clma.app.ui.theme.LocalDarkMode
 
 private val jsonLenient = Json {
     ignoreUnknownKeys = true

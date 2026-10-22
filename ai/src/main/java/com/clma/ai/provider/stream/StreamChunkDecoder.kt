@@ -1,6 +1,6 @@
-package me.rerere.ai.provider.stream
+package com.clma.ai.provider.stream
 
-import me.rerere.ai.ui.StreamChunk
+import com.clma.ai.ui.StreamChunk
 
 /**
  * 一次 Provider 响应流所使用的有状态、传输无关解码器。

@@ -1,6 +1,6 @@
-package me.rerere.rikkahub.ui.pages.imggen
+package com.clma.app.ui.pages.imggen
 
-import me.rerere.rikkahub.data.db.entity.GenMediaEntity
+import com.clma.app.data.db.entity.GenMediaEntity
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before

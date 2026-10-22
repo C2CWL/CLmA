@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.webview
+package com.clma.app.ui.pages.webview
 
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ArrowRight01
@@ -37,13 +37,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import me.rerere.hugeicons.stroke.MoreVertical
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.ui.components.nav.BackButton
-import me.rerere.rikkahub.ui.components.webview.WEB_VIEW_BASE_URL
-import me.rerere.rikkahub.ui.components.webview.WebView
-import me.rerere.rikkahub.ui.components.webview.WebViewContentCache
-import me.rerere.rikkahub.ui.components.webview.rememberWebViewState
-import me.rerere.rikkahub.ui.theme.JetbrainsMono
+import com.clma.app.R
+import com.clma.app.ui.components.nav.BackButton
+import com.clma.app.ui.components.webview.WEB_VIEW_BASE_URL
+import com.clma.app.ui.components.webview.WebView
+import com.clma.app.ui.components.webview.WebViewContentCache
+import com.clma.app.ui.components.webview.rememberWebViewState
+import com.clma.app.ui.theme.JetbrainsMono
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.sync.s3
+package com.clma.app.data.sync.s3
 
 import java.net.URLEncoder
 import java.security.MessageDigest

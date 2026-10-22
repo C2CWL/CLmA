@@ -1,6 +1,6 @@
-package me.rerere.rikkahub.ui.context
+package com.clma.app.ui.context
 
 import androidx.compose.runtime.compositionLocalOf
-import me.rerere.rikkahub.ui.hooks.CustomTtsState
+import com.clma.app.ui.hooks.CustomTtsState
 
 val LocalTTSState = compositionLocalOf<CustomTtsState> { error("Not provided yet") }

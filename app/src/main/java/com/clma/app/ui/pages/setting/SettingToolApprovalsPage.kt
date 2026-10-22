@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.setting
+package com.clma.app.ui.pages.setting
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -39,19 +39,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.agentdef.LocalToolGroups
-import me.rerere.rikkahub.data.ai.tools.LocalToolInventory
-import me.rerere.rikkahub.data.ai.tools.LocalToolPalette
-import me.rerere.rikkahub.data.ai.tools.LocalTools
-import me.rerere.rikkahub.data.ai.tools.ToolApprovalDefaults
-import me.rerere.rikkahub.data.ai.tools.ApprovalMode
-import me.rerere.rikkahub.data.ai.tools.ToolApprovalPolicy
-import me.rerere.rikkahub.data.preferences.ToolApprovalPreferences
-import me.rerere.rikkahub.ui.components.nav.BackButton
-import me.rerere.rikkahub.ui.components.ui.CardGroup
-import me.rerere.rikkahub.ui.theme.CustomColors
-import me.rerere.rikkahub.utils.plus
+import com.clma.app.R
+import com.clma.app.data.agentdef.LocalToolGroups
+import com.clma.app.data.ai.tools.LocalToolInventory
+import com.clma.app.data.ai.tools.LocalToolPalette
+import com.clma.app.data.ai.tools.LocalTools
+import com.clma.app.data.ai.tools.ToolApprovalDefaults
+import com.clma.app.data.ai.tools.ApprovalMode
+import com.clma.app.data.ai.tools.ToolApprovalPolicy
+import com.clma.app.data.preferences.ToolApprovalPreferences
+import com.clma.app.ui.components.nav.BackButton
+import com.clma.app.ui.components.ui.CardGroup
+import com.clma.app.ui.theme.CustomColors
+import com.clma.app.utils.plus
 import org.koin.compose.koinInject
 
 /**

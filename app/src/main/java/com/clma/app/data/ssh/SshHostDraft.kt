@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ssh
+package com.clma.app.data.ssh
 
 /**
  * P2-32: pure model + validation behind the SSH host settings page.

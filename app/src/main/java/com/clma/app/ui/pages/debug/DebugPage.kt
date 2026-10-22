@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.debug
+package com.clma.app.ui.pages.debug
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -45,16 +45,16 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dokar.sonner.ToastType
 import kotlinx.coroutines.launch
-import me.rerere.common.android.Logging
-import me.rerere.rikkahub.data.model.Avatar
-import me.rerere.rikkahub.ui.components.ui.UIAvatar
-import me.rerere.rikkahub.ui.components.nav.BackButton
-import me.rerere.rikkahub.ui.components.richtext.MarkdownBlock
-import me.rerere.rikkahub.ui.components.richtext.MathBlock
-import me.rerere.rikkahub.ui.components.richtext.Mermaid
-import me.rerere.rikkahub.ui.context.LocalSettings
-import me.rerere.rikkahub.ui.context.LocalToaster
-import me.rerere.rikkahub.ui.theme.JetbrainsMono
+import com.clma.common.android.Logging
+import com.clma.app.data.model.Avatar
+import com.clma.app.ui.components.ui.UIAvatar
+import com.clma.app.ui.components.nav.BackButton
+import com.clma.app.ui.components.richtext.MarkdownBlock
+import com.clma.app.ui.components.richtext.MathBlock
+import com.clma.app.ui.components.richtext.Mermaid
+import com.clma.app.ui.context.LocalSettings
+import com.clma.app.ui.context.LocalToaster
+import com.clma.app.ui.theme.JetbrainsMono
 import org.koin.androidx.compose.koinViewModel
 import kotlin.random.Random
 import kotlin.random.nextInt

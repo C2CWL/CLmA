@@ -1,11 +1,11 @@
-package me.rerere.rikkahub.data.repository
+package com.clma.app.data.repository
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import me.rerere.rikkahub.data.db.dao.ConversationDAO
-import me.rerere.rikkahub.data.db.dao.FolderDAO
-import me.rerere.rikkahub.data.db.entity.FolderEntity
-import me.rerere.rikkahub.data.model.Folder
+import com.clma.app.data.db.dao.ConversationDAO
+import com.clma.app.data.db.dao.FolderDAO
+import com.clma.app.data.db.entity.FolderEntity
+import com.clma.app.data.model.Folder
 import java.time.Instant
 import kotlin.uuid.Uuid
 

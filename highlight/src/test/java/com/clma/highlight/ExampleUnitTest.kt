@@ -1,4 +1,4 @@
-package me.rerere.highlight
+package com.clma.highlight
 
 import org.junit.Assert.*
 import org.junit.Test

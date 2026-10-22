@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.assistant.detail
+package com.clma.app.ui.pages.assistant.detail
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -43,27 +43,27 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import me.rerere.ai.provider.ModelType
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.db.entity.WorkspaceEntity
-import me.rerere.rikkahub.data.model.Assistant
-import me.rerere.rikkahub.data.ai.tools.ToolSurfaceMode
-import me.rerere.rikkahub.subagent.SubAgentDefaults
-import me.rerere.rikkahub.ui.components.ai.ModelSelector
-import me.rerere.rikkahub.ui.components.ai.ReasoningButton
-import me.rerere.rikkahub.ui.components.nav.BackButton
-import me.rerere.rikkahub.ui.components.ui.FormItem
-import me.rerere.rikkahub.ui.components.ui.Select
-import me.rerere.rikkahub.ui.components.ui.TagsInput
-import me.rerere.rikkahub.ui.components.ui.AssistantAvatar
-import me.rerere.rikkahub.ui.hooks.heroAnimation
-import me.rerere.rikkahub.ui.theme.CustomColors
-import me.rerere.rikkahub.utils.toFixed
+import com.clma.ai.provider.ModelType
+import com.clma.app.R
+import com.clma.app.data.db.entity.WorkspaceEntity
+import com.clma.app.data.model.Assistant
+import com.clma.app.data.ai.tools.ToolSurfaceMode
+import com.clma.app.subagent.SubAgentDefaults
+import com.clma.app.ui.components.ai.ModelSelector
+import com.clma.app.ui.components.ai.ReasoningButton
+import com.clma.app.ui.components.nav.BackButton
+import com.clma.app.ui.components.ui.FormItem
+import com.clma.app.ui.components.ui.Select
+import com.clma.app.ui.components.ui.TagsInput
+import com.clma.app.ui.components.ui.AssistantAvatar
+import com.clma.app.ui.hooks.heroAnimation
+import com.clma.app.ui.theme.CustomColors
+import com.clma.app.utils.toFixed
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 import kotlin.math.roundToInt
 import kotlin.uuid.Uuid
-import me.rerere.rikkahub.data.model.Tag as DataTag
+import com.clma.app.data.model.Tag as DataTag
 
 @Composable
 fun AssistantBasicPage(id: String) {
@@ -110,7 +110,7 @@ fun AssistantBasicPage(id: String) {
 internal fun AssistantBasicContent(
     innerPadding: PaddingValues,
     assistant: Assistant,
-    providers: List<me.rerere.ai.provider.ProviderSetting>,
+    providers: List<com.clma.ai.provider.ProviderSetting>,
     tags: List<DataTag>,
     workspaces: List<WorkspaceEntity>,
     onUpdate: (Assistant) -> Unit,

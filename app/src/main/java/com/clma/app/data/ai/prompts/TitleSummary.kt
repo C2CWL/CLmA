@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.prompts
+package com.clma.app.data.ai.prompts
 
 internal val DEFAULT_TITLE_PROMPT = """
     I will give you some dialogue content in the `<content>` block.

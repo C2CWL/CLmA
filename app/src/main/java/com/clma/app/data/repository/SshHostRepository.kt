@@ -1,7 +1,7 @@
-package me.rerere.rikkahub.data.repository
+package com.clma.app.data.repository
 
-import me.rerere.rikkahub.data.db.dao.SshHostDao
-import me.rerere.rikkahub.data.db.entity.SshHostEntity
+import com.clma.app.data.db.dao.SshHostDao
+import com.clma.app.data.db.entity.SshHostEntity
 
 class SshHostRepository(private val dao: SshHostDao) {
     suspend fun getAll(): List<SshHostEntity> = dao.getAll()

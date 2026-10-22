@@ -1,10 +1,10 @@
-package me.rerere.rikkahub.data.agentdef
+package com.clma.app.data.agentdef
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import me.rerere.rikkahub.data.ai.tools.LocalToolOption
+import com.clma.app.data.ai.tools.LocalToolOption
 
 /**
  * P2-06 — a stored **expert definition**.
@@ -62,7 +62,7 @@ data class AgentDefinition(
 
     /**
      * The expert's OWN local-tool list. `null` = inherit the parent assistant's; a non-null
-     * (possibly empty) list replaces it. See [me.rerere.rikkahub.subagent.SubAgentSurface].
+     * (possibly empty) list replaces it. See [com.clma.app.subagent.SubAgentSurface].
      */
     @ColumnInfo(name = "local_tools")
     val localTools: List<LocalToolOption>? = null,

@@ -1,16 +1,16 @@
-package me.rerere.rikkahub.workflow.repository
+package com.clma.app.workflow.repository
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import me.rerere.rikkahub.workflow.db.WorkflowDao
-import me.rerere.rikkahub.workflow.db.WorkflowEntity
-import me.rerere.rikkahub.workflow.db.WorkflowRunDao
-import me.rerere.rikkahub.workflow.db.WorkflowRunEntity
-import me.rerere.rikkahub.workflow.model.WorkflowConstants
-import me.rerere.rikkahub.workflow.model.WorkflowDefinition
-import me.rerere.rikkahub.workflow.model.WorkflowJson
-import me.rerere.rikkahub.workflow.model.WorkflowRun
-import me.rerere.rikkahub.workflow.model.WorkflowRunStatus
+import com.clma.app.workflow.db.WorkflowDao
+import com.clma.app.workflow.db.WorkflowEntity
+import com.clma.app.workflow.db.WorkflowRunDao
+import com.clma.app.workflow.db.WorkflowRunEntity
+import com.clma.app.workflow.model.WorkflowConstants
+import com.clma.app.workflow.model.WorkflowDefinition
+import com.clma.app.workflow.model.WorkflowJson
+import com.clma.app.workflow.model.WorkflowRun
+import com.clma.app.workflow.model.WorkflowRunStatus
 import java.time.LocalDate
 import java.time.ZoneId
 
@@ -110,13 +110,13 @@ class WorkflowRepository(
         return deleted
     }
 
-    @Volatile private var engineRef: me.rerere.rikkahub.workflow.execution.WorkflowEngine? = null
+    @Volatile private var engineRef: com.clma.app.workflow.execution.WorkflowEngine? = null
     /**
      * Set by the DI module after both singletons exist — workaround for the circular
      * Engine-needs-Repo / Repo-needs-Engine dependency. The repository owns delete; it has
      * to notify the engine to drop in-memory caches.
      */
-    fun bindEngine(engine: me.rerere.rikkahub.workflow.execution.WorkflowEngine) {
+    fun bindEngine(engine: com.clma.app.workflow.execution.WorkflowEngine) {
         engineRef = engine
     }
 

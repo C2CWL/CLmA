@@ -1,10 +1,10 @@
-package me.rerere.rikkahub.data.usage
+package com.clma.app.data.usage
 
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
-import me.rerere.ai.core.TokenUsage
+import com.clma.ai.core.TokenUsage
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue

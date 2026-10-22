@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.reliability
+package com.clma.app.reliability
 
 import android.util.Log
 import java.util.Locale
@@ -6,9 +6,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import me.rerere.rikkahub.BuildConfig
-import me.rerere.rikkahub.utils.UpdateDownload
-import me.rerere.rikkahub.utils.UpdateInfo
+import com.clma.app.BuildConfig
+import com.clma.app.utils.UpdateDownload
+import com.clma.app.utils.UpdateInfo
 import okhttp3.OkHttpClient
 import okhttp3.Request
 

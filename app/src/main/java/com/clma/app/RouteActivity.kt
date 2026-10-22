@@ -1,4 +1,4 @@
-package me.rerere.rikkahub
+package com.clma.app
 
 import android.annotation.SuppressLint
 import android.content.Intent
@@ -58,94 +58,94 @@ import coil3.svg.SvgDecoder
 import com.dokar.sonner.Toaster
 import com.dokar.sonner.rememberToasterState
 import kotlinx.serialization.Serializable
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.datastore.DEFAULT_CODEX_PROVIDER_ID
-import me.rerere.rikkahub.data.datastore.DEFAULT_GEMINI_OAUTH_PROVIDER_ID
-import me.rerere.rikkahub.data.db.DatabaseMigrationTracker
-import me.rerere.rikkahub.data.db.MigrationState
-import me.rerere.rikkahub.data.event.AppEvent
-import me.rerere.rikkahub.data.event.AppEventBus
-import me.rerere.rikkahub.ui.activity.SafeModeActivity
-import me.rerere.rikkahub.ui.components.ui.TTSController
-import me.rerere.rikkahub.ui.context.LocalNavController
-import me.rerere.rikkahub.ui.context.LocalASRState
-import me.rerere.rikkahub.ui.context.LocalSettings
-import me.rerere.rikkahub.ui.context.LocalSharedTransitionScope
-import me.rerere.rikkahub.ui.context.LocalTTSState
-import me.rerere.rikkahub.ui.context.LocalToaster
-import me.rerere.rikkahub.ui.context.Navigator
-import me.rerere.rikkahub.ui.hooks.readBooleanPreference
-import me.rerere.rikkahub.ui.hooks.readStringPreference
-import me.rerere.rikkahub.ui.hooks.rememberCustomTtsState
-import me.rerere.rikkahub.ui.hooks.rememberCustomAsrState
-import me.rerere.rikkahub.ui.pages.assistant.AssistantPage
-import me.rerere.rikkahub.ui.pages.assistant.detail.AssistantBasicPage
-import me.rerere.rikkahub.ui.pages.assistant.detail.AssistantDetailPage
-import me.rerere.rikkahub.ui.pages.assistant.detail.AssistantExtensionsPage
-import me.rerere.rikkahub.ui.pages.assistant.detail.AssistantLocalToolPage
-import me.rerere.rikkahub.ui.pages.assistant.detail.AssistantMcpPage
-import me.rerere.rikkahub.ui.pages.assistant.detail.AssistantMemoryPage
-import me.rerere.rikkahub.ui.pages.assistant.detail.AssistantPromptPage
-import me.rerere.rikkahub.ui.pages.assistant.detail.AssistantRequestPage
-import me.rerere.rikkahub.ui.pages.backup.BackupPage
-import me.rerere.rikkahub.ui.pages.chat.ChatPage
-import me.rerere.rikkahub.ui.pages.debug.DebugPage
-import me.rerere.rikkahub.ui.pages.developer.DeveloperPage
-import me.rerere.rikkahub.ui.pages.extensions.ExtensionsPage
-import me.rerere.rikkahub.ui.pages.extensions.PromptPage
-import me.rerere.rikkahub.ui.pages.extensions.QuickMessagesPage
-import me.rerere.rikkahub.ui.pages.extensions.skills.SkillDetailPage
-import me.rerere.rikkahub.ui.pages.extensions.skills.SkillsPage
-import me.rerere.rikkahub.ui.pages.gettingstarted.GETTING_STARTED_SEEN_KEY
-import me.rerere.rikkahub.ui.pages.gettingstarted.GettingStartedPage
-import me.rerere.rikkahub.ui.pages.gettingstarted.hasConfiguredModel
-import me.rerere.rikkahub.ui.pages.extensions.workspace.WorkspaceDetailPage
-import me.rerere.rikkahub.ui.pages.extensions.workspace.WorkspaceFileEditorPage
-import me.rerere.rikkahub.ui.pages.extensions.workspace.WorkspacePage
-import me.rerere.rikkahub.ui.pages.extensions.workspace.WorkspaceTerminalPage
-import me.rerere.workspace.WorkspaceStorageArea
-import me.rerere.rikkahub.ui.pages.favorite.FavoritePage
-import me.rerere.rikkahub.ui.pages.history.HistoryPage
-import me.rerere.rikkahub.ui.pages.imggen.ImageGenPage
-import me.rerere.rikkahub.ui.pages.videogen.VideoGenPage
-import me.rerere.rikkahub.ui.pages.log.LogPage
-import me.rerere.rikkahub.ui.pages.search.SearchPage
-import me.rerere.rikkahub.ui.pages.setting.SettingAboutPage
-import me.rerere.rikkahub.ui.pages.setting.SettingAccessibilityPage
-import me.rerere.rikkahub.ui.pages.setting.SettingFloatingBallPage
-import me.rerere.rikkahub.ui.pages.setting.SettingNotificationsPage
-import me.rerere.rikkahub.ui.pages.setting.SettingPermissionsPage
-import me.rerere.rikkahub.ui.pages.setting.SettingPreferencesThemePage
-import me.rerere.rikkahub.ui.pages.setting.SettingPreferencesNotificationPage
-import me.rerere.rikkahub.ui.pages.setting.SettingPreferencesGeneralPage
-import me.rerere.rikkahub.ui.pages.setting.SettingPreferencesNetworkPage
-import me.rerere.rikkahub.ui.pages.setting.SettingPreferencesUIPage
-import me.rerere.rikkahub.ui.pages.setting.SettingThemePage
-import me.rerere.rikkahub.ui.pages.setting.SettingFilesPage
-import me.rerere.rikkahub.ui.pages.setting.SettingMcpPage
-import me.rerere.rikkahub.ui.pages.setting.SettingModelPage
-import me.rerere.rikkahub.ui.pages.setting.SettingPage
-import me.rerere.rikkahub.ui.pages.setting.SettingProviderDetailPage
-import me.rerere.rikkahub.ui.pages.setting.SettingProviderPage
-import me.rerere.rikkahub.ui.pages.setting.SettingSearchDetailPage
-import me.rerere.rikkahub.ui.pages.setting.SettingSearchPage
-import me.rerere.rikkahub.ui.pages.setting.SettingsSearchPage
-import me.rerere.rikkahub.ui.pages.setting.SettingSpeechPage
-import me.rerere.rikkahub.ui.pages.setting.SettingSubAgentsPage
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.datastore.DEFAULT_CODEX_PROVIDER_ID
+import com.clma.app.data.datastore.DEFAULT_GEMINI_OAUTH_PROVIDER_ID
+import com.clma.app.data.db.DatabaseMigrationTracker
+import com.clma.app.data.db.MigrationState
+import com.clma.app.data.event.AppEvent
+import com.clma.app.data.event.AppEventBus
+import com.clma.app.ui.activity.SafeModeActivity
+import com.clma.app.ui.components.ui.TTSController
+import com.clma.app.ui.context.LocalNavController
+import com.clma.app.ui.context.LocalASRState
+import com.clma.app.ui.context.LocalSettings
+import com.clma.app.ui.context.LocalSharedTransitionScope
+import com.clma.app.ui.context.LocalTTSState
+import com.clma.app.ui.context.LocalToaster
+import com.clma.app.ui.context.Navigator
+import com.clma.app.ui.hooks.readBooleanPreference
+import com.clma.app.ui.hooks.readStringPreference
+import com.clma.app.ui.hooks.rememberCustomTtsState
+import com.clma.app.ui.hooks.rememberCustomAsrState
+import com.clma.app.ui.pages.assistant.AssistantPage
+import com.clma.app.ui.pages.assistant.detail.AssistantBasicPage
+import com.clma.app.ui.pages.assistant.detail.AssistantDetailPage
+import com.clma.app.ui.pages.assistant.detail.AssistantExtensionsPage
+import com.clma.app.ui.pages.assistant.detail.AssistantLocalToolPage
+import com.clma.app.ui.pages.assistant.detail.AssistantMcpPage
+import com.clma.app.ui.pages.assistant.detail.AssistantMemoryPage
+import com.clma.app.ui.pages.assistant.detail.AssistantPromptPage
+import com.clma.app.ui.pages.assistant.detail.AssistantRequestPage
+import com.clma.app.ui.pages.backup.BackupPage
+import com.clma.app.ui.pages.chat.ChatPage
+import com.clma.app.ui.pages.debug.DebugPage
+import com.clma.app.ui.pages.developer.DeveloperPage
+import com.clma.app.ui.pages.extensions.ExtensionsPage
+import com.clma.app.ui.pages.extensions.PromptPage
+import com.clma.app.ui.pages.extensions.QuickMessagesPage
+import com.clma.app.ui.pages.extensions.skills.SkillDetailPage
+import com.clma.app.ui.pages.extensions.skills.SkillsPage
+import com.clma.app.ui.pages.gettingstarted.GETTING_STARTED_SEEN_KEY
+import com.clma.app.ui.pages.gettingstarted.GettingStartedPage
+import com.clma.app.ui.pages.gettingstarted.hasConfiguredModel
+import com.clma.app.ui.pages.extensions.workspace.WorkspaceDetailPage
+import com.clma.app.ui.pages.extensions.workspace.WorkspaceFileEditorPage
+import com.clma.app.ui.pages.extensions.workspace.WorkspacePage
+import com.clma.app.ui.pages.extensions.workspace.WorkspaceTerminalPage
+import com.clma.workspace.WorkspaceStorageArea
+import com.clma.app.ui.pages.favorite.FavoritePage
+import com.clma.app.ui.pages.history.HistoryPage
+import com.clma.app.ui.pages.imggen.ImageGenPage
+import com.clma.app.ui.pages.videogen.VideoGenPage
+import com.clma.app.ui.pages.log.LogPage
+import com.clma.app.ui.pages.search.SearchPage
+import com.clma.app.ui.pages.setting.SettingAboutPage
+import com.clma.app.ui.pages.setting.SettingAccessibilityPage
+import com.clma.app.ui.pages.setting.SettingFloatingBallPage
+import com.clma.app.ui.pages.setting.SettingNotificationsPage
+import com.clma.app.ui.pages.setting.SettingPermissionsPage
+import com.clma.app.ui.pages.setting.SettingPreferencesThemePage
+import com.clma.app.ui.pages.setting.SettingPreferencesNotificationPage
+import com.clma.app.ui.pages.setting.SettingPreferencesGeneralPage
+import com.clma.app.ui.pages.setting.SettingPreferencesNetworkPage
+import com.clma.app.ui.pages.setting.SettingPreferencesUIPage
+import com.clma.app.ui.pages.setting.SettingThemePage
+import com.clma.app.ui.pages.setting.SettingFilesPage
+import com.clma.app.ui.pages.setting.SettingMcpPage
+import com.clma.app.ui.pages.setting.SettingModelPage
+import com.clma.app.ui.pages.setting.SettingPage
+import com.clma.app.ui.pages.setting.SettingProviderDetailPage
+import com.clma.app.ui.pages.setting.SettingProviderPage
+import com.clma.app.ui.pages.setting.SettingSearchDetailPage
+import com.clma.app.ui.pages.setting.SettingSearchPage
+import com.clma.app.ui.pages.setting.SettingsSearchPage
+import com.clma.app.ui.pages.setting.SettingSpeechPage
+import com.clma.app.ui.pages.setting.SettingSubAgentsPage
 // P2-32 ssh hosts page
-import me.rerere.rikkahub.ui.pages.setting.SettingSshPage
-import me.rerere.rikkahub.ui.pages.setting.SettingSecretsPage
-import me.rerere.rikkahub.ui.pages.setting.SettingTelegramPage
-import me.rerere.rikkahub.ui.pages.setting.SettingWebPage
-import me.rerere.rikkahub.ui.pages.share.handler.ShareHandlerPage
-import me.rerere.rikkahub.ui.pages.stats.StatsPage
-import me.rerere.rikkahub.ui.pages.translator.TranslatorPage
-import me.rerere.rikkahub.ui.pages.webview.WebViewPage
-import me.rerere.rikkahub.ui.theme.LocalDarkMode
-import me.rerere.rikkahub.ui.theme.RikkahubTheme
-import me.rerere.rikkahub.utils.CrashHandler
-import me.rerere.rikkahub.utils.openUsageAccessSettings
-import me.rerere.rikkahub.utils.resolveInitialChatStack
+import com.clma.app.ui.pages.setting.SettingSshPage
+import com.clma.app.ui.pages.setting.SettingSecretsPage
+import com.clma.app.ui.pages.setting.SettingTelegramPage
+import com.clma.app.ui.pages.setting.SettingWebPage
+import com.clma.app.ui.pages.share.handler.ShareHandlerPage
+import com.clma.app.ui.pages.stats.StatsPage
+import com.clma.app.ui.pages.translator.TranslatorPage
+import com.clma.app.ui.pages.webview.WebViewPage
+import com.clma.app.ui.theme.LocalDarkMode
+import com.clma.app.ui.theme.RikkahubTheme
+import com.clma.app.utils.CrashHandler
+import com.clma.app.utils.openUsageAccessSettings
+import com.clma.app.utils.resolveInitialChatStack
 import okhttp3.OkHttpClient
 import org.koin.android.ext.android.inject
 import org.koin.compose.koinInject
@@ -557,35 +557,35 @@ class RouteActivity : ComponentActivity() {
                             }
 
                             entry<Screen.SettingWorkflows> {
-                                me.rerere.rikkahub.workflow.ui.WorkflowsScreen()
+                                com.clma.app.workflow.ui.WorkflowsScreen()
                             }
 
                             entry<Screen.WorkflowDetail> { key ->
-                                me.rerere.rikkahub.workflow.ui.WorkflowDetailScreen(workflowId = key.id)
+                                com.clma.app.workflow.ui.WorkflowDetailScreen(workflowId = key.id)
                             }
 
                             entry<Screen.SettingScheduledJobs> {
-                                me.rerere.rikkahub.ui.pages.setting.scheduledjobs.ScheduledJobsScreen()
+                                com.clma.app.ui.pages.setting.scheduledjobs.ScheduledJobsScreen()
                             }
 
                             entry<Screen.SettingBrowser> {
-                                me.rerere.rikkahub.ui.pages.setting.browser.SettingBrowserPage()
+                                com.clma.app.ui.pages.setting.browser.SettingBrowserPage()
                             }
 
                             entry<Screen.SettingTermux> {
-                                me.rerere.rikkahub.ui.pages.setting.termux.SettingTermuxPage()
+                                com.clma.app.ui.pages.setting.termux.SettingTermuxPage()
                             }
 
                             entry<Screen.SettingShizuku> {
-                                me.rerere.rikkahub.ui.pages.setting.shizuku.SettingShizukuPage()
+                                com.clma.app.ui.pages.setting.shizuku.SettingShizukuPage()
                             }
 
                             entry<Screen.ScheduledJobDetail> { key ->
-                                me.rerere.rikkahub.ui.pages.setting.scheduledjobs.ScheduledJobDetailScreen(jobId = key.id)
+                                com.clma.app.ui.pages.setting.scheduledjobs.ScheduledJobDetailScreen(jobId = key.id)
                             }
 
                             entry<Screen.SettingDoctor> {
-                                me.rerere.rikkahub.ui.pages.setting.doctor.DoctorScreen()
+                                com.clma.app.ui.pages.setting.doctor.DoctorScreen()
                             }
 
                             entry<Screen.GettingStarted> {
@@ -593,7 +593,7 @@ class RouteActivity : ComponentActivity() {
                             }
 
                             entry<Screen.SettingToolApprovals> {
-                                me.rerere.rikkahub.ui.pages.setting.SettingToolApprovalsPage()
+                                com.clma.app.ui.pages.setting.SettingToolApprovalsPage()
                             }
 
                             entry<Screen.SettingAccessibility> {

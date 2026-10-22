@@ -1,4 +1,4 @@
-package me.rerere.llamacpp
+package com.clma.llamacpp
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

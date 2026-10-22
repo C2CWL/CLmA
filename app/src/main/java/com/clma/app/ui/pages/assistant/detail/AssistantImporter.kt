@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.assistant.detail
+package com.clma.app.ui.pages.assistant.detail
 
 import android.content.Context
 import android.net.Uri
@@ -35,14 +35,14 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import me.rerere.ai.ui.UIMessage
-import me.rerere.rikkahub.data.model.Assistant
-import me.rerere.rikkahub.data.files.FilesManager
-import me.rerere.rikkahub.ui.components.ui.AutoAIIcon
-import me.rerere.rikkahub.ui.context.LocalToaster
-import me.rerere.rikkahub.utils.ImageUtils
-import me.rerere.rikkahub.utils.jsonPrimitiveOrNull
-import me.rerere.rikkahub.R
+import com.clma.ai.ui.UIMessage
+import com.clma.app.data.model.Assistant
+import com.clma.app.data.files.FilesManager
+import com.clma.app.ui.components.ui.AutoAIIcon
+import com.clma.app.ui.context.LocalToaster
+import com.clma.app.utils.ImageUtils
+import com.clma.app.utils.jsonPrimitiveOrNull
+import com.clma.app.R
 import org.koin.compose.koinInject
 
 @Composable

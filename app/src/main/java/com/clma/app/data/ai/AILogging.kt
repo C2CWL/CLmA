@@ -1,16 +1,16 @@
-package me.rerere.rikkahub.data.ai
+package com.clma.app.data.ai
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import me.rerere.rikkahub.AppScope
-import me.rerere.rikkahub.data.datastore.AiLogLevel
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.ai.provider.ProviderSetting
-import me.rerere.ai.provider.TextGenerationParams
-import me.rerere.ai.ui.UIMessage
+import com.clma.app.AppScope
+import com.clma.app.data.datastore.AiLogLevel
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.ai.provider.ProviderSetting
+import com.clma.ai.provider.TextGenerationParams
+import com.clma.ai.ui.UIMessage
 
 sealed class AILogging {
     data class Generation(

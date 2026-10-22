@@ -1,10 +1,10 @@
-package me.rerere.rikkahub.data.sync
+package com.clma.app.data.sync
 
 import android.content.Context
 import androidx.sqlite.db.SupportSQLiteDatabase
 import io.requery.android.database.sqlite.SQLiteDatabase
 import io.requery.android.database.sqlite.SQLiteDatabaseConfiguration
-import me.rerere.rikkahub.data.db.SQLiteConfiguration
+import com.clma.app.data.db.SQLiteConfiguration
 import java.io.File
 
 internal object DatabaseBackup {

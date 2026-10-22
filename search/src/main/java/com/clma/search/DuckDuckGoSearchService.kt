@@ -1,4 +1,4 @@
-package me.rerere.search
+package com.clma.search
 
 import androidx.compose.runtime.Composable
 import kotlinx.coroutines.Dispatchers
@@ -8,14 +8,14 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import me.rerere.ai.core.InputSchema
-import me.rerere.search.SearchService.Companion.httpClient
-import me.rerere.search.extract.ExtractMode
-import me.rerere.search.extract.ScrapeSchema
-import me.rerere.search.extract.WebExtractor
-import me.rerere.search.net.SearchCircuitBreaker
-import me.rerere.search.net.hostIsBlockedLiteral
-import me.rerere.search.net.withEgressGuard
+import com.clma.ai.core.InputSchema
+import com.clma.search.SearchService.Companion.httpClient
+import com.clma.search.extract.ExtractMode
+import com.clma.search.extract.ScrapeSchema
+import com.clma.search.extract.WebExtractor
+import com.clma.search.net.SearchCircuitBreaker
+import com.clma.search.net.hostIsBlockedLiteral
+import com.clma.search.net.withEgressGuard
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Request
 import org.jsoup.Jsoup

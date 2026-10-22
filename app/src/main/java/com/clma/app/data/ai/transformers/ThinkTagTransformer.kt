@@ -1,10 +1,10 @@
-package me.rerere.rikkahub.data.ai.transformers
+package com.clma.app.data.ai.transformers
 
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
-import me.rerere.ai.core.MessageRole
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.UIMessagePart
+import com.clma.ai.core.MessageRole
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessagePart
 import kotlin.time.Clock
 import kotlin.time.Instant
 

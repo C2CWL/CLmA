@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.service
+package com.clma.app.service
 
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
@@ -8,8 +8,8 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.UIMessagePart
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessagePart
 
 /**
  * Pure presentation helpers shared by TelegramBotService when rendering assistant messages,

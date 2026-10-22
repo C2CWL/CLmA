@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.ui
+package com.clma.app.ui.components.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -18,8 +18,8 @@ import androidx.compose.ui.unit.dp
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.File01
 import me.rerere.hugeicons.stroke.Share01
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.export.ExporterState
+import com.clma.app.R
+import com.clma.app.data.export.ExporterState
 
 @Composable
 fun <T> ExportDialog(

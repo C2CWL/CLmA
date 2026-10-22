@@ -1,6 +1,6 @@
-package me.rerere.rikkahub.data.search
+package com.clma.app.data.search
 
-import me.rerere.search.SearchServiceOptions
+import com.clma.search.SearchServiceOptions
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Test

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.chat
+package com.clma.app.ui.pages.chat
 
 import android.app.Application
 import androidx.lifecycle.SavedStateHandle
@@ -22,15 +22,15 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.model.Conversation
-import me.rerere.rikkahub.data.model.Folder
-import me.rerere.rikkahub.data.repository.ConversationRepository
-import me.rerere.rikkahub.data.repository.FolderRepository
-import me.rerere.rikkahub.subagent.SubAgentArchiveRules
-import me.rerere.rikkahub.service.ChatService
-import me.rerere.rikkahub.utils.toLocalString
+import com.clma.app.R
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.model.Conversation
+import com.clma.app.data.model.Folder
+import com.clma.app.data.repository.ConversationRepository
+import com.clma.app.data.repository.FolderRepository
+import com.clma.app.subagent.SubAgentArchiveRules
+import com.clma.app.service.ChatService
+import com.clma.app.utils.toLocalString
 import java.time.LocalDate
 import java.time.ZoneId
 import kotlin.uuid.Uuid

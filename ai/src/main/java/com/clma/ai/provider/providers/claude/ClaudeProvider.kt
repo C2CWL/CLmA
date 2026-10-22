@@ -1,4 +1,4 @@
-package me.rerere.ai.provider.providers.claude
+package com.clma.ai.provider.providers.claude
 
 import android.content.Context
 import android.util.Log
@@ -29,49 +29,49 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
-import me.rerere.ai.core.MessageRole
-import me.rerere.ai.core.ReasoningLevel
-import me.rerere.ai.core.TokenUsage
-import me.rerere.ai.core.merge
-import me.rerere.ai.provider.BuiltInTools
-import me.rerere.ai.provider.ClaudePromptCacheTtl
-import me.rerere.ai.provider.ImageGenerationParams
-import me.rerere.ai.provider.Model
-import me.rerere.ai.provider.ModelAbility
-import me.rerere.ai.provider.Provider
-import me.rerere.ai.provider.ProviderSetting
-import me.rerere.ai.provider.TextGenerationResult
-import me.rerere.ai.provider.TextGenerationParams
-import me.rerere.ai.provider.providers.PartGroup
-import me.rerere.ai.provider.providers.groupPartsByToolBoundary
-import me.rerere.ai.provider.stream.SseEvent
-import me.rerere.ai.ui.ImageGenerationItem
-import me.rerere.ai.ui.StreamChunk
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.ClaudeReasoningMetadata
-import me.rerere.ai.ui.ServerToolMetadata
-import me.rerere.ai.ui.ServerToolProtocol
-import me.rerere.ai.ui.ServerToolStatus
-import me.rerere.ai.ui.StreamChunkHandler
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.ai.ui.handleTextGenerationResult
-import me.rerere.ai.ui.metadataAs
-import me.rerere.ai.ui.toMetadata
-import me.rerere.ai.util.HttpException
-import me.rerere.ai.util.KeyRoulette
-import me.rerere.ai.util.configureReferHeaders
-import me.rerere.ai.util.configureSessionHeaders
-import me.rerere.ai.util.encodeBase64
-import me.rerere.ai.util.json
-import me.rerere.ai.util.mergeCustomBody
-import me.rerere.ai.util.mergeCustomHeaders
-import me.rerere.ai.util.parseErrorDetail
-import me.rerere.ai.util.redactSecrets
-import me.rerere.ai.util.stringSafe
-import me.rerere.ai.util.toHeaders
-import me.rerere.common.android.Logging
-import me.rerere.common.http.await
-import me.rerere.common.http.jsonPrimitiveOrNull
+import com.clma.ai.core.MessageRole
+import com.clma.ai.core.ReasoningLevel
+import com.clma.ai.core.TokenUsage
+import com.clma.ai.core.merge
+import com.clma.ai.provider.BuiltInTools
+import com.clma.ai.provider.ClaudePromptCacheTtl
+import com.clma.ai.provider.ImageGenerationParams
+import com.clma.ai.provider.Model
+import com.clma.ai.provider.ModelAbility
+import com.clma.ai.provider.Provider
+import com.clma.ai.provider.ProviderSetting
+import com.clma.ai.provider.TextGenerationResult
+import com.clma.ai.provider.TextGenerationParams
+import com.clma.ai.provider.providers.PartGroup
+import com.clma.ai.provider.providers.groupPartsByToolBoundary
+import com.clma.ai.provider.stream.SseEvent
+import com.clma.ai.ui.ImageGenerationItem
+import com.clma.ai.ui.StreamChunk
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.ClaudeReasoningMetadata
+import com.clma.ai.ui.ServerToolMetadata
+import com.clma.ai.ui.ServerToolProtocol
+import com.clma.ai.ui.ServerToolStatus
+import com.clma.ai.ui.StreamChunkHandler
+import com.clma.ai.ui.UIMessagePart
+import com.clma.ai.ui.handleTextGenerationResult
+import com.clma.ai.ui.metadataAs
+import com.clma.ai.ui.toMetadata
+import com.clma.ai.util.HttpException
+import com.clma.ai.util.KeyRoulette
+import com.clma.ai.util.configureReferHeaders
+import com.clma.ai.util.configureSessionHeaders
+import com.clma.ai.util.encodeBase64
+import com.clma.ai.util.json
+import com.clma.ai.util.mergeCustomBody
+import com.clma.ai.util.mergeCustomHeaders
+import com.clma.ai.util.parseErrorDetail
+import com.clma.ai.util.redactSecrets
+import com.clma.ai.util.stringSafe
+import com.clma.ai.util.toHeaders
+import com.clma.common.android.Logging
+import com.clma.common.http.await
+import com.clma.common.http.jsonPrimitiveOrNull
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -828,7 +828,7 @@ class ClaudeProvider(private val client: OkHttpClient, context: Context? = null)
         put("id", toolCallId)
         put("name", toolName)
         // redactSecrets: password / private_key / token 等不得回灌给云端模型。
-        put("input", me.rerere.ai.util.redactSecrets(inputAsJson()))
+        put("input", com.clma.ai.util.redactSecrets(inputAsJson()))
     }
 
     private fun UIMessagePart.Tool.toToolResultBlock() = buildJsonObject {

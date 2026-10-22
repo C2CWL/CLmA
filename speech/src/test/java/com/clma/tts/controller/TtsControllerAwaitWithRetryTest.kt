@@ -1,4 +1,4 @@
-package me.rerere.tts.controller
+package com.clma.tts.controller
 
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope

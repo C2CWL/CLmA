@@ -1,9 +1,9 @@
-package me.rerere.rikkahub.shizuku
+package com.clma.app.shizuku
 
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import me.rerere.rikkahub.data.ai.tools.local.BoundedOutputStream
+import com.clma.app.data.ai.tools.local.BoundedOutputStream
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 

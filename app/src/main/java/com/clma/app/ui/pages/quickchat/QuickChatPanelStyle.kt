@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.quickchat
+package com.clma.app.ui.pages.quickchat
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -17,7 +17,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
-import me.rerere.rikkahub.ui.theme.LocalDarkMode
+import com.clma.app.ui.theme.LocalDarkMode
 
 /**
  * The quick-chat panel's glass palette, one set per theme.

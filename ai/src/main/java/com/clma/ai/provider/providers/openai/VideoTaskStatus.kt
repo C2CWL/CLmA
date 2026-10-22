@@ -1,4 +1,4 @@
-package me.rerere.ai.provider.providers.openai
+package com.clma.ai.provider.providers.openai
 
 /**
  * One vocabulary for "what does this vendor's task-status word mean".

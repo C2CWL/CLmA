@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.favorite
+package com.clma.app.ui.pages.favorite
 
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Delete01
@@ -40,13 +40,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.ui.components.nav.BackButton
-import me.rerere.rikkahub.ui.context.LocalNavController
-import me.rerere.rikkahub.ui.theme.CustomColors
-import me.rerere.rikkahub.utils.navigateToChatPage
-import me.rerere.rikkahub.utils.plus
-import me.rerere.rikkahub.utils.toLocalDateTime
+import com.clma.app.R
+import com.clma.app.ui.components.nav.BackButton
+import com.clma.app.ui.context.LocalNavController
+import com.clma.app.ui.theme.CustomColors
+import com.clma.app.utils.navigateToChatPage
+import com.clma.app.utils.plus
+import com.clma.app.utils.toLocalDateTime
 import org.koin.androidx.compose.koinViewModel
 import java.time.Instant
 

@@ -1,4 +1,4 @@
-package me.rerere.search
+package com.clma.search
 
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals

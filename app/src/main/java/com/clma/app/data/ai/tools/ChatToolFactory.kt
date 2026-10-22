@@ -1,21 +1,21 @@
-package me.rerere.rikkahub.data.ai.tools
+package com.clma.app.data.ai.tools
 
 import android.util.Log
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
-import me.rerere.ai.core.Tool
-import me.rerere.ai.provider.BuiltInTools
-import me.rerere.ai.provider.Model
-import me.rerere.rikkahub.data.ai.mcp.McpManager
-import me.rerere.rikkahub.data.ai.ToolSurfaceResolver
-import me.rerere.rikkahub.data.ai.mcp.McpTool
-import me.rerere.rikkahub.data.datastore.Settings
-import me.rerere.rikkahub.data.files.SkillManager
-import me.rerere.rikkahub.data.model.Assistant
-import me.rerere.rikkahub.data.repository.ConversationRepository
-import me.rerere.rikkahub.data.repository.MemoryRepository
-import me.rerere.rikkahub.data.repository.WorkspaceRepository
-import me.rerere.workspace.WorkspaceShellStatus
+import com.clma.ai.core.Tool
+import com.clma.ai.provider.BuiltInTools
+import com.clma.ai.provider.Model
+import com.clma.app.data.ai.mcp.McpManager
+import com.clma.app.data.ai.ToolSurfaceResolver
+import com.clma.app.data.ai.mcp.McpTool
+import com.clma.app.data.datastore.Settings
+import com.clma.app.data.files.SkillManager
+import com.clma.app.data.model.Assistant
+import com.clma.app.data.repository.ConversationRepository
+import com.clma.app.data.repository.MemoryRepository
+import com.clma.app.data.repository.WorkspaceRepository
+import com.clma.workspace.WorkspaceShellStatus
 import kotlin.uuid.Uuid
 
 private const val TAG = "ChatToolFactory"

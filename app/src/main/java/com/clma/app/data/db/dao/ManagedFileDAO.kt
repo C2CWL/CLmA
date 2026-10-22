@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.db.dao
+package com.clma.app.data.db.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
@@ -6,7 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
-import me.rerere.rikkahub.data.db.entity.ManagedFileEntity
+import com.clma.app.data.db.entity.ManagedFileEntity
 
 @Dao
 interface ManagedFileDAO {

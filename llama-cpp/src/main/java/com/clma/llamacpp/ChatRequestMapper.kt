@@ -1,13 +1,13 @@
-package me.rerere.llamacpp
+package com.clma.llamacpp
 
 import kotlinx.serialization.json.Json
-import me.rerere.ai.core.InputSchema
-import me.rerere.ai.core.MessageRole
-import me.rerere.ai.core.Tool
-import me.rerere.ai.provider.providers.PartGroup
-import me.rerere.ai.provider.providers.groupPartsByToolBoundary
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.UIMessagePart
+import com.clma.ai.core.InputSchema
+import com.clma.ai.core.MessageRole
+import com.clma.ai.core.Tool
+import com.clma.ai.provider.providers.PartGroup
+import com.clma.ai.provider.providers.groupPartsByToolBoundary
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessagePart
 import org.json.JSONArray
 import org.json.JSONObject
 

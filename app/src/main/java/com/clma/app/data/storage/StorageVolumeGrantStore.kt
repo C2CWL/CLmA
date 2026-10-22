@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.storage
+package com.clma.app.data.storage
 
 import android.content.Context
 import androidx.datastore.preferences.core.edit

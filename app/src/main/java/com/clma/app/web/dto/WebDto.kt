@@ -1,13 +1,13 @@
-package me.rerere.rikkahub.web.dto
+package com.clma.app.web.dto
 
 import kotlinx.serialization.Serializable
-import me.rerere.ai.core.ReasoningLevel
-import me.rerere.ai.core.TokenUsage
-import me.rerere.ai.ui.UIMessageAnnotation
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.data.model.Conversation
-import me.rerere.rikkahub.data.model.MessageNode
+import com.clma.ai.core.ReasoningLevel
+import com.clma.ai.core.TokenUsage
+import com.clma.ai.ui.UIMessageAnnotation
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.model.Conversation
+import com.clma.app.data.model.MessageNode
 
 // ========== Request DTOs ==========
 
@@ -312,7 +312,7 @@ fun Conversation.toListDto(isGenerating: Boolean = false) = ConversationListDto(
     isGenerating = isGenerating
 )
 
-fun me.rerere.rikkahub.data.model.Folder.toDto() = FolderDto(
+fun com.clma.app.data.model.Folder.toDto() = FolderDto(
     id = id.toString(),
     assistantId = assistantId.toString(),
     name = name,

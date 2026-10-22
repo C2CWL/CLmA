@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.setting
+package com.clma.app.ui.pages.setting
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -27,14 +27,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.permissions.PermissionInventory
-import me.rerere.rikkahub.data.permissions.PermissionInventory.GrantAction
-import me.rerere.rikkahub.data.permissions.PermissionInventory.Group
-import me.rerere.rikkahub.data.permissions.PermissionInventory.Status
-import me.rerere.rikkahub.ui.components.nav.BackButton
-import me.rerere.rikkahub.ui.components.ui.CardGroup
-import me.rerere.rikkahub.ui.theme.CustomColors
+import com.clma.app.R
+import com.clma.app.data.permissions.PermissionInventory
+import com.clma.app.data.permissions.PermissionInventory.GrantAction
+import com.clma.app.data.permissions.PermissionInventory.Group
+import com.clma.app.data.permissions.PermissionInventory.Status
+import com.clma.app.ui.components.nav.BackButton
+import com.clma.app.ui.components.ui.CardGroup
+import com.clma.app.ui.theme.CustomColors
 
 /**
  * Auto-discovered permission overview. Reads every <uses-permission> the app declares plus

@@ -1,12 +1,12 @@
-package me.rerere.rikkahub.data.sync
+package com.clma.app.data.sync
 
 import kotlinx.serialization.Serializable
 
 /**
  * One selectable slice of app data in a local / WebDAV / S3 backup.
  *
- * The enum is persisted inside [me.rerere.rikkahub.data.datastore.WebDavConfig] and
- * [me.rerere.rikkahub.data.sync.s3.S3Config] by *name*, so [FILES] must never be removed:
+ * The enum is persisted inside [com.clma.app.data.datastore.WebDavConfig] and
+ * [com.clma.app.data.sync.s3.S3Config] by *name*, so [FILES] must never be removed:
  * settings written before the granular split carried `["DATABASE","FILES"]`, and dropping the
  * value would make those settings fail to decode (the tolerant decoder would fall back to a
  * default config and silently lose the WebDAV/S3 credentials). [FILES] is therefore kept as a
@@ -27,7 +27,7 @@ enum class BackupItem {
     WORKSPACES,
     TOOL_OUTPUTS,
 
-    /** Non-[me.rerere.rikkahub.data.datastore.Settings] preference stores (see [BackupLayout]). */
+    /** Non-[com.clma.app.data.datastore.Settings] preference stores (see [BackupLayout]). */
     CONFIG,
     ;
 

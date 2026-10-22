@@ -1,7 +1,7 @@
-package me.rerere.rikkahub.data.ai
+package com.clma.app.data.ai
 
-import me.rerere.rikkahub.data.ai.limits.ToolRuntimeLimits
-import me.rerere.rikkahub.data.preferences.TermuxDefaults
+import com.clma.app.data.ai.limits.ToolRuntimeLimits
+import com.clma.app.data.preferences.TermuxDefaults
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals

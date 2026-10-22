@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.net
+package com.clma.app.data.ai.net
 
 import okhttp3.Dns
 import okhttp3.OkHttpClient

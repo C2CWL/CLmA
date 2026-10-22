@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.browser
+package com.clma.app.browser
 
 import android.content.Intent
 import android.net.Uri
@@ -21,7 +21,7 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
-import me.rerere.rikkahub.ui.theme.RikkahubTheme
+import com.clma.app.ui.theme.RikkahubTheme
 import org.koin.android.ext.android.inject
 import java.io.File
 

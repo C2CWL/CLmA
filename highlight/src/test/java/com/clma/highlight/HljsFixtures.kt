@@ -1,8 +1,8 @@
-package me.rerere.highlight
+package com.clma.highlight
 
-import me.rerere.highlight.core.HighlightEngine
-import me.rerere.highlight.core.highlightDebugMode
-import me.rerere.highlight.languages.builtinLanguages
+import com.clma.highlight.core.HighlightEngine
+import com.clma.highlight.core.highlightDebugMode
+import com.clma.highlight.languages.builtinLanguages
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import java.io.File

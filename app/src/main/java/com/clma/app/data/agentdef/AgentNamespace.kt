@@ -1,7 +1,7 @@
-package me.rerere.rikkahub.data.agentdef
+package com.clma.app.data.agentdef
 
-import me.rerere.rikkahub.data.agentdef.AgentDefinitionDefaults.COLD_MEMORY_FOLDER
-import me.rerere.rikkahub.data.agentdef.AgentDefinitionDefaults.NAMESPACE_ROOT
+import com.clma.app.data.agentdef.AgentDefinitionDefaults.COLD_MEMORY_FOLDER
+import com.clma.app.data.agentdef.AgentDefinitionDefaults.NAMESPACE_ROOT
 
 /**
  * D9 — pure slug / path arithmetic for an expert's private namespace.

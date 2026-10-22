@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.setting
+package com.clma.app.ui.pages.setting
 
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Image02
@@ -57,14 +57,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.launch
-import me.rerere.rikkahub.data.db.entity.ManagedFileEntity
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.files.FileFolders
-import me.rerere.rikkahub.data.files.FilesManager
-import me.rerere.rikkahub.ui.components.nav.BackButton
-import me.rerere.rikkahub.ui.context.LocalToaster
-import me.rerere.rikkahub.ui.theme.CustomColors
-import me.rerere.rikkahub.utils.fileSizeToString
+import com.clma.app.data.db.entity.ManagedFileEntity
+import com.clma.app.R
+import com.clma.app.data.files.FileFolders
+import com.clma.app.data.files.FilesManager
+import com.clma.app.ui.components.nav.BackButton
+import com.clma.app.ui.context.LocalToaster
+import com.clma.app.ui.theme.CustomColors
+import com.clma.app.utils.fileSizeToString
 import org.koin.compose.koinInject
 import java.io.File
 import java.util.concurrent.TimeUnit

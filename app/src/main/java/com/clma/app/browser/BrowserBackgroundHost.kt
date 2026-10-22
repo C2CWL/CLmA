@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.browser
+package com.clma.app.browser
 
 import android.content.Context
 import android.hardware.display.DisplayManager
@@ -10,8 +10,8 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import me.rerere.rikkahub.data.ai.tools.local.VirtualDisplayController
-import me.rerere.rikkahub.shizuku.ShizukuManager
+import com.clma.app.data.ai.tools.local.VirtualDisplayController
+import com.clma.app.shizuku.ShizukuManager
 
 /**
  * Android-side glue for background browsing: ensure a dedicated virtual display exists for

@@ -1,14 +1,14 @@
-package me.rerere.rikkahub.data.api
+package com.clma.app.data.api
 
 import kotlinx.coroutines.CancellationException
-import me.rerere.rikkahub.data.model.HfModelDetail
-import me.rerere.rikkahub.data.model.HfModelSearchResult
+import com.clma.app.data.model.HfModelDetail
+import com.clma.app.data.model.HfModelSearchResult
 import retrofit2.HttpException
 import java.io.IOException
 
 /**
  * Search the public HuggingFace model API for GGUF repos and list a repo's `.gguf` files with
- * their sizes. Mirrors [me.rerere.locallm.ModelInstall]'s shape: a stateless object taking its
+ * their sizes. Mirrors [com.clma.locallm.ModelInstall]'s shape: a stateless object taking its
  * network client as a parameter rather than a DI-managed instance, so tests exercise the pure
  * parts ([toFilesResult]) without a network call.
  *
@@ -70,7 +70,7 @@ object HuggingFaceModelSearch {
         return FilesResult.Files(files)
     }
 
-    /** Same `/resolve/main/` URL shape [me.rerere.llamacpp.LlamaCppCatalogEntry.resolveUrl]
+    /** Same `/resolve/main/` URL shape [com.clma.llamacpp.LlamaCppCatalogEntry.resolveUrl]
      *  builds for a curated entry: `ModelInstall.download` already normalises and streams
      *  this URL shape, so a HuggingFace search result installs through the identical path. */
     fun resolveUrl(repoId: String, fileName: String): String =

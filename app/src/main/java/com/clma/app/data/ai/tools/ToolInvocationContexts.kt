@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.tools
+package com.clma.app.data.ai.tools
 
 /**
  * P2-01 — the ONE place a [ToolInvocationContext] gets its field values.
@@ -13,7 +13,7 @@ package me.rerere.rikkahub.data.ai.tools
  * apart. That is exactly the "路径漂移" this refactor removes.
  *
  * The functions below take plain values (no `Assistant` / `Model` dependency) so the field
- * choices are unit-testable on a bare JVM; [me.rerere.rikkahub.data.ai.ToolSurfaceResolver]
+ * choices are unit-testable on a bare JVM; [com.clma.app.data.ai.ToolSurfaceResolver]
  * holds the `Assistant`-flavoured wrappers that call sites actually use.
  *
  * ## The three shapes, and why they differ
@@ -30,7 +30,7 @@ package me.rerere.rikkahub.data.ai.tools
  *    only the calling assistant id and the headless bit (which fires the sub-agent recursion
  *    guard) are known.
  *
- * Callers with no context at all (the legacy [me.rerere.rikkahub.data.ai.tools.LocalTools]
+ * Callers with no context at all (the legacy [com.clma.app.data.ai.tools.LocalTools]
  * `getTools(options)` shape) must pass [ToolInvocationContext.EMPTY] explicitly rather than
  * inventing a new literal here.
  */

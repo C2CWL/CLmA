@@ -1,6 +1,6 @@
-package me.rerere.ai.provider.providers
+package com.clma.ai.provider.providers
 
-import me.rerere.ai.ui.UIMessagePart
+import com.clma.ai.ui.UIMessagePart
 
 /**
  * 消息 parts 按工具边界分组的结果

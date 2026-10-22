@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.videogen
+package com.clma.app.ui.pages.videogen
 
 import android.app.Application
 import android.util.Log
@@ -20,21 +20,21 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
-import me.rerere.ai.provider.ProviderManager
-import me.rerere.ai.provider.VideoGenerationParams
-import me.rerere.ai.ui.ImageAspectRatio
-import me.rerere.ai.ui.VideoGenerationItem
-import me.rerere.rikkahub.data.ai.tools.local.MAX_VIDEO_DURATION_SECONDS
-import me.rerere.rikkahub.data.ai.tools.local.MIN_VIDEO_DURATION_SECONDS
-import me.rerere.rikkahub.data.ai.tools.local.clampVideoCount
-import me.rerere.rikkahub.data.ai.tools.local.videoGalleryRelativePath
-import me.rerere.rikkahub.data.ai.tools.local.videoGenFilename
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.datastore.findModelById
-import me.rerere.rikkahub.data.datastore.findProvider
-import me.rerere.rikkahub.data.db.entity.GenMediaEntity
-import me.rerere.rikkahub.data.files.FilesManager
-import me.rerere.rikkahub.data.repository.GenMediaRepository
+import com.clma.ai.provider.ProviderManager
+import com.clma.ai.provider.VideoGenerationParams
+import com.clma.ai.ui.ImageAspectRatio
+import com.clma.ai.ui.VideoGenerationItem
+import com.clma.app.data.ai.tools.local.MAX_VIDEO_DURATION_SECONDS
+import com.clma.app.data.ai.tools.local.MIN_VIDEO_DURATION_SECONDS
+import com.clma.app.data.ai.tools.local.clampVideoCount
+import com.clma.app.data.ai.tools.local.videoGalleryRelativePath
+import com.clma.app.data.ai.tools.local.videoGenFilename
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.datastore.findModelById
+import com.clma.app.data.datastore.findProvider
+import com.clma.app.data.db.entity.GenMediaEntity
+import com.clma.app.data.files.FilesManager
+import com.clma.app.data.repository.GenMediaRepository
 import java.io.File
 import kotlin.coroutines.cancellation.CancellationException
 

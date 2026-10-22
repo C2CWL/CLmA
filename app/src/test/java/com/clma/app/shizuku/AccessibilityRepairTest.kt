@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.shizuku
+package com.clma.app.shizuku
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -12,7 +12,7 @@ import org.junit.Test
  */
 class AccessibilityRepairTest {
 
-    private val comp = "excp.rikkahub.debug/me.rerere.rikkahub.service.RikkaAccessibilityService"
+    private val comp = "excp.rikkahub.debug/com.clma.app.service.RikkaAccessibilityService"
 
     @Test
     fun `an unset list - null, blank or the string null - becomes just our component`() {

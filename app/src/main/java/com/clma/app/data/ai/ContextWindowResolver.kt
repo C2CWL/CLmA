@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai
+package com.clma.app.data.ai
 
 /**
  * The single place where the "model window" — the number every context-budget decision divides

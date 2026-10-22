@@ -1,21 +1,21 @@
-package me.rerere.tts.provider
+package com.clma.tts.provider
 
 import android.content.Context
 import kotlinx.coroutines.flow.Flow
-import me.rerere.tts.model.AudioChunk
-import me.rerere.tts.model.TTSRequest
-import me.rerere.tts.provider.providers.ElevenLabsTTSProvider
-import me.rerere.tts.provider.providers.FishAudioTTSProvider
-import me.rerere.tts.provider.providers.GeminiTTSProvider
-import me.rerere.tts.provider.providers.GroqTTSProvider
-import me.rerere.tts.provider.providers.MiMoTTSProvider
-import me.rerere.tts.provider.providers.MiniMaxTTSProvider
-import me.rerere.tts.provider.providers.OpenAITTSProvider
-import me.rerere.tts.provider.providers.QwenTTSProvider
-import me.rerere.tts.provider.providers.StepTTSProvider
-import me.rerere.tts.provider.providers.SystemTTSProvider
-import me.rerere.tts.provider.providers.VolcengineTTSProvider
-import me.rerere.tts.provider.providers.XAITTSProvider
+import com.clma.tts.model.AudioChunk
+import com.clma.tts.model.TTSRequest
+import com.clma.tts.provider.providers.ElevenLabsTTSProvider
+import com.clma.tts.provider.providers.FishAudioTTSProvider
+import com.clma.tts.provider.providers.GeminiTTSProvider
+import com.clma.tts.provider.providers.GroqTTSProvider
+import com.clma.tts.provider.providers.MiMoTTSProvider
+import com.clma.tts.provider.providers.MiniMaxTTSProvider
+import com.clma.tts.provider.providers.OpenAITTSProvider
+import com.clma.tts.provider.providers.QwenTTSProvider
+import com.clma.tts.provider.providers.StepTTSProvider
+import com.clma.tts.provider.providers.SystemTTSProvider
+import com.clma.tts.provider.providers.VolcengineTTSProvider
+import com.clma.tts.provider.providers.XAITTSProvider
 
 class TTSManager(private val context: Context) {
     private val openAIProvider = OpenAITTSProvider()

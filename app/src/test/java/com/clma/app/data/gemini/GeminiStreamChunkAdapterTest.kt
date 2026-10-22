@@ -1,13 +1,13 @@
-package me.rerere.rikkahub.data.gemini
+package com.clma.app.data.gemini
 
-import me.rerere.ai.core.MessageRole
-import me.rerere.ai.ui.GoogleThoughtMetadata
-import me.rerere.ai.ui.MessageChunk
-import me.rerere.ai.ui.StreamChunk
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.UIMessageChoice
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.ai.ui.toMetadata
+import com.clma.ai.core.MessageRole
+import com.clma.ai.ui.GoogleThoughtMetadata
+import com.clma.ai.ui.MessageChunk
+import com.clma.ai.ui.StreamChunk
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessageChoice
+import com.clma.ai.ui.UIMessagePart
+import com.clma.ai.ui.toMetadata
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

@@ -1,4 +1,4 @@
-package me.rerere.highlight.core
+package com.clma.highlight.core
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

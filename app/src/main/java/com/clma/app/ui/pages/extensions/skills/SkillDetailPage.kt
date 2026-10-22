@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.extensions.skills
+package com.clma.app.ui.pages.extensions.skills
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -53,7 +53,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
-import me.rerere.rikkahub.R
+import com.clma.app.R
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.composables.icons.lucide.ChevronDown
 import com.composables.icons.lucide.ChevronRight
@@ -70,13 +70,13 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
-import me.rerere.rikkahub.skills.SkillTestRunner
-import me.rerere.rikkahub.data.files.SkillMetadata
-import me.rerere.rikkahub.ui.components.nav.BackButton
-import me.rerere.rikkahub.ui.components.ui.RikkaConfirmDialog
-import me.rerere.rikkahub.ui.context.LocalToaster
-import me.rerere.rikkahub.ui.theme.CustomColors
-import me.rerere.rikkahub.utils.plus
+import com.clma.app.skills.SkillTestRunner
+import com.clma.app.data.files.SkillMetadata
+import com.clma.app.ui.components.nav.BackButton
+import com.clma.app.ui.components.ui.RikkaConfirmDialog
+import com.clma.app.ui.context.LocalToaster
+import com.clma.app.ui.theme.CustomColors
+import com.clma.app.utils.plus
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 

@@ -1,10 +1,10 @@
-package me.rerere.rikkahub.ui.hooks
+package com.clma.app.ui.hooks
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import me.rerere.rikkahub.ui.theme.ColorMode
+import com.clma.app.ui.theme.ColorMode
 
 private const val COLOR_MODE_KEY = "colorMode"
 

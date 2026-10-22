@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.tools.local
+package com.clma.app.data.ai.tools.local
 
 import android.content.Context
 import kotlinx.serialization.json.JsonObject
@@ -12,13 +12,13 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.put
-import me.rerere.ai.core.InputSchema
-import me.rerere.ai.core.Tool
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.data.telegram.TelegramApiException
-import me.rerere.rikkahub.data.telegram.TelegramBotClient
-import me.rerere.rikkahub.data.telegram.TelegramBotPreferences
-import me.rerere.rikkahub.service.TelegramBotService
+import com.clma.ai.core.InputSchema
+import com.clma.ai.core.Tool
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.telegram.TelegramApiException
+import com.clma.app.data.telegram.TelegramBotClient
+import com.clma.app.data.telegram.TelegramBotPreferences
+import com.clma.app.service.TelegramBotService
 import java.io.File
 
 private fun textPart(o: JsonObject) = listOf(UIMessagePart.Text(o.toString()))
@@ -132,7 +132,7 @@ fun telegramStatusTool(
         // Best-effort runtime check: the service writes to its companion isRunning flag while
         // the poll loop is alive. If the process was killed the flag's also cleared (it's
         // process-local), so this naturally reflects "service alive in *this* process".
-        val serviceRunning = me.rerere.rikkahub.service.TelegramBotService.isRunning
+        val serviceRunning = com.clma.app.service.TelegramBotService.isRunning
         textPart(buildJsonObject {
             put("token_set", cfg.token.isNotBlank())
             put("enabled", cfg.enabled)

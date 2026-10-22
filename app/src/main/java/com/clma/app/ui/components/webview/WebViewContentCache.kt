@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.webview
+package com.clma.app.ui.components.webview
 
 import java.io.File
 import java.security.MessageDigest

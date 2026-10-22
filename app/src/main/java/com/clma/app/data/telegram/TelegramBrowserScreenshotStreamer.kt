@@ -1,8 +1,8 @@
-package me.rerere.rikkahub.data.telegram
+package com.clma.app.data.telegram
 
 import android.util.Log
-import me.rerere.rikkahub.browser.BrowserScreenshotStreamer
-import me.rerere.rikkahub.data.repository.TelegramChatRepository
+import com.clma.app.browser.BrowserScreenshotStreamer
+import com.clma.app.data.repository.TelegramChatRepository
 import java.io.File
 
 private const val TAG = "TelegramBrowserStreamer"
@@ -13,7 +13,7 @@ private const val MAX_CAPTION_CHARS = 1024  // Telegram's hard photo-caption cap
  *
  * Translation flow:
  *   1. The browser tool wraps up its action (click, type, submit, ...) and calls
- *      [me.rerere.rikkahub.browser.BrowserController.streamScreenshotIfHeadless].
+ *      [com.clma.app.browser.BrowserController.streamScreenshotIfHeadless].
  *   2. The controller writes the PNG to its `browser-stream/` cache subdir and resolves
  *      this streamer via Koin.
  *   3. We map the conversation id -> Telegram chat id via [TelegramChatRepository].

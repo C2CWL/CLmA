@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.tools
+package com.clma.app.data.ai.tools
 
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
@@ -7,19 +7,19 @@ import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import me.rerere.ai.core.InputSchema
-import me.rerere.ai.core.Tool
-import me.rerere.ai.ui.DiffMetadata
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.ai.ui.toMetadata
-import me.rerere.rikkahub.data.files.FilesManager
-import me.rerere.rikkahub.data.repository.WorkspaceRepository
-import me.rerere.rikkahub.utils.generateUnifiedDiff
-import me.rerere.workspace.BackgroundStatus
-import me.rerere.workspace.WorkspaceCommandResult
-import me.rerere.workspace.WorkspaceFileEntry
-import me.rerere.workspace.WorkspaceManager
-import me.rerere.workspace.WorkspaceTreeResult
+import com.clma.ai.core.InputSchema
+import com.clma.ai.core.Tool
+import com.clma.ai.ui.DiffMetadata
+import com.clma.ai.ui.UIMessagePart
+import com.clma.ai.ui.toMetadata
+import com.clma.app.data.files.FilesManager
+import com.clma.app.data.repository.WorkspaceRepository
+import com.clma.app.utils.generateUnifiedDiff
+import com.clma.workspace.BackgroundStatus
+import com.clma.workspace.WorkspaceCommandResult
+import com.clma.workspace.WorkspaceFileEntry
+import com.clma.workspace.WorkspaceManager
+import com.clma.workspace.WorkspaceTreeResult
 import org.koin.java.KoinJavaComponent.getKoin
 import java.io.ByteArrayOutputStream
 

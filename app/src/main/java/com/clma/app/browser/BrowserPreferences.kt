@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.browser
+package com.clma.app.browser
 
 import android.content.Context
 import androidx.datastore.preferences.core.Preferences
@@ -20,7 +20,7 @@ private val Context.browserDataStore by preferencesDataStore(name = "browser_pre
 
 /**
  * DataStore-backed per-tool toggle store for the in-app browser. Mirrors
- * [me.rerere.rikkahub.data.telegram.TelegramBotPreferences] in shape: a single store,
+ * [com.clma.app.data.telegram.TelegramBotPreferences] in shape: a single store,
  * suspend reads/writes, and an observable Flow.
  *
  * Pass 1 lays the wiring. Pass 2's tool factories will call [isToolEnabled] before
@@ -160,7 +160,7 @@ class BrowserPreferences(private val context: Context) {
 
     /**
      * Blocking variant of [snapshot] for callers that aren't already in a coroutine.
-     * Used by [me.rerere.rikkahub.data.ai.tools.LocalTools.getTools] which is non-suspend
+     * Used by [com.clma.app.data.ai.tools.LocalTools.getTools] which is non-suspend
      * (called from ChatService / CronJobWorker / etc — all already on background dispatchers).
      *
      * DataStore caches the latest [Preferences] instance after the first read, so steady-state

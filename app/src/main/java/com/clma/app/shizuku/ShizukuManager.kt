@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.shizuku
+package com.clma.app.shizuku
 
 import android.content.ComponentName
 import android.content.Context
@@ -18,7 +18,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
-import me.rerere.rikkahub.BuildConfig
+import com.clma.app.BuildConfig
 import rikka.shizuku.Shizuku
 
 private const val TAG = "ShizukuManager"
@@ -118,7 +118,7 @@ internal fun bindFailedResponse(failure: BindResult.Failure): JsonObject = build
  * our own AIDL service instead, see [ShizukuUserService].
  *
  * A stateless `object` wrapping a global SDK singleton, mirroring
- * [me.rerere.rikkahub.data.ai.tools.local.TermuxIntegration] in shape: tool factories and the
+ * [com.clma.app.data.ai.tools.local.TermuxIntegration] in shape: tool factories and the
  * settings page call it directly with a [Context], no DI needed.
  */
 object ShizukuManager {

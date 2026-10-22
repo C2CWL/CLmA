@@ -1,4 +1,4 @@
-package me.rerere.document
+package com.clma.document
 
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserFactory

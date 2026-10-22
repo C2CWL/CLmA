@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.chat
+package com.clma.app.ui.pages.chat
 
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Folder01
@@ -50,11 +50,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.itemKey
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.ui.components.ui.AppDropdownMenu
-import me.rerere.rikkahub.ui.components.ui.AppMenuEntry
-import me.rerere.rikkahub.data.model.Conversation
-import me.rerere.rikkahub.ui.theme.extendColors
+import com.clma.app.R
+import com.clma.app.ui.components.ui.AppDropdownMenu
+import com.clma.app.ui.components.ui.AppMenuEntry
+import com.clma.app.data.model.Conversation
+import com.clma.app.ui.theme.extendColors
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.Locale

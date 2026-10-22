@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.assistant
+package com.clma.app.ui.pages.assistant
 
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Copy01
@@ -60,25 +60,25 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.rerere.hugeicons.stroke.MoreVertical
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.Screen
-import me.rerere.rikkahub.data.datastore.DEFAULT_ASSISTANTS_IDS
-import me.rerere.rikkahub.data.datastore.Settings
-import me.rerere.rikkahub.data.model.Assistant
-import me.rerere.rikkahub.data.model.AssistantMemory
-import me.rerere.rikkahub.ui.components.nav.BackButton
-import me.rerere.rikkahub.ui.components.ui.FormItem
-import me.rerere.rikkahub.ui.components.ui.Tag
-import me.rerere.rikkahub.ui.components.ui.TagType
-import me.rerere.rikkahub.ui.components.ui.AssistantAvatar
-import me.rerere.rikkahub.ui.context.LocalNavController
-import me.rerere.rikkahub.ui.hooks.EditState
-import me.rerere.rikkahub.ui.hooks.EditStateContent
-import me.rerere.rikkahub.ui.hooks.heroAnimation
-import me.rerere.rikkahub.ui.hooks.useEditState
-import me.rerere.rikkahub.ui.modifier.onClick
-import me.rerere.rikkahub.ui.pages.assistant.detail.AssistantImporter
-import me.rerere.rikkahub.ui.theme.CustomColors
+import com.clma.app.R
+import com.clma.app.Screen
+import com.clma.app.data.datastore.DEFAULT_ASSISTANTS_IDS
+import com.clma.app.data.datastore.Settings
+import com.clma.app.data.model.Assistant
+import com.clma.app.data.model.AssistantMemory
+import com.clma.app.ui.components.nav.BackButton
+import com.clma.app.ui.components.ui.FormItem
+import com.clma.app.ui.components.ui.Tag
+import com.clma.app.ui.components.ui.TagType
+import com.clma.app.ui.components.ui.AssistantAvatar
+import com.clma.app.ui.context.LocalNavController
+import com.clma.app.ui.hooks.EditState
+import com.clma.app.ui.hooks.EditStateContent
+import com.clma.app.ui.hooks.heroAnimation
+import com.clma.app.ui.hooks.useEditState
+import com.clma.app.ui.modifier.onClick
+import com.clma.app.ui.pages.assistant.detail.AssistantImporter
+import com.clma.app.ui.theme.CustomColors
 import org.koin.androidx.compose.koinViewModel
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
@@ -284,7 +284,7 @@ private fun AssistantTagsFilterRow(
     val haptic = LocalHapticFeedback.current
     if (settings.assistantTags.isNotEmpty()) {
         val tags = remember {
-            mutableStateListOf<me.rerere.rikkahub.data.model.Tag>().apply {
+            mutableStateListOf<com.clma.app.data.model.Tag>().apply {
                 addAll(settings.assistantTags)
             }
         }

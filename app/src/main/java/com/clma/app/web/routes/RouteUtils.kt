@@ -1,7 +1,7 @@
-package me.rerere.rikkahub.web.routes
+package com.clma.app.web.routes
 
 import kotlin.uuid.Uuid
-import me.rerere.rikkahub.web.BadRequestException
+import com.clma.app.web.BadRequestException
 
 internal fun String?.toUuid(name: String = "id"): Uuid {
     if (this == null) throw BadRequestException("Missing $name")

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.ai
+package com.clma.app.ui.components.ai
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -15,12 +15,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
-import me.rerere.ai.provider.ProviderManager
-import me.rerere.ai.provider.ProviderSetting
+import com.clma.ai.provider.ProviderManager
+import com.clma.ai.provider.ProviderSetting
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.MoneyBag02
-import me.rerere.rikkahub.utils.SimpleCache
-import me.rerere.rikkahub.utils.toDp
+import com.clma.app.utils.SimpleCache
+import com.clma.app.utils.toDp
 import org.koin.compose.koinInject
 import java.util.concurrent.TimeUnit
 

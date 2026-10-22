@@ -1,4 +1,4 @@
-package me.rerere.ai.provider.providers.openai
+package com.clma.ai.provider.providers.openai
 
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
@@ -6,8 +6,8 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import me.rerere.ai.provider.Model
-import me.rerere.ai.ui.ImageAspectRatio
+import com.clma.ai.provider.Model
+import com.clma.ai.ui.ImageAspectRatio
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 /**

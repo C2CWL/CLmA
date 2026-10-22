@@ -1,7 +1,7 @@
-package me.rerere.highlight.languages.java
+package com.clma.highlight.languages.java
 
-import me.rerere.highlight.core.Mode
-import me.rerere.highlight.core.mode
+import com.clma.highlight.core.Mode
+import com.clma.highlight.core.mode
 
 /**
  * The numeric literal of the Java Language Specification, ported from

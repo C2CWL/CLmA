@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.db
+package com.clma.app.data.db
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.datastore
+package com.clma.app.data.datastore
 
 import java.io.File
 import org.junit.Assert.assertEquals
@@ -17,7 +17,7 @@ import org.junit.Test
  */
 class SettingsReadBackCoverageTest {
 
-    private val source = File("src/main/java/me/rerere/rikkahub/data/datastore/PreferencesStore.kt").readText()
+    private val source = File("src/main/java/com/clma/app/data/datastore/PreferencesStore.kt").readText()
 
     private val writes = Regex("""preferences\[([A-Z0-9_]+)]\s*=(?!=)""")
     private val reads = Regex("""preferences\[([A-Z0-9_]+)](?!\s*=(?!=))""")

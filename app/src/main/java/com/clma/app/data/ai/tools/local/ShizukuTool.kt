@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.tools.local
+package com.clma.app.data.ai.tools.local
 
 import android.content.Context
 import kotlinx.serialization.json.buildJsonObject
@@ -7,10 +7,10 @@ import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import me.rerere.ai.core.InputSchema
-import me.rerere.ai.core.Tool
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.shizuku.ShizukuManager
+import com.clma.ai.core.InputSchema
+import com.clma.ai.core.Tool
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.shizuku.ShizukuManager
 
 private const val DEFAULT_TIMEOUT_MS = 30_000
 private const val MIN_TIMEOUT_MS = 1_000
@@ -23,8 +23,8 @@ private const val MAX_TIMEOUT_MS = 300_000
  * permission granted from Settings -> Shizuku; the permission is never requested from this
  * tool or automatically, only from an explicit tap on that settings screen.
  *
- * Approval-gated in [me.rerere.rikkahub.data.ai.tools.ToolApprovalDefaults] and its `command`
- * argument is checked against [me.rerere.rikkahub.data.ai.tools.HardlineCommandGuard] like
+ * Approval-gated in [com.clma.app.data.ai.tools.ToolApprovalDefaults] and its `command`
+ * argument is checked against [com.clma.app.data.ai.tools.HardlineCommandGuard] like
  * every other shell surface (SSH, Termux).
  */
 fun shizukuExecTool(context: Context): Tool = Tool(

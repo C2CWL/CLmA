@@ -1,4 +1,4 @@
-package me.rerere.ai.ui
+package com.clma.ai.ui
 
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

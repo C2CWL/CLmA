@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.service
+package com.clma.app.service
 
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay

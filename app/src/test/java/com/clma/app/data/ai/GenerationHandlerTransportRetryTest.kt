@@ -1,9 +1,9 @@
-package me.rerere.rikkahub.data.ai
+package com.clma.app.data.ai
 
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
-import me.rerere.ai.provider.providers.openai.ResponseStreamErrorException
-import me.rerere.ai.util.HttpException
+import com.clma.ai.provider.providers.openai.ResponseStreamErrorException
+import com.clma.ai.util.HttpException
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.setting.scheduledjobs
+package com.clma.app.ui.pages.setting.scheduledjobs
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -8,11 +8,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import me.rerere.rikkahub.data.db.entity.ScheduledJobEntity
-import me.rerere.rikkahub.data.db.entity.ScheduledJobRunEntity
-import me.rerere.rikkahub.data.repository.ScheduledJobRepository
-import me.rerere.rikkahub.data.repository.ScheduledJobRunRepository
-import me.rerere.rikkahub.service.CronJobScheduler
+import com.clma.app.data.db.entity.ScheduledJobEntity
+import com.clma.app.data.db.entity.ScheduledJobRunEntity
+import com.clma.app.data.repository.ScheduledJobRepository
+import com.clma.app.data.repository.ScheduledJobRunRepository
+import com.clma.app.service.CronJobScheduler
 
 /**
  * Backs the Settings → Scheduled Jobs list + detail screens. Mirrors the responsibilities

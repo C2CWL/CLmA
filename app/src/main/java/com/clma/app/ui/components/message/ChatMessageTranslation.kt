@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.message
+package com.clma.app.ui.components.message
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
@@ -49,8 +49,8 @@ import me.rerere.hugeicons.stroke.ArrowDown01
 import me.rerere.hugeicons.stroke.ArrowUp01
 import me.rerere.hugeicons.stroke.Cancel01
 import me.rerere.hugeicons.stroke.LanguageCircle
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.ui.components.richtext.MarkdownBlock
+import com.clma.app.R
+import com.clma.app.ui.components.richtext.MarkdownBlock
 import java.util.Locale
 
 @Composable

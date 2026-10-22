@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.setting
+package com.clma.app.ui.pages.setting
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -49,15 +49,15 @@ import me.rerere.hugeicons.stroke.Play
 import me.rerere.hugeicons.stroke.Stop
 import me.rerere.hugeicons.stroke.View
 import me.rerere.hugeicons.stroke.ViewOff
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.telegram.TelegramBotConfig
-import me.rerere.rikkahub.data.telegram.TelegramBotPreferences
-import me.rerere.rikkahub.service.TelegramBotService
-import me.rerere.rikkahub.ui.components.nav.BackButton
-import me.rerere.rikkahub.ui.components.ui.CardGroup
-import me.rerere.rikkahub.ui.context.LocalToaster
-import me.rerere.rikkahub.ui.theme.CustomColors
-import me.rerere.rikkahub.utils.plus
+import com.clma.app.R
+import com.clma.app.data.telegram.TelegramBotConfig
+import com.clma.app.data.telegram.TelegramBotPreferences
+import com.clma.app.service.TelegramBotService
+import com.clma.app.ui.components.nav.BackButton
+import com.clma.app.ui.components.ui.CardGroup
+import com.clma.app.ui.context.LocalToaster
+import com.clma.app.ui.theme.CustomColors
+import com.clma.app.utils.plus
 import org.koin.compose.koinInject
 
 /**
@@ -453,7 +453,7 @@ private fun BatteryOptimizationCard() {
         onDispose { lifecycleOwner.lifecycle.removeObserver(obs) }
     }
     val whitelisted = remember(resumeTick) {
-        me.rerere.rikkahub.data.ai.tools.local.PermissionHelper
+        com.clma.app.data.ai.tools.local.PermissionHelper
             .ignoresBatteryOptimizations(ctx)
     }
 
@@ -472,7 +472,7 @@ private fun BatteryOptimizationCard() {
                     toaster.show(ctx.getString(R.string.setting_page_telegram_battery_already_ok))
                     return@item
                 }
-                val intent = me.rerere.rikkahub.data.ai.tools.local.PermissionHelper
+                val intent = com.clma.app.data.ai.tools.local.PermissionHelper
                     .requestIgnoreBatteryOptimizationsIntent(ctx)
                 try {
                     launcher.launch(intent)
@@ -480,7 +480,7 @@ private fun BatteryOptimizationCard() {
                     // Some OEMs reject ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS; fall back
                     // to the system-wide list page where the user can find the app manually.
                     launcher.launch(
-                        me.rerere.rikkahub.data.ai.tools.local.PermissionHelper
+                        com.clma.app.data.ai.tools.local.PermissionHelper
                             .batteryOptimizationsListIntent()
                     )
                 }

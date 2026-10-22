@@ -1,7 +1,7 @@
-package me.rerere.rikkahub.ui.pages.chat
+package com.clma.app.ui.pages.chat
 
-import me.rerere.rikkahub.ui.components.ui.FrostedPlateSpec
-import me.rerere.rikkahub.ui.components.ui.frostedPlateSpec
+import com.clma.app.ui.components.ui.FrostedPlateSpec
+import com.clma.app.ui.components.ui.frostedPlateSpec
 
 /*
  * 抽屉里的磨砂卡片（顶部身份/搜索卡、底部助手卡、备份提醒）。

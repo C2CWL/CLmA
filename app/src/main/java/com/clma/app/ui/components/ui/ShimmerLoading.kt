@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.ui
+package com.clma.app.ui.components.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -22,7 +22,7 @@ import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import me.rerere.rikkahub.R
+import com.clma.app.R
 
 /** One left→right pass, then a short rest before the next. */
 internal const val SHIMMER_SWEEP_MS = 1400

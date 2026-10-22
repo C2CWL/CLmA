@@ -1,10 +1,10 @@
-package me.rerere.ai.util
+package com.clma.ai.util
 
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import me.rerere.ai.provider.CustomBody
+import com.clma.ai.provider.CustomBody
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

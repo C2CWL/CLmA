@@ -1,9 +1,9 @@
-package me.rerere.rikkahub.subagent
+package com.clma.app.subagent
 
-import me.rerere.ai.core.Tool
-import me.rerere.rikkahub.data.agentdef.AgentDefinition
-import me.rerere.rikkahub.data.ai.tools.LocalToolOption
-import me.rerere.rikkahub.data.model.Assistant
+import com.clma.ai.core.Tool
+import com.clma.app.data.agentdef.AgentDefinition
+import com.clma.app.data.ai.tools.LocalToolOption
+import com.clma.app.data.model.Assistant
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -26,7 +26,7 @@ import kotlin.uuid.Uuid
  *    run ends up with, so "child ⊆ parent" is replaced by "child has its own surface, minus the
  *    tools nobody may run unattended" rather than by "child has anything it likes".
  *
- * P2-06b moved the overlay itself into [me.rerere.rikkahub.data.agentdef.toAssistant] and widened
+ * P2-06b moved the overlay itself into [com.clma.app.data.agentdef.toAssistant] and widened
  * "own surface" to include `skills` and the D9 `slug`, so the derived assistant is now assembled in
  * exactly one place and a namespace-only expert still gets the floor applied.
  */

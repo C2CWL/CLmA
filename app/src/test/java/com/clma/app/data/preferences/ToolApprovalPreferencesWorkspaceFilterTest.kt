@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.preferences
+package com.clma.app.data.preferences
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

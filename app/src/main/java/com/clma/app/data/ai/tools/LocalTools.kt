@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.tools
+package com.clma.app.data.ai.tools
 
 import android.content.Context
 import com.whl.quickjs.wrapper.QuickJSContext
@@ -25,115 +25,115 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import me.rerere.ai.core.InputSchema
-import me.rerere.ai.core.Tool
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.data.ai.tools.local.BiometricResultBuffer
-import me.rerere.rikkahub.data.ai.tools.local.CameraResultBuffer
-import me.rerere.rikkahub.data.ai.tools.local.InteractiveToolStreamer
-import me.rerere.rikkahub.data.ai.tools.local.audioInfoTool
-import me.rerere.rikkahub.data.ai.tools.local.batteryTool
-import me.rerere.rikkahub.data.ai.tools.local.callLogTool
-import me.rerere.rikkahub.data.ai.tools.local.cameraPhotoTool
+import com.clma.ai.core.InputSchema
+import com.clma.ai.core.Tool
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.ai.tools.local.BiometricResultBuffer
+import com.clma.app.data.ai.tools.local.CameraResultBuffer
+import com.clma.app.data.ai.tools.local.InteractiveToolStreamer
+import com.clma.app.data.ai.tools.local.audioInfoTool
+import com.clma.app.data.ai.tools.local.batteryTool
+import com.clma.app.data.ai.tools.local.callLogTool
+import com.clma.app.data.ai.tools.local.cameraPhotoTool
 // P2-33 image generation tools
-import me.rerere.rikkahub.data.ai.tools.local.editImageTool
-import me.rerere.rikkahub.data.ai.tools.local.generateImageTool
-import me.rerere.rikkahub.data.ai.tools.local.generateVideoTool
-import me.rerere.rikkahub.data.ai.tools.local.clickNodeTool
-import me.rerere.rikkahub.data.ai.tools.local.downloadTool
-import me.rerere.rikkahub.data.ai.tools.local.fingerprintTool
-import me.rerere.rikkahub.data.ai.tools.local.findNodeTool
-import me.rerere.rikkahub.data.ai.tools.local.getBrightnessTool
-import me.rerere.rikkahub.data.ai.tools.local.getVolumeTool
-import me.rerere.rikkahub.data.ai.tools.local.globalActionTool
-import me.rerere.rikkahub.data.ai.tools.local.listContactsTool
-import me.rerere.rikkahub.data.ai.tools.local.listSensorsTool
-import me.rerere.rikkahub.data.ai.tools.local.listSmsInboxTool
-import me.rerere.rikkahub.data.ai.tools.local.locationTool
-import me.rerere.rikkahub.data.ai.tools.local.longPressTool
-import me.rerere.rikkahub.data.ai.tools.local.mediaScannerTool
-import me.rerere.rikkahub.data.ai.tools.local.micRecorderTool
-import me.rerere.rikkahub.data.ai.tools.local.notificationTool
-import me.rerere.rikkahub.data.ai.tools.local.getMediaStatusTool
-import me.rerere.rikkahub.data.ai.tools.local.pauseMediaTool
-import me.rerere.rikkahub.data.ai.tools.local.playMediaTool
-import me.rerere.rikkahub.data.ai.tools.local.resumeMediaTool
-import me.rerere.rikkahub.data.ai.tools.local.seekMediaTool
-import me.rerere.rikkahub.data.ai.tools.local.readSensorTool
-import me.rerere.rikkahub.data.ai.tools.local.readWindowTreeTool
-import me.rerere.rikkahub.data.ai.tools.local.scrollTool
-import me.rerere.rikkahub.data.ai.tools.local.searchContactsTool
-import me.rerere.rikkahub.data.ai.tools.local.searchSmsTool
-import me.rerere.rikkahub.data.ai.tools.local.setBrightnessTool
-import me.rerere.rikkahub.data.ai.tools.local.setVolumeTool
-import me.rerere.rikkahub.data.ai.tools.local.shareTool
-import me.rerere.rikkahub.data.ai.tools.local.speechToTextTool
-import me.rerere.rikkahub.data.ai.tools.local.stopMediaTool
-import me.rerere.rikkahub.data.ai.tools.local.storageTool
-import me.rerere.rikkahub.data.ai.tools.local.swipeTool
-import me.rerere.rikkahub.data.ai.tools.local.takeScreenshotTool
-import me.rerere.rikkahub.data.ai.tools.local.tapTool
-import me.rerere.rikkahub.data.ai.tools.local.telephonyInfoTool
-import me.rerere.rikkahub.data.ai.tools.local.toastTool
-import me.rerere.rikkahub.data.ai.tools.local.torchTool
-import me.rerere.rikkahub.data.ai.tools.local.vibrateTool
-import me.rerere.rikkahub.data.ai.tools.local.wifiInfoTool
-import me.rerere.rikkahub.data.ai.tools.local.deleteSshHostTool
-import me.rerere.rikkahub.data.ai.tools.local.forgetSshHostKeyTool
-import me.rerere.rikkahub.data.ai.tools.local.listSshHostsTool
-import me.rerere.rikkahub.data.ai.tools.local.telegramAddWhitelistTool
-import me.rerere.rikkahub.data.ai.tools.local.telegramDeleteCommandsTool
-import me.rerere.rikkahub.data.ai.tools.local.telegramDisableTool
-import me.rerere.rikkahub.data.ai.tools.local.telegramEnableTool
-import me.rerere.rikkahub.data.ai.tools.local.telegramGetCommandsTool
-import me.rerere.rikkahub.data.ai.tools.local.telegramRemoveWhitelistTool
-import me.rerere.rikkahub.data.ai.tools.local.telegramSendDocumentTool
-import me.rerere.rikkahub.data.ai.tools.local.telegramSendMessageTool
-import me.rerere.rikkahub.data.ai.tools.local.telegramSendPhotoTool
-import me.rerere.rikkahub.data.ai.tools.local.telegramSetAssistantTool
-import me.rerere.rikkahub.data.ai.tools.local.telegramSetCommandsTool
-import me.rerere.rikkahub.data.ai.tools.local.telegramSetDefaultChatTool
-import me.rerere.rikkahub.data.ai.tools.local.telegramSetTokenTool
-import me.rerere.rikkahub.data.ai.tools.local.telegramStatusTool
-import me.rerere.rikkahub.data.ai.tools.local.requestSecretTool
-import me.rerere.rikkahub.data.ai.tools.local.saveSshHostTool
-import me.rerere.rikkahub.data.ai.tools.local.secretDeleteTool
-import me.rerere.rikkahub.data.ai.tools.local.secretListTool
-import me.rerere.rikkahub.data.ai.tools.local.sshDownloadTool
-import me.rerere.rikkahub.data.ai.tools.local.sshExecSavedTool
-import me.rerere.rikkahub.data.ai.tools.local.sshExecTool
-import me.rerere.rikkahub.data.ai.tools.local.sshUploadTool
-import me.rerere.rikkahub.data.ai.tools.local.REQUEST_SECRET_TOOL_NAME
-import me.rerere.rikkahub.data.secrets.AgentSecretsStore
-import me.rerere.rikkahub.data.ai.tools.local.writeTextFileTool
-import me.rerere.rikkahub.data.ai.tools.local.showImageTool
-import me.rerere.rikkahub.data.ai.tools.local.openFileTool
-import me.rerere.rikkahub.data.ai.tools.local.transcribeAudioFileTool
-import me.rerere.rikkahub.data.ai.tools.local.whisperStatusTool
-import me.rerere.rikkahub.data.ai.tools.local.listFilesTool
-import me.rerere.rikkahub.data.ai.tools.local.readFileTool
-import me.rerere.rikkahub.data.ai.tools.local.writeBinaryFileTool
-import me.rerere.rikkahub.data.ai.tools.local.deleteFileTool
-import me.rerere.rikkahub.data.ai.tools.local.moveFileTool
-import me.rerere.rikkahub.data.ai.tools.local.copyFileTool
-import me.rerere.rikkahub.data.ai.tools.local.createDirectoryTool
-import me.rerere.rikkahub.data.ai.tools.local.fileInfoTool
-import me.rerere.rikkahub.data.ai.tools.local.findFilesTool
-import me.rerere.rikkahub.data.ai.tools.local.dismissNotificationTool
-import me.rerere.rikkahub.data.ai.tools.local.listActiveNotificationsTool
-import me.rerere.rikkahub.data.ai.tools.local.listRecentNotificationsTool
-import me.rerere.rikkahub.data.ai.tools.local.notificationActionClickTool
-import me.rerere.rikkahub.data.ai.tools.local.notificationReplyTool
-import me.rerere.rikkahub.data.ai.tools.local.notificationStatusTool
-import me.rerere.rikkahub.data.ai.tools.local.batchCopyTool
-import me.rerere.rikkahub.data.ai.tools.local.batchMoveTool
-import me.rerere.rikkahub.data.ai.tools.local.batchDeleteTool
-import me.rerere.rikkahub.data.ai.tools.local.webFetchTool
-import me.rerere.rikkahub.data.ai.tools.local.webExtractTool
-import me.rerere.rikkahub.data.event.AppEvent
-import me.rerere.rikkahub.data.event.AppEventBus
-import me.rerere.rikkahub.utils.readClipboardText
-import me.rerere.rikkahub.utils.writeClipboardText
+import com.clma.app.data.ai.tools.local.editImageTool
+import com.clma.app.data.ai.tools.local.generateImageTool
+import com.clma.app.data.ai.tools.local.generateVideoTool
+import com.clma.app.data.ai.tools.local.clickNodeTool
+import com.clma.app.data.ai.tools.local.downloadTool
+import com.clma.app.data.ai.tools.local.fingerprintTool
+import com.clma.app.data.ai.tools.local.findNodeTool
+import com.clma.app.data.ai.tools.local.getBrightnessTool
+import com.clma.app.data.ai.tools.local.getVolumeTool
+import com.clma.app.data.ai.tools.local.globalActionTool
+import com.clma.app.data.ai.tools.local.listContactsTool
+import com.clma.app.data.ai.tools.local.listSensorsTool
+import com.clma.app.data.ai.tools.local.listSmsInboxTool
+import com.clma.app.data.ai.tools.local.locationTool
+import com.clma.app.data.ai.tools.local.longPressTool
+import com.clma.app.data.ai.tools.local.mediaScannerTool
+import com.clma.app.data.ai.tools.local.micRecorderTool
+import com.clma.app.data.ai.tools.local.notificationTool
+import com.clma.app.data.ai.tools.local.getMediaStatusTool
+import com.clma.app.data.ai.tools.local.pauseMediaTool
+import com.clma.app.data.ai.tools.local.playMediaTool
+import com.clma.app.data.ai.tools.local.resumeMediaTool
+import com.clma.app.data.ai.tools.local.seekMediaTool
+import com.clma.app.data.ai.tools.local.readSensorTool
+import com.clma.app.data.ai.tools.local.readWindowTreeTool
+import com.clma.app.data.ai.tools.local.scrollTool
+import com.clma.app.data.ai.tools.local.searchContactsTool
+import com.clma.app.data.ai.tools.local.searchSmsTool
+import com.clma.app.data.ai.tools.local.setBrightnessTool
+import com.clma.app.data.ai.tools.local.setVolumeTool
+import com.clma.app.data.ai.tools.local.shareTool
+import com.clma.app.data.ai.tools.local.speechToTextTool
+import com.clma.app.data.ai.tools.local.stopMediaTool
+import com.clma.app.data.ai.tools.local.storageTool
+import com.clma.app.data.ai.tools.local.swipeTool
+import com.clma.app.data.ai.tools.local.takeScreenshotTool
+import com.clma.app.data.ai.tools.local.tapTool
+import com.clma.app.data.ai.tools.local.telephonyInfoTool
+import com.clma.app.data.ai.tools.local.toastTool
+import com.clma.app.data.ai.tools.local.torchTool
+import com.clma.app.data.ai.tools.local.vibrateTool
+import com.clma.app.data.ai.tools.local.wifiInfoTool
+import com.clma.app.data.ai.tools.local.deleteSshHostTool
+import com.clma.app.data.ai.tools.local.forgetSshHostKeyTool
+import com.clma.app.data.ai.tools.local.listSshHostsTool
+import com.clma.app.data.ai.tools.local.telegramAddWhitelistTool
+import com.clma.app.data.ai.tools.local.telegramDeleteCommandsTool
+import com.clma.app.data.ai.tools.local.telegramDisableTool
+import com.clma.app.data.ai.tools.local.telegramEnableTool
+import com.clma.app.data.ai.tools.local.telegramGetCommandsTool
+import com.clma.app.data.ai.tools.local.telegramRemoveWhitelistTool
+import com.clma.app.data.ai.tools.local.telegramSendDocumentTool
+import com.clma.app.data.ai.tools.local.telegramSendMessageTool
+import com.clma.app.data.ai.tools.local.telegramSendPhotoTool
+import com.clma.app.data.ai.tools.local.telegramSetAssistantTool
+import com.clma.app.data.ai.tools.local.telegramSetCommandsTool
+import com.clma.app.data.ai.tools.local.telegramSetDefaultChatTool
+import com.clma.app.data.ai.tools.local.telegramSetTokenTool
+import com.clma.app.data.ai.tools.local.telegramStatusTool
+import com.clma.app.data.ai.tools.local.requestSecretTool
+import com.clma.app.data.ai.tools.local.saveSshHostTool
+import com.clma.app.data.ai.tools.local.secretDeleteTool
+import com.clma.app.data.ai.tools.local.secretListTool
+import com.clma.app.data.ai.tools.local.sshDownloadTool
+import com.clma.app.data.ai.tools.local.sshExecSavedTool
+import com.clma.app.data.ai.tools.local.sshExecTool
+import com.clma.app.data.ai.tools.local.sshUploadTool
+import com.clma.app.data.ai.tools.local.REQUEST_SECRET_TOOL_NAME
+import com.clma.app.data.secrets.AgentSecretsStore
+import com.clma.app.data.ai.tools.local.writeTextFileTool
+import com.clma.app.data.ai.tools.local.showImageTool
+import com.clma.app.data.ai.tools.local.openFileTool
+import com.clma.app.data.ai.tools.local.transcribeAudioFileTool
+import com.clma.app.data.ai.tools.local.whisperStatusTool
+import com.clma.app.data.ai.tools.local.listFilesTool
+import com.clma.app.data.ai.tools.local.readFileTool
+import com.clma.app.data.ai.tools.local.writeBinaryFileTool
+import com.clma.app.data.ai.tools.local.deleteFileTool
+import com.clma.app.data.ai.tools.local.moveFileTool
+import com.clma.app.data.ai.tools.local.copyFileTool
+import com.clma.app.data.ai.tools.local.createDirectoryTool
+import com.clma.app.data.ai.tools.local.fileInfoTool
+import com.clma.app.data.ai.tools.local.findFilesTool
+import com.clma.app.data.ai.tools.local.dismissNotificationTool
+import com.clma.app.data.ai.tools.local.listActiveNotificationsTool
+import com.clma.app.data.ai.tools.local.listRecentNotificationsTool
+import com.clma.app.data.ai.tools.local.notificationActionClickTool
+import com.clma.app.data.ai.tools.local.notificationReplyTool
+import com.clma.app.data.ai.tools.local.notificationStatusTool
+import com.clma.app.data.ai.tools.local.batchCopyTool
+import com.clma.app.data.ai.tools.local.batchMoveTool
+import com.clma.app.data.ai.tools.local.batchDeleteTool
+import com.clma.app.data.ai.tools.local.webFetchTool
+import com.clma.app.data.ai.tools.local.webExtractTool
+import com.clma.app.data.event.AppEvent
+import com.clma.app.data.event.AppEventBus
+import com.clma.app.utils.readClipboardText
+import com.clma.app.utils.writeClipboardText
 import java.time.ZonedDateTime
 import java.time.format.TextStyle
 import java.util.Locale
@@ -360,64 +360,64 @@ private const val EVAL_JS_TIMEOUT_MS = 5_000L
 
 class LocalTools(
     private val context: Context,
-    private val usageRecordDao: me.rerere.rikkahub.data.usage.UsageRecordDao,
-    private val agentRunRepository: me.rerere.rikkahub.data.agentrun.AgentRunRepository,
+    private val usageRecordDao: com.clma.app.data.usage.UsageRecordDao,
+    private val agentRunRepository: com.clma.app.data.agentrun.AgentRunRepository,
     private val eventBus: AppEventBus,
     private val cameraResultBuffer: CameraResultBuffer,
     private val biometricResultBuffer: BiometricResultBuffer,
-    private val scheduledJobRepository: me.rerere.rikkahub.data.repository.ScheduledJobRepository,
-    private val scheduledJobRunRepository: me.rerere.rikkahub.data.repository.ScheduledJobRunRepository,
-    private val cronJobScheduler: me.rerere.rikkahub.service.CronJobScheduler,
-    private val settingsStore: me.rerere.rikkahub.data.datastore.SettingsStore,
-    private val sshHostRepository: me.rerere.rikkahub.data.repository.SshHostRepository,
+    private val scheduledJobRepository: com.clma.app.data.repository.ScheduledJobRepository,
+    private val scheduledJobRunRepository: com.clma.app.data.repository.ScheduledJobRunRepository,
+    private val cronJobScheduler: com.clma.app.service.CronJobScheduler,
+    private val settingsStore: com.clma.app.data.datastore.SettingsStore,
+    private val sshHostRepository: com.clma.app.data.repository.SshHostRepository,
     private val agentSecretsStore: AgentSecretsStore,
-    private val telegramBotPreferences: me.rerere.rikkahub.data.telegram.TelegramBotPreferences,
-    private val telegramBotClient: me.rerere.rikkahub.data.telegram.TelegramBotClient,
-    private val notificationListenerPreferences: me.rerere.rikkahub.data.notifications.NotificationListenerPreferences,
-    private val mcpManager: me.rerere.rikkahub.data.ai.mcp.McpManager,
-    private val externalAutomationConfig: me.rerere.rikkahub.automation.ExternalAutomationConfig,
-    private val gitHubReleaseChecker: me.rerere.rikkahub.reliability.GitHubReleaseChecker,
-    private val bugReportBuilder: me.rerere.rikkahub.reliability.BugReportBuilder,
+    private val telegramBotPreferences: com.clma.app.data.telegram.TelegramBotPreferences,
+    private val telegramBotClient: com.clma.app.data.telegram.TelegramBotClient,
+    private val notificationListenerPreferences: com.clma.app.data.notifications.NotificationListenerPreferences,
+    private val mcpManager: com.clma.app.data.ai.mcp.McpManager,
+    private val externalAutomationConfig: com.clma.app.automation.ExternalAutomationConfig,
+    private val gitHubReleaseChecker: com.clma.app.reliability.GitHubReleaseChecker,
+    private val bugReportBuilder: com.clma.app.reliability.BugReportBuilder,
     // P2-06b — the expert library. Read as a blocking snapshot at tool-construction time (this
     // factory is not suspend) to list the experts `subagent_dispatch` may name, to feed
     // `subagent_list kind=experts`, and to back the three roster-write tools.
-    private val agentDefinitionRepository: me.rerere.rikkahub.data.agentdef.AgentDefinitionRepository,
-    private val subAgentEngine: me.rerere.rikkahub.subagent.SubAgentEngine,
-    private val subAgentRegistry: me.rerere.rikkahub.subagent.SubAgentRegistry,
-    private val conversationRepo: me.rerere.rikkahub.data.repository.ConversationRepository,
-    private val workflowRepository: me.rerere.rikkahub.workflow.repository.WorkflowRepository,
-    private val workflowEngine: me.rerere.rikkahub.workflow.execution.WorkflowEngine,
-    private val skillUrlImporter: me.rerere.rikkahub.skills.SkillUrlImporter,
-    private val skillManager: me.rerere.rikkahub.data.files.SkillManager,
-    private val jsSkillRunner: me.rerere.rikkahub.skills.js.JsSkillRunner,
-    private val skillSecretsStore: me.rerere.rikkahub.skills.js.SkillSecretsStore,
+    private val agentDefinitionRepository: com.clma.app.data.agentdef.AgentDefinitionRepository,
+    private val subAgentEngine: com.clma.app.subagent.SubAgentEngine,
+    private val subAgentRegistry: com.clma.app.subagent.SubAgentRegistry,
+    private val conversationRepo: com.clma.app.data.repository.ConversationRepository,
+    private val workflowRepository: com.clma.app.workflow.repository.WorkflowRepository,
+    private val workflowEngine: com.clma.app.workflow.execution.WorkflowEngine,
+    private val skillUrlImporter: com.clma.app.skills.SkillUrlImporter,
+    private val skillManager: com.clma.app.data.files.SkillManager,
+    private val jsSkillRunner: com.clma.app.skills.js.JsSkillRunner,
+    private val skillSecretsStore: com.clma.app.skills.js.SkillSecretsStore,
     // Browser per-tool toggle store. Pass 2 reads a [snapshotBlocking] of the map so each
     // tool factory gates its own registration on whether the user has flipped it on. Master
     // toggle ([LocalToolOption.Browser]) acts as the group on/off; per-tool toggles act as
     // a sub-allow-list. Both must be true for a tool to register.
-    private val browserPreferences: me.rerere.rikkahub.browser.BrowserPreferences,
+    private val browserPreferences: com.clma.app.browser.BrowserPreferences,
     // TermuxPreferences is injected here solely to force Koin to construct it at first tool
     // use (same trick as browserPreferences above). Koin singles are lazy; without this
     // constructor reference the singleton — and its init{} sync seed + async collectors —
     // would never build in headless sessions that skip Settings -> Termux.
     @Suppress("UNUSED_PARAMETER")
-    termuxPreferences: me.rerere.rikkahub.data.preferences.TermuxPreferences,
+    termuxPreferences: com.clma.app.data.preferences.TermuxPreferences,
     // Post-action screenshot streamer for headless mode (Telegram bot / cron / sub-agent).
     // Injected rather than Koin-resolved inside each factory so JVM tests can pass a mock.
     private val interactiveToolStreamer: InteractiveToolStreamer,
     // Phase 25 — NFC / SAF Activity-bridge buffers + the SAF tree-grant store.
-    private val nfcResultBuffer: me.rerere.rikkahub.data.ai.tools.local.NfcResultBuffer,
-    private val safPickerResultBuffer: me.rerere.rikkahub.data.ai.tools.local.SafPickerResultBuffer,
-    private val storageVolumeGrantStore: me.rerere.rikkahub.data.storage.StorageVolumeGrantStore,
+    private val nfcResultBuffer: com.clma.app.data.ai.tools.local.NfcResultBuffer,
+    private val safPickerResultBuffer: com.clma.app.data.ai.tools.local.SafPickerResultBuffer,
+    private val storageVolumeGrantStore: com.clma.app.data.storage.StorageVolumeGrantStore,
     // Shared OkHttp singleton (NetworkChangeMonitor-registered) — backs the web_fetch tool.
     private val okHttpClient: okhttp3.OkHttpClient,
     // agent-keyboard IPC client — backs the keyboard_* tools (drives the active text field).
-    private val keyboardApiClient: me.rerere.rikkahub.data.keyboard.KeyboardApiClient,
+    private val keyboardApiClient: com.clma.app.data.keyboard.KeyboardApiClient,
     // P2-33 image generation tools — the same provider + gallery stack ImgGenVM uses;
     // these two tools are just a second caller of it.
-    private val providerManager: me.rerere.ai.provider.ProviderManager,
-    private val filesManager: me.rerere.rikkahub.data.files.FilesManager,
-    private val genMediaRepository: me.rerere.rikkahub.data.repository.GenMediaRepository,
+    private val providerManager: com.clma.ai.provider.ProviderManager,
+    private val filesManager: com.clma.app.data.files.FilesManager,
+    private val genMediaRepository: com.clma.app.data.repository.GenMediaRepository,
 ) {
     val javascriptTool by lazy {
         Tool(
@@ -609,7 +609,7 @@ class LocalTools(
                 when (action) {
                     "read" -> {
                         val text = context.readClipboardText()
-                        val hits = me.rerere.rikkahub.data.ai.tools.local
+                        val hits = com.clma.app.data.ai.tools.local
                             .SensitiveContentDetector.scan(text)
                         val payload = buildJsonObject {
                             put("text", text)
@@ -791,9 +791,9 @@ class LocalTools(
         }
 
         if (options.contains(LocalToolOption.UsageLedger)) {
-            tools.add(me.rerere.rikkahub.data.usage.usageExportTool(usageRecordDao))
-            tools.add(me.rerere.rikkahub.data.usage.usageGetPricesTool(settingsStore))
-            tools.add(me.rerere.rikkahub.data.usage.usageSetPricesTool(settingsStore, agentRunRepository))
+            tools.add(com.clma.app.data.usage.usageExportTool(usageRecordDao))
+            tools.add(com.clma.app.data.usage.usageGetPricesTool(settingsStore))
+            tools.add(com.clma.app.data.usage.usageSetPricesTool(settingsStore, agentRunRepository))
         }
         if (options.contains(LocalToolOption.AudioInfo)) {
             tools.add(audioInfoTool(context))
@@ -886,17 +886,17 @@ class LocalTools(
             tools.add(forgetSshHostKeyTool(context))
         }
         if (options.contains(LocalToolOption.Shizuku)) {
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.shizukuExecTool(context))
+            tools.add(com.clma.app.data.ai.tools.local.shizukuExecTool(context))
         }
         if (options.contains(LocalToolOption.VirtualDisplay)) {
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.virtualDisplayCreateTool(context))
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.virtualDisplayDestroyTool())
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.virtualDisplayListTool())
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.virtualDisplayLaunchTool(context))
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.virtualDisplayTapTool(context))
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.virtualDisplaySwipeTool(context))
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.virtualDisplayKeyTool(context))
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.virtualDisplayTextTool(context))
+            tools.add(com.clma.app.data.ai.tools.local.virtualDisplayCreateTool(context))
+            tools.add(com.clma.app.data.ai.tools.local.virtualDisplayDestroyTool())
+            tools.add(com.clma.app.data.ai.tools.local.virtualDisplayListTool())
+            tools.add(com.clma.app.data.ai.tools.local.virtualDisplayLaunchTool(context))
+            tools.add(com.clma.app.data.ai.tools.local.virtualDisplayTapTool(context))
+            tools.add(com.clma.app.data.ai.tools.local.virtualDisplaySwipeTool(context))
+            tools.add(com.clma.app.data.ai.tools.local.virtualDisplayKeyTool(context))
+            tools.add(com.clma.app.data.ai.tools.local.virtualDisplayTextTool(context))
         }
         if (options.contains(LocalToolOption.TelegramBot)) {
             tools.add(telegramSetTokenTool(telegramBotPreferences, telegramBotClient))
@@ -915,14 +915,14 @@ class LocalTools(
             tools.add(telegramDeleteCommandsTool(telegramBotPreferences, telegramBotClient))
         }
         if (options.contains(LocalToolOption.CronJobs)) {
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.scheduleJobTool(scheduledJobRepository, cronJobScheduler, settingsStore,
+            tools.add(com.clma.app.data.ai.tools.local.scheduleJobTool(scheduledJobRepository, cronJobScheduler, settingsStore,
                 knownToolNamesProvider = { tools.map { it.name } }))
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.listJobsTool(scheduledJobRepository))
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.deleteJobTool(scheduledJobRepository, scheduledJobRunRepository, cronJobScheduler))
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.pauseJobTool(scheduledJobRepository, cronJobScheduler))
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.resumeJobTool(scheduledJobRepository, cronJobScheduler))
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.triggerJobNowTool(scheduledJobRepository, cronJobScheduler))
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.getJobHistoryTool(scheduledJobRepository, scheduledJobRunRepository))
+            tools.add(com.clma.app.data.ai.tools.local.listJobsTool(scheduledJobRepository))
+            tools.add(com.clma.app.data.ai.tools.local.deleteJobTool(scheduledJobRepository, scheduledJobRunRepository, cronJobScheduler))
+            tools.add(com.clma.app.data.ai.tools.local.pauseJobTool(scheduledJobRepository, cronJobScheduler))
+            tools.add(com.clma.app.data.ai.tools.local.resumeJobTool(scheduledJobRepository, cronJobScheduler))
+            tools.add(com.clma.app.data.ai.tools.local.triggerJobNowTool(scheduledJobRepository, cronJobScheduler))
+            tools.add(com.clma.app.data.ai.tools.local.getJobHistoryTool(scheduledJobRepository, scheduledJobRunRepository))
         }
         if (options.contains(LocalToolOption.ScreenAutomation)) {
             tools.add(tapTool(invocationContext, interactiveToolStreamer))
@@ -931,28 +931,28 @@ class LocalTools(
             tools.add(readWindowTreeTool(invocationContext, interactiveToolStreamer))
             tools.add(findNodeTool(invocationContext, interactiveToolStreamer))
             tools.add(clickNodeTool(invocationContext, interactiveToolStreamer))
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.setTextTool(invocationContext, interactiveToolStreamer))
+            tools.add(com.clma.app.data.ai.tools.local.setTextTool(invocationContext, interactiveToolStreamer))
             tools.add(scrollTool(invocationContext, interactiveToolStreamer))
             tools.add(globalActionTool(invocationContext, interactiveToolStreamer))
             tools.add(takeScreenshotTool(context))  // take_screenshot IS the screenshot; skip auto-stream
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.wakeScreenTool(context))
+            tools.add(com.clma.app.data.ai.tools.local.wakeScreenTool(context))
         }
         if (options.contains(LocalToolOption.AppLauncher)) {
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.launchAppTool(context, invocationContext, interactiveToolStreamer))
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.listInstalledAppsTool(context))
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.listAppActivitiesTool(context))
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.launchActivityTool(context, invocationContext, interactiveToolStreamer))
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.openUrlTool(context, invocationContext, interactiveToolStreamer))
+            tools.add(com.clma.app.data.ai.tools.local.launchAppTool(context, invocationContext, interactiveToolStreamer))
+            tools.add(com.clma.app.data.ai.tools.local.listInstalledAppsTool(context))
+            tools.add(com.clma.app.data.ai.tools.local.listAppActivitiesTool(context))
+            tools.add(com.clma.app.data.ai.tools.local.launchActivityTool(context, invocationContext, interactiveToolStreamer))
+            tools.add(com.clma.app.data.ai.tools.local.openUrlTool(context, invocationContext, interactiveToolStreamer))
         }
         if (options.contains(LocalToolOption.Termux)) {
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.termuxRunCommandTool(context))
+            tools.add(com.clma.app.data.ai.tools.local.termuxRunCommandTool(context))
             // Persistent interactive (tmux-backed) sessions: ssh-with-prompts, sudo, REPLs,
             // stateful shells. start is approval-gated; send is hardline-guarded per call.
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.termuxSessionStartTool(context))
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.termuxSessionSendTool(context))
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.termuxSessionReadTool(context))
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.termuxSessionKillTool(context))
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.termuxSessionListTool(context))
+            tools.add(com.clma.app.data.ai.tools.local.termuxSessionStartTool(context))
+            tools.add(com.clma.app.data.ai.tools.local.termuxSessionSendTool(context))
+            tools.add(com.clma.app.data.ai.tools.local.termuxSessionReadTool(context))
+            tools.add(com.clma.app.data.ai.tools.local.termuxSessionKillTool(context))
+            tools.add(com.clma.app.data.ai.tools.local.termuxSessionListTool(context))
             // transcribe_audio_file shells out to whisper-cli via Termux's RUN_COMMAND
             // service — it has a hard transitive dependency on Termux being present. No
             // separate toggle; it lives under the Termux toggle.
@@ -988,28 +988,28 @@ class LocalTools(
             tools.add(batchDeleteTool())
         }
         if (options.contains(LocalToolOption.McpControl)) {
-            tools.add(me.rerere.rikkahub.data.ai.mcp.control.mcpListTool(settingsStore, mcpManager))
-            tools.add(me.rerere.rikkahub.data.ai.mcp.control.mcpGetTool(settingsStore, mcpManager))
-            tools.add(me.rerere.rikkahub.data.ai.mcp.control.mcpAddTool(settingsStore, mcpManager))
-            tools.add(me.rerere.rikkahub.data.ai.mcp.control.mcpUpdateTool(settingsStore, mcpManager))
-            tools.add(me.rerere.rikkahub.data.ai.mcp.control.mcpDeleteTool(settingsStore, mcpManager))
-            tools.add(me.rerere.rikkahub.data.ai.mcp.control.mcpSetEnabledTool(settingsStore, mcpManager))
-            tools.add(me.rerere.rikkahub.data.ai.mcp.control.mcpTestTool(settingsStore, mcpManager))
-            tools.add(me.rerere.rikkahub.data.ai.mcp.control.mcpListToolsTool(settingsStore, mcpManager))
-            tools.add(me.rerere.rikkahub.data.ai.mcp.control.mcpSetToolApprovalTool(settingsStore))
+            tools.add(com.clma.app.data.ai.mcp.control.mcpListTool(settingsStore, mcpManager))
+            tools.add(com.clma.app.data.ai.mcp.control.mcpGetTool(settingsStore, mcpManager))
+            tools.add(com.clma.app.data.ai.mcp.control.mcpAddTool(settingsStore, mcpManager))
+            tools.add(com.clma.app.data.ai.mcp.control.mcpUpdateTool(settingsStore, mcpManager))
+            tools.add(com.clma.app.data.ai.mcp.control.mcpDeleteTool(settingsStore, mcpManager))
+            tools.add(com.clma.app.data.ai.mcp.control.mcpSetEnabledTool(settingsStore, mcpManager))
+            tools.add(com.clma.app.data.ai.mcp.control.mcpTestTool(settingsStore, mcpManager))
+            tools.add(com.clma.app.data.ai.mcp.control.mcpListToolsTool(settingsStore, mcpManager))
+            tools.add(com.clma.app.data.ai.mcp.control.mcpSetToolApprovalTool(settingsStore))
         }
         if (options.contains(LocalToolOption.ExternalAutomation)) {
-            tools.add(me.rerere.rikkahub.automation.externalAutomationStatusTool(externalAutomationConfig))
-            tools.add(me.rerere.rikkahub.automation.externalAutomationSetEnabledTool(externalAutomationConfig))
-            tools.add(me.rerere.rikkahub.automation.externalAutomationAddTrustedPackageTool(externalAutomationConfig))
-            tools.add(me.rerere.rikkahub.automation.externalAutomationRemoveTrustedPackageTool(externalAutomationConfig))
+            tools.add(com.clma.app.automation.externalAutomationStatusTool(externalAutomationConfig))
+            tools.add(com.clma.app.automation.externalAutomationSetEnabledTool(externalAutomationConfig))
+            tools.add(com.clma.app.automation.externalAutomationAddTrustedPackageTool(externalAutomationConfig))
+            tools.add(com.clma.app.automation.externalAutomationRemoveTrustedPackageTool(externalAutomationConfig))
         }
         // Built-in update check: always on, never a user toggle and never listed in the
         // per-tool overrides (see [HIDDEN_TOOL_NAMES]) — it backs the app's own update
         // path, not an optional capability. The Reliability group keeps only bug reports.
-        tools.add(me.rerere.rikkahub.reliability.checkAppUpdatesTool(gitHubReleaseChecker))
+        tools.add(com.clma.app.reliability.checkAppUpdatesTool(gitHubReleaseChecker))
         if (options.contains(LocalToolOption.Reliability)) {
-            tools.add(me.rerere.rikkahub.reliability.generateBugReportTool(context, bugReportBuilder))
+            tools.add(com.clma.app.reliability.generateBugReportTool(context, bugReportBuilder))
         }
         if (options.contains(LocalToolOption.SubAgents)) {
             // Pass the caller context so the recursion guard inside SubAgentEngine.dispatch
@@ -1021,24 +1021,24 @@ class LocalTools(
             val definitions = agentDefinitionRepository.snapshotBlocking()
             // NEVER profile: dispatch tool is not registered (engine also refuses);
             // list/get/cancel/create/update/delete stay so the user can still manage runs.
-            if (me.rerere.rikkahub.subagent.SubAgentDispatchProfileRules
+            if (com.clma.app.subagent.SubAgentDispatchProfileRules
                     .isDispatchEnabled(
-                        me.rerere.rikkahub.subagent.SubAgentDispatchProfileRules.getLiveDispatchProfile()
+                        com.clma.app.subagent.SubAgentDispatchProfileRules.getLiveDispatchProfile()
                     )
             ) {
                 tools.add(
-                    me.rerere.rikkahub.subagent.subagentDispatchTool(
+                    com.clma.app.subagent.subagentDispatchTool(
                         subAgentEngine,
                         invocationContext,
                         definitions,
                     )
                 )
             }
-            tools.add(me.rerere.rikkahub.subagent.subagentListTool(subAgentRegistry, definitions))
+            tools.add(com.clma.app.subagent.subagentListTool(subAgentRegistry, definitions))
             // P2-06b — the roster write tools. Registered alongside the reads; each one prompts
             // per call and refuses outright in a headless conversation.
             tools.add(
-                me.rerere.rikkahub.subagent.subagentCreateTool(
+                com.clma.app.subagent.subagentCreateTool(
                     agentDefinitionRepository,
                     agentRunRepository,
                     settingsStore,
@@ -1046,7 +1046,7 @@ class LocalTools(
                 )
             )
             tools.add(
-                me.rerere.rikkahub.subagent.subagentUpdateTool(
+                com.clma.app.subagent.subagentUpdateTool(
                     agentDefinitionRepository,
                     agentRunRepository,
                     settingsStore,
@@ -1054,54 +1054,54 @@ class LocalTools(
                 )
             )
             tools.add(
-                me.rerere.rikkahub.subagent.subagentDeleteTool(
+                com.clma.app.subagent.subagentDeleteTool(
                     agentDefinitionRepository,
                     agentRunRepository,
                     invocationContext,
                 )
             )
-            tools.add(me.rerere.rikkahub.subagent.subagentGetTool(subAgentRegistry))
-            tools.add(me.rerere.rikkahub.subagent.subagentCancelTool(subAgentRegistry))
+            tools.add(com.clma.app.subagent.subagentGetTool(subAgentRegistry))
+            tools.add(com.clma.app.subagent.subagentCancelTool(subAgentRegistry))
         }
         if (options.contains(LocalToolOption.CostGuards)) {
-            tools.add(me.rerere.rikkahub.costguards.checkTokenUsageTool(settingsStore, conversationRepo))
+            tools.add(com.clma.app.costguards.checkTokenUsageTool(settingsStore, conversationRepo))
         }
         if (options.contains(LocalToolOption.SkillImport)) {
-            tools.add(me.rerere.rikkahub.skills.skillInstallFromUrlTool(skillUrlImporter, settingsStore, skillManager))
-            tools.add(me.rerere.rikkahub.skills.skillInstallFromTextTool(skillUrlImporter, settingsStore, skillManager))
+            tools.add(com.clma.app.skills.skillInstallFromUrlTool(skillUrlImporter, settingsStore, skillManager))
+            tools.add(com.clma.app.skills.skillInstallFromTextTool(skillUrlImporter, settingsStore, skillManager))
         }
         if (options.contains(LocalToolOption.JsSkills)) {
-            tools.add(me.rerere.rikkahub.skills.js.runJsTool(
+            tools.add(com.clma.app.skills.js.runJsTool(
                 context, skillManager, jsSkillRunner, skillSecretsStore,
             ))
         }
         if (options.contains(LocalToolOption.SystemIntents)) {
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.createCalendarEventTool(context, invocationContext, interactiveToolStreamer))
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.createContactTool(context, invocationContext, interactiveToolStreamer))
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.sendEmailIntentTool(context, invocationContext, interactiveToolStreamer))
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.sendSmsIntentTool(context, invocationContext, interactiveToolStreamer))
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.openWifiSettingsTool(context, invocationContext, interactiveToolStreamer))
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.showLocationOnMapTool(context, invocationContext, interactiveToolStreamer))
+            tools.add(com.clma.app.data.ai.tools.local.createCalendarEventTool(context, invocationContext, interactiveToolStreamer))
+            tools.add(com.clma.app.data.ai.tools.local.createContactTool(context, invocationContext, interactiveToolStreamer))
+            tools.add(com.clma.app.data.ai.tools.local.sendEmailIntentTool(context, invocationContext, interactiveToolStreamer))
+            tools.add(com.clma.app.data.ai.tools.local.sendSmsIntentTool(context, invocationContext, interactiveToolStreamer))
+            tools.add(com.clma.app.data.ai.tools.local.openWifiSettingsTool(context, invocationContext, interactiveToolStreamer))
+            tools.add(com.clma.app.data.ai.tools.local.showLocationOnMapTool(context, invocationContext, interactiveToolStreamer))
         }
         if (options.contains(LocalToolOption.Workflows)) {
             // workflow_create persists the authoringAssistantId from [context] so the
             // engine can resolve the right tool surface at fire time (not "any assistant
             // with the Workflows toggle on", which is non-deterministic across UI reorder).
-            tools.add(me.rerere.rikkahub.workflow.tools.workflowCreateTool(
+            tools.add(com.clma.app.workflow.tools.workflowCreateTool(
                 workflowRepository,
                 knownToolNamesProvider = { tools.map { it.name } },
                 callerContext = invocationContext,
             ))
-            tools.add(me.rerere.rikkahub.workflow.tools.workflowListTool(workflowRepository))
-            tools.add(me.rerere.rikkahub.workflow.tools.workflowGetTool(workflowRepository))
-            tools.add(me.rerere.rikkahub.workflow.tools.workflowUpdateTool(
+            tools.add(com.clma.app.workflow.tools.workflowListTool(workflowRepository))
+            tools.add(com.clma.app.workflow.tools.workflowGetTool(workflowRepository))
+            tools.add(com.clma.app.workflow.tools.workflowUpdateTool(
                 workflowRepository,
                 knownToolNamesProvider = { tools.map { it.name } },
                 callerContext = invocationContext,
             ))
-            tools.add(me.rerere.rikkahub.workflow.tools.workflowDeleteTool(workflowRepository))
-            tools.add(me.rerere.rikkahub.workflow.tools.workflowSetEnabledTool(workflowRepository))
-            tools.add(me.rerere.rikkahub.workflow.tools.workflowRunTool(workflowEngine, workflowRepository))
+            tools.add(com.clma.app.workflow.tools.workflowDeleteTool(workflowRepository))
+            tools.add(com.clma.app.workflow.tools.workflowSetEnabledTool(workflowRepository))
+            tools.add(com.clma.app.workflow.tools.workflowRunTool(workflowEngine, workflowRepository))
         }
         if (options.contains(LocalToolOption.Browser)) {
             // Per-tool registration. The user can grant only the tools they trust — read
@@ -1109,9 +1109,9 @@ class LocalTools(
             // snapshotBlocking() reads DataStore once; steady-state cost is microseconds because
             // DataStore caches the latest Preferences instance after the first decode.
             val browserPrefs = browserPreferences.snapshotBlocking()
-            me.rerere.rikkahub.browser.BrowserToolDefaults.ALL_TOOLS.forEach { name ->
+            com.clma.app.browser.BrowserToolDefaults.ALL_TOOLS.forEach { name ->
                 if (browserPrefs[name] == true) {
-                    me.rerere.rikkahub.data.ai.tools.local.createBrowserTool(
+                    com.clma.app.data.ai.tools.local.createBrowserTool(
                         toolName = name,
                         context = context,
                         // Pass 3: thread the caller context so browser_open can pick the
@@ -1130,35 +1130,35 @@ class LocalTools(
         }
         // Phase 25 — Phase 3 second cut + ExternalStorage + Archive.
         if (options.contains(LocalToolOption.SmsSend)) {
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.smsSendTool(context))
+            tools.add(com.clma.app.data.ai.tools.local.smsSendTool(context))
         }
         if (options.contains(LocalToolOption.Wallpaper)) {
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.setWallpaperTool(context))
+            tools.add(com.clma.app.data.ai.tools.local.setWallpaperTool(context))
         }
         if (options.contains(LocalToolOption.Keystore)) {
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.keystoreGenerateKeyTool())
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.keystoreSignTool())
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.keystoreVerifyTool())
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.keystoreEncryptTool())
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.keystoreDecryptTool())
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.keystoreDeleteKeyTool())
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.keystoreListKeysTool())
+            tools.add(com.clma.app.data.ai.tools.local.keystoreGenerateKeyTool())
+            tools.add(com.clma.app.data.ai.tools.local.keystoreSignTool())
+            tools.add(com.clma.app.data.ai.tools.local.keystoreVerifyTool())
+            tools.add(com.clma.app.data.ai.tools.local.keystoreEncryptTool())
+            tools.add(com.clma.app.data.ai.tools.local.keystoreDecryptTool())
+            tools.add(com.clma.app.data.ai.tools.local.keystoreDeleteKeyTool())
+            tools.add(com.clma.app.data.ai.tools.local.keystoreListKeysTool())
         }
         if (options.contains(LocalToolOption.Nfc)) {
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.nfcReadTagTool(context, nfcResultBuffer, invocationContext))
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.nfcWriteTagTool(context, nfcResultBuffer, invocationContext))
+            tools.add(com.clma.app.data.ai.tools.local.nfcReadTagTool(context, nfcResultBuffer, invocationContext))
+            tools.add(com.clma.app.data.ai.tools.local.nfcWriteTagTool(context, nfcResultBuffer, invocationContext))
         }
         if (options.contains(LocalToolOption.ExternalStorage)) {
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.listStorageVolumesTool(context))
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.listGrantedDirectoriesTool(context, storageVolumeGrantStore))
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.grantDirectoryAccessTool(
+            tools.add(com.clma.app.data.ai.tools.local.listStorageVolumesTool(context))
+            tools.add(com.clma.app.data.ai.tools.local.listGrantedDirectoriesTool(context, storageVolumeGrantStore))
+            tools.add(com.clma.app.data.ai.tools.local.grantDirectoryAccessTool(
                 context, storageVolumeGrantStore, safPickerResultBuffer, invocationContext,
             ))
         }
         if (options.contains(LocalToolOption.Archive)) {
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.zipFilesTool(context))
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.unzipFileTool(context))
-            tools.add(me.rerere.rikkahub.data.ai.tools.local.listZipContentsTool(context))
+            tools.add(com.clma.app.data.ai.tools.local.zipFilesTool(context))
+            tools.add(com.clma.app.data.ai.tools.local.unzipFileTool(context))
+            tools.add(com.clma.app.data.ai.tools.local.listZipContentsTool(context))
         }
         if (options.contains(LocalToolOption.KeyboardControl)) {
             // Drives the active text field through the co-signed agent-keyboard IME.
@@ -1211,10 +1211,10 @@ class LocalTools(
             // writes are in the recommended blacklist set (ToolApprovalDefaults.DANGEROUS_TOOLS)
             // and are refused outright in a headless run via
             // HeadlessToolApprovalPolicy.MODEL_WRITE_TOOL_NAMES.
-            tools.add(me.rerere.rikkahub.data.ai.model.modelListTool(settingsStore))
-            tools.add(me.rerere.rikkahub.data.ai.model.modelAddTool(settingsStore, agentRunRepository))
-            tools.add(me.rerere.rikkahub.data.ai.model.modelUpdateTool(settingsStore, agentRunRepository))
-            tools.add(me.rerere.rikkahub.data.ai.model.modelDeleteTool(settingsStore, agentRunRepository))
+            tools.add(com.clma.app.data.ai.model.modelListTool(settingsStore))
+            tools.add(com.clma.app.data.ai.model.modelAddTool(settingsStore, agentRunRepository))
+            tools.add(com.clma.app.data.ai.model.modelUpdateTool(settingsStore, agentRunRepository))
+            tools.add(com.clma.app.data.ai.model.modelDeleteTool(settingsStore, agentRunRepository))
         }
         // Blacklist era: every tool is routed through the runtime approval decision
         // (ChatService.isToolAutoApproved → ToolApprovalPolicy), so `needsApproval` is true

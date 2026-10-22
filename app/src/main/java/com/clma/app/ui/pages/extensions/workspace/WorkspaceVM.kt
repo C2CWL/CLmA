@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.extensions.workspace
+package com.clma.app.ui.pages.extensions.workspace
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -9,9 +9,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import me.rerere.rikkahub.data.db.entity.WorkspaceEntity
-import me.rerere.rikkahub.data.repository.WorkspaceRepository
-import me.rerere.workspace.RootfsInstallProgress
+import com.clma.app.data.db.entity.WorkspaceEntity
+import com.clma.app.data.repository.WorkspaceRepository
+import com.clma.workspace.RootfsInstallProgress
 
 class WorkspaceVM(
     private val repository: WorkspaceRepository,

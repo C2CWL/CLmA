@@ -1,9 +1,9 @@
-package me.rerere.rikkahub.data.ai.tools.local
+package com.clma.app.data.ai.tools.local
 
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import me.rerere.ai.ui.ImageAspectRatio
+import com.clma.ai.ui.ImageAspectRatio
 
 /**
  * P2-33b — the pure core of the `generate_video` local tool, a deliberate mirror of

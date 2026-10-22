@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.web.routes
+package com.clma.app.web.routes
 
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.request.receive
@@ -6,21 +6,21 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.post
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.route
-import me.rerere.ai.provider.BuiltInTools
-import me.rerere.ai.provider.ModelType
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.datastore.findModelById
-import me.rerere.rikkahub.web.BadRequestException
-import me.rerere.rikkahub.web.NotFoundException
-import me.rerere.rikkahub.web.dto.UpdateAssistantModelRequest
-import me.rerere.rikkahub.web.dto.UpdateAssistantRequest
-import me.rerere.rikkahub.web.dto.UpdateAssistantReasoningLevelRequest
-import me.rerere.rikkahub.web.dto.UpdateAssistantMcpServersRequest
-import me.rerere.rikkahub.web.dto.UpdateAssistantInjectionsRequest
-import me.rerere.rikkahub.web.dto.UpdateBuiltInToolRequest
-import me.rerere.rikkahub.web.dto.UpdateFavoriteModelsRequest
-import me.rerere.rikkahub.web.dto.UpdateSearchEnabledRequest
-import me.rerere.rikkahub.web.dto.UpdateSearchServiceRequest
+import com.clma.ai.provider.BuiltInTools
+import com.clma.ai.provider.ModelType
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.datastore.findModelById
+import com.clma.app.web.BadRequestException
+import com.clma.app.web.NotFoundException
+import com.clma.app.web.dto.UpdateAssistantModelRequest
+import com.clma.app.web.dto.UpdateAssistantRequest
+import com.clma.app.web.dto.UpdateAssistantReasoningLevelRequest
+import com.clma.app.web.dto.UpdateAssistantMcpServersRequest
+import com.clma.app.web.dto.UpdateAssistantInjectionsRequest
+import com.clma.app.web.dto.UpdateBuiltInToolRequest
+import com.clma.app.web.dto.UpdateFavoriteModelsRequest
+import com.clma.app.web.dto.UpdateSearchEnabledRequest
+import com.clma.app.web.dto.UpdateSearchServiceRequest
 import java.util.Locale
 
 fun Route.settingsRoutes(

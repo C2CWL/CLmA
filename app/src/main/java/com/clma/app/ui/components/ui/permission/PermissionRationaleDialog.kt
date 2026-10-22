@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.ui.permission
+package com.clma.app.ui.components.ui.permission
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,7 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.AlertCircle
-import me.rerere.rikkahub.R
+import com.clma.app.R
 
 /**
  * 权限请求说明对话框

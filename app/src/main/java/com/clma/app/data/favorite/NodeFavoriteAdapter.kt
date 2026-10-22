@@ -1,12 +1,12 @@
-package me.rerere.rikkahub.data.favorite
+package com.clma.app.data.favorite
 
-import me.rerere.rikkahub.data.db.entity.FavoriteEntity
-import me.rerere.rikkahub.data.model.FavoriteMeta
-import me.rerere.rikkahub.data.model.FavoriteType
-import me.rerere.rikkahub.data.model.NodeFavoriteRef
-import me.rerere.rikkahub.data.model.NodeFavoriteTarget
-import me.rerere.rikkahub.data.model.buildFavoritePreview
-import me.rerere.rikkahub.utils.JsonInstant
+import com.clma.app.data.db.entity.FavoriteEntity
+import com.clma.app.data.model.FavoriteMeta
+import com.clma.app.data.model.FavoriteType
+import com.clma.app.data.model.NodeFavoriteRef
+import com.clma.app.data.model.NodeFavoriteTarget
+import com.clma.app.data.model.buildFavoritePreview
+import com.clma.app.utils.JsonInstant
 
 object NodeFavoriteAdapter : FavoriteAdapter<NodeFavoriteTarget> {
     override val type: FavoriteType = FavoriteType.NODE

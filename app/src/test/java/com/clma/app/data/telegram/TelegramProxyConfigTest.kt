@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.telegram
+package com.clma.app.data.telegram
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences

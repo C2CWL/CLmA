@@ -1,6 +1,6 @@
-package me.rerere.rikkahub.subagent
+package com.clma.app.subagent
 
-import me.rerere.rikkahub.data.ai.tools.ToolApprovalDefaults
+import com.clma.app.data.ai.tools.ToolApprovalDefaults
 
 /**
  * T-09 / (8) + P2-04 — the headless **safety floor**: the per-tool predicate that decides
@@ -9,7 +9,7 @@ import me.rerere.rikkahub.data.ai.tools.ToolApprovalDefaults
  * ## Why this exists
  *
  * A sub-agent is executed as a headless
- * [me.rerere.rikkahub.data.ai.tools.HeadlessConversations] run. Two things follow from that:
+ * [com.clma.app.data.ai.tools.HeadlessConversations] run. Two things follow from that:
  *
  *  1. **Headless conversations auto-approve every tool.** `ChatService`'s `isToolAutoApproved`
  *     returns true for any conversation registered with `HeadlessConversations.mark()`, and that

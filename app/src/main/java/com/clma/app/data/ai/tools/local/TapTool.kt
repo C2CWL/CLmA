@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.tools.local
+package com.clma.app.data.ai.tools.local
 
 import android.accessibilityservice.GestureDescription
 import kotlinx.serialization.json.buildJsonObject
@@ -7,12 +7,12 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.put
-import me.rerere.ai.core.InputSchema
-import me.rerere.ai.core.Tool
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.data.ai.AgentTurnTracker
-import me.rerere.rikkahub.data.ai.tools.ToolInvocationContext
-import me.rerere.rikkahub.service.ActionLogEntry
+import com.clma.ai.core.InputSchema
+import com.clma.ai.core.Tool
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.ai.AgentTurnTracker
+import com.clma.app.data.ai.tools.ToolInvocationContext
+import com.clma.app.service.ActionLogEntry
 
 private const val DEFAULT_LONG_PRESS_MS = 600L
 
@@ -52,7 +52,7 @@ fun tapTool(
     execute = { input ->
         AgentTurnTracker.recordAutomationAction()
         // Wake screen so gestures land on a visible surface, not a dark screen.
-        val wakeOk = me.rerere.rikkahub.service.RikkaAccessibilityService.instance
+        val wakeOk = com.clma.app.service.RikkaAccessibilityService.instance
             ?.let { wakeScreenIfNeeded(it) } ?: true
         val x = coordOrError(input, "x")
         val y = coordOrError(input, "y")
@@ -133,7 +133,7 @@ fun longPressTool(
     },
     execute = { input ->
         AgentTurnTracker.recordAutomationAction()
-        val wakeOk = me.rerere.rikkahub.service.RikkaAccessibilityService.instance
+        val wakeOk = com.clma.app.service.RikkaAccessibilityService.instance
             ?.let { wakeScreenIfNeeded(it) } ?: true
         val x = coordOrError(input, "x")
         val y = coordOrError(input, "y")

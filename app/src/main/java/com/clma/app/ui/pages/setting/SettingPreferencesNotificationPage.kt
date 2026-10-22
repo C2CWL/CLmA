@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.setting
+package com.clma.app.ui.pages.setting
 
 import android.os.Build
 import androidx.compose.foundation.layout.Arrangement
@@ -21,15 +21,15 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.datastore.DisplaySetting
-import me.rerere.rikkahub.ui.components.nav.BackButton
-import me.rerere.rikkahub.ui.components.ui.CardGroup
-import me.rerere.rikkahub.ui.components.ui.permission.PermissionManager
-import me.rerere.rikkahub.ui.components.ui.permission.PermissionNotification
-import me.rerere.rikkahub.ui.components.ui.permission.rememberPermissionState
-import me.rerere.rikkahub.ui.theme.CustomColors
-import me.rerere.rikkahub.utils.plus
+import com.clma.app.R
+import com.clma.app.data.datastore.DisplaySetting
+import com.clma.app.ui.components.nav.BackButton
+import com.clma.app.ui.components.ui.CardGroup
+import com.clma.app.ui.components.ui.permission.PermissionManager
+import com.clma.app.ui.components.ui.permission.PermissionNotification
+import com.clma.app.ui.components.ui.permission.rememberPermissionState
+import com.clma.app.ui.theme.CustomColors
+import com.clma.app.utils.plus
 import org.koin.androidx.compose.koinViewModel
 
 @Composable

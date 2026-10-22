@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.setting.doctor
+package com.clma.app.ui.pages.setting.doctor
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue

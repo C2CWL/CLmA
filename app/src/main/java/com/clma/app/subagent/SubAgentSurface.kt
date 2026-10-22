@@ -1,10 +1,10 @@
-package me.rerere.rikkahub.subagent
+package com.clma.app.subagent
 
-import me.rerere.ai.core.Tool
-import me.rerere.rikkahub.data.agentdef.AgentDefinition
-import me.rerere.rikkahub.data.agentdef.AgentNamespace
-import me.rerere.rikkahub.data.agentdef.toAssistant
-import me.rerere.rikkahub.data.model.Assistant
+import com.clma.ai.core.Tool
+import com.clma.app.data.agentdef.AgentDefinition
+import com.clma.app.data.agentdef.AgentNamespace
+import com.clma.app.data.agentdef.toAssistant
+import com.clma.app.data.model.Assistant
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.uuid.Uuid
 
@@ -34,7 +34,7 @@ import kotlin.uuid.Uuid
  * Before P2-06b this object carried its own three-field overlay (`localTools` /
  * `disabledLocalTools` / `mcpServers` copied off a `SubAgentProfile`). The expert library now
  * stores those same fields plus `skills` and the D9 `slug`, and
- * [me.rerere.rikkahub.data.agentdef.toAssistant] already knows how to overlay all of them, so the
+ * [com.clma.app.data.agentdef.toAssistant] already knows how to overlay all of them, so the
  * overlay lives in exactly one place and the surface cannot drift from a dispatch that resolves
  * the same definition. `skills` and `slug` (which sets `coldMemoryDir` to `agents/<slug>/memory`)
  * therefore count as "this expert has a surface of its own" too: a definition that only names a

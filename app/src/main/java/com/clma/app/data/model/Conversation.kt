@@ -1,14 +1,14 @@
-package me.rerere.rikkahub.data.model
+package com.clma.app.data.model
 
 import android.net.Uri
 import androidx.core.net.toUri
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
-import me.rerere.ai.core.MessageRole
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.ai.util.InstantSerializer
-import me.rerere.rikkahub.data.datastore.DEFAULT_ASSISTANT_ID
+import com.clma.ai.core.MessageRole
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessagePart
+import com.clma.ai.util.InstantSerializer
+import com.clma.app.data.datastore.DEFAULT_ASSISTANT_ID
 import java.time.Instant
 import kotlin.uuid.Uuid
 

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.richtext
+package com.clma.app.ui.components.richtext
 
 import android.graphics.Rect
 import androidx.compose.foundation.Canvas

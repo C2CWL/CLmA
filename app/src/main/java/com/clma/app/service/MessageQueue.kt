@@ -1,12 +1,12 @@
-package me.rerere.rikkahub.service
+package com.clma.app.service
 
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.ai.ui.isEmptyInputMessage
-import me.rerere.rikkahub.data.model.Conversation
-import me.rerere.rikkahub.data.model.localFileUrls
+import com.clma.ai.ui.UIMessagePart
+import com.clma.ai.ui.isEmptyInputMessage
+import com.clma.app.data.model.Conversation
+import com.clma.app.data.model.localFileUrls
 import kotlin.uuid.Uuid
 
 data class QueuedMessage(

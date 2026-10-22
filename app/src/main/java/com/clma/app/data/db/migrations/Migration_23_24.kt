@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.db.migrations
+package com.clma.app.data.db.migrations
 
 import android.util.Log
 import androidx.room.migration.Migration
@@ -16,7 +16,7 @@ private const val TAG = "Migration_23_24"
  *
  * Hand-written rather than an AutoMigration so the table shape is pinned in source and the
  * `Migration_23_24_Test` can assert it directly. The `CREATE TABLE` / `CREATE INDEX`
- * statements must match the schema Room generates from the [me.rerere.rikkahub.data.agentrun.AgentRun]
+ * statements must match the schema Room generates from the [com.clma.app.data.agentrun.AgentRun]
  * `@Entity` exactly, or `runMigrationsAndValidate` fails the test.
  */
 val Migration_23_24 = object : Migration(23, 24) {

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.web.routes
+package com.clma.app.web.routes
 
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.request.receive
@@ -9,15 +9,15 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import kotlinx.coroutines.flow.first
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.repository.FolderRepository
-import me.rerere.rikkahub.service.ChatService
-import me.rerere.rikkahub.web.BadRequestException
-import me.rerere.rikkahub.web.ConflictException
-import me.rerere.rikkahub.web.NotFoundException
-import me.rerere.rikkahub.web.dto.CreateFolderRequest
-import me.rerere.rikkahub.web.dto.RenameFolderRequest
-import me.rerere.rikkahub.web.dto.toDto
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.repository.FolderRepository
+import com.clma.app.service.ChatService
+import com.clma.app.web.BadRequestException
+import com.clma.app.web.ConflictException
+import com.clma.app.web.NotFoundException
+import com.clma.app.web.dto.CreateFolderRequest
+import com.clma.app.web.dto.RenameFolderRequest
+import com.clma.app.web.dto.toDto
 
 fun Route.folderRoutes(
     chatService: ChatService,

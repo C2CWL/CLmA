@@ -1,12 +1,12 @@
-package me.rerere.rikkahub.ui.pages.chat
+package com.clma.app.ui.pages.chat
 
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import me.rerere.ai.core.MessageRole
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.data.ai.ContextCompactionPresentation
-import me.rerere.rikkahub.data.model.MessageNode
+import com.clma.ai.core.MessageRole
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.ai.ContextCompactionPresentation
+import com.clma.app.data.model.MessageNode
 import kotlin.uuid.Uuid
 
 /**

@@ -1,6 +1,6 @@
-package me.rerere.rikkahub.data.ai.tools
+package com.clma.app.data.ai.tools
 
-import me.rerere.ai.core.Tool
+import com.clma.ai.core.Tool
 
 /**
  * P2-02 — the per-tool opt-out.
@@ -8,7 +8,7 @@ import me.rerere.ai.core.Tool
  * `LocalToolOption` is a coarse switch: it turns a whole group on or off (e.g. `sensors` is
  * `list_sensors` **and** `read_sensor`; `media_player` is six tools). This filter adds a
  * second, finer layer driven by
- * [me.rerere.rikkahub.data.model.Assistant.disabledLocalTools] — a set of exact tool names
+ * [com.clma.app.data.model.Assistant.disabledLocalTools] — a set of exact tool names
  * that are removed from the assembled surface even while their group is still enabled.
  *
  * It is applied at the single assembly point (`LocalTools.getTools`), so every caller that

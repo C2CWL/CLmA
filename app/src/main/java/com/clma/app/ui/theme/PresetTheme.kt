@@ -1,14 +1,14 @@
-package me.rerere.rikkahub.ui.theme
+package com.clma.app.ui.theme
 
 import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.Composable
-import me.rerere.rikkahub.ui.theme.presets.AutumnThemePreset
-import me.rerere.rikkahub.ui.theme.presets.BlackThemePreset
-import me.rerere.rikkahub.ui.theme.presets.ClaudeThemePreset
-import me.rerere.rikkahub.ui.theme.presets.MinimalThemePreset
-import me.rerere.rikkahub.ui.theme.presets.OceanThemePreset
-import me.rerere.rikkahub.ui.theme.presets.SakuraThemePreset
-import me.rerere.rikkahub.ui.theme.presets.SpringThemePreset
+import com.clma.app.ui.theme.presets.AutumnThemePreset
+import com.clma.app.ui.theme.presets.BlackThemePreset
+import com.clma.app.ui.theme.presets.ClaudeThemePreset
+import com.clma.app.ui.theme.presets.MinimalThemePreset
+import com.clma.app.ui.theme.presets.OceanThemePreset
+import com.clma.app.ui.theme.presets.SakuraThemePreset
+import com.clma.app.ui.theme.presets.SpringThemePreset
 
 data class PresetTheme(
     val id: String,

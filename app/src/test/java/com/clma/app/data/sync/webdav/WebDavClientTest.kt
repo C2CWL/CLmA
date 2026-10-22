@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.sync.webdav
+package com.clma.app.data.sync.webdav
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue

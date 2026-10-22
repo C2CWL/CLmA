@@ -1,6 +1,6 @@
-package me.rerere.rikkahub.ui.pages.chat
+package com.clma.app.ui.pages.chat
 
-import me.rerere.rikkahub.data.model.AssistantBackgroundMode
+import com.clma.app.data.model.AssistantBackgroundMode
 
 /**
  * A custom chat photo sits under theme-coloured UI. The old veil painted

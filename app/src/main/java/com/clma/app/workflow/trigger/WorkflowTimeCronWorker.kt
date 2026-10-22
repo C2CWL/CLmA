@@ -1,9 +1,9 @@
-package me.rerere.rikkahub.workflow.trigger
+package com.clma.app.workflow.trigger
 
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import me.rerere.rikkahub.workflow.repository.WorkflowRepository
+import com.clma.app.workflow.repository.WorkflowRepository
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import org.koin.java.KoinJavaComponent

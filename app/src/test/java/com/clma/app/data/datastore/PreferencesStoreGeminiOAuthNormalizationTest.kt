@@ -1,6 +1,6 @@
-package me.rerere.rikkahub.data.datastore
+package com.clma.app.data.datastore
 
-import me.rerere.ai.provider.Model
+import com.clma.ai.provider.Model
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import kotlin.uuid.Uuid
@@ -16,7 +16,7 @@ import kotlin.uuid.Uuid
  */
 class PreferencesStoreGeminiOAuthNormalizationTest {
 
-    private val preferencesStoreKt = Class.forName("me.rerere.rikkahub.data.datastore.PreferencesStoreKt")
+    private val preferencesStoreKt = Class.forName("com.clma.app.data.datastore.PreferencesStoreKt")
 
     private fun dropDenied(models: List<Model>): List<Model> {
         val method = preferencesStoreKt.getDeclaredMethod("dropDeniedGeminiOAuthModels", List::class.java)

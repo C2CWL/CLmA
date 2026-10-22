@@ -1,7 +1,7 @@
-package me.rerere.rikkahub.costguards
+package com.clma.app.costguards
 
-import me.rerere.ai.core.TokenUsage
-import me.rerere.rikkahub.data.model.Conversation
+import com.clma.ai.core.TokenUsage
+import com.clma.app.data.model.Conversation
 
 /**
  * Phase 15 — pure-function token aggregator over a [Conversation]. Walks the currently-

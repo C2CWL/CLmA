@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.log
+package com.clma.app.ui.pages.log
 
 import android.content.ClipData
 import androidx.compose.ui.platform.ClipEntry
@@ -42,18 +42,18 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import me.rerere.common.android.LogEntry
-import me.rerere.common.android.LogLevel
-import me.rerere.common.android.Logging
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.datastore.SettingsStore
+import com.clma.common.android.LogEntry
+import com.clma.common.android.LogLevel
+import com.clma.common.android.Logging
+import com.clma.app.R
+import com.clma.app.data.datastore.SettingsStore
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.koinInject
-import me.rerere.rikkahub.ui.components.nav.BackButton
-import me.rerere.rikkahub.ui.components.ui.JsonTree
-import me.rerere.rikkahub.ui.theme.CustomColors
-import me.rerere.rikkahub.ui.theme.JetbrainsMono
-import me.rerere.rikkahub.utils.JsonInstantPretty
+import com.clma.app.ui.components.nav.BackButton
+import com.clma.app.ui.components.ui.JsonTree
+import com.clma.app.ui.theme.CustomColors
+import com.clma.app.ui.theme.JetbrainsMono
+import com.clma.app.utils.JsonInstantPretty
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale

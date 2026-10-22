@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.shizuku;
+package com.clma.app.shizuku;
 
 // AIDL contract for the process Shizuku spawns under the shell UID (bound via
 // Shizuku.bindUserService — Shizuku.newProcess is private in dev.rikka.shizuku:api 13.1.5,

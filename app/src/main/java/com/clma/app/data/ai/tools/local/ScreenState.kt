@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.tools.local
+package com.clma.app.data.ai.tools.local
 
 import android.app.KeyguardManager
 import android.content.Context
@@ -14,7 +14,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import me.rerere.rikkahub.service.RikkaAccessibilityService
+import com.clma.app.service.RikkaAccessibilityService
 
 // Pure core of the post-action screen-state envelope. Everything in this section is
 // JVM-testable: no framework calls, no Context.

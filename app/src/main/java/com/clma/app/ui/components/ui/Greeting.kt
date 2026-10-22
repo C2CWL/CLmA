@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.ui
+package com.clma.app.ui.components.ui
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -6,7 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
-import me.rerere.rikkahub.R
+import com.clma.app.R
 import java.util.Calendar
 
 @Composable

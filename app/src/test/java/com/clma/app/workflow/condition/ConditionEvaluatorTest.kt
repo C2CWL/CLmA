@@ -1,7 +1,7 @@
-package me.rerere.rikkahub.workflow.condition
+package com.clma.app.workflow.condition
 
-import me.rerere.rikkahub.workflow.model.ConditionSpec
-import me.rerere.rikkahub.workflow.model.WorkflowContext
+import com.clma.app.workflow.model.ConditionSpec
+import com.clma.app.workflow.model.WorkflowContext
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test

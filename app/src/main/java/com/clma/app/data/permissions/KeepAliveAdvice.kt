@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.permissions
+package com.clma.app.data.permissions
 
 /**
  * Which OEM power-management family the device belongs to.

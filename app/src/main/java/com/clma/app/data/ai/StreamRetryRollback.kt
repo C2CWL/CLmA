@@ -1,6 +1,6 @@
-package me.rerere.rikkahub.data.ai
+package com.clma.app.data.ai
 
-import me.rerere.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessage
 
 /**
  * What the visible messages should be when the stream is re-issued after a failure that came

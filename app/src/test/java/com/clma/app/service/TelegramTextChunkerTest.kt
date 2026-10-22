@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.service
+package com.clma.app.service
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue

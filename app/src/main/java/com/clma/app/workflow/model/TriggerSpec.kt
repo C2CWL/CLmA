@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.workflow.model
+package com.clma.app.workflow.model
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

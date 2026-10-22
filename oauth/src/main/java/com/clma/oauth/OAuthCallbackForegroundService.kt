@@ -1,4 +1,4 @@
-package me.rerere.oauth
+package com.clma.oauth
 
 import android.app.NotificationChannel
 import android.app.NotificationManager

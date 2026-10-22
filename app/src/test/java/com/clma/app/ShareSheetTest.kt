@@ -1,10 +1,10 @@
-package me.rerere.rikkahub
+package com.clma.app
 
-import me.rerere.ai.provider.BalanceOption
-import me.rerere.ai.provider.Model
-import me.rerere.ai.provider.ProviderSetting
-import me.rerere.rikkahub.ui.components.ui.decodeProviderSetting
-import me.rerere.rikkahub.ui.components.ui.encodeForShare
+import com.clma.ai.provider.BalanceOption
+import com.clma.ai.provider.Model
+import com.clma.ai.provider.ProviderSetting
+import com.clma.app.ui.components.ui.decodeProviderSetting
+import com.clma.app.ui.components.ui.encodeForShare
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

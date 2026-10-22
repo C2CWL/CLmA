@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.tools.local
+package com.clma.app.data.ai.tools.local
 
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.buildJsonObject
@@ -6,10 +6,10 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import me.rerere.ai.core.InputSchema
-import me.rerere.ai.core.Tool
-import me.rerere.rikkahub.data.ai.net.hostIsBlockedLiteral
-import me.rerere.rikkahub.data.ai.net.withEgressGuard
+import com.clma.ai.core.InputSchema
+import com.clma.ai.core.Tool
+import com.clma.app.data.ai.net.hostIsBlockedLiteral
+import com.clma.app.data.ai.net.withEgressGuard
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request

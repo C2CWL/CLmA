@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.setting.browser
+package com.clma.app.ui.pages.setting.browser
 
 import android.content.Context
 import android.webkit.CookieManager
@@ -10,16 +10,16 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import me.rerere.rikkahub.browser.BrowserPreferences
-import me.rerere.rikkahub.browser.BrowserSearchEngines
-import me.rerere.rikkahub.browser.BrowserToolDefaults
+import com.clma.app.browser.BrowserPreferences
+import com.clma.app.browser.BrowserSearchEngines
+import com.clma.app.browser.BrowserToolDefaults
 import java.io.File
 
 class SettingBrowserViewModel(
     private val prefs: BrowserPreferences,
 ) : ViewModel() {
 
-    /** Per-tool enabled map, keyed by [me.rerere.rikkahub.browser.BrowserToolDefaults.ALL_TOOLS]. */
+    /** Per-tool enabled map, keyed by [com.clma.app.browser.BrowserToolDefaults.ALL_TOOLS]. */
     val toolStates: StateFlow<Map<String, Boolean>> = prefs.observeAll().stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),

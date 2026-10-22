@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.richtext
+package com.clma.app.ui.components.richtext
 
 import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
@@ -16,11 +16,11 @@ import coil3.request.ImageRequest
 import coil3.request.allowHardware
 import coil3.request.crossfade
 import coil3.request.placeholder
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.ui.components.ui.ImagePreviewDialog
-import me.rerere.rikkahub.ui.components.ui.LocalExportContext
-import me.rerere.rikkahub.ui.modifier.shimmer
-import me.rerere.rikkahub.ui.theme.LocalDarkMode
+import com.clma.app.R
+import com.clma.app.ui.components.ui.ImagePreviewDialog
+import com.clma.app.ui.components.ui.LocalExportContext
+import com.clma.app.ui.modifier.shimmer
+import com.clma.app.ui.theme.LocalDarkMode
 
 @Composable
 fun ZoomableAsyncImage(

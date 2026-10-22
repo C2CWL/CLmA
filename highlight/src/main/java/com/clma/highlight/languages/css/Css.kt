@@ -1,11 +1,11 @@
-package me.rerere.highlight.languages.css
+package com.clma.highlight.languages.css
 
-import me.rerere.highlight.core.APOS_STRING_MODE
-import me.rerere.highlight.core.Language
-import me.rerere.highlight.core.QUOTE_STRING_MODE
-import me.rerere.highlight.core.keywords
-import me.rerere.highlight.core.lookahead
-import me.rerere.highlight.core.mode
+import com.clma.highlight.core.APOS_STRING_MODE
+import com.clma.highlight.core.Language
+import com.clma.highlight.core.QUOTE_STRING_MODE
+import com.clma.highlight.core.keywords
+import com.clma.highlight.core.lookahead
+import com.clma.highlight.core.mode
 
 /** CSS, ported from `lib/languages/css.js` of `highlight.js` 11.11.1. */
 internal fun css(): Language {

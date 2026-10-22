@@ -1,4 +1,4 @@
-package me.rerere.locallm.litert
+package com.clma.locallm.litert
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

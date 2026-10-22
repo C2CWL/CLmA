@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.setting.termux
+package com.clma.app.ui.pages.setting.termux
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -7,9 +7,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import me.rerere.rikkahub.data.preferences.TermuxDefaults
-import me.rerere.rikkahub.data.preferences.TermuxPreferences
-import me.rerere.rikkahub.data.preferences.TermuxRuntimeConfig
+import com.clma.app.data.preferences.TermuxDefaults
+import com.clma.app.data.preferences.TermuxPreferences
+import com.clma.app.data.preferences.TermuxRuntimeConfig
 
 class SettingTermuxViewModel(
     private val prefs: TermuxPreferences,

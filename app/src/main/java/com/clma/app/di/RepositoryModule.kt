@@ -1,20 +1,20 @@
-package me.rerere.rikkahub.di
+package com.clma.app.di
 
 import android.content.Context
-import me.rerere.rikkahub.data.files.FileFolders
-import me.rerere.rikkahub.data.files.FilesManager
-import me.rerere.rikkahub.data.files.SkillManager
-import me.rerere.rikkahub.data.repository.ConversationRepository
-import me.rerere.rikkahub.data.repository.FavoriteRepository
-import me.rerere.rikkahub.data.repository.FolderRepository
-import me.rerere.rikkahub.data.repository.FilesRepository
-import me.rerere.rikkahub.data.repository.GenMediaRepository
-import me.rerere.rikkahub.data.repository.MemoryRepository
-import me.rerere.rikkahub.data.repository.WorkspaceRepository
-import me.rerere.workspace.ProotShellRunner
-import me.rerere.workspace.RootfsInstaller
-import me.rerere.workspace.WorkspaceBindMount
-import me.rerere.workspace.WorkspaceManager
+import com.clma.app.data.files.FileFolders
+import com.clma.app.data.files.FilesManager
+import com.clma.app.data.files.SkillManager
+import com.clma.app.data.repository.ConversationRepository
+import com.clma.app.data.repository.FavoriteRepository
+import com.clma.app.data.repository.FolderRepository
+import com.clma.app.data.repository.FilesRepository
+import com.clma.app.data.repository.GenMediaRepository
+import com.clma.app.data.repository.MemoryRepository
+import com.clma.app.data.repository.WorkspaceRepository
+import com.clma.workspace.ProotShellRunner
+import com.clma.workspace.RootfsInstaller
+import com.clma.workspace.WorkspaceBindMount
+import com.clma.workspace.WorkspaceManager
 import org.koin.dsl.module
 import java.io.File
 

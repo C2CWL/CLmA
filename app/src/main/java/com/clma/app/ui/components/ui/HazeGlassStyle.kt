@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.ui
+package com.clma.app.ui.components.ui
 
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -12,7 +12,7 @@ import dev.chrisbanes.haze.glass.OpticalSizeValue
 import dev.chrisbanes.haze.glass.RefractionProfile
 import dev.chrisbanes.haze.glass.SurfaceProfile
 import dev.chrisbanes.haze.glass.material3.Material3
-import me.rerere.rikkahub.ui.theme.LocalDarkMode
+import com.clma.app.ui.theme.LocalDarkMode
 
 /**
  * Liquid glass recipe for floating surfaces (chat input bar and top-bar glass buttons).

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.service
+package com.clma.app.service
 
 import android.app.ActivityManager
 import android.content.Context
@@ -9,7 +9,7 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import java.util.concurrent.TimeUnit
-import me.rerere.rikkahub.data.telegram.TelegramBotPreferences
+import com.clma.app.data.telegram.TelegramBotPreferences
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 

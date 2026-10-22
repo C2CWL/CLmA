@@ -1,7 +1,7 @@
-package me.rerere.rikkahub.ui.theme
+package com.clma.app.ui.theme
 
 import androidx.compose.ui.graphics.Color
-import me.rerere.highlight.HighlightTextColorPalette
+import com.clma.highlight.HighlightTextColorPalette
 
 // Atom One Dark Theme Colors
 val AtomOneDarkPalette = HighlightTextColorPalette(

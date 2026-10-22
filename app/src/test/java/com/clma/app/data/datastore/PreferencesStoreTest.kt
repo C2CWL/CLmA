@@ -1,11 +1,11 @@
-package me.rerere.rikkahub.data.datastore
+package com.clma.app.data.datastore
 
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
-import me.rerere.ai.core.ReasoningLevel
-import me.rerere.rikkahub.data.model.Assistant
-import me.rerere.rikkahub.utils.JsonInstant
+import com.clma.ai.core.ReasoningLevel
+import com.clma.app.data.model.Assistant
+import com.clma.app.utils.JsonInstant
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

@@ -1,4 +1,4 @@
-package me.rerere.common.http
+package com.clma.common.http
 
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject

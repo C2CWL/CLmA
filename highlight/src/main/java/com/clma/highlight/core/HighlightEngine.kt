@@ -1,6 +1,6 @@
-package me.rerere.highlight.core
+package com.clma.highlight.core
 
-import me.rerere.highlight.HighlightToken
+import com.clma.highlight.HighlightToken
 
 /**
  * Rethrow grammar failures instead of degrading to plain text.

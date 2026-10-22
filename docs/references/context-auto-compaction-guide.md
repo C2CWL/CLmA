@@ -22,9 +22,9 @@
 关键位置：
 
 ```text
-app/src/main/java/me/rerere/rikkahub/service/ChatService.kt:1252-1341
-app/src/main/java/me/rerere/rikkahub/data/repository/ConversationRepository.kt:296-306
-app/src/main/java/me/rerere/rikkahub/data/db/dao/MessageNodeDAO.kt:37-38
+app/src/main/java/com/clma/app/service/ChatService.kt:1252-1341
+app/src/main/java/com/clma/app/data/repository/ConversationRepository.kt:296-306
+app/src/main/java/com/clma/app/data/db/dao/MessageNodeDAO.kt:37-38
 app/src/main/res/values/strings.xml:273
 ```
 
@@ -49,11 +49,11 @@ FilesPicker -> ChatPage -> ChatVM.handleCompressContext -> ChatService.compressC
 关键位置：
 
 ```text
-app/src/main/java/me/rerere/rikkahub/service/ChatService.kt:858-864, 1018-1036
-app/src/main/java/me/rerere/rikkahub/data/ai/GenerationHandler.kt:990
-ai/src/main/java/me/rerere/ai/ui/Message.kt:272-315
-app/src/main/java/me/rerere/rikkahub/data/model/Assistant.kt:27
-ai/src/main/java/me/rerere/ai/provider/Model.kt:21
+app/src/main/java/com/clma/app/service/ChatService.kt:858-864, 1018-1036
+app/src/main/java/com/clma/app/data/ai/GenerationHandler.kt:990
+ai/src/main/java/com/clma/ai/ui/Message.kt:272-315
+app/src/main/java/com/clma/app/data/model/Assistant.kt:27
+ai/src/main/java/com/clma/ai/provider/Model.kt:21
 ```
 
 ### 1.3 改造前：设置页没有自动压缩开关和阈值

@@ -1,11 +1,11 @@
-package me.rerere.rikkahub.reliability
+package com.clma.app.reliability
 
 import android.content.Context
 import android.os.Build
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import me.rerere.rikkahub.BuildConfig
+import com.clma.app.BuildConfig
 import java.io.BufferedReader
 import java.io.File
 import java.io.FileOutputStream

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.browser
+package com.clma.app.browser
 
 import android.annotation.SuppressLint
 import android.app.DownloadManager
@@ -60,8 +60,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Alert02
-import me.rerere.rikkahub.BuildConfig
-import me.rerere.rikkahub.R
+import com.clma.app.BuildConfig
+import com.clma.app.R
 import java.io.File
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid

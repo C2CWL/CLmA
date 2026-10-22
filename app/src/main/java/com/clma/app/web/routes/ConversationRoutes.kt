@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.web.routes
+package com.clma.app.web.routes
 
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.request.receive
@@ -15,33 +15,33 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
-import me.rerere.rikkahub.data.ai.AssistantResolver
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.repository.ConversationRepository
-import me.rerere.rikkahub.data.repository.FolderRepository
-import me.rerere.rikkahub.service.ChatService
-import me.rerere.rikkahub.web.BadRequestException
-import me.rerere.rikkahub.web.NotFoundException
-import me.rerere.rikkahub.web.dto.ConversationDto
-import me.rerere.rikkahub.web.dto.ConversationNodeUpdateEvent
-import me.rerere.rikkahub.web.dto.ConversationSnapshotEvent
-import me.rerere.rikkahub.web.dto.EditMessageRequest
-import me.rerere.rikkahub.web.dto.ErrorEvent
-import me.rerere.rikkahub.web.dto.ForkConversationRequest
-import me.rerere.rikkahub.web.dto.ForkConversationResponse
-import me.rerere.rikkahub.web.dto.MoveConversationRequest
-import me.rerere.rikkahub.web.dto.MoveConversationToFolderRequest
-import me.rerere.rikkahub.web.dto.PagedResult
-import me.rerere.rikkahub.web.dto.RegenerateRequest
-import me.rerere.rikkahub.web.dto.SelectMessageNodeRequest
-import me.rerere.rikkahub.web.dto.SendMessageRequest
-import me.rerere.rikkahub.web.dto.ToolApprovalRequest
-import me.rerere.rikkahub.web.dto.MessageSearchResultDto
-import me.rerere.rikkahub.web.dto.UpdateConversationInjectionsRequest
-import me.rerere.rikkahub.web.dto.UpdateConversationTitleRequest
-import me.rerere.rikkahub.web.dto.toDto
-import me.rerere.rikkahub.web.dto.toListDto
-import me.rerere.rikkahub.utils.JsonInstant
+import com.clma.app.data.ai.AssistantResolver
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.repository.ConversationRepository
+import com.clma.app.data.repository.FolderRepository
+import com.clma.app.service.ChatService
+import com.clma.app.web.BadRequestException
+import com.clma.app.web.NotFoundException
+import com.clma.app.web.dto.ConversationDto
+import com.clma.app.web.dto.ConversationNodeUpdateEvent
+import com.clma.app.web.dto.ConversationSnapshotEvent
+import com.clma.app.web.dto.EditMessageRequest
+import com.clma.app.web.dto.ErrorEvent
+import com.clma.app.web.dto.ForkConversationRequest
+import com.clma.app.web.dto.ForkConversationResponse
+import com.clma.app.web.dto.MoveConversationRequest
+import com.clma.app.web.dto.MoveConversationToFolderRequest
+import com.clma.app.web.dto.PagedResult
+import com.clma.app.web.dto.RegenerateRequest
+import com.clma.app.web.dto.SelectMessageNodeRequest
+import com.clma.app.web.dto.SendMessageRequest
+import com.clma.app.web.dto.ToolApprovalRequest
+import com.clma.app.web.dto.MessageSearchResultDto
+import com.clma.app.web.dto.UpdateConversationInjectionsRequest
+import com.clma.app.web.dto.UpdateConversationTitleRequest
+import com.clma.app.web.dto.toDto
+import com.clma.app.web.dto.toListDto
+import com.clma.app.utils.JsonInstant
 import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
@@ -245,7 +245,7 @@ fun Route.conversationRoutes(
 
             // Same rationale as ChatVM.moveConversationToAssistant — drop ChatScope grants
             // because they were authorised under the previous assistant's behaviour.
-            me.rerere.rikkahub.data.ai.tools.ToolApprovalAllowList.clearChat(uuid)
+            com.clma.app.data.ai.tools.ToolApprovalAllowList.clearChat(uuid)
             chatService.saveConversation(uuid, conversation.copy(assistantId = targetAssistantId))
             call.respond(HttpStatusCode.OK, mapOf("status" to "updated"))
         }
@@ -366,8 +366,8 @@ fun Route.conversationRoutes(
             // allow; anything else (including a legacy "always", which no longer exists — the
             // blacklist is where a tool stops asking) falls back to "once".
             val scope = when (request.scope?.lowercase()) {
-                "chat" -> me.rerere.rikkahub.service.ChatService.ApprovalScope.ChatScope
-                else -> me.rerere.rikkahub.service.ChatService.ApprovalScope.Once
+                "chat" -> com.clma.app.service.ChatService.ApprovalScope.ChatScope
+                else -> com.clma.app.service.ChatService.ApprovalScope.Once
             }
             chatService.handleToolApproval(
                 conversationId = uuid,
@@ -481,7 +481,7 @@ private data class ConversationInjectionIds(
 )
 
 private fun validateConversationInjectionIds(
-    settings: me.rerere.rikkahub.data.datastore.Settings,
+    settings: com.clma.app.data.datastore.Settings,
     modeInjectionIds: List<String>,
     lorebookIds: List<String>,
 ): ConversationInjectionIds {

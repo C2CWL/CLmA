@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.ui
+package com.clma.app.ui.components.ui
 
 import android.graphics.drawable.AnimatedVectorDrawable
 import android.widget.ImageView
@@ -20,11 +20,11 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import dev.chrisbanes.haze.HazeState
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.datastore.LoadingIndicatorStyle
-import me.rerere.rikkahub.data.datastore.effectiveLoadingIndicatorStyle
-import me.rerere.rikkahub.ui.components.message.WallpaperContrastPlate
-import me.rerere.rikkahub.ui.context.LocalSettings
+import com.clma.app.R
+import com.clma.app.data.datastore.LoadingIndicatorStyle
+import com.clma.app.data.datastore.effectiveLoadingIndicatorStyle
+import com.clma.app.ui.components.message.WallpaperContrastPlate
+import com.clma.app.ui.context.LocalSettings
 
 /*
  * Single home for loading-indicator style dispatch. Both entry points below switch over every

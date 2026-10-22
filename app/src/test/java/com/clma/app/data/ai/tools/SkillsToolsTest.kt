@@ -1,10 +1,10 @@
-package me.rerere.rikkahub.data.ai.tools
+package com.clma.app.data.ai.tools
 
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.data.files.SkillMetadata
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.files.SkillMetadata
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test

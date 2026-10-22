@@ -1,10 +1,10 @@
-package me.rerere.rikkahub.ui.components.message
+package com.clma.app.ui.components.message
 
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.common.http.jsonObjectOrNull
+import com.clma.ai.ui.UIMessagePart
+import com.clma.common.http.jsonObjectOrNull
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue

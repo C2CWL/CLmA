@@ -1,9 +1,9 @@
-package me.rerere.rikkahub.data.ai.transformers
+package com.clma.app.data.ai.transformers
 
-import me.rerere.ai.core.MessageRole
-import me.rerere.ai.ui.UIMessage
-import me.rerere.rikkahub.data.ai.ContextBudgetPlanner
-import me.rerere.rikkahub.data.datastore.getEffectiveContextLength
+import com.clma.ai.core.MessageRole
+import com.clma.ai.ui.UIMessage
+import com.clma.app.data.ai.ContextBudgetPlanner
+import com.clma.app.data.datastore.getEffectiveContextLength
 
 /**
  * 上下文预算提醒注入转换器

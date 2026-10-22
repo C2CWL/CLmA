@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.setting.components
+package com.clma.app.ui.pages.setting.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -34,20 +34,20 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import me.rerere.ai.core.Tool
-import me.rerere.ai.provider.ModelType
-import me.rerere.ai.provider.ProviderManager
-import me.rerere.ai.provider.ProviderSetting
-import me.rerere.ai.provider.TextGenerationParams
-import me.rerere.ai.ui.StreamChunk
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.UIMessagePart
+import com.clma.ai.core.Tool
+import com.clma.ai.provider.ModelType
+import com.clma.ai.provider.ProviderManager
+import com.clma.ai.provider.ProviderSetting
+import com.clma.ai.provider.TextGenerationParams
+import com.clma.ai.ui.StreamChunk
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessagePart
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Connect
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.ui.components.ai.ModelSelector
-import me.rerere.rikkahub.ui.theme.extendColors
-import me.rerere.rikkahub.utils.UiState
+import com.clma.app.R
+import com.clma.app.ui.components.ai.ModelSelector
+import com.clma.app.ui.theme.extendColors
+import com.clma.app.utils.UiState
 import org.koin.compose.koinInject
 
 @Composable

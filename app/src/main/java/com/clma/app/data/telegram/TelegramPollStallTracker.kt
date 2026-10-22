@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.telegram
+package com.clma.app.data.telegram
 
 import java.util.concurrent.atomic.AtomicLong
 
@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicLong
  * loop calls [markUpdate] on every successful `getUpdates` (success OR empty), and a
  * companion checker periodically asks [isStalled].
  *
- * One instance per [me.rerere.rikkahub.service.TelegramBotService] lifecycle. Thread-safe:
+ * One instance per [com.clma.app.service.TelegramBotService] lifecycle. Thread-safe:
  * the poll loop and the checker run on different coroutines.
  */
 class TelegramPollStallTracker {

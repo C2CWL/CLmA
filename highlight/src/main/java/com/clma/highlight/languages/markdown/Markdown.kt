@@ -1,9 +1,9 @@
-package me.rerere.highlight.languages.markdown
+package com.clma.highlight.languages.markdown
 
-import me.rerere.highlight.core.Language
-import me.rerere.highlight.core.Mode
-import me.rerere.highlight.core.concat
-import me.rerere.highlight.core.mode
+import com.clma.highlight.core.Language
+import com.clma.highlight.core.Mode
+import com.clma.highlight.core.concat
+import com.clma.highlight.core.mode
 
 /** Markdown, ported from `lib/languages/markdown.js` of `highlight.js` 11.11.1. */
 internal fun markdown(): Language {

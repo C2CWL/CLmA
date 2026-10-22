@@ -1,4 +1,4 @@
-package me.rerere.tts.provider
+package com.clma.tts.provider
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue

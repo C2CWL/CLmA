@@ -1,14 +1,14 @@
-package me.rerere.rikkahub.data.sync
+package com.clma.app.data.sync
 
 import android.content.Context
 import android.content.ContextWrapper
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import kotlinx.coroutines.runBlocking
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.db.AppDatabase
-import me.rerere.rikkahub.data.db.AppDatabaseFactory
-import me.rerere.rikkahub.utils.JsonInstant
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.db.AppDatabase
+import com.clma.app.data.db.AppDatabaseFactory
+import com.clma.app.utils.JsonInstant
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

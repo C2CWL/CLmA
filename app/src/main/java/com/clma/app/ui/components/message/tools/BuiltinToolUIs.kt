@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.message.tools
+package com.clma.app.ui.components.message.tools
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -48,8 +48,8 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.jsonPrimitive
-import me.rerere.common.http.jsonObjectOrNull
-import me.rerere.highlight.CodeHighlightText
+import com.clma.common.http.jsonObjectOrNull
+import com.clma.highlight.CodeHighlightText
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Clipboard
 import me.rerere.hugeicons.stroke.Clock02
@@ -68,18 +68,18 @@ import me.rerere.hugeicons.stroke.CalendarAdd01
 import me.rerere.hugeicons.stroke.SmartPhone01
 import me.rerere.hugeicons.stroke.Time02
 import me.rerere.hugeicons.stroke.VolumeHigh
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.event.AppEvent
-import me.rerere.rikkahub.data.event.AppEventBus
-import me.rerere.rikkahub.data.repository.MemoryRepository
-import me.rerere.rikkahub.ui.components.richtext.MarkdownBlock
-import me.rerere.rikkahub.ui.components.ui.Favicon
-import me.rerere.rikkahub.ui.components.ui.FaviconRow
-import me.rerere.rikkahub.ui.modifier.shimmer
-import me.rerere.rikkahub.utils.JsonInstantPretty
-import me.rerere.rikkahub.utils.jsonPrimitiveOrNull
-import me.rerere.rikkahub.utils.openUrl
-import me.rerere.rikkahub.utils.toLocalString
+import com.clma.app.R
+import com.clma.app.data.event.AppEvent
+import com.clma.app.data.event.AppEventBus
+import com.clma.app.data.repository.MemoryRepository
+import com.clma.app.ui.components.richtext.MarkdownBlock
+import com.clma.app.ui.components.ui.Favicon
+import com.clma.app.ui.components.ui.FaviconRow
+import com.clma.app.ui.modifier.shimmer
+import com.clma.app.utils.JsonInstantPretty
+import com.clma.app.utils.jsonPrimitiveOrNull
+import com.clma.app.utils.openUrl
+import com.clma.app.utils.toLocalString
 import org.koin.compose.koinInject
 import java.time.LocalDate
 import java.time.LocalDateTime

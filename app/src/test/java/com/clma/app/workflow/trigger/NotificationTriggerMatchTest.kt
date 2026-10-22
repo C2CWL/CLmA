@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.workflow.trigger
+package com.clma.app.workflow.trigger
 
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

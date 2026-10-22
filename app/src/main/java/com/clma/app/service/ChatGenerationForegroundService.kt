@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.service
+package com.clma.app.service
 
 import android.app.PendingIntent
 import android.app.Service
@@ -12,8 +12,8 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
-import me.rerere.rikkahub.CHAT_LIVE_UPDATE_NOTIFICATION_CHANNEL_ID
-import me.rerere.rikkahub.R
+import com.clma.app.CHAT_LIVE_UPDATE_NOTIFICATION_CHANNEL_ID
+import com.clma.app.R
 import java.util.concurrent.atomic.AtomicBoolean
 
 private const val TAG = "ChatGenerationFgs"

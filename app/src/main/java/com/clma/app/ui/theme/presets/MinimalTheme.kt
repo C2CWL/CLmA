@@ -1,12 +1,12 @@
-package me.rerere.rikkahub.ui.theme.presets
+package com.clma.app.ui.theme.presets
 
 import androidx.compose.material3.Text
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.ui.theme.PresetTheme
+import com.clma.app.R
+import com.clma.app.ui.theme.PresetTheme
 
 /**
  * 极简中性风格：纯白/近黑底色，中性灰的表面层级，细淡边框，

@@ -1,10 +1,10 @@
-package me.rerere.rikkahub.data.ai.tools.local
+package com.clma.app.data.ai.tools.local
 
 import android.content.ComponentName
 import android.content.Context
 import android.provider.Settings
 import kotlinx.serialization.json.JsonObject
-import me.rerere.rikkahub.service.RikkaAccessibilityService
+import com.clma.app.service.RikkaAccessibilityService
 
 /**
  * Bridge between the LLM tool factories and the live AccessibilityService.

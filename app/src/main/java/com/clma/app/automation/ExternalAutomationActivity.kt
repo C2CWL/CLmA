@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.automation
+package com.clma.app.automation
 
 import android.app.Activity
 import android.os.Bundle

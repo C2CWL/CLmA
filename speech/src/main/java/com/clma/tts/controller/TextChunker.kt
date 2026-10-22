@@ -1,4 +1,4 @@
-package me.rerere.tts.controller
+package com.clma.tts.controller
 
 /**
  * Split long text into speakable chunks with basic punctuation-aware grouping.

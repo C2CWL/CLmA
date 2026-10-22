@@ -1,4 +1,4 @@
-package me.rerere.workspace
+package com.clma.workspace
 
 data class Workspace(
     val id: String,

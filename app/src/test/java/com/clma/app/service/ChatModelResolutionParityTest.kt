@@ -1,12 +1,12 @@
-package me.rerere.rikkahub.service
+package com.clma.app.service
 
-import me.rerere.ai.provider.Model
-import me.rerere.ai.provider.ModelType
-import me.rerere.ai.provider.ProviderSetting
-import me.rerere.rikkahub.data.datastore.Settings
-import me.rerere.rikkahub.data.datastore.resolveChatModel
-import me.rerere.rikkahub.data.model.Assistant
-import me.rerere.rikkahub.data.model.Conversation
+import com.clma.ai.provider.Model
+import com.clma.ai.provider.ModelType
+import com.clma.ai.provider.ProviderSetting
+import com.clma.app.data.datastore.Settings
+import com.clma.app.data.datastore.resolveChatModel
+import com.clma.app.data.model.Assistant
+import com.clma.app.data.model.Conversation
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test

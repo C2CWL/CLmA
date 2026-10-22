@@ -1,10 +1,10 @@
-package me.rerere.ai.provider
+package com.clma.ai.provider
 
 import android.content.Context
-import me.rerere.ai.provider.providers.AICoreProvider
-import me.rerere.ai.provider.providers.claude.ClaudeProvider
-import me.rerere.ai.provider.providers.google.GoogleProvider
-import me.rerere.ai.provider.providers.openai.OpenAIProvider
+import com.clma.ai.provider.providers.AICoreProvider
+import com.clma.ai.provider.providers.claude.ClaudeProvider
+import com.clma.ai.provider.providers.google.GoogleProvider
+import com.clma.ai.provider.providers.openai.OpenAIProvider
 import okhttp3.OkHttpClient
 
 /**

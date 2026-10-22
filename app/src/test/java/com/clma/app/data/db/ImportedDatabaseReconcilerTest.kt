@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.db
+package com.clma.app.data.db
 
 import java.io.File
 import kotlinx.serialization.json.Json
@@ -36,8 +36,8 @@ class ImportedDatabaseReconcilerTest {
 
     private fun findSchemaDir(): File {
         val candidates = listOf(
-            File("schemas/me.rerere.rikkahub.data.db.AppDatabase"),
-            File("app/schemas/me.rerere.rikkahub.data.db.AppDatabase"),
+            File("schemas/com.clma.app.data.db.AppDatabase"),
+            File("app/schemas/com.clma.app.data.db.AppDatabase"),
         )
         return candidates.firstOrNull { it.isDirectory }
             ?: error("could not find the AppDatabase schema export directory, tried: $candidates")
@@ -80,8 +80,8 @@ class ImportedDatabaseReconcilerTest {
     @Test
     fun `expected version matches the version declared in AppDatabase`() {
         val candidates = listOf(
-            File("src/main/java/me/rerere/rikkahub/data/db/AppDatabase.kt"),
-            File("app/src/main/java/me/rerere/rikkahub/data/db/AppDatabase.kt"),
+            File("src/main/java/com/clma/app/data/db/AppDatabase.kt"),
+            File("app/src/main/java/com/clma/app/data/db/AppDatabase.kt"),
         )
         val file = candidates.firstOrNull { it.isFile }
         if (file == null) {

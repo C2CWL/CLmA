@@ -1,11 +1,11 @@
-package me.rerere.llamacpp
+package com.clma.llamacpp
 
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
-import me.rerere.ai.provider.Model
-import me.rerere.ai.provider.TextGenerationParams
-import me.rerere.ai.ui.StreamChunk
-import me.rerere.ai.ui.UIMessage
+import com.clma.ai.provider.Model
+import com.clma.ai.provider.TextGenerationParams
+import com.clma.ai.ui.StreamChunk
+import com.clma.ai.ui.UIMessage
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

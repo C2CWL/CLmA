@@ -1,11 +1,11 @@
-package me.rerere.highlight.languages.css
+package com.clma.highlight.languages.css
 
-import me.rerere.highlight.core.APOS_STRING_MODE
-import me.rerere.highlight.core.C_BLOCK_COMMENT_MODE
-import me.rerere.highlight.core.Mode
-import me.rerere.highlight.core.NUMBER_RE
-import me.rerere.highlight.core.QUOTE_STRING_MODE
-import me.rerere.highlight.core.mode
+import com.clma.highlight.core.APOS_STRING_MODE
+import com.clma.highlight.core.C_BLOCK_COMMENT_MODE
+import com.clma.highlight.core.Mode
+import com.clma.highlight.core.NUMBER_RE
+import com.clma.highlight.core.QUOTE_STRING_MODE
+import com.clma.highlight.core.mode
 
 /**
  * The modes and word lists `lib/languages/lib/css-shared.js` of `highlight.js` 11.11.1 exports.

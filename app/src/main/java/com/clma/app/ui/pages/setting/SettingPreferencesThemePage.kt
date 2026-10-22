@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.setting
+package com.clma.app.ui.pages.setting
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -28,17 +28,17 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ArrowRight01
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.Screen
-import me.rerere.rikkahub.ui.components.nav.BackButton
-import me.rerere.rikkahub.ui.components.ui.CardGroup
-import me.rerere.rikkahub.ui.components.ui.Select
-import me.rerere.rikkahub.ui.context.LocalNavController
-import me.rerere.rikkahub.ui.hooks.rememberAmoledDarkMode
-import me.rerere.rikkahub.ui.hooks.rememberColorMode
-import me.rerere.rikkahub.ui.theme.ColorMode
-import me.rerere.rikkahub.ui.theme.CustomColors
-import me.rerere.rikkahub.utils.plus
+import com.clma.app.R
+import com.clma.app.Screen
+import com.clma.app.ui.components.nav.BackButton
+import com.clma.app.ui.components.ui.CardGroup
+import com.clma.app.ui.components.ui.Select
+import com.clma.app.ui.context.LocalNavController
+import com.clma.app.ui.hooks.rememberAmoledDarkMode
+import com.clma.app.ui.hooks.rememberColorMode
+import com.clma.app.ui.theme.ColorMode
+import com.clma.app.ui.theme.CustomColors
+import com.clma.app.utils.plus
 import org.koin.androidx.compose.koinViewModel
 
 @Composable

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.sync
+package com.clma.app.data.sync
 
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.SerializationException

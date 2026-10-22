@@ -1,7 +1,7 @@
-package me.rerere.rikkahub.web.routes
+package com.clma.app.web.routes
 
-import me.rerere.rikkahub.web.dto.ConversationDto
-import me.rerere.rikkahub.web.dto.MessageNodeDto
+import com.clma.app.web.dto.ConversationDto
+import com.clma.app.web.dto.MessageNodeDto
 
 internal data class NodeDiff(
     val nodeIndex: Int,

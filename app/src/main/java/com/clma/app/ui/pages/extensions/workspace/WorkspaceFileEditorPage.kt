@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.extensions.workspace
+package com.clma.app.ui.pages.extensions.workspace
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,14 +30,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.dokar.sonner.ToastType
 import kotlinx.coroutines.launch
-import me.rerere.rikkahub.data.repository.WorkspaceRepository
-import me.rerere.rikkahub.ui.components.nav.BackButton
-import me.rerere.rikkahub.ui.components.webview.WebView
-import me.rerere.rikkahub.ui.components.webview.rememberWebViewState
-import me.rerere.rikkahub.ui.context.LocalToaster
-import me.rerere.rikkahub.ui.theme.CustomColors
-import me.rerere.rikkahub.ui.theme.JetbrainsMono
-import me.rerere.workspace.WorkspaceStorageArea
+import com.clma.app.data.repository.WorkspaceRepository
+import com.clma.app.ui.components.nav.BackButton
+import com.clma.app.ui.components.webview.WebView
+import com.clma.app.ui.components.webview.rememberWebViewState
+import com.clma.app.ui.context.LocalToaster
+import com.clma.app.ui.theme.CustomColors
+import com.clma.app.ui.theme.JetbrainsMono
+import com.clma.workspace.WorkspaceStorageArea
 import org.koin.compose.koinInject
 
 /**

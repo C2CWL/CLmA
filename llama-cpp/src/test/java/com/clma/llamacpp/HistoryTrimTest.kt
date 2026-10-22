@@ -1,7 +1,7 @@
-package me.rerere.llamacpp
+package com.clma.llamacpp
 
-import me.rerere.ai.core.MessageRole
-import me.rerere.ai.ui.UIMessage
+import com.clma.ai.core.MessageRole
+import com.clma.ai.ui.UIMessage
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

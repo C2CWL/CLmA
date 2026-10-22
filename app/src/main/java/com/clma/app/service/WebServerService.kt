@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.service
+package com.clma.app.service
 
 import android.app.PendingIntent
 import android.app.Service
@@ -16,10 +16,10 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.WEB_SERVER_NOTIFICATION_CHANNEL_ID
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.web.WebServerManager
+import com.clma.app.R
+import com.clma.app.WEB_SERVER_NOTIFICATION_CHANNEL_ID
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.web.WebServerManager
 import org.koin.android.ext.android.inject
 
 private const val TAG = "WebServerService"

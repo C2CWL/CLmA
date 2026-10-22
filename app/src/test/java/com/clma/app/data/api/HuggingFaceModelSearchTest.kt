@@ -1,9 +1,9 @@
-package me.rerere.rikkahub.data.api
+package com.clma.app.data.api
 
 import kotlinx.serialization.decodeFromString
-import me.rerere.rikkahub.data.model.HfModelDetail
-import me.rerere.rikkahub.data.model.HfSibling
-import me.rerere.rikkahub.utils.JsonInstant
+import com.clma.app.data.model.HfModelDetail
+import com.clma.app.data.model.HfSibling
+import com.clma.app.utils.JsonInstant
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

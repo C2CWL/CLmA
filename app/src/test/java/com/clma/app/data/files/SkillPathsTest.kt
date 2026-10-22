@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.files
+package com.clma.app.data.files
 
 import java.io.File
 import java.nio.file.Files

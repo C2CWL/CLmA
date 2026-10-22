@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.modifier
+package com.clma.app.ui.modifier
 
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode

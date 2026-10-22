@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.sync
+package com.clma.app.data.sync
 
 import android.content.Context
 import kotlinx.coroutines.Dispatchers
@@ -9,13 +9,13 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
-import me.rerere.rikkahub.data.datastore.Settings
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.datastore.migration.SettingsJsonMigrator
-import me.rerere.rikkahub.data.db.AppDatabaseFactory
-import me.rerere.rikkahub.data.db.AppDatabase
-import me.rerere.rikkahub.data.db.ImportedDatabaseReconciler
-import me.rerere.rikkahub.data.db.SQLiteConfiguration
+import com.clma.app.data.datastore.Settings
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.datastore.migration.SettingsJsonMigrator
+import com.clma.app.data.db.AppDatabaseFactory
+import com.clma.app.data.db.AppDatabase
+import com.clma.app.data.db.ImportedDatabaseReconciler
+import com.clma.app.data.db.SQLiteConfiguration
 import java.io.File
 import java.io.FileOutputStream
 import java.nio.file.Files

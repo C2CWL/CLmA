@@ -1,4 +1,4 @@
-package me.rerere.highlight
+package com.clma.highlight
 
 sealed interface HighlightToken {
     val content: String

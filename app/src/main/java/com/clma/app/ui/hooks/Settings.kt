@@ -1,10 +1,10 @@
-package me.rerere.rikkahub.ui.hooks
+package com.clma.app.ui.hooks
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import me.rerere.rikkahub.data.datastore.Settings
-import me.rerere.rikkahub.data.datastore.SettingsStore
+import com.clma.app.data.datastore.Settings
+import com.clma.app.data.datastore.SettingsStore
 import org.koin.compose.koinInject
 
 @Composable

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.subagent
+package com.clma.app.subagent
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue

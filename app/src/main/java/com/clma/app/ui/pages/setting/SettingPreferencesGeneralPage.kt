@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.setting
+package com.clma.app.ui.pages.setting
 
 import android.widget.Toast
 import androidx.compose.material3.MaterialTheme
@@ -33,24 +33,24 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.datastore.DisplaySetting
-import me.rerere.rikkahub.data.datastore.LoadingIndicatorStyle
-import me.rerere.rikkahub.data.datastore.effectiveLoadingIndicatorStyle
-import me.rerere.rikkahub.data.datastore.withLoadingIndicatorStyle
-import me.rerere.rikkahub.ui.components.nav.BackButton
-import me.rerere.rikkahub.ui.components.ui.CardGroup
-import me.rerere.rikkahub.ui.components.ui.PercentSlider
-import me.rerere.rikkahub.ui.components.ui.SettingSlider
-import me.rerere.rikkahub.ui.components.ui.parseIntInRange
-import me.rerere.rikkahub.ui.components.ui.snapToInt
-import me.rerere.rikkahub.ui.components.ui.Select
-import me.rerere.rikkahub.ui.hooks.rememberSharedPreferenceBoolean
-import me.rerere.rikkahub.ui.theme.CustomColors
-import me.rerere.rikkahub.utils.AppIconStyle
-import me.rerere.rikkahub.utils.applyAppIcon
-import me.rerere.rikkahub.utils.currentAppIcon
-import me.rerere.rikkahub.utils.plus
+import com.clma.app.R
+import com.clma.app.data.datastore.DisplaySetting
+import com.clma.app.data.datastore.LoadingIndicatorStyle
+import com.clma.app.data.datastore.effectiveLoadingIndicatorStyle
+import com.clma.app.data.datastore.withLoadingIndicatorStyle
+import com.clma.app.ui.components.nav.BackButton
+import com.clma.app.ui.components.ui.CardGroup
+import com.clma.app.ui.components.ui.PercentSlider
+import com.clma.app.ui.components.ui.SettingSlider
+import com.clma.app.ui.components.ui.parseIntInRange
+import com.clma.app.ui.components.ui.snapToInt
+import com.clma.app.ui.components.ui.Select
+import com.clma.app.ui.hooks.rememberSharedPreferenceBoolean
+import com.clma.app.ui.theme.CustomColors
+import com.clma.app.utils.AppIconStyle
+import com.clma.app.utils.applyAppIcon
+import com.clma.app.utils.currentAppIcon
+import com.clma.app.utils.plus
 import org.koin.androidx.compose.koinViewModel
 
 @Composable

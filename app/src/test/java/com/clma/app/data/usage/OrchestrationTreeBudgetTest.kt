@@ -1,7 +1,7 @@
-package me.rerere.rikkahub.data.usage
+package com.clma.app.data.usage
 
-import me.rerere.rikkahub.data.agentrun.AgentRun
-import me.rerere.rikkahub.data.agentrun.AgentRunKind
+import com.clma.app.data.agentrun.AgentRun
+import com.clma.app.data.agentrun.AgentRunKind
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull

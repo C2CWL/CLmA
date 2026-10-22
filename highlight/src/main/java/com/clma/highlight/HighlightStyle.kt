@@ -1,4 +1,4 @@
-package me.rerere.highlight
+package com.clma.highlight
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString

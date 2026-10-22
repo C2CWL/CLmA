@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.setting.components
+package com.clma.app.ui.pages.setting.components
 
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ArrowDown01
@@ -27,12 +27,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import me.rerere.ai.provider.BalanceOption
-import me.rerere.ai.provider.ProviderSetting
-import me.rerere.common.http.isJsonExprValid
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.datastore.DEFAULT_PROVIDERS
-import me.rerere.rikkahub.ui.theme.JetbrainsMono
+import com.clma.ai.provider.BalanceOption
+import com.clma.ai.provider.ProviderSetting
+import com.clma.common.http.isJsonExprValid
+import com.clma.app.R
+import com.clma.app.data.datastore.DEFAULT_PROVIDERS
+import com.clma.app.ui.theme.JetbrainsMono
 
 private val ApiPathRegex = Regex("""^/[^ \t\n\r]*$""")
 

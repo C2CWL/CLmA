@@ -1,4 +1,4 @@
-package me.rerere.tts.controller
+package com.clma.tts.controller
 
 import android.content.Context
 import android.net.Uri
@@ -23,10 +23,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
-import me.rerere.tts.model.AudioFormat
-import me.rerere.tts.model.PlaybackState
-import me.rerere.tts.model.PlaybackStatus
-import me.rerere.tts.model.TTSResponse
+import com.clma.tts.model.AudioFormat
+import com.clma.tts.model.PlaybackState
+import com.clma.tts.model.PlaybackStatus
+import com.clma.tts.model.TTSResponse
 import java.io.ByteArrayOutputStream
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException

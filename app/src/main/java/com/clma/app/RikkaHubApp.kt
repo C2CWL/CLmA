@@ -1,4 +1,4 @@
-package me.rerere.rikkahub
+package com.clma.app
 
 import android.app.Application
 import android.content.Intent
@@ -17,7 +17,7 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import me.rerere.rikkahub.data.files.FileFolders
+import com.clma.app.data.files.FileFolders
 import java.io.File
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -25,29 +25,29 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
-import me.rerere.common.android.LogLevel
-import me.rerere.common.android.Logging
-import me.rerere.common.android.appTempFolder
+import com.clma.common.android.LogLevel
+import com.clma.common.android.Logging
+import com.clma.common.android.appTempFolder
 import com.whl.quickjs.android.QuickJSLoader
-import me.rerere.rikkahub.di.appModule
-import me.rerere.rikkahub.di.dataSourceModule
-import me.rerere.rikkahub.di.repositoryModule
-import me.rerere.rikkahub.di.viewModelModule
-import me.rerere.rikkahub.data.files.FilesManager
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.ai.tools.HeadlessConversations
-import me.rerere.rikkahub.data.ai.tools.local.AccessibilityServiceHandle
-import me.rerere.rikkahub.data.sync.BackupManager
-import me.rerere.rikkahub.data.sync.RestoreFailedException
-import me.rerere.rikkahub.utils.JsonInstant
-import me.rerere.rikkahub.service.FloatingBallService
-import me.rerere.rikkahub.service.WebServerService
-import me.rerere.rikkahub.utils.CrashHandler
-import me.rerere.rikkahub.utils.DatabaseUtil
-import me.rerere.rikkahub.data.repository.WorkspaceRepository
-import me.rerere.workspace.WorkspaceManager
-import me.rerere.rikkahub.ui.hooks.readBooleanPreference
-import me.rerere.rikkahub.ui.hooks.writeBooleanPreference
+import com.clma.app.di.appModule
+import com.clma.app.di.dataSourceModule
+import com.clma.app.di.repositoryModule
+import com.clma.app.di.viewModelModule
+import com.clma.app.data.files.FilesManager
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.ai.tools.HeadlessConversations
+import com.clma.app.data.ai.tools.local.AccessibilityServiceHandle
+import com.clma.app.data.sync.BackupManager
+import com.clma.app.data.sync.RestoreFailedException
+import com.clma.app.utils.JsonInstant
+import com.clma.app.service.FloatingBallService
+import com.clma.app.service.WebServerService
+import com.clma.app.utils.CrashHandler
+import com.clma.app.utils.DatabaseUtil
+import com.clma.app.data.repository.WorkspaceRepository
+import com.clma.workspace.WorkspaceManager
+import com.clma.app.ui.hooks.readBooleanPreference
+import com.clma.app.ui.hooks.writeBooleanPreference
 import org.koin.android.ext.android.get
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -155,7 +155,7 @@ class RikkaHubApp : Application() {
         // Tools resolve `~` and `~/foo` paths to this dir, giving the LLM a stable
         // sandbox for `.learnings/`, scratch files, and skill state without scoped-
         // storage friction. Termux-style: private, persistent, OS-blessed.
-        me.rerere.rikkahub.data.ai.tools.local.AgentWorkspace.init(this)
+        com.clma.app.data.ai.tools.local.AgentWorkspace.init(this)
 
         // TermuxPreferences is already constructed transitively via eagerlyInitChatService()
         // above (ChatService -> LocalTools -> TermuxPreferences), which runs its init{}
@@ -245,8 +245,8 @@ class RikkaHubApp : Application() {
                         // for native crashes. Match the JNI sidekick of each runtime.
                         (exit.description?.contains("liblitertlm", ignoreCase = true) == true)
                 } ?: return@runCatching
-                val prefs = get<me.rerere.locallm.LocalRuntimePreferences>()
-                val runtime = me.rerere.locallm.LocalRuntime.LiteRT
+                val prefs = get<com.clma.locallm.LocalRuntimePreferences>()
+                val runtime = com.clma.locallm.LocalRuntime.LiteRT
                 // Don't double-stamp if the user has already seen and dismissed an earlier
                 // crash banner — the prior dismiss cleared the recovery key, but if a NEW
                 // crash happened after, we want a fresh notice.
@@ -277,8 +277,8 @@ class RikkaHubApp : Application() {
     private fun invalidateLocalLlmDecisionsOnSdkUpgrade() {
         get<AppScope>().launch(Dispatchers.IO) {
             runCatching {
-                val prefs = get<me.rerere.locallm.LocalRuntimePreferences>()
-                val invalidated = prefs.maybeInvalidateOnSdkUpgrade(me.rerere.locallm.LocalRuntime.LiteRT)
+                val prefs = get<com.clma.locallm.LocalRuntimePreferences>()
+                val invalidated = prefs.maybeInvalidateOnSdkUpgrade(com.clma.locallm.LocalRuntime.LiteRT)
                 if (invalidated) {
                     Log.i(
                         TAG,
@@ -294,7 +294,7 @@ class RikkaHubApp : Application() {
                 // re-stamps the flag the moment it observes a fresh failure — so the wipe
                 // never strands the app in a crash loop, it just ensures we re-test on
                 // every launch.
-                val wipedVision = prefs.clearAllVisionUnavailable(me.rerere.locallm.LocalRuntime.LiteRT)
+                val wipedVision = prefs.clearAllVisionUnavailable(com.clma.locallm.LocalRuntime.LiteRT)
                 if (wipedVision > 0) {
                     Log.i(
                         TAG,
@@ -316,7 +316,7 @@ class RikkaHubApp : Application() {
     private fun runAgentRunBootRecovery() {
         get<AppScope>().launch(Dispatchers.IO) {
             runCatching {
-                get<me.rerere.rikkahub.data.agentrun.AgentRunBootRecovery>().runRecovery()
+                get<com.clma.app.data.agentrun.AgentRunBootRecovery>().runRecovery()
             }.onFailure {
                 Log.w(TAG, "runAgentRunBootRecovery failed", it)
             }
@@ -331,7 +331,7 @@ class RikkaHubApp : Application() {
     private fun runOrphanedReasoningRecovery() {
         get<AppScope>().launch(Dispatchers.IO) {
             runCatching {
-                get<me.rerere.rikkahub.data.ai.OrphanedReasoningRecovery>().runRecovery()
+                get<com.clma.app.data.ai.OrphanedReasoningRecovery>().runRecovery()
             }.onFailure {
                 Log.w(TAG, "runOrphanedReasoningRecovery failed", it)
             }
@@ -341,8 +341,8 @@ class RikkaHubApp : Application() {
     private fun startWorkflowRegistry() {
         get<AppScope>().launch(Dispatchers.IO) {
             runCatching {
-                val registry = get<me.rerere.rikkahub.workflow.trigger.TriggerRegistry>()
-                val engine = get<me.rerere.rikkahub.workflow.execution.WorkflowEngine>()
+                val registry = get<com.clma.app.workflow.trigger.TriggerRegistry>()
+                val engine = get<com.clma.app.workflow.execution.WorkflowEngine>()
                 registry.setEngineCallback(engine.triggerCallback)
                 registry.start()
             }.onFailure {
@@ -354,7 +354,7 @@ class RikkaHubApp : Application() {
     private fun startNetworkChangeMonitor() {
         runCatching {
             val client = get<okhttp3.OkHttpClient>()
-            me.rerere.rikkahub.utils.NetworkChangeMonitor.start(this, client)
+            com.clma.app.utils.NetworkChangeMonitor.start(this, client)
         }.onFailure {
             Log.w(TAG, "startNetworkChangeMonitor failed", it)
         }
@@ -377,7 +377,7 @@ class RikkaHubApp : Application() {
                 val orphanIds = HeadlessConversations.activeIds()
                 if (orphanIds.isEmpty()) return@runCatching
                 Log.i(TAG, "sweepOrphanHeadlessConversations: found ${orphanIds.size} candidate(s)")
-                val convRepo = get<me.rerere.rikkahub.data.repository.ConversationRepository>()
+                val convRepo = get<com.clma.app.data.repository.ConversationRepository>()
                 for (id in orphanIds) {
                     runCatching {
                         val conv = convRepo.getConversationById(id)
@@ -411,7 +411,7 @@ class RikkaHubApp : Application() {
             // Just resolving the singleton triggers Koin's factory; the side effect we care
             // about is the LifecycleRegistry.addObserver call inside ChatService.<init>,
             // which Android requires to happen on the main thread.
-            get<me.rerere.rikkahub.service.ChatService>()
+            get<com.clma.app.service.ChatService>()
         } catch (t: Throwable) {
             Log.e(TAG, "eagerlyInitChatService failed", t)
         }
@@ -421,7 +421,7 @@ class RikkaHubApp : Application() {
     // constructed TermuxPreferences transitively; kept independent in case that chain changes.
     private fun eagerlyInitTermuxPreferences() {
         try {
-            get<me.rerere.rikkahub.data.preferences.TermuxPreferences>()
+            get<com.clma.app.data.preferences.TermuxPreferences>()
         } catch (t: Throwable) {
             Log.e(TAG, "eagerlyInitTermuxPreferences failed", t)
         }
@@ -430,16 +430,16 @@ class RikkaHubApp : Application() {
     private fun startTelegramBotIfEnabled() {
         get<AppScope>().launch(Dispatchers.IO) {
             runCatching {
-                val cfg = get<me.rerere.rikkahub.data.telegram.TelegramBotPreferences>().current()
+                val cfg = get<com.clma.app.data.telegram.TelegramBotPreferences>().current()
                 if (cfg.isUsable) {
                     Log.i(TAG, "startTelegramBotIfEnabled: re-starting bot service")
-                    me.rerere.rikkahub.service.TelegramBotService.start(this@RikkaHubApp)
+                    com.clma.app.service.TelegramBotService.start(this@RikkaHubApp)
                     // Defense-in-depth against OEM aggressive task-killing: a 30-min
                     // periodic health probe re-starts the service if anything killed it
                     // outside our control. Idempotent — uses ExistingPeriodicWorkPolicy.KEEP.
-                    me.rerere.rikkahub.service.TelegramBotHealthWorker.schedule(this@RikkaHubApp)
+                    com.clma.app.service.TelegramBotHealthWorker.schedule(this@RikkaHubApp)
                 } else {
-                    me.rerere.rikkahub.service.TelegramBotHealthWorker.cancel(this@RikkaHubApp)
+                    com.clma.app.service.TelegramBotHealthWorker.cancel(this@RikkaHubApp)
                 }
             }.onFailure {
                 Log.e(TAG, "startTelegramBotIfEnabled failed", it)
@@ -460,7 +460,7 @@ class RikkaHubApp : Application() {
     private fun seedDefaultSkillsIfNeeded() {
         get<AppScope>().launch(Dispatchers.IO) {
             runCatching {
-                get<me.rerere.rikkahub.data.files.SkillManager>().seedDefaultSkillsIfNeeded()
+                get<com.clma.app.data.files.SkillManager>().seedDefaultSkillsIfNeeded()
             }.onFailure {
                 Log.e(TAG, "seedDefaultSkillsIfNeeded failed", it)
             }

@@ -1,4 +1,4 @@
-package me.rerere.ai.util
+package com.clma.ai.util
 
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.boolean
@@ -14,7 +14,7 @@ import org.junit.Test
 /**
  * Covers [sanitizeForGeminiSchema], the allowlist replacement for the old
  * `removeElements` blacklist call on tool `parameters` in
- * [me.rerere.ai.provider.providers.GoogleProvider.buildCompletionRequestBody]. MCP server
+ * [com.clma.ai.provider.providers.GoogleProvider.buildCompletionRequestBody]. MCP server
  * schemas routinely carry JSON-Schema-only keywords Google's Schema proto 400s on
  * ("Unknown name ...") - these tests pin exactly which keywords survive and how the
  * schema-composition keywords ($ref, oneOf, allOf, array type) get normalized away.

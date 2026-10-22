@@ -1,4 +1,4 @@
-package me.rerere.oauth
+package com.clma.oauth
 
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient

@@ -1,8 +1,8 @@
-package me.rerere.highlight.languages.diff
+package com.clma.highlight.languages.diff
 
-import me.rerere.highlight.core.Language
-import me.rerere.highlight.core.either
-import me.rerere.highlight.core.mode
+import com.clma.highlight.core.Language
+import com.clma.highlight.core.either
+import com.clma.highlight.core.mode
 
 /** Diff, ported from `lib/languages/diff.js` of `highlight.js` 11.11.1. */
 internal fun diff(): Language = Language(

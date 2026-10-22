@@ -1,6 +1,6 @@
-package me.rerere.rikkahub.subagent
+package com.clma.app.subagent
 
-import me.rerere.rikkahub.data.agentdef.AgentDefinition
+import com.clma.app.data.agentdef.AgentDefinition
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

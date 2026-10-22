@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.setting.locallm
+package com.clma.app.ui.pages.setting.locallm
 
 import android.content.Context
 import androidx.lifecycle.ViewModel
@@ -13,24 +13,24 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.launch
-import me.rerere.ai.provider.Model
-import me.rerere.ai.provider.Modality
-import me.rerere.ai.provider.ModelAbility
-import me.rerere.ai.provider.ProviderSetting
-import me.rerere.ai.provider.LITERT_PROVIDER_ID
-import me.rerere.ai.provider.LLAMACPP_PROVIDER_ID
-import me.rerere.llamacpp.LlamaCppCatalog
-import me.rerere.locallm.AcceleratorProbe
-import me.rerere.locallm.LocalRuntime
-import me.rerere.locallm.LocalRuntimePreferences
-import me.rerere.locallm.litert.LiteRtModelMetadata
-import me.rerere.locallm.MemoryGuard
-import me.rerere.locallm.ModelInstall
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.api.HuggingFaceAPI
-import me.rerere.rikkahub.data.api.HuggingFaceModelSearch
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.model.HfModelSearchResult
+import com.clma.ai.provider.Model
+import com.clma.ai.provider.Modality
+import com.clma.ai.provider.ModelAbility
+import com.clma.ai.provider.ProviderSetting
+import com.clma.ai.provider.LITERT_PROVIDER_ID
+import com.clma.ai.provider.LLAMACPP_PROVIDER_ID
+import com.clma.llamacpp.LlamaCppCatalog
+import com.clma.locallm.AcceleratorProbe
+import com.clma.locallm.LocalRuntime
+import com.clma.locallm.LocalRuntimePreferences
+import com.clma.locallm.litert.LiteRtModelMetadata
+import com.clma.locallm.MemoryGuard
+import com.clma.locallm.ModelInstall
+import com.clma.app.R
+import com.clma.app.data.api.HuggingFaceAPI
+import com.clma.app.data.api.HuggingFaceModelSearch
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.model.HfModelSearchResult
 import okhttp3.OkHttpClient
 
 /**
@@ -87,7 +87,7 @@ class SettingLocalLlmViewModel(
     val accelerator: StateFlow<String?> = _accelerator.asStateFlow()
 
     /** True (default) when the runtime is locked to CPU. Off lets the probe pick GPU/NNAPI/QNN.
-     *  Auto-flipped to true by [me.rerere.rikkahub.RikkaHubApp] when the prior process exited
+     *  Auto-flipped to true by [com.clma.app.RikkaHubApp] when the prior process exited
      *  with a native crash inside the runtime's JNI lib (see crashRecoveryAccelerator). */
     val forceCpu: StateFlow<Boolean> = prefs.forceCpuFlow(runtime)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)

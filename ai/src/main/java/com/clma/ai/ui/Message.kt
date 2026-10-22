@@ -1,13 +1,13 @@
-package me.rerere.ai.ui
+package com.clma.ai.ui
 
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
-import me.rerere.ai.core.MessageRole
-import me.rerere.ai.core.TokenUsage
-import me.rerere.ai.util.json
+import com.clma.ai.core.MessageRole
+import com.clma.ai.core.TokenUsage
+import com.clma.ai.util.json
 import kotlin.math.roundToInt
 import kotlin.time.Clock
 import kotlin.uuid.Uuid
@@ -514,7 +514,7 @@ fun <T> List<T>.migrateToolNodes(
 }
 
 /**
- * Legacy per-event chunk shape, kept only for [me.rerere.ai.provider.providers.google
+ * Legacy per-event chunk shape, kept only for [com.clma.ai.provider.providers.google
  * .GoogleProvider.parseStreamCandidates], which the Cloud Code Assist transport (app module)
  * still consumes across the module boundary. New streaming code should use [StreamChunk]
  * instead; do not build new producers or consumers of this type.

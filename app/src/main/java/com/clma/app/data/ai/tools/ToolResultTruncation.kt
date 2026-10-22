@@ -1,6 +1,6 @@
-package me.rerere.rikkahub.data.ai.tools
+package com.clma.app.data.ai.tools
 
-import me.rerere.rikkahub.data.ai.ContextCompactionPlanner
+import com.clma.app.data.ai.ContextCompactionPlanner
 
 /**
  * Phase 17 (⑥) — optional per-tool-result token budget.

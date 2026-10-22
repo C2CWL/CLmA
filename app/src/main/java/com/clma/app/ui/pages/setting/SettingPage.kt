@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.setting
+package com.clma.app.ui.pages.setting
 
 import android.content.ActivityNotFoundException
 import android.content.Intent
@@ -73,17 +73,17 @@ import me.rerere.hugeicons.stroke.Telegram
 import me.rerere.hugeicons.stroke.Tick01
 import me.rerere.hugeicons.stroke.View
 import me.rerere.hugeicons.stroke.Wrench01
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.Screen
-import me.rerere.rikkahub.data.datastore.SettingsHubStyle
-import me.rerere.rikkahub.data.datastore.isNotConfigured
-import me.rerere.rikkahub.data.files.FilesManager
-import me.rerere.rikkahub.ui.components.nav.BackButton
-import me.rerere.rikkahub.ui.components.ui.CardGroup
-import me.rerere.rikkahub.ui.context.LocalNavController
-import me.rerere.rikkahub.ui.context.Navigator
-import me.rerere.rikkahub.ui.theme.CustomColors
-import me.rerere.rikkahub.utils.plus
+import com.clma.app.R
+import com.clma.app.Screen
+import com.clma.app.data.datastore.SettingsHubStyle
+import com.clma.app.data.datastore.isNotConfigured
+import com.clma.app.data.files.FilesManager
+import com.clma.app.ui.components.nav.BackButton
+import com.clma.app.ui.components.ui.CardGroup
+import com.clma.app.ui.context.LocalNavController
+import com.clma.app.ui.context.Navigator
+import com.clma.app.ui.theme.CustomColors
+import com.clma.app.utils.plus
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 

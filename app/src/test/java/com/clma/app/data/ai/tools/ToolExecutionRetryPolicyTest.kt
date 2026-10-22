@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.tools
+package com.clma.app.data.ai.tools
 
 import java.io.FileNotFoundException
 import java.io.IOException
@@ -10,9 +10,9 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.ai.util.HttpException
-import me.rerere.rikkahub.data.ai.tools.ToolExecutionRetryPolicy.RetryOutcome
+import com.clma.ai.ui.UIMessagePart
+import com.clma.ai.util.HttpException
+import com.clma.app.data.ai.tools.ToolExecutionRetryPolicy.RetryOutcome
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

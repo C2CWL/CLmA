@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.tools
+package com.clma.app.data.ai.tools
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -21,11 +21,11 @@ import java.io.File
 class ToolSchemaArrayItemsTest {
 
     private val toolDirs: List<String> = listOf(
-        "src/main/java/me/rerere/rikkahub/data/ai/tools/local",
-        "src/main/java/me/rerere/rikkahub/data/ai/tools",
-        "src/main/java/me/rerere/rikkahub/data/ai/mcp/control",
-        "src/main/java/me/rerere/rikkahub/subagent",
-        "src/main/java/me/rerere/rikkahub/workflow",
+        "src/main/java/com/clma/app/data/ai/tools/local",
+        "src/main/java/com/clma/app/data/ai/tools",
+        "src/main/java/com/clma/app/data/ai/mcp/control",
+        "src/main/java/com/clma/app/subagent",
+        "src/main/java/com/clma/app/workflow",
     )
 
     private fun resolveModuleRoot(): File {

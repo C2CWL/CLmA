@@ -1,4 +1,4 @@
-package me.rerere.asr
+package com.clma.asr
 
 import org.junit.Assert.*
 import org.junit.Test

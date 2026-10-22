@@ -1,6 +1,6 @@
-package me.rerere.rikkahub.ui.components.message
+package com.clma.app.ui.components.message
 
-import me.rerere.rikkahub.data.datastore.DisplaySetting
+import com.clma.app.data.datastore.DisplaySetting
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

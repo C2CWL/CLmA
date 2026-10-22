@@ -1,4 +1,4 @@
-package me.rerere.common.cache
+package com.clma.common.cache
 
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.decodeFromString

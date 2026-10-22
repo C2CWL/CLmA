@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.tools
+package com.clma.app.data.ai.tools
 
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
@@ -7,9 +7,9 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.data.files.SkillContent
-import me.rerere.rikkahub.data.files.SkillMetadata
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.files.SkillContent
+import com.clma.app.data.files.SkillMetadata
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -27,7 +27,7 @@ class SkillGetContentToolTest {
     private fun meta(name: String) =
         SkillMetadata(name = name, description = "desc for $name", skillDir = File("/tmp/$name"))
 
-    private fun exec(tool: me.rerere.ai.core.Tool, args: String): String = runBlocking {
+    private fun exec(tool: com.clma.ai.core.Tool, args: String): String = runBlocking {
         (tool.execute(Json.parseToJsonElement(args)).first() as UIMessagePart.Text).text
     }
 

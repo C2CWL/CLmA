@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.service
+package com.clma.app.service
 
 import android.annotation.SuppressLint
 import android.app.ActivityOptions
@@ -32,12 +32,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import me.rerere.rikkahub.FLOATING_BALL_NOTIFICATION_CHANNEL_ID
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.ui.hooks.readStringPreference
-import me.rerere.rikkahub.ui.hooks.writeStringPreference
-import me.rerere.rikkahub.ui.pages.quickchat.QuickChatActivity
+import com.clma.app.FLOATING_BALL_NOTIFICATION_CHANNEL_ID
+import com.clma.app.R
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.ui.hooks.readStringPreference
+import com.clma.app.ui.hooks.writeStringPreference
+import com.clma.app.ui.pages.quickchat.QuickChatActivity
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import kotlin.math.abs

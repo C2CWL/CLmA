@@ -1,4 +1,4 @@
-package me.rerere.search
+package com.clma.search
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -17,6 +17,6 @@ class ExampleInstrumentedTest {
     fun useAppContext() {
         // Context of the app under test.
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        assertEquals("me.rerere.search.test", appContext.packageName)
+        assertEquals("com.clma.search.test", appContext.packageName)
     }
 }

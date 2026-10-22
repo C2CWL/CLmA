@@ -1,6 +1,6 @@
-package me.rerere.highlight.core
+package com.clma.highlight.core
 
-import me.rerere.highlight.HighlightToken
+import com.clma.highlight.HighlightToken
 
 /**
  * Collects highlighted text into a flat list of [HighlightToken].

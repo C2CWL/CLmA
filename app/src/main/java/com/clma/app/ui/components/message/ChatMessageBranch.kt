@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.message
+package com.clma.app.ui.components.message
 
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
@@ -23,8 +23,8 @@ import androidx.compose.ui.unit.dp
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ArrowLeft01
 import me.rerere.hugeicons.stroke.ArrowRight01
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.model.MessageNode
+import com.clma.app.R
+import com.clma.app.data.model.MessageNode
 
 @Composable
 fun ChatMessageBranchSelector(

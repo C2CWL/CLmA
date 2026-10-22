@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.service
+package com.clma.app.service
 
 import android.app.Notification
 import android.content.pm.PackageManager
@@ -12,11 +12,11 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import me.rerere.rikkahub.BuildConfig
-import me.rerere.rikkahub.data.notifications.NotificationEntry
-import me.rerere.rikkahub.data.notifications.NotificationListenerPreferences
-import me.rerere.rikkahub.data.telegram.TelegramBotClient
-import me.rerere.rikkahub.data.telegram.TelegramBotPreferences
+import com.clma.app.BuildConfig
+import com.clma.app.data.notifications.NotificationEntry
+import com.clma.app.data.notifications.NotificationListenerPreferences
+import com.clma.app.data.telegram.TelegramBotClient
+import com.clma.app.data.telegram.TelegramBotPreferences
 import org.koin.android.ext.android.inject
 
 private const val TAG = "RikkaNListener"
@@ -107,7 +107,7 @@ class RikkaNotificationListenerService : NotificationListenerService() {
         // Phase 12 — fan out to the workflow notification trigger dispatcher. The dispatcher
         // checks the matching workflows itself; with zero matching, this is a no-op.
         runCatching {
-            me.rerere.rikkahub.workflow.trigger.NotificationTriggerDispatcher.onPosted(
+            com.clma.app.workflow.trigger.NotificationTriggerDispatcher.onPosted(
                 packageName = entry.packageName,
                 title = entry.title,
                 text = entry.text,
@@ -147,7 +147,7 @@ class RikkaNotificationListenerService : NotificationListenerService() {
         // notifications (e.g. a termux-notification the user explicitly asked the agent
         // to send) still go through.
         if (entry.ongoing &&
-            me.rerere.rikkahub.data.ai.AgentTurnTracker.isFreshlyTouched(entry.packageName)) {
+            com.clma.app.data.ai.AgentTurnTracker.isFreshlyTouched(entry.packageName)) {
             return
         }
 

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.grok
+package com.clma.app.data.grok
 
 import android.content.Context
 import android.content.Intent
@@ -19,7 +19,7 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import me.rerere.common.http.await
+import com.clma.common.http.await
 import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request

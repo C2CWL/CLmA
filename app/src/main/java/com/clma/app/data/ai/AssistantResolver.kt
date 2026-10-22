@@ -1,8 +1,8 @@
-package me.rerere.rikkahub.data.ai
+package com.clma.app.data.ai
 
-import me.rerere.rikkahub.data.ai.tools.LocalToolOption
-import me.rerere.rikkahub.data.datastore.Settings
-import me.rerere.rikkahub.data.model.Assistant
+import com.clma.app.data.ai.tools.LocalToolOption
+import com.clma.app.data.datastore.Settings
+import com.clma.app.data.model.Assistant
 import kotlin.uuid.Uuid
 
 /**

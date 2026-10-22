@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.imggen
+package com.clma.app.ui.pages.imggen
 
 import android.app.Application
 import android.util.Log
@@ -20,18 +20,18 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
-import me.rerere.ai.provider.ImageEditParams
-import me.rerere.ai.provider.ImageGenerationParams
-import me.rerere.ai.provider.ProviderManager
-import me.rerere.ai.ui.ImageAspectRatio
-import me.rerere.ai.ui.ImageGenerationItem
-import me.rerere.common.android.appTempFolder
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.datastore.findModelById
-import me.rerere.rikkahub.data.datastore.findProvider
-import me.rerere.rikkahub.data.db.entity.GenMediaEntity
-import me.rerere.rikkahub.data.files.FilesManager
-import me.rerere.rikkahub.data.repository.GenMediaRepository
+import com.clma.ai.provider.ImageEditParams
+import com.clma.ai.provider.ImageGenerationParams
+import com.clma.ai.provider.ProviderManager
+import com.clma.ai.ui.ImageAspectRatio
+import com.clma.ai.ui.ImageGenerationItem
+import com.clma.common.android.appTempFolder
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.datastore.findModelById
+import com.clma.app.data.datastore.findProvider
+import com.clma.app.data.db.entity.GenMediaEntity
+import com.clma.app.data.files.FilesManager
+import com.clma.app.data.repository.GenMediaRepository
 import java.io.File
 import kotlin.coroutines.cancellation.CancellationException
 

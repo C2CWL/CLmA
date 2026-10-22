@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.tools
+package com.clma.app.data.ai.tools
 
 /**
  * Phase 17 stability — context every tool factory in [LocalTools.getTools] sees about WHO

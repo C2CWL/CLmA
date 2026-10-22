@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.setting
+package com.clma.app.ui.pages.setting
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -42,29 +42,29 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
-import me.rerere.ai.core.ReasoningLevel
-import me.rerere.ai.provider.Model
-import me.rerere.ai.provider.ModelType
-import me.rerere.ai.provider.ProviderSetting
+import com.clma.ai.core.ReasoningLevel
+import com.clma.ai.provider.Model
+import com.clma.ai.provider.ModelType
+import com.clma.ai.provider.ProviderSetting
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.AiBrain01
 import me.rerere.hugeicons.stroke.AiEditing
 import me.rerere.hugeicons.stroke.ArrowRight01
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.datastore.AutoCompactionThresholdMode
-import me.rerere.rikkahub.data.datastore.Settings
-import me.rerere.rikkahub.ui.pages.setting.termux.SettingTermuxViewModel
-import me.rerere.rikkahub.ui.pages.setting.termux.TimeoutInput
-import me.rerere.rikkahub.ui.components.ai.ModelListSheet
-import me.rerere.rikkahub.ui.components.ai.ReasoningButton
-import me.rerere.rikkahub.ui.components.ai.rememberModelListState
-import me.rerere.rikkahub.ui.components.nav.BackButton
-import me.rerere.rikkahub.ui.components.ui.CardGroup
-import me.rerere.rikkahub.ui.components.ui.SettingSlider
-import me.rerere.rikkahub.ui.components.ui.parseIntInRange
-import me.rerere.rikkahub.ui.components.ui.snapToInt
-import me.rerere.rikkahub.ui.theme.CustomColors
-import me.rerere.rikkahub.utils.plus
+import com.clma.app.R
+import com.clma.app.data.datastore.AutoCompactionThresholdMode
+import com.clma.app.data.datastore.Settings
+import com.clma.app.ui.pages.setting.termux.SettingTermuxViewModel
+import com.clma.app.ui.pages.setting.termux.TimeoutInput
+import com.clma.app.ui.components.ai.ModelListSheet
+import com.clma.app.ui.components.ai.ReasoningButton
+import com.clma.app.ui.components.ai.rememberModelListState
+import com.clma.app.ui.components.nav.BackButton
+import com.clma.app.ui.components.ui.CardGroup
+import com.clma.app.ui.components.ui.SettingSlider
+import com.clma.app.ui.components.ui.parseIntInRange
+import com.clma.app.ui.components.ui.snapToInt
+import com.clma.app.ui.theme.CustomColors
+import com.clma.app.utils.plus
 import org.koin.androidx.compose.koinViewModel
 import kotlin.uuid.Uuid
 
@@ -191,7 +191,7 @@ private fun ModelSettingsPage(settings: Settings, vm: SettingVM, contentPadding:
 /**
  * Per-turn generation limits — the wall-clock budget and the tool-step ceiling for one
  * user turn. These are app-wide (they govern every tool family and the model loop itself,
- * see [me.rerere.rikkahub.data.ai.limits.ToolRuntimeLimits]); they live on the model page
+ * see [com.clma.app.data.ai.limits.ToolRuntimeLimits]); they live on the model page
  * because they shape generation behaviour, not Termux specifically. Persistence stays in
  * TermuxPreferences (the pre-existing store), surfaced here through SettingTermuxViewModel.
  */

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.prompts
+package com.clma.app.data.ai.prompts
 
 val DEFAULT_OCR_PROMPT =
     """

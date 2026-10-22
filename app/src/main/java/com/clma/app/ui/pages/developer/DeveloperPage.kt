@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.developer
+package com.clma.app.ui.pages.developer
 
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.FileScript
@@ -29,8 +29,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
-import me.rerere.rikkahub.data.ai.AILogging
-import me.rerere.rikkahub.data.datastore.AiLogLevel
+import com.clma.app.data.ai.AILogging
+import com.clma.app.data.datastore.AiLogLevel
 import org.koin.androidx.compose.koinViewModel
 
 @Composable

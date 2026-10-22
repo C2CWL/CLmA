@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.db.fts
+package com.clma.app.data.db.fts
 
 import android.content.Context
 import java.io.File

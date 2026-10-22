@@ -95,14 +95,14 @@
 ### 3.5 ★ token 现状（P2-11 的落点，本轮新实核）
 
 - **AI 核心在独立模块 `ai/`**（非 app 模块）。
-- `ai/src/main/java/me/rerere/ai/core/Usage.kt` →
+- `ai/src/main/java/com/clma/ai/core/Usage.kt` →
   ```kotlin
   data class TokenUsage(promptTokens=0, completionTokens=0, cachedTokens=0, totalTokens=0, cost: Double? = null)
   fun TokenUsage?.merge(other: TokenUsage): TokenUsage   // ★ 语义有坑，见下
   ```
 - **采集/聚合点**：
   - provider 流式解码器产 `StreamChunk.Usage`（`ChatCompletionsStreamDecoder.kt:80` 解析 `payload["usage"]`；`GoogleStreamDecoder.kt:50`）
-  - **回合聚合点** = `ai/src/main/java/me/rerere/ai/ui/StreamChunkHandler.kt:338` → `usage = last().usage.merge(result.usage ?: TokenUsage())`
+  - **回合聚合点** = `ai/src/main/java/com/clma/ai/ui/StreamChunkHandler.kt:338` → `usage = last().usage.merge(result.usage ?: TokenUsage())`
 - **已有单测**：`ai/src/test/.../ChatCompletionsUsageParsingTest.kt`、`ai/src/test/.../UsageTest.kt` ⇒ **P2-11 有现成测试落点**。
 - 持久化：`ui/.../message/ChatMessageNerdLine.kt:73-78` 渲染 footer；`MessageNodeDAO.kt:59` `cachedTokens: Long = 0`。
 - 统计页**已存在**：`ui/pages/stats/StatsPage.kt` / `StatsVM.kt`（含 `totalCachedTokens`、`stats_page_cache_hit_rate`）。
@@ -330,7 +330,7 @@ P2-05(调色板) 服务于 P2-06 的 UI
 
 ### P2-11c 用量账本存储层 ✅ 已合并（2026-10-02，PR #15 / squash `9445f178`）
 
-交付：`app/src/main/java/me/rerere/rikkahub/data/usage/` 五个新文件 + 一个单测（+396 行，**零既有文件改动**）。
+交付：`app/src/main/java/com/clma/app/data/usage/` 五个新文件 + 一个单测（+396 行，**零既有文件改动**）。
 
 - `UsagePurpose`（12 类：MAIN/TOOL_LOOP/COMPACTION/TITLE/SUGGESTION/MEMORY_EXTRACT/SUBAGENT/CRON/WORKFLOW/SKILL_TEST/TRANSLATION/UNKNOWN，按枚举名入库）。
 - `UsageRecordEntity`（`usage_records`：**一次模型往返一行**，只存元数据不存消息内容；带 P2-11a 的 provenance 列，`cached_tokens_reported=false` 才能把「没报」与「报了 0」分开；成本列留空、写入时冻结，待 P2-11d 价格表）。
@@ -338,7 +338,7 @@ P2-05(调色板) 服务于 P2-06 的 UI
 - `UsageLedger`（写入 + 每天最多一次 90 天清扫；`UsageRecordMapper` 纯映射 + 保留期算术，可脱 Room 单测）。
 - 单测 `UsageRecordMappingTest` 4 例（逐列映射含可空 provenance / 未上报缓存保持未上报 / purpose 往返 / 90 天边界）。
 
-★ **架构决定：独立库文件 `usage_ledger.db`，不并入 `AppDatabase`**。原因：`ImportedDatabaseReconciler` 把 DB 版本 / Room **identity hash** / fork-only 表 DDL 三者硬绑，且 `ImportedDatabaseReconcilerTest` 从 `app/schemas/me.rerere.rikkahub.data.db.AppDatabase/NN.json` 直接比对（版本号、identityHash、文件名、AppDatabase 声明四处）；而 identity hash **只能由 Room 编译器产出**，本地无 Android SDK 无法预生成 ⇒ 并入主库必然烧两轮 CI，且那条路有 issue #105 的崩溃史。独立库：遥测永不碰主库迁移链，保留期清扫碰不到用户消息；账本无外键不 join，按 id 读即可；版本停 1，形状变了整库丢弃重建。代价 = 不能跨库 SQL join，统计/导出改内存 join。**若日后要并回主库**：两轮 CI 换 hash + 把新表 DDL 手写进 reconciler 的表清单。
+★ **架构决定：独立库文件 `usage_ledger.db`，不并入 `AppDatabase`**。原因：`ImportedDatabaseReconciler` 把 DB 版本 / Room **identity hash** / fork-only 表 DDL 三者硬绑，且 `ImportedDatabaseReconcilerTest` 从 `app/schemas/com.clma.app.data.db.AppDatabase/NN.json` 直接比对（版本号、identityHash、文件名、AppDatabase 声明四处）；而 identity hash **只能由 Room 编译器产出**，本地无 Android SDK 无法预生成 ⇒ 并入主库必然烧两轮 CI，且那条路有 issue #105 的崩溃史。独立库：遥测永不碰主库迁移链，保留期清扫碰不到用户消息；账本无外键不 join，按 id 读即可；版本停 1，形状变了整库丢弃重建。代价 = 不能跨库 SQL join，统计/导出改内存 join。**若日后要并回主库**：两轮 CI 换 hash + 把新表 DDL 手写进 reconciler 的表清单。
 
 本地验证：给 VPS kotlinc 工具链补 `room-common-jvm-2.8.4.jar`（★ **DAO 注解 `@Dao/@Query/@Insert` 在 `-jvm` 变体；实体注解 `@Entity/@ColumnInfo/@Index/@PrimaryKey` 在 `room-common`**，两颗不是一回事）→ 真编译 + `OK (4 tests)`；顺手修了 `ktest.sh` 的缺陷（原先编译失败仍会继续跑 JUnit，导致报「class not found」而非真因，现先判「有没有产出 class」）。CI 首轮即绿。
 
@@ -796,7 +796,7 @@ P2-11 的采集装饰器 `UsageRecordingProvider` 是 `Provider<T> by delegate`�
 
 ### 新坑 / 手法
 
-- ★ **`merge` 是 `ai.core` 的顶层扩展函数，跨包必须显式 `import me.rerere.ai.core.merge`**（`TokenUsage?.merge`）—— 首轮 harness 编译因此失败（`unresolved reference 'merge'`），其余逻辑全对。教训：挪用别处的扩展函数，别忘连 import 一起搬。
+- ★ **`merge` 是 `ai.core` 的顶层扩展函数，跨包必须显式 `import com.clma.ai.core.merge`**（`TokenUsage?.merge`）—— 首轮 harness 编译因此失败（`unresolved reference 'merge'`），其余逻辑全对。教训：挪用别处的扩展函数，别忘连 import 一起搬。
 - ★ 附带的**行为外溢**（可接受）：连接测试 `ProviderConnectionTester` 也经 `providerManager.getProviderByType` ⇒ 其流式那半现在也会记一行（purpose=UNKNOWN）。因**非流式那半本就已记**，属一致化、非回归；UNKNOWN 正是"未接线路径必须可见"的设计。
 
 **下一卡 = P2-12b**（回合视图：footer 升级 + 可展开逐次 + 估算 vs 真实标注；归属键＝时间窗）。
@@ -977,7 +977,7 @@ footer 只读 `message.usage`，而它由 `StreamChunkHandler` 的 `TokenUsage.m
 
 1. ★ **补丁器的 `already_marker` 遇到「删除类」编辑必炸**：把要删掉的原文当 already_marker，首跑就命中自己（P2-13 那条坑的镜像面）。删除类编辑改用 **anchor 计数**兜底（改完 anchor 归零 ⇒ 重放自然 ABORT）；只有「新增文本」才配 already_marker。
 2. ★ **「插在既有行之后」的编辑必须带 already_marker**：字符串这类锚点插入后锚点仍在的编辑，不带守卫会重放成两行。
-3. **harness 要编 `SubAgentRun.kt` 就得有 T-04 的 `SubAgentContextDigest`**：该文件拖入 `me.rerere.ai.ui`（Compose），与卡无关 ⇒ 用 5 行哨兵对象（同 `MAX_TURNS = 10`）保住纯逻辑可测，是全卡唯一 stub。
+3. **harness 要编 `SubAgentRun.kt` 就得有 T-04 的 `SubAgentContextDigest`**：该文件拖入 `com.clma.ai.ui`（Compose），与卡无关 ⇒ 用 5 行哨兵对象（同 `MAX_TURNS = 10`）保住纯逻辑可测，是全卡唯一 stub。
 
 ---
 

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.db.migrations
+package com.clma.app.data.db.migrations
 
 import android.util.Log
 import androidx.room.migration.Migration
@@ -11,11 +11,11 @@ private const val TAG = "Migration_30_31"
  *
  * Adds `shell_compatibility_mode` to `workspaces`. Hand-written rather than an AutoMigration
  * (issue #105): a database restored from an upstream 2.5.x backup can already carry this column
- * because [me.rerere.rikkahub.data.db.ImportedDatabaseReconciler] stamped it straight to v30
+ * because [com.clma.app.data.db.ImportedDatabaseReconciler] stamped it straight to v30
  * without it, so an unconditional `ADD COLUMN` crash-loops every launch with "duplicate column
  * name: shell_compatibility_mode". Checking `PRAGMA table_info` first makes the step idempotent.
  * The `ADD COLUMN` statement is byte-identical to what the old AutoMigration generated, so the
- * result still matches app/schemas/me.rerere.rikkahub.data.db.AppDatabase/31.json.
+ * result still matches app/schemas/com.clma.app.data.db.AppDatabase/31.json.
  */
 val Migration_30_31 = object : Migration(30, 31) {
     override fun migrate(db: SupportSQLiteDatabase) {

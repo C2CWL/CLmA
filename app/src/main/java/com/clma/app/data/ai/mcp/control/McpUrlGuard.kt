@@ -1,6 +1,6 @@
-package me.rerere.rikkahub.data.ai.mcp.control
+package com.clma.app.data.ai.mcp.control
 
-import me.rerere.rikkahub.data.ai.tools.HeadlessConversations
+import com.clma.app.data.ai.tools.HeadlessConversations
 import java.net.URI
 
 /**

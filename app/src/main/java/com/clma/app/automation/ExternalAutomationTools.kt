@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.automation
+package com.clma.app.automation
 
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.JsonElement
@@ -12,9 +12,9 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
-import me.rerere.ai.core.InputSchema
-import me.rerere.ai.core.Tool
-import me.rerere.ai.ui.UIMessagePart
+import com.clma.ai.core.InputSchema
+import com.clma.ai.core.Tool
+import com.clma.ai.ui.UIMessagePart
 
 /**
  * Phase 13 — External Automation config tools.

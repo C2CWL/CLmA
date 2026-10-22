@@ -1,8 +1,8 @@
-package me.rerere.rikkahub.service
+package com.clma.app.service
 
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
-import me.rerere.rikkahub.data.telegram.TelegramPollStallTracker
+import com.clma.app.data.telegram.TelegramPollStallTracker
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

@@ -1,4 +1,4 @@
-package me.rerere.ai.util
+package com.clma.ai.util
 
 import okhttp3.Call
 import okhttp3.Callback

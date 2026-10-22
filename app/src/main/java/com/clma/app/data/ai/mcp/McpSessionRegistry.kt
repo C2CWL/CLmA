@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.mcp
+package com.clma.app.data.ai.mcp
 
 import android.util.Log
 import io.ktor.client.HttpClient
@@ -33,8 +33,8 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonObject
-import me.rerere.rikkahub.AppScope
-import me.rerere.rikkahub.data.datastore.SettingsStore
+import com.clma.app.AppScope
+import com.clma.app.data.datastore.SettingsStore
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid

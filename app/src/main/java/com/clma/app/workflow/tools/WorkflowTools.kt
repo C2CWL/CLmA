@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.workflow.tools
+package com.clma.app.workflow.tools
 
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.add
@@ -9,14 +9,14 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.JsonPrimitive
-import me.rerere.ai.core.InputSchema
-import me.rerere.ai.core.Tool
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.workflow.execution.WorkflowEngine
-import me.rerere.rikkahub.workflow.model.WorkflowDefinition
-import me.rerere.rikkahub.workflow.model.WorkflowJson
-import me.rerere.rikkahub.workflow.repository.WorkflowRepository
-import me.rerere.rikkahub.workflow.trigger.TriggerRegistry
+import com.clma.ai.core.InputSchema
+import com.clma.ai.core.Tool
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.workflow.execution.WorkflowEngine
+import com.clma.app.workflow.model.WorkflowDefinition
+import com.clma.app.workflow.model.WorkflowJson
+import com.clma.app.workflow.repository.WorkflowRepository
+import com.clma.app.workflow.trigger.TriggerRegistry
 
 /**
  * Phase 12 — the seven `workflow_*` tools the LLM uses to author and manage workflows.
@@ -36,8 +36,8 @@ import me.rerere.rikkahub.workflow.trigger.TriggerRegistry
 fun workflowCreateTool(
     repository: WorkflowRepository,
     knownToolNamesProvider: () -> List<String>,
-    callerContext: me.rerere.rikkahub.data.ai.tools.ToolInvocationContext =
-        me.rerere.rikkahub.data.ai.tools.ToolInvocationContext.EMPTY,
+    callerContext: com.clma.app.data.ai.tools.ToolInvocationContext =
+        com.clma.app.data.ai.tools.ToolInvocationContext.EMPTY,
 ): Tool = Tool(
     name = "workflow_create",
     description = """
@@ -236,8 +236,8 @@ fun workflowGetTool(repository: WorkflowRepository): Tool = Tool(
 fun workflowUpdateTool(
     repository: WorkflowRepository,
     knownToolNamesProvider: () -> List<String>,
-    callerContext: me.rerere.rikkahub.data.ai.tools.ToolInvocationContext =
-        me.rerere.rikkahub.data.ai.tools.ToolInvocationContext.EMPTY,
+    callerContext: com.clma.app.data.ai.tools.ToolInvocationContext =
+        com.clma.app.data.ai.tools.ToolInvocationContext.EMPTY,
 ): Tool = Tool(
     name = "workflow_update",
     description = """

@@ -1,7 +1,7 @@
-package me.rerere.rikkahub.service
+package com.clma.app.service
 
 import com.cronutils.model.time.ExecutionTime
-import me.rerere.rikkahub.data.db.entity.ScheduledJobEntity
+import com.clma.app.data.db.entity.ScheduledJobEntity
 import java.time.Instant
 import java.time.ZoneId
 

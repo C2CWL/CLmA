@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.chat
+package com.clma.app.ui.pages.chat
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

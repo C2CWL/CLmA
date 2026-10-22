@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.tools.local
+package com.clma.app.data.ai.tools.local
 
 import android.graphics.Rect
 import android.view.accessibility.AccessibilityNodeInfo
@@ -11,14 +11,14 @@ import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import me.rerere.ai.core.InputSchema
-import me.rerere.ai.core.Tool
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.data.ai.AgentTurnTracker
-import me.rerere.rikkahub.data.ai.AutomationRecorder
-import me.rerere.rikkahub.data.ai.tools.ToolInvocationContext
-import me.rerere.rikkahub.service.ActionLogEntry
-import me.rerere.rikkahub.service.RikkaAccessibilityService
+import com.clma.ai.core.InputSchema
+import com.clma.ai.core.Tool
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.ai.AgentTurnTracker
+import com.clma.app.data.ai.AutomationRecorder
+import com.clma.app.data.ai.tools.ToolInvocationContext
+import com.clma.app.service.ActionLogEntry
+import com.clma.app.service.RikkaAccessibilityService
 
 private val ALLOWED_BY = setOf("text", "content_description", "view_id_resource_name")
 private const val MATCH_CAP = 50
@@ -178,7 +178,7 @@ fun findNodeTool(
         )
     },
     execute = { input ->
-        me.rerere.rikkahub.service.RikkaAccessibilityService.instance?.let { wakeScreenIfNeeded(it) }
+        com.clma.app.service.RikkaAccessibilityService.instance?.let { wakeScreenIfNeeded(it) }
         val (by, value, pkgFilter) = parseSelector(input)
         if (by == null || by !in ALLOWED_BY || value == null) {
             return@Tool listOf(

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.backup
+package com.clma.app.ui.pages.backup
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,14 +24,14 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.ui.components.nav.BackButton
-import me.rerere.rikkahub.ui.pages.backup.components.BackupDialog
-import me.rerere.rikkahub.ui.pages.backup.tabs.ImportExportTab
-import me.rerere.rikkahub.ui.pages.backup.tabs.ReminderTab
-import me.rerere.rikkahub.ui.pages.backup.tabs.S3Tab
-import me.rerere.rikkahub.ui.pages.backup.tabs.WebDavTab
-import me.rerere.rikkahub.ui.theme.CustomColors
+import com.clma.app.R
+import com.clma.app.ui.components.nav.BackButton
+import com.clma.app.ui.pages.backup.components.BackupDialog
+import com.clma.app.ui.pages.backup.tabs.ImportExportTab
+import com.clma.app.ui.pages.backup.tabs.ReminderTab
+import com.clma.app.ui.pages.backup.tabs.S3Tab
+import com.clma.app.ui.pages.backup.tabs.WebDavTab
+import com.clma.app.ui.theme.CustomColors
 import org.koin.androidx.compose.koinViewModel
 
 @Composable

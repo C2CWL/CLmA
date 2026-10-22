@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.ui
+package com.clma.app.ui.components.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -21,17 +21,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.datastore.Settings
-import me.rerere.rikkahub.data.files.SkillManager
-import me.rerere.rikkahub.data.files.SkillMetadata
-import me.rerere.rikkahub.data.model.Assistant
-import me.rerere.rikkahub.data.model.Conversation
-import me.rerere.rikkahub.ui.components.ai.ExtensionEmptyState
-import me.rerere.rikkahub.ui.components.ai.LorebooksContent
-import me.rerere.rikkahub.ui.components.ai.ModeInjectionsContent
-import me.rerere.rikkahub.ui.components.ai.QuickMessagesContent
-import me.rerere.rikkahub.ui.components.ai.SkillsContent
+import com.clma.app.R
+import com.clma.app.data.datastore.Settings
+import com.clma.app.data.files.SkillManager
+import com.clma.app.data.files.SkillMetadata
+import com.clma.app.data.model.Assistant
+import com.clma.app.data.model.Conversation
+import com.clma.app.ui.components.ai.ExtensionEmptyState
+import com.clma.app.ui.components.ai.LorebooksContent
+import com.clma.app.ui.components.ai.ModeInjectionsContent
+import com.clma.app.ui.components.ai.QuickMessagesContent
+import com.clma.app.ui.components.ai.SkillsContent
 import org.koin.compose.koinInject
 
 

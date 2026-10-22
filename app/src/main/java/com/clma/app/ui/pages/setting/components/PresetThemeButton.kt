@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.setting.components
+package com.clma.app.ui.pages.setting.components
 
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Tick01
@@ -34,9 +34,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
-import me.rerere.rikkahub.ui.theme.LocalDarkMode
-import me.rerere.rikkahub.ui.theme.PresetTheme
-import me.rerere.rikkahub.ui.theme.PresetThemes
+import com.clma.app.ui.theme.LocalDarkMode
+import com.clma.app.ui.theme.PresetTheme
+import com.clma.app.ui.theme.PresetThemes
 
 @Composable
 fun PresetThemeButton(

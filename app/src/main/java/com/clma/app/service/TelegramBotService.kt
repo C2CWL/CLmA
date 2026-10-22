@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.service
+package com.clma.app.service
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -27,29 +27,29 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
-import me.rerere.ai.core.MessageRole
-import me.rerere.ai.provider.Modality
-import me.rerere.ai.ui.UIMessage
-import me.rerere.ai.ui.UIMessagePart
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.ai.tools.HeadlessConversations
-import me.rerere.rikkahub.data.datastore.SettingsStore
-import me.rerere.rikkahub.data.datastore.getCurrentAssistant
-import me.rerere.rikkahub.data.db.entity.TelegramChatEntity
-import me.rerere.rikkahub.data.model.Conversation
-import me.rerere.rikkahub.data.repository.ConversationRepository
-import me.rerere.rikkahub.data.repository.TelegramChatRepository
-import me.rerere.rikkahub.data.telegram.AttachmentKind
-import me.rerere.rikkahub.data.telegram.TelegramApiException
-import me.rerere.rikkahub.data.telegram.TelegramBotClient
-import me.rerere.rikkahub.data.telegram.TelegramBotPreferences
-import me.rerere.rikkahub.data.telegram.TelegramCallbackQuery
-import me.rerere.rikkahub.data.telegram.TelegramHtmlRenderer
-import me.rerere.rikkahub.data.telegram.TelegramIncomingMessage
-import me.rerere.rikkahub.data.telegram.TelegramMyChatMember
-import me.rerere.rikkahub.data.telegram.parseCallbackQuery
-import me.rerere.rikkahub.data.telegram.parseIncoming
-import me.rerere.rikkahub.data.telegram.parseMyChatMember
+import com.clma.ai.core.MessageRole
+import com.clma.ai.provider.Modality
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.R
+import com.clma.app.data.ai.tools.HeadlessConversations
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.datastore.getCurrentAssistant
+import com.clma.app.data.db.entity.TelegramChatEntity
+import com.clma.app.data.model.Conversation
+import com.clma.app.data.repository.ConversationRepository
+import com.clma.app.data.repository.TelegramChatRepository
+import com.clma.app.data.telegram.AttachmentKind
+import com.clma.app.data.telegram.TelegramApiException
+import com.clma.app.data.telegram.TelegramBotClient
+import com.clma.app.data.telegram.TelegramBotPreferences
+import com.clma.app.data.telegram.TelegramCallbackQuery
+import com.clma.app.data.telegram.TelegramHtmlRenderer
+import com.clma.app.data.telegram.TelegramIncomingMessage
+import com.clma.app.data.telegram.TelegramMyChatMember
+import com.clma.app.data.telegram.parseCallbackQuery
+import com.clma.app.data.telegram.parseIncoming
+import com.clma.app.data.telegram.parseMyChatMember
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -77,11 +77,11 @@ class TelegramBotService : Service() {
     internal val conversationRepo: ConversationRepository by inject()
     internal val chatRepo: TelegramChatRepository by inject()
     internal val settingsStore: SettingsStore by inject()
-    internal val doctorChecks: me.rerere.rikkahub.ui.pages.setting.doctor.DoctorChecks by inject()
-    internal val agentRunRepo: me.rerere.rikkahub.data.agentrun.AgentRunRepository by inject()
+    internal val doctorChecks: com.clma.app.ui.pages.setting.doctor.DoctorChecks by inject()
+    internal val agentRunRepo: com.clma.app.data.agentrun.AgentRunRepository by inject()
     // Phase 24 — shared long-poll stall tracker. The poll loop stamps it on every
     // getUpdates; the stall checker reads it; DoctorChecks reads it.
-    private val pollStallTracker: me.rerere.rikkahub.data.telegram.TelegramPollStallTracker by inject()
+    private val pollStallTracker: com.clma.app.data.telegram.TelegramPollStallTracker by inject()
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var pollJob: Job? = null
@@ -488,7 +488,7 @@ class TelegramBotService : Service() {
                 val selected = conv.messageNodes.mapNotNull { it.messages.getOrNull(it.selectIndex) }
                 val lastAssistant = selected.lastOrNull { it.role.name.equals("assistant", ignoreCase = true) }
                 lastAssistant?.parts
-                    ?.filterIsInstance<me.rerere.ai.ui.UIMessagePart.Text>()
+                    ?.filterIsInstance<com.clma.ai.ui.UIMessagePart.Text>()
                     ?.joinToString("\n") { it.text }
                     ?.trim()
                     .orEmpty()
@@ -565,7 +565,7 @@ class TelegramBotService : Service() {
     }
 
     private suspend fun handleIncoming(
-        cfg: me.rerere.rikkahub.data.telegram.TelegramBotConfig,
+        cfg: com.clma.app.data.telegram.TelegramBotConfig,
         m: TelegramIncomingMessage,
     ) {
         val sender = m.senderId ?: run {
@@ -663,7 +663,7 @@ class TelegramBotService : Service() {
      * coroutine, which calls chatService.stopGeneration(convId) and unblocks us.
      */
     private suspend fun handleLlmTurn(
-        cfg: me.rerere.rikkahub.data.telegram.TelegramBotConfig,
+        cfg: com.clma.app.data.telegram.TelegramBotConfig,
         m: TelegramIncomingMessage,
     ) {
         val (convId, wasCreated) = lookupOrCreateConversation(cfg, m.chatId)
@@ -693,7 +693,7 @@ class TelegramBotService : Service() {
             att.kind == AttachmentKind.VIDEO_NOTE
         }
         val hasPhotoAttachment = m.photoFileIds.isNotEmpty()
-        me.rerere.rikkahub.data.ai.tools.ConversationSystemAddendum.set(
+        com.clma.app.data.ai.tools.ConversationSystemAddendum.set(
             convId,
             buildAgentContextPreamble(cfg, m.chatId, wasCreated, hasAudioAttachment, hasPhotoAttachment),
         )
@@ -736,7 +736,7 @@ class TelegramBotService : Service() {
         // domain_id=conversation id; one row per turn (a fresh row each inbound message).
         // Marked terminal in the finally block below. Best-effort — never breaks the turn.
         val ledgerId = agentRunRepo.open(
-            kind = me.rerere.rikkahub.data.agentrun.AgentRunKind.Telegram,
+            kind = com.clma.app.data.agentrun.AgentRunKind.Telegram,
             domainId = convId.toString(),
             metadata = buildJsonObject {
                 put("chat_id", m.chatId.toString())
@@ -746,7 +746,7 @@ class TelegramBotService : Service() {
 
         // Fresh per-turn screenshot signal so the finalizer's "post the answer at the bottom"
         // decision reflects only THIS turn's auto-streamed photos.
-        me.rerere.rikkahub.data.telegram.TelegramStreamSignal.reset(convId.toString())
+        com.clma.app.data.telegram.TelegramStreamSignal.reset(convId.toString())
 
         // Send the streaming placeholder once. The per-iteration editJob below edits it
         // in place during active generation, then stops while we wait on the user (so we
@@ -981,9 +981,9 @@ class TelegramBotService : Service() {
             // cancelled; a generation error → failed; otherwise succeeded. Runs in the
             // finally so the row is closed even on the CancellationException re-throw path.
             val ledgerStatus = when {
-                turnCancelled -> me.rerere.rikkahub.data.agentrun.AgentRunStatus.cancelled
-                generationError != null -> me.rerere.rikkahub.data.agentrun.AgentRunStatus.failed
-                else -> me.rerere.rikkahub.data.agentrun.AgentRunStatus.succeeded
+                turnCancelled -> com.clma.app.data.agentrun.AgentRunStatus.cancelled
+                generationError != null -> com.clma.app.data.agentrun.AgentRunStatus.failed
+                else -> com.clma.app.data.agentrun.AgentRunStatus.succeeded
             }
             agentRunRepo.markTerminal(
                 id = ledgerId,
@@ -1035,7 +1035,7 @@ class TelegramBotService : Service() {
                 }
             }
             placeholderId != null && finalReply.length <= MAX_CHARS &&
-                me.rerere.rikkahub.data.telegram.TelegramStreamSignal.count(convId.toString()) == 0 -> {
+                com.clma.app.data.telegram.TelegramStreamSignal.count(convId.toString()) == 0 -> {
                 // Final fits in one message AND no screenshots streamed this turn; just edit
                 // the placeholder one last time (it's still the newest message).
                 editPlaceholderHtmlWithFallback(m.chatId, placeholderId, finalReply)
@@ -1079,7 +1079,7 @@ class TelegramBotService : Service() {
      * Kept small so it doesn't dominate the prompt — model name + chat id + last few commands.
      */
     private fun buildAgentContextPreamble(
-        cfg: me.rerere.rikkahub.data.telegram.TelegramBotConfig,
+        cfg: com.clma.app.data.telegram.TelegramBotConfig,
         chatId: Long,
         firstTurnOfChat: Boolean,
         hasAudioAttachment: Boolean = false,
@@ -1203,7 +1203,7 @@ class TelegramBotService : Service() {
     /** Returns (conversationId, wasCreated). wasCreated=true means the LLM hasn't seen
      *  the Telegram context preamble yet for this chat. */
     private suspend fun lookupOrCreateConversation(
-        cfg: me.rerere.rikkahub.data.telegram.TelegramBotConfig,
+        cfg: com.clma.app.data.telegram.TelegramBotConfig,
         chatId: Long,
     ): Pair<kotlin.uuid.Uuid, Boolean> {
         val existing = chatRepo.getByChatId(chatId)
@@ -1574,16 +1574,16 @@ class TelegramBotService : Service() {
                 tool.input.ifBlank { "{}" }
             ) as? kotlinx.serialization.json.JsonObject
             parsed?.let {
-                me.rerere.rikkahub.data.ai.mcp.control.McpApprovalRenderer.render(tool.toolName, it)
+                com.clma.app.data.ai.mcp.control.McpApprovalRenderer.render(tool.toolName, it)
             }
         }.getOrNull()
         // Workflow_* mutators render their args in plain multi-line form ("Create workflow X / When: … / Do: …").
         // The plain variant is then escaped + wrapped in <pre> by the standard path, so the
         // existing approval-card chrome stays consistent across tools.
         val workflowRendered: String? = runCatching {
-            if (me.rerere.rikkahub.workflow.tools.WorkflowApprovalRenderer.isWorkflowTool(tool.toolName)
+            if (com.clma.app.workflow.tools.WorkflowApprovalRenderer.isWorkflowTool(tool.toolName)
                 && tool.toolName !in setOf("workflow_list", "workflow_get")) {
-                me.rerere.rikkahub.workflow.tools.WorkflowApprovalRenderer.renderPlain(
+                com.clma.app.workflow.tools.WorkflowApprovalRenderer.renderPlain(
                     tool.toolName, tool.input.ifBlank { "{}" },
                 )
             } else null
@@ -1678,7 +1678,7 @@ class TelegramBotService : Service() {
         val effectiveModelId = assistant.chatModelId ?: s.chatModelId
         val enabledProviders = s.providers
             .filter { it.enabled }
-            .filter { p -> p.models.any { it.type == me.rerere.ai.provider.ModelType.CHAT } }
+            .filter { p -> p.models.any { it.type == com.clma.ai.provider.ModelType.CHAT } }
         val currentPair = enabledProviders
             .flatMap { p -> p.models.map { p to it } }
             .firstOrNull { (_, m) -> m.id == effectiveModelId }
@@ -1721,7 +1721,7 @@ class TelegramBotService : Service() {
             return
         }
         val providerModels = provider.models
-            .filter { it.type == me.rerere.ai.provider.ModelType.CHAT }
+            .filter { it.type == com.clma.ai.provider.ModelType.CHAT }
             .map { provider to it }
         if (providerModels.isEmpty()) {
             client.answerCallbackQuery(cq.callbackQueryId, "no chat models in ${provider.name}")
@@ -1805,7 +1805,7 @@ class TelegramBotService : Service() {
      * "apv:<scope>:<toolCallId>" / "mdl:<token>" / "mdp:<token>" / "dfix:<id>".
      */
     private suspend fun handleCallbackQuery(
-        cfg: me.rerere.rikkahub.data.telegram.TelegramBotConfig,
+        cfg: com.clma.app.data.telegram.TelegramBotConfig,
         cq: TelegramCallbackQuery,
     ) {
         val cbStartMs = System.currentTimeMillis()

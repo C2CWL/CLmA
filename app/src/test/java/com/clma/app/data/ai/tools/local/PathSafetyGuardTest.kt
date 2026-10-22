@@ -1,10 +1,10 @@
-package me.rerere.rikkahub.data.ai.tools.local
+package com.clma.app.data.ai.tools.local
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Test
-import me.rerere.rikkahub.BuildConfig
+import com.clma.app.BuildConfig
 
 class PathSafetyGuardTest {
 

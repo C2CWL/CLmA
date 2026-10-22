@@ -1,4 +1,4 @@
-package me.rerere.highlight
+package com.clma.highlight
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Surface

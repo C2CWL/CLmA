@@ -1,4 +1,4 @@
-package me.rerere.highlight.core
+package com.clma.highlight.core
 
 /**
  * The shared regular expressions and modes exported as `MODES` by `highlight.js` 11.11.1.

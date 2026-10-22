@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.files
+package com.clma.app.data.files
 
 import org.yaml.snakeyaml.LoaderOptions
 import org.yaml.snakeyaml.Yaml

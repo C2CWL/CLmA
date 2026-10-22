@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.datastore
+package com.clma.app.data.datastore
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -60,7 +60,7 @@ object SkillGroupRules {
 
     /**
      * Subtract [disabledSkillNames] from the assistant's enabled-skills set. This is the
-     * value that should reach [me.rerere.rikkahub.data.ai.tools.createSkillTools] so a
+     * value that should reach [com.clma.app.data.ai.tools.createSkillTools] so a
      * disabled group's skills never surface to the model.
      */
     fun effectiveEnabledSkills(

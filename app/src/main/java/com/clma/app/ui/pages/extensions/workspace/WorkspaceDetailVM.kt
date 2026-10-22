@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.extensions.workspace
+package com.clma.app.ui.pages.extensions.workspace
 
 import android.content.ContentResolver
 import android.net.Uri
@@ -21,13 +21,13 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
-import me.rerere.rikkahub.data.db.entity.WorkspaceEntity
-import me.rerere.rikkahub.data.repository.WorkspaceRepository
-import me.rerere.workspace.RootfsInstallProgress
-import me.rerere.workspace.RootfsInstallStage
-import me.rerere.workspace.WorkspaceFileEntry
-import me.rerere.workspace.WorkspaceCommandResult
-import me.rerere.workspace.WorkspaceStorageArea
+import com.clma.app.data.db.entity.WorkspaceEntity
+import com.clma.app.data.repository.WorkspaceRepository
+import com.clma.workspace.RootfsInstallProgress
+import com.clma.workspace.RootfsInstallStage
+import com.clma.workspace.WorkspaceFileEntry
+import com.clma.workspace.WorkspaceCommandResult
+import com.clma.workspace.WorkspaceStorageArea
 
 class WorkspaceDetailVM(
     private val id: String,

@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.components.richtext
+package com.clma.app.ui.components.richtext
 
 /**
  * Decodes HTML character references (`&lt;`, `&#39;`, `&#x3C;`, `&copy;` …) in Markdown text.

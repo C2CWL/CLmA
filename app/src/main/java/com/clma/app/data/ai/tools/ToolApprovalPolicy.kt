@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.tools
+package com.clma.app.data.ai.tools
 
 /**
  * The three posture levels the device owner picks in Settings → Tool approvals.

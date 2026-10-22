@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.ui.pages.imggen
+package com.clma.app.ui.pages.imggen
 
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -86,9 +86,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import me.rerere.ai.provider.ModelType
-import me.rerere.ai.ui.ImageAspectRatio
-import me.rerere.common.android.appTempFolder
+import com.clma.ai.provider.ModelType
+import com.clma.ai.ui.ImageAspectRatio
+import com.clma.common.android.appTempFolder
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Add01
 import me.rerere.hugeicons.stroke.ArrowUp02
@@ -99,17 +99,17 @@ import me.rerere.hugeicons.stroke.Delete01
 import me.rerere.hugeicons.stroke.FloppyDisk
 import me.rerere.hugeicons.stroke.Image03
 import me.rerere.hugeicons.stroke.Tools
-import me.rerere.rikkahub.R
-import me.rerere.rikkahub.data.datastore.Settings
-import me.rerere.rikkahub.data.files.FileUtils
-import me.rerere.rikkahub.data.files.FilesManager
-import me.rerere.rikkahub.ui.components.ai.ModelSelector
-import me.rerere.rikkahub.ui.components.nav.BackButton
-import me.rerere.rikkahub.ui.components.ui.FormItem
-import me.rerere.rikkahub.ui.components.ui.ImagePreviewDialog
-import me.rerere.rikkahub.ui.components.ui.OutlinedNumberInput
-import me.rerere.rikkahub.ui.context.LocalToaster
-import me.rerere.rikkahub.utils.ImageUtils
+import com.clma.app.R
+import com.clma.app.data.datastore.Settings
+import com.clma.app.data.files.FileUtils
+import com.clma.app.data.files.FilesManager
+import com.clma.app.ui.components.ai.ModelSelector
+import com.clma.app.ui.components.nav.BackButton
+import com.clma.app.ui.components.ui.FormItem
+import com.clma.app.ui.components.ui.ImagePreviewDialog
+import com.clma.app.ui.components.ui.OutlinedNumberInput
+import com.clma.app.ui.context.LocalToaster
+import com.clma.app.utils.ImageUtils
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 import java.io.File

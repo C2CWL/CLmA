@@ -1,4 +1,4 @@
-package me.rerere.rikkahub.data.ai.tools.local
+package com.clma.app.data.ai.tools.local
 
 import android.content.Context
 import android.net.ConnectivityManager
@@ -18,9 +18,9 @@ import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import me.rerere.ai.core.InputSchema
-import me.rerere.ai.core.Tool
-import me.rerere.ai.ui.UIMessagePart
+import com.clma.ai.core.InputSchema
+import com.clma.ai.core.Tool
+import com.clma.ai.ui.UIMessagePart
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -61,7 +61,7 @@ private const val SERVER_ALIVE_COUNT_MAX = 3
  */
 internal val sshDnsCache: DnsCache = DnsCache().also { cache ->
     runCatching {
-        me.rerere.rikkahub.utils.NetworkChangeMonitor.addNetworkChangeListener {
+        com.clma.app.utils.NetworkChangeMonitor.addNetworkChangeListener {
             cache.invalidateAll()
         }
     }
@@ -537,7 +537,7 @@ internal fun runOnSession(session: Session, command: String, timeoutMs: Int, std
  */
 fun sshExecTool(
     context: Context,
-    secrets: me.rerere.rikkahub.data.secrets.AgentSecretsStore,
+    secrets: com.clma.app.data.secrets.AgentSecretsStore,
 ): Tool = Tool(
     name = "ssh_exec",
     description = """
