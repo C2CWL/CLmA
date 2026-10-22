@@ -3,6 +3,7 @@ package com.clma.app.ui.pages.chat
 import com.clma.ai.ui.UIMessage
 import com.clma.ai.ui.UIMessagePart
 import com.clma.app.data.ai.ContextCompactionPresentation
+import com.clma.app.data.ai.markFailedTurnFinished
 import com.clma.app.data.model.Conversation
 import com.clma.app.data.model.ConversationCompaction
 import com.clma.app.data.model.MessageNode
@@ -128,6 +129,28 @@ class AutoCompactionMessageGroupTest {
         val groups = listOf(half, nextQuestion, rest).groupAutomaticCompactionMessages()
 
         assertEquals(3, groups.size)
+    }
+
+    @Test
+    fun `failed reply then continue then reply stay three separate messages`() {
+        // 回复中途失败（网络断开/服务端错误）后用户发「继续」：失败的那条必须被 finalize，
+        // 否则会被当成插话前半，把「失败回复 + 继续 + 新回复」并成一条消息。
+        val question = UIMessage.user("question")
+        val failedReply = UIMessage.assistant("partial answer before the stream broke")
+        val finalized = listOf(question, failedReply).markFailedTurnFinished()
+        val failedNode = MessageNode(messages = listOf(finalized.last()))
+        val continueNode = MessageNode(messages = listOf(UIMessage.user("继续")))
+        val replyNode = MessageNode(messages = listOf(UIMessage.assistant("rest of the answer")))
+
+        val groups = listOf(
+            MessageNode(messages = listOf(question)),
+            failedNode,
+            continueNode,
+            replyNode,
+        ).groupAutomaticCompactionMessages()
+
+        assertEquals(4, groups.size)
+        assertEquals(listOf(continueNode.id), groups[2].nodes.map { it.id })
     }
 
     @Test

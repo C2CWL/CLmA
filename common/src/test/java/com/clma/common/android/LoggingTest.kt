@@ -160,5 +160,52 @@ class LoggingTest {
         assertTrue(Logging.readEarlierSessionLogs().isEmpty())
     }
 
+    @Test
+    fun `in-memory request bodies are capped in total, newest kept`() {
+        try {
+            Logging.clear()
+            Logging.setRequestLoggingEnabled(true)
+            val bodySize = 600_000
+            repeat(10) { i ->
+                Logging.logRequest(
+                    request("https://example.com/$i").copy(requestBody = "x".repeat(bodySize))
+                )
+            }
+            val logs = Logging.getRequestLogs()
+            assertEquals(10, logs.size)
+            // Newest first: the newest bodies that fit the budget stay intact.
+            val kept = MAX_IN_MEMORY_BODY_CHARS / bodySize
+            logs.take(kept).forEach { assertEquals(bodySize, it.requestBody!!.length) }
+            // Older ones keep their metadata but lose the body.
+            logs.drop(kept).forEach {
+                assertEquals(Logging.omittedBodyPlaceholder(bodySize.toLong()), it.requestBody)
+            }
+            assertEquals("https://example.com/0", logs.last().url)
+            assertTrue(logs.sumOf { it.requestBody?.length ?: 0 } <= MAX_IN_MEMORY_BODY_CHARS + 1_000)
+        } finally {
+            Logging.clear()
+        }
+    }
+
+    @Test
+    fun `logCrash records a bounded stack on disk and never throws`() {
+        val dir = tempFolder.newFolder("logs-crash")
+        try {
+            Logging.clear()
+            Logging.init(dir, LogLevel.INFO)
+            Logging.logCrash("CrashHandler", "java.lang.OutOfMemoryError\n" + "at x\n".repeat(50_000))
+            val crash = Logging.getTextLogs().single()
+            assertEquals(LogLevel.ERROR, crash.level)
+            assertTrue(crash.message.startsWith("CRASH"))
+            assertTrue(crash.message.contains("OutOfMemoryError"))
+            assertTrue(crash.message.length <= 8_100)
+            // On disk too, so "copy all logs" carries it after the process died.
+            assertTrue(File(dir, "app.log").readText().contains("OutOfMemoryError"))
+        } finally {
+            Logging.clear()
+            Logging.resetFileLogForTest()
+        }
+    }
+
     private fun request(url: String) = LogEntry.RequestLog(tag = "HTTP", url = url, method = "GET")
 }

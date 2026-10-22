@@ -623,6 +623,19 @@ private class SteerInterrupt : RuntimeException("interrupted by user steer") {
 }
 
 /**
+ * Stamps `finishedAt` on the trailing assistant message of a turn that failed (non-cancel).
+ * Leaves it untouched when it already has one, and never touches a trailing user message.
+ */
+internal fun List<UIMessage>.markFailedTurnFinished(
+    now: kotlinx.datetime.LocalDateTime = Clock.System.now()
+        .toLocalDateTime(TimeZone.currentSystemDefault()),
+): List<UIMessage> {
+    val last = lastOrNull() ?: return this
+    if (last.role != MessageRole.ASSISTANT || last.finishedAt != null) return this
+    return dropLast(1) + last.copy(finishedAt = now)
+}
+
+/**
  * 插话打断后的消息整理：最后一条 assistant 消息若没有任何内容（空文本、空推理），
  * 把 parts 清空——UI 的 isEmptyUIMessage 会跳过它，provider 也会丢弃空 assistant。
  *
@@ -897,6 +910,13 @@ class GenerationLoop(
                                 } else part
                             }
                             messages = messages.dropLast(1) + lastMsg.copy(parts = newParts)
+                        }
+                        // A failed reply is over: stamp finishedAt so it is not mistaken for
+                        // the unfinished front half of an interjection (finishedAt == null is
+                        // that marker, see groupAutomaticCompactionMessages). Without this,
+                        // "failed reply + 继续 + next reply" rendered as one merged message.
+                        messages = messages.markFailedTurnFinished()
+                        if (lastMsg != null) {
                             emit(GenerationChunk.Messages(messages))
                         }
                     } else {
