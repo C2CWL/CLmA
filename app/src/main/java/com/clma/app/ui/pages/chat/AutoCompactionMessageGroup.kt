@@ -30,10 +30,9 @@ internal data class AutoCompactionMessageGroup(
         parts = nodes.flatMap { node ->
             val message = node.currentMessage
             if (message.role == MessageRole.USER) {
-                // 插话：转成带 `rikkahub.interjection` 标记的 Text part，
-                // 渲染层（ChatMessage）把它画成内嵌卡片，前后两段 assistant
-                // 在视觉上保持同一条连续消息。
-                listOf(interjectionPart(message))
+                // 仅标记文本 part 以便渲染层画成内嵌卡片；附件保持原始类型，
+                // 这样图片等内容仍会走各自的媒体渲染分支。
+                interjectionParts(message)
             } else {
                 message.parts
             }
@@ -43,23 +42,18 @@ internal data class AutoCompactionMessageGroup(
     )
 }
 
-/** 插话内容压成一段文本；非文本附件降级为占位符，卡片里至少能看到用户说了什么。 */
-private fun interjectionPart(message: UIMessage): UIMessagePart.Text {
-    val text = message.parts.mapNotNull { part ->
-        when (part) {
-            is UIMessagePart.Text -> part.text
-            is UIMessagePart.Image -> "[图片]"
-            is UIMessagePart.Video -> "[视频]"
-            is UIMessagePart.Audio -> "[音频]"
-            is UIMessagePart.Document -> "[文件] ${part.fileName}"
-            else -> null
+private fun interjectionParts(message: UIMessage): List<UIMessagePart> =
+    message.parts.map { part ->
+        if (part is UIMessagePart.Text) {
+            part.copy(
+                metadata = JsonObject(
+                    part.metadata.orEmpty() + ("rikkahub.interjection" to JsonPrimitive(true)),
+                ),
+            )
+        } else {
+            part
         }
-    }.filter { it.isNotBlank() }.joinToString("\n").ifBlank { "…" }
-    return UIMessagePart.Text(
-        text = text,
-        metadata = JsonObject(mapOf("rikkahub.interjection" to JsonPrimitive(true))),
-    )
-}
+    }
 
 internal fun List<MessageNode>.groupAutomaticCompactionMessages(): List<AutoCompactionMessageGroup> {
     if (isEmpty()) return emptyList()
