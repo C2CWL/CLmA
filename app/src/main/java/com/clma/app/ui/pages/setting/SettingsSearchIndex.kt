@@ -362,6 +362,7 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
             row(R.string.setting_floating_ball_overlay_title),
             row(R.string.setting_floating_ball_color_title, R.string.setting_floating_ball_preview_desc, R.string.setting_floating_ball_preview_title),
             row(R.string.setting_floating_ball_task_card_title, R.string.setting_floating_ball_task_card_desc),
+            row(R.string.setting_floating_ball_done_tap_title, R.string.setting_floating_ball_done_tap_desc),
         ),
     ),
     SettingsSearchPageSpec(

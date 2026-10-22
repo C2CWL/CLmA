@@ -70,7 +70,7 @@ class GenerationStopReceiver : BroadcastReceiver(), KoinComponent {
         fun stopAction(context: Context, conversationId: Uuid?, requestCode: Int = REQUEST_CODE_ALL): NotificationCompat.Action =
             NotificationCompat.Action.Builder(
                 0,
-                context.getString(R.string.task_card_notification_stop),
+                context.getString(R.string.generation_notification_stop),
                 stopPendingIntent(context, conversationId, requestCode),
             ).build()
     }

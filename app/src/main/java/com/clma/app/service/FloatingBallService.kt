@@ -15,7 +15,6 @@ import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
-import android.os.SystemClock
 import android.provider.Settings
 import android.util.Log
 import android.view.Gravity
@@ -23,15 +22,12 @@ import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
-import android.view.ContextThemeWrapper
 import android.view.WindowInsets
 import android.view.WindowManager
-import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -39,13 +35,11 @@ import kotlinx.coroutines.launch
 import com.clma.app.FLOATING_BALL_NOTIFICATION_CHANNEL_ID
 import com.clma.app.R
 import com.clma.app.RouteActivity
-import com.clma.ai.ui.UIMessagePart
 import com.clma.app.data.datastore.SettingsStore
 import com.clma.app.service.EdgeBarLook.Edge
-import com.clma.app.service.taskcard.EdgeBarTaskCardView
-import com.clma.app.service.taskcard.TaskCardPhase
-import com.clma.app.service.taskcard.TaskCardStatus
-import com.clma.app.service.taskcard.TaskCardStatusResolver
+import com.clma.app.data.repository.ConversationRepository
+import com.clma.app.service.chatbox.EdgeBarChatBoxController
+import com.clma.app.service.chatbox.EdgeBarChatBoxView
 import com.clma.app.ui.hooks.COLOR_MODE_KEY
 import com.clma.app.ui.hooks.readStringPreference
 import com.clma.app.ui.hooks.writeStringPreference
@@ -62,10 +56,10 @@ private const val TAG = "FloatingBallService"
  *
  * A slim pill ([EdgeBarView]) in a small TYPE_APPLICATION_OVERLAY window, flush with the left or
  * right screen edge, or lying horizontally just under the status bar, that survives across apps:
- *  - tap                 → bring the main app to the front (an existing task is resumed, not
- *                          duplicated; see [openMainApp]); while a chat reply is generating it
- *                          opens the task card instead ([EdgeBarTaskCardView]: progress, a
- *                          "补充一句" input, 停止 / 打开), unless that is switched off in settings;
+ *  - tap                 → open the floating chat box ([EdgeBarChatBoxController]): recent
+ *                          messages, live progress / 停止 / interject while replying, send when
+ *                          idle; or, per the settings, bring the main app to the front (an
+ *                          existing task is resumed, not duplicated; see [openMainApp]);
  *  - long press, drag    → move the bar freely; on release it snaps to the left, right or top
  *                          edge ([EdgeBarLook.edgeAfterDrag]); edge and position are saved;
  *  - anything else (a plain swipe) does nothing.
@@ -104,8 +98,6 @@ class FloatingBallService : Service(), KoinComponent {
         /** Centre x of the bar on the top edge. */
         private const val PREF_TOP_X = "floating_ball_top_x"
 
-        /** A tap on the bar that arrives this soon after the card closed (outside tap) only closed it. */
-        private const val CARD_TAP_GRACE_MS = 250L
 
         /** The app's SharedPreferences file (see ui/hooks/SharedPreferences.kt). */
         private const val PREFS_NAME = "rikkahub.preferences"
@@ -156,6 +148,7 @@ class FloatingBallService : Service(), KoinComponent {
 
     private val settingsStore: SettingsStore by inject()
     private val chatService: ChatService by inject()
+    private val conversationRepo: ConversationRepository by inject()
 
     private val mainHandler = Handler(Looper.getMainLooper())
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -172,56 +165,19 @@ class FloatingBallService : Service(), KoinComponent {
     /** The edge the bar is snapped to. */
     private var edge = Edge.RIGHT
 
-    // ---- Task card (tap the bar while a reply is generating) ----
+    // ---- Chat box (tap the bar) ----
 
-    private val themedContext by lazy {
-        ContextThemeWrapper(this, android.R.style.Theme_DeviceDefault_NoActionBar)
-    }
-    private var taskCard: EdgeBarTaskCardView? = null
-
-    /** Generating conversations: the job and when we first saw it (elapsedRealtime). */
-    private val generating = HashMap<Uuid, Pair<Job, Long>>()
-    private var cardTarget: Uuid? = null
-    private var cardBindJob: Job? = null
-    private var cardTitle = ""
-    private var cardStatus: TaskCardStatus? = null
-
-    /** uptimeMillis when the card last closed itself (tap outside, arrow, back). */
-    private var cardDismissedAt = Long.MIN_VALUE / 2
-
-    private val cardCallbacks = object : EdgeBarTaskCardView.Callbacks {
-        override fun onStop() {
-            val id = cardTarget ?: return
-            scope.launch {
-                runCatching { chatService.stopGeneration(id) }
-                    .onFailure { Log.w(TAG, "stopGeneration failed", it) }
-            }
-        }
-
-        override fun onOpen() {
-            val id = cardTarget ?: return
-            closeCard()
-            openConversation(id)
-        }
-
-        override fun onSend(text: String) {
-            val id = cardTarget
-            val accepted = id != null && runCatching {
-                chatService.interjectMessage(id, listOf(UIMessagePart.Text(text)))
-            }.onFailure { Log.w(TAG, "interjectMessage failed", it) }.getOrDefault(false)
-            if (accepted) {
-                taskCard?.clearInput()
-                toast(R.string.task_card_interject_sent)
-            } else {
-                // Keep the text in the field so it can be sent again.
-                toast(R.string.task_card_interject_failed)
-            }
-        }
-
-        override fun onDismissed() {
-            cardDismissedAt = SystemClock.uptimeMillis()
-            unbindCard()
-        }
+    private val chatBox: EdgeBarChatBoxController by lazy {
+        EdgeBarChatBoxController(
+            context = this,
+            scope = scope,
+            chatService = chatService,
+            settingsStore = settingsStore,
+            conversationRepo = conversationRepo,
+            anchor = ::chatBoxAnchor,
+            isDark = { isDarkMode(resources.configuration) },
+            openConversationInApp = ::openConversation,
+        )
     }
 
     /**
@@ -239,7 +195,7 @@ class FloatingBallService : Service(), KoinComponent {
         val view = barView ?: return@Runnable
         val params = barParams ?: return@Runnable
         dragArmed = true
-        closeCard()
+        chatBox.close()
         // From here the window moves freely: place it by its absolute top-left corner.
         params.x = barLeft(params)
         params.gravity = Gravity.TOP or Gravity.LEFT
@@ -256,10 +212,8 @@ class FloatingBallService : Service(), KoinComponent {
                 barView?.barColor = settings.floatingBallBarColor
             }
         }
-        // Which conversations are generating: the task card shows the most recent one.
-        scope.launch {
-            chatService.getConversationJobs().collect { jobs -> onJobs(jobs) }
-        }
+        // Which conversations are generating / just finished: the chat box follows them.
+        chatBox.start()
         // Same preferences file the app's theme reads its colour mode from (see ui/hooks).
         getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .registerOnSharedPreferenceChangeListener(colorModeListener)
@@ -273,6 +227,7 @@ class FloatingBallService : Service(), KoinComponent {
 
     private fun applyDarkMode(config: Configuration) {
         barView?.darkMode = isDarkMode(config)
+        chatBox.onThemeChanged()
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -293,9 +248,9 @@ class FloatingBallService : Service(), KoinComponent {
 
             ACTION_WORKING_OFF -> {
                 working = false
-                closeCard()
-                // The bar turns green until the user taps it (which opens the app).
-                unseenDone = true
+                // The bar turns green until the user taps it, unless the chat box is open (the
+                // finished reply is right there).
+                unseenDone = !chatBox.isShowing
                 if (barView == null) stopSelf() else syncBar()
                 return START_NOT_STICKY
             }
@@ -324,7 +279,7 @@ class FloatingBallService : Service(), KoinComponent {
         applyDarkMode(newConfig)
         // Rotation / resize: keep the edge, re-clamp the position against the new screen.
         mainHandler.post {
-            closeCard()
+            chatBox.close()
             val view = barView ?: return@post
             val params = barParams ?: return@post
             if (dragArmed) return@post
@@ -338,7 +293,7 @@ class FloatingBallService : Service(), KoinComponent {
         getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .unregisterOnSharedPreferenceChangeListener(colorModeListener)
         scope.cancel()
-        closeCard()
+        chatBox.close()
         hideBar()
         runCatching { ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE) }
         super.onDestroy()
@@ -408,7 +363,7 @@ class FloatingBallService : Service(), KoinComponent {
         isShowing = true
         attachTouch(view, params)
         // Touches are handled in attachTouch; this is what TalkBack / switch access trigger.
-        view.setOnClickListener { onBarTap(SystemClock.uptimeMillis()) }
+        view.setOnClickListener { onBarTap() }
         syncBar()
     }
 
@@ -439,7 +394,6 @@ class FloatingBallService : Service(), KoinComponent {
         val touchSlop = ViewConfiguration.get(this).scaledTouchSlop
         var downRawX = 0f
         var downRawY = 0f
-        var downAt = 0L
         /** The finger moved before the long press armed: a swipe, which does nothing. */
         var swiped = false
 
@@ -448,7 +402,6 @@ class FloatingBallService : Service(), KoinComponent {
                 MotionEvent.ACTION_DOWN -> {
                     downRawX = event.rawX
                     downRawY = event.rawY
-                    downAt = event.downTime
                     swiped = false
                     dragArmed = false
                     mainHandler.removeCallbacks(longPressRunnable)
@@ -500,7 +453,7 @@ class FloatingBallService : Service(), KoinComponent {
                             savePosition(newEdge, params)
                         }
                         // A cancelled gesture (e.g. taken by the system) is never a tap.
-                        !cancelled && !swiped -> onBarTap(downAt)
+                        !cancelled && !swiped -> onBarTap()
                     }
                     dragArmed = false
                     swiped = false
@@ -567,57 +520,37 @@ class FloatingBallService : Service(), KoinComponent {
         Edge.LEFT -> 0
     }
 
-    // ---- Tap / task card ----
+    // ---- Tap / chat box ----
 
     /**
-     * A tap on the bar (gesture that went down at [downAt], uptimeMillis). While a chat reply is
-     * generating (and the setting is on) it toggles the task card; otherwise it opens the app.
+     * A tap on the bar. Any tap clears the green "done" state. Green: per the setting, open the
+     * chat box on the finished reply or return to the app. Otherwise (idle or replying): the
+     * chat box if "点细条打开聊天框" is on, else the app.
      */
-    private fun onBarTap(downAt: Long) {
-        // The touch that went down on the bar already closed the open card (as a tap outside it).
-        if (cardDismissedAt >= downAt - CARD_TAP_GRACE_MS) return
-        val card = taskCard
-        if (card != null && card.isShowing) {
-            closeCard()
+    private fun onBarTap() {
+        val wasGreen = unseenDone
+        if (unseenDone) {
+            unseenDone = false
+            syncBar()
+        }
+        if (chatBox.isShowing) {
+            chatBox.close()
             return
         }
-        val target = if (working && settingsStore.settingsFlow.value.displaySetting.edgeBarTaskCard) {
-            newestGenerating()
-        } else {
-            null
+        val display = settingsStore.settingsFlow.value.displaySetting
+        val useChatBox = if (wasGreen) display.edgeBarDoneTapOpensChatBox else display.edgeBarTaskCard
+        if (!useChatBox || barView == null) {
+            openMainApp()
+            return
         }
-        if (target != null && openCard(target)) return
-        openMainApp()
+        barView?.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+        chatBox.open(preferFinished = wasGreen)
     }
 
-    private fun newestGenerating(): Uuid? = generating.maxByOrNull { it.value.second }?.key
-
-    private fun onJobs(jobs: Map<Uuid, Job?>) {
-        val now = SystemClock.elapsedRealtime()
-        val active = jobs.mapNotNull { (id, job) -> job?.let { id to it } }.toMap()
-        generating.keys.retainAll(active.keys)
-        for ((id, job) in active) {
-            val previous = generating[id]
-            if (previous == null || previous.first !== job) generating[id] = job to now
-        }
-        val card = taskCard ?: return
-        if (!card.isShowing) return
-        // Finished while open: close (the bar turns green as usual); a newer reply takes over.
-        val newest = newestGenerating()
-        when {
-            newest == null -> closeCard()
-            newest != cardTarget -> {
-                bindCard(newest)
-                card.update(cardContent(newest))
-            }
-        }
-    }
-
-    private fun openCard(id: Uuid): Boolean {
-        val view = barView ?: return false
-        val params = barParams ?: return false
+    private fun chatBoxAnchor(): EdgeBarChatBoxView.Anchor? {
+        val params = barParams ?: return null
         val screen = screenSize()
-        val anchor = EdgeBarTaskCardView.Anchor(
+        return EdgeBarChatBoxView.Anchor(
             edge = edge,
             barLeft = barLeft(params),
             barTop = params.y,
@@ -628,50 +561,7 @@ class FloatingBallService : Service(), KoinComponent {
             topInset = screen.topInset,
             bottomInset = screen.bottomInset,
         )
-        bindCard(id)
-        val card = taskCard ?: EdgeBarTaskCardView(themedContext, cardCallbacks).also { taskCard = it }
-        card.show(cardContent(id), anchor)
-        if (!card.isShowing) {
-            unbindCard()
-            return false
-        }
-        view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
-        return true
     }
-
-    private fun closeCard() {
-        taskCard?.hide()
-        unbindCard()
-    }
-
-    /** Follows [id]'s title and messages while the card shows it. */
-    private fun bindCard(id: Uuid) {
-        if (cardTarget == id && cardBindJob != null) return
-        cardBindJob?.cancel()
-        cardTarget = id
-        cardTitle = ""
-        cardStatus = null
-        cardBindJob = scope.launch {
-            chatService.getConversationFlow(id).collect { conversation ->
-                if (cardTarget != id) return@collect
-                cardTitle = conversation.title
-                cardStatus = TaskCardStatusResolver.resolve(conversation.currentMessages)
-                taskCard?.update(cardContent(id))
-            }
-        }
-    }
-
-    private fun unbindCard() {
-        cardBindJob?.cancel()
-        cardBindJob = null
-        cardTarget = null
-    }
-
-    private fun cardContent(id: Uuid) = EdgeBarTaskCardView.Content(
-        title = cardTitle,
-        status = cardStatus ?: TaskCardStatus(TaskCardPhase.Thinking, 1, ""),
-        startedAtMs = generating[id]?.second ?: SystemClock.elapsedRealtime(),
-    )
 
     /** Opens the app on [id], like the generation notification's tap (ChatService.getPendingIntent). */
     private fun openConversation(id: Uuid) {
@@ -685,10 +575,6 @@ class FloatingBallService : Service(), KoinComponent {
         }
         runCatching { startActivity(intent) }
             .onFailure { Log.w(TAG, "open conversation failed", it) }
-    }
-
-    private fun toast(res: Int) {
-        Toast.makeText(this, res, Toast.LENGTH_SHORT).show()
     }
 
     /**

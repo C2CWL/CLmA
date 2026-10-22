@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="agent_overlay_working">AI 正在工作…</string>
+  <string name="generation_notification_stop">停止</string>
+  <string name="chat_box_new_conversation">新对话</string>
+  <string name="chat_box_open">打开</string>
+  <string name="chat_box_collapse">收起</string>
+  <string name="chat_box_send">发送</string>
+  <string name="chat_box_stop">停止</string>
+  <string name="chat_box_input_hint">发消息…</string>
+  <string name="chat_box_interject_hint">给 AI 补充一句…</string>
+  <string name="chat_box_interject_failed">现在无法插话，稍后再试</string>
+  <string name="chat_box_send_failed">发送失败，请重试</string>
+  <string name="chat_box_untitled">新对话</string>
+  <string name="chat_box_assistant_default">助手</string>
+  <string name="chat_box_subtitle_idle">%1$s · %2$s</string>
+  <string name="chat_box_just_now">刚刚</string>
+  <string name="chat_box_subtitle_working">正在回复</string>
+  <string name="chat_box_subtitle_working_step">正在回复 · 第 %d 步</string>
+  <string name="chat_box_subtitle_done">✓ 已完成 · 用时 %s</string>
+  <string name="chat_box_status_thinking">思考中</string>
+  <string name="chat_box_status_writing">正在写</string>
+  <string name="chat_box_status_tool">调用工具：%s</string>
+  <string name="chat_box_elapsed">已用时 %s</string>
+  <string name="chat_box_tool_done">✓ 已调用工具：%s</string>
+  <string name="chat_box_tool_running">… 正在调用工具：%s</string>
+  <string name="chat_box_image">[图片]</string>
+  <string name="chat_box_file">[文件]</string>
+</resources>
