@@ -1,0 +1,87 @@
+package com.clma.app.data.preferences
+
+/**
+ * Authoritative defaults and clamp helpers for every Termux-configurable knob. Mirrors
+ * [com.clma.app.browser.BrowserToolDefaults] in shape — one object, constants +
+ * clamp functions. All ceilings are deliberate hard limits per the CLAUDE.md rule that
+ * every tool MUST have a hard timeout.
+ */
+object TermuxDefaults {
+
+    // --- Command capture timeout -----------------------------------------------------------
+    /** Default ms to wait for a Termux background command to complete. */
+    const val DEFAULT_COMMAND_TIMEOUT_MS = 60_000L   // 60 s
+    const val MIN_COMMAND_TIMEOUT_MS     =  5_000L   //  5 s
+    /** Hard ceiling: 10 min (600 s). Same as BrowserToolDefaults' per-tool max. */
+    const val MAX_COMMAND_TIMEOUT_MS     = 600_000L  // 10 min
+
+    // --- Per-turn wall-clock budget (app-wide) ---------------------------------------------
+    // Default raised to 30 min (was 10, matching the constant that used to live in
+    // GenerationHandler.kt); ceiling raised to 12 h so an unattended install / build chain
+    // can finish instead of being force-ended mid-task.
+    /** Default per-turn wall-clock budget in ms. */
+    const val DEFAULT_TURN_BUDGET_MS = 30L * 60L * 1_000L   // 30 min
+    const val MIN_TURN_BUDGET_MS     =  1L * 60L * 1_000L   //  1 min
+    const val MAX_TURN_BUDGET_MS     = 720L * 60L * 1_000L  // 12 h
+
+    // --- Per-turn tool-call step cap (app-wide) --------------------------------------------
+    // Default raised to 90 (was the 32 that used to be GenerationHandler's hardcoded maxSteps).
+    // The ceiling is the backstop: the wall-clock turn budget is the primary limit, so this only
+    // has to stop a runaway loop from iterating without bound.
+    const val DEFAULT_MAX_TOOL_STEPS = 90
+    const val MIN_MAX_TOOL_STEPS     =  1
+    const val MAX_MAX_TOOL_STEPS     = 1500
+
+    // --- Verify smoke-test timeout ---------------------------------------------------------
+    const val DEFAULT_VERIFY_TIMEOUT_MS =  8_000L   //  8 s
+    const val MIN_VERIFY_TIMEOUT_MS     =  3_000L   //  3 s
+    const val MAX_VERIFY_TIMEOUT_MS     = 30_000L   // 30 s
+
+    // --- Working directory -----------------------------------------------------------------
+    const val DEFAULT_WORKING_DIR = "/data/data/com.termux/files/home"
+
+    // --- Stdout / stderr capture caps (bytes) ----------------------------------------------
+    const val DEFAULT_MAX_STDOUT =  8_000
+    const val MIN_MAX_STDOUT     =  1_000
+    const val MAX_MAX_STDOUT     = 64_000
+
+    const val DEFAULT_MAX_STDERR =  2_000
+    const val MIN_MAX_STDERR     =    500
+    const val MAX_MAX_STDERR     = 16_000
+
+    // --- apt-wrap default ------------------------------------------------------------------
+    /** ON by default — preserves the prior behavior for existing users. */
+    const val DEFAULT_APT_WRAP_ENABLED = true
+
+    // --- Max per-call timeout_seconds ceiling (LLM-exposed arg) ---------------------------
+    /** Raised from 300 to 600 s so it aligns with the configurable command timeout ceiling. */
+    const val MAX_COMMAND_TIMEOUT_SECONDS = 600
+
+    // --- Clamp helpers ---------------------------------------------------------------------
+
+    fun clampCommandTimeoutMs(ms: Long): Long =
+        ms.coerceIn(MIN_COMMAND_TIMEOUT_MS, MAX_COMMAND_TIMEOUT_MS)
+
+    fun clampTurnBudgetMs(ms: Long): Long =
+        ms.coerceIn(MIN_TURN_BUDGET_MS, MAX_TURN_BUDGET_MS)
+
+    fun clampMaxToolSteps(steps: Int): Int =
+        steps.coerceIn(MIN_MAX_TOOL_STEPS, MAX_MAX_TOOL_STEPS)
+
+    fun clampVerifyTimeoutMs(ms: Long): Long =
+        ms.coerceIn(MIN_VERIFY_TIMEOUT_MS, MAX_VERIFY_TIMEOUT_MS)
+
+    fun clampMaxStdout(bytes: Int): Int =
+        bytes.coerceIn(MIN_MAX_STDOUT, MAX_MAX_STDOUT)
+
+    fun clampMaxStderr(bytes: Int): Int =
+        bytes.coerceIn(MIN_MAX_STDERR, MAX_MAX_STDERR)
+
+    /**
+     * Non-empty rule for the working directory. An empty value would pass a blank string to
+     * Termux's RUN_COMMAND intent, which silently falls back to Termux's internal default —
+     * a confusing outcome. Clamp by returning the default if the supplied value is blank.
+     */
+    fun clampWorkingDir(dir: String): String =
+        dir.ifBlank { DEFAULT_WORKING_DIR }
+}

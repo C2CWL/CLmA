@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "me.rerere.ai"
+    namespace = "com.clma.ai"
 
     defaultConfig {
 //        externalNativeBuild {

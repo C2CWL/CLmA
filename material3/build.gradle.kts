@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "me.rerere.material3"
+    namespace = "com.clma.material3"
     sourceSets {
         named("main") {
             kotlin.srcDir("material-color-utilities/kotlin")

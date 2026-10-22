@@ -95,17 +95,17 @@
 # off the class that implements it, and horizontally merges the anonymous implementor created
 # inside LlamaCppJni.generate into LlamaCppJni's own singleton, which never had an onToken
 # method. GetMethodID then returns null and the process crashes with "no non-static method
-# Lme/rerere/llamacpp/RealLlamaCppNative;.onToken([B)Z" the first time a local GGUF model
+# Lcom/clma/llamacpp/RealLlamaCppNative;.onToken([B)Z" the first time a local GGUF model
 # streams a token. -dontobfuscate above does not help here: nothing is renamed, this is R8's
 # optimizer (inlining, class merging, member removal) erasing the method outright, so only a
 # -keep closes it. Keep the whole JNI-facing surface: LlamaCppJni itself and its native
 # methods, the TokenSink interface, and every class implementing it.
--keep class me.rerere.llamacpp.LlamaCppJni { *; }
--keepclasseswithmembers class me.rerere.llamacpp.LlamaCppJni {
+-keep class com.clma.llamacpp.LlamaCppJni { *; }
+-keepclasseswithmembers class com.clma.llamacpp.LlamaCppJni {
     native <methods>;
 }
--keep interface me.rerere.llamacpp.LlamaCppJni$TokenSink { *; }
--keep class * implements me.rerere.llamacpp.LlamaCppJni$TokenSink { *; }
+-keep interface com.clma.llamacpp.LlamaCppJni$TokenSink { *; }
+-keep class * implements com.clma.llamacpp.LlamaCppJni$TokenSink { *; }
 
 # SLF4J 2.x service-loader binding. Without these rules the ServiceLoader<SLF4JServiceProvider>
 # lookup can return empty in release (R8 keeps the META-INF/services file but the implementing
@@ -131,6 +131,6 @@
 # Shizuku (shizuku_exec): ShizukuUserService's no-arg constructor is called reflectively by
 # Shizuku's server in the process it spawns for the service, not by any code of ours R8 can
 # see. Without this rule R8 can strip the constructor on release and the bind fails.
--keepclassmembers class me.rerere.rikkahub.shizuku.ShizukuUserService {
+-keepclassmembers class com.clma.app.shizuku.ShizukuUserService {
     public <init>(...);
 }

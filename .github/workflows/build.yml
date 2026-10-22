@@ -150,10 +150,11 @@ jobs:
       # artifact nothing shipped. The published APK is `app-*-pure-unsigned.apk`,
       # re-signed on the VPS with p2.keystore (dl2.sh apk-pure).
       #
-      # :ai:testDebugUnitTest is listed explicitly: :app:testPureUnitTest does not
-      # run the library modules' tests, so the provider request-shape tests in
-      # :ai never executed in CI. They are plain JVM tests (android.util.Log is
-      # stubbed via returnDefaultValues), so this is seconds, not minutes.
+      # Library modules' JVM unit tests are listed explicitly (testDebugUnitTest
+      # for every module that has src/test): :app:testPureUnitTest does not run
+      # them. :ai was the first one wired in (provider request-shape tests); the
+      # rest followed with the com.clma package rename so every moved test runs
+      # at least once in CI. They are plain JVM tests, seconds not minutes.
       - name: Assemble pure APK + unit tests
         env:
           # Fast lane: a push to a feature branch (feat/**) skips the release
@@ -166,7 +167,12 @@ jobs:
             echo "fast lane: -PskipLintVital"
             FLAGS="-PskipLintVital"
           fi
-          ./gradlew :app:assemblePure :app:testPureUnitTest :ai:testDebugUnitTest $FLAGS --stacktrace
+          LIB_TESTS=":ai:testDebugUnitTest :common:testDebugUnitTest :document:testDebugUnitTest \
+            :highlight:testDebugUnitTest :llama-cpp:testDebugUnitTest :local-llm:testDebugUnitTest \
+            :material3:testDebugUnitTest :oauth:testDebugUnitTest :search:testDebugUnitTest \
+            :speech:testDebugUnitTest :web:testDebugUnitTest :workspace:testDebugUnitTest"
+          # --continue: one failing module must not hide the results of the others.
+          ./gradlew :app:assemblePure :app:testPureUnitTest $LIB_TESTS --continue $FLAGS --stacktrace
 
       - name: Show pure APK sizes
         run: ls -la app/build/outputs/apk/pure/*.apk || true
@@ -189,7 +195,6 @@ jobs:
         with:
           name: unit-test-report
           path: |
-            app/build/reports/tests/
-            ai/build/reports/tests/
+            */build/reports/tests/
           if-no-files-found: ignore
           retention-days: 14

@@ -14,7 +14,7 @@
 
 ```bash
 UPDATE_STREAM_TRACE_SNAPSHOTS=true ../gradlew testDebugUnitTest \
-  --tests me.rerere.ai.provider.stream.StreamTraceReplayTest
+  --tests com.clma.ai.provider.stream.StreamTraceReplayTest
 ```
 
 快照会保留工具调用 ID、完整 metadata、思考文本、工具名称与参数及 token usage。图片数据保留在
