@@ -185,6 +185,14 @@ class WorkspaceManager(
         return fileSystem.tree(location.rootDir, location.relativePath, maxDepth)
     }
 
+    /**
+     * 把 Rootfs 内绝对路径解析成宿主机上存在且可读的普通文件; 路径越界、是内核伪文件系统、
+     * 不存在或不是文件时返回 null (不抛异常), 供聊天里显示 AI 生成的图片使用。
+     */
+    fun resolveRootfsFileOrNull(root: String, path: String): File? = runCatching {
+        resolveRootfsFile(root, path)
+    }.getOrNull()?.takeIf { it.isFile && it.canRead() }
+
     private fun resolveRootfsFile(root: String, path: String): File {
         val location = resolveRootfsPath(root, path)
         return fileSystem.resolve(location.rootDir, location.relativePath)
