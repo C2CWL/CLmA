@@ -237,6 +237,9 @@
   <string name="backup_page_export_desc">Export app data to a file</string>
   <string name="backup_page_exporting">Exporting...</string>
   <string name="backup_page_files">Files</string>
+  <string name="backup_page_files_total_size">Total %1$s</string>
+  <string name="backup_page_estimated_total_size">Estimated size of selected items (before compression): %1$s</string>
+  <string name="backup_page_export_success_size">Backup successful (%1$s)</string>
   <string name="backup_page_import_chatbox_desc">Import ChatBox provider configurations and full chat history</string>
   <string name="backup_page_import_cherry_studio_desc">Import Cherry Studio provider configurations</string>
   <string name="backup_page_import_desc">Import local backup file</string>
