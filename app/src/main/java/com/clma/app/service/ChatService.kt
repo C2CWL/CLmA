@@ -76,6 +76,8 @@ import com.clma.app.data.ai.GenerationChunk
 import com.clma.app.data.ai.GenerationLoop
 import com.clma.app.data.ai.ModelRouter
 import com.clma.app.data.ai.ContextBudgetPlanner
+import com.clma.app.data.ai.PreSendContextDecision
+import com.clma.app.data.ai.PreSendContextGuard
 import com.clma.app.data.ai.ContextCompactionPlanner
 import com.clma.app.data.ai.ContextCompactionPresentation
 import com.clma.app.data.ai.CompactedMessageView
@@ -1815,7 +1817,21 @@ class ChatService(
                     assistant = assistant,
                     model = model,
                     processingStatus = session.processingStatus,
-                )
+                ).also { view ->
+                    // Pre-send compaction: show the card on the latest reply, like the
+                    // context-limit retry path does.
+                    view.newlyCreatedAutoCompaction?.let { compaction ->
+                        getConversationFlow(conversationId).value.currentMessages
+                            .lastOrNull { it.role == MessageRole.ASSISTANT }
+                            ?.let { sourceMessage ->
+                                attachAutomaticCompactionPresentation(
+                                    conversationId = conversationId,
+                                    messageId = sourceMessage.id,
+                                    compaction = compaction,
+                                )
+                            }
+                    }
+                }
             } else {
                 // Regenerating an assistant message: request the compacted view clipped to this
                 // range so the request matches what a normal turn would have sent, instead of
@@ -2743,22 +2759,53 @@ class ChatService(
     ): CompactedMessageView {
         var view = loadCompactedMessageView(conversation)
         if (!settings.enableAutoCompaction) {
-            return if (view.compaction?.isAuto == true) {
+            val requestView = if (view.compaction?.isAuto == true) {
                 ContextCompactionView.build(conversation, null)
             } else {
                 view
             }
+            // Auto compaction is off: still refuse a new turn that clearly cannot fit the
+            // model's window, instead of sending a request that can only fail (and is billed).
+            val decision = preSendContextDecision(requestView, settings, model)
+            if (decision is PreSendContextDecision.OverHardLimit) {
+                throw IllegalStateException(
+                    context.getString(
+                        R.string.chat_page_context_over_limit,
+                        decision.estimatedTokens.toString(),
+                        decision.limitTokens.toString(),
+                    )
+                )
+            }
+            return requestView
         }
 
-        // Automatic compaction is deliberately driven by provider-reported usage after a
-        // tool result, or by an actual context-limit error. Do not estimate the history here
-        // and compact before the model has had a chance to execute its tools.
-        if (!force) return view
+        // Inside a turn, automatic compaction stays driven by provider-reported usage after a
+        // tool result, or by an actual context-limit error, so the model can run its tools
+        // first. A brand-new user turn whose request already reaches the trigger is compacted
+        // before it is sent (see PreSendContextGuard).
+        // Pre-send compaction keeps the new user message itself raw, so it needs something
+        // before that message to summarize.
+        val preSend = !force
+        if (preSend) {
+            val hasOlderRawMessages =
+                conversation.currentMessages.lastIndex > view.rawTailStartIndex
+            if (!hasOlderRawMessages ||
+                preSendContextDecision(view, settings, model) !is PreSendContextDecision.Compact
+            ) {
+                return view
+            }
+        }
 
         Log.i(
             TAG,
             "Auto compaction starting for ${conversation.id}: " +
-                "provider usage reached the configured threshold or context limit, " +
+                (
+                    if (preSend) {
+                        "new turn's estimated request reached the configured threshold, "
+                    } else {
+                        "provider usage reached the configured threshold or context limit, "
+                    }
+                ) +
                 "modelContext=${model.contextLength}",
         )
         processingStatus.value = context.getString(R.string.chat_page_compressing)
@@ -2808,6 +2855,7 @@ class ChatService(
                                 settings.autoCompactionKeepRecentToolCalls
                             },
                             maxTailTokens = maxTailTokens,
+                            keepTrailingUserMessage = preSend,
                         ),
                     ) { newlyCreatedAutoCompaction = it }
                     val firstView = firstCompaction?.let {
@@ -2829,6 +2877,7 @@ class ChatService(
                                 settings = settings,
                                 targetTokens = targetTokens,
                                 keepRecentToolCalls = 0,
+                                keepTrailingUserMessage = preSend,
                             ),
                         ) { newlyCreatedAutoCompaction = it } ?: firstView.compaction
                     } else {
@@ -2840,8 +2889,40 @@ class ChatService(
             return ContextCompactionView.build(latestConversation, compaction).copy(
                 newlyCreatedAutoCompaction = newlyCreatedAutoCompaction,
             )
+        } catch (e: Exception) {
+            // A failed pre-send compaction (e.g. the summary request failed) must not cost the
+            // turn: send the uncompacted request as before; the context-limit retry still applies.
+            if (e is CancellationException || !preSend) throw e
+            Log.w(TAG, "Pre-send compaction failed for ${conversation.id}; sending uncompacted", e)
+            return view
         } finally {
             processingStatus.value = null
+        }
+    }
+
+    /** Pre-send context check for a new user turn; off the main thread (may read file sizes). */
+    private suspend fun preSendContextDecision(
+        view: CompactedMessageView,
+        settings: Settings,
+        model: Model,
+    ): PreSendContextDecision = withContext(Dispatchers.IO) {
+        runCatching {
+            PreSendContextGuard.decide(
+                messages = view.messages,
+                autoCompactionEnabled = settings.enableAutoCompaction,
+                triggerTokens = if (settings.enableAutoCompaction) {
+                    automaticCompactionTriggerTokens(settings, model)
+                } else {
+                    null
+                },
+                hardLimitTokens = PreSendContextGuard.hardContextLimit(model),
+                compactedAt = view.compaction?.let { ContextCompactionView.summaryMessage(it).createdAt },
+            )
+        }.getOrElse { error ->
+            if (error is CancellationException) throw error
+            // An estimation bug must never block sending.
+            Log.w(TAG, "pre-send context check failed; sending as is", error)
+            PreSendContextDecision.Send
         }
     }
 
@@ -2895,17 +2976,23 @@ class ChatService(
         targetTokens: Int,
         keepRecentToolCalls: Int,
         maxTailTokens: Int? = null,
+        keepTrailingUserMessage: Boolean = false,
     ): ConversationCompaction? {
         if (conversation.messageNodes.size < 2) {
             throw IllegalStateException(context.getString(R.string.chat_page_compress_not_enough_messages))
         }
 
-        val rawTailStartIndex = ContextCompactionPlanner.automaticTailStartIndex(
+        val plannedTailStartIndex = ContextCompactionPlanner.automaticTailStartIndex(
             messages = conversation.currentMessages,
             rawTailStartIndex = currentView.rawTailStartIndex,
             keepRecentToolCalls = keepRecentToolCalls,
             maxTailTokens = maxTailTokens,
         )
+        // Pre-send compaction: never fold the message the user is sending into the summary.
+        val rawTailStartIndex = conversation.currentMessages.lastIndex
+            .takeIf { keepTrailingUserMessage && conversation.currentMessages.lastOrNull()?.role == MessageRole.USER }
+            ?.let { minOf(plannedTailStartIndex, it) }
+            ?: plannedTailStartIndex
 
         // A subsequent compaction may legitimately consume the final raw tail message,
         // leaving the persisted summary as the only request-context prefix. The summary

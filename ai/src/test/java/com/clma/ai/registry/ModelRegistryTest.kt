@@ -138,7 +138,14 @@ class ModelRegistryTest {
         assertEquals(1_000_000, ModelRegistry.MODEL_CONTEXT_LENGTH.getData("deepseek-v4-flash"))
         assertEquals(1_000_000, ModelRegistry.MODEL_CONTEXT_LENGTH.getData("deepseek-v4-pro"))
         assertEquals(1_000_000, ModelRegistry.MODEL_CONTEXT_LENGTH.getData("deepseek-v4-flash-vision-exp"))
-        assertEquals(null, ModelRegistry.MODEL_CONTEXT_LENGTH.getData("deepseek-v3"))
+        // V3-era models and the legacy API names: 128K.
+        assertEquals(128_000, ModelRegistry.MODEL_CONTEXT_LENGTH.getData("deepseek-v3"))
+        assertEquals(128_000, ModelRegistry.MODEL_CONTEXT_LENGTH.getData("deepseek-chat"))
+        assertEquals(128_000, ModelRegistry.MODEL_CONTEXT_LENGTH.getData("deepseek-reasoner"))
+        assertEquals(128_000, ModelRegistry.MODEL_CONTEXT_LENGTH.getData("deepseek-r1"))
+        assertEquals(128_000, ModelRegistry.MODEL_CONTEXT_LENGTH.getData("deepseek-ai/DeepSeek-V3"))
+        assertEquals(128_000, ModelRegistry.MODEL_CONTEXT_LENGTH.getData("deepseek-v3.1"))
+        assertEquals(128_000, ModelRegistry.MODEL_CONTEXT_LENGTH.getData("deepseek-v3.2"))
         // deepseek-flash: 1M per the official model table.
         assertEquals(1_000_000, ModelRegistry.MODEL_CONTEXT_LENGTH.getData("deepseek-flash"))
     }
