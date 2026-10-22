@@ -1885,6 +1885,8 @@
   <string name="setting_asr_configure_step_hotwords_desc">以逗號分隔的熱詞清單，用於提升專有名詞／領域術語的辨識準確率</string>
   <string name="log_page_record_requests">記錄請求</string>
   <string name="log_page_record_requests_desc">擷取請求標頭、請求主體和回應元數據</string>
+  <string name="log_page_earlier_logs">之前的日誌</string>
+  <string name="log_page_earlier_logs_desc">來自之前的應用工作階段，最新的在前（共 %1$d 行）</string>
   <string name="codex_provider_description">使用 OpenAI Codex OAuth 和 Responses API。此整合依賴 Codex 服務相容性。</string>
   <string name="codex_sign_in">使用 OpenAI OAuth 登入</string>
   <string name="codex_enable">啟用 Codex</string>

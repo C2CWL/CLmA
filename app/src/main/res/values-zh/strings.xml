@@ -2173,6 +2173,8 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="log_page_copy_all">复制全部日志</string>
   <string name="log_page_record_requests">记录请求</string>
   <string name="log_page_record_requests_desc">捕获请求标头、正文和响应元数据</string>
+  <string name="log_page_earlier_logs">之前的日志</string>
+  <string name="log_page_earlier_logs_desc">来自之前的应用会话，最新的在前（共 %1$d 行）</string>
   <string name="codex_provider_description">使用 OpenAI Codex OAuth 和 Responses API。此集成依赖 Codex 服务兼容性。</string>
   <string name="codex_sign_in">使用 OpenAI OAuth 登录</string>
   <string name="codex_enable">启用 Codex</string>
