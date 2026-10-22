@@ -18,15 +18,17 @@ object ChatToolPresets {
 
     enum class Kind { FLOOR, MCP, BLACKLIST }
 
-    /** One sheet row. [serverName] is set only for [Kind.MCP]. */
+    /** One sheet row. [serverName] / [description] (the server's own text) are set only for [Kind.MCP]. */
     data class Row(
         val toolName: String,
         val kind: Kind,
         val serverName: String? = null,
+        val description: String? = null,
     )
 
-    /** One relayed MCP tool: the server's display name and the full `mcp__…` tool name. */
-    data class McpEntry(val serverName: String, val toolName: String)
+    /** One relayed MCP tool: the server's display name, the full `mcp__…` tool name and the
+     *  server-provided description (untranslated, may be null). */
+    data class McpEntry(val serverName: String, val toolName: String, val description: String? = null)
 
     /** Human-input tools never ask for a capability grant, so they never get a row. */
     private val NEVER_LISTED = setOf(
@@ -45,7 +47,7 @@ object ChatToolPresets {
         val local = surfaceToolNames.filter { it.isNotBlank() && it !in NEVER_LISTED }
         local.filter { it in hardFloor }.forEach { if (seen.add(it)) out += Row(it, Kind.FLOOR) }
         mcpTools.filter { it.toolName.startsWith(ToolApprovalDefaults.MCP_TOOL_PREFIX) }
-            .forEach { if (seen.add(it.toolName)) out += Row(it.toolName, Kind.MCP, it.serverName) }
+            .forEach { if (seen.add(it.toolName)) out += Row(it.toolName, Kind.MCP, it.serverName, it.description) }
         local.filter { it in blacklist }.forEach { if (seen.add(it)) out += Row(it, Kind.BLACKLIST) }
         return out
     }

@@ -31,6 +31,8 @@ import com.clma.ai.core.MessageRole
 import com.clma.ai.provider.Modality
 import com.clma.ai.ui.UIMessage
 import com.clma.ai.ui.UIMessagePart
+import com.clma.app.ui.components.ai.toolDisplayDescriptionOrNull
+import com.clma.app.ui.components.ai.toolDisplayNameOrNull
 import com.clma.app.R
 import com.clma.app.data.ai.tools.HeadlessConversations
 import com.clma.app.data.datastore.SettingsStore
@@ -1595,7 +1597,20 @@ class TelegramBotService : Service() {
             append("⚠️ <b>Permission required</b>\n\n")
             append("Tool: <code>")
             append(TelegramHtmlRenderer.escape(tool.toolName))
-            append("</code>\n")
+            append("</code>")
+            // Display-only human name + one-line description (localised); the raw id above
+            // stays the authoritative identifier.
+            toolDisplayNameOrNull(tool.toolName)?.let { name ->
+                append(" — <b>")
+                append(TelegramHtmlRenderer.escape(name))
+                append("</b>")
+                toolDisplayDescriptionOrNull(tool.toolName)?.let { desc ->
+                    append("\n<i>")
+                    append(TelegramHtmlRenderer.escape(desc))
+                    append("</i>")
+                }
+            }
+            append("\n")
             append("in: <pre>")
             append(TelegramHtmlRenderer.escape(argsPreview))
             append("</pre>")

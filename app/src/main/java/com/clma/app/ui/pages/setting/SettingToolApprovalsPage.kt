@@ -42,13 +42,16 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
+import com.clma.app.ui.components.ai.ToolDisplayHeadline
+import com.clma.app.ui.components.ai.ToolDisplaySupporting
+import com.clma.app.ui.components.ai.rememberToolDisplaySearchText
+import com.clma.app.ui.components.ai.toolNameWithId
 import com.clma.app.R
 import com.clma.app.data.agentdef.LocalToolGroups
 import com.clma.app.data.ai.tools.LocalToolInventory
@@ -159,6 +162,7 @@ fun SettingToolApprovalsPage() {
     }
 
     var query by rememberSaveable { mutableStateOf("") }
+    val displaySearchText = rememberToolDisplaySearchText()
 
     Scaffold(
         topBar = {
@@ -298,7 +302,19 @@ fun SettingToolApprovalsPage() {
             } else {
                 // ask_user is a request for input, not a capability: it never consults the
                 // blacklist, so showing it a switch would be a lie.
-                val hits = (if (query.isBlank()) toolPalette.hits else toolPalette.matchAll(query))
+                // Ranked id/summary matches first, then tools whose display name or
+                // description (e.g. Chinese) contains the query.
+                val hits = (if (query.isBlank()) {
+                    toolPalette.hits
+                } else {
+                    val ranked = toolPalette.matchAll(query)
+                    val rankedNames = ranked.mapTo(HashSet()) { it.name }
+                    val q = query.trim()
+                    ranked + toolPalette.hits.filter {
+                        it.name !in rankedNames &&
+                            displaySearchText[it.name]?.contains(q, ignoreCase = true) == true
+                    }
+                })
                     .filterNot { it.name == ToolApprovalPolicy.ASK_USER_TOOL_NAME }
                 if (hits.isEmpty()) {
                     item {
@@ -327,30 +343,30 @@ fun SettingToolApprovalsPage() {
                                         val checked = if (floor) !waived else hit.name in blacklist
                                         item(
                                             headlineContent = {
-                                                if (floor) {
-                                                    Row(
-                                                        verticalAlignment = Alignment.CenterVertically,
-                                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                                    ) {
-                                                        Text(hit.name)
-                                                        HighRiskTag()
-                                                    }
-                                                } else {
-                                                    Text(hit.name)
-                                                }
+                                                ToolDisplayHeadline(
+                                                    toolName = hit.name,
+                                                    tag = if (floor) {
+                                                        { HighRiskTag() }
+                                                    } else {
+                                                        null
+                                                    },
+                                                )
                                             },
                                             supportingContent = {
-                                                when {
-                                                    waived -> WaivedText()
-                                                    else -> Text(
-                                                        text = if (floor) {
-                                                            stringResource(R.string.setting_page_tool_approvals_floor_badge)
-                                                        } else {
-                                                            stringResource(R.string.setting_page_tool_approvals_switch_desc)
-                                                        },
-                                                        style = MaterialTheme.typography.bodySmall,
-                                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                    )
+                                                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                                    ToolDisplaySupporting(toolName = hit.name)
+                                                    when {
+                                                        waived -> WaivedText()
+                                                        else -> Text(
+                                                            text = if (floor) {
+                                                                stringResource(R.string.setting_page_tool_approvals_floor_badge)
+                                                            } else {
+                                                                stringResource(R.string.setting_page_tool_approvals_switch_desc)
+                                                            },
+                                                            style = MaterialTheme.typography.bodySmall,
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                        )
+                                                    }
                                                 }
                                             },
                                             trailingContent = {
@@ -501,7 +517,7 @@ private fun FloorWaiverDialog(
     val displayName = if (target == MCP_WAIVER_TARGET) {
         stringResource(R.string.setting_page_tool_approvals_mcp_group)
     } else {
-        target
+        toolNameWithId(target)
     }
     val bodyTemplate = stringResource(R.string.setting_page_tool_approvals_waiver_dialog_body, displayName)
     val nameStart = bodyTemplate.indexOf(displayName)
@@ -510,7 +526,7 @@ private fun FloorWaiverDialog(
             append(bodyTemplate)
         } else {
             append(bodyTemplate.substring(0, nameStart))
-            withStyle(SpanStyle(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.SemiBold)) {
+            withStyle(SpanStyle(fontWeight = FontWeight.SemiBold)) {
                 append(displayName)
             }
             append(bodyTemplate.substring(nameStart + displayName.length))
