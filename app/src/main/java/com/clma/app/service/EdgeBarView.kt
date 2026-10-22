@@ -95,15 +95,32 @@ internal class EdgeBarView(context: Context) : View(context) {
             invalidate()
         }
 
+    /**
+     * Lying along the top edge: the pill turns horizontal (64x16dp), flush with the top of the
+     * window and centred horizontally in it.
+     */
+    var horizontal: Boolean = false
+        set(value) {
+            if (field == value) return
+            field = value
+            invalidate()
+        }
+
     override fun onDraw(canvas: Canvas) {
         val w = width.toFloat()
         val h = height.toFloat()
         if (w <= 0f || h <= 0f) return
-        val barW = dp(EdgeBarLook.BAR_WIDTH_DP).coerceAtMost(w)
-        val barH = dp(EdgeBarLook.BAR_HEIGHT_DP).coerceAtMost(h)
-        val radius = dp(EdgeBarLook.BAR_CORNER_DP).coerceAtMost(barW / 2f)
-        val left = if (onRight) w - barW else 0f
-        val top = (h - barH) / 2f
+        val thin = dp(EdgeBarLook.BAR_WIDTH_DP)
+        val long = dp(EdgeBarLook.BAR_HEIGHT_DP)
+        val barW = (if (horizontal) long else thin).coerceAtMost(w)
+        val barH = (if (horizontal) thin else long).coerceAtMost(h)
+        val radius = dp(EdgeBarLook.BAR_CORNER_DP).coerceAtMost(minOf(barW, barH) / 2f)
+        val left = when {
+            horizontal -> (w - barW) / 2f
+            onRight -> w - barW
+            else -> 0f
+        }
+        val top = if (horizontal) 0f else (h - barH) / 2f
         pill.set(left, top, left + barW, top + barH)
 
         val signal = signal
@@ -234,7 +251,7 @@ internal class EdgeBarView(context: Context) : View(context) {
     private fun drawCheck(canvas: Canvas) {
         val cx = pill.centerX()
         val cy = pill.centerY()
-        val s = (pill.width() - dp(6f)).coerceAtLeast(dp(6f)) / 10f // 10dp-wide mark in a 16dp pill
+        val s = (minOf(pill.width(), pill.height()) - dp(6f)).coerceAtLeast(dp(6f)) / 10f // 10dp-wide mark in a 16dp pill
         check.reset()
         check.moveTo(cx - 4.5f * s, cy + 0.2f * s)
         check.lineTo(cx - 1.4f * s, cy + 3.2f * s)

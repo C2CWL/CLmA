@@ -244,6 +244,44 @@ internal object EdgeBarLook {
     fun defaultTop(windowHeight: Int, screenHeight: Int): Int =
         (screenHeight * DEFAULT_CENTER_FRACTION).toInt() - windowHeight / 2
 
+    /** Screen edge the bar is snapped to. TOP = a horizontal pill just under the status bar. */
+    enum class Edge { LEFT, RIGHT, TOP }
+
+    /** A drop whose finger is in the top [TOP_SNAP_RATIO] of the screen snaps to the top edge. */
+    const val TOP_SNAP_RATIO = 0.14f
+
+    /** Value saved under the edge key for the top edge; anything else means "use the saved x". */
+    const val SAVED_EDGE_TOP = "top"
+
+    /**
+     * Edge from the saved values: [savedEdge] == [SAVED_EDGE_TOP] is the top edge; otherwise the
+     * side comes from the saved x exactly as before (so existing users keep their side).
+     */
+    fun edgeFromSaved(savedEdge: String?, savedX: Int?, screenWidth: Int): Edge = when {
+        savedEdge == SAVED_EDGE_TOP -> Edge.TOP
+        onRightFromSavedX(savedX, screenWidth) -> Edge.RIGHT
+        else -> Edge.LEFT
+    }
+
+    /**
+     * Edge after a free long-press drag released at ([rawX], [rawY]): near the top of the screen it
+     * snaps to the top; otherwise to a side, with the same "well across" rule as before when it
+     * was already on a side, and the nearer half when it comes down from the top.
+     */
+    fun edgeAfterDrag(rawX: Float, rawY: Float, screenWidth: Int, screenHeight: Int, was: Edge): Edge {
+        if (rawY < screenHeight.coerceAtLeast(1) * TOP_SNAP_RATIO) return Edge.TOP
+        val onRight = when (was) {
+            Edge.TOP -> rawX >= screenWidth / 2f
+            Edge.RIGHT -> onRightAfterDrag(rawX, screenWidth, wasOnRight = true)
+            Edge.LEFT -> onRightAfterDrag(rawX, screenWidth, wasOnRight = false)
+        }
+        return if (onRight) Edge.RIGHT else Edge.LEFT
+    }
+
+    /** Window x (gravity TOP|LEFT) of the top-edge bar, centred on [centerX] and kept on screen. */
+    fun topBarLeft(centerX: Int, windowWidth: Int, screenWidth: Int): Int =
+        (centerX - windowWidth / 2).coerceIn(0, (screenWidth - windowWidth).coerceAtLeast(0))
+
     /**
      * Side after a long-press drag released at [rawX]: dropped well across the screen it switches
      * edges, otherwise it stays where it was.

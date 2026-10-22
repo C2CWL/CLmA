@@ -70,6 +70,10 @@ class ChatGenerationForegroundService : Service() {
             .setOnlyAlertOnce(true)
             .setCategory(NotificationCompat.CATEGORY_PROGRESS)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
+            // Fallback for the edge-bar task card (no overlay permission): show it is busy and offer a
+            // 停止 that stops every running generation (this notification is shared by all).
+            .setProgress(0, 0, true)
+            .addAction(GenerationStopReceiver.stopAction(this, conversationId = null))
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
             notificationBuilder.setRequestPromotedOngoing(true)
         }

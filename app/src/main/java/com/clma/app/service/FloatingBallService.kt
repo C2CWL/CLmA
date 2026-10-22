@@ -36,12 +36,17 @@ import com.clma.app.FLOATING_BALL_NOTIFICATION_CHANNEL_ID
 import com.clma.app.R
 import com.clma.app.RouteActivity
 import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.service.EdgeBarLook.Edge
+import com.clma.app.data.repository.ConversationRepository
+import com.clma.app.service.chatbox.EdgeBarChatBoxController
+import com.clma.app.service.chatbox.EdgeBarChatBoxView
 import com.clma.app.ui.hooks.COLOR_MODE_KEY
 import com.clma.app.ui.hooks.readStringPreference
 import com.clma.app.ui.hooks.writeStringPreference
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import kotlin.math.abs
+import kotlin.uuid.Uuid
 
 private const val TAG = "FloatingBallService"
 
@@ -50,11 +55,13 @@ private const val TAG = "FloatingBallService"
  * the manifest entry, the settings key and every caller stay unchanged).
  *
  * A slim pill ([EdgeBarView]) in a small TYPE_APPLICATION_OVERLAY window, flush with the left or
- * right screen edge, that survives across apps:
- *  - tap                 → bring the main app to the front (an existing task is resumed, not
- *                          duplicated; see [openMainApp]);
- *  - long press, drag    → move the bar up / down along its edge (dropped well across the
- *                          screen it switches edges); the position is saved on release;
+ * right screen edge, or lying horizontally just under the status bar, that survives across apps:
+ *  - tap                 → open the floating chat box ([EdgeBarChatBoxController]): recent
+ *                          messages, live progress / 停止 / interject while replying, send when
+ *                          idle; or, per the settings, bring the main app to the front (an
+ *                          existing task is resumed, not duplicated; see [openMainApp]);
+ *  - long press, drag    → move the bar freely; on release it snaps to the left, right or top
+ *                          edge ([EdgeBarLook.edgeAfterDrag]); edge and position are saved;
  *  - anything else (a plain swipe) does nothing.
  *
  * It is also the "agent is working" light: [AgentOverlay] hands the signal here whenever the bar
@@ -83,6 +90,14 @@ class FloatingBallService : Service(), KoinComponent {
         // Same keys the floating ball used, so the bar opens on the side / height the ball was on.
         private const val PREF_X = "floating_ball_x"
         private const val PREF_Y = "floating_ball_y"
+
+        /** [EdgeBarLook.SAVED_EDGE_TOP] for the top edge; missing / anything else = side from [PREF_X]. */
+        private const val PREF_EDGE = "floating_ball_edge"
+        private const val PREF_EDGE_SIDE = "side"
+
+        /** Centre x of the bar on the top edge. */
+        private const val PREF_TOP_X = "floating_ball_top_x"
+
 
         /** The app's SharedPreferences file (see ui/hooks/SharedPreferences.kt). */
         private const val PREFS_NAME = "rikkahub.preferences"
@@ -132,6 +147,8 @@ class FloatingBallService : Service(), KoinComponent {
     }
 
     private val settingsStore: SettingsStore by inject()
+    private val chatService: ChatService by inject()
+    private val conversationRepo: ConversationRepository by inject()
 
     private val mainHandler = Handler(Looper.getMainLooper())
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -144,6 +161,24 @@ class FloatingBallService : Service(), KoinComponent {
 
     /** A turn finished and the user has not tapped the bar (opened the app) since. */
     private var unseenDone = false
+
+    /** The edge the bar is snapped to. */
+    private var edge = Edge.RIGHT
+
+    // ---- Chat box (tap the bar) ----
+
+    private val chatBox: EdgeBarChatBoxController by lazy {
+        EdgeBarChatBoxController(
+            context = this,
+            scope = scope,
+            chatService = chatService,
+            settingsStore = settingsStore,
+            conversationRepo = conversationRepo,
+            anchor = ::chatBoxAnchor,
+            isDark = { isDarkMode(resources.configuration) },
+            openConversationInApp = ::openConversation,
+        )
+    }
 
     /**
      * The app's colour-mode setting changed (Settings → theme): the "follow theme" swatch repaints.
@@ -158,7 +193,14 @@ class FloatingBallService : Service(), KoinComponent {
 
     private val longPressRunnable = Runnable {
         val view = barView ?: return@Runnable
+        val params = barParams ?: return@Runnable
         dragArmed = true
+        chatBox.close()
+        // From here the window moves freely: place it by its absolute top-left corner.
+        params.x = barLeft(params)
+        params.gravity = Gravity.TOP or Gravity.LEFT
+        updateLayout(view, params)
+        clearGestureExclusion(view)
         view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
     }
 
@@ -170,6 +212,8 @@ class FloatingBallService : Service(), KoinComponent {
                 barView?.barColor = settings.floatingBallBarColor
             }
         }
+        // Which conversations are generating / just finished: the chat box follows them.
+        chatBox.start()
         // Same preferences file the app's theme reads its colour mode from (see ui/hooks).
         getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .registerOnSharedPreferenceChangeListener(colorModeListener)
@@ -183,6 +227,7 @@ class FloatingBallService : Service(), KoinComponent {
 
     private fun applyDarkMode(config: Configuration) {
         barView?.darkMode = isDarkMode(config)
+        chatBox.onThemeChanged()
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -203,8 +248,9 @@ class FloatingBallService : Service(), KoinComponent {
 
             ACTION_WORKING_OFF -> {
                 working = false
-                // The bar turns green until the user taps it (which opens the app).
-                unseenDone = true
+                // The bar turns green until the user taps it, unless the chat box is open (the
+                // finished reply is right there).
+                unseenDone = !chatBox.isShowing
                 if (barView == null) stopSelf() else syncBar()
                 return START_NOT_STICKY
             }
@@ -231,11 +277,13 @@ class FloatingBallService : Service(), KoinComponent {
         super.onConfigurationChanged(newConfig)
         // System light / dark switch: the "follow theme" swatch repaints.
         applyDarkMode(newConfig)
-        // Rotation / resize: keep the side, re-clamp the height against the new screen.
+        // Rotation / resize: keep the edge, re-clamp the position against the new screen.
         mainHandler.post {
+            chatBox.close()
             val view = barView ?: return@post
             val params = barParams ?: return@post
-            params.y = clampTop(params.y)
+            if (dragArmed) return@post
+            applyEdge(view, params, edge, centerX = params.x + params.width / 2, sideTop = params.y)
             updateLayout(view, params)
             updateGestureExclusion(view)
         }
@@ -245,6 +293,7 @@ class FloatingBallService : Service(), KoinComponent {
         getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .unregisterOnSharedPreferenceChangeListener(colorModeListener)
         scope.cancel()
+        chatBox.close()
         hideBar()
         runCatching { ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE) }
         super.onDestroy()
@@ -256,15 +305,17 @@ class FloatingBallService : Service(), KoinComponent {
     private fun showBar() {
         if (barView != null) return
         val wm = windowManager() ?: return
-        val width = dpPx(EdgeBarLook.TOUCH_WIDTH_DP)
         val height = dpPx(EdgeBarLook.TOUCH_HEIGHT_DP)
         val screen = screenSize()
-        val onRight = EdgeBarLook.onRightFromSavedX(
+        // Existing users keep their side and height; the top edge is a new saved value.
+        val savedEdge = EdgeBarLook.edgeFromSaved(
+            readStringPreference(PREF_EDGE),
             readStringPreference(PREF_X)?.toIntOrNull(),
             screen.width,
         )
         val savedTop = readStringPreference(PREF_Y)?.toIntOrNull()
             ?: EdgeBarLook.defaultTop(height, screen.height)
+        val savedCenterX = readStringPreference(PREF_TOP_X)?.toIntOrNull() ?: (screen.width / 2)
 
         val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
@@ -273,7 +324,7 @@ class FloatingBallService : Service(), KoinComponent {
             WindowManager.LayoutParams.TYPE_PHONE
         }
         val params = WindowManager.LayoutParams(
-            width,
+            dpPx(EdgeBarLook.TOUCH_WIDTH_DP),
             height,
             type,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
@@ -281,21 +332,26 @@ class FloatingBallService : Service(), KoinComponent {
                 or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT,
         ).apply {
-            // Placed by gravity, so the bar stays flush with its edge across rotations / resizes.
-            gravity = Gravity.TOP or (if (onRight) Gravity.RIGHT else Gravity.LEFT)
-            x = 0
-            y = savedTop
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                // x / y are measured from the screen's top-left corner (the insets are handled
+                // by clampTop / the top edge's y), the same frame as the task card's window.
+                setFitInsetsTypes(0)
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+            }
         }
-        params.y = clampTop(params.y)
 
         val view = EdgeBarView(this).apply {
-            this.onRight = onRight
             barColor = settingsStore.settingsFlow.value.floatingBallBarColor
             darkMode = isDarkMode(resources.configuration)
             contentDescription = getString(R.string.setting_floating_ball_bar_a11y)
             isClickable = true
             isHapticFeedbackEnabled = true
         }
+        // Side bars are placed by gravity, so they stay flush with their edge across rotations.
+        edge = savedEdge
+        applyEdge(view, params, savedEdge, centerX = savedCenterX, sideTop = savedTop)
         try {
             wm.addView(view, params)
         } catch (t: Throwable) {
@@ -307,7 +363,7 @@ class FloatingBallService : Service(), KoinComponent {
         isShowing = true
         attachTouch(view, params)
         // Touches are handled in attachTouch; this is what TalkBack / switch access trigger.
-        view.setOnClickListener { openMainApp() }
+        view.setOnClickListener { onBarTap() }
         syncBar()
     }
 
@@ -338,7 +394,6 @@ class FloatingBallService : Service(), KoinComponent {
         val touchSlop = ViewConfiguration.get(this).scaledTouchSlop
         var downRawX = 0f
         var downRawY = 0f
-        var startY = 0
         /** The finger moved before the long press armed: a swipe, which does nothing. */
         var swiped = false
 
@@ -347,7 +402,6 @@ class FloatingBallService : Service(), KoinComponent {
                 MotionEvent.ACTION_DOWN -> {
                     downRawX = event.rawX
                     downRawY = event.rawY
-                    startY = params.y
                     swiped = false
                     dragArmed = false
                     mainHandler.removeCallbacks(longPressRunnable)
@@ -359,9 +413,14 @@ class FloatingBallService : Service(), KoinComponent {
                     val dx = event.rawX - downRawX
                     val dy = event.rawY - downRawY
                     if (dragArmed) {
-                        // Vertical only while dragging; the side is decided on release.
-                        val y = clampTop((startY + dy).toInt())
-                        if (y != params.y) {
+                        // Free 2-D drag (centred on the finger); the edge is decided on release.
+                        val screen = screenSize()
+                        val x = (event.rawX - params.width / 2f).toInt()
+                            .coerceIn(0, (screen.width - params.width).coerceAtLeast(0))
+                        val y = (event.rawY - params.height / 2f).toInt()
+                            .coerceIn(0, (screen.height - params.height).coerceAtLeast(0))
+                        if (x != params.x || y != params.y) {
+                            params.x = x
                             params.y = y
                             updateLayout(view, params)
                         }
@@ -380,21 +439,21 @@ class FloatingBallService : Service(), KoinComponent {
                     when {
                         dragArmed -> {
                             val screen = screenSize()
-                            val onRight = if (cancelled) {
-                                view.onRight
+                            val newEdge = if (cancelled) {
+                                edge
                             } else {
-                                EdgeBarLook.onRightAfterDrag(event.rawX, screen.width, view.onRight)
+                                EdgeBarLook.edgeAfterDrag(event.rawX, event.rawY, screen.width, screen.height, edge)
                             }
-                            if (onRight != view.onRight) {
-                                view.onRight = onRight
-                                params.gravity = Gravity.TOP or (if (onRight) Gravity.RIGHT else Gravity.LEFT)
-                                updateLayout(view, params)
-                            }
+                            edge = newEdge
+                            val centerX = params.x + params.width / 2
+                            val sideTop = params.y + params.height / 2 - dpPx(EdgeBarLook.TOUCH_HEIGHT_DP) / 2
+                            applyEdge(view, params, newEdge, centerX = centerX, sideTop = sideTop)
+                            updateLayout(view, params)
                             updateGestureExclusion(view)
-                            savePosition(onRight, params)
+                            savePosition(newEdge, params)
                         }
                         // A cancelled gesture (e.g. taken by the system) is never a tap.
-                        !cancelled && !swiped -> openMainApp()
+                        !cancelled && !swiped -> onBarTap()
                     }
                     dragArmed = false
                     swiped = false
@@ -406,10 +465,116 @@ class FloatingBallService : Service(), KoinComponent {
         }
     }
 
-    private fun savePosition(onRight: Boolean, params: WindowManager.LayoutParams) {
+    private fun savePosition(edge: Edge, params: WindowManager.LayoutParams) {
+        if (edge == Edge.TOP) {
+            writeStringPreference(PREF_EDGE, EdgeBarLook.SAVED_EDGE_TOP)
+            writeStringPreference(PREF_TOP_X, (params.x + params.width / 2).toString())
+            return
+        }
         val screen = screenSize()
-        writeStringPreference(PREF_X, EdgeBarLook.savedXFor(onRight, screen.width, params.width).toString())
+        writeStringPreference(PREF_EDGE, PREF_EDGE_SIDE)
+        writeStringPreference(
+            PREF_X,
+            EdgeBarLook.savedXFor(edge == Edge.RIGHT, screen.width, params.width).toString(),
+        )
         writeStringPreference(PREF_Y, params.y.toString())
+    }
+
+    /**
+     * Sizes and places the window for [edge]: a vertical touch area flush with the left / right
+     * edge (placed by gravity, height [sideTop] clamped), or a horizontal one just under the
+     * status bar centred on [centerX] (kept on screen).
+     */
+    @SuppressLint("RtlHardcoded")
+    private fun applyEdge(
+        view: EdgeBarView,
+        params: WindowManager.LayoutParams,
+        edge: Edge,
+        centerX: Int,
+        sideTop: Int,
+    ) {
+        val thin = dpPx(EdgeBarLook.TOUCH_WIDTH_DP)
+        val long = dpPx(EdgeBarLook.TOUCH_HEIGHT_DP)
+        val screen = screenSize()
+        view.horizontal = edge == Edge.TOP
+        if (edge == Edge.TOP) {
+            params.width = long
+            params.height = thin
+            params.gravity = Gravity.TOP or Gravity.LEFT
+            params.x = EdgeBarLook.topBarLeft(centerX, long, screen.width)
+            params.y = screen.topInset
+        } else {
+            view.onRight = edge == Edge.RIGHT
+            params.width = thin
+            params.height = long
+            params.gravity = Gravity.TOP or (if (edge == Edge.RIGHT) Gravity.RIGHT else Gravity.LEFT)
+            params.x = 0
+            params.y = clampTop(sideTop)
+        }
+    }
+
+    /** Absolute left of the bar's window (side bars are placed by gravity with x = 0). */
+    private fun barLeft(params: WindowManager.LayoutParams): Int = when (edge) {
+        Edge.TOP -> params.x
+        Edge.RIGHT -> screenSize().width - params.width
+        Edge.LEFT -> 0
+    }
+
+    // ---- Tap / chat box ----
+
+    /**
+     * A tap on the bar. Any tap clears the green "done" state. Green: per the setting, open the
+     * chat box on the finished reply or return to the app. Otherwise (idle or replying): the
+     * chat box if "点细条打开聊天框" is on, else the app.
+     */
+    private fun onBarTap() {
+        val wasGreen = unseenDone
+        if (unseenDone) {
+            unseenDone = false
+            syncBar()
+        }
+        if (chatBox.isShowing) {
+            chatBox.close()
+            return
+        }
+        val display = settingsStore.settingsFlow.value.displaySetting
+        val useChatBox = if (wasGreen) display.edgeBarDoneTapOpensChatBox else display.edgeBarTaskCard
+        if (!useChatBox || barView == null) {
+            openMainApp()
+            return
+        }
+        barView?.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+        chatBox.open(preferFinished = wasGreen)
+    }
+
+    private fun chatBoxAnchor(): EdgeBarChatBoxView.Anchor? {
+        val params = barParams ?: return null
+        val screen = screenSize()
+        return EdgeBarChatBoxView.Anchor(
+            edge = edge,
+            barLeft = barLeft(params),
+            barTop = params.y,
+            barWidth = params.width,
+            barHeight = params.height,
+            screenWidth = screen.width,
+            screenHeight = screen.height,
+            topInset = screen.topInset,
+            bottomInset = screen.bottomInset,
+        )
+    }
+
+    /** Opens the app on [id], like the generation notification's tap (ChatService.getPendingIntent). */
+    private fun openConversation(id: Uuid) {
+        val intent = Intent(this, RouteActivity::class.java).apply {
+            addFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                    Intent.FLAG_ACTIVITY_SINGLE_TOP
+            )
+            putExtra("conversationId", id.toString())
+        }
+        runCatching { startActivity(intent) }
+            .onFailure { Log.w(TAG, "open conversation failed", it) }
     }
 
     /**
@@ -495,7 +660,12 @@ class FloatingBallService : Service(), KoinComponent {
     private fun updateGestureExclusion(view: View) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
         val params = barParams ?: return
-        view.systemGestureExclusionRects = listOf(Rect(0, 0, params.width, params.height))
+        // The back gesture only lives on the side edges.
+        view.systemGestureExclusionRects = if (edge == Edge.TOP) {
+            emptyList()
+        } else {
+            listOf(Rect(0, 0, params.width, params.height))
+        }
     }
 
     private fun clearGestureExclusion(view: View) {

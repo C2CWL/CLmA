@@ -1215,6 +1215,10 @@ data class DisplaySetting(
     val useAppIconStyleLoadingIndicator: Boolean = true,
     /** Null = not chosen yet: follow [useAppIconStyleLoadingIndicator] (see resolveLoadingIndicatorStyle). */
     val loadingIndicatorStyle: LoadingIndicatorStyle? = null,
+    /** Edge bar: a tap opens the floating chat box (otherwise it returns to the app). Name kept from the task card. */
+    val edgeBarTaskCard: Boolean = true,
+    /** Edge bar: once green (reply finished), a tap opens the chat box (true) or returns to the app (false). */
+    val edgeBarDoneTapOpensChatBox: Boolean = true,
     val showUserAvatar: Boolean = true,
     val showAssistantBubble: Boolean = false,
     val bubbleOpacity: Float = 1.0f,
