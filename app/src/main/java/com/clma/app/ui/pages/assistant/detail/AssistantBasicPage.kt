@@ -47,17 +47,24 @@ import com.clma.ai.provider.ModelType
 import com.clma.app.R
 import com.clma.app.data.db.entity.WorkspaceEntity
 import com.clma.app.data.model.Assistant
+import com.clma.app.data.datastore.AutoCompactionThresholdMode
+import com.clma.app.data.datastore.findModelById
+import com.clma.app.data.datastore.getEffectiveContextLength
 import com.clma.app.data.ai.tools.ToolSurfaceMode
 import com.clma.app.subagent.SubAgentDefaults
 import com.clma.app.ui.components.ai.ModelSelector
 import com.clma.app.ui.components.ai.ReasoningButton
 import com.clma.app.ui.components.nav.BackButton
 import com.clma.app.ui.components.ui.FormItem
+import com.clma.app.ui.components.ui.SettingSlider
+import com.clma.app.ui.components.ui.parseIntInRange
+import com.clma.app.ui.components.ui.snapToInt
 import com.clma.app.ui.components.ui.Select
 import com.clma.app.ui.components.ui.TagsInput
 import com.clma.app.ui.components.ui.AssistantAvatar
 import com.clma.app.ui.hooks.heroAnimation
 import com.clma.app.ui.theme.CustomColors
+import com.clma.app.utils.formatNumber
 import com.clma.app.utils.toFixed
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -707,6 +714,22 @@ internal fun AssistantBasicContent(
             )
             if (assistant.enableCompactContextTool) {
                 val reminderPercent = assistant.contextBudgetReminderPercent.coerceIn(5, 95)
+                // Same window the ContextBudgetReminderTransformer reads (declared ceiling in TOKENS
+                // mode → provider metadata → ModelRegistry), resolved for the model this assistant
+                // actually chats with, so the token count shown here is the one the reminder uses.
+                val settings by vm.settings.collectAsStateWithLifecycle()
+                val reminderModel = settings.findModelById(assistant.chatModelId ?: settings.chatModelId)
+                val reminderWindow = settings.getEffectiveContextLength(reminderModel)
+                val tokensMode = settings.autoCompactionThresholdMode == AutoCompactionThresholdMode.TOKENS
+                var reminderInput by remember(reminderPercent) {
+                    mutableStateOf(reminderPercent.toString())
+                }
+                val commitReminderPercent: (Int) -> Unit = { percent ->
+                    val normalized = percent.coerceIn(5, 95)
+                    if (normalized != assistant.contextBudgetReminderPercent) {
+                        onUpdate(assistant.copy(contextBudgetReminderPercent = normalized))
+                    }
+                }
                 HorizontalDivider()
                 FormItem(
                     modifier = Modifier.padding(8.dp),
@@ -714,27 +737,64 @@ internal fun AssistantBasicContent(
                         Text(stringResource(R.string.assistant_page_context_reminder_threshold))
                     },
                     description = {
-                        Text(stringResource(R.string.assistant_page_context_reminder_threshold_desc))
+                        Text(
+                            stringResource(
+                                if (tokensMode) {
+                                    R.string.assistant_page_context_reminder_threshold_desc_tokens_mode
+                                } else {
+                                    R.string.assistant_page_context_reminder_threshold_desc
+                                }
+                            )
+                        )
                     },
                 ) {
-                    Slider(
+                    SettingSlider(
                         value = reminderPercent.toFloat(),
-                        onValueChange = { value ->
-                            onUpdate(
-                                assistant.copy(
-                                    contextBudgetReminderPercent = (value / 5f).roundToInt() * 5
-                                )
-                            )
-                        },
+                        onValueChange = { value -> commitReminderPercent(value.roundToInt()) },
                         valueRange = 5f..95f,
-                        steps = 17,
-                        modifier = Modifier.fillMaxWidth()
+                        title = stringResource(R.string.assistant_page_context_reminder_threshold),
+                        valueLabel = { "${it.roundToInt()}%" },
+                        parseInput = { parseIntInRange(it, 5f..95f) },
+                        snap = { raw -> snapToInt(raw, 5f..95f) },
+                        rangeHint = "5% – 95%",
+                    )
+                    OutlinedTextField(
+                        value = reminderInput,
+                        onValueChange = { value ->
+                            reminderInput = value.filter(Char::isDigit).take(2)
+                            reminderInput.toIntOrNull()
+                                ?.takeIf { it in 5..95 }
+                                ?.let(commitReminderPercent)
+                        },
+                        singleLine = true,
+                        suffix = { Text("%") },
+                        supportingText = { Text("5% – 95%") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .onFocusChanged { focusState ->
+                                if (!focusState.isFocused) {
+                                    val normalized = reminderInput.toIntOrNull()?.coerceIn(5, 95)
+                                        ?: reminderPercent
+                                    reminderInput = normalized.toString()
+                                    if (normalized != reminderPercent) commitReminderPercent(normalized)
+                                }
+                            },
                     )
                     Text(
-                        text = stringResource(
-                            R.string.assistant_page_context_reminder_threshold_value,
-                            reminderPercent
-                        ),
+                        text = if (reminderWindow != null) {
+                            stringResource(
+                                R.string.assistant_page_context_reminder_threshold_value_tokens,
+                                reminderPercent,
+                                (reminderWindow.toLong() * reminderPercent / 100L).toInt().formatNumber(),
+                                reminderWindow.formatNumber(),
+                            )
+                        } else {
+                            stringResource(
+                                R.string.assistant_page_context_reminder_threshold_window_unknown,
+                                reminderPercent,
+                            )
+                        },
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.75f),
                     )

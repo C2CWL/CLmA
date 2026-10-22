@@ -2377,6 +2377,9 @@
   <string name="assistant_page_context_reminder_threshold">上下文提醒閾值</string>
   <string name="assistant_page_context_reminder_threshold_desc">當估算上下文達到模型視窗的這個比例時，注入 &lt;context_reminder&gt;，讓模型趕在自動壓縮觸發之前自行決定是否需要壓縮。建議低於自動壓縮閾值，否則會被客戶端的強制壓縮搶先。</string>
   <string name="assistant_page_context_reminder_threshold_value">%1$d%%</string>
+  <string name="assistant_page_context_reminder_threshold_desc_tokens_mode">自動壓縮目前是「按 Token」模式，所以這裡的百分比是相對於你設定的 Token 上限（不是模型本身的視窗）：估算上下文達到這個比例時注入 &lt;context_reminder&gt;，讓模型先自行決定是否壓縮。</string>
+  <string name="assistant_page_context_reminder_threshold_value_tokens">%1$d%%（約 %2$s tokens，共 %3$s）</string>
+  <string name="assistant_page_context_reminder_threshold_window_unknown">%1$d%%（模型上下文視窗未知，提醒不會觸發）</string>
   <string name="assistant_page_tool_surface_mode">漸進式 MCP 工具目錄</string>
   <string name="assistant_page_tool_surface_mode_desc">用 tool_search / tool_open 一對工具替換每次請求裡的 MCP 工具，因此只傳送模型實際開啟的那些 schema。可減少首輪工具 token，但工具清單會在回合間變化，可能損失提示快取命中。本地工具不會被編入目錄。預設關閉。</string>
   <string name="assistant_page_subagent_context_refs">子智慧體上下文引用</string>
