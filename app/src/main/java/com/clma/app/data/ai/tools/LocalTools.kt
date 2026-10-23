@@ -738,8 +738,38 @@ class LocalTools(
                     required = listOf("questions")
                 )
             },
-            needsApproval = { true },
-            execute = {
+            needsApproval = { input ->
+                val questions = runCatching { input.jsonObject["questions"] as? JsonArray }.getOrNull()
+                questions != null && questions.any { q ->
+                    runCatching {
+                        !q.jsonObject["question"]?.jsonPrimitive?.contentOrNull.isNullOrBlank()
+                    }.getOrDefault(false)
+                }
+            },
+            execute = { input ->
+                val questions = runCatching { input.jsonObject["questions"] as? JsonArray }.getOrNull()
+                val hasValidQuestions = questions != null && questions.any { q ->
+                    runCatching {
+                        !q.jsonObject["question"]?.jsonPrimitive?.contentOrNull.isNullOrBlank()
+                    }.getOrDefault(false)
+                }
+                if (!hasValidQuestions) {
+                    return@Tool listOf(
+                        UIMessagePart.Text(
+                            buildJsonObject {
+                                put("error", "invalid_tool_args")
+                                put(
+                                    "detail",
+                                    "Invalid ask_user call: 'questions' array must contain at least one question with non-blank 'question' text."
+                                )
+                                put(
+                                    "recovery",
+                                    "Provide a non-empty 'questions' array where each item has 'id' and 'question', or ask the user directly in your reply text."
+                                )
+                            }.toString()
+                        )
+                    )
+                }
                 // Reached only when no human-in-the-loop surface intercepted this call. The
                 // in-app question card and the Telegram clarify flow both handle ask_user before
                 // execute() runs; any other context (cron jobs, sub-agents) has nobody to answer,
