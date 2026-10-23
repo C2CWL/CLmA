@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Atom02
@@ -72,6 +73,10 @@ internal fun risingDotLift(phase: Float, index: Int): Float {
 /**
  * The text next to an indicator: [processingStatus] when there is one, otherwise the phase label
  * (思考中 / 回复中 / 工作中), plus "…" when [ellipsis]. Phase changes cross-fade.
+ *
+ * Two lines instead of one: a status like "已 298 秒没有新内容，可能已卡住；可停止后重试" (and the
+ * waiting / retrying ones) is longer than a single line next to the icon, and used to be cut off
+ * mid-sentence. Callers pass a weight so the label wraps inside the row that also holds the dots.
  */
 @Composable
 private fun ThinkingLabel(
@@ -79,6 +84,7 @@ private fun ThinkingLabel(
     phase: GenerationPhase,
     ellipsis: Boolean,
     shimmerPhase: (() -> Float)?,
+    modifier: Modifier = Modifier,
 ) {
     val phaseText = generationPhaseLabel(phase)
     val text = processingStatus ?: if (ellipsis) "$phaseText…" else phaseText
@@ -90,8 +96,9 @@ private fun ThinkingLabel(
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Medium,
             color = color,
-            maxLines = 1,
-            modifier = if (shimmerPhase == null) Modifier else Modifier
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = if (shimmerPhase == null) modifier else modifier
                 // Offscreen so SrcAtop paints the band onto the glyphs only.
                 .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
                 .drawWithContent {
@@ -187,8 +194,17 @@ fun AtomDotsThinkingRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         GradientSpinningAtom(t, Modifier.size(IndicatorSize))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            ThinkingLabel(processingStatus, phase, ellipsis = false, shimmerPhase = null)
+        Row(
+            modifier = Modifier.weight(1f, fill = false),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            ThinkingLabel(
+                processingStatus = processingStatus,
+                phase = phase,
+                ellipsis = false,
+                shimmerPhase = null,
+                modifier = Modifier.weight(1f, fill = false),
+            )
             RisingDots(t, Modifier.padding(start = 2.dp))
         }
     }
@@ -260,7 +276,13 @@ fun BreathingOrbThinkingRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         BreathingOrb(t, Modifier.size(IndicatorSize))
-        ThinkingLabel(processingStatus, phase, ellipsis = true, shimmerPhase = t)
+        ThinkingLabel(
+            processingStatus = processingStatus,
+            phase = phase,
+            ellipsis = true,
+            shimmerPhase = t,
+            modifier = Modifier.weight(1f, fill = false),
+        )
     }
 }
 
@@ -317,7 +339,13 @@ fun TwinOrbitThinkingRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         TwinOrbit(t, Modifier.size(IndicatorSize))
-        ThinkingLabel(processingStatus, phase, ellipsis = true, shimmerPhase = t)
+        ThinkingLabel(
+            processingStatus = processingStatus,
+            phase = phase,
+            ellipsis = true,
+            shimmerPhase = t,
+            modifier = Modifier.weight(1f, fill = false),
+        )
     }
 }
 

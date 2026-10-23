@@ -114,6 +114,7 @@ import com.clma.app.ui.components.ai.completion.ChatCompletionContext
 import com.clma.app.ui.components.ai.completion.ChatCompletionItem
 import com.clma.app.ui.components.ai.completion.ChatCompletionList
 import com.clma.app.ui.components.ai.completion.ChatCompletionProvider
+import com.clma.app.ui.components.message.WallpaperOnlySelection
 import com.clma.app.ui.components.ui.AutoAIIconFill
 import com.clma.app.ui.components.ui.CleanInputPaddingMaxDp
 import com.clma.app.ui.components.ui.CleanInputPaddingMinDp
@@ -265,7 +266,10 @@ fun ChatInput(
     val cleanLayout = chatLayout != ChatLayout.ORIGINAL
     val claudeLayout = chatLayout == ChatLayout.CLAUDE
     // Claude layout prefers a solid card (no glass) so the 24dp composer reads like paper.
-    val useGlass = when (chatLayout) {
+    // 「模糊效果」(DisplaySetting.enableBlurEffect) 只负责这一条输入条（见设置页文案）。
+    // 之前这里无视该开关、永远走玻璃，开关等于摆设；现在关掉即退回实心卡片，
+    // 这同时是一条性能逃生阀：玻璃要每帧抓背景 + 做 RenderEffect，在有壁纸时很贵。
+    val useGlass = settings.displaySetting.enableBlurEffect && when (chatLayout) {
         ChatLayout.ORIGINAL -> true
         ChatLayout.CLEAN -> settings.displaySetting.cleanLayoutGlass
         ChatLayout.CLAUDE -> false
@@ -311,10 +315,8 @@ fun ChatInput(
                 onFinishEdit = onFinishEditQueuedMessage,
                 onResume = onResumeMessageQueue,
             )
-            // Fixed glass — the bar is the app's primary control surface, so it keeps the glass
-            // material regardless of the blur preference (same recipe as the drawer's cards).
-            // Fixed glass — the bar is the app's primary control surface, so it keeps the glass
-            // material regardless of the blur preference (same recipe as the drawer's cards).
+            // Fixed glass — the bar is the app's primary control surface; the glass recipe
+            // follows the blur preference (see useGlass above).
             // Clean layout keeps its 14dp flat card geometry, and can toggle between liquid
             // glass and a flat solid card via DisplaySetting.cleanLayoutGlass.
             Surface(
@@ -324,7 +326,14 @@ fun ChatInput(
                     .then(
                         if (useGlass) {
                             Modifier.hazeGlass(
-                                input = HazeInput.Sources(hazeState),
+                                // 只模糊壁纸这一层源：列表内容每帧都在变（流式文字、加载动画），
+                                // 把整条 LazyColumn 也当背景会让这条全宽玻璃每帧重新抓取 + 重做模糊，
+                                // RenderThread 直接被吃满（发热/掉帧的主因）。壁纸是静态的，
+                                // 选中它就不会随动画重算。用量行早就这么做了（WallpaperOnlySelection）。
+                                input = HazeInput.Sources(
+                                    hazeState,
+                                    selection = WallpaperOnlySelection,
+                                ),
                                 style = rikkaGlassStyle(
                                     containerShape,
                                     blurRadius = 12.dp,

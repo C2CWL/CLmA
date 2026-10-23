@@ -23,7 +23,7 @@ class GeminiRetryTest {
     @Test
     fun `the default user agent matches the pinned antigravity hub format`() {
         assertEquals(
-            "antigravity/hub/2.8.0 (aidev_client; os_type=darwin; arch=arm64; cl=963137146)",
+            "antigravity/hub/2.25.0 (aidev_client; os_type=darwin; arch=arm64; cl=998881661)",
             buildAntigravityUserAgent(),
         )
     }

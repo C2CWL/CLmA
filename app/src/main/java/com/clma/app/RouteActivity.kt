@@ -257,6 +257,7 @@ class RouteActivity : ComponentActivity() {
             if (backStack.lastOrNull() != destination) backStack.add(destination)
             intent.removeExtra(EXTRA_OPEN_GEMINI_SETTINGS)
         }
+        val conversationId = intent.getStringExtra("conversationId")
         val destination = when (intent.action) {
             ACTION_TRANSLATE -> Screen.Translator
             Intent.ACTION_SEND -> Screen.ShareHandler(
@@ -266,10 +267,24 @@ class RouteActivity : ComponentActivity() {
             Intent.ACTION_PROCESS_TEXT -> Screen.ShareHandler(
                 text = intent.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT)?.toString().orEmpty(),
             )
-            else -> intent.getStringExtra("conversationId")?.let { Screen.Chat(it) }
+            else -> conversationId?.let { Screen.Chat(it) }
         }
-        if (destination != null && backStack.lastOrNull() != destination) {
-            backStack.add(destination)
+        if (destination != null) {
+            if (destination is Screen.Chat && conversationId != null) {
+                // "Open this conversation" (edge bar tap, notification, shortcut) replaces the
+                // stack — the same semantics as the drawer's clearAndNavigate — instead of
+                // stacking another Chat: repeated taps used to pile up Chat entries, so Back
+                // walked through stale conversations and the visible one looked wrong.
+                if (backStack.size != 1 || backStack.lastOrNull() != destination) {
+                    backStack.clear()
+                    backStack.add(destination)
+                }
+                // One-shot: keep it out of the Intent so a config change / recomposition can't
+                // replay the navigation on top of wherever the user has since gone.
+                intent.removeExtra("conversationId")
+            } else if (backStack.lastOrNull() != destination) {
+                backStack.add(destination)
+            }
         }
     }
 

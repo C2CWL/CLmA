@@ -162,7 +162,7 @@ class GrokOAuthManager(
         const val TOKEN_URL = "$ISSUER/oauth2/token"
         const val SCOPE = "openid profile email offline_access grok-cli:access api:access"
         const val DEVICE_CODE_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:device_code"
-        const val USER_AGENT = "grok-cli"
+        const val USER_AGENT = "grok-cli/1.0.52"
     }
 }
 
