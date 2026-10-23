@@ -1,0 +1,94 @@
+diff --git a/app/src/main/java/com/clma/app/ui/components/message/ChatMessage.kt b/app/src/main/java/com/clma/app/ui/components/message/ChatMessage.kt
+index b797b40..0679844 100644
+--- a/app/src/main/java/com/clma/app/ui/components/message/ChatMessage.kt
++++ b/app/src/main/java/com/clma/app/ui/components/message/ChatMessage.kt
+@@ -427,12 +427,11 @@ private fun MessagePartsBlock(
+                 if (block.steps.isNotEmpty()) {
+                     val isReasoningOnlyBlock = block.steps.fastAll { it is ThinkingStep.ReasoningStep }
+                     val toolCallStyle = settings.displaySetting.toolCallStyle
+-                    // Capsule drops the timeline only for a pure tool/server-tool group.
+-                    // Reasoning or process narration keeps the classic line and icon mask.
+-                    val capsuleToolOnly = toolCallStyle == ToolCallStyle.CAPSULE &&
+-                        block.steps.fastAll {
+-                            it is ThinkingStep.ToolStep || it is ThinkingStep.ServerToolStep
+-                        }
++                    // Capsule covers the whole step card. It used to require a pure tool group,
++                    // but every reasoning model — and foldProcessNarration, which is on by
++                    // default — puts a reasoning/narration step in the same group, so the style
++                    // never actually applied and the setting looked like it did nothing.
++                    val capsule = toolCallStyle == ToolCallStyle.CAPSULE
+                     // Force-expand whenever any tool step is awaiting approval. Without
+                     // this, on 3+ pending tool calls only the last 2 rows are visible
+                     // and the first sits hidden behind the "show more" arrow — easy to
+@@ -453,12 +452,12 @@ private fun MessagePartsBlock(
+                         ),
+                         collapsedAdaptiveWidth = isReasoningOnlyBlock,
+                         forceExpanded = hasPendingApproval,
+-                        showTimeline = !capsuleToolOnly,
+-                        maskIcons = !capsuleToolOnly,
+-                        shape = RoundedCornerShape(if (capsuleToolOnly) 20.dp else 16.dp),
++                        showTimeline = !capsule,
++                        maskIcons = !capsule,
++                        shape = RoundedCornerShape(if (capsule) 20.dp else 16.dp),
+                         toolCallStyle = toolCallStyle,
+                         cardColors = CardDefaults.cardColors(
+-                            containerColor = if (capsuleToolOnly) {
++                            containerColor = if (capsule) {
+                                 MaterialTheme.colorScheme.surfaceContainer
+                             } else {
+                                 MaterialTheme.colorScheme.surfaceContainerHigh
+diff --git a/app/src/main/java/com/clma/app/ui/components/message/ChatMessageTools.kt b/app/src/main/java/com/clma/app/ui/components/message/ChatMessageTools.kt
+index d880cbe..472fff2 100644
+--- a/app/src/main/java/com/clma/app/ui/components/message/ChatMessageTools.kt
++++ b/app/src/main/java/com/clma/app/ui/components/message/ChatMessageTools.kt
+@@ -241,8 +241,7 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
+                 text = toolCallStyle.stepTitle(
+                     toolName = tool.toolName,
+                     classicTitle = renderer.title(context),
+-                    query = context.arguments.getStringContent("query"),
+-                    url = context.arguments.getStringContent("url"),
++                    arguments = context.arguments,
+                 ),
+                 style = MaterialTheme.typography.titleSmall,
+                 fontWeight = if (capsule) FontWeight.Medium else null,
+diff --git a/app/src/main/java/com/clma/app/ui/pages/chat/Export.kt b/app/src/main/java/com/clma/app/ui/pages/chat/Export.kt
+index 78a807b..f548f87 100644
+--- a/app/src/main/java/com/clma/app/ui/pages/chat/Export.kt
++++ b/app/src/main/java/com/clma/app/ui/pages/chat/Export.kt
+@@ -565,19 +565,19 @@ private fun ExportedChatMessage(
+                     is MessagePartBlock.ThinkingBlock -> {
+                         if (block.steps.isNotEmpty()) {
+                             val toolCallStyle = settings.displaySetting.toolCallStyle
+-                            val capsuleToolOnly = toolCallStyle == ToolCallStyle.CAPSULE &&
+-                                block.steps.all {
+-                                    it is ThinkingStep.ToolStep || it is ThinkingStep.ServerToolStep
+-                                }
++                            // Capsule covers the whole step card, mixed reasoning groups included
++                            // (see ChatMessage): requiring a pure tool group meant the style never
++                            // showed up for reasoning models.
++                            val capsule = toolCallStyle == ToolCallStyle.CAPSULE
+                             ChainOfThought(
+                                 steps = block.steps,
+                                 collapsedVisibleCount = block.steps.size,
+-                                showTimeline = !capsuleToolOnly,
+-                                maskIcons = !capsuleToolOnly,
+-                                shape = RoundedCornerShape(if (capsuleToolOnly) 20.dp else 16.dp),
++                                showTimeline = !capsule,
++                                maskIcons = !capsule,
++                                shape = RoundedCornerShape(if (capsule) 20.dp else 16.dp),
+                                 toolCallStyle = toolCallStyle,
+                                 cardColors = CardDefaults.cardColors(
+-                                    containerColor = if (capsuleToolOnly) {
++                                    containerColor = if (capsule) {
+                                         MaterialTheme.colorScheme.surfaceContainer
+                                     } else {
+                                         MaterialTheme.colorScheme.surfaceContainerHigh
+@@ -769,7 +769,7 @@ private fun ChainOfThoughtScope.ExportedToolStep(
+         "scrape_web" -> stringResource(R.string.chat_message_tool_scrape_web)
+         else -> stringResource(R.string.chat_message_tool_call_generic, tool.toolName)
+     }
+-    val title = toolCallStyle.stepTitle(tool.toolName, classicTitle, query, url)
++    val title = toolCallStyle.stepTitle(tool.toolName, classicTitle, arguments)
+     val classicIcon = when (tool.toolName) {
+         "memory_tool" -> when (memoryAction) {
+             "create", "edit" -> HugeIcons.Book04
