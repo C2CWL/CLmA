@@ -34,6 +34,18 @@ class StreamChunkHandlerTest {
     }
 
     @Test
+    fun `length finish reason still marks a truncated assistant complete`() {
+        var messages = listOf(UIMessage.user("continue"))
+        val handler = StreamChunkHandler(model)
+
+        messages = handler.handle(messages, StreamChunk.TextDelta("text-1", "partial"))
+        messages = handler.handle(messages, StreamChunk.Finish(finishReason = "length"))
+
+        assertEquals("partial", messages.last().toText())
+        assertNotNull(messages.last().finishedAt)
+    }
+
+    @Test
     fun `reasoning tool and usage events should preserve semantic order`() {
         var messages = listOf(UIMessage.user("use a tool"))
         val handler = StreamChunkHandler(model)

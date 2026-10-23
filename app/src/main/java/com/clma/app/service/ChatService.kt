@@ -733,6 +733,7 @@ class ChatService(
 
     fun cleanup() = runCatching {
         ProcessLifecycleOwner.get().lifecycle.removeObserver(lifecycleObserver)
+        messageDeleteBarriers.clear()
         sessions.values.forEach { it.cleanup() }
         sessions.clear()
         sessionMutexes.clear()
@@ -761,6 +762,7 @@ class ChatService(
                 onIdle = { removeSession(it) },
                 onGenerationFinished = { id, cause ->
                     val session = sessions[id]
+                    messageDeleteBarriers.remove(id)
                     if (cause != null) session?.messageQueue?.pause()
                     if (session?.state?.value?.currentMessages?.any { message ->
                             message.parts.any { it is UIMessagePart.Tool && it.isPending }
@@ -812,6 +814,7 @@ class ChatService(
         compactionMutexes.remove(conversationId)
         pendingStreamingPersistence.remove(conversationId)
         lastStreamingPersistAt.remove(conversationId)
+        messageDeleteBarriers.remove(conversationId)
         persistenceMutexes.remove(conversationId)
         _sessionsVersion.value++
         Log.i(TAG, "dropSession: $conversationId (remaining: ${sessions.size})")
@@ -930,8 +933,14 @@ class ChatService(
             // "the second one finishes but shows the first one's output".
             //
             // Only hydrate a session we have no content for (same contract as ensureHydrated).
+            // A send is queued before its lazy generation job starts; do not replace that
+            // session with the on-disk snapshot or the assistant preset while initialization
+            // is racing the first send.
             val inMemory = session.state.value
-            if (inMemory.messageNodes.isEmpty()) {
+            val hasPendingWork = session.messageQueue.state.value.messages.isNotEmpty() ||
+                session.submittingMessage != null ||
+                session.isGenerating
+            if (inMemory.messageNodes.isEmpty() && !hasPendingWork) {
                 updateConversation(conversationId, conversation)
             } else if (inMemory.assistantId != conversation.assistantId) {
                 // Keep the live content but still follow the stored assistant binding.
@@ -940,9 +949,13 @@ class ChatService(
             settingsStore.updateAssistant(conversation.assistantId)
         } else {
             // A send can race this asynchronous initialization for a brand-new conversation.
-            // Once the session already contains a user message, never replace it with the
-            // assistant preset that was computed from the stale empty snapshot.
-            if (getConversationFlow(conversationId).value.messageNodes.isNotEmpty()) return
+            // Do not replace a session that already has content or queued/in-flight work with
+            // the assistant preset computed from the stale empty snapshot.
+            if (session.state.value.messageNodes.isNotEmpty() ||
+                session.messageQueue.state.value.messages.isNotEmpty() ||
+                session.submittingMessage != null ||
+                session.isGenerating
+            ) return
             // 新建对话, 并添加预设消息
             val currentSettings = settingsStore.settingsFlowRaw.first()
             val assistant = currentSettings.getCurrentAssistant()
@@ -3939,6 +3952,13 @@ class ChatService(
     private val deletedConversationIds = ConcurrentHashMap.newKeySet<Uuid>()
 
     /**
+     * Message-delete barriers prevent a cancelled/stuck generation from publishing an older
+     * snapshot after the user has deleted a message. The barrier is released by the generation
+     * completion callback; the explicit delete snapshot is the only write allowed while active.
+     */
+    private val messageDeleteBarriers = ConcurrentHashMap.newKeySet<Uuid>()
+
+    /**
      * 批量删除会话。先记墓碑并停掉生成，再丢掉内存 session，最后在持久化锁里删库，
      * 避免进行中的 save 把行写回来。文件和搜索索引走 [ConversationRepository.deleteConversation]。
      */
@@ -4063,10 +4083,18 @@ class ChatService(
         ids.forEach { persistStreamingStateNow(it) }
     }
 
-    suspend fun saveConversation(conversationId: Uuid, conversation: Conversation) {
+    suspend fun saveConversation(
+        conversationId: Uuid,
+        conversation: Conversation,
+        allowEmptySnapshot: Boolean = false,
+    ) {
         persistenceMutexFor(conversationId).withLock {
             val updatedConversation = conversation.copy()
-            if (!persistConversationSnapshot(conversationId, updatedConversation)) return@withLock
+            if (!persistConversationSnapshot(
+                    conversationId,
+                    updatedConversation,
+                    allowEmptySnapshot = allowEmptySnapshot,
+                )) return@withLock
             updateConversation(conversationId, updatedConversation)
         }
     }
@@ -4076,8 +4104,10 @@ class ChatService(
         conversationId: Uuid,
         conversation: Conversation,
         updateSearchIndex: Boolean = true,
+        allowEmptySnapshot: Boolean = false,
     ): Boolean {
         if (conversation.id in deletedConversationIds) return false
+        if (conversation.id in messageDeleteBarriers && !allowEmptySnapshot) return false
         val exists = conversationRepo.existsConversationById(conversation.id)
         if (!exists && conversation.title.isBlank() && conversation.messageNodes.isEmpty()) {
             return false // 新会话且为空时不保存
@@ -4087,7 +4117,7 @@ class ChatService(
         // could be called against an unhydrated session (post-restart), build an empty
         // updatedConversation, and call saveConversation. Without this guard we'd wipe
         // the Pending tool the user was trying to approve.
-        if (exists && conversation.messageNodes.isEmpty()) {
+        if (exists && conversation.messageNodes.isEmpty() && !allowEmptySnapshot) {
             val storedHasContent = runCatching {
                 conversationRepo.getConversationById(conversation.id)?.messageNodes?.isNotEmpty() == true
             }.getOrDefault(false)
@@ -4109,9 +4139,8 @@ class ChatService(
             )
         }
 
-        // 删除消息或切换分支也可能解除工具审批阻塞，保存成功后重新检查队列。
-        // 调度器仍会检查当前生成任务、待审批工具、暂停状态及编辑占位。
-        dispatchNextQueuedMessage(conversationId)
+        // Saving is deliberately side-effect-free: deletes/branch changes must not start
+        // unrelated queued requests (which can be especially harmful while offline).
         return true
     }
 
@@ -4296,10 +4325,20 @@ class ChatService(
         messageId: Uuid,
         failIfMissing: Boolean = true,
     ) {
+        // Establish the barrier before cancelling. A provider may ignore cancellation and still
+        // deliver a final chunk; that chunk must not overwrite the post-delete snapshot.
+        val hadGeneration = sessions[conversationId]?.isGenerating == true
+        if (hadGeneration) messageDeleteBarriers.add(conversationId)
+        if (hadGeneration) {
+            withTimeoutOrNull(2_000L) {
+                runCatching { stopGeneration(conversationId) }
+            }
+        }
         val currentConversation = getConversationFlow(conversationId).value
         val updatedConversation = buildConversationAfterMessageDelete(currentConversation, messageId)
 
         if (updatedConversation == null) {
+            if (hadGeneration) messageDeleteBarriers.remove(conversationId)
             if (failIfMissing) {
                 throw NotFoundException("Message not found")
             }
@@ -4312,7 +4351,8 @@ class ChatService(
             after = updatedConversation.messageNodes,
             reason = "delete message",
         )
-        saveConversation(conversationId, updatedConversation)
+        saveConversation(conversationId, updatedConversation, allowEmptySnapshot = true)
+        if (!hadGeneration) messageDeleteBarriers.remove(conversationId)
     }
 
     suspend fun deleteMessage(
