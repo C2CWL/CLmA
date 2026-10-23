@@ -42,6 +42,37 @@ class ThinkTagTransformerTest {
     }
 
     @Test
+    fun `blank reasoning part should still extract think tag from text`() {
+        val blankReasoning = UIMessagePart.Reasoning("", finishedAt = null)
+        val text = UIMessagePart.Text("<think>extracted reason</think>visible answer")
+        val message = UIMessage(
+            role = MessageRole.ASSISTANT,
+            parts = listOf(blankReasoning, text),
+        )
+
+        val result = listOf(message).transformThinkTags(now, generationFinished = true).single()
+
+        assertEquals("extracted reason", result.parts.filterIsInstance<UIMessagePart.Reasoning>().single().reasoning)
+        assertEquals("visible answer", result.parts.filterIsInstance<UIMessagePart.Text>().single().text)
+        assertEquals(now, result.parts.filterIsInstance<UIMessagePart.Reasoning>().single().finishedAt)
+    }
+
+    @Test
+    fun `closed think tag at start of text should merge when native reasoning also present`() {
+        val nativeReasoning = UIMessagePart.Reasoning("step 1")
+        val text = UIMessagePart.Text("<think>step 2</think>final answer")
+        val message = UIMessage(
+            role = MessageRole.ASSISTANT,
+            parts = listOf(nativeReasoning, text),
+        )
+
+        val result = listOf(message).transformThinkTags(now, generationFinished = true).single()
+
+        assertEquals("step 1\n\nstep 2", result.parts.filterIsInstance<UIMessagePart.Reasoning>().single().reasoning)
+        assertEquals("final answer", result.parts.filterIsInstance<UIMessagePart.Text>().single().text)
+    }
+
+    @Test
     fun `later think tags should remain visible`() {
         val result = transform("<think>reason</think>answer <think>literal")
 

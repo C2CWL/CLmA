@@ -63,8 +63,25 @@ fun requestSecretTool(): Tool = Tool(
             required = listOf("name"),
         )
     },
-    needsApproval = { true },
-    execute = {
+    needsApproval = { input ->
+        val name = runCatching { input.jsonObject["name"]?.jsonPrimitive?.contentOrNull }.getOrNull()
+        !name.isNullOrBlank() && Regex("[A-Za-z0-9_]{1,64}").matches(name)
+    },
+    execute = { input ->
+        val name = runCatching { input.jsonObject["name"]?.jsonPrimitive?.contentOrNull }.getOrNull()
+        if (name.isNullOrBlank() || !Regex("[A-Za-z0-9_]{1,64}").matches(name)) {
+            return@Tool listOf(
+                UIMessagePart.Text(
+                    buildJsonObject {
+                        put("error", "invalid_tool_args")
+                        put(
+                            "detail",
+                            "Invalid request_secret call: 'name' is required and must match [A-Za-z0-9_]{1,64}.",
+                        )
+                    }.toString(),
+                ),
+            )
+        }
         // Reached only when no interactive surface handled the call (cron / sub-agent).
         listOf(
             UIMessagePart.Text(
