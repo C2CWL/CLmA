@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="chat_interactive_card_cancel">取消</string>
+  <string name="chat_interactive_card_cancelled">已取消</string>
+  <string name="chat_interactive_card_answered">已回答：%1$s</string>
+  <string name="chat_interactive_card_answered_plain">已回答</string>
+  <string name="chat_interactive_card_ask_title">需要你回答</string>
+  <string name="chat_interactive_card_waiting">等待输入</string>
+</resources>
