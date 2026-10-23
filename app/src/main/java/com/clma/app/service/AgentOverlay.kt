@@ -65,7 +65,7 @@ object AgentOverlay {
             Log.d(TAG, "show: SYSTEM_ALERT_WINDOW not granted, no-op")
             return
         }
-        val key = conversationId ?: UNATTRIBUTED
+        val key = conversationId?.toString() ?: UNATTRIBUTED
         val alreadyWorking = synchronized(workingConversations) {
             val wasWorking = workingConversations.isNotEmpty()
             workingConversations.add(key)
@@ -85,7 +85,7 @@ object AgentOverlay {
     /** The turn for [conversationId] ended; only the last one clears the indicator. */
     fun hide(context: Context, conversationId: Uuid? = null) {
         val app = context.applicationContext
-        val key = conversationId ?: UNATTRIBUTED
+        val key = conversationId?.toString() ?: UNATTRIBUTED
         val stillWorking = synchronized(workingConversations) {
             workingConversations.remove(key)
             isWorking = workingConversations.isNotEmpty()
