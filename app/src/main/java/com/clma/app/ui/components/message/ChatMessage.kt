@@ -427,12 +427,11 @@ private fun MessagePartsBlock(
                 if (block.steps.isNotEmpty()) {
                     val isReasoningOnlyBlock = block.steps.fastAll { it is ThinkingStep.ReasoningStep }
                     val toolCallStyle = settings.displaySetting.toolCallStyle
-                    // Capsule drops the timeline only for a pure tool/server-tool group.
-                    // Reasoning or process narration keeps the classic line and icon mask.
-                    val capsuleToolOnly = toolCallStyle == ToolCallStyle.CAPSULE &&
-                        block.steps.fastAll {
-                            it is ThinkingStep.ToolStep || it is ThinkingStep.ServerToolStep
-                        }
+                    // Capsule covers the whole step card. It used to require a pure tool group,
+                    // but every reasoning model — and foldProcessNarration, which is on by
+                    // default — puts a reasoning/narration step in the same group, so the style
+                    // never actually applied and the setting looked like it did nothing.
+                    val capsule = toolCallStyle == ToolCallStyle.CAPSULE
                     // Force-expand whenever any tool step is awaiting approval. Without
                     // this, on 3+ pending tool calls only the last 2 rows are visible
                     // and the first sits hidden behind the "show more" arrow — easy to
@@ -453,12 +452,12 @@ private fun MessagePartsBlock(
                         ),
                         collapsedAdaptiveWidth = isReasoningOnlyBlock,
                         forceExpanded = hasPendingApproval,
-                        showTimeline = !capsuleToolOnly,
-                        maskIcons = !capsuleToolOnly,
-                        shape = RoundedCornerShape(if (capsuleToolOnly) 20.dp else 16.dp),
+                        showTimeline = !capsule,
+                        maskIcons = !capsule,
+                        shape = RoundedCornerShape(if (capsule) 20.dp else 16.dp),
                         toolCallStyle = toolCallStyle,
                         cardColors = CardDefaults.cardColors(
-                            containerColor = if (capsuleToolOnly) {
+                            containerColor = if (capsule) {
                                 MaterialTheme.colorScheme.surfaceContainer
                             } else {
                                 MaterialTheme.colorScheme.surfaceContainerHigh

@@ -241,8 +241,7 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
                 text = toolCallStyle.stepTitle(
                     toolName = tool.toolName,
                     classicTitle = renderer.title(context),
-                    query = context.arguments.getStringContent("query"),
-                    url = context.arguments.getStringContent("url"),
+                    arguments = context.arguments,
                 ),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = if (capsule) FontWeight.Medium else null,

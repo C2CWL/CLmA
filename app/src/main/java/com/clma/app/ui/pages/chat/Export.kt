@@ -565,19 +565,19 @@ private fun ExportedChatMessage(
                     is MessagePartBlock.ThinkingBlock -> {
                         if (block.steps.isNotEmpty()) {
                             val toolCallStyle = settings.displaySetting.toolCallStyle
-                            val capsuleToolOnly = toolCallStyle == ToolCallStyle.CAPSULE &&
-                                block.steps.all {
-                                    it is ThinkingStep.ToolStep || it is ThinkingStep.ServerToolStep
-                                }
+                            // Capsule covers the whole step card, mixed reasoning groups included
+                            // (see ChatMessage): requiring a pure tool group meant the style never
+                            // showed up for reasoning models.
+                            val capsule = toolCallStyle == ToolCallStyle.CAPSULE
                             ChainOfThought(
                                 steps = block.steps,
                                 collapsedVisibleCount = block.steps.size,
-                                showTimeline = !capsuleToolOnly,
-                                maskIcons = !capsuleToolOnly,
-                                shape = RoundedCornerShape(if (capsuleToolOnly) 20.dp else 16.dp),
+                                showTimeline = !capsule,
+                                maskIcons = !capsule,
+                                shape = RoundedCornerShape(if (capsule) 20.dp else 16.dp),
                                 toolCallStyle = toolCallStyle,
                                 cardColors = CardDefaults.cardColors(
-                                    containerColor = if (capsuleToolOnly) {
+                                    containerColor = if (capsule) {
                                         MaterialTheme.colorScheme.surfaceContainer
                                     } else {
                                         MaterialTheme.colorScheme.surfaceContainerHigh
@@ -769,7 +769,7 @@ private fun ChainOfThoughtScope.ExportedToolStep(
         "scrape_web" -> stringResource(R.string.chat_message_tool_scrape_web)
         else -> stringResource(R.string.chat_message_tool_call_generic, tool.toolName)
     }
-    val title = toolCallStyle.stepTitle(tool.toolName, classicTitle, query, url)
+    val title = toolCallStyle.stepTitle(tool.toolName, classicTitle, arguments)
     val classicIcon = when (tool.toolName) {
         "memory_tool" -> when (memoryAction) {
             "create", "edit" -> HugeIcons.Book04
