@@ -96,7 +96,11 @@ import com.clma.app.data.ai.tools.ToolCatalog
 import com.clma.app.data.ai.tools.ToolCatalogEntry
 import com.clma.app.data.ai.tools.ToolCatalogSource
 import com.clma.app.data.ai.tools.ToolSurfaceMode
-import com.clma.app.data.ai.tools.buildToolCatalogTools
+import com.clma.app.data.ai.tools.ChatToolSurface
+import com.clma.app.data.ai.tools.CORE_LOCAL_TOOL_GROUPS
+import com.clma.app.data.ai.tools.LocalToolOption
+import com.clma.app.data.ai.tools.LocalToolPalette
+import com.clma.app.data.ai.tools.catalogCategoryKey
 import com.clma.app.data.ai.tools.ChatToolFactory
 import com.clma.app.data.ai.tools.InvalidMcpServerNamesException
 import com.clma.app.data.ai.tools.LocalTools
@@ -1635,72 +1639,253 @@ class ChatService(
         conversation: Conversation,
         model: Model,
         settings: Settings,
-    ): List<Tool> = buildList {
+    ): List<Tool> {
         // P2-04 — a sub-agent run may carry its OWN tool surface ([SubAgentSurface]). For every
-        // other conversation this is the `assistant` argument itself, so the list built below is
-        // exactly what it was before.
+        // other conversation this is the `assistant` argument itself.
         val surfaceAssistant = com.clma.app.subagent.SubAgentSurface
             .assistantFor(conversationId) ?: assistant
-        if (surfaceAssistant.enableWebSearch) {
-            addAll(createSearchTools(settings))
-        }
-        // T-04 / (4) + T-09 / (8) - the rebuild path (regenerate) must offer the SAME tool
-        // surface as the first pass, otherwise the subagent_dispatch definition would
-        // silently lose its `include_recent_turns` / `tools` parameters on a re-run.
+        // P2-05 — same assembly as the chat path (so the two can never drift), but with
+        // allowCatalog = false: a rerun executes a tool that was already chosen, it never shows
+        // schemas to a model, so it gets the full direct surface and can address any tool.
+        val surface = assembleChatToolSurface(
+            surfaceAssistant = surfaceAssistant,
+            conversationId = conversationId,
+            conversation = conversation,
+            model = model,
+            settings = settings,
+            includeSearchTools = surfaceAssistant.enableWebSearch,
+            includeCompactionTools = false,
+            allowCatalog = false,
+            mcpScope = if (surfaceAssistant === assistant) null else surfaceAssistant,
+            abortOnInvalidMcpNames = false,
+        ) ?: return emptyList() // unreachable: it only returns null when abort is requested
+        // T-09 / (8) is already applied inside the helper (the frozen sub-agent surface gates
+        // both the direct list and, when catalogued, the catalog itself).
+        return surface.tools()
+    }
+
+    /**
+     * P2-05 (chat half) — the ONE place a chat turn's tool surface is assembled.
+     *
+     * ## What changed
+     *
+     * [ToolSurfaceMode.PROGRESSIVE_CATALOG] used to catalogue the MCP half only, so ~180 local
+     * tools were injected in full on every request no matter what the switch said: the mode
+     * could shrink a remote-heavy surface but never the one an on-device assistant actually
+     * carries. Local tools are now split by [LocalToolOption] group — [CORE_LOCAL_TOOL_GROUPS]
+     * and the group-less always-on tools stay directly attached, every other group enters the
+     * same catalog as the MCP tools.
+     *
+     * ## Why two resolutions
+     *
+     * [ToolSurfaceResolver.resolve] produces the tool *objects* and is canonical: several tools
+     * close over `knownToolNamesProvider = { tools.map { it.name } }`, so they must see the full
+     * list. [ToolSurfaceResolver.resolveByGroup] only attributes names to groups. Both are cheap
+     * (the factory builds one group at a time) and this runs once per turn, not per step — the
+     * per-step part is [ChatToolSurface.tools], which just re-reads the activation set.
+     *
+     * @param includeSearchTools `web_search` family: chat gates it on model ability, the rerun
+     *   path on `assistant.enableWebSearch` (both unchanged).
+     * @param includeCompactionTools `compact_context`; chat only, the rerun path never had it.
+     * @param allowCatalog false for paths that execute tools without ever showing schemas
+     *   (rerun/regenerate): they get the full direct surface so a rerun can address any tool.
+     * @param mcpScope null = resolve MCP against the global current assistant (inherited
+     *   sub-agent), non-null = against that assistant's own servers (P2-04).
+     * @param abortOnInvalidMcpNames when true, a server name outside `[A-Za-z0-9]+` is reported
+     *   via [addError] and this returns null so the caller aborts the turn.
+     */
+    private suspend fun assembleChatToolSurface(
+        surfaceAssistant: Assistant,
+        conversationId: Uuid,
+        conversation: Conversation,
+        model: Model,
+        settings: Settings,
+        includeSearchTools: Boolean,
+        includeCompactionTools: Boolean,
+        allowCatalog: Boolean,
+        mcpScope: Assistant?,
+        abortOnInvalidMcpNames: Boolean,
+    ): ChatToolSurface? {
+        // Synchronise the live dispatch profile before tool resolution so subagent_dispatch is
+        // registered when the profile != NEVER. generateText used to be the missing third call
+        // site (fast-path and buildToolsForRerun already do this).
         com.clma.app.subagent.SubAgentDispatchProfileRules
-            .setLiveDispatchProfile(settingsStore.settingsFlow.first().subAgentDispatchProfile)
-        addAll(
-            ToolSurfaceResolver.resolve(
-                localTools = localTools,
-                assistant = surfaceAssistant,
-                context = ToolSurfaceResolver.chatContext(
+            .setLiveDispatchProfile(settings.subAgentDispatchProfile)
+        val localContext = ToolSurfaceResolver.chatContext(
+            assistant = surfaceAssistant,
+            conversationId = conversationId,
+            model = model,
+            isHeadless = com.clma.app.data.ai.tools.HeadlessConversations.isHeadless(conversationId),
+            appPlaybook = coldMemoryPlaybookReader(surfaceAssistant),
+        )
+        // The tool objects the model will actually receive.
+        val localToolsFull = ToolSurfaceResolver.resolve(
+            localTools = localTools,
+            assistant = surfaceAssistant,
+            context = localContext,
+        )
+        // name -> group, used ONLY for attribution (see the doc comment).
+        val groupOfTool: Map<String, LocalToolOption> = if (allowCatalog) {
+            ToolSurfaceResolver.groupIndex(
+                ToolSurfaceResolver.resolveByGroup(
+                    localTools = localTools,
                     assistant = surfaceAssistant,
-                    conversationId = conversationId,
-                    model = model,
-                    isHeadless = com.clma.app.data.ai.tools.HeadlessConversations.isHeadless(conversationId),
-                    appPlaybook = coldMemoryPlaybookReader(surfaceAssistant),
+                    context = localContext,
                 ),
             )
-        )
-        addAll(createWorkspaceToolsIfReady(surfaceAssistant.workspaceId?.toString(), conversation.workspaceCwd))
-        // T-06 / (7) - cold memory (Markdown knowledge base). Same on both build paths so a
-        // regenerate sees the surface the first pass had. Off unless enabled AND configured.
-        addAll(createColdMemoryToolsIfConfigured(surfaceAssistant))
-        if (surfaceAssistant.enabledSkills.isNotEmpty()) {
+        } else {
+            emptyMap()
+        }
+
+        val fixedTools = buildList {
+            if (includeSearchTools) {
+                addAll(createSearchTools(settings))
+            }
+            if (allowCatalog) {
+                // A tool with no attributable group is attached directly rather than catalogued:
+                // losing callability is worse than a slightly larger request.
+                addAll(
+                    localToolsFull.filter { tool ->
+                        val group = groupOfTool[tool.name]
+                        group == null || group in CORE_LOCAL_TOOL_GROUPS
+                    }
+                )
+            } else {
+                addAll(localToolsFull)
+            }
             addAll(
-                createSkillTools(
-                    enabledSkills = surfaceAssistant.enabledSkills,
-                    allSkills = skillManager.listSkills(),
-                    skillManager = skillManager,
-                    disabledSkills = SkillGroupRules.disabledSkillNames(settings.skillGroups),
+                createWorkspaceToolsIfReady(
+                    surfaceAssistant.workspaceId?.toString(),
+                    conversation.workspaceCwd,
                 )
             )
+            // T-06 / (7) - cold memory (Markdown knowledge base). Same on both build paths so a
+            // regenerate sees the surface the first pass had.
+            addAll(createColdMemoryToolsIfConfigured(surfaceAssistant))
+            if (surfaceAssistant.enabledSkills.isNotEmpty()) {
+                addAll(
+                    createSkillTools(
+                        enabledSkills = surfaceAssistant.enabledSkills,
+                        allSkills = skillManager.listSkills(),
+                        skillManager = skillManager,
+                        disabledSkills = SkillGroupRules.disabledSkillNames(settings.skillGroups),
+                    )
+                )
+            }
+            if (includeCompactionTools && surfaceAssistant.enableCompactContextTool) {
+                // T-02 / ② - model-initiated compaction. Reuses the manual compress pipeline
+                // end-to-end (see compactConversationFromTool) instead of re-implementing
+                // summarisation. Default OFF: with the flag unset the tool list is byte-for-byte
+                // what it was before this change.
+                addAll(
+                    buildCompactionTools(
+                        onCompact = { instructions ->
+                            compactConversationFromTool(
+                                conversationId = conversationId,
+                                conversation = getConversationFlow(conversationId).value,
+                                settings = settings,
+                                model = model,
+                                instructions = instructions,
+                            )
+                        },
+                    )
+                )
+            }
         }
-        // P2-04 — an inherited child (surfaceAssistant === assistant) keeps the global
-        // current-assistant MCP resolution it has always used; only an explicitly surfaced child
-        // resolves MCP against its own assistant.
-        val mcpTools = if (surfaceAssistant === assistant) {
+
+        val allMcpTools = if (mcpScope == null) {
             mcpManager.getAllAvailableTools()
         } else {
-            mcpManager.getAllAvailableTools(surfaceAssistant)
+            mcpManager.getAllAvailableTools(mcpScope)
         }
-        mcpTools.forEach { (serverId, serverName, mcpTool) ->
-            val mcpToolName = com.clma.app.data.ai.mcp.buildMcpToolName(serverId, serverName, mcpTool.name)
-            add(
-                Tool(
-                    name = mcpToolName,
-                    description = mcpTool.description ?: "",
-                    parameters = { mcpTool.inputSchema },
-                    // mcp__* is on the non-waivable approval floor; see buildMcpTool above.
-                    needsApproval = { true },
-                    execute = { mcpManager.callTool(serverId, mcpTool.name, it.jsonObject) },
-                )
+
+        if (!allowCatalog) {
+            // Nothing here is model-facing, so there is nothing to catalogue and a malformed
+            // server name cannot reach a request — the rerun path just gets the full list.
+            val mcpTools = allMcpTools.map { (serverId, serverName, tool) ->
+                buildMcpTool(serverId = serverId, serverName = serverName, tool = tool)
+            }
+            // T-09 / (8) — a sub-agent conversation sees its frozen, headless-safe surface;
+            // every other conversation gets this exact list back by reference.
+            return ChatToolSurface(
+                fixed = com.clma.app.subagent.SubAgentSurface.apply(
+                    conversationId = conversationId,
+                    tools = fixedTools + mcpTools,
+                ),
             )
         }
-        // T-09 / (8) - a sub-agent conversation sees its frozen, headless-safe surface; every
-        // other conversation gets this exact list back by reference (apply is an identity when
-        // the conversation was never frozen).
-    }.let { com.clma.app.subagent.SubAgentSurface.apply(conversationId, it) }
+
+        // Upstream name validation: a server name that isn't pure English+digits would produce an
+        // invalid `mcp__<name>__tool` surface, so surface it as an error rather than emit a tool
+        // the model can't address.
+        val invalidMcpNames = allMcpTools
+            .map { it.second }
+            .distinct()
+            .filter { name -> name.isEmpty() || !name.all { it in 'a'..'z' || it in 'A'..'Z' || it in '0'..'9' } }
+        if (invalidMcpNames.isNotEmpty() && abortOnInvalidMcpNames) {
+            addError(
+                error = IllegalStateException(
+                    context.getString(
+                        R.string.error_mcp_invalid_server_name,
+                        invalidMcpNames.joinToString(", "),
+                    )
+                ),
+                conversationId = conversationId,
+            )
+            return null
+        }
+
+        val catalogEntries = buildList {
+                localToolsFull.forEach { tool ->
+                    val group = groupOfTool[tool.name] ?: return@forEach
+                    if (group in CORE_LOCAL_TOOL_GROUPS) return@forEach
+                    add(
+                        ToolCatalogEntry(
+                            name = tool.name,
+                            summary = LocalToolPalette.summarize(tool),
+                            source = ToolCatalogSource.LOCAL,
+                            tool = tool,
+                            // The group is what the model-facing tool_search description lists,
+                            // so the model knows which capability areas exist without being told
+                            // every tool name.
+                            group = catalogCategoryKey(group),
+                        )
+                    )
+                }
+                allMcpTools.forEach { (serverId, serverName, tool) ->
+                    add(
+                        ToolCatalogEntry(
+                            name = com.clma.app.data.ai.mcp.buildMcpToolName(
+                                serverId = serverId,
+                                serverName = serverName,
+                                toolName = tool.name,
+                            ),
+                            summary = mcpCatalogSummary(tool),
+                            source = ToolCatalogSource.MCP,
+                            tool = buildMcpTool(serverId = serverId, serverName = serverName, tool = tool),
+                        )
+                    )
+                }
+            }
+        // T-09 / (8) — the frozen sub-agent surface has to gate the catalog too, not just the
+        // fixed prefix: a floor-denied tool that stays activatable would let a headless child
+        // reach a call that can never be approved. With no freeze record `apply` is an identity.
+        val gatedTools = com.clma.app.subagent.SubAgentSurface
+            .apply(conversationId = conversationId, tools = catalogEntries.map { it.tool })
+        val gatedNames = gatedTools.mapTo(HashSet()) { it.name }
+        val catalog = ToolCatalog(catalogEntries.filter { it.name in gatedNames })
+        val activation = toolActivationFor(conversationId)
+        // Drop names that left the surface since the last turn (MCP server disconnected, a local
+        // group switched off) so a stale activation can never inject a schema that no longer
+        // exists (which would 400 the request).
+        activation.retain(catalog.entries.mapTo(mutableSetOf()) { it.name })
+        return ChatToolSurface(
+            fixed = com.clma.app.subagent.SubAgentSurface
+                .apply(conversationId = conversationId, tools = fixedTools),
+            catalog = catalog,
+            activation = activation,
+        )
+    }
 
     // ---- 处理消息补全 ----
 
@@ -1858,6 +2043,24 @@ class ChatService(
             } else {
                 compactedMessageView!!.messages
             }
+            // P2-05 — one surface per turn, assembled once and re-snapshotted per step (see
+            // ChatToolSurface). A malformed MCP server name aborts the turn here, exactly as the
+            // inline assembly used to.
+            val surfaceAssistant = com.clma.app.subagent.SubAgentSurface
+                .assistantFor(conversationId) ?: assistant
+            val toolSurface = assembleChatToolSurface(
+                surfaceAssistant = surfaceAssistant,
+                conversationId = conversationId,
+                conversation = conversation,
+                model = model,
+                settings = settings,
+                includeSearchTools = useExternalWebSearch,
+                includeCompactionTools = true,
+                allowCatalog = surfaceAssistant.toolSurfaceMode == ToolSurfaceMode.PROGRESSIVE_CATALOG,
+                mcpScope = if (surfaceAssistant === assistant) null else surfaceAssistant,
+                abortOnInvalidMcpNames = true,
+            ) ?: return
+
             generationLoop.generateText(
                 settings = settings,
                 model = model,
@@ -1980,135 +2183,15 @@ class ChatService(
                     add(ContextBudgetReminderTransformer)
                 },
                 outputTransformers = outputTransformers,
-                tools = buildList {
-                    // Synchronise the live dispatch profile before tool resolution so
-                    // subagent_dispatch is registered when the profile != NEVER.
-                    // generateText was the missing third call site (fast-path and
-                    // buildToolsForRerun already do this).
-                    com.clma.app.subagent.SubAgentDispatchProfileRules
-                        .setLiveDispatchProfile(settings.subAgentDispatchProfile)
-                    // P2-04 — the child's own tool surface when this conversation is a sub-agent
-                    // run that has one; otherwise this is the resolved assistant itself.
-                    val surfaceAssistant = com.clma.app.subagent.SubAgentSurface
-                        .assistantFor(conversationId) ?: assistant
-                    if (useExternalWebSearch) {
-                        addAll(createSearchTools(settings))
-                    }
-                    // The caller context tells context-aware tools (subagent_dispatch
-                    // recursion guard, workflow_create authoring-id) who is calling.
-                    // isHeadless is read from HeadlessConversations — true iff this is a
-                    // cron / sub-agent / workflow / external-automation flow.
-                    addAll(
-                        ToolSurfaceResolver.resolve(
-                            localTools = localTools,
-                            assistant = surfaceAssistant,
-                            context = ToolSurfaceResolver.chatContext(
-                                assistant = surfaceAssistant,
-                                conversationId = conversationId,
-                                model = model,
-                                isHeadless = com.clma.app.data.ai.tools.HeadlessConversations
-                                    .isHeadless(conversationId),
-                                appPlaybook = coldMemoryPlaybookReader(surfaceAssistant),
-                            ),
-                        )
-                    )
-                    addAll(createWorkspaceToolsIfReady(surfaceAssistant.workspaceId?.toString(), conversation.workspaceCwd))
-                    // T-06 / (7) - cold memory, mirroring the regenerate path above.
-                    addAll(createColdMemoryToolsIfConfigured(surfaceAssistant))
-                    if (surfaceAssistant.enabledSkills.isNotEmpty()) {
-                        addAll(
-                            createSkillTools(
-                                enabledSkills = surfaceAssistant.enabledSkills,
-                                allSkills = skillManager.listSkills(),
-                                skillManager = skillManager,
-                                disabledSkills = SkillGroupRules.disabledSkillNames(settings.skillGroups),
-                            )
-                        )
-                    }
-                    if (surfaceAssistant.enableCompactContextTool) {
-                        // T-02 / ② - model-initiated compaction. Reuses the manual compress
-                        // pipeline end-to-end (see compactConversationFromTool) instead of
-                        // re-implementing summarisation. Default OFF: when the flag is unset
-                        // the tool list is byte-for-byte what it was before this change.
-                        addAll(
-                            buildCompactionTools(
-                                onCompact = { instructions ->
-                                    compactConversationFromTool(
-                                        conversationId = conversationId,
-                                        conversation = getConversationFlow(conversationId).value,
-                                        settings = settings,
-                                        model = model,
-                                        instructions = instructions,
-                                    )
-                                },
-                            )
-                        )
-                    }
-                    // P2-04 — an inherited child (surfaceAssistant === assistant) keeps the
-                    // global current-assistant MCP resolution; an explicitly surfaced child
-                    // resolves MCP against its own assistant.
-                    val allMcpTools = (if (surfaceAssistant === assistant) {
-                        mcpManager.getAllAvailableTools()
-                    } else {
-                        mcpManager.getAllAvailableTools(surfaceAssistant)
-                    }).also { allTools ->
-                        // Upstream name validation: a server name that isn't pure
-                        // English+digits would produce an invalid `mcp__<name>__tool`
-                        // surface, so surface it as an error rather than emit a tool the
-                        // model can't address.
-                        val invalidNames = allTools
-                            .map { it.second }
-                            .distinct()
-                            .filter { name -> name.isEmpty() || !name.all { it in 'a'..'z' || it in 'A'..'Z' || it in '0'..'9' } }
-                        if (invalidNames.isNotEmpty()) {
-                            addError(
-                                error = IllegalStateException(
-                                    context.getString(
-                                        R.string.error_mcp_invalid_server_name,
-                                        invalidNames.joinToString(", ")
-                                    )
-                                ),
-                                conversationId = conversationId,
-                            )
-                            return
-                        }
-                    }
-                    if (surfaceAssistant.toolSurfaceMode == ToolSurfaceMode.PROGRESSIVE_CATALOG) {
-                        // T-03 / (1) - progressive tool exposure. MCP schemas are the expensive
-                        // part of the surface (one entry per remote tool, all of them opaque to
-                        // us), so in this mode they are replaced by a two-tool discovery pair.
-                        // Local/workspace/skill tools stay directly attached: they are the ones
-                        // the model needs on nearly every turn, and keeping them stable is also
-                        // what keeps the prompt prefix cacheable.
-                        val mcpCatalog = ToolCatalog(
-                            entries = allMcpTools.map { (serverId, serverName, tool) ->
-                                ToolCatalogEntry(
-                                    name = com.clma.app.data.ai.mcp.buildMcpToolName(
-                                        serverId = serverId,
-                                        serverName = serverName,
-                                        toolName = tool.name,
-                                    ),
-                                    summary = mcpCatalogSummary(tool),
-                                    source = ToolCatalogSource.MCP,
-                                    tool = buildMcpTool(serverId, serverName, tool),
-                                )
-                            },
-                        )
-                        val activation = toolActivationFor(conversationId)
-                        // Drop names whose server/tool disappeared since the last turn so a
-                        // stale activation can never attempt to inject a schema that no longer
-                        // exists (which would 400 the request).
-                        activation.retain(mcpCatalog.entries.mapTo(mutableSetOf()) { it.name })
-                        addAll(buildToolCatalogTools(catalog = mcpCatalog, activation = activation))
-                        activation.active().forEach { activeName ->
-                            mcpCatalog.entry(activeName)?.let { entry -> add(entry.tool) }
-                        }
-                    } else {
-                        allMcpTools.forEach { (serverId, serverName, tool) ->
-                            add(buildMcpTool(serverId, serverName, tool))
-                        }
-                    }
-                }.let { com.clma.app.subagent.SubAgentSurface.apply(conversationId, it) },
+                // P2-05 — a snapshot plus a per-step provider: `tools` is what the first request
+                // of this turn sends, `toolsProvider` is re-read before every later step so a
+                // `tool_open` result is honoured inside the SAME turn instead of costing the
+                // model another user round-trip.
+                tools = toolSurface.tools(),
+                toolsProvider = { toolSurface.tools() },
+                // A catalogued-but-not-activated call is answered with the real schema instead of
+                // a bare tool_not_found (see GenerationLoop).
+                unloadedToolSchema = { name -> toolSurface.schemaForUnloadedTool(name) },
                 continuationFromPartial = continuationFromPartial,
             ).onCompletion { completionCause ->
                 // 本轮结束时仍有未消费的插话（通常是最后一个 chunk 之后才到）：

@@ -95,10 +95,13 @@ data class Assistant(
     // Appended last on purpose: a new field may never shift the position of an existing one.
     val enableCompactContextTool: Boolean = false,
     // Phase 17 (①) — Progressive tool exposure. DIRECT (default) keeps the historical behaviour:
-    // every enabled MCP tool's schema is injected on every request. PROGRESSIVE_CATALOG replaces
-    // the MCP portion of the tool list with the small `tool_search` / `tool_open` pair, and only
-    // activated schemas get injected (from the following turn onwards). Local tools are never
-    // catalogued — only MCP tools — so the blast radius of this phase stays small.
+    // every enabled local + MCP tool's schema is injected on every request. PROGRESSIVE_CATALOG
+    // replaces the catalogue-able part of the surface (every enabled local tool group except the
+    // always-attached core, plus every MCP tool) with the small `tool_search` / `tool_open` pair,
+    // and only activated schemas get injected — from the next request onwards, which the
+    // generation loop re-reads per step, so a tool opened mid-turn is callable later in the SAME
+    // turn. Memory / workspace / skill / cold-memory / compaction tools and `ask_user` are never
+    // catalogued: they are needed before any planning can happen.
     // Appended last on purpose: a new field may never shift the position of an existing one.
     val toolSurfaceMode: ToolSurfaceMode = ToolSurfaceMode.DIRECT,
     // T-04 / (4) - let `subagent_dispatch` carry a slice of THIS conversation to the

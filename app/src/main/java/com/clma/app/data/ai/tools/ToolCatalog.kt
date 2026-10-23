@@ -18,7 +18,7 @@ import com.clma.ai.ui.UIMessagePart
 // catalog summaries of the same length this file enforces when it serialises search hits.
 internal const val TOOL_CATALOG_MAX_SEARCH_RESULTS = 8
 internal const val TOOL_CATALOG_MAX_OPEN_PER_CALL = 4
-internal const val TOOL_CATALOG_MAX_ACTIVE_SCHEMAS = 6
+internal const val TOOL_CATALOG_MAX_ACTIVE_SCHEMAS = 12
 internal const val TOOL_CATALOG_MAX_SUMMARY_CHARS = 180
 
 /**
@@ -38,13 +38,16 @@ enum class ToolCatalogSource { LOCAL, MCP }
  * [summary] is authored by the caller. This file never truncates the stored value;
  * it only enforces the 180-char cap at serialization time. [tool] is carried so the
  * caller can materialize a real schema once the name is activated — it is never
- * serialized here (it contains lambdas).
+ * serialized here (it contains lambdas). [group] is the LOCAL tool group the entry came
+ * from (a `LocalToolOption` serial name) and is null for MCP entries; it exists so the
+ * model can be told which capabilities the catalog covers without listing every name.
  */
 data class ToolCatalogEntry(
     val name: String,
     val summary: String,
     val source: ToolCatalogSource,
     val tool: Tool,
+    val group: String? = null,
 )
 
 /**
@@ -58,7 +61,30 @@ class ToolCatalog(entries: List<ToolCatalogEntry>) {
     private val byName: Map<String, ToolCatalogEntry> = entries.associateBy { it.name }
     val size: Int get() = entries.size
 
+    /**
+     * Distinct local group names in inventory order. The model-facing `tool_search`
+     * description prints these so it knows which capability areas exist at all; the tool
+     * names themselves stay out of the request until the model searches for them.
+     */
+    val categories: List<String> = this.entries.mapNotNull { it.group }.distinct()
+
     fun entry(name: String): ToolCatalogEntry? = byName[name]
+
+    /**
+     * One catalogued tool rendered as JSON (name, description, schema) — the payload
+     * returned when the model calls a tool it never opened. Handing back the real schema
+     * instead of a bare "tool_not_found" lets the model retry correctly in the same turn.
+     */
+    fun schemaJsonFor(name: String): String? = entry(name)?.let { entry ->
+        val parameters = entry.tool.parameters()
+        buildJsonObject {
+            put("name", JsonPrimitive(entry.name))
+            put("description", JsonPrimitive(entry.tool.description.take(2000)))
+            if (parameters != null) {
+                put("parameters", Json.encodeToJsonElement(InputSchema.serializer(), parameters))
+            }
+        }.toString()
+    }
 
     fun search(query: String, limit: Int = TOOL_CATALOG_MAX_SEARCH_RESULTS): List<ToolCatalogEntry> =
         matchAll(query).take(limit.coerceIn(1, TOOL_CATALOG_MAX_SEARCH_RESULTS))
@@ -77,7 +103,8 @@ data class ToolOpenOutcome(
 ) {
     fun toJson(): String {
         val note = buildString {
-            append("Activated schemas become callable from your NEXT turn, not this one.")
+            append("Activated schemas are callable from your NEXT request onwards — including")
+            append(" later steps of this same turn, so open a tool and then call it.")
             if (activated.isEmpty()) {
                 if (unknown.isEmpty() && alreadyActive.isEmpty() && rejectedOverCap.isEmpty()) {
                     append(" No tool names were provided, so nothing was activated. Call tool_search")
@@ -196,8 +223,9 @@ class ToolActivationState {
  * The two catalogue tools that replace a full schema dump.
  *
  * Returns exactly two tools: `tool_search` (find names, no schema) and `tool_open`
- * (activate names, no schema). Real schemas surface only on the model's next turn,
- * which is what keeps the request small.
+ * (activate names, no schema). Real schemas surface only on the model's next *request* —
+ * which, since the generation loop re-reads the activation set between steps, is usually a
+ * later step of the same turn rather than a new user message.
  */
 fun buildToolCatalogTools(
     catalog: ToolCatalog,
@@ -205,13 +233,22 @@ fun buildToolCatalogTools(
 ): List<Tool> = listOf(
     Tool(
         name = "tool_search",
-        description = """
-            Search the tool catalog by keyword and return matching tool names with short
-            summaries. Use this whenever you are unsure which tools exist. It returns
-            names and summaries ONLY — never schemas or parameters. To actually call a
-            tool, first activate it with tool_open; activation takes effect on your NEXT
-            turn, not the current one.
-        """.trimIndent(),
+        description = buildString {
+            append(
+                """
+                Search the tool catalog by keyword and return matching tool names with short
+                summaries. Use this whenever you are unsure which tools exist. It returns
+                names and summaries ONLY — never schemas or parameters. To actually call a
+                tool, first activate it with tool_open; activation applies to your next
+                request, so a tool you open can be called in a later step of the same turn.
+                """.trimIndent(),
+            )
+            if (catalog.categories.isNotEmpty()) {
+                append("\n\nCapability groups in this catalog: ")
+                append(catalog.categories.joinToString(", "))
+                append(". Search with one of those group names to see what is inside it.")
+            }
+        },
         parameters = {
             InputSchema.Obj(
                 properties = buildJsonObject {
@@ -239,8 +276,9 @@ fun buildToolCatalogTools(
         name = "tool_open",
         description = """
             Activate tools by name so their schemas become callable. Names must be exact
-            matches returned by tool_search. Activation takes effect on your NEXT turn,
-            not the current one. Do not re-open a tool that is already active.
+            matches returned by tool_search. Activation applies to your next request — the
+            same turn continues, so open now and call on the following step. Do not re-open
+            a tool that is already active.
         """.trimIndent(),
         parameters = {
             InputSchema.Obj(
