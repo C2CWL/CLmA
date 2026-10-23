@@ -1,12 +1,12 @@
 name: tmp-apply-capsule-patch
 
-# Temporary: applies tmp/capsule_big3.patch on this branch, then deletes itself and the
-# patch file in the same commit. Kept out of the PR diff because the files are gone by
-# the time the branch is opened for review.
+# Temporary helper: applies tmp/capsule_big3.patch to this branch, commits it and
+# removes both the patch and this workflow in the same commit. Trigger the patch
+# push first, then this file.
 on:
   push:
-    branches:
-      - fix/capsule-style-whole-card
+    paths:
+      - '.github/workflows/tmp-apply-capsule-patch.yml'
 
 permissions:
   contents: write
@@ -20,13 +20,12 @@ jobs:
           ref: fix/capsule-style-whole-card
           fetch-depth: 0
 
-      - name: Apply the patch and drop the temporary files
+      - name: Apply patch, commit as C2CWL, self-delete
         run: |
-          set -euo pipefail
-          git config user.name "clma-bot"
-          git config user.email "clma-bot@users.noreply.github.com"
+          git config user.name 'C2CWL'
+          git config user.email 'LuChen.687@proton.me'
           git apply -v tmp/capsule_big3.patch
-          git rm -q tmp/capsule_big3.patch .github/workflows/tmp-apply-capsule-patch.yml
+          git rm -q .github/workflows/tmp-apply-capsule-patch.yml tmp/capsule_big3.patch
           git add -A
-          git commit -m "fix(tools): 胶囊样式覆盖整张思考卡，不再要求纯工具组"
+          git commit -m 'fix(tools): 胶囊样式覆盖整张思考卡，不再要求纯工具组'
           git push origin HEAD:fix/capsule-style-whole-card
