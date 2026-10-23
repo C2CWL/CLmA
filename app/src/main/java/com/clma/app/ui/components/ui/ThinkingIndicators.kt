@@ -110,7 +110,8 @@ private fun ThinkingLabel(
                         brush = Brush.horizontalGradient(
                             colorStops = arrayOf(
                                 0f to Color.Transparent,
-                                0.5f to highlight.copy(alpha = 0.85f),\n                                1f to Color.Transparent,
+                                0.5f to highlight.copy(alpha = 0.85f),
+                                1f to Color.Transparent,
                             ),
                             startX = start,
                             endX = start + band,
