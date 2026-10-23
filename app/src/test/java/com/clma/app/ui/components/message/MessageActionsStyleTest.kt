@@ -16,7 +16,7 @@ class MessageActionsStyleTest {
             assertEquals(DEFAULT_MESSAGE_ACTIONS_STYLE, style)
             assertFalse(style.onSurfaceInk)
             assertEquals(1f, style.iconAlpha, 0f)
-            assertEquals(0.6f, style.timeAlpha, 0f)
+            assertEquals(0.75f, style.timeAlpha, 0f)
             assertFalse(style.plated)
         }
     }
