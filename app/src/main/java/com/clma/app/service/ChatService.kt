@@ -864,8 +864,16 @@ class ChatService(
     }
 
     fun getGenerationJobStateFlow(conversationId: Uuid): Flow<Job?> {
-        val session = sessions[conversationId] ?: return flowOf(null)
-        return session.generationJob
+        // Follow the CURRENT session instead of the one that happened to exist when the page
+        // subscribed. A session is evicted when it goes idle and a fresh one is created on the
+        // next send, so a snapshot taken at ViewModel creation could either miss that new job
+        // (no spinner, no stop button) or keep reporting an evicted session's job — which is how
+        // the "工作中…" footer stayed up over an already finished reply. Only an active job
+        // counts, so a completion callback that hasn't run yet cannot pin the indicator either.
+        return _sessionsVersion.flatMapLatest {
+            val jobFlow = sessions[conversationId]?.generationJob ?: return@flatMapLatest flowOf<Job?>(null)
+            jobFlow.map { job -> job?.takeIf { it.isActive } }
+        }
     }
 
     fun getProcessingStatusFlow(conversationId: Uuid): StateFlow<String?> {
@@ -909,10 +917,26 @@ class ChatService(
     // ---- 初始化对话 ----
 
     suspend fun initializeConversation(conversationId: Uuid) {
-        getOrCreateSession(conversationId) // 确保 session 存在
+        val session = getOrCreateSession(conversationId) // 确保 session 存在
         val conversation = conversationRepo.getConversationById(conversationId)
         if (conversation != null) {
-            updateConversation(conversationId, conversation)
+            // Never replace a live in-memory conversation with the on-disk snapshot.
+            //
+            // With several conversations open at once the disk copy lags behind: a turn that is
+            // still streaming is persisted on a throttle (persistStreamingStateIfDue) and a turn
+            // that just finished may not have been written yet. Overwriting the session here made
+            // the chat page / edge-bar chat box show stale (or empty) content, and with two
+            // conversations replying the newest one could be replaced by the older snapshot —
+            // "the second one finishes but shows the first one's output".
+            //
+            // Only hydrate a session we have no content for (same contract as ensureHydrated).
+            val inMemory = session.state.value
+            if (inMemory.messageNodes.isEmpty()) {
+                updateConversation(conversationId, conversation)
+            } else if (inMemory.assistantId != conversation.assistantId) {
+                // Keep the live content but still follow the stored assistant binding.
+                updateConversationState(conversationId) { it.copy(assistantId = conversation.assistantId) }
+            }
             settingsStore.updateAssistant(conversation.assistantId)
         } else {
             // A send can race this asynchronous initialization for a brand-new conversation.
