@@ -169,7 +169,7 @@ private fun preProcess(content: String): String {
         }
     }
 
-    return result
+    return protectNumericRangeTildes(result)
 }
 
 @Preview(showBackground = true)
