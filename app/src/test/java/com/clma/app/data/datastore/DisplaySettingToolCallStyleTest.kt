@@ -35,12 +35,49 @@ class DisplaySettingToolCallStyleTest {
     }
 
     @Test
-    fun `capsule copy is limited to search and page tools`() {
+    fun `capsule copy covers web, shell, file, skill and memory tools`() {
         assertEquals(CapsuleToolKind.SEARCH, capsuleToolKind("search_web"))
+        assertEquals(CapsuleToolKind.SEARCH, capsuleToolKind("conversation_search"))
         assertEquals(CapsuleToolKind.READ, capsuleToolKind("scrape_web"))
         assertEquals(CapsuleToolKind.READ, capsuleToolKind("web_extract"))
         assertEquals(CapsuleToolKind.FETCH, capsuleToolKind("web_fetch"))
-        assertNull(capsuleToolKind("memory_tool"))
+        assertEquals(CapsuleToolKind.RUN, capsuleToolKind("workspace_shell"))
+        assertEquals(CapsuleToolKind.RUN_JS, capsuleToolKind("run_js"))
+        assertEquals(CapsuleToolKind.SKILL, capsuleToolKind("use_skill"))
+        assertEquals(CapsuleToolKind.READ_FILE, capsuleToolKind("workspace_read_file"))
+        assertEquals(CapsuleToolKind.WRITE_FILE, capsuleToolKind("workspace_write_file"))
+        assertEquals(CapsuleToolKind.EDIT_FILE, capsuleToolKind("workspace_edit_file"))
+        assertEquals(CapsuleToolKind.MEMORY, capsuleToolKind("memory_tool"))
+        // Tools without capsule copy keep the classic title and icon.
+        assertNull(capsuleToolKind("get_time_info"))
+        assertNull(capsuleToolKind(""))
+    }
+
+    @Test
+    fun `capsule subject reads the argument each tool actually sends`() {
+        val args = mapOf(
+            "query" to "kotlin compose",
+            "url" to "https://example.com/x",
+            "command" to "ls -la",
+            "path" to "/workspace/notes.md",
+            "skill_name" to "qr-code",
+            "name" to "agent-core",
+            "action" to "edit",
+        )
+        val arg: (String) -> String? = { args[it] }
+
+        assertEquals("kotlin compose", capsuleSubject(CapsuleToolKind.SEARCH, arg))
+        assertEquals("https://example.com/x", capsuleSubject(CapsuleToolKind.READ, arg))
+        assertEquals("https://example.com/x", capsuleSubject(CapsuleToolKind.FETCH, arg))
+        assertEquals("ls -la", capsuleSubject(CapsuleToolKind.RUN, arg))
+        assertEquals("qr-code", capsuleSubject(CapsuleToolKind.RUN_JS, arg))
+        assertEquals("agent-core", capsuleSubject(CapsuleToolKind.SKILL, arg))
+        assertEquals("/workspace/notes.md", capsuleSubject(CapsuleToolKind.READ_FILE, arg))
+        assertEquals("/workspace/notes.md", capsuleSubject(CapsuleToolKind.WRITE_FILE, arg))
+        assertEquals("/workspace/notes.md", capsuleSubject(CapsuleToolKind.EDIT_FILE, arg))
+        assertEquals("edit", capsuleSubject(CapsuleToolKind.MEMORY, arg))
+        // A missing argument is null, so the caller falls back to the empty copy.
+        assertNull(capsuleSubject(CapsuleToolKind.SEARCH) { null })
     }
 
     @Test
@@ -51,5 +88,10 @@ class DisplaySettingToolCallStyleTest {
         // Exactly at the limit still fits, so it is left alone.
         assertEquals("1234567890", capsuleArgumentLabel("1234567890", preferHost = false, max = 10))
         assertEquals("123456789…", capsuleArgumentLabel("12345678901", preferHost = false, max = 10))
+    }
+
+    @Test
+    fun `capsule label collapses whitespace so a command stays single line`() {
+        assertEquals("ls -la", capsuleArgumentLabel("ls\n  -la", preferHost = false))
     }
 }

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Capsule tool titles (ToolCallPresentation.kt). Kept in their own file so translation
+  edits never conflict with the big strings.xml. Keys:
+    chat_message_tool_<tool>_capsule         with the argument (query / host / command / path)
+    chat_message_tool_<tool>_capsule_empty   when the tool omitted that argument
+-->
+<resources>
+  <string name="chat_message_tool_run_capsule">Ran %1$s</string>
+  <string name="chat_message_tool_run_capsule_empty">Ran a command</string>
+  <string name="chat_message_tool_run_js_capsule">Ran %1$s</string>
+  <string name="chat_message_tool_run_js_capsule_empty">Ran a JS skill</string>
+  <string name="chat_message_tool_skill_capsule">Opened skill %1$s</string>
+  <string name="chat_message_tool_skill_capsule_empty">Opened a skill</string>
+  <string name="chat_message_tool_read_file_capsule">Read %1$s</string>
+  <string name="chat_message_tool_read_file_capsule_empty">Read a file</string>
+  <string name="chat_message_tool_write_file_capsule">Wrote %1$s</string>
+  <string name="chat_message_tool_write_file_capsule_empty">Wrote a file</string>
+  <string name="chat_message_tool_edit_file_capsule">Edited %1$s</string>
+  <string name="chat_message_tool_edit_file_capsule_empty">Edited a file</string>
+  <string name="chat_message_tool_memory_capsule">Updated memory</string>
+</resources>

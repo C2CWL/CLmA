@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 胶囊工具标题，见 ToolCallPresentation.kt。单独成文件，避免和 strings.xml 的翻译改动冲突。 -->
+<resources>
+  <string name="chat_message_tool_run_capsule">执行了 %1$s</string>
+  <string name="chat_message_tool_run_capsule_empty">执行了命令</string>
+  <string name="chat_message_tool_run_js_capsule">运行了 %1$s</string>
+  <string name="chat_message_tool_run_js_capsule_empty">运行了 JS 技能</string>
+  <string name="chat_message_tool_skill_capsule">加载了技能 %1$s</string>
+  <string name="chat_message_tool_skill_capsule_empty">加载了技能</string>
+  <string name="chat_message_tool_read_file_capsule">读取了 %1$s</string>
+  <string name="chat_message_tool_read_file_capsule_empty">读取了文件</string>
+  <string name="chat_message_tool_write_file_capsule">写入了 %1$s</string>
+  <string name="chat_message_tool_write_file_capsule_empty">写入了文件</string>
+  <string name="chat_message_tool_edit_file_capsule">编辑了 %1$s</string>
+  <string name="chat_message_tool_edit_file_capsule_empty">编辑了文件</string>
+  <string name="chat_message_tool_memory_capsule">更新了记忆</string>
+</resources>
