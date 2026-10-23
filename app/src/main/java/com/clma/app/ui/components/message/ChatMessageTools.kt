@@ -269,8 +269,7 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
                 text = toolCallStyle.stepTitle(
                     toolName = tool.toolName,
                     classicTitle = renderer.title(context),
-                    query = context.arguments.getStringContent("query"),
-                    url = context.arguments.getStringContent("url"),
+                    arguments = context.arguments,
                 ),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = if (capsule) FontWeight.Medium else null,
@@ -786,7 +785,7 @@ private fun AskUserToolCard(
                             }
                             onToolAnswer(tool.toolCallId, answerPayload.toString())
                         },
-                        enabled = !inFlight && questions.all { q ->
+                        enabled = !inFlight && questions.isNotEmpty() && questions.all { q ->
                             when (q.selectionType) {
                                 "multi" -> !multiAnswers[q.id].isNullOrEmpty() || !answers[q.id].isNullOrBlank()
                                 else -> !answers[q.id].isNullOrBlank()
