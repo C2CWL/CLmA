@@ -417,7 +417,16 @@ class FilesManager(
         repository.deleteById(id) > 0
     }
 
-    suspend fun deleteAll(folder: String = FileFolders.UPLOAD): Boolean = withContext(Dispatchers.IO) {
+    /**
+     * 清空 [folder]。 [excludeRelativePaths] 里的文件（助手头像/壁纸，见 [AssistantMediaRefs]）
+     * 会被原样保留 —— 它们在磁盘上与普通附件同目录，没有这层过滤就会被一起删掉。
+     *
+     * @return 所有「本该删掉」的文件是否都删成功了；被排除的文件不计入失败。
+     */
+    suspend fun deleteAll(
+        folder: String = FileFolders.UPLOAD,
+        excludeRelativePaths: Set<String> = emptySet(),
+    ): Boolean = withContext(Dispatchers.IO) {
         val dir = File(context.filesDir, folder)
         val entries = dir.listFiles()
         if (dir.exists() && entries == null) {
@@ -426,31 +435,37 @@ class FilesManager(
 
         var allDeletedFromDisk = true
         entries.orEmpty().forEach { entry ->
+            val relativePath = getRelativePathInFilesDir(entry)
+            if (relativePath != null && relativePath in excludeRelativePaths) {
+                return@forEach
+            }
             if (!runCatching { entry.deleteRecursively() }.getOrDefault(false)) {
                 allDeletedFromDisk = false
             }
         }
 
-        if (allDeletedFromDisk) {
-            repository.deleteByFolder(folder)
-            return@withContext true
-        }
-
+        // 数据库 -> 磁盘：把文件已经不存在的记录清掉（上面删掉的，以及本来就不在盘上的）
         repository.listByFolder(folder).first().forEach { entity ->
             if (!getFile(entity).exists()) {
                 repository.deleteById(entity.id)
             }
         }
-        false
+        allDeletedFromDisk
     }
 
+    /**
+     * 删除 [folder] 中创建时间早于 [cutoffMillis] 的文件，[excludeRelativePaths] 中的文件除外。
+     *
+     * @return 所有本该删除的文件是否都删成功了；被排除的文件不计入失败。
+     */
     suspend fun deleteOlderThan(
         folder: String = FileFolders.UPLOAD,
         cutoffMillis: Long,
+        excludeRelativePaths: Set<String> = emptySet(),
     ): Boolean = withContext(Dispatchers.IO) {
         var allDeleted = true
         repository.listByFolder(folder).first()
-            .filter { it.createdAt < cutoffMillis }
+            .filter { it.createdAt < cutoffMillis && it.relativePath !in excludeRelativePaths }
             .forEach { entity ->
                 val file = getFile(entity)
                 val deletedFromDisk = !file.exists() || runCatching {
