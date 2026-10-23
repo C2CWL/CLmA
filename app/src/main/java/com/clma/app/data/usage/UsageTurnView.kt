@@ -224,49 +224,92 @@ object UsageTurnViewFactory {
     }
 
     /**
-     * D6 — the per-message footers.
+     * D6 — the per-message footers, one per **turn**.
      *
-     * A node earns a footer when the ledger already holds rows for it, or when it is the turn
-     * currently being generated ([liveMessageId]) and its first row has not landed yet — the UI
-     * shows “counting…” in that window instead of falling back to a second, older widget.
+     * A turn is everything between two user messages, not one assistant node. A single reply can
+     * be split into several assistant nodes while its tool loop runs (the UI folds them into one
+     * card), and each node used to claim only the rows of its own `[createdAt, next.createdAt)`
+     * slice: the folded nodes showed no footer at all, while the chat top bar — which sums every
+     * footer — still counted their rows. The visible footers then added up to a fraction of the
+     * header, which read as a tenfold over-count.
      *
-     * The wall clock starts at the most recent **user** message before the node (the round the
-     * user actually started) and ends at the node's own `finishedAt`, so the idle time between two
-     * turns is never billed to the one that just ended. While [liveMessageId] is the node the end
-     * is unknown, so [TurnFooter.finishedAtMs] is null and [TurnFooter.running] is true.
+     * So the rows are now attributed by the turn's window instead:
+     *
+     *  - a turn starts at its opening user message and ends at the next user message;
+     *  - every assistant node in it contributes its rows to one [TurnFooter], attached to the
+     *    turn's **last** assistant node — the one the UI renders as the reply;
+     *  - an interjection (a user message between an un-finalized assistant half and its
+     *    continuation) does not start a new turn: the UI merges those three nodes into one
+     *    continuous reply, so splitting there would drop the first half's usage.
+     *
+     * The footer's wall clock still ends at that last node's `finishedAt`, so idle time between
+     * two turns is never billed to the one that just ended. While [liveMessageId] is that node
+     * the end is unknown, so [TurnFooter.finishedAtMs] is null and [TurnFooter.running] is true.
      */
     fun footersFor(
         nodes: List<TurnNode>,
         records: List<UsageRecordEntity>,
         liveMessageId: String? = null,
     ): Map<String, TurnFooter> {
-        val usageByMessage = map(windowsFor(nodes.map { it.messageId to it.createdAtMs }), records)
+        val turns = turnsOf(nodes)
         val result = LinkedHashMap<String, TurnFooter>()
-        var lastUserStartMs: Long? = null
-        // 被插话打断、尚未 finalize 的前半：不单独出 footer，usage 结转到下一条，
-        // 最后一条显示整轮合并后的 tokens/耗时。
-        var carriedUsage: TurnUsageView? = null
-        for (node in nodes) {
-            if (node.role == MessageRole.USER) {
-                lastUserStartMs = node.createdAtMs
-                continue
-            }
-            val running = node.messageId == liveMessageId
-            val usage = usageByMessage[node.messageId]
-            if (usage == null && !running) continue
-            if (!running && node.finishedAtMs == null) {
-                carriedUsage = merge(carriedUsage, usage)
-                continue
-            }
-            result[node.messageId] = TurnFooter(
-                usage = merge(carriedUsage, usage),
-                startedAtMs = lastUserStartMs ?: node.createdAtMs,
-                finishedAtMs = if (running) null else node.finishedAtMs,
+        turns.forEachIndexed { index, turn ->
+            val assistant = turn.lastAssistant ?: return@forEachIndexed
+            val startMs = turn.startMs
+            val nextStartMs = turns.getOrNull(index + 1)?.startMs
+            val window = UsageTurnWindow(
+                startMs = startMs,
+                // A non-increasing neighbour start yields an empty window rather than a reversed
+                // one, so a duplicated timestamp can never absorb the next turn's rows.
+                endExclusiveMs = when {
+                    nextStartMs == null -> Long.MAX_VALUE
+                    nextStartMs > startMs -> nextStartMs
+                    else -> startMs
+                },
+            )
+            val usage = turnUsageFor(records, window)
+            val running = assistant.messageId == liveMessageId
+            if (usage == null && !running) return@forEachIndexed
+            result[assistant.messageId] = TurnFooter(
+                usage = usage,
+                startedAtMs = startMs,
+                finishedAtMs = if (running) null else assistant.finishedAtMs,
                 running = running,
             )
-            carriedUsage = null
         }
         return result
+    }
+
+    /** One turn's span: the user message that opened it and its last assistant node. */
+    private data class TurnSpan(
+        val startMs: Long,
+        var lastAssistant: TurnNode? = null,
+    )
+
+    /**
+     * Groups the ordered nodes into turns. A user message opens a turn unless it is an
+     * interjection — an un-finalized assistant half before it and a continuation after it.
+     */
+    private fun turnsOf(nodes: List<TurnNode>): List<TurnSpan> {
+        val turns = mutableListOf<TurnSpan>()
+        var current: TurnSpan? = null
+        nodes.forEachIndexed { index, node ->
+            if (node.role == MessageRole.USER) {
+                val prev = nodes.getOrNull(index - 1)
+                val next = nodes.getOrNull(index + 1)
+                val interjection = prev?.role == MessageRole.ASSISTANT &&
+                    prev.finishedAtMs == null &&
+                    next?.role == MessageRole.ASSISTANT
+                if (interjection) return@forEachIndexed
+                current?.let { turns += it }
+                current = TurnSpan(startMs = node.createdAtMs)
+                return@forEachIndexed
+            }
+            val turn = current ?: TurnSpan(startMs = nodes.first().createdAtMs).also { current = it }
+            turn.lastAssistant = node
+        }
+        current?.let { turns += it }
+        return turns
     }
 
     /** 合并两段 turn usage（插话打断时前半结转到后半）。null 视为空。 */
