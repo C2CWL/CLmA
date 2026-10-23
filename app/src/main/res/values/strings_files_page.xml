@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+<string name="setting_files_page_clean_kept_note">%1$d avatar/background file(s) will be kept</string>
+<string name="setting_files_page_delete_image_title">Delete Image</string>
+<string name="setting_files_page_folder_images">Generated images</string>
+<string name="setting_files_page_protected_avatar">Avatar</string>
+<string name="setting_files_page_protected_background">Background</string>
+<string name="setting_files_page_protected_hint">Used by an assistant as its avatar or chat wallpaper. Cleaning never removes these; change them in the assistant settings.</string>
+<string name="setting_files_page_section_files">Other files</string>
+<string name="setting_files_page_section_protected">Avatars &amp; backgrounds (protected)</string>
+</resources>
