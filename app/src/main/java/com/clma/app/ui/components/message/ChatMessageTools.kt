@@ -720,7 +720,7 @@ private fun ChainOfThoughtScope.AskUserToolStep(
                 }
 
                 // Submit button
-                if (isPending && onToolAnswer != null) {
+                if (isPending && onToolAnswer != null && questions.isNotEmpty()) {
                     FilledTonalButton(
                         onClick = {
                             val answerPayload = buildJsonObject {
@@ -739,7 +739,7 @@ private fun ChainOfThoughtScope.AskUserToolStep(
                             }
                             onToolAnswer(tool.toolCallId, answerPayload.toString())
                         },
-                        enabled = questions.all { q ->
+                        enabled = questions.isNotEmpty() && questions.all { q ->
                             when (q.selectionType) {
                                 "multi" -> !multiAnswers[q.id].isNullOrEmpty() || !answers[q.id].isNullOrBlank()
                                 else -> !answers[q.id].isNullOrBlank()
