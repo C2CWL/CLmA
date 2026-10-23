@@ -369,4 +369,79 @@ class UsageTurnViewTest {
 
         assertTrue(UsageTurnViewFactory.footersFor(nodes, emptyList(), liveMessageId = "u1").isEmpty())
     }
+
+    @Test
+    fun `a tool loop split into several assistant nodes reports one footer for the whole turn`() {
+        val nodes = listOf(
+            TurnNode("u1", MessageRole.USER, 1_000L, null),
+            TurnNode("a1", MessageRole.ASSISTANT, 1_200L, 3_000L),
+            TurnNode("a2", MessageRole.ASSISTANT, 4_000L, 6_000L),
+            TurnNode("a3", MessageRole.ASSISTANT, 7_000L, 9_000L),
+        )
+        val records = listOf(
+            row("r1", 1_500L, input = 10, output = 1),
+            row("r2", 4_500L, input = 20, output = 2),
+            row("r3", 7_500L, input = 30, output = 3),
+        )
+
+        val footers = UsageTurnViewFactory.footersFor(nodes, records)
+
+        // 中间节点不再各出一个 footer：整轮的调用都归到这条回复的最后一段。
+        assertFalse(footers.containsKey("a1"))
+        assertFalse(footers.containsKey("a2"))
+        val footer = footers.getValue("a3")
+        assertEquals(60L, footer.usage!!.inputTokens)
+        assertEquals(6L, footer.usage.outputTokens)
+        assertEquals(3, footer.usage.callCount)
+        assertEquals(1_000L, footer.startedAtMs)
+        assertEquals(9_000L, footer.finishedAtMs)
+    }
+
+    @Test
+    fun `the footers add up to every row the ledger holds`() {
+        val nodes = listOf(
+            TurnNode("u1", MessageRole.USER, 1_000L, null),
+            TurnNode("a1", MessageRole.ASSISTANT, 1_200L, 6_000L),
+            TurnNode("u2", MessageRole.USER, 10_000L, null),
+            TurnNode("a2", MessageRole.ASSISTANT, 10_200L, 12_000L),
+            TurnNode("a3", MessageRole.ASSISTANT, 13_000L, 15_000L),
+        )
+        val records = listOf(
+            row("r1", 1_500L, input = 10, output = 1),
+            row("r2", 10_500L, input = 20, output = 2),
+            row("r3", 13_500L, input = 30, output = 3),
+        )
+
+        val footers = UsageTurnViewFactory.footersFor(nodes, records)
+
+        // 与聊天顶栏的求和口径一致，两者不会再各说各话。
+        val summed = footers.values.mapNotNull { it.usage }.sumOf { it.inputTokens + it.outputTokens }
+        assertEquals(66L, summed)
+    }
+
+    @Test
+    fun `an interjection keeps one turn even when the reply is split into several nodes`() {
+        val nodes = listOf(
+            TurnNode("u1", MessageRole.USER, 1_000L, null),
+            TurnNode("a1", MessageRole.ASSISTANT, 1_200L, null),
+            TurnNode("u2", MessageRole.USER, 5_000L, null),
+            TurnNode("a2", MessageRole.ASSISTANT, 5_200L, 7_000L),
+            TurnNode("a3", MessageRole.ASSISTANT, 8_000L, 9_000L),
+        )
+        val records = listOf(
+            row("r1", 1_500L, input = 10, output = 1),
+            row("r2", 5_500L, input = 20, output = 2),
+            row("r3", 8_500L, input = 30, output = 3),
+        )
+
+        val footers = UsageTurnViewFactory.footersFor(nodes, records)
+
+        // 插话不切轮：整轮仍然只有一个 footer，挂在最后一段。
+        assertEquals(1, footers.size)
+        assertFalse(footers.containsKey("a2"))
+        val footer = footers.getValue("a3")
+        assertEquals(60L, footer.usage!!.inputTokens)
+        assertEquals(3, footer.usage.callCount)
+        assertEquals(1_000L, footer.startedAtMs)
+    }
 }
