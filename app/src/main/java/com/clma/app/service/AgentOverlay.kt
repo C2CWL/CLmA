@@ -14,6 +14,7 @@ import android.view.Gravity
 import android.view.WindowManager
 import android.widget.TextView
 import com.clma.app.R
+import kotlin.uuid.Uuid
 
 /**
  * Lightweight top-of-screen pill that shows while a generation turn is active so the
@@ -31,30 +32,80 @@ object AgentOverlay {
     @Volatile private var view: TextView? = null
     private val mainHandler = Handler(Looper.getMainLooper())
 
+    /**
+     * Conversations whose turn is currently running.
+     *
+     * A turn per conversation, not one turn at a time: with several chats replying at once, the
+     * old single boolean let the FIRST one to finish clear the indicator while the others were
+     * still streaming — the edge bar dropped its "replying" sweep, turned green for a reply that
+     * was not the one the user was watching, and once the green was dismissed it fell back to a
+     * plain idle pill ("只剩一个灰条"). Counting the live turns keeps the sweep up until the last
+     * one ends, and only then offers the "done" state.
+     *
+     * Mutated only under `synchronized(workingConversations)`; [show]/[hide] run on the generation
+     * flow's own dispatcher, [reset] on the service's main looper.
+     */
+    private val workingConversations = HashSet<String>()
+
+    /** True while at least one conversation is generating (read by the bar / tests). */
+    @Volatile
+    var isWorking: Boolean = false
+        private set
+
     fun canShow(context: Context): Boolean = Settings.canDrawOverlays(context)
 
-    fun show(context: Context, text: String? = null) {
+    /**
+     * A turn started for [conversationId] (null = an unattributed turn, treated as its own key so
+     * a caller that has no conversation still gets the indicator).
+     */
+    fun show(context: Context, conversationId: Uuid? = null, text: String? = null) {
         val app = context.applicationContext
         val label = text ?: app.getString(R.string.agent_overlay_working)
         if (!canShow(app)) {
             Log.d(TAG, "show: SYSTEM_ALERT_WINDOW not granted, no-op")
             return
         }
+        val key = conversationId ?: UNATTRIBUTED
+        val alreadyWorking = synchronized(workingConversations) {
+            val wasWorking = workingConversations.isNotEmpty()
+            workingConversations.add(key)
+            isWorking = true
+            wasWorking
+        }
         // The edge bar carries the signal whenever it is up; only fall back to the pill (which is
-        // what users found abrupt) when there is no bar to animate.
+        // what users found abrupt) when there is no bar to animate. A second concurrent turn needs
+        // no extra UI — the bar is already sweeping.
         if (FloatingBallService.isShowing) {
-            FloatingBallService.setWorking(app, true)
+            if (!alreadyWorking) FloatingBallService.setWorking(app, true)
             return
         }
-        mainHandler.post { showInternal(app, label) }
+        if (!alreadyWorking) mainHandler.post { showInternal(app, label) }
     }
 
-    fun hide(context: Context) {
+    /** The turn for [conversationId] ended; only the last one clears the indicator. */
+    fun hide(context: Context, conversationId: Uuid? = null) {
         val app = context.applicationContext
+        val key = conversationId ?: UNATTRIBUTED
+        val stillWorking = synchronized(workingConversations) {
+            workingConversations.remove(key)
+            isWorking = workingConversations.isNotEmpty()
+            isWorking
+        }
+        if (stillWorking) return
         // No-op unless the edge bar is actually up (see setWorking), so this is safe unconditionally.
         FloatingBallService.setWorking(app, false)
         mainHandler.post { hideInternal(app) }
     }
+
+    /** All turns are over (service teardown) — drop any straggler ids. */
+    fun reset() {
+        synchronized(workingConversations) {
+            workingConversations.clear()
+            isWorking = false
+        }
+    }
+
+    private const val UNATTRIBUTED = "<unattributed>"
 
     @SuppressLint("RtlHardcoded")
     private fun showInternal(app: Context, text: String) {

@@ -1540,10 +1540,12 @@ class GenerationLoop(
             // Screen-automation observations are per-turn too: they are flushed to the app's
             // cold-memory playbook when the turn ends (ChatService.flushAutomationPlaybook).
             AutomationRecorder.reset()
-            AgentOverlay.show(context)
+            // Per-conversation: several chats can be generating at once, and the indicator must
+            // stay up until the last of them ends (see AgentOverlay).
+            AgentOverlay.show(context, conversationId)
         }
         .onCompletion {
-            AgentOverlay.hide(context)
+            AgentOverlay.hide(context, conversationId)
             handleAutoReturnAfterTurn()
             // Screen-automation screenshots are working artifacts: unless the model asked to
             // keep one (keep=true), drop the files now that the turn is over. Gated on the turn

@@ -364,18 +364,24 @@ class FloatingBallService : Service(), KoinComponent {
         attachTouch(view, params)
         // Touches are handled in attachTouch; this is what TalkBack / switch access trigger.
         view.setOnClickListener { onBarTap() }
+        // The bar can also appear mid-reply (service restarted / re-enabled while a turn runs).
+        // Adopt the live state so it starts sweeping instead of looking idle until the next turn.
+        working = AgentOverlay.isWorking
         syncBar()
     }
 
     private fun hideBar() {
+        // The bar is gone: forget the ids of the turns it was tracking, otherwise a re-shown bar
+        // would carry a stale "working" count into the next session.
+        AgentOverlay.reset()
+        working = false
+        unseenDone = false
         val view = barView ?: return
         mainHandler.removeCallbacks(longPressRunnable)
         clearGestureExclusion(view)
         barView = null
         barParams = null
         isShowing = false
-        working = false
-        unseenDone = false
         dragArmed = false
         val wm = windowManager() ?: return
         runCatching { wm.removeViewImmediate(view) }
