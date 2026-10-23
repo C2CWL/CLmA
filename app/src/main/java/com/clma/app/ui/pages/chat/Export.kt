@@ -87,6 +87,7 @@ import com.clma.app.data.datastore.ToolCallStyle
 import com.clma.app.data.datastore.findModelById
 import com.clma.app.data.model.Conversation
 import com.clma.app.ui.components.message.MessagePartBlock
+import com.clma.app.ui.components.message.InteractiveToolCard
 import com.clma.app.ui.components.message.ThinkingStep
 import com.clma.app.ui.components.message.ChatMessageNarrationStep
 import com.clma.app.ui.components.message.ChatMessageServerToolStep
@@ -611,6 +612,10 @@ private fun ExportedChatMessage(
                                 }
                             }
                         }
+                    }
+
+                    is MessagePartBlock.InteractiveToolBlock -> {
+                        InteractiveToolCard(tool = block.tool)
                     }
 
                     is MessagePartBlock.ContentBlock -> {

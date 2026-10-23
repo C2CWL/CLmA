@@ -11,7 +11,8 @@ import org.junit.Test
 /**
  * Unit tests for [groupMessageParts] — the pure helper that splits a message's
  * part list into renderable blocks (consecutive Reasoning/Tool parts collapse
- * into a single ThinkingBlock, everything else becomes a ContentBlock).
+ * into a single ThinkingBlock; ask_user / request_secret become their own
+ * InteractiveToolBlock; everything else becomes a ContentBlock).
  *
  * When [foldProcessNarration] is on, non-final Text between tool/reasoning
  * rounds becomes [ThinkingStep.NarrationStep] inside the same thinking block.
@@ -292,5 +293,81 @@ class GroupMessagePartsTest {
         val parts = listOf(first, text("mid"), second)
         assertTrue(shellInlineOutputShouldCollapse(parts, first))
         assertTrue(!shellInlineOutputShouldCollapse(parts, second))
+    }
+
+    private fun ask(id: String) = UIMessagePart.Tool(toolCallId = id, toolName = "ask_user", input = "{}")
+    private fun secret(id: String) = UIMessagePart.Tool(toolCallId = id, toolName = "request_secret", input = "{}")
+
+    @Test
+    fun `interactive ask_user flushes thinking and becomes its own block`() {
+        val result = listOf(
+            reasoning("think"),
+            tool("call-1"),
+            ask("q1"),
+            text("after"),
+        ).groupMessageParts()
+
+        assertEquals(3, result.size)
+        val thinking = result[0] as MessagePartBlock.ThinkingBlock
+        assertEquals(2, thinking.steps.size)
+        val card = result[1] as MessagePartBlock.InteractiveToolBlock
+        assertEquals(2, card.index)
+        assertEquals("ask_user", card.tool.toolName)
+        assertEquals(text("after"), (result[2] as MessagePartBlock.ContentBlock).part)
+    }
+
+    @Test
+    fun `request_secret is also an interactive block and splits surrounding tools`() {
+        val result = listOf(tool("a"), secret("s1"), tool("b")).groupMessageParts()
+
+        assertEquals(3, result.size)
+        assertTrue(result[0] is MessagePartBlock.ThinkingBlock)
+        val card = result[1] as MessagePartBlock.InteractiveToolBlock
+        assertEquals(1, card.index)
+        assertEquals("request_secret", card.tool.toolName)
+        assertTrue(result[2] is MessagePartBlock.ThinkingBlock)
+    }
+
+    @Test
+    fun `fold on does not swallow text before an interactive tool into the chain`() {
+        val result = listOf(text("please answer"), ask("q")).groupMessageParts(foldProcessNarration = true)
+
+        assertEquals(2, result.size)
+        assertEquals(text("please answer"), (result[0] as MessagePartBlock.ContentBlock).part)
+        assertTrue(result[1] is MessagePartBlock.InteractiveToolBlock)
+    }
+
+    @Test
+    fun `fold on still folds narration before a real tool that precedes ask_user`() {
+        val result = listOf(
+            text("plan"),
+            tool("a"),
+            text("now I ask"),
+            ask("q"),
+        ).groupMessageParts(foldProcessNarration = true)
+
+        assertEquals(3, result.size)
+        val thinking = result[0] as MessagePartBlock.ThinkingBlock
+        assertTrue(thinking.steps[0] is ThinkingStep.NarrationStep)
+        assertTrue(thinking.steps[1] is ThinkingStep.ToolStep)
+        assertEquals(text("now I ask"), (result[1] as MessagePartBlock.ContentBlock).part)
+        assertTrue(result[2] is MessagePartBlock.InteractiveToolBlock)
+    }
+
+    @Test
+    fun `shell collapses once a later interactive tool starts`() {
+        val call = shell("s1")
+        assertTrue(shellInlineOutputShouldCollapse(listOf(call, ask("q")), call))
+        assertTrue(shellInlineOutputShouldCollapse(listOf(call, secret("s")), call))
+    }
+
+    @Test
+    fun `two interactive tools stay separate blocks`() {
+        val result = listOf(ask("q1"), secret("s1")).groupMessageParts()
+        assertEquals(2, result.size)
+        assertTrue(result[0] is MessagePartBlock.InteractiveToolBlock)
+        assertTrue(result[1] is MessagePartBlock.InteractiveToolBlock)
+        assertEquals(0, (result[0] as MessagePartBlock.InteractiveToolBlock).index)
+        assertEquals(1, (result[1] as MessagePartBlock.InteractiveToolBlock).index)
     }
 }

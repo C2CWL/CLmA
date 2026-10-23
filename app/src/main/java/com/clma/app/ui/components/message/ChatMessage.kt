@@ -511,6 +511,15 @@ private fun MessagePartsBlock(
                 }
             }
 
+            is MessagePartBlock.InteractiveToolBlock -> key(block.index) {
+                InteractiveToolCard(
+                    tool = block.tool,
+                    loading = loading && !block.tool.isExecuted,
+                    onToolApproval = onToolApproval,
+                    onToolAnswer = onToolAnswer,
+                )
+            }
+
             is MessagePartBlock.ContentBlock -> key(block.index) {
                 when (val part = block.part) {
                     is UIMessagePart.Text -> {
