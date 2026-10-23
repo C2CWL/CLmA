@@ -107,7 +107,7 @@ private fun preProcess(content: String): String {
     result = BLOCK_LATEX_REGEX.replace(result) { m ->
         if (isInCodeBlock(m.range.first)) m.value else "$$" + m.groupValues[1] + "$$"
     }
-    return result
+    return protectNumericRangeTildes(result)
 }
 
 // ---- HTML generation ----
