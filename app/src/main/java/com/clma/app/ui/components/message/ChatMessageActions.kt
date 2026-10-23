@@ -288,7 +288,7 @@ fun ChatMessageTimestamp(
     )
     Text(
         text = displayAt.toJavaLocalDateTime().toMessageTimeString(),
-        style = MaterialTheme.typography.labelSmall,
+        style = MaterialTheme.typography.labelMedium,
         color = ink.copy(alpha = style.timeAlpha),
         maxLines = 1,
         modifier = modifier,
@@ -420,7 +420,7 @@ fun ChatMessageActionsSheet(
                     modifier = Modifier
                         .padding(16.dp)
                         .fillMaxWidth()
-                ) {
+                    ) {
                     Icon(
                         imageVector = HugeIcons.Share04,
                         contentDescription = null,
@@ -508,7 +508,7 @@ fun ChatMessageActionsSheet(
                     modifier = Modifier
                         .padding(16.dp)
                         .fillMaxWidth()
-                ) {
+                    ) {
                     Icon(
                         imageVector = HugeIcons.Delete01,
                         contentDescription = null,
