@@ -18,14 +18,21 @@ class SystemPromptBuilderTest {
             systemAddendum = "Surface addendum",
         )
 
-        assertTrue(prompt.startsWith("Assistant prompt"))
+        assertTrue(prompt.startsWith(SystemPromptBuilder.PRECEDENCE_NOTICE))
+        assertTrue(prompt.contains("<user_instructions priority=\"highest\">"))
+        assertTrue(prompt.contains("Assistant prompt"))
+        assertTrue(prompt.contains("</user_instructions>"))
         assertTrue(prompt.contains("Tool cost guidance: prefer low-cost text tools"))
+        assertTrue(prompt.contains(SystemPromptBuilder.REFERENCE_NOTICE))
         assertTrue(prompt.endsWith("Surface addendum"))
 
-        // Stable-first: assistant + tools precede the volatile memory/recent-chats sections.
+        // Stable-first: wrapped assistant + tools precede the volatile memory/recent-chats sections.
+        assertTrue(prompt.indexOf(SystemPromptBuilder.PRECEDENCE_NOTICE) < prompt.indexOf("<user_instructions"))
         assertTrue(prompt.indexOf("Assistant prompt") < prompt.indexOf("Tool cost guidance"))
+        assertTrue(prompt.indexOf("</user_instructions>") < prompt.indexOf("Tool cost guidance"))
         assertTrue(prompt.indexOf("Tool A") < prompt.indexOf("Tool B"))
-        assertTrue(prompt.indexOf("Tool B") < prompt.indexOf("**Memories**"))
+        assertTrue(prompt.indexOf("Tool B") < prompt.indexOf(SystemPromptBuilder.REFERENCE_NOTICE))
+        assertTrue(prompt.indexOf(SystemPromptBuilder.REFERENCE_NOTICE) < prompt.indexOf("**Memories**"))
         assertTrue(prompt.indexOf("**Memories**") < prompt.indexOf("**Recent Chats**"))
         assertTrue(prompt.indexOf("**Recent Chats**") < prompt.indexOf("Surface addendum"))
     }
@@ -40,12 +47,17 @@ class SystemPromptBuilderTest {
             systemAddendum = "telegram chat_id 5",
         )
         assertTrue(stable.contains("You are helpful."))
+        assertTrue(stable.contains("<user_instructions priority=\"highest\">"))
+        assertTrue(stable.contains(SystemPromptBuilder.PRECEDENCE_NOTICE))
         assertTrue(stable.contains("tool_a docs"))
         assertTrue(stable.contains("Tool cost guidance"))
         assertFalse(stable.contains("Memories"))
+        assertTrue(volatile.contains(SystemPromptBuilder.REFERENCE_NOTICE))
         assertTrue(volatile.contains("**Memories** m1"))
         assertTrue(volatile.contains("**Recent Chats** c1"))
         assertTrue(volatile.contains("telegram chat_id 5"))
+        // Tool section is not demoted with an extra notice.
+        assertFalse(stable.contains("以下为工具补充说明"))
     }
 
     @Test
@@ -68,5 +80,29 @@ class SystemPromptBuilderTest {
             listOf(stable, volatile).filter { it.isNotBlank() }.joinToString("\n"),
             builder.build(assistantPrompt = "A", memoryPrompt = "M"),
         )
+    }
+
+    @Test
+    fun `blank assistant prompt emits no priority markers`() {
+        val (stable, volatile) = builder.buildSections(
+            assistantPrompt = "   ",
+            memoryPrompt = "**Memories** m1",
+            toolPrompts = listOf("tool_a docs"),
+        )
+        assertFalse(stable.contains("user_instructions"))
+        assertFalse(stable.contains(SystemPromptBuilder.PRECEDENCE_NOTICE))
+        assertTrue(stable.startsWith("Tool cost guidance"))
+        assertTrue(volatile.contains(SystemPromptBuilder.REFERENCE_NOTICE))
+        assertTrue(volatile.contains("**Memories** m1"))
+    }
+
+    @Test
+    fun `empty volatile inputs emit no reference notice`() {
+        val (stable, volatile) = builder.buildSections(
+            assistantPrompt = "You are helpful.",
+            toolPrompts = emptyList(),
+        )
+        assertTrue(stable.contains("<user_instructions"))
+        assertTrue(volatile.isEmpty())
     }
 }
