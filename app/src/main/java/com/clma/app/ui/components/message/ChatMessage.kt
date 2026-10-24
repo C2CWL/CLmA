@@ -289,16 +289,6 @@ fun ChatMessage(
             }
         }
 
-        // 时间戳独立于操作栏渲染：操作栏隐藏时（插话打断的前半、流式中）也能显示。
-        // 空消息（流式首 token 之前）不显示。
-        if (message.parts.isEmptyUIMessage().not()) {
-            ChatMessageTimestamp(
-                message = actionMessage,
-                photoShown = photoShown,
-                hazeState = hazeState,
-            )
-        }
-
         EditedFilesList(
             parts = message.parts,
             assistant = assistant,
