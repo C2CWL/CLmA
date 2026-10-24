@@ -244,7 +244,7 @@ fun SettingProviderDetailPage(id: Uuid, vm: SettingVM = koinViewModel()) {
                                     HugeIcons.Tick02,
                                     stringResource(
                                         if (allSelected) R.string.setting_provider_page_unselect_all
-                                        else R.string.setting_provider_page_select_all
+                                        else R.string.setting_provider_page_select_all_models
                                     )
                                 )
                             }

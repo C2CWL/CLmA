@@ -939,7 +939,7 @@
   <string name="setting_provider_page_add_new_model">添加新模型</string>
   <string name="setting_provider_page_select_models">多選模型</string>
   <string name="setting_provider_page_selected_models_count">已選 %1$d 個</string>
-  <string name="setting_provider_page_select_all">全選</string>
+  <string name="setting_provider_page_select_all_models">全選</string>
   <string name="setting_provider_page_unselect_all">取消全選</string>
   <string name="setting_provider_page_delete_selected_models">刪除所選模型</string>
   <string name="setting_provider_page_clear_all_models">清空全部模型</string>

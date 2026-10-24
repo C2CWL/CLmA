@@ -1216,7 +1216,7 @@
   <string name="setting_provider_page_add_new_model">Add New Model</string>
   <string name="setting_provider_page_select_models">Select models</string>
   <string name="setting_provider_page_selected_models_count">%1$d selected</string>
-  <string name="setting_provider_page_select_all">Select all</string>
+  <string name="setting_provider_page_select_all_models">Select all</string>
   <string name="setting_provider_page_unselect_all">Unselect all</string>
   <string name="setting_provider_page_delete_selected_models">Delete selected models</string>
   <string name="setting_provider_page_clear_all_models">Delete all models</string>
