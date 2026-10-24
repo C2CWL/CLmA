@@ -3,6 +3,7 @@ package com.clma.app.di
 import android.content.Context
 import com.clma.app.data.files.FileFolders
 import com.clma.app.data.files.FilesManager
+import com.clma.app.data.files.GalleryCleaner
 import com.clma.app.data.files.SkillManager
 import com.clma.app.data.repository.ConversationRepository
 import com.clma.app.data.repository.FavoriteRepository
@@ -78,6 +79,10 @@ val repositoryModule = module {
 
     single {
         FilesManager(get(), get(), get())
+    }
+
+    single {
+        GalleryCleaner(get(), get())
     }
 
     single {
