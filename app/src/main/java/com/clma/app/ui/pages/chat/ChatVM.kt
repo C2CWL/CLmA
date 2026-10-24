@@ -53,6 +53,9 @@ import com.clma.app.service.ChatError
 import com.clma.app.service.ChatService
 import com.clma.app.ui.hooks.writeStringPreference
 import com.clma.app.ui.hooks.ChatInputState
+import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.flow.collectLatest
+import com.clma.app.data.chat.ChatDrafts
 import java.util.Locale
 import kotlin.uuid.Uuid
 
@@ -60,6 +63,9 @@ private const val TAG = "ChatVM"
 
 /** D6 — how often the footer re-reads the ledger while a turn is running. */
 private const val TURN_FOOTER_LIVE_REFRESH_MS = 1_000L
+
+/** 草稿写盘前的静默期: 停手 400ms 才落一次, 打字过程中不产生 IO。 */
+private const val DRAFT_SAVE_DEBOUNCE_MS = 400L
 
 class ChatVM(
     id: String,
@@ -77,6 +83,9 @@ class ChatVM(
 
     // 聊天输入状态 - 保存在 ViewModel 中避免 TransactionTooLargeException
     val inputState = ChatInputState()
+
+    /** 未发送的输入按对话持久化; VM 随对话销毁, 只有落到 prefs 才不会丢。 */
+    private val drafts = ChatDrafts(context)
 
     val voiceSession = VoiceSessionController(viewModelScope, context::getString) {
         chatService.enqueueVoiceMessage(_conversationId, it)
@@ -169,10 +178,27 @@ class ChatVM(
 
         // 记住对话ID, 方便下次启动恢复
         context.writeStringPreference("lastConversationId", _conversationId.toString())
+
+        // 恢复上次未发送的草稿 (只恢复文本; 附件不猜)
+        drafts.get(_conversationId).takeIf { it.isNotBlank() }?.let(inputState::setMessageText)
+
+        // 边打边存: collectLatest + delay 即防抖, 避免每键一次 IO。
+        // 编辑历史消息时不写草稿, 否则会把别人的消息当成草稿存下来。
+        viewModelScope.launch {
+            snapshotFlow { inputState.textContent.text.toString() }
+                .distinctUntilChanged()
+                .collectLatest { text ->
+                    delay(DRAFT_SAVE_DEBOUNCE_MS)
+                    if (!inputState.isEditing()) drafts.save(_conversationId, text)
+                }
+        }
     }
 
     override fun onCleared() {
         voiceSession.stop()
+        if (!inputState.isEditing()) {
+            drafts.save(_conversationId, inputState.textContent.text.toString())
+        }
         super.onCleared()
         // 移除对话引用
         chatService.removeConversationReference(_conversationId)
@@ -280,6 +306,7 @@ class ChatVM(
         if (content.isEmptyInputMessage()) return
 
         chatService.sendMessage(_conversationId, content, answer)
+        drafts.clear(_conversationId)
     }
 
     /**
@@ -290,7 +317,9 @@ class ChatVM(
     fun interjectMessage(content: List<UIMessagePart>): Boolean {
         if (content.isEmptyInputMessage()) return false
 
-        return chatService.interjectMessage(_conversationId, content)
+        val accepted = chatService.interjectMessage(_conversationId, content)
+        if (accepted) drafts.clear(_conversationId)
+        return accepted
     }
 
     fun handleMessageEdit(parts: List<UIMessagePart>, messageId: Uuid) {
@@ -299,6 +328,8 @@ class ChatVM(
         viewModelScope.launch {
             chatService.editMessage(_conversationId, messageId, parts)
         }
+        // 编辑历史消息不是草稿: 清掉编辑框残留, 避免 onCleared 把别人的话存成草稿。
+        drafts.clear(_conversationId)
     }
 
     fun handleCompressContext(additionalPrompt: String, targetTokens: Int, keepRecentMessages: Int): Deferred<Result<Unit>> {
