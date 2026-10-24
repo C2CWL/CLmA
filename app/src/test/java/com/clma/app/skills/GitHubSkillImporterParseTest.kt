@@ -35,8 +35,10 @@ class GitHubSkillImporterParseTest {
         assertEquals("skills/demo/SKILL.md", ref?.path)
     }
 
+    // JVM 方法名不允许出现 '.', 所以这里的 ".git" 不能写成反引号原名,
+    // 否则 Kotlin 编译期直接报 "Name contains illegal characters: .."。
     @Test
-    fun `strips .git suffix and www`() {
+    fun `strips git suffix and www`() {
         val ref = GitHubSkillImporter.parse("https://www.github.com/owner/repo.git")
         assertEquals("owner", ref?.owner)
         assertEquals("repo", ref?.repo)
