@@ -898,6 +898,14 @@ class ChatService(
         }
     }
 
+    /**
+     * Whether [conversationId] has a generation running right now. Same source of truth the chat
+     * page reads; exposed for surfaces (the floating chat box) that only know about jobs they
+     * watched start themselves, and would otherwise treat a turn begun before they opened as idle.
+     */
+    fun isGenerating(conversationId: Uuid): Boolean =
+        sessions[conversationId]?.isGenerating == true
+
     private fun launchGenerationJob(
         conversationId: Uuid,
         keepAliveInBackground: Boolean = true,

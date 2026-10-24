@@ -131,7 +131,7 @@ internal class EdgeBarChatBoxController(
         chatService.addConversationReference(id)
         // Load it from the database (or set up a new one) unless it is generating right now,
         // in which case its live session already holds everything.
-        if (!generating.containsKey(id)) {
+        if (!isGeneratingNow(id)) {
             scope.launch {
                 runCatching { chatService.initializeConversation(id) }
                     .onFailure { Log.w(TAG, "initializeConversation failed", it) }
@@ -157,7 +157,7 @@ internal class EdgeBarChatBoxController(
     private fun onJobs(jobs: Map<Uuid, Job?>) {
         val now = SystemClock.elapsedRealtime()
         val active = jobs.mapNotNull { (id, job) -> job?.let { id to it } }.toMap()
-        val wasGenerating = boundId?.let { generating.containsKey(it) } ?: false
+        val wasGenerating = boundId?.let { isGeneratingNow(it) } ?: false
         for ((id, entry) in generating) {
             if (id !in active) recentlyEnded[id] = now - entry.second
         }
@@ -167,11 +167,20 @@ internal class EdgeBarChatBoxController(
             val previous = generating[id]
             if (previous == null || previous.first !== job) generating[id] = job to now
         }
-        val isGenerating = boundId?.let { generating.containsKey(it) } ?: false
+        val isGenerating = boundId?.let { isGeneratingNow(it) } ?: false
         if (wasGenerating != isGenerating) render()
     }
 
     private fun newestGenerating(): Uuid? = generating.maxByOrNull { it.value.second }?.key
+
+    /**
+     * True when [id] is generating. [generating] only tracks jobs this window watched start, so a
+     * reply already in flight when the window opened looks idle here — and a send would start a
+     * second message instead of interjecting. The service's session flag is what the main chat UI
+     * uses, so consult it as well and keep both surfaces agreeing.
+     */
+    private fun isGeneratingNow(id: Uuid): Boolean =
+        chatService.isGenerating(id) || generating.containsKey(id)
 
     // ---- Rendering ----
 
@@ -249,7 +258,7 @@ internal class EdgeBarChatBoxController(
     override fun onSend(text: String) {
         val id = boundId ?: return
         val parts = listOf(UIMessagePart.Text(text))
-        if (generating.containsKey(id)) {
+        if (isGeneratingNow(id)) {
             val accepted = runCatching { chatService.interjectMessage(id, parts) }
                 .onFailure { Log.w(TAG, "interjectMessage failed", it) }
                 .getOrDefault(false)
