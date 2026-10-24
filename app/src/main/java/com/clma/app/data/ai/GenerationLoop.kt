@@ -90,6 +90,13 @@ private const val GENERATION_STREAM_RETRY_MAX_DELAY_MS = 4_000L
 private const val RETRY_FAILURE_REASON_MAX_CHARS = 240
 
 /**
+ * How often the loop polls for a pending user steer while no stream chunk is arriving - i.e.
+ * during the first-token (TTFT) wait and while tools run. A chunk-driven check cannot see a
+ * steer in either window; ~120ms keeps the interrupt feeling immediate without busy-looping.
+ */
+private const val STEER_POLL_INTERVAL_MS = 120L
+
+/**
  * Upper bound for both stream-silence watchdogs, in seconds. Its only job is to keep a hand-typed
  * setting sane; the values themselves are user-configurable (Settings -> Network), defaulting to
  * 120s each. Kept in [NetworkSetting] so the settings screen clamps to the same number the
@@ -1043,6 +1050,14 @@ class GenerationLoop(
 
                 val toolCalls = messages.last().getTools().filter { !it.isExecuted }
                 if (toolCalls.isEmpty()) {
+                    // 插话还没被 drain（最常见的形态：整轮只有一段文本、根本没有工具调用）。
+                    // 这里 break 会把回合直接收掉，这条插话就只能等用户下次发消息才被消费，
+                    // 在界面上表现为一个「排队中」的孤岛气泡。continue 让下一 step 先 drain
+                    // 再重新请求，插话于是成为真正的下一段输入。
+                    if (hasPendingSteer()) {
+                        Log.i(TAG, "generateText: no tool calls but a steer is pending, continuing")
+                        continue
+                    }
                     // no tool calls, break
                     break
                 }
@@ -1132,7 +1147,37 @@ class GenerationLoop(
 
             // Handle tools (execute approved tools, handle denied tools)
             val executedTools = arrayListOf<UIMessagePart.Tool>()
+            // 工具执行期同样要能被打断：一个工具跑几十秒时，chunk 驱动的检查根本不会触发。
+            // 命中插话后本轮剩余工具一律不再执行，但都必须落下一条结果 —— 没有结果的
+            // tool_call 是 dangling call，provider 会拒绝下一次请求。
+            var steerAbortedTools = false
             toolsToProcess.forEach { tool ->
+                if (!steerAbortedTools && hasPendingSteer()) {
+                    steerAbortedTools = true
+                    Log.i(TAG, "generateText: user steer during tool execution, skipping the remaining tools")
+                }
+                if (steerAbortedTools) {
+                    executedTools += tool.copy(
+                        output = listOf(
+                            UIMessagePart.Text(
+                                json.encodeToString(
+                                    buildJsonObject {
+                                        put(
+                                            "error",
+                                            JsonPrimitive(
+                                                "tool_interrupted_by_user_steer: the user sent a new message " +
+                                                    "before this tool ran, so it was NOT executed and there is no " +
+                                                    "result. Do not assume any output; re-plan around the new " +
+                                                    "instruction."
+                                            )
+                                        )
+                                    }
+                                )
+                            )
+                        )
+                    )
+                    return@forEach
+                }
                 when (tool.approvalState) {
                     is ToolApprovalState.Denied -> {
                         // Tool was denied by user
@@ -1828,118 +1873,144 @@ class GenerationLoop(
                     val usageAttribution = conversationId?.let { UsageRunContexts.get(it.toString()) }
                         coroutineScope {
                             val idleWatchdog = launch { watchStreamIdle(context, idleNotifier, processingStatus) }
-                            try {
-                                withContext(
-                                    UsageCallContext(
-                                        purpose = usageAttribution?.purpose
-                                            ?: if (stepIndex > 0) UsagePurpose.TOOL_LOOP else UsagePurpose.MAIN,
-                                        conversationId = conversationId?.toString(),
-                                        assistantId = assistant.id.toString(),
-                                        runId = usageAttribution?.runId,
-                                        parentRunId = usageAttribution?.parentRunId,
-                                    )
-                                ) {
-                                    providerImpl.streamText(
-                                        providerSetting = provider,
-                                        messages = attemptMessages,
-                                        params = params
-                                    )
-                                }.abortIfSilent(
-                                    firstElementTimeoutMs = firstOutputTimeoutMs,
-                                    interChunkTimeoutMs = stallTimeoutMs,
-                                    noFirstElement = {
-                                        // A dead socket produces neither bytes nor an error; make
-                                        // it an ordinary transport failure so retryWhen re-issues
-                                        // the request on a fresh connection. Only reached before
-                                        // ANY output, which is exactly when a retry is safe.
-                                        IOException(
-                                            "Model stream produced no output within " +
-                                                "${firstOutputTimeoutMs / 1000}s"
+                            // TTFT 等待期一个 chunk 都不会到达，collect 里的 hasPendingSteer 检查在这段
+                            // 窗口里永远不触发：用户按了插话，界面却还在死等 provider 的首包。
+                            // 于是把整条流扣进一个子 Job，另起一个短周期 watchdog 巡检；
+                            // 命中就取消子 Job，再由下面的 steerCancelled 把这次取消翻译成
+                            // SteerInterrupt —— 只结束本 step，不动整轮协程。
+                            var steerCancelled = false
+                            val streamJob = launch {
+                                try {
+                                    withContext(
+                                        UsageCallContext(
+                                            purpose = usageAttribution?.purpose
+                                                ?: if (stepIndex > 0) UsagePurpose.TOOL_LOOP else UsagePurpose.MAIN,
+                                            conversationId = conversationId?.toString(),
+                                            assistantId = assistant.id.toString(),
+                                            runId = usageAttribution?.runId,
+                                            parentRunId = usageAttribution?.parentRunId,
                                         )
-                                    },
-                                    stalled = {
-                                        // Reached with the reply already under way: the retry
-                                        // policy refuses to re-run the turn here (that would
-                                        // duplicate visible text), so this failure is what feeds
-                                        // the continue / restart path instead.
-                                        IOException(
-                                            "Model stream went silent for " +
-                                                "${stallTimeoutMs / 1000}s after its first output"
+                                    ) {
+                                        providerImpl.streamText(
+                                            providerSetting = provider,
+                                            messages = attemptMessages,
+                                            params = params
                                         )
-                                    },
-                                ).onCompletion { cause ->
-                                    // Some SSE implementations report an abruptly closed socket through onClosed
-                                    // without an exception. Treat a clean close with no chunks at all as a transport
-                                    // failure so the retry policy can recover a background continuation. A clean
-                                    // close after chunks arrived but none produced parseable parts is a permanent
-                                    // condition (unrecognized part shapes), not a transport hiccup, so it must not
-                                    // burn retries - log it and let the generation end normally with an empty reply.
-                                    if (cause == null && shouldReportEmptyGenerationStream(receivedAnyChunk)) {
-                                        throw IOException("Model stream closed without meaningful output")
-                                    }
-                                    if (cause == null && receivedAnyChunk && !receivedMeaningfulOutput) {
-                                        Log.w(
-                                            TAG,
-                                            "streamText: stream closed after chunks arrived but none contained " +
-                                                "parseable parts; ending without retry",
-                                        )
-                                    }
-                                }.retryWhen { cause, retryAttempt ->
-                                    val shouldRetry = shouldRetryGenerationStreamFailure(
-                                        failure = cause,
-                                        retryAttempt = retryAttempt,
-                                        maxRetries = params.maxStreamRetries,
-                                        receivedMeaningfulOutput = receivedMeaningfulOutput,
-                                    )
-                                    if (shouldRetry) {
-                                        // A new attempt is about to start collecting from scratch: reset the
-                                        // per-attempt "did anything arrive" flag so onCompletion's transport-failure
-                                        // check reflects this attempt, not a chunk seen in an earlier one.
-                                        receivedAnyChunk = false
-                                        idleNotifier.onAttemptStart()
-                                        // Drop the empty parts the failed attempt's Start markers left
-                                        // behind, and the handler's id->index map that points at them.
-                                        messages = messagesForStreamRetry(
-                                            current = messages,
-                                            attemptStart = attemptStartMessages,
+                                    }.abortIfSilent(
+                                        firstElementTimeoutMs = firstOutputTimeoutMs,
+                                        interChunkTimeoutMs = stallTimeoutMs,
+                                        noFirstElement = {
+                                            // A dead socket produces neither bytes nor an error; make
+                                            // it an ordinary transport failure so retryWhen re-issues
+                                            // the request on a fresh connection. Only reached before
+                                            // ANY output, which is exactly when a retry is safe.
+                                            IOException(
+                                                "Model stream produced no output within " +
+                                                    "${firstOutputTimeoutMs / 1000}s"
+                                            )
+                                        },
+                                        stalled = {
+                                            // Reached with the reply already under way: the retry
+                                            // policy refuses to re-run the turn here (that would
+                                            // duplicate visible text), so this failure is what feeds
+                                            // the continue / restart path instead.
+                                            IOException(
+                                                "Model stream went silent for " +
+                                                    "${stallTimeoutMs / 1000}s after its first output"
+                                            )
+                                        },
+                                    ).onCompletion { cause ->
+                                        // Some SSE implementations report an abruptly closed socket through onClosed
+                                        // without an exception. Treat a clean close with no chunks at all as a transport
+                                        // failure so the retry policy can recover a background continuation. A clean
+                                        // close after chunks arrived but none produced parseable parts is a permanent
+                                        // condition (unrecognized part shapes), not a transport hiccup, so it must not
+                                        // burn retries - log it and let the generation end normally with an empty reply.
+                                        if (cause == null && shouldReportEmptyGenerationStream(receivedAnyChunk)) {
+                                            throw IOException("Model stream closed without meaningful output")
+                                        }
+                                        if (cause == null && receivedAnyChunk && !receivedMeaningfulOutput) {
+                                            Log.w(
+                                                TAG,
+                                                "streamText: stream closed after chunks arrived but none contained " +
+                                                    "parseable parts; ending without retry",
+                                            )
+                                        }
+                                    }.retryWhen { cause, retryAttempt ->
+                                        val shouldRetry = shouldRetryGenerationStreamFailure(
+                                            failure = cause,
+                                            retryAttempt = retryAttempt,
+                                            maxRetries = params.maxStreamRetries,
                                             receivedMeaningfulOutput = receivedMeaningfulOutput,
                                         )
-                                        streamChunkHandler = StreamChunkHandler(model)
+                                        if (shouldRetry) {
+                                            // A new attempt is about to start collecting from scratch: reset the
+                                            // per-attempt "did anything arrive" flag so onCompletion's transport-failure
+                                            // check reflects this attempt, not a chunk seen in an earlier one.
+                                            receivedAnyChunk = false
+                                            idleNotifier.onAttemptStart()
+                                            // Drop the empty parts the failed attempt's Start markers left
+                                            // behind, and the handler's id->index map that points at them.
+                                            messages = messagesForStreamRetry(
+                                                current = messages,
+                                                attemptStart = attemptStartMessages,
+                                                receivedMeaningfulOutput = receivedMeaningfulOutput,
+                                            )
+                                            streamChunkHandler = StreamChunkHandler(model)
+                                            onUpdateMessages(messages)
+                                            val delayMs = generationStreamRetryDelayMs(retryAttempt)
+                                            processingStatus.value = retryStatusText(
+                                                context = context,
+                                                retryNumber = retryAttempt + 1,
+                                                maxRetries = params.maxStreamRetries,
+                                                failure = cause,
+                                            )
+                                            Log.w(
+                                                TAG,
+                                                "streamText: retrying after failure " +
+                                                    "(${retryAttempt + 1}/${params.maxStreamRetries}) in ${delayMs}ms",
+                                                cause,
+                                            )
+                                            delay(delayMs)
+                                        }
+                                        shouldRetry
+                                    }.collect {
+                                        // 用户插话：立刻结束当前 step，让下一 step 带着新指令重新请求。
+                                        // 已流出的文本由 catch 分支正常收尾后保留。
+                                        if (hasPendingSteer()) throw SteerInterrupt()
+                                        receivedAnyChunk = true
+                                        val meaningful = isMeaningfulStreamChunk(it)
+                                        if (meaningful) {
+                                            receivedMeaningfulOutput = true
+                                            everReceivedMeaningfulOutput = true
+                                            clearRetryStatus(processingStatus)
+                                        }
+                                        idleNotifier.onChunk(meaningful)
+                                        messages = streamChunkHandler.handle(messages, it)
                                         onUpdateMessages(messages)
-                                        val delayMs = generationStreamRetryDelayMs(retryAttempt)
-                                        processingStatus.value = retryStatusText(
-                                            context = context,
-                                            retryNumber = retryAttempt + 1,
-                                            maxRetries = params.maxStreamRetries,
-                                            failure = cause,
-                                        )
-                                        Log.w(
-                                            TAG,
-                                            "streamText: retrying after failure " +
-                                                "(${retryAttempt + 1}/${params.maxStreamRetries}) in ${delayMs}ms",
-                                            cause,
-                                        )
-                                        delay(delayMs)
                                     }
-                                    shouldRetry
-                                }.collect {
-                                    // 用户插话：立刻结束当前 step，让下一 step 带着新指令重新请求。
-                                    // 已流出的文本由 catch 分支正常收尾后保留。
-                                    if (hasPendingSteer()) throw SteerInterrupt()
-                                    receivedAnyChunk = true
-                                    val meaningful = isMeaningfulStreamChunk(it)
-                                    if (meaningful) {
-                                        receivedMeaningfulOutput = true
-                                        everReceivedMeaningfulOutput = true
-                                        clearRetryStatus(processingStatus)
-                                    }
-                                    idleNotifier.onChunk(meaningful)
-                                    messages = streamChunkHandler.handle(messages, it)
-                                    onUpdateMessages(messages)
+                                } finally {
+                                    idleWatchdog.cancel()
                                 }
-                            } finally {
-                                idleWatchdog.cancel()
                             }
+                            val steerWatchdog = launch {
+                                while (isActive) {
+                                    delay(STEER_POLL_INTERVAL_MS)
+                                    if (hasPendingSteer()) {
+                                        // 流刚好自己结束时不要误判成插话打断。
+                                        if (streamJob.isCompleted) return@launch
+                                        steerCancelled = true
+                                        streamJob.cancel()
+                                        return@launch
+                                    }
+                                }
+                            }
+                            try {
+                                streamJob.join()
+                            } finally {
+                                steerWatchdog.cancel()
+                            }
+                            if (steerCancelled) throw SteerInterrupt()
                         }
                         // The stream finished normally: leave the attempt loop. Without this the
                         // `while (true)` above immediately re-issues the very same request, so a
