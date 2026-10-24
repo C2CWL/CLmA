@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -36,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.delay
@@ -44,6 +46,7 @@ import com.clma.ai.core.MessageRole
 import com.clma.ai.provider.Model
 import com.clma.ai.ui.UIMessage
 import com.clma.ai.ui.UIMessagePart
+import com.clma.ai.ui.isEmptyUIMessage
 import kotlinx.datetime.LocalDateTime
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Copy01
@@ -119,6 +122,13 @@ fun ColumnScope.ChatMessageActionButtons(
         else -> Modifier
     }
 
+    // 助手消息操作栏靠左、时间贴右端；用户消息整组靠右，时间跟在操作栏右边。
+    val userMessage = message.role == MessageRole.USER
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+    if (userMessage) Spacer(Modifier.weight(1f))
     FlowRow(
         modifier = plateModifier,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -234,6 +244,38 @@ fun ColumnScope.ChatMessageActionButtons(
         )
     }
 
+    if (!userMessage) Spacer(Modifier.weight(1f))
+
+    // 时间戳贴在操作栏右端，与操作栏共用同一层胶囊底板
+    if (settings.displaySetting.showDateTimeInMessage && !message.parts.isEmptyUIMessage()) {
+        val timePlateModifier = when {
+            frost != null && hazeState != null -> Modifier.frostedPlate(
+                hazeState = hazeState,
+                shape = plateShape,
+                spec = FrostedPlateSpec(tintAlpha = frost.tintAlpha, blurRadiusDp = frost.blurRadiusDp),
+                selection = WallpaperOnlySelection,
+            )
+
+            plateAlpha != null -> Modifier
+                .clip(plateShape)
+                .background(MaterialTheme.colorScheme.surface.copy(alpha = plateAlpha))
+
+            else -> Modifier
+                .clip(plateShape)
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+        }
+        Text(
+            text = message.displayTimestamp(preferEndTime = settings.displaySetting.showMessageEndTime)
+                .toJavaLocalDateTime()
+                .toMessageTimeString(),
+            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = style.timeAlpha),
+            maxLines = 1,
+            modifier = timePlateModifier.padding(horizontal = 10.dp, vertical = 4.dp),
+        )
+    }
+    }
+
     // Translation dialog
     if (showTranslateDialog && onTranslate != null) {
         LanguageSelectionDialog(
@@ -280,7 +322,8 @@ fun ChatMessageTimestamp(
     val settings = LocalSettings.current
     if (!settings.displaySetting.showDateTimeInMessage) return
     val style = messageActionsStyle(photoShown, sdkInt = Build.VERSION.SDK_INT, hasHazeState = hazeState != null)
-    val ink = if (style.onSurfaceInk) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
+    // The timestamp is standalone text: always the strong ink, never the faded secondary one.
+    val ink = MaterialTheme.colorScheme.onSurface
     // Streaming: createdAt ≈ first-token time. After finish/stop: finishedAt when the
     // "prefer end time" switch is on (default), else keep the old always-createdAt look.
     val displayAt = message.displayTimestamp(
@@ -288,7 +331,7 @@ fun ChatMessageTimestamp(
     )
     Text(
         text = displayAt.toJavaLocalDateTime().toMessageTimeString(),
-        style = MaterialTheme.typography.labelSmall,
+        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
         color = ink.copy(alpha = style.timeAlpha),
         maxLines = 1,
         modifier = modifier,

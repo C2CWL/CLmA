@@ -242,18 +242,6 @@ fun ChatMessage(
             assistant?.useGradientBackground == true,
         )
 
-        // 时间戳紧跟正文：与消息内容同侧对齐（助手在左、用户在气泡右下），
-        // 独立于操作栏渲染，操作栏隐藏时（插话打断的前半、流式中）也能显示。
-        // 空消息（首 token 之前）不显示。
-        if (message.parts.isEmptyUIMessage().not()) {
-            ChatMessageTimestamp(
-                message = actionMessage,
-                photoShown = photoShown,
-                hazeState = hazeState,
-                modifier = Modifier.padding(horizontal = 8.dp),
-            )
-        }
-
         // 被插话打断的前半保持 finishedAt == null：它“话还没说完”，不出操作栏，
         // 避免在同一个回合中间出现“这条回复已结束”的视觉断裂。
         // 用户消息的 finishedAt 恒为 null（发出时不写），不能按同一条件隐藏，
@@ -263,6 +251,18 @@ fun ChatMessage(
         } else {
             message.parts.isEmptyUIMessage().not() &&
                 (message.role == MessageRole.USER || message.finishedAt != null)
+        }
+
+        // 时间戳默认跟着操作栏走（同一行右端，见 ChatMessageActionButtons）；
+        // 操作栏不显示时（流式中、插话打断的前半）才在这里单独显示。
+        // 空消息（首 token 之前）不显示。
+        if (message.parts.isEmptyUIMessage().not() && !showActions) {
+            ChatMessageTimestamp(
+                message = actionMessage,
+                photoShown = photoShown,
+                hazeState = hazeState,
+                modifier = Modifier.padding(horizontal = 8.dp),
+            )
         }
 
         AnimatedVisibility(
