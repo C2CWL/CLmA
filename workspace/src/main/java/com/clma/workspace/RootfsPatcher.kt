@@ -228,7 +228,7 @@ class RootfsPatcher {
             .mapNotNull { it.toLongOrNull() }
     }
 
-    private companion object {
+    companion object {
         private const val MAX_DNS_SERVERS = 3
         private const val DEFAULT_HOSTNAME = "localhost"
         private val WHITESPACE_REGEX = Regex("\\s+")
