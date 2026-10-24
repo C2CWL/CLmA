@@ -750,7 +750,9 @@ class ChatService(
     // ---- Session 管理 ----
 
     private fun getOrCreateSession(conversationId: Uuid): ConversationSession {
-        return sessions.computeIfAbsent(conversationId) { id ->
+        var created = false
+        val session = sessions.computeIfAbsent(conversationId) { id ->
+            created = true
             val settings = settingsStore.settingsFlow.value
             ConversationSession(
                 id = id,
@@ -771,11 +773,16 @@ class ChatService(
                     }
                     appScope.launch { dispatchNextQueuedMessage(id) }
                 },
-            ).also {
-                _sessionsVersion.value++
-                Log.i(TAG, "createSession: $id (total: ${sessions.size + 1})")
-            }
+            )
         }
+        // Bump only after the session is in the map. A bump inside computeIfAbsent
+        // runs before the insert, so collectors snapshot a missing session and stay
+        // on flowOf(null) until some later bump.
+        if (created) {
+            _sessionsVersion.value++
+            Log.i(TAG, "createSession: $conversationId (total: ${sessions.size})")
+        }
+        return session
     }
 
     private fun removeSession(conversationId: Uuid) {
@@ -872,10 +879,16 @@ class ChatService(
         // next send, so a snapshot taken at ViewModel creation could either miss that new job
         // (no spinner, no stop button) or keep reporting an evicted session's job — which is how
         // the "工作中…" footer stayed up over an already finished reply. Only an active job
-        // counts, so a completion callback that hasn't run yet cannot pin the indicator either.
+        // counts as this turn even before start(); a finished job still in the slot does not.
         return _sessionsVersion.flatMapLatest {
             val jobFlow = sessions[conversationId]?.generationJob ?: return@flatMapLatest flowOf<Job?>(null)
-            jobFlow.map { job -> job?.takeIf { it.isActive } }
+            // setJob publishes a LAZY job, then calls start(). StateFlow does not
+            // emit again when isActive flips, so filtering on isActive drops the only
+            // emission: the chat page never shows cancel / streaming until it
+            // resubscribes (leave the conversation and come back). A not-yet-started
+            // job is still this turn. A job that already finished, but whose
+            // completion callback has not cleared the slot, must not pin the indicator.
+            jobFlow.map { job -> job?.takeUnless { it.isCompleted } }
         }
     }
 
