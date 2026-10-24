@@ -16,7 +16,9 @@ class RootfsPatcher {
         ensureHostname(etcDir, options.hostname)
         ensureLocale(etcDir, options.locale)
         ensureGroupNames(etcDir, options.groupIds.ifEmpty { currentSupplementaryGroupIds() })
+        ensureAptMirrors(etcDir, options.mirrorUrl)
         ensureTempDirs(linuxDir)
+        ensureSetupScripts(linuxDir)
     }
 
     private fun ensureRootfsDns(
@@ -139,7 +141,7 @@ class RootfsPatcher {
     }
 
     private fun ensureTempDirs(linuxDir: File) {
-        listOf("tmp", "var/tmp", "root").forEach { path ->
+        listOf("tmp", "var/tmp", "root", "usr/local/bin").forEach { path ->
             File(linuxDir, path).mkdirs()
         }
         listOf(File(linuxDir, "tmp"), File(linuxDir, "var/tmp")).forEach { dir ->
@@ -154,6 +156,67 @@ class RootfsPatcher {
         }
     }
 
+    private fun ensureAptMirrors(etcDir: File, mirrorUrl: String) {
+        if (mirrorUrl.isBlank()) return
+        val aptDir = File(etcDir, "apt")
+        if (!aptDir.isDirectory) return
+
+        // 1. Ubuntu 24.04+ deb822 格式: /etc/apt/sources.list.d/ubuntu.sources
+        val sourcesDir = File(aptDir, "sources.list.d")
+        val ubuntuSources = File(sourcesDir, "ubuntu.sources")
+        if (ubuntuSources.isFile) {
+            val content = ubuntuSources.readText()
+            val updated = content.replace("http://ports.ubuntu.com/ubuntu-ports/", mirrorUrl.trimEnd('/') + "/")
+                .replace("https://ports.ubuntu.com/ubuntu-ports/", mirrorUrl.trimEnd('/') + "/")
+                .replace("http://archive.ubuntu.com/ubuntu/", mirrorUrl.trimEnd('/') + "/")
+                .replace("https://archive.ubuntu.com/ubuntu/", mirrorUrl.trimEnd('/') + "/")
+            if (updated != content) {
+                ubuntuSources.writeText(updated)
+            }
+        }
+
+        // 2. 传统 sources.list
+        val sourcesList = File(aptDir, "sources.list")
+        if (sourcesList.isFile) {
+            val content = sourcesList.readText()
+            val updated = content.replace("http://ports.ubuntu.com/ubuntu-ports", mirrorUrl.trimEnd('/'))
+                .replace("https://ports.ubuntu.com/ubuntu-ports", mirrorUrl.trimEnd('/'))
+                .replace("http://archive.ubuntu.com/ubuntu", mirrorUrl.trimEnd('/'))
+                .replace("https://archive.ubuntu.com/ubuntu", mirrorUrl.trimEnd('/'))
+            if (updated != content) {
+                sourcesList.writeText(updated)
+            }
+        }
+    }
+
+    private fun ensureSetupScripts(linuxDir: File) {
+        val binDir = File(linuxDir, "usr/local/bin").apply { mkdirs() }
+        val scriptFile = File(binDir, "clma-init-tools")
+        val scriptContent = """
+            #!/bin/sh
+            set -e
+            export DEBIAN_FRONTEND=noninteractive
+            echo "Installing CLmA core media and data tools..."
+            apt-get -o DPkg::Lock::Timeout=60 -o Acquire::Retries=2 update
+            apt-get -o DPkg::Lock::Timeout=60 -o Acquire::Retries=2 install -y --no-install-recommends \
+                ca-certificates \
+                curl \
+                wget \
+                ffmpeg \
+                imagemagick \
+                jq \
+                poppler-utils
+            echo "CLmA core tools installed successfully."
+        """.trimIndent() + "\n"
+
+        if (!scriptFile.exists() || scriptFile.readText() != scriptContent) {
+            scriptFile.writeText(scriptContent)
+            scriptFile.setReadable(true, false)
+            scriptFile.setWritable(true, true)
+            scriptFile.setExecutable(true, false)
+        }
+    }
+
     private fun currentSupplementaryGroupIds(): List<Long> {
         val status = File("/proc/self/status")
         if (!status.isFile) return emptyList()
@@ -165,7 +228,7 @@ class RootfsPatcher {
             .mapNotNull { it.toLongOrNull() }
     }
 
-    private companion object {
+    companion object {
         private const val MAX_DNS_SERVERS = 3
         private const val DEFAULT_HOSTNAME = "localhost"
         private val WHITESPACE_REGEX = Regex("\\s+")
@@ -179,6 +242,7 @@ class RootfsPatcher {
             "8.8.8.8",
             "223.5.5.5",
         )
+        const val DEFAULT_UBUNTU_MIRROR = "https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports"
     }
 }
 
@@ -187,4 +251,5 @@ data class RootfsPatchOptions(
     val hostname: String = "localhost",
     val locale: String = "C.UTF-8",
     val groupIds: List<Long> = emptyList(),
+    val mirrorUrl: String = RootfsPatcher.DEFAULT_UBUNTU_MIRROR,
 )
