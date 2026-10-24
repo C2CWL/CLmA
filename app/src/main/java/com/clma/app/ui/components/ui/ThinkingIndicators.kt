@@ -25,7 +25,6 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Atom02
@@ -74,9 +73,11 @@ internal fun risingDotLift(phase: Float, index: Int): Float {
  * The text next to an indicator: [processingStatus] when there is one, otherwise the phase label
  * (思考中 / 回复中 / 工作中), plus "…" when [ellipsis]. Phase changes cross-fade.
  *
- * Two lines instead of one: a status like "已 298 秒没有新内容，可能已卡住；可停止后重试" (and the
- * waiting / retrying ones) is longer than a single line next to the icon, and used to be cut off
- * mid-sentence. Callers pass a weight so the label wraps inside the row that also holds the dots.
+ * No line limit: a status like "正在重试（第 2/5 次）。上次失败原因：…" carries the provider's error
+ * text and runs well past two lines, so a fixed maxLines only moved the cut from one line to two and
+ * still ended in an ellipsis. The label now wraps for as long as it needs (the row grows taller, and
+ * callers keep passing a weight so it wraps inside the row that also holds the dots). Callers that
+ * want the indicator aligned with the first line use [Alignment.Top] rather than centring.
  */
 @Composable
 private fun ThinkingLabel(
@@ -96,8 +97,8 @@ private fun ThinkingLabel(
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Medium,
             color = color,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
+            // Deliberately no maxLines / overflow: the status text (retry failure reasons in
+            // particular) must be readable in full, even when that means several lines.
             modifier = if (shimmerPhase == null) modifier else modifier
                 // Offscreen so SrcAtop paints the band onto the glyphs only.
                 .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
@@ -188,15 +189,17 @@ fun AtomDotsThinkingRow(
     modifier: Modifier = Modifier,
 ) {
     val t = rememberThinkingPhase(ATOM_DOTS_STATIC_PHASE, "atom-dots")
+    // Top-aligned, not centred: the label can now run to several lines, and centring would push
+    // the atom and the rising dots into the middle of the block instead of beside the first line.
     Row(
         modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically,
+        verticalAlignment = Alignment.Top,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         GradientSpinningAtom(t, Modifier.size(IndicatorSize))
         Row(
             modifier = Modifier.weight(1f, fill = false),
-            verticalAlignment = Alignment.CenterVertically,
+            verticalAlignment = Alignment.Top,
         ) {
             ThinkingLabel(
                 processingStatus = processingStatus,
@@ -205,7 +208,8 @@ fun AtomDotsThinkingRow(
                 shimmerPhase = null,
                 modifier = Modifier.weight(1f, fill = false),
             )
-            RisingDots(t, Modifier.padding(start = 2.dp))
+            // 3dp nudges the 14dp dots to the optical centre of the first text line.
+            RisingDots(t, Modifier.padding(start = 2.dp, top = 3.dp))
         }
     }
 }
@@ -270,9 +274,10 @@ fun BreathingOrbThinkingRow(
     modifier: Modifier = Modifier,
 ) {
     val t = rememberThinkingPhase(ORB_STATIC_PHASE, "breathing-orb")
+    // Top-aligned so a multi-line status keeps the orb beside the first line (see ThinkingLabel).
     Row(
         modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically,
+        verticalAlignment = Alignment.Top,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         BreathingOrb(t, Modifier.size(IndicatorSize))
@@ -333,9 +338,10 @@ fun TwinOrbitThinkingRow(
     modifier: Modifier = Modifier,
 ) {
     val t = rememberThinkingPhase(ORBIT_STATIC_PHASE, "twin-orbit")
+    // Top-aligned so a multi-line status keeps the orbit beside the first line (see ThinkingLabel).
     Row(
         modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically,
+        verticalAlignment = Alignment.Top,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         TwinOrbit(t, Modifier.size(IndicatorSize))
