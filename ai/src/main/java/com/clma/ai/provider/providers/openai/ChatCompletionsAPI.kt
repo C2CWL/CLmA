@@ -52,6 +52,7 @@ import com.clma.ai.ui.metadataAs
 import com.clma.ai.ui.toMetadata
 import com.clma.ai.util.HttpException
 import com.clma.ai.util.KeyRoulette
+import com.clma.ai.util.RequestTooLargeException
 import com.clma.ai.util.configureReferHeaders
 import com.clma.ai.util.configureSessionHeaders
 import com.clma.ai.util.encodeBase64
@@ -115,7 +116,13 @@ class ChatCompletionsAPI(
 
         val response = client.newCall(request).await()
         if (!response.isSuccessful) {
-            throw Exception("Failed to get response: ${response.code} ${response.body.string()}")
+            val errorBody = response.body.string()
+            // 413 is the same problem the local size checks model, seen from the server side:
+            // compaction can still fix it, so keep it distinguishable from a generic error.
+            if (response.code == 413) {
+                throw RequestTooLargeException("Failed to get response: 413 $errorBody")
+            }
+            throw Exception("Failed to get response: ${response.code} $errorBody")
         }
 
         val bodyStr = response.body.string()
@@ -254,8 +261,18 @@ class ChatCompletionsAPI(
                         Log.i(TAG, "onFailure: $exception")
                     }
                 } catch (e: Throwable) {
+                    // Some gateways answer with a non-JSON body, or with one that still carries a
+                    // chunk-size prefix ("3a33\r\n{...}"). Surfacing the JSON parse error hides
+                    // the provider's actual reason, so keep its text instead.
                     Log.w(TAG, "onFailure: failed to parse from $bodyRaw", e)
-                    exception = e
+                    val raw = bodyRaw.orEmpty().trim()
+                    val cleaned = raw
+                        .replace(Regex("^[0-9a-fA-F]{1,8}\\s*\\r?\\n"), "")
+                        .ifBlank { raw }
+                    exception = HttpException(
+                        message = "Failed to get response: ${response?.code ?: 0} $cleaned",
+                        statusCode = response?.code,
+                    )
                 } finally {
                     close(exception)
                 }
