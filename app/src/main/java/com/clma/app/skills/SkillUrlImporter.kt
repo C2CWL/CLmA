@@ -129,6 +129,7 @@ class SkillUrlImporter(
                 ?: return Result.Err("transcode_failed", "could not parse openclaw skill body")
             SkillFormat.HERMES -> transcodeFromHermes(raw, sourceUrl = sourceForFrontmatter, override = overrideName)
                 ?: return Result.Err("transcode_failed", "could not parse Hermes skill JSON")
+            SkillFormat.GITHUB -> raw
         }
 
         // Pull name / description out of the (now-canonical) frontmatter for the saved-skill record.
