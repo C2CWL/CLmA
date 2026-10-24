@@ -52,6 +52,7 @@ import com.clma.ai.ui.limitContext
 import com.clma.ai.util.HttpException
 import com.clma.ai.util.isFatalForRetry
 import com.clma.ai.util.redactSecrets
+import com.clma.app.data.secrets.SecretVaultRegistry
 import com.clma.app.data.repository.ConversationRepository
 import com.clma.app.data.ai.limits.ConversationReasoningOverrides
 import com.clma.app.data.ai.tools.ConversationInjections
@@ -2105,8 +2106,11 @@ class GenerationLoop(
         hasShellAccess: Boolean,
         maxTokens: Int? = null,
     ): List<UIMessagePart> {
-        val textParts = output.filterIsInstance<UIMessagePart.Text>()
-        val nonTextParts = output.filter { it !is UIMessagePart.Text }
+        // 先按保险箱明文做值级脱敏, 再走截断/落盘: 否则 spill 到 /tool_outputs 的全文
+        // 仍会带着 token, 模型 cat 一下就又读回来了。
+        val scrubbed = redactToolOutputValues(output)
+        val textParts = scrubbed.filterIsInstance<UIMessagePart.Text>()
+        val nonTextParts = scrubbed.filter { it !is UIMessagePart.Text }
         val totalChars = textParts.sumOf { it.text.length }
 
         // Phase 17 (⑥): optional per-tool-result token budget. Off by default (null = the
@@ -2138,16 +2142,17 @@ class GenerationLoop(
             }
         }
 
-        if (totalChars <= MAX_TOOL_OUTPUT_CHARS || !hasShellAccess) return output
+        if (totalChars <= MAX_TOOL_OUTPUT_CHARS || !hasShellAccess) return scrubbed
 
         Log.i(TAG, "maybeTruncateToolOutput: truncating tool $toolCallId output ($totalChars chars)")
 
         val fullText = textParts.joinToString("\n") { it.text }
         val preview = fullText.take(TOOL_OUTPUT_PREVIEW_CHARS)
 
-        val fileName = "${toolCallId}.txt"
-        val outputDir = File(context.filesDir, FileFolders.TOOL_OUTPUTS).apply { mkdirs() }
-        File(outputDir, fileName).writeText(fullText)
+        val fileName = spillToolOutput(toolCallId, fullText) ?: run {
+            // 落盘失败时仍返回脱敏后的预览, 绝不能把原文塞回模型。
+            return listOf(UIMessagePart.Text(preview)) + nonTextParts
+        }
 
         return listOf(
             UIMessagePart.Text(
@@ -2174,6 +2179,24 @@ class GenerationLoop(
         File(outputDir, fileName).writeText(fullText)
         fileName
     }.getOrNull()
+
+    /**
+     * 值级脱敏: 把保险箱里的明文 (及 Base64 / URL 编码变形) 从工具输出里抠掉。
+     * 只动 Text 部分; 图片/文件引用保持原样。
+     */
+    private fun redactToolOutputValues(output: List<UIMessagePart>): List<UIMessagePart> {
+        val secrets = SecretVaultRegistry.snapshotValues()
+        if (secrets.isEmpty()) return output
+        return output.map { part ->
+            if (part is UIMessagePart.Text) {
+                part.copy(
+                    text = com.clma.app.data.secrets.SecretValueRedactor.redact(part.text, secrets),
+                )
+            } else {
+                part
+            }
+        }
+    }
 
     /**
      * Header for a budget-trimmed tool result. The `cat`/`grep` hints are only advertised when a

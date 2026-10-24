@@ -146,7 +146,12 @@ val appModule = module {
     // T-07: named secrets a workflow action can reference as {{secret:NAME}} — keystore-backed
     // so the token never has to live inside the (plaintext, model-visible) workflow JSON.
     single { com.clma.app.workflow.secrets.WorkflowSecretsStore(get()) }
-    single { com.clma.app.data.secrets.AgentSecretsStore(get()) }
+    single {
+        com.clma.app.data.secrets.AgentSecretsStore(get()).also {
+            // 工具输出脱敏需要读保险箱明文 (见 SecretVaultRegistry)
+            com.clma.app.data.secrets.SecretVaultRegistry.install(it)
+        }
+    }
 
     // Phase 12: Workflows
     single {
