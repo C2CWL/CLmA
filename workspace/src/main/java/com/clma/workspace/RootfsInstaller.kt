@@ -55,6 +55,10 @@ class RootfsInstaller(
         connection.connectTimeout = CONNECT_TIMEOUT_MS
         connection.readTimeout = READ_TIMEOUT_MS
         connection.instanceFollowRedirects = true
+        connection.setRequestProperty(
+            "User-Agent",
+            "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
+        )
         try {
             val code = connection.responseCode
             require(code in 200..299) { "Rootfs download failed: HTTP $code" }

@@ -242,7 +242,7 @@ class RootfsPatcher {
             "8.8.8.8",
             "223.5.5.5",
         )
-        const val DEFAULT_UBUNTU_MIRROR = "https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports"
+        const val DEFAULT_UBUNTU_MIRROR = "https://mirrors.aliyun.com/ubuntu-ports"
     }
 }
 
