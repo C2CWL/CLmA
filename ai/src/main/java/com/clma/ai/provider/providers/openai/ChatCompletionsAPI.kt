@@ -971,16 +971,16 @@ class ChatCompletionsAPI(
                     "text"
                 )?.jsonPrimitiveOrNull?.contentOrNull
             }
-        val reasoningMetadata = jsonObject["reasoning_details"]?.jsonArrayOrNull?.let {
-            OpenRouterReasoningMetadata(reasoningDetails = it).toMetadata()
-        }
+        val reasoningMetadata = jsonObject["reasoning_details"]?.jsonArrayOrNull
+            ?.takeIf { it.isNotEmpty() }
+            ?.let { OpenRouterReasoningMetadata(reasoningDetails = it).toMetadata() }
         val toolCalls = jsonObject["tool_calls"] as? JsonArray ?: JsonArray(emptyList())
         val images = jsonObject["images"] as? JsonArray ?: JsonArray(emptyList())
 
         return UIMessage(
             role = role,
             parts = buildList {
-                if (!reasoning.isNullOrEmpty() || reasoningMetadata != null) {
+                if (!reasoning.isNullOrBlank() || reasoningMetadata != null) {
                     add(
                         UIMessagePart.Reasoning(
                             reasoning = reasoning.orEmpty(),

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+<string name="setting_files_page_clean_kept_note">将保留 %1$d 个头像/背景文件</string>
+<string name="setting_files_page_delete_image_title">删除图片</string>
+<string name="setting_files_page_folder_images">生成图片</string>
+<string name="setting_files_page_protected_avatar">头像</string>
+<string name="setting_files_page_protected_background">背景</string>
+<string name="setting_files_page_protected_hint">被助手用作头像或聊天壁纸，清理时不会删除；如需更换请到助手设置页。</string>
+<string name="setting_files_page_section_files">其他文件</string>
+<string name="setting_files_page_section_protected">头像与背景（受保护）</string>
+</resources>

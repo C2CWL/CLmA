@@ -242,6 +242,18 @@ fun ChatMessage(
             assistant?.useGradientBackground == true,
         )
 
+        // 时间戳紧跟正文：与消息内容同侧对齐（助手在左、用户在气泡右下），
+        // 独立于操作栏渲染，操作栏隐藏时（插话打断的前半、流式中）也能显示。
+        // 空消息（首 token 之前）不显示。
+        if (message.parts.isEmptyUIMessage().not()) {
+            ChatMessageTimestamp(
+                message = actionMessage,
+                photoShown = photoShown,
+                hazeState = hazeState,
+                modifier = Modifier.padding(horizontal = 8.dp),
+            )
+        }
+
         // 被插话打断的前半保持 finishedAt == null：它“话还没说完”，不出操作栏，
         // 避免在同一个回合中间出现“这条回复已结束”的视觉断裂。
         // 用户消息的 finishedAt 恒为 null（发出时不写），不能按同一条件隐藏，
@@ -275,16 +287,6 @@ fun ChatMessage(
                     hazeState = hazeState,
                 )
             }
-        }
-
-        // 时间戳独立于操作栏渲染：操作栏隐藏时（插话打断的前半、流式中）也能显示。
-        // 空消息（流式首 token 之前）不显示。
-        if (message.parts.isEmptyUIMessage().not()) {
-            ChatMessageTimestamp(
-                message = actionMessage,
-                photoShown = photoShown,
-                hazeState = hazeState,
-            )
         }
 
         EditedFilesList(
@@ -427,12 +429,11 @@ private fun MessagePartsBlock(
                 if (block.steps.isNotEmpty()) {
                     val isReasoningOnlyBlock = block.steps.fastAll { it is ThinkingStep.ReasoningStep }
                     val toolCallStyle = settings.displaySetting.toolCallStyle
-                    // Capsule drops the timeline only for a pure tool/server-tool group.
-                    // Reasoning or process narration keeps the classic line and icon mask.
-                    val capsuleToolOnly = toolCallStyle == ToolCallStyle.CAPSULE &&
-                        block.steps.fastAll {
-                            it is ThinkingStep.ToolStep || it is ThinkingStep.ServerToolStep
-                        }
+                    // Capsule covers the whole step card. It used to require a pure tool group,
+                    // but every reasoning model — and foldProcessNarration, which is on by
+                    // default — puts a reasoning/narration step in the same group, so the style
+                    // never actually applied and the setting looked like it did nothing.
+                    val capsule = toolCallStyle == ToolCallStyle.CAPSULE
                     // Force-expand whenever any tool step is awaiting approval. Without
                     // this, on 3+ pending tool calls only the last 2 rows are visible
                     // and the first sits hidden behind the "show more" arrow — easy to
@@ -453,12 +454,12 @@ private fun MessagePartsBlock(
                         ),
                         collapsedAdaptiveWidth = isReasoningOnlyBlock,
                         forceExpanded = hasPendingApproval,
-                        showTimeline = !capsuleToolOnly,
-                        maskIcons = !capsuleToolOnly,
-                        shape = RoundedCornerShape(if (capsuleToolOnly) 20.dp else 16.dp),
+                        showTimeline = !capsule,
+                        maskIcons = !capsule,
+                        shape = RoundedCornerShape(if (capsule) 20.dp else 16.dp),
                         toolCallStyle = toolCallStyle,
                         cardColors = CardDefaults.cardColors(
-                            containerColor = if (capsuleToolOnly) {
+                            containerColor = if (capsule) {
                                 MaterialTheme.colorScheme.surfaceContainer
                             } else {
                                 MaterialTheme.colorScheme.surfaceContainerHigh
@@ -508,6 +509,15 @@ private fun MessagePartsBlock(
                         }
                     }
                 }
+            }
+
+            is MessagePartBlock.InteractiveToolBlock -> key(block.index) {
+                InteractiveToolCard(
+                    tool = block.tool,
+                    loading = loading && !block.tool.isExecuted,
+                    onToolApproval = onToolApproval,
+                    onToolAnswer = onToolAnswer,
+                )
             }
 
             is MessagePartBlock.ContentBlock -> key(block.index) {

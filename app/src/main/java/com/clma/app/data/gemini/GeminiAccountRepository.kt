@@ -371,13 +371,13 @@ internal fun clientMetadataJson(): JsonObject = buildJsonObject {
 // live Antigravity update manifest (packages/catalog/src/wire/gemini-headers.ts:35). The backend
 // gates newer models on this version, so bump it there and here together when it moves; we do not
 // fetch the manifest ourselves to avoid a runtime dependency on an extra Google-owned endpoint.
-internal const val ANTIGRAVITY_VERSION = "2.8.0"
+internal const val ANTIGRAVITY_VERSION = "2.25.0"
 internal const val ANTIGRAVITY_OS = "darwin"
 internal const val ANTIGRAVITY_ARCH = "arm64"
 // The backend does not validate cl: stale, zero, and absent values all pass model gating
 // (gemini-headers.ts:95-98), so this stays at opencode-antigravity-auth's captured value
 // (src/constants.ts's getAntigravityUserAgent default) rather than tracking a real changelist.
-internal const val ANTIGRAVITY_CL = "963137146"
+internal const val ANTIGRAVITY_CL = "998881661"
 
 // Antigravity generate traffic (streamGenerateContent, fetchAvailableModels) tries the daily
 // Cloud Code Assist tier first, then its sandbox twin - oh-my-pi's ANTIGRAVITY_ENDPOINT_FALLBACKS

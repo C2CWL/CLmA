@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ask_user / request_secret standalone cards. Kept out of strings.xml so this UI
+  change does not collide with the large default string table.
+-->
+<resources>
+  <string name="chat_interactive_card_cancel">Cancel</string>
+  <string name="chat_interactive_card_cancelled">Cancelled</string>
+  <string name="chat_interactive_card_answered">Answered: %1$s</string>
+  <string name="chat_interactive_card_answered_plain">Answered</string>
+  <string name="chat_interactive_card_ask_title">Question</string>
+  <string name="chat_interactive_card_waiting">Waiting for your input</string>
+</resources>

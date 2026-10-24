@@ -2,6 +2,7 @@ package com.clma.app.ui.components.message
 
 import androidx.compose.ui.util.fastForEachIndexed
 import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.ai.tools.ToolApprovalPolicy
 
 /**
  * 思考步骤类型，用于分组 Reasoning、客户端 Tool、ServerTool，以及（可选）过程旁白 Text。
@@ -40,17 +41,34 @@ sealed interface ThinkingStep {
 sealed interface MessagePartBlock {
     data class ThinkingBlock(val steps: List<ThinkingStep>) : MessagePartBlock
     data class ContentBlock(val part: UIMessagePart, val index: Int) : MessagePartBlock
+
+    /**
+     * ask_user / request_secret。正文级卡片，不进思考链，避免表单被「再显示 N 步」折起来。
+     *
+     * [index] 是该 Tool 在原始 parts 里的下标，给 Compose key 用。
+     */
+    data class InteractiveToolBlock(
+        val tool: UIMessagePart.Tool,
+        val index: Int,
+    ) : MessagePartBlock
 }
 
+/** 向用户要输入的工具：独立卡片，不当成思考步骤。 */
+fun UIMessagePart.Tool.isInteractiveInputTool(): Boolean =
+    toolName == ToolApprovalPolicy.ASK_USER_TOOL_NAME ||
+        toolName == ToolApprovalPolicy.REQUEST_SECRET_TOOL_NAME
+
 /**
- * 将 parts 分组成 ThinkingBlock 和 ContentBlock。
+ * 将 parts 分组成 ThinkingBlock、InteractiveToolBlock 和 ContentBlock。
  *
  * 连续的 Reasoning、客户端 Tool 和 ServerTool 会被分组到一个 ThinkingBlock 中；
  * 空白 Text 会被跳过，不会把一组步骤切开。
+ * ask_user / request_secret 会先 flush 当前思考链，再单独成块。
  *
  * @param foldProcessNarration 为 true 时，若某段非空 Text 后面还跟有思考/工具 part，
  * 则把它收成 [ThinkingStep.NarrationStep] 留在当前思考链里，而不是 flush 成正文。
- * 最后一轮思考/工具之后的 Text（真正回答）仍是 ContentBlock。带 `rikkahub.webview`
+ * 最后一轮思考/工具之后的 Text（真正回答）仍是 ContentBlock。交互卡片不算思考步骤，
+ * 所以它前面的说明文字不会仅仅因为它而被折进思考链。带 `rikkahub.webview`
  * 的 Text 始终当正文卡片，不并进思考链。
  */
 fun List<UIMessagePart>.groupMessageParts(
@@ -66,14 +84,15 @@ fun List<UIMessagePart>.groupMessageParts(
         }
     }
 
-    // 开启折叠旁白时，预先找到「最后一次思考/工具」的下标：
-    // 它之前的普通 Text 都是过程旁白；它之后的 Text 才是正文回答。
+    // 开启折叠旁白时，预先找到「最后一次思考/工具」的下标。
+    // 交互卡片不算：否则它前面的说明文字会被折进思考链，卡片和旁白对不上。
     val lastThinkingIndex = if (foldProcessNarration) {
         indices.lastOrNull { idx ->
-            when (this[idx]) {
+            when (val part = this[idx]) {
                 is UIMessagePart.Reasoning,
-                is UIMessagePart.Tool,
-                is UIMessagePart.ServerTool -> true
+                is UIMessagePart.ServerTool,
+                -> true
+                is UIMessagePart.Tool -> !part.isInteractiveInputTool()
                 else -> false
             }
         } ?: -1
@@ -88,7 +107,12 @@ fun List<UIMessagePart>.groupMessageParts(
             }
 
             is UIMessagePart.Tool -> {
-                currentThinkingSteps.add(ThinkingStep.ToolStep(part))
+                if (part.isInteractiveInputTool()) {
+                    flushThinkingSteps()
+                    result.add(MessagePartBlock.InteractiveToolBlock(part, index))
+                } else {
+                    currentThinkingSteps.add(ThinkingStep.ToolStep(part))
+                }
             }
 
             is UIMessagePart.ServerTool -> {
@@ -126,8 +150,8 @@ fun List<UIMessagePart>.groupMessageParts(
  * workspace_shell 的内联输出要不要收起。
  *
  * 这个调用还是消息里的最后一步时保持展开，输出长出来的过程还在。
- * 它后面一旦出现推理 part 或正文 part（下一次思考或输出已经开始），就收起。
- * 后面如果只是另一个工具，先不收。非 shell 工具恒为 false。
+ * 它后面一旦出现推理 part、正文 part，或提问/安全输入卡片（下一次思考或输出已经开始），就收起。
+ * 后面如果只是另一个普通工具，先不收。非 shell 工具恒为 false。
  */
 fun shellInlineOutputShouldCollapse(parts: List<UIMessagePart>, tool: UIMessagePart.Tool): Boolean {
     if (tool.toolName != "workspace_shell") return false
@@ -138,6 +162,8 @@ fun shellInlineOutputShouldCollapse(parts: List<UIMessagePart>, tool: UIMessageP
     }
     if (index < 0) return false
     return parts.drop(index + 1).any { part ->
-        part is UIMessagePart.Reasoning || part is UIMessagePart.Text
+        part is UIMessagePart.Reasoning ||
+            part is UIMessagePart.Text ||
+            (part is UIMessagePart.Tool && part.isInteractiveInputTool())
     }
 }

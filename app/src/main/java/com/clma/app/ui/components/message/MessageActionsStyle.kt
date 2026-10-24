@@ -24,8 +24,9 @@ internal data class MessageActionsStyle(
     val plated: Boolean get() = plateAlpha != null || frost != null
 }
 
-/** Off a photo: the original look (icons at full `onSurfaceVariant`, the time at 0.6). */
-internal val DEFAULT_MESSAGE_ACTIONS_STYLE = MessageActionsStyle(onSurfaceInk = false, iconAlpha = 1f, timeAlpha = 0.6f)
+/** Off a photo: the original look (icons at full `onSurfaceVariant`), the time a touch stronger
+ *  than before (0.6 → 0.75) so it reads as part of the message instead of fading into the page. */
+internal val DEFAULT_MESSAGE_ACTIONS_STYLE = MessageActionsStyle(onSurfaceInk = false, iconAlpha = 1f, timeAlpha = 0.75f)
 
 /** Icons over a plate: a touch stronger than the usage text, they are thin strokes. */
 internal const val MESSAGE_ACTIONS_PLATED_ICON_ALPHA = 0.9f
