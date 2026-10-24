@@ -48,7 +48,6 @@ import com.clma.ai.ui.ToolApprovalState
 import com.clma.ai.ui.StreamChunk
 import com.clma.ai.ui.StreamChunkHandler
 import com.clma.ai.ui.handleTextGenerationResult
-import com.clma.ai.ui.limitContext
 import com.clma.ai.util.HttpException
 import com.clma.ai.util.isFatalForRetry
 import com.clma.ai.util.redactSecrets
@@ -1692,8 +1691,10 @@ class GenerationLoop(
             // upstream's isSynthetic marker (keeps this built-up system prompt out of
             // TemplateTransformer) and its stepped truncation (which now preserves
             // prompt caching instead of trimming one message at a time).
+            // limitContext 是位置驱动的, 条数超限时会连开头的压缩摘要一起丢掉; 用保留
+            // 前置合成消息的版本, 只对尾部原文限流。
             addAll(
-                messages.limitContext(assistant.contextMessageLimit)
+                messages.limitContextPreservingLeadingSynthetic(assistant.contextMessageLimit)
                     .ageOldToolImages()
                     .ageOldUserImages()
             )
