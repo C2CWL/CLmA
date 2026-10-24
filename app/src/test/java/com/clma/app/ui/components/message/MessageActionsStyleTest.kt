@@ -16,7 +16,7 @@ class MessageActionsStyleTest {
             assertEquals(DEFAULT_MESSAGE_ACTIONS_STYLE, style)
             assertFalse(style.onSurfaceInk)
             assertEquals(1f, style.iconAlpha, 0f)
-            assertEquals(0.75f, style.timeAlpha, 0f)
+            assertEquals(1f, style.timeAlpha, 0f)
             assertFalse(style.plated)
         }
     }
@@ -29,8 +29,8 @@ class MessageActionsStyleTest {
         assertNotNull(style.frost)
         assertEquals(usage.frost, style.frost)
         assertNull(style.plateAlpha)
-        assertEquals(usage.inkAlpha, style.timeAlpha, 0f)
-        assertTrue(style.iconAlpha >= style.timeAlpha)
+        assertEquals(1f, style.timeAlpha, 0f)
+        assertTrue(style.timeAlpha >= style.iconAlpha)
     }
 
     @Test
@@ -41,7 +41,7 @@ class MessageActionsStyleTest {
             assertNull(style.frost)
             assertEquals(usage.plateAlpha, style.plateAlpha)
             assertTrue(style.plated)
-            assertEquals(usage.inkAlpha, style.timeAlpha, 0f)
+            assertEquals(1f, style.timeAlpha, 0f)
         }
     }
 }

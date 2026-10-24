@@ -36,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.delay
@@ -280,7 +281,8 @@ fun ChatMessageTimestamp(
     val settings = LocalSettings.current
     if (!settings.displaySetting.showDateTimeInMessage) return
     val style = messageActionsStyle(photoShown, sdkInt = Build.VERSION.SDK_INT, hasHazeState = hazeState != null)
-    val ink = if (style.onSurfaceInk) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
+    // The timestamp is standalone text: always the strong ink, never the faded secondary one.
+    val ink = MaterialTheme.colorScheme.onSurface
     // Streaming: createdAt ≈ first-token time. After finish/stop: finishedAt when the
     // "prefer end time" switch is on (default), else keep the old always-createdAt look.
     val displayAt = message.displayTimestamp(
@@ -288,7 +290,7 @@ fun ChatMessageTimestamp(
     )
     Text(
         text = displayAt.toJavaLocalDateTime().toMessageTimeString(),
-        style = MaterialTheme.typography.labelSmall,
+        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
         color = ink.copy(alpha = style.timeAlpha),
         maxLines = 1,
         modifier = modifier,
