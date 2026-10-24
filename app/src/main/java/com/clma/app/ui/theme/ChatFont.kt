@@ -44,6 +44,14 @@ fun DisplaySetting.resolveChatFontFamily(context: Context): FontFamily =
 fun DisplaySetting.resolveUiFontFamily(context: Context): FontFamily =
     resolveFontFamily(context, uiFontFamily, uiCustomFontPath)
 
+/** Resolves the native [Typeface] for the chat font, or null for system default. */
+fun DisplaySetting.resolveChatTypeface(context: Context): Typeface? =
+    resolveTypeface(context, chatFontFamily, chatCustomFontPath)
+
+/** Resolves the native [Typeface] for the app-wide UI font, or null for system default. */
+fun DisplaySetting.resolveUiTypeface(context: Context): Typeface? =
+    resolveTypeface(context, uiFontFamily, uiCustomFontPath)
+
 private fun resolveFontFamily(context: Context, family: ChatFontFamily, customFontPath: String): FontFamily =
     when (family) {
         ChatFontFamily.DEFAULT -> FontFamily.Default
@@ -51,6 +59,20 @@ private fun resolveFontFamily(context: Context, family: ChatFontFamily, customFo
         ChatFontFamily.MONOSPACE -> FontFamily.Monospace
         ChatFontFamily.CUSTOM -> loadCustomFontFamily(context, customFontPath) ?: FontFamily.Default
     }
+
+private fun resolveTypeface(context: Context, family: ChatFontFamily, customFontPath: String): Typeface? =
+    when (family) {
+        ChatFontFamily.DEFAULT -> null
+        ChatFontFamily.SERIF -> Typeface.SERIF
+        ChatFontFamily.MONOSPACE -> Typeface.MONOSPACE
+        ChatFontFamily.CUSTOM -> loadCustomTypeface(context, customFontPath)
+    }
+
+private fun loadCustomTypeface(context: Context, relativePath: String): Typeface? {
+    val file = resolveFilesDirFile(context, relativePath) ?: return null
+    if (!file.isFile) return null
+    return runCatching { Typeface.createFromFile(file) }.getOrNull()
+}
 
 private fun loadCustomFontFamily(context: Context, relativePath: String): FontFamily? {
     val file = resolveFilesDirFile(context, relativePath) ?: return null

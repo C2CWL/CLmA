@@ -119,6 +119,7 @@ internal class EdgeBarChatBoxView(
 
     // Views, (re)built by [buildContent] for the current palette.
     private var palette = ChatBoxPalette.of(dark = false, glass = false)
+    private var chatTypeface: Typeface? = null
     private lateinit var root: LinearLayout
     private lateinit var titleView: TextView
     private lateinit var subtitleView: TextView
@@ -145,8 +146,14 @@ internal class EdgeBarChatBoxView(
     val isShowing: Boolean get() = dialog != null
 
     /** Opens the box next to the bar at [newAnchor] (re-renders it if it is already open). */
-    fun show(newState: State, newAnchor: Anchor, darkMode: Boolean) {
+    fun show(
+        newState: State,
+        newAnchor: Anchor,
+        darkMode: Boolean,
+        customChatTypeface: Typeface? = chatTypeface,
+    ) {
         anchor = newAnchor
+        chatTypeface = customChatTypeface
         if (dialog != null) {
             if (darkMode != dark) setDarkMode(darkMode)
             update(newState)
@@ -227,6 +234,13 @@ internal class EdgeBarChatBoxView(
     fun setDarkMode(darkMode: Boolean) {
         if (darkMode == dark) return
         dark = darkMode
+        rebuild()
+    }
+
+    /** Updates the typeface used for user/AI chat bubbles (and input field). */
+    fun setChatTypeface(typeface: Typeface?) {
+        if (chatTypeface == typeface) return
+        chatTypeface = typeface
         rebuild()
     }
 
@@ -378,6 +392,7 @@ internal class EdgeBarChatBoxView(
             setTextColor(p.inputText)
             setHintTextColor(p.hint)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
+            typeface = chatTypeface ?: Typeface.DEFAULT
             background = rounded(p.inputBg, dp(19).toFloat()).apply { setStroke(dp(1), p.inputBorder) }
             setPadding(dp(14), dp(8), dp(14), dp(8))
             minHeight = dp(38)
@@ -500,8 +515,12 @@ internal class EdgeBarChatBoxView(
                 if (existing != null) list.removeViewAt(i)
                 newRow(kind, maxBubble).also { list.addView(it, i, rowParams(kind)) }
             }
-            val text = textOf(item)
-            if (view.text?.toString() != text) view.text = text
+            val content = formatContent(item)
+            val raw = rawTextOf(item)
+            if (view.getTag(R.id.chat_box_row_raw) != raw) {
+                view.setTag(R.id.chat_box_row_raw, raw)
+                view.text = content
+            }
         }
         while (list.childCount > items.size) list.removeViewAt(list.childCount - 1)
     }
@@ -511,7 +530,7 @@ internal class EdgeBarChatBoxView(
         is ChatBoxItem.ToolChip -> KIND_TOOL
     }
 
-    private fun textOf(item: ChatBoxItem): String = when (item) {
+    private fun rawTextOf(item: ChatBoxItem): String = when (item) {
         is ChatBoxItem.Bubble -> buildString {
             append(item.text)
             repeat(item.images) {
@@ -529,6 +548,27 @@ internal class EdgeBarChatBoxView(
         )
     }
 
+    private fun formatContent(item: ChatBoxItem): CharSequence = when (item) {
+        is ChatBoxItem.Bubble -> {
+            val formatted = ChatBoxMarkdown.format(item.text, codeBgColor = palette.toolChip)
+            if (item.images == 0 && item.files == 0) {
+                formatted
+            } else {
+                android.text.SpannableStringBuilder(formatted).apply {
+                    repeat(item.images) {
+                        if (isNotEmpty()) append(' ')
+                        append(context.getString(R.string.chat_box_image))
+                    }
+                    repeat(item.files) {
+                        if (isNotEmpty()) append(' ')
+                        append(context.getString(R.string.chat_box_file))
+                    }
+                }
+            }
+        }
+        is ChatBoxItem.ToolChip -> rawTextOf(item)
+    }
+
     private fun newRow(kind: Int, maxBubble: Int): TextView = TextView(context).apply {
         tag = kind
         val p = palette
@@ -537,6 +577,7 @@ internal class EdgeBarChatBoxView(
                 setTextColor(0xFFFFFFFF.toInt())
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
                 setLineSpacing(dp(1.5f).toFloat(), 1f)
+                typeface = chatTypeface ?: Typeface.DEFAULT
                 maxWidth = maxBubble
                 setPadding(dp(10), dp(7), dp(10), dp(7))
                 background = GradientDrawable(
@@ -548,6 +589,7 @@ internal class EdgeBarChatBoxView(
                 setTextColor(p.aiText)
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
                 setLineSpacing(dp(1.5f).toFloat(), 1f)
+                typeface = chatTypeface ?: Typeface.DEFAULT
                 maxWidth = maxBubble
                 setPadding(dp(10), dp(7), dp(10), dp(7))
                 background = GradientDrawable().apply {
