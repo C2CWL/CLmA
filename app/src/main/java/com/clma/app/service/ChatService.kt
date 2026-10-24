@@ -213,6 +213,12 @@ private fun Throwable.isContextLimitError(): Boolean {
         "input is too long",
         "exceeds the model",
         "exceed.*context",
+        // OpenAI-compatible gateways answer an oversized request with 413 and this wording.
+        // Without these markers the failure looks like an ordinary provider error, so the
+        // automatic "compact and retry" pass never runs and the user sees the raw 413.
+        "message length exceeds limit",
+        "messages you submitted were too long",
+        "request entity too large",
     )
     return generateSequence(this) { it.cause }
         .take(8)
@@ -3546,6 +3552,35 @@ class ChatService(
         // consume the model's output budget, so keep the configured prose target intact.
         val modelSummaryTargetTokens = targetTokens.coerceAtLeast(1)
 
+        /**
+         * Splits one compression input into two halves, or null when it cannot be split further.
+         * Used when the provider rejects a summary request as too long: the plan sized it against
+         * the model's *declared* window, and a gateway whose real ceiling is lower still 413s.
+         */
+        fun splitSourcesInHalf(sources: List<String>): List<List<String>>? {
+            if (sources.size > 1) {
+                val mid = sources.size / 2
+                return listOf(sources.subList(0, mid), sources.subList(mid, sources.size))
+            }
+            val only = sources.singleOrNull() ?: return null
+            if (only.length < 2) return null
+            var mid = only.length / 2
+            // Prefer a nearby line break so the split does not cut a line apart; fall back to the
+            // midpoint (moved past a surrogate pair) for one huge unbroken block.
+            val windowStart = (mid - 2_000).coerceAtLeast(1)
+            val newline = only.lastIndexOf('\n', mid).takeIf { it >= windowStart }
+            if (newline != null && newline > 0) mid = newline
+            if (
+                mid in 1 until only.length &&
+                Character.isHighSurrogate(only[mid - 1]) &&
+                Character.isLowSurrogate(only[mid])
+            ) {
+                mid++
+            }
+            if (mid <= 0 || mid >= only.length) return null
+            return listOf(listOf(only.substring(0, mid)), listOf(only.substring(mid)))
+        }
+
         suspend fun compressSources(
             sources: List<String>,
             requestedTargetTokens: Int,
@@ -3578,14 +3613,44 @@ class ChatService(
                 )
             }
 
-            val result = withTimeout(COMPACTION_REQUEST_TIMEOUT_MS) {
-                withContext(UsageCallContext(purpose = UsagePurpose.COMPACTION, conversationId = conversation.id.toString())) { providerHandler.generateText(
-                    providerSetting = provider,
-                    messages = listOf(UIMessage.user(prompt)),
-                    params = backgroundTextGenerationParams(model, conversation.id).copy(
-                        maxTokens = requestedTargetTokens,
-                    ),
-                ) }
+            val result = try {
+                withTimeout(COMPACTION_REQUEST_TIMEOUT_MS) {
+                    withContext(
+                        UsageCallContext(
+                            purpose = UsagePurpose.COMPACTION,
+                            conversationId = conversation.id.toString(),
+                        ),
+                    ) {
+                        providerHandler.generateText(
+                            providerSetting = provider,
+                            messages = listOf(UIMessage.user(prompt)),
+                            params = backgroundTextGenerationParams(model, conversation.id).copy(
+                                maxTokens = requestedTargetTokens,
+                            ),
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                // The plan sizes this request against the model's *declared* window, but a gateway
+                // whose real ceiling is lower still rejects it as too long. Splitting the source
+                // and summarizing the halves keeps the compaction instead of failing the whole
+                // turn and then sending the uncompacted (equally oversized) request.
+                val tooLong = e.isContextLimitError() || e.isRequestTooLarge()
+                val halves = if (tooLong) splitSourcesInHalf(sources) else null
+                if (halves == null) throw e
+                Log.w(
+                    TAG,
+                    "Compaction request rejected as too long (${sources.size} source(s)); " +
+                        "retrying as ${halves.size} smaller requests",
+                    e,
+                )
+                val halfTargetTokens = (requestedTargetTokens / halves.size).coerceAtLeast(256)
+                val summaries = ArrayList<String>(halves.size)
+                for (half in halves) {
+                    summaries += compressSources(half, halfTargetTokens)
+                }
+                return summaries.joinToString("\n\n")
             }
 
             return result.message.toText().trim()
