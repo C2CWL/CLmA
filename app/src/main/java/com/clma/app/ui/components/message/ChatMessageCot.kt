@@ -2,6 +2,7 @@ package com.clma.app.ui.components.message
 
 import androidx.compose.ui.util.fastForEachIndexed
 import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.ai.ContextCompactionPresentation
 import com.clma.app.data.ai.tools.ToolApprovalPolicy
 
 /**
@@ -86,13 +87,14 @@ fun List<UIMessagePart>.groupMessageParts(
 
     // 开启折叠旁白时，预先找到「最后一次思考/工具」的下标。
     // 交互卡片不算：否则它前面的说明文字会被折进思考链，卡片和旁白对不上。
+    // 展示专用伪工具（如上下文自动压缩卡片）也不算：否则最终回答会被误当成旁白折叠进思考链。
     val lastThinkingIndex = if (foldProcessNarration) {
         indices.lastOrNull { idx ->
             when (val part = this[idx]) {
                 is UIMessagePart.Reasoning,
                 is UIMessagePart.ServerTool,
                 -> true
-                is UIMessagePart.Tool -> !part.isInteractiveInputTool()
+                is UIMessagePart.Tool -> !part.isInteractiveInputTool() && !ContextCompactionPresentation.isDisplayTool(part)
                 else -> false
             }
         } ?: -1
