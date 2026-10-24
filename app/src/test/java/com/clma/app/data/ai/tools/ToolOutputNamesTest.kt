@@ -17,7 +17,7 @@ class ToolOutputNamesTest {
     @Test
     fun `path separators cannot escape the directory`() {
         val dir = File("/data/tool_outputs")
-        for (id in listOf("../../shared_prefs/x", "a/b", "..\\..\\x", "/etc/passwd", "a\x00b")) {
+        for (id in listOf("../../shared_prefs/x", "a/b", "..\\..\\x", "/etc/passwd", "a\\u0000b")) {
             val name = ToolOutputNames.fileNameFor(id)
             assertFalse(name, name.contains('/') || name.contains('\\'))
             assertFalse(name, name.startsWith("."))
