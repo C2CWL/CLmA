@@ -44,9 +44,17 @@ import me.rerere.hugeicons.stroke.File02
 import me.rerere.hugeicons.stroke.FileImport
 import me.rerere.hugeicons.stroke.Share08
 import com.clma.app.R
+import com.clma.app.Screen
 import com.clma.app.data.model.Assistant
 import com.clma.app.data.repository.WorkspaceRepository
+import com.clma.app.ui.components.ui.ImagePreviewDialog
+import com.clma.app.ui.context.LocalNavController
+import com.clma.app.ui.context.LocalToaster
+import com.clma.app.ui.pages.extensions.workspace.WorkspaceFileType
+import com.clma.app.ui.pages.extensions.workspace.detectWorkspaceFileType
+import com.clma.app.utils.FileOpenUtil
 import com.clma.workspace.WorkspaceStorageArea
+import com.dokar.sonner.ToastType
 import org.koin.compose.koinInject
 import java.io.File
 
@@ -73,8 +81,11 @@ internal fun EditedFilesList(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val workspaceRepository: WorkspaceRepository = koinInject()
+    val navController = LocalNavController.current
+    val toaster = LocalToaster.current
 
     var selectedPath by remember { mutableStateOf<String?>(null) }
+    var previewImagePath by remember { mutableStateOf<String?>(null) }
     var expanded by remember { mutableStateOf(false) }
     val visibleFiles = if (expanded) editedFiles else editedFiles.take(DEFAULT_VISIBLE_COUNT)
     val hasMore = editedFiles.size > DEFAULT_VISIBLE_COUNT
@@ -166,6 +177,66 @@ internal fun EditedFilesList(
                 Card(
                     onClick = {
                         val p = selectedPath ?: return@Card
+                        selectedPath = null
+                        val fileName = p.substringAfterLast('/')
+                        val (area, relativePath) = resolveWorkspacePath(p)
+                        if (detectWorkspaceFileType(fileName) == WorkspaceFileType.TEXT) {
+                            // 文本走 App 内编辑器：文件在私有目录里，交给外部 App 反而读不到
+                            navController.navigate(
+                                Screen.WorkspaceFileEditor(workspaceId, area.name, relativePath)
+                            )
+                        } else {
+                            scope.launch {
+                                runCatching {
+                                    val dir = File(context.cacheDir, "workspace_open").apply { mkdirs() }
+                                    val file = File(dir, fileName)
+                                    file.outputStream().use { output ->
+                                        workspaceRepository.exportFile(workspaceId, area, relativePath, output)
+                                    }
+                                    file
+                                }.onSuccess { file ->
+                                    if (detectWorkspaceFileType(fileName) == WorkspaceFileType.IMAGE) {
+                                        previewImagePath = file.absolutePath
+                                    } else {
+                                        FileOpenUtil.open(context, file).onFailure {
+                                            toaster.show(
+                                                message = context.getString(R.string.attachment_open_failed),
+                                                type = ToastType.Error,
+                                            )
+                                        }
+                                    }
+                                }.onFailure {
+                                    toaster.show(
+                                        message = context.getString(R.string.attachment_open_failed),
+                                        type = ToastType.Error,
+                                    )
+                                }
+                            }
+                        }
+                    },
+                    shape = MaterialTheme.shapes.medium,
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier
+                            .padding(16.dp)
+                            .fillMaxWidth(),
+                    ) {
+                        Icon(
+                            imageVector = HugeIcons.File02,
+                            contentDescription = null,
+                            modifier = Modifier.padding(4.dp),
+                        )
+                        Text(
+                            text = "打开",
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                    }
+                }
+                Card(
+                    onClick = {
+                        val p = selectedPath ?: return@Card
                         exportLauncher.launch(p.substringAfterLast('/'))
                     },
                     shape = MaterialTheme.shapes.medium,
@@ -237,13 +308,25 @@ internal fun EditedFilesList(
             }
         }
     }
+
+    // 图片在 App 内预览：缓存里的副本既能直接给 Coil 加载，也不牵扯跨 App 授权
+    previewImagePath?.let { path ->
+        ImagePreviewDialog(
+            images = listOf(path),
+            onDismissRequest = { previewImagePath = null },
+        )
+    }
 }
 
 private fun resolveWorkspacePath(path: String): Pair<WorkspaceStorageArea, String> {
     val trimmed = path.trimEnd('/')
-    return if (trimmed == "/workspace" || trimmed.startsWith("/workspace/")) {
-        WorkspaceStorageArea.FILES to trimmed.removePrefix("/workspace").trimStart('/')
-    } else {
-        WorkspaceStorageArea.LINUX to trimmed.trimStart('/')
+    return when {
+        trimmed == "/workspace" || trimmed.startsWith("/workspace/") ->
+            WorkspaceStorageArea.FILES to trimmed.removePrefix("/workspace").trimStart('/')
+
+        // 工具返回的 path 常见写法是 files 区内的相对路径（如 "notes/a.md"），不是 rootfs 绝对路径
+        !trimmed.startsWith("/") -> WorkspaceStorageArea.FILES to trimmed
+
+        else -> WorkspaceStorageArea.LINUX to trimmed.trimStart('/')
     }
 }
