@@ -56,6 +56,7 @@ import com.clma.app.ui.components.nav.BackButton
 import com.clma.app.ui.components.ui.CardGroup
 import com.clma.app.ui.context.LocalToaster
 import com.clma.app.ui.theme.CustomColors
+import com.clma.app.utils.plus
 import com.clma.app.utils.writeClipboardText
 import com.dokar.sonner.ToastType
 import java.time.Instant
