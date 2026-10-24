@@ -17,6 +17,7 @@ import com.clma.app.service.taskcard.TaskCardStatus
 import com.clma.app.service.taskcard.TaskCardStatusResolver
 import com.clma.app.ui.hooks.readStringPreference
 import com.clma.app.ui.hooks.writeStringPreference
+import com.clma.app.ui.theme.resolveChatTypeface
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -78,6 +79,12 @@ internal class EdgeBarChatBoxController(
                 lastFinished = id
                 lastFinishedElapsed = elapsed
                 if (id == boundId) render()
+            }
+        }
+        scope.launch {
+            settingsStore.settingsFlow.collect { settings ->
+                val typeface = settings.displaySetting.resolveChatTypeface(context)
+                view?.setChatTypeface(typeface)
             }
         }
     }
@@ -190,8 +197,9 @@ internal class EdgeBarChatBoxController(
             unbind()
             return
         }
+        val typeface = settingsStore.settingsFlow.value.displaySetting.resolveChatTypeface(context)
         val v = view ?: EdgeBarChatBoxView(themedContext, this).also { view = it }
-        v.show(currentState(), a, isDark())
+        v.show(currentState(), a, isDark(), typeface)
         if (!v.isShowing) unbind()
     }
 
