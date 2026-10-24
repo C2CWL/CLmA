@@ -1038,14 +1038,6 @@ class GenerationLoop(
                         assistant = assistant,
                         settings = settings
                     )
-                    if (!steered) {
-                        // 消息级 finishedAt 只在整轮真正结束时设置：被打断的前半保持 null，
-                        // UI 不出操作栏、usage 结转到后半（见 UsageTurnViewFactory）。
-                        messages = messages.slice(0 until messages.lastIndex) + messages.last().copy(
-                            finishedAt = Clock.System.now()
-                                .toLocalDateTime(TimeZone.currentSystemDefault())
-                        )
-                    }
                     send(GenerationChunk.Messages(messages))
                 }
 
@@ -1063,6 +1055,14 @@ class GenerationLoop(
                     if (hasPendingSteer()) {
                         Log.i(TAG, "generateText: no tool calls but a steer is pending, continuing")
                         continue
+                    }
+                    // 整轮正常完结：无后续工具调用且未被插话打断，在此处标记最终完成时间并通知 UI。
+                    // 有未执行工具或等待用户审批时保持 finishedAt == null，避免多 step 交互中提前出现操作栏与双气泡分裂。
+                    if (!steered && messages.lastOrNull()?.role == MessageRole.ASSISTANT) {
+                        messages = messages.dropLast(1) + messages.last().copy(
+                            finishedAt = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+                        )
+                        send(GenerationChunk.Messages(messages))
                     }
                     // no tool calls, break
                     break

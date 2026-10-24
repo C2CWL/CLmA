@@ -290,10 +290,9 @@ class StreamChunkHandler(private val model: Model? = null) {
             is StreamChunk.ImageEnd -> this.also { imagePartIndexes.remove(chunk.id) }
             is StreamChunk.Annotations -> copy(annotations = (annotations + chunk.annotations).distinct())
             is StreamChunk.Usage -> copy(usage = usage.merge(chunk.usage))
-            is StreamChunk.Finish -> copy(
-                finishedAt = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
-            ).finishReasoning().also {
-                // Finish 同时结束尚未显式结束的 reasoning，并释放本次响应流的索引状态。
+            // Finish 同时结束尚未显式结束的 reasoning，并释放本次响应流的索引状态。
+            // 单个 Step 的 Finish 不设置消息级 finishedAt，整轮最终完成由 GenerationLoop 统一管理。
+            is StreamChunk.Finish -> finishReasoning().also {
                 textPartIndexes.clear()
                 reasoningPartIndexes.clear()
                 imagePartIndexes.clear()
@@ -328,7 +327,6 @@ fun List<UIMessage>.handleTextGenerationResult(
     val incoming = result.message.copy(
         modelId = model?.id,
         usage = result.usage,
-        finishedAt = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
     ).finishReasoning()
     return if (last().role != incoming.role) {
         this + incoming
@@ -336,7 +334,6 @@ fun List<UIMessage>.handleTextGenerationResult(
         dropLast(1) + last().appendMessage(incoming).copy(
             modelId = model?.id ?: last().modelId,
             usage = last().usage.merge(result.usage ?: TokenUsage()),
-            finishedAt = incoming.finishedAt,
         ).finishReasoning()
     }
 }
