@@ -25,7 +25,8 @@ class ChatBoxMarkdownTest {
     fun `inline bold with double asterisks or double underscores`() {
         val raw = "This is **bold** and __also bold__."
         val result = ChatBoxMarkdown.parse(raw)
-        assertEquals("This is bold and also bold..", result.text)
+        // raw 末尾只有一个 '.', 去标记后自然只有一个句点
+        assertEquals("This is bold and also bold.", result.text)
         assertEquals(
             listOf(
                 ChatBoxMarkdown.Span(ChatBoxMarkdown.SpanType.BOLD, 8, 12),
