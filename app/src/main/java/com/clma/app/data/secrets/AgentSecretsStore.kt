@@ -25,6 +25,18 @@ import javax.crypto.spec.GCMParameterSpec
  * storage discipline: device-bound key, prefs excluded from cloud backup by the
  * sharedpref deny-by-default rules, fallback obfuscation if the keystore is unavailable.
  */
+/**
+ * One vault entry: the name plus when it was first written and last overwritten.
+ *
+ * Timestamps are best effort — entries created before this was introduced have `null`
+ * values and the UI shows them as "unknown" instead of inventing a date.
+ */
+data class SecretEntry(
+    val name: String,
+    val createdAt: Long?,
+    val updatedAt: Long?,
+)
+
 class AgentSecretsStore(context: Context) {
 
     private val prefs: SharedPreferences =
@@ -35,9 +47,14 @@ class AgentSecretsStore(context: Context) {
     fun set(name: String, value: String): Boolean {
         if (!isValidName(name)) return false
         val (encrypted, iv) = encrypt(value)
+        val now = System.currentTimeMillis()
+        val isNew = !prefs.contains(secretKey(name))
         prefs.edit {
             putString(secretKey(name), encrypted)
             putString(ivKey(name), iv)
+            // Keep the original creation time on overwrite; always refresh "last modified".
+            if (isNew) putLong(createdKey(name), now)
+            putLong(updatedKey(name), now)
         }
         return true
     }
@@ -52,6 +69,8 @@ class AgentSecretsStore(context: Context) {
         prefs.edit {
             remove(secretKey(name))
             remove(ivKey(name))
+            remove(createdKey(name))
+            remove(updatedKey(name))
         }
     }
 
@@ -62,6 +81,27 @@ class AgentSecretsStore(context: Context) {
             .map { it.removePrefix(SECRET_PREFIX) }
             .filter { isValidName(it) }
             .sorted()
+
+    /**
+     * Names + timestamps, newest first. Entries without a recorded creation time (written by a
+     * build older than the timestamp feature) sort last so the list stays stable for them.
+     */
+    fun entries(): List<SecretEntry> =
+        prefs.all.keys
+            .filter { it.startsWith(SECRET_PREFIX) }
+            .map { it.removePrefix(SECRET_PREFIX) }
+            .filter { isValidName(it) }
+            .map { name ->
+                SecretEntry(
+                    name = name,
+                    createdAt = timestamp(createdKey(name)),
+                    updatedAt = timestamp(updatedKey(name)),
+                )
+            }
+            .sortedWith(
+                compareByDescending<SecretEntry> { it.createdAt ?: Long.MIN_VALUE }
+                    .thenBy { it.name }
+            )
 
     fun has(name: String): Boolean = prefs.contains(secretKey(name))
 
@@ -118,6 +158,12 @@ class AgentSecretsStore(context: Context) {
 
     private fun secretKey(name: String): String = "$SECRET_PREFIX$name"
     private fun ivKey(name: String): String = "$IV_PREFIX$name"
+    private fun createdKey(name: String): String = "$CREATED_PREFIX$name"
+    private fun updatedKey(name: String): String = "$UPDATED_PREFIX$name"
+
+    /** 0L means "never recorded" — treat it as absent instead of 1970-01-01. */
+    private fun timestamp(key: String): Long? =
+        prefs.getLong(key, 0L).takeIf { it > 0L }
 
     companion object {
         const val PREFS_NAME = "agent_secrets"
@@ -125,6 +171,8 @@ class AgentSecretsStore(context: Context) {
         private const val TAG = "AgentSecretsStore"
         private const val SECRET_PREFIX = "ag_secret_"
         private const val IV_PREFIX = "ag_iv_"
+        private const val CREATED_PREFIX = "ag_created_"
+        private const val UPDATED_PREFIX = "ag_updated_"
         private const val KEY_ALIAS = "agent_secrets_master"
         private const val ANDROID_KEYSTORE = "AndroidKeyStore"
         private const val TRANSFORMATION = "AES/GCM/NoPadding"
