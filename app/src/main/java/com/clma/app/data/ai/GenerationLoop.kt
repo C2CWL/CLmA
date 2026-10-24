@@ -85,6 +85,8 @@ private const val MAX_TOOL_OUTPUT_CHARS = 32 * 1024
 private const val TOOL_OUTPUT_PREVIEW_CHARS = 4 * 1024
 private const val GENERATION_STREAM_RETRY_INITIAL_DELAY_MS = 750L
 private const val GENERATION_STREAM_RETRY_MAX_DELAY_MS = 4_000L
+/** Longest slice of a provider error message that reaches the retry status line. */
+private const val RETRY_FAILURE_REASON_MAX_CHARS = 240
 
 /**
  * Upper bound for both stream-silence watchdogs, in seconds. Its only job is to keep a hand-typed
@@ -321,12 +323,24 @@ private fun generationStreamRetryDelayMs(retryAttempt: Long): Long =
     ((retryAttempt + 1) * GENERATION_STREAM_RETRY_INITIAL_DELAY_MS)
         .coerceAtMost(GENERATION_STREAM_RETRY_MAX_DELAY_MS)
 
+/**
+ * The provider's own failure text, collapsed onto one line. Truncation is marked with an ellipsis
+ * instead of happening silently: the status row now shows the reason unabridged (see
+ * ThinkingIndicators), so a quiet cut mid-word would read as a rendering bug rather than as
+ * "there was more".
+ */
 private fun retryFailureReason(failure: Throwable): String =
     generateSequence(failure) { it.cause }
         .mapNotNull { it.message?.trim()?.takeIf(String::isNotBlank) }
         .firstOrNull()
         ?.replace(Regex("\\s+"), " ")
-        ?.take(240)
+        ?.let { reason ->
+            if (reason.length <= RETRY_FAILURE_REASON_MAX_CHARS) {
+                reason
+            } else {
+                reason.take(RETRY_FAILURE_REASON_MAX_CHARS).trimEnd() + "…"
+            }
+        }
         ?: failure.javaClass.simpleName
 
 private fun retryStatusText(
