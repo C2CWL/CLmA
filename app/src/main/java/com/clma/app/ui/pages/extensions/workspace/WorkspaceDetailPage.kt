@@ -487,6 +487,19 @@ private fun WorkspaceBasicPage(
                                     modifier = Modifier.padding(start = 8.dp),
                                 )
                             }
+                            if (workspace?.isShellReady() == true) {
+                                OutlinedButton(
+                                    onClick = { onExecuteTerminalCommand("/usr/local/bin/clma-init-tools") },
+                                    enabled = !installing,
+                                    modifier = Modifier.fillMaxWidth(),
+                                ) {
+                                    Icon(HugeIcons.FileImport, contentDescription = null)
+                                    Text(
+                                        text = stringResource(R.string.workspace_detail_install_core_tools),
+                                        modifier = Modifier.padding(start = 8.dp),
+                                    )
+                                }
+                            }
                             installProgress?.let { RootfsProgress(it) }
                         }
                     },
@@ -1077,4 +1090,4 @@ internal fun String.toShellStatusLabel(): String = when (this) {
 }
 
 private const val DEFAULT_ROOTFS_URL =
-    "https://cdimage.ubuntu.com/ubuntu-base/releases/24.04/release/ubuntu-base-24.04.3-base-arm64.tar.gz"
+    "https://mirrors.tuna.tsinghua.edu.cn/ubuntu-cdimage/ubuntu-base/releases/24.04/release/ubuntu-base-24.04.3-base-arm64.tar.gz"
