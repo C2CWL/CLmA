@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -45,6 +46,7 @@ import com.clma.ai.core.MessageRole
 import com.clma.ai.provider.Model
 import com.clma.ai.ui.UIMessage
 import com.clma.ai.ui.UIMessagePart
+import com.clma.ai.ui.isEmptyUIMessage
 import kotlinx.datetime.LocalDateTime
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Copy01
@@ -120,6 +122,13 @@ fun ColumnScope.ChatMessageActionButtons(
         else -> Modifier
     }
 
+    // 助手消息操作栏靠左、时间贴右端；用户消息整组靠右，时间跟在操作栏右边。
+    val userMessage = message.role == MessageRole.USER
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+    if (userMessage) Spacer(Modifier.weight(1f))
     FlowRow(
         modifier = plateModifier,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -233,6 +242,38 @@ fun ColumnScope.ChatMessageActionButtons(
             color = actionIconColor,
             onUpdate = onUpdate,
         )
+    }
+
+    if (!userMessage) Spacer(Modifier.weight(1f))
+
+    // 时间戳贴在操作栏右端，与操作栏共用同一层胶囊底板
+    if (settings.displaySetting.showDateTimeInMessage && !message.parts.isEmptyUIMessage()) {
+        val timePlateModifier = when {
+            frost != null && hazeState != null -> Modifier.frostedPlate(
+                hazeState = hazeState,
+                shape = plateShape,
+                spec = FrostedPlateSpec(tintAlpha = frost.tintAlpha, blurRadiusDp = frost.blurRadiusDp),
+                selection = WallpaperOnlySelection,
+            )
+
+            plateAlpha != null -> Modifier
+                .clip(plateShape)
+                .background(MaterialTheme.colorScheme.surface.copy(alpha = plateAlpha))
+
+            else -> Modifier
+                .clip(plateShape)
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+        }
+        Text(
+            text = message.displayTimestamp(preferEndTime = settings.displaySetting.showMessageEndTime)
+                .toJavaLocalDateTime()
+                .toMessageTimeString(),
+            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = style.timeAlpha),
+            maxLines = 1,
+            modifier = timePlateModifier.padding(horizontal = 10.dp, vertical = 4.dp),
+        )
+    }
     }
 
     // Translation dialog
