@@ -1,7 +1,6 @@
 package com.clma.app.ui.components.richtext
 
 import android.content.ClipData
-import android.content.Intent
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -102,9 +101,13 @@ import com.clma.app.R
 import com.clma.app.data.datastore.Settings
 import com.clma.app.ui.components.table.DataTable
 import com.clma.app.ui.context.LocalSettings
+import com.clma.app.ui.context.LocalToaster
 import com.clma.app.ui.modifier.onClick
 import com.clma.app.ui.theme.JetbrainsMono
 import com.clma.app.utils.toDp
+import com.clma.app.utils.FileOpenUtil
+import com.dokar.sonner.ToastType
+import java.io.File
 import org.intellij.markdown.IElementType
 import org.intellij.markdown.MarkdownElementTypes
 import org.intellij.markdown.MarkdownTokenTypes
@@ -169,7 +172,7 @@ private fun preProcess(content: String): String {
         }
     }
 
-    return protectNumericRangeTildes(result)
+    return result
 }
 
 @Preview(showBackground = true)
@@ -471,13 +474,49 @@ private fun MarkdownNode(
             val linkDest =
                 node.findChildOfTypeRecursive(MarkdownElementTypes.LINK_DESTINATION)?.getTextInNode(content) ?: ""
             val context = LocalContext.current
+            val scope = rememberCoroutineScope()
+            val workspaceResolver = LocalWorkspaceImageResolver.current
+            val toaster = LocalToaster.current
             Text(
                 text = linkText,
                 color = MaterialTheme.colorScheme.primary,
                 textDecoration = TextDecoration.Underline,
                 modifier = modifier.clickable {
-                    val intent = Intent(Intent.ACTION_VIEW, linkDest.toUri())
-                    context.startActivity(intent)
+                    val dest = linkDest.trim()
+                    if (dest.isEmpty()) return@clickable
+                    scope.launch {
+                        // 工作区内的路径（/workspace/a.md、a.png、file:///workspace/...）先解析成宿主机文件，
+                        // 再走 FileProvider。直接 ACTION_VIEW(file://) 在 Android 7+ 会被拦，
+                        // 而且目标 App 也读不到 App 私有目录。
+                        val workspacePath = ChatImagePaths.workspacePathOf(dest)
+                        val result = runCatching {
+                            val hostFile = workspacePath
+                                ?.let { workspaceResolver?.resolve(it) }
+                                ?.let(::File)
+                            when {
+                                hostFile != null && hostFile.isFile ->
+                                    FileOpenUtil.open(context, hostFile).getOrThrow()
+
+                                workspacePath != null ->
+                                    error("工作区里找不到该文件：$workspacePath")
+
+                                else -> {
+                                    val uri = dest.toUri()
+                                    if (uri.scheme.isNullOrEmpty()) {
+                                        FileOpenUtil.open(context, File(dest)).getOrThrow()
+                                    } else {
+                                        FileOpenUtil.openUri(context, uri).getOrThrow()
+                                    }
+                                }
+                            }
+                        }
+                        result.onFailure {
+                            toaster.show(
+                                message = context.getString(R.string.attachment_open_failed),
+                                type = ToastType.Error,
+                            )
+                        }
+                    }
                 })
         }
 

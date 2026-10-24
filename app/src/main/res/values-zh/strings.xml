@@ -2076,6 +2076,7 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="workspace_detail_installing">安装中</string>
   <string name="workspace_detail_reinstall_rootfs">重新安装 Rootfs</string>
   <string name="workspace_detail_install_rootfs">安装 Rootfs</string>
+  <string name="workspace_detail_install_core_tools">安装核心工具 (ffmpeg, jq 等)</string>
   <string name="workspace_detail_workspace_info">工作区</string>
   <string name="workspace_detail_name">名称</string>
   <string name="workspace_detail_shell_status">Shell 状态</string>

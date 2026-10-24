@@ -34,6 +34,10 @@ object ContextCompactionView {
             // sourceEndNodeId is a MessageNode id, never a message id, so reusing it as this
             // synthetic message's id cannot collide with a real message's id.
             id = compaction.sourceEndNodeId,
+            // 由程序生成而非用户输入: 因此它不参与模板变量替换(TemplateTransformer 跳过
+            // 合成消息), 也不会被消息条数上限裁掉
+            // (见 limitContextPreservingLeadingSynthetic)。
+            isSynthetic = true,
         )
 
     fun build(

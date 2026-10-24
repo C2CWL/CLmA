@@ -23,8 +23,11 @@ private val TEXT_EXTENSIONS = setOf(
     "diff", "patch", "srt", "vtt",
 )
 
-fun WorkspaceFileEntry.detectFileType(): WorkspaceFileType {
-    val ext = name.substringAfterLast('.', "").lowercase()
+fun WorkspaceFileEntry.detectFileType(): WorkspaceFileType = detectWorkspaceFileType(name)
+
+/** 只按文件名判断，供没有 [WorkspaceFileEntry] 的调用方使用（如聊天里的文件 chip） */
+fun detectWorkspaceFileType(fileName: String): WorkspaceFileType {
+    val ext = fileName.substringAfterLast('.', "").lowercase()
     return when {
         ext.isEmpty() -> WorkspaceFileType.OTHER
         ext in IMAGE_EXTENSIONS -> WorkspaceFileType.IMAGE

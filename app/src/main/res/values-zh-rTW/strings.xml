@@ -1762,6 +1762,7 @@
   <string name="workspace_detail_installing">安裝中</string>
   <string name="workspace_detail_reinstall_rootfs">重新安裝 Rootfs</string>
   <string name="workspace_detail_install_rootfs">安裝 Rootfs</string>
+  <string name="workspace_detail_install_core_tools">安裝核心工具 (ffmpeg, jq 等)</string>
   <string name="workspace_detail_workspace_info">工作區</string>
   <string name="workspace_detail_name">名稱</string>
   <string name="workspace_detail_shell_status">Shell 狀態</string>

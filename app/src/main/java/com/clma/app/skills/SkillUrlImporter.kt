@@ -17,6 +17,11 @@ import java.util.concurrent.TimeUnit
  */
 interface SkillSaver {
     fun saveSkill(name: String, content: String): SkillMetadata?
+    /** Multi-file install (GitHub zip / local zip). Default falls back to SKILL.md only. */
+    fun saveSkillFiles(name: String, files: Map<String, ByteArray>): SkillMetadata? {
+        val md = files["SKILL.md"]?.toString(Charsets.UTF_8) ?: return null
+        return saveSkill(name, md)
+    }
 }
 
 /**
@@ -58,11 +63,17 @@ class SkillUrlImporter(
         data class Err(val code: String, val detail: String) : Result()
     }
 
-    enum class SkillFormat { NATIVE, OPENCLAW, HERMES }
+    enum class SkillFormat { NATIVE, OPENCLAW, HERMES, GITHUB }
 
     suspend fun importFromUrl(url: String, overrideName: String? = null): Result {
         val urlCheck = checkUrl(url)
         if (urlCheck != null) return Result.Err(urlCheck.first, urlCheck.second)
+
+        // Multi-file GitHub repo / tree URL → codeload zip + SkillZipImporter.
+        // Single-file raw.githubusercontent.com still falls through to the text path.
+        if (GitHubSkillImporter.parse(url) != null) {
+            return GitHubSkillImporter.import(url, overrideName, skillManager, httpClient)
+        }
 
         val raw = try {
             fetch(url)
@@ -118,6 +129,7 @@ class SkillUrlImporter(
                 ?: return Result.Err("transcode_failed", "could not parse openclaw skill body")
             SkillFormat.HERMES -> transcodeFromHermes(raw, sourceUrl = sourceForFrontmatter, override = overrideName)
                 ?: return Result.Err("transcode_failed", "could not parse Hermes skill JSON")
+            SkillFormat.GITHUB -> raw
         }
 
         // Pull name / description out of the (now-canonical) frontmatter for the saved-skill record.
@@ -362,6 +374,11 @@ class SkillUrlImporter(
 fun SkillManager.asSaver(): SkillSaver = object : SkillSaver {
     override fun saveSkill(name: String, content: String): SkillMetadata? =
         this@asSaver.saveSkill(name, content)
+
+    override fun saveSkillFiles(name: String, files: Map<String, ByteArray>): SkillMetadata? {
+        if (!this@asSaver.saveSkillFileBytesAtomically(name, files)) return null
+        return this@asSaver.getSkillMetadata(name)
+    }
 }
 
 /**

@@ -24,9 +24,8 @@ internal data class MessageActionsStyle(
     val plated: Boolean get() = plateAlpha != null || frost != null
 }
 
-/** Off a photo: the original look (icons at full `onSurfaceVariant`), the time a touch stronger
- *  than before (0.6 → 0.75) so it reads as part of the message instead of fading into the page. */
-internal val DEFAULT_MESSAGE_ACTIONS_STYLE = MessageActionsStyle(onSurfaceInk = false, iconAlpha = 1f, timeAlpha = 0.75f)
+/** Off a photo: icons stay on `onSurfaceVariant`, the standalone timestamp is fully opaque. */
+internal val DEFAULT_MESSAGE_ACTIONS_STYLE = MessageActionsStyle(onSurfaceInk = false, iconAlpha = 1f, timeAlpha = 1f)
 
 /** Icons over a plate: a touch stronger than the usage text, they are thin strokes. */
 internal const val MESSAGE_ACTIONS_PLATED_ICON_ALPHA = 0.9f
@@ -37,8 +36,8 @@ internal fun messageActionsStyle(photoShown: Boolean, sdkInt: Int, hasHazeState:
     return MessageActionsStyle(
         onSurfaceInk = true,
         iconAlpha = MESSAGE_ACTIONS_PLATED_ICON_ALPHA,
-        // The timestamp reads like the usage line under it, at the same ink.
-        timeAlpha = usage.inkAlpha,
+        // The timestamp is standalone text, so keep it fully opaque even over the plate.
+        timeAlpha = 1f,
         plateAlpha = usage.plateAlpha,
         frost = usage.frost,
     )

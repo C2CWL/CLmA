@@ -1,6 +1,5 @@
 package com.clma.app.ui.components.message
 
-import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.fadeIn
@@ -65,8 +64,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastAll
 import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastForEachIndexed
-import androidx.core.content.FileProvider
-import androidx.core.net.toFile
 import androidx.core.net.toUri
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
@@ -107,6 +104,7 @@ import com.clma.app.ui.components.webview.WebViewContentCache
 import com.clma.app.ui.components.ui.ChainOfThought
 import com.clma.app.ui.components.ui.Favicon
 import com.clma.app.ui.context.LocalNavController
+import com.clma.app.ui.context.LocalToaster
 import com.clma.app.ui.modifier.shimmer
 import com.clma.app.ui.context.LocalSettings
 import com.clma.app.ui.pages.chat.PHOTO_TEXT_PLATE_ALPHA
@@ -117,9 +115,11 @@ import com.clma.app.ui.theme.LocalChatFontFamily
 import com.clma.app.ui.theme.LocalDarkMode
 import com.clma.app.ui.theme.rememberChatFontFamily
 import com.clma.app.ui.theme.extendColors
+import com.clma.app.utils.FileOpenUtil
 import com.clma.app.utils.JsonInstant
 import com.clma.app.utils.openUrl
 import com.clma.app.utils.urlDecode
+import com.dokar.sonner.ToastType
 import java.util.Locale
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -242,18 +242,6 @@ fun ChatMessage(
             assistant?.useGradientBackground == true,
         )
 
-        // 时间戳紧跟正文：与消息内容同侧对齐（助手在左、用户在气泡右下），
-        // 独立于操作栏渲染，操作栏隐藏时（插话打断的前半、流式中）也能显示。
-        // 空消息（首 token 之前）不显示。
-        if (message.parts.isEmptyUIMessage().not()) {
-            ChatMessageTimestamp(
-                message = actionMessage,
-                photoShown = photoShown,
-                hazeState = hazeState,
-                modifier = Modifier.padding(horizontal = 8.dp),
-            )
-        }
-
         // 被插话打断的前半保持 finishedAt == null：它“话还没说完”，不出操作栏，
         // 避免在同一个回合中间出现“这条回复已结束”的视觉断裂。
         // 用户消息的 finishedAt 恒为 null（发出时不写），不能按同一条件隐藏，
@@ -263,6 +251,18 @@ fun ChatMessage(
         } else {
             message.parts.isEmptyUIMessage().not() &&
                 (message.role == MessageRole.USER || message.finishedAt != null)
+        }
+
+        // 时间戳默认跟着操作栏走（同一行右端，见 ChatMessageActionButtons）；
+        // 操作栏不显示时（流式中、插话打断的前半）才在这里单独显示。
+        // 空消息（首 token 之前）不显示。
+        if (message.parts.isEmptyUIMessage().not() && !showActions) {
+            ChatMessageTimestamp(
+                message = actionMessage,
+                photoShown = photoShown,
+                hazeState = hazeState,
+                modifier = Modifier.padding(horizontal = 8.dp),
+            )
         }
 
         AnimatedVisibility(
@@ -287,6 +287,16 @@ fun ChatMessage(
                     hazeState = hazeState,
                 )
             }
+        }
+
+        // 时间戳独立于操作栏渲染：操作栏隐藏时（插话打断的前半、流式中）也能显示。
+        // 空消息（流式首 token 之前）不显示。
+        if (message.parts.isEmptyUIMessage().not()) {
+            ChatMessageTimestamp(
+                message = actionMessage,
+                photoShown = photoShown,
+                hazeState = hazeState,
+            )
         }
 
         EditedFilesList(
@@ -364,6 +374,7 @@ private fun MessagePartsBlock(
     onUserMessageClick: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
+    val toaster = LocalToaster.current
     val contentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
 
     // 消息输出HapticFeedback
@@ -629,15 +640,14 @@ private fun MessagePartsBlock(
                         Surface(
                             tonalElevation = 2.dp,
                             onClick = {
-                                val intent = Intent(Intent.ACTION_VIEW)
-                                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                intent.data = FileProvider.getUriForFile(
-                                    context,
-                                    "${context.packageName}.fileprovider",
-                                    part.url.toUri().toFile()
-                                )
-                                val chooserIndent = Intent.createChooser(intent, null)
-                                context.startActivity(chooserIndent)
+                                // 私有目录文件交给 FileOpenUtil：转 FileProvider content:// 再开，
+                                // 失败弹提示而不是把异常抛到主线程
+                                FileOpenUtil.openUri(context, part.url.toUri()).onFailure {
+                                    toaster.show(
+                                        message = context.getString(R.string.attachment_open_failed),
+                                        type = ToastType.Error,
+                                    )
+                                }
                             },
                             modifier = Modifier,
                             shape = RoundedCornerShape(8.dp),
@@ -652,15 +662,14 @@ private fun MessagePartsBlock(
                         Surface(
                             tonalElevation = 2.dp,
                             onClick = {
-                                val intent = Intent(Intent.ACTION_VIEW)
-                                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                intent.data = FileProvider.getUriForFile(
-                                    context,
-                                    "${context.packageName}.fileprovider",
-                                    part.url.toUri().toFile()
-                                )
-                                val chooserIndent = Intent.createChooser(intent, null)
-                                context.startActivity(chooserIndent)
+                                // 私有目录文件交给 FileOpenUtil：转 FileProvider content:// 再开，
+                                // 失败弹提示而不是把异常抛到主线程
+                                FileOpenUtil.openUri(context, part.url.toUri()).onFailure {
+                                    toaster.show(
+                                        message = context.getString(R.string.attachment_open_failed),
+                                        type = ToastType.Error,
+                                    )
+                                }
                             },
                             modifier = Modifier,
                             shape = RoundedCornerShape(50),
@@ -708,15 +717,14 @@ private fun MessagePartsBlock(
                         Surface(
                             tonalElevation = 2.dp,
                             onClick = {
-                                val intent = Intent(Intent.ACTION_VIEW)
-                                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                intent.data = FileProvider.getUriForFile(
-                                    context,
-                                    "${context.packageName}.fileprovider",
-                                    part.url.toUri().toFile()
-                                )
-                                val chooserIndent = Intent.createChooser(intent, null)
-                                context.startActivity(chooserIndent)
+                                // 私有目录文件交给 FileOpenUtil：转 FileProvider content:// 再开，
+                                // 失败弹提示而不是把异常抛到主线程
+                                FileOpenUtil.openUri(context, part.url.toUri()).onFailure {
+                                    toaster.show(
+                                        message = context.getString(R.string.attachment_open_failed),
+                                        type = ToastType.Error,
+                                    )
+                                }
                             },
                             modifier = Modifier,
                             shape = RoundedCornerShape(50),

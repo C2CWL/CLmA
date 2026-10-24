@@ -38,6 +38,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
@@ -242,6 +243,7 @@ fun WorkspaceDetailPage(id: String) {
                     onInstallRootfs = { showInstallDialog = true },
                     onToolApprovalChange = vm::setToolApproval,
                     onShellCompatibilityModeChange = vm::setShellCompatibilityMode,
+                    onExecuteTerminalCommand = vm::executeTerminalCommand,
                 )
 
                 1 -> WorkspaceFilesPage(
@@ -431,6 +433,7 @@ private fun WorkspaceBasicPage(
     onInstallRootfs: () -> Unit,
     onToolApprovalChange: (String, Boolean) -> Unit,
     onShellCompatibilityModeChange: (Boolean) -> Unit,
+    onExecuteTerminalCommand: (String) -> Unit,
 ) {
     val shellStatus = workspace?.shellStatus
     val installing = installProgress != null || shellStatus == WorkspaceShellStatus.INSTALLING.name
@@ -486,6 +489,19 @@ private fun WorkspaceBasicPage(
                                     text = installButtonText,
                                     modifier = Modifier.padding(start = 8.dp),
                                 )
+                            }
+                            if (rootfsReady) {
+                                OutlinedButton(
+                                    onClick = { onExecuteTerminalCommand("/usr/local/bin/clma-init-tools") },
+                                    enabled = !installing,
+                                    modifier = Modifier.fillMaxWidth(),
+                                ) {
+                                    Icon(HugeIcons.FileImport, contentDescription = null)
+                                    Text(
+                                        text = stringResource(R.string.workspace_detail_install_core_tools),
+                                        modifier = Modifier.padding(start = 8.dp),
+                                    )
+                                }
                             }
                             installProgress?.let { RootfsProgress(it) }
                         }
@@ -1077,4 +1093,4 @@ internal fun String.toShellStatusLabel(): String = when (this) {
 }
 
 private const val DEFAULT_ROOTFS_URL =
-    "https://cdimage.ubuntu.com/ubuntu-base/releases/24.04/release/ubuntu-base-24.04.3-base-arm64.tar.gz"
+    "https://mirrors.tuna.tsinghua.edu.cn/ubuntu-cdimage/ubuntu-base/releases/24.04/release/ubuntu-base-24.04.3-base-arm64.tar.gz"

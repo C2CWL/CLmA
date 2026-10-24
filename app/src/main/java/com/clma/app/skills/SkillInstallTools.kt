@@ -137,11 +137,12 @@ fun skillInstallFromUrlTool(
 ): Tool = Tool(
     name = "skill_install_from_url",
     description = """
-        Download and install a skill from a URL. Accepts native (RikkaHub markdown +
-        frontmatter), openclaw markdown, or Hermes JSON formats. Tool names are best-effort
-        transcoded to RikkaHub equivalents. The user reviews and approves the URL + final
-        skill name before save. Newly-installed skills are auto-enabled for the calling
-        assistant unless they previously existed and were disabled. Returns
+        Download and install a skill from a URL. Accepts: (1) a GitHub repo or tree URL
+        (https://github.com/owner/repo[/tree/branch/path]) — multi-file skills with scripts/
+        and assets/ are installed intact; (2) a raw SKILL.md URL in native / openclaw /
+        Hermes formats. Tool names are best-effort transcoded. The user reviews and approves
+        the URL + final skill name before save. Newly-installed skills are auto-enabled for
+        the calling assistant unless they previously existed and were disabled. Returns
         { ok, name, format, source_url, auto_enabled, auto_enabled_detail } on success.
     """.trimIndent().replace("\n", " "),
     parameters = {

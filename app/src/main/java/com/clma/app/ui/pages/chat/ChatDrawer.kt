@@ -101,6 +101,7 @@ import com.clma.app.ui.components.ui.Tooltip
 import com.clma.app.ui.components.ui.AssistantAvatar
 import com.clma.app.ui.components.ui.UIAvatar
 import com.clma.app.ui.components.ui.frostedPlate
+import com.clma.app.ui.components.message.WallpaperOnlySelection
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.shadow
@@ -280,7 +281,12 @@ fun ChatDrawerContent(
             settings = settings,
             onClick = { navController.navigate(Screen.Backup()) },
             modifier = if (drawerFrost != null) {
-                Modifier.frostedPlate(hazeState, MaterialTheme.shapes.medium, drawerFrost)
+                Modifier.frostedPlate(
+                    hazeState = hazeState,
+                    shape = MaterialTheme.shapes.medium,
+                    spec = drawerFrost,
+                    selection = WallpaperOnlySelection,
+                )
             } else {
                 Modifier
             },
@@ -402,6 +408,7 @@ fun ChatDrawerContent(
                                 Modifier.frostedPlate(
                                     hazeState, topBarShape, drawerFrost,
                                     tint = MaterialTheme.colorScheme.surface,
+                                    selection = WallpaperOnlySelection,
                                 )
                             } else {
                                 Modifier.shadow(4.dp, topBarShape, clip = false)
@@ -428,7 +435,10 @@ fun ChatDrawerContent(
             .width(300.dp)
             .clip(drawerShape)
             .hazeBlur(
-                input = HazeInput.Sources(hazeState),
+                input = HazeInput.Sources(
+                    hazeState,
+                    selection = WallpaperOnlySelection,
+                ),
                 style = drawerBlurStyle,
             ),
         drawerShape = drawerShape,
@@ -676,6 +686,7 @@ fun ChatDrawerContent(
                                     Modifier.frostedPlate(
                                         hazeState, bottomBarShape, drawerFrost,
                                         tint = MaterialTheme.colorScheme.surface,
+                                        selection = WallpaperOnlySelection,
                                     )
                                 } else {
                                     Modifier.shadow(4.dp, bottomBarShape, clip = false)
