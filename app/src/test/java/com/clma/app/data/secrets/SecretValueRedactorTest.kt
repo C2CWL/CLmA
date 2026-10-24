@@ -29,8 +29,14 @@ class SecretValueRedactorTest {
 
     @Test
     fun `url encoded form is replaced`() {
-        val encoded = SecretValueRedactor.variantsOf("hunter2hunter2").first { it.contains('%') }
-        val out = SecretValueRedactor.redact("GET /login?pw=$encoded", secrets)
+        // 样本必须含需要转义的字符, 否则 urlEncode 的结果里根本没有 '%',
+        // 断言会变成测"编码器没干活"而不是测脱敏。
+        val valueWithSymbols = "p@ss word!"
+        val encoded = SecretValueRedactor.variantsOf(valueWithSymbols).first { it.contains('%') }
+        val out = SecretValueRedactor.redact(
+            "GET /login?pw=$encoded",
+            mapOf("db_pass" to valueWithSymbols),
+        )
         assertFalse(out.contains(encoded))
         assertTrue(out.contains("[REDACTED:db_pass]"))
     }
