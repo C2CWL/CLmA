@@ -632,11 +632,9 @@ private fun ChatPageContent(
                         }
                     },
                     onDelete = {
-                        if (loadingJob != null) {
-                            vm.showDeleteBlockedWhileGeneratingError()
-                        } else {
-                            vm.deleteMessage(it)
-                        }
+                        // Deletion is persisted by ChatService and must not be blocked by a
+                        // stale UI job reference (especially after an offline/disconnected turn).
+                        vm.deleteMessage(it)
                     },
                     onUpdateMessage = { newNode ->
                         vm.updateConversation(
