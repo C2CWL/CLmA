@@ -9,9 +9,12 @@ import me.rerere.hugeicons.stroke.Refresh03
 import me.rerere.hugeicons.stroke.Tools
 import me.rerere.hugeicons.stroke.Share01
 import me.rerere.hugeicons.stroke.Delete01
+import me.rerere.hugeicons.stroke.Tick02
+import me.rerere.hugeicons.stroke.TextSelection
 import me.rerere.hugeicons.stroke.Cancel01
 import me.rerere.hugeicons.stroke.Settings03
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,6 +44,7 @@ import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FloatingToolbarDefaults.ScreenOffset
 import androidx.compose.material3.FloatingToolbarDefaults.floatingToolbarVerticalNestedScroll
@@ -149,6 +153,16 @@ fun SettingProviderDetailPage(id: Uuid, vm: SettingVM = koinViewModel()) {
     val toaster = LocalToaster.current
     val context = LocalContext.current
 
+    // 模型列表：多选批量删除 / 一键清空
+    var modelSelectionMode by rememberSaveable(provider.id) { mutableStateOf(false) }
+    var selectedModelIds by remember(provider.id) { mutableStateOf(emptySet<Uuid>()) }
+    var showClearAllModelsDialog by remember { mutableStateOf(false) }
+    var showDeleteSelectedModelsDialog by remember { mutableStateOf(false) }
+    val exitModelSelection = {
+        modelSelectionMode = false
+        selectedModelIds = emptySet()
+    }
+
     val onEdit = { newProvider: ProviderSetting ->
         val newSettings = settings.copy(
             providers = settings.providers.map {
@@ -178,16 +192,28 @@ fun SettingProviderDetailPage(id: Uuid, vm: SettingVM = koinViewModel()) {
                 },
                 colors = CustomColors.topBarColors,
                 title = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        AutoAIIcon(provider.name, modifier = Modifier.size(22.dp))
-                        Text(text = provider.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    if (modelSelectionMode && pager.currentPage == 1) {
+                        Text(
+                            text = stringResource(
+                                R.string.setting_provider_page_selected_models_count,
+                                selectedModelIds.size
+                            ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    } else {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            AutoAIIcon(provider.name, modifier = Modifier.size(22.dp))
+                            Text(text = provider.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
                     }
                 },
                 actions = {
                     if (
+                        !modelSelectionMode &&
                         provider !is ProviderSetting.Codex &&
                         provider !is ProviderSetting.Grok &&
                         provider !is ProviderSetting.GeminiOAuth
@@ -200,6 +226,53 @@ fun SettingProviderDetailPage(id: Uuid, vm: SettingVM = koinViewModel()) {
                             }
                         ) {
                             Icon(HugeIcons.Share01, null)
+                        }
+                    }
+                    if (pager.currentPage == 1 && provider.models.isNotEmpty()) {
+                        val allSelected = selectedModelIds.size == provider.models.size
+                        if (modelSelectionMode) {
+                            IconButton(
+                                onClick = {
+                                    selectedModelIds = if (allSelected) {
+                                        emptySet()
+                                    } else {
+                                        provider.models.map { it.id }.toSet()
+                                    }
+                                }
+                            ) {
+                                Icon(
+                                    HugeIcons.Tick02,
+                                    stringResource(
+                                        if (allSelected) R.string.setting_provider_page_unselect_all
+                                        else R.string.setting_provider_page_select_all_models
+                                    )
+                                )
+                            }
+                            IconButton(
+                                onClick = { showDeleteSelectedModelsDialog = true },
+                                enabled = selectedModelIds.isNotEmpty()
+                            ) {
+                                Icon(
+                                    HugeIcons.Delete01,
+                                    stringResource(R.string.setting_provider_page_delete_selected_models)
+                                )
+                            }
+                            IconButton(onClick = { exitModelSelection() }) {
+                                Icon(HugeIcons.Cancel01, stringResource(R.string.cancel))
+                            }
+                        } else {
+                            IconButton(onClick = { modelSelectionMode = true }) {
+                                Icon(
+                                    HugeIcons.TextSelection,
+                                    stringResource(R.string.setting_provider_page_select_models)
+                                )
+                            }
+                            IconButton(onClick = { showClearAllModelsDialog = true }) {
+                                Icon(
+                                    HugeIcons.Delete01,
+                                    stringResource(R.string.setting_provider_page_clear_all_models)
+                                )
+                            }
                         }
                     }
                 }
@@ -268,7 +341,16 @@ fun SettingProviderDetailPage(id: Uuid, vm: SettingVM = koinViewModel()) {
                 1 -> {
                     SettingProviderModelPage(
                         provider = provider,
-                        onEdit = onEdit
+                        onEdit = onEdit,
+                        selectionMode = modelSelectionMode,
+                        selectedModelIds = selectedModelIds,
+                        onToggleSelection = { modelId ->
+                            selectedModelIds = if (modelId in selectedModelIds) {
+                                selectedModelIds - modelId
+                            } else {
+                                selectedModelIds + modelId
+                            }
+                        }
                     )
                 }
 
@@ -280,6 +362,73 @@ fun SettingProviderDetailPage(id: Uuid, vm: SettingVM = koinViewModel()) {
                 }
             }
         }
+    }
+
+    if (showClearAllModelsDialog) {
+        AlertDialog(
+            onDismissRequest = { showClearAllModelsDialog = false },
+            title = { Text(stringResource(R.string.confirm_delete)) },
+            text = {
+                Text(
+                    stringResource(
+                        R.string.setting_provider_page_clear_all_models_dialog_text,
+                        provider.models.size
+                    )
+                )
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearAllModelsDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showClearAllModelsDialog = false
+                        exitModelSelection()
+                        onEdit(provider.copyProvider(models = emptyList()))
+                    }
+                ) {
+                    Text(stringResource(R.string.delete))
+                }
+            }
+        )
+    }
+
+    if (showDeleteSelectedModelsDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteSelectedModelsDialog = false },
+            title = { Text(stringResource(R.string.confirm_delete)) },
+            text = {
+                Text(
+                    stringResource(
+                        R.string.setting_provider_page_delete_selected_models_dialog_text,
+                        selectedModelIds.size
+                    )
+                )
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteSelectedModelsDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val deleting = selectedModelIds
+                        showDeleteSelectedModelsDialog = false
+                        exitModelSelection()
+                        onEdit(
+                            provider.copyProvider(
+                                models = provider.models.filterNot { it.id in deleting }
+                            )
+                        )
+                    }
+                ) {
+                    Text(stringResource(R.string.delete))
+                }
+            }
+        )
     }
 }
 
@@ -422,11 +571,17 @@ private fun SettingProviderConfigPage(
 @Composable
 private fun SettingProviderModelPage(
     provider: ProviderSetting,
-    onEdit: (ProviderSetting) -> Unit
+    onEdit: (ProviderSetting) -> Unit,
+    selectionMode: Boolean,
+    selectedModelIds: Set<Uuid>,
+    onToggleSelection: (Uuid) -> Unit
 ) {
     ModelList(
         providerSetting = provider,
-        onUpdateProvider = onEdit
+        onUpdateProvider = onEdit,
+        selectionMode = selectionMode,
+        selectedModelIds = selectedModelIds,
+        onToggleSelection = onToggleSelection
     )
 }
 
@@ -455,7 +610,10 @@ private fun SettingProviderAdvancedPage(
 @Composable
 private fun ModelList(
     providerSetting: ProviderSetting,
-    onUpdateProvider: (ProviderSetting) -> Unit
+    onUpdateProvider: (ProviderSetting) -> Unit,
+    selectionMode: Boolean = false,
+    selectedModelIds: Set<Uuid> = emptySet(),
+    onToggleSelection: (Uuid) -> Unit = {}
 ) {
     val providerManager = koinInject<ProviderManager>()
     val toaster = LocalToaster.current
@@ -537,8 +695,14 @@ private fun ModelList(
                                 onUpdateProvider(providerSetting.editModel(editedModel))
                             },
                             parentProvider = providerSetting,
+                            selectionMode = selectionMode,
+                            selected = item.id in selectedModelIds,
+                            onToggleSelection = { onToggleSelection(item.id) },
                             modifier = Modifier
-                                .longPressDraggableHandle()
+                                .then(
+                                    if (selectionMode) Modifier
+                                    else Modifier.longPressDraggableHandle()
+                                )
                                 .graphicsLayer {
                                     if (isDragging) {
                                         scaleX = 1.05f
@@ -553,25 +717,27 @@ private fun ModelList(
                 }
             }
         }
-        HorizontalFloatingToolbar(
-            expanded = expanded,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .offset(y = -ScreenOffset),
-        ) {
-            AddModelButton(
-                models = modelList,
-                selectedModels = providerSetting.models,
-                onAddModel = {
-                    onUpdateProvider(providerSetting.addModel(it))
-                },
-                onRemoveModel = {
-                    onUpdateProvider(providerSetting.delModel(it))
-                },
+        if (!selectionMode) {
+            HorizontalFloatingToolbar(
                 expanded = expanded,
-                parentProvider = providerSetting,
-                onUpdateProvider = onUpdateProvider
-            )
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .offset(y = -ScreenOffset),
+            ) {
+                AddModelButton(
+                    models = modelList,
+                    selectedModels = providerSetting.models,
+                    onAddModel = {
+                        onUpdateProvider(providerSetting.addModel(it))
+                    },
+                    onRemoveModel = {
+                        onUpdateProvider(providerSetting.delModel(it))
+                    },
+                    expanded = expanded,
+                    parentProvider = providerSetting,
+                    onUpdateProvider = onUpdateProvider
+                )
+            }
         }
     }
 }
@@ -1299,7 +1465,10 @@ private fun ModelCard(
     modifier: Modifier = Modifier,
     onDelete: () -> Unit,
     onEdit: (Model) -> Unit,
-    parentProvider: ProviderSetting
+    parentProvider: ProviderSetting,
+    selectionMode: Boolean = false,
+    selected: Boolean = false,
+    onToggleSelection: () -> Unit = {}
 ) {
     val dialogState = useEditState<Model> {
         onEdit(it.copy(displayName = it.displayName.trim()))
@@ -1422,13 +1591,17 @@ private fun ModelCard(
             }
         },
         enableDismissFromStartToEnd = false,
-        gesturesEnabled = true,
+        gesturesEnabled = !selectionMode,
         modifier = modifier
     ) {
         OutlinedCard {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .then(
+                        if (selectionMode) Modifier.clickable { onToggleSelection() }
+                        else Modifier
+                    )
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -1470,13 +1643,20 @@ private fun ModelCard(
                     }
                 }
 
-                // Edit button
-                IconButton(
-                    onClick = {
-                        dialogState.open(model.copy())
+                if (selectionMode) {
+                    Checkbox(
+                        checked = selected,
+                        onCheckedChange = { onToggleSelection() }
+                    )
+                } else {
+                    // Edit button
+                    IconButton(
+                        onClick = {
+                            dialogState.open(model.copy())
+                        }
+                    ) {
+                        Icon(HugeIcons.Tools, stringResource(R.string.accessibility_edit_model))
                     }
-                ) {
-                    Icon(HugeIcons.Tools, stringResource(R.string.accessibility_edit_model))
                 }
             }
         }

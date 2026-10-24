@@ -1147,6 +1147,14 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="setting_provider_page_add_model">添加模型</string>
   <string name="setting_provider_page_add_models_hint">点击下方按钮添加模型</string>
   <string name="setting_provider_page_add_new_model">添加新模型</string>
+  <string name="setting_provider_page_select_models">多选模型</string>
+  <string name="setting_provider_page_selected_models_count">已选 %1$d 个</string>
+  <string name="setting_provider_page_select_all_models">全选</string>
+  <string name="setting_provider_page_unselect_all">取消全选</string>
+  <string name="setting_provider_page_delete_selected_models">删除所选模型</string>
+  <string name="setting_provider_page_clear_all_models">清空全部模型</string>
+  <string name="setting_provider_page_clear_all_models_dialog_text">确定要删除这个提供方的全部 %1$d 个模型吗？此操作无法撤销。</string>
+  <string name="setting_provider_page_delete_selected_models_dialog_text">确定要删除选中的 %1$d 个模型吗？此操作无法撤销。</string>
   <string name="setting_provider_page_add_provider">添加提供商</string>
   <string name="setting_provider_page_add_provider_override">添加提供商重写</string>
   <string name="setting_provider_page_advanced_settings">高级设置</string>

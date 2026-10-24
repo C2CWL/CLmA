@@ -937,6 +937,14 @@
   <string name="setting_provider_page_add_model">添加模型</string>
   <string name="setting_provider_page_add_models_hint">點擊下方按鈕添加模型</string>
   <string name="setting_provider_page_add_new_model">添加新模型</string>
+  <string name="setting_provider_page_select_models">多選模型</string>
+  <string name="setting_provider_page_selected_models_count">已選 %1$d 個</string>
+  <string name="setting_provider_page_select_all_models">全選</string>
+  <string name="setting_provider_page_unselect_all">取消全選</string>
+  <string name="setting_provider_page_delete_selected_models">刪除所選模型</string>
+  <string name="setting_provider_page_clear_all_models">清空全部模型</string>
+  <string name="setting_provider_page_clear_all_models_dialog_text">確定要刪除這個提供方的全部 %1$d 個模型嗎？此操作無法撤銷。</string>
+  <string name="setting_provider_page_delete_selected_models_dialog_text">確定要刪除所選的 %1$d 個模型嗎？此操作無法撤銷。</string>
   <string name="setting_provider_page_add_provider">添加提供商</string>
   <string name="setting_provider_page_add_provider_override">新增提供商覆寫</string>
   <string name="setting_provider_page_advanced_settings">進階設定</string>
