@@ -1,6 +1,6 @@
 package com.clma.app.data.secrets
 
-import android.util.Base64
+import java.util.Base64
 
 /**
  * Value-based redactor.
@@ -16,7 +16,9 @@ import android.util.Base64
  * naming the secret, so the model can still say "the token you gave me is wrong" without
  * ever seeing it.
  *
- * Deliberately pure (no Android calls beyond Base64) so JVM tests drive the real code path.
+ * Deliberately pure (no Android APIs at all) so JVM tests drive the real code path:
+ * `android.util.Base64` is a stub in unit tests, which silently killed the Base64 variant
+ * and made the redactor miss Base64-encoded echoes in CI and locally.
  */
 object SecretValueRedactor {
 
@@ -48,7 +50,8 @@ object SecretValueRedactor {
     fun variantsOf(value: String): List<String> = buildList {
         add(value)
         runCatching {
-            add(Base64.encodeToString(value.toByteArray(Charsets.UTF_8), Base64.NO_WRAP))
+            // java.util.Base64 (API 26+, our minSdk) — no Android stub, so tests match runtime.
+            add(Base64.getEncoder().encodeToString(value.toByteArray(Charsets.UTF_8)))
         }
         add(urlEncode(value))
     }.filter { it.isNotBlank() }.distinct()
