@@ -17,7 +17,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onStart
@@ -755,7 +755,13 @@ class GenerationLoop(
         // continuation). The synthetic message is request-only: it is never
         // written back into the visible conversation.
         continuationFromPartial: Boolean = false,
-    ): Flow<GenerationChunk> = flow {
+    ): Flow<GenerationChunk> = channelFlow {
+        // channelFlow, not flow: the TTFT steer watchdog (PR #71) collects the provider
+        // stream in a child Job so it can cancel just that request. flow { emit() } rejects
+        // emission from another coroutine (SafeCollector: "Emission from another coroutine
+        // is detected"), which crashed every streamed turn and then retry/fallback-stormed
+        // the gateway into HTTP 429. ProducerScope.send() is the supported way to publish
+        // from children; the rest of this loop is unchanged.
         val provider = model.findProvider(settings.providers) ?: error("Provider not found")
         val providerImpl = providerManager.getProviderByType(provider)
 
@@ -863,7 +869,7 @@ class GenerationLoop(
                     val steers = drainSteerMessages()
                     if (steers.isNotEmpty()) {
                         messages = messages + steers
-                        emit(
+                        send(
                             GenerationChunk.Messages(
                                 messages.visualTransforms(
                                     transformers = outputTransformers,
@@ -901,7 +907,7 @@ class GenerationLoop(
                                 assistant = assistant,
                                 settings = settings
                             )
-                            emit(
+                            send(
                                 GenerationChunk.Messages(
                                     messages.visualTransforms(
                                         transformers = outputTransformers,
@@ -959,7 +965,7 @@ class GenerationLoop(
                         // "failed reply + 继续 + next reply" rendered as one merged message.
                         messages = messages.markFailedTurnFinished()
                         if (lastMsg != null) {
-                            emit(GenerationChunk.Messages(messages))
+                            send(GenerationChunk.Messages(messages))
                         }
                     } else {
                         // A stop mid-turn must leave the assistant message finalized the same
@@ -973,7 +979,7 @@ class GenerationLoop(
                         // same as ChatService's own onCompletion persist for this exact reason.
                         //
                         // This flow ends in .flowOn(Dispatchers.IO), so this block runs in the
-                        // upstream producer coroutine: emit() can still throw (e.g. the
+                        // upstream producer coroutine: send() can still throw (e.g. the
                         // downstream channel already closed because the consumer tore down
                         // first) even under NonCancellable. That must never replace the
                         // original CancellationException — best-effort only: log and fall
@@ -1002,7 +1008,7 @@ class GenerationLoop(
                                             .toLocalDateTime(TimeZone.currentSystemDefault())
                                     )
                                 }
-                                emit(GenerationChunk.Messages(messages))
+                                send(GenerationChunk.Messages(messages))
                             }
                         } catch (finalizeError: Throwable) {
                             Log.w(TAG, "generateText: cancellation finalize failed, stop proceeds without it", finalizeError)
@@ -1040,7 +1046,7 @@ class GenerationLoop(
                                 .toLocalDateTime(TimeZone.currentSystemDefault())
                         )
                     }
-                    emit(GenerationChunk.Messages(messages))
+                    send(GenerationChunk.Messages(messages))
                 }
 
                 if (steered) {
@@ -1127,7 +1133,7 @@ class GenerationLoop(
                         }
                     }
                     messages = messages.dropLast(1) + lastMessage.copy(parts = updatedParts)
-                    emit(GenerationChunk.Messages(messages))
+                    send(GenerationChunk.Messages(messages))
                 }
 
                 // If there are pending approvals, break and wait for user
@@ -1456,7 +1462,7 @@ class GenerationLoop(
                                         if (p is UIMessagePart.Tool && p.toolCallId == tool.toolCallId) markedTool else p
                                     }
                                     messages = messages.dropLast(1) + lastMsg.copy(parts = markedParts)
-                                    emit(GenerationChunk.Messages(messages))
+                                    send(GenerationChunk.Messages(messages))
                                 }
                             }
                             // Hard-cap individual tool execution at the remaining wall-clock
@@ -1574,7 +1580,7 @@ class GenerationLoop(
                 } else part
             }
             messages = messages.dropLast(1) + lastMessage.copy(parts = updatedParts)
-            emit(
+            send(
                 GenerationChunk.Messages(
                     messages.transforms(
                         transformers = outputTransformers,
