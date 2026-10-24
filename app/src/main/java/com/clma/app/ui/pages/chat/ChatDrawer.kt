@@ -31,6 +31,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DrawerDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -434,15 +435,21 @@ fun ChatDrawerContent(
         modifier = Modifier
             .width(300.dp)
             .clip(drawerShape)
-            .hazeBlur(
-                input = HazeInput.Sources(
-                    hazeState,
-                    selection = WallpaperOnlySelection,
-                ),
-                style = drawerBlurStyle,
+            .then(
+                if (drawerFrost != null) {
+                    Modifier.hazeBlur(
+                        input = HazeInput.Sources(
+                            hazeState,
+                            selection = WallpaperOnlySelection,
+                        ),
+                        style = drawerBlurStyle,
+                    )
+                } else {
+                    Modifier
+                },
             ),
         drawerShape = drawerShape,
-        drawerContainerColor = Color.Transparent,
+        drawerContainerColor = if (drawerFrost != null) Color.Transparent else DrawerDefaults.modalContainerColor,
         drawerContentColor = MaterialTheme.colorScheme.onSurface,
         drawerTonalElevation = 0.dp,
     ) {
