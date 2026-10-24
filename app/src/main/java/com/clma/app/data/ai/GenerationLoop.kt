@@ -63,6 +63,7 @@ import com.clma.app.data.ai.transformers.transforms
 import com.clma.app.data.ai.transformers.visualTransforms
 import com.clma.app.data.ai.limits.ToolRuntimeLimits
 import com.clma.app.data.ai.tools.ToolExecutionRetryPolicy
+import com.clma.app.data.ai.tools.ToolOutputNames
 import com.clma.app.data.ai.tools.buildMemoryTools
 import com.clma.app.data.ai.tools.truncateToolResult
 import com.clma.app.data.datastore.NetworkSetting
@@ -2146,7 +2147,7 @@ class GenerationLoop(
         val fullText = textParts.joinToString("\n") { it.text }
         val preview = fullText.take(TOOL_OUTPUT_PREVIEW_CHARS)
 
-        val fileName = "${toolCallId}.txt"
+        val fileName = ToolOutputNames.fileNameFor(toolCallId)
         val outputDir = File(context.filesDir, FileFolders.TOOL_OUTPUTS).apply { mkdirs() }
         File(outputDir, fileName).writeText(fullText)
 
@@ -2170,7 +2171,7 @@ class GenerationLoop(
      * without a spill — losing the tail of a log must never fail the tool call itself.
      */
     private fun spillToolOutput(toolCallId: String, fullText: String): String? = runCatching {
-        val fileName = "${toolCallId}.txt"
+        val fileName = ToolOutputNames.fileNameFor(toolCallId)
         val outputDir = File(context.filesDir, FileFolders.TOOL_OUTPUTS).apply { mkdirs() }
         File(outputDir, fileName).writeText(fullText)
         fileName
