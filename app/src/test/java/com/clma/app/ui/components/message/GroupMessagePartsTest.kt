@@ -4,6 +4,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
 import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.ai.ContextCompactionPresentation
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -23,6 +24,14 @@ class GroupMessagePartsTest {
     private fun reasoning(s: String) = UIMessagePart.Reasoning(reasoning = s)
     private fun tool(id: String) = UIMessagePart.Tool(toolCallId = id, toolName = "t", input = "{}")
     private fun shell(id: String) = UIMessagePart.Tool(toolCallId = id, toolName = "workspace_shell", input = "{}")
+    private fun compactionTool(id: String = "compact-1") = UIMessagePart.Tool(
+        toolCallId = id,
+        toolName = ContextCompactionPresentation.TOOL_NAME,
+        input = "{}",
+        metadata = buildJsonObject {
+            put("rikkahub_display_only_context_compaction", true)
+        },
+    )
 
     @Test
     fun `empty list produces no blocks`() {
@@ -251,6 +260,70 @@ class GroupMessagePartsTest {
         assertTrue(result[0] is MessagePartBlock.ThinkingBlock)
         assertEquals(text("answer part 1"), (result[1] as MessagePartBlock.ContentBlock).part)
         assertEquals(text("answer part 2"), (result[2] as MessagePartBlock.ContentBlock).part)
+    }
+
+    @Test
+    fun `fold on keeps final answer as content when compaction tool is attached at tail`() {
+        val result = listOf(
+            tool("search"),
+            text("Here is the answer"),
+            compactionTool(),
+        ).groupMessageParts(foldProcessNarration = true)
+
+        assertEquals(3, result.size)
+        val thinking = result[0] as MessagePartBlock.ThinkingBlock
+        assertEquals(1, thinking.steps.size)
+        assertTrue(thinking.steps[0] is ThinkingStep.ToolStep)
+
+        val content = result[1] as MessagePartBlock.ContentBlock
+        assertEquals(1, content.index)
+        assertEquals(text("Here is the answer"), content.part)
+
+        val compactionBlock = result[2] as MessagePartBlock.ThinkingBlock
+        assertEquals(1, compactionBlock.steps.size)
+        assertTrue(compactionBlock.steps[0] is ThinkingStep.ToolStep)
+    }
+
+    @Test
+    fun `fold on pure text followed by compaction tool keeps text as content`() {
+        val result = listOf(
+            text("Direct response"),
+            compactionTool(),
+        ).groupMessageParts(foldProcessNarration = true)
+
+        assertEquals(2, result.size)
+        val content = result[0] as MessagePartBlock.ContentBlock
+        assertEquals(0, content.index)
+        assertEquals(text("Direct response"), content.part)
+
+        val compactionBlock = result[1] as MessagePartBlock.ThinkingBlock
+        assertEquals(1, compactionBlock.steps.size)
+        assertTrue(compactionBlock.steps[0] is ThinkingStep.ToolStep)
+    }
+
+    @Test
+    fun `fold on intermediate narration before real tool is still folded when compaction tool exists at tail`() {
+        val result = listOf(
+            text("checking"),
+            tool("search"),
+            text("final answer"),
+            compactionTool(),
+        ).groupMessageParts(foldProcessNarration = true)
+
+        assertEquals(3, result.size)
+        val thinking = result[0] as MessagePartBlock.ThinkingBlock
+        assertEquals(2, thinking.steps.size)
+        assertTrue(thinking.steps[0] is ThinkingStep.NarrationStep)
+        assertEquals("checking", (thinking.steps[0] as ThinkingStep.NarrationStep).text.text)
+        assertTrue(thinking.steps[1] is ThinkingStep.ToolStep)
+
+        val content = result[1] as MessagePartBlock.ContentBlock
+        assertEquals(2, content.index)
+        assertEquals(text("final answer"), content.part)
+
+        val compactionBlock = result[2] as MessagePartBlock.ThinkingBlock
+        assertEquals(1, compactionBlock.steps.size)
+        assertTrue(compactionBlock.steps[0] is ThinkingStep.ToolStep)
     }
 
     @Test
