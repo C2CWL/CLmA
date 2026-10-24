@@ -55,6 +55,7 @@ import com.clma.app.ui.components.ui.cleanHeaderShape
 import com.clma.app.ui.components.ui.cleanPanelFill
 import com.clma.app.ui.components.ui.cleanPanelOutline
 import com.clma.app.ui.components.ui.rikkaGlassStyle
+import com.clma.app.ui.components.message.WallpaperOnlySelection
 import com.clma.app.ui.context.LocalToaster
 import com.clma.app.ui.theme.LocalDarkMode
 import org.koin.androidx.compose.koinViewModel
@@ -222,7 +223,7 @@ internal fun CleanTopBarPanel(
             .then(
                 if (glass) {
                     Modifier.hazeGlass(
-                        input = HazeInput.Sources(hazeState),
+                        input = HazeInput.Sources(hazeState, selection = WallpaperOnlySelection),
                         style = rikkaGlassStyle(
                             shape,
                             blurRadius = 12.dp,

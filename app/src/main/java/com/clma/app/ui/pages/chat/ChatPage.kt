@@ -70,6 +70,7 @@ import dev.chrisbanes.haze.rememberHazeState
 import com.clma.app.ui.components.ui.rikkaGlassStyle
 import com.clma.app.ui.components.ui.frostedPlate
 import com.clma.app.ui.components.ui.frostedPlateSpec
+import com.clma.app.ui.components.message.WallpaperOnlySelection
 import com.clma.app.ui.theme.LocalDarkMode
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -1042,7 +1043,7 @@ private fun GlassTopBarButton(
             .size(40.dp)
             .clip(CircleShape)
             .hazeGlass(
-                input = HazeInput.Sources(hazeState),
+                input = HazeInput.Sources(hazeState, selection = WallpaperOnlySelection),
                 style = glassStyle,
             ),
         shape = CircleShape,
