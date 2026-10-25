@@ -445,10 +445,6 @@ fun ChatInput(
                                 completionProviders = completionProviders,
                                 onSendMessage = { sendMessage() },
                                 onFocusChanged = { isFocused = it },
-                                // The pill is one line. A wrapping placeholder makes the whole bar
-                                // two rows tall, which is what "在想什么？" did once the model name
-                                // sat beside it. Multiline returns as soon as the bar opens.
-                                singleLine = !expanded,
                                 modifier = Modifier.fillMaxWidth(),
                             )
                         },
@@ -800,7 +796,6 @@ private fun TextInputRow(
     onSendMessage: () -> Unit,
     modifier: Modifier = Modifier,
     onFocusChanged: (Boolean) -> Unit = {},
-    singleLine: Boolean = false,
 ) {
     val settings = LocalSettings.current
     val assistant = settings.getCurrentAssistant()
@@ -924,13 +919,13 @@ private fun TextInputRow(
                 },
             shape = MaterialTheme.shapes.largeIncreased,
             placeholder = {
-                Text(stringResource(hint))
+                Text(
+                    text = stringResource(hint),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             },
-            lineLimits = if (singleLine) {
-                TextFieldLineLimits.SingleLine
-            } else {
-                TextFieldLineLimits.MultiLine(maxHeightInLines = 5)
-            },
+            lineLimits = TextFieldLineLimits.MultiLine(maxHeightInLines = 5),
             keyboardOptions = KeyboardOptions(
                 capitalization = KeyboardCapitalization.Sentences,
                 // Only show the Send action when there is something to send; otherwise let the
