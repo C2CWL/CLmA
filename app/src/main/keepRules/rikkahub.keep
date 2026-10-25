@@ -45,7 +45,7 @@
 -keep class com.auth0.jwt.** { *; }
 
 # JLaTeXMath loads alphabet registrations and font descriptors by binary name.
--keep class org.scilab.forge.jlatexmath.** {*}
+-keep class org.scilab.forge.jlatexmath.** { *; }
 
 # JSch: SSH client loads crypto providers (com.jcraft.jsch.jce.*) reflectively
 # from a static init table, so R8 can't see the dependency at compile time and
