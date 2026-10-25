@@ -243,7 +243,7 @@ fun WorkspaceDetailPage(id: String) {
                     onInstallRootfs = { showInstallDialog = true },
                     onToolApprovalChange = vm::setToolApproval,
                     onShellCompatibilityModeChange = vm::setShellCompatibilityMode,
-                    onExecuteTerminalCommand = vm::executeTerminalCommand,
+                    onOpenTerminal = { navController.navigate(Screen.WorkspaceTerminal(id)) },
                 )
 
                 1 -> WorkspaceFilesPage(
@@ -433,7 +433,7 @@ private fun WorkspaceBasicPage(
     onInstallRootfs: () -> Unit,
     onToolApprovalChange: (String, Boolean) -> Unit,
     onShellCompatibilityModeChange: (Boolean) -> Unit,
-    onExecuteTerminalCommand: (String) -> Unit,
+    onOpenTerminal: () -> Unit,
 ) {
     val shellStatus = workspace?.shellStatus
     val installing = installProgress != null || shellStatus == WorkspaceShellStatus.INSTALLING.name
@@ -492,7 +492,7 @@ private fun WorkspaceBasicPage(
                             }
                             if (rootfsReady) {
                                 OutlinedButton(
-                                    onClick = { onExecuteTerminalCommand("/usr/local/bin/clma-init-tools") },
+                                    onClick = onOpenTerminal,
                                     enabled = !installing,
                                     modifier = Modifier.fillMaxWidth(),
                                 ) {
@@ -1093,4 +1093,4 @@ internal fun String.toShellStatusLabel(): String = when (this) {
 }
 
 private const val DEFAULT_ROOTFS_URL =
-    "https://mirrors.tuna.tsinghua.edu.cn/ubuntu-cdimage/ubuntu-base/releases/24.04/release/ubuntu-base-24.04.3-base-arm64.tar.gz"
+    "https://mirrors.aliyun.com/ubuntu-cdimage/ubuntu-base/releases/24.04/release/ubuntu-base-24.04.3-base-arm64.tar.gz"

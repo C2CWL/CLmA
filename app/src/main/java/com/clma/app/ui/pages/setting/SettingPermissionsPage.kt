@@ -119,15 +119,17 @@ fun SettingPermissionsPage() {
                             headlineContent = { Text(row.label) },
                             supportingContent = { Text(row.description) },
                             trailingContent = {
-                                val statusText = when (row.status) {
-                                    Status.GRANTED -> stringResource(R.string.setting_page_permissions_status_granted)
-                                    Status.AUTO_GRANTED -> stringResource(R.string.setting_page_permissions_status_auto_granted)
-                                    Status.DENIED -> stringResource(R.string.setting_page_permissions_status_denied)
+                                val isActionable = row.grant !is GrantAction.None
+                                val statusText = when {
+                                    row.status == Status.GRANTED -> stringResource(R.string.setting_page_permissions_status_granted)
+                                    row.status == Status.AUTO_GRANTED -> stringResource(R.string.setting_page_permissions_status_auto_granted)
+                                    !isActionable -> stringResource(R.string.setting_page_permissions_status_not_granted)
+                                    else -> stringResource(R.string.setting_page_permissions_status_denied)
                                 }
-                                val tint = when (row.status) {
-                                    Status.GRANTED -> MaterialTheme.colorScheme.primary
-                                    Status.AUTO_GRANTED -> MaterialTheme.colorScheme.outline
-                                    Status.DENIED -> MaterialTheme.colorScheme.error
+                                val tint = when {
+                                    row.status == Status.GRANTED -> MaterialTheme.colorScheme.primary
+                                    row.status == Status.AUTO_GRANTED || !isActionable -> MaterialTheme.colorScheme.outline
+                                    else -> MaterialTheme.colorScheme.error
                                 }
                                 Text(
                                     text = statusText,

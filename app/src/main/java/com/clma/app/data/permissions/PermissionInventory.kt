@@ -2,6 +2,9 @@ package com.clma.app.data.permissions
 
 import android.Manifest
 import android.app.NotificationManager
+import android.app.AppOpsManager
+import android.os.Environment
+import android.os.Process
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageInfo
@@ -144,6 +147,84 @@ object PermissionInventory {
                     ),
                 )
             }
+            Manifest.permission.MANAGE_EXTERNAL_STORAGE -> {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    val granted = Environment.isExternalStorageManager()
+                    val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, pkgUri)
+                    return Row(
+                        id = perm,
+                        label = labelOrHumanize(context, perm),
+                        description = describeRuntime(context, perm),
+                        status = if (granted) Status.GRANTED else Status.DENIED,
+                        group = Group.SpecialAccess,
+                        grant = GrantAction.SystemSettings(intent),
+                    )
+                } else {
+                    return autoRow(context, perm, labelOrHumanize(context, perm))
+                }
+            }
+            Manifest.permission.PACKAGE_USAGE_STATS -> {
+                val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as? AppOpsManager
+                val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    appOps?.unsafeCheckOpNoThrow(
+                        AppOpsManager.OPSTR_GET_USAGE_STATS,
+                        Process.myUid(),
+                        context.packageName
+                    )
+                } else {
+                    @Suppress("DEPRECATION")
+                    appOps?.checkOpNoThrow(
+                        AppOpsManager.OPSTR_GET_USAGE_STATS,
+                        Process.myUid(),
+                        context.packageName
+                    )
+                }
+                val granted = mode == AppOpsManager.MODE_ALLOWED
+                return Row(
+                    id = perm,
+                    label = labelOrHumanize(context, perm),
+                    description = describeRuntime(context, perm),
+                    status = if (granted) Status.GRANTED else Status.DENIED,
+                    group = Group.SpecialAccess,
+                    grant = GrantAction.SystemSettings(
+                        Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
+                    ),
+                )
+            }
+            Manifest.permission.ACCESS_BACKGROUND_LOCATION -> {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    val granted = ContextCompat.checkSelfPermission(context, perm) ==
+                        PackageManager.PERMISSION_GRANTED
+                    return Row(
+                        id = perm,
+                        label = labelOrHumanize(context, perm),
+                        description = describeRuntime(context, perm),
+                        status = if (granted) Status.GRANTED else Status.DENIED,
+                        group = Group.SpecialAccess,
+                        grant = GrantAction.SystemSettings(
+                            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, pkgUri)
+                        ),
+                    )
+                } else {
+                    return autoRow(context, perm, labelOrHumanize(context, perm))
+                }
+            }
+            "android.permission.ACCESS_LOCAL_NETWORK" -> {
+                if (Build.VERSION.SDK_INT >= 37) {
+                    val granted = ContextCompat.checkSelfPermission(context, perm) ==
+                        PackageManager.PERMISSION_GRANTED
+                    return Row(
+                        id = perm,
+                        label = labelOrHumanize(context, perm),
+                        description = describeRuntime(context, perm),
+                        status = if (granted) Status.GRANTED else Status.DENIED,
+                        group = Group.Runtime,
+                        grant = GrantAction.Runtime(perm),
+                    )
+                } else {
+                    return autoRow(context, perm, labelOrHumanize(context, perm))
+                }
+            }
             Manifest.permission.POST_NOTIFICATIONS -> {
                 return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     val granted = ContextCompat.checkSelfPermission(context, perm) ==
@@ -174,16 +255,16 @@ object PermissionInventory {
         if (info == null) {
             // Unknown to this device — typically a custom perm declared by an app that isn't
             // installed (e.g. com.termux.permission.RUN_COMMAND when Termux isn't installed).
-            // Best we can do is check checkSelfPermission and offer no grant flow.
+            // Cannot request via standard runtime dialog since declaring app is missing.
             val granted = ContextCompat.checkSelfPermission(context, perm) ==
                 PackageManager.PERMISSION_GRANTED
             return Row(
                 id = perm,
-                label = humanize(perm),
-                description = context.getString(R.string.perm_desc_custom),
+                label = labelOrHumanize(context, perm),
+                description = descriptionFor(context, perm) ?: context.getString(R.string.perm_desc_custom),
                 status = if (granted) Status.GRANTED else Status.DENIED,
-                group = Group.Runtime,
-                grant = GrantAction.Runtime(perm),
+                group = Group.ServicesAndIntegrations,
+                grant = GrantAction.None,
             )
         }
 
@@ -264,12 +345,19 @@ object PermissionInventory {
         Manifest.permission.READ_PHONE_STATE -> context.getString(R.string.perm_label_phone_state)
         Manifest.permission.ACCESS_FINE_LOCATION -> context.getString(R.string.perm_label_fine_location)
         Manifest.permission.ACCESS_COARSE_LOCATION -> context.getString(R.string.perm_label_coarse_location)
+        Manifest.permission.ACCESS_BACKGROUND_LOCATION -> context.getString(R.string.perm_label_background_location)
+        "android.permission.ACCESS_LOCAL_NETWORK" -> context.getString(R.string.perm_label_local_network)
         Manifest.permission.READ_CONTACTS -> context.getString(R.string.perm_label_contacts)
         Manifest.permission.READ_CALL_LOG -> context.getString(R.string.perm_label_call_log)
         Manifest.permission.READ_SMS -> context.getString(R.string.perm_label_sms)
         Manifest.permission.SEND_SMS -> context.getString(R.string.perm_label_send_sms)
         Manifest.permission.POST_NOTIFICATIONS -> context.getString(R.string.perm_label_post_notifications)
+        Manifest.permission.MANAGE_EXTERNAL_STORAGE -> context.getString(R.string.perm_label_manage_storage)
+        Manifest.permission.PACKAGE_USAGE_STATS -> context.getString(R.string.perm_label_usage_stats)
+        Manifest.permission.BLUETOOTH_CONNECT -> context.getString(R.string.perm_label_bluetooth_connect)
         "com.termux.permission.RUN_COMMAND" -> context.getString(R.string.perm_label_termux_run)
+        "moe.shizuku.manager.permission.API_V23" -> context.getString(R.string.perm_label_shizuku)
+        "dev.patrickgold.florisboard.permission.AGENT_KEYBOARD_API" -> context.getString(R.string.perm_label_keyboard_api)
         else -> null
     }
 
@@ -279,11 +367,18 @@ object PermissionInventory {
         Manifest.permission.READ_PHONE_STATE -> context.getString(R.string.perm_desc_phone_state)
         Manifest.permission.ACCESS_FINE_LOCATION -> context.getString(R.string.perm_desc_fine_location)
         Manifest.permission.ACCESS_COARSE_LOCATION -> context.getString(R.string.perm_desc_coarse_location)
+        Manifest.permission.ACCESS_BACKGROUND_LOCATION -> context.getString(R.string.perm_desc_background_location)
+        "android.permission.ACCESS_LOCAL_NETWORK" -> context.getString(R.string.perm_desc_local_network)
         Manifest.permission.READ_CONTACTS -> context.getString(R.string.perm_desc_contacts)
         Manifest.permission.READ_CALL_LOG -> context.getString(R.string.perm_desc_call_log)
         Manifest.permission.READ_SMS -> context.getString(R.string.perm_desc_sms)
         Manifest.permission.SEND_SMS -> context.getString(R.string.perm_desc_send_sms)
+        Manifest.permission.MANAGE_EXTERNAL_STORAGE -> context.getString(R.string.perm_desc_manage_storage)
+        Manifest.permission.PACKAGE_USAGE_STATS -> context.getString(R.string.perm_desc_usage_stats)
+        Manifest.permission.BLUETOOTH_CONNECT -> context.getString(R.string.perm_desc_bluetooth_connect)
         "com.termux.permission.RUN_COMMAND" -> context.getString(R.string.perm_desc_termux_run)
+        "moe.shizuku.manager.permission.API_V23" -> context.getString(R.string.perm_desc_shizuku)
+        "dev.patrickgold.florisboard.permission.AGENT_KEYBOARD_API" -> context.getString(R.string.perm_desc_keyboard_api)
         else -> null
     }
 
