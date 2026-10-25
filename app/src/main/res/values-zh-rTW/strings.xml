@@ -2423,7 +2423,7 @@
   <string name="assistant_page_context_reminder_threshold_value_tokens">%1$d%%（約 %2$s tokens，共 %3$s）</string>
   <string name="assistant_page_context_reminder_threshold_window_unknown">%1$d%%（模型上下文視窗未知，提醒不會觸發）</string>
   <string name="assistant_page_tool_surface_mode">漸進式工具目錄</string>
-  <string name="assistant_page_tool_surface_mode_desc">用 tool_search / tool_open 一對工具替換每次請求裡已啟用的本地工具與 MCP 工具，因此只傳送模型實際開啟的那些 schema。記憶、工作區、技能與 ask_user 等工具始終直掛，開啟的工具在同一回合的下一步即可呼叫。可減少首輪工具 token，但工具清單會在回合間變化，可能損失提示快取命中。預設關閉。</string>
+  <string name="assistant_page_tool_surface_mode_desc">用 tool_search / tool_open 一對工具替換每次請求裡已啟用的本地工具與 MCP 工具，因此只傳送模型實際開啟的那些 schema。記憶、工作區、技能與 ask_user 等工具始終直掛，開啟的工具在同一回合的下一步即可呼叫。可減少首輪工具 token，但工具清單會在回合間變化，可能損失提示快取命中。預設開啟。</string>
   <string name="assistant_page_subagent_context_refs">子智慧體上下文引用</string>
   <string name="assistant_page_subagent_context_refs_desc">讓 subagent_dispatch 也能把本會話最近 N 個回合原文發給子智慧體，因此引用剛討論內容的任務無需重述。回合以純文字傳遞——子智慧體仍然無法讀取本會話。預設關閉；關閉時工具 schema 與之前完全一致，現有會話傳送的請求不變。</string>
   <string name="assistant_page_subagent_tool_surface">凍結子智慧體工具面</string>
