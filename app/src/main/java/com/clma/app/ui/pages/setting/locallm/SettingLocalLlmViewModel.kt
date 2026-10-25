@@ -87,7 +87,7 @@ class SettingLocalLlmViewModel(
     val accelerator: StateFlow<String?> = _accelerator.asStateFlow()
 
     /** True (default) when the runtime is locked to CPU. Off lets the probe pick GPU/NNAPI/QNN.
-     *  Auto-flipped to true by [com.clma.app.RikkaHubApp] when the prior process exited
+     *  Auto-flipped to true by [com.clma.app.ClmaApp] when the prior process exited
      *  with a native crash inside the runtime's JNI lib (see crashRecoveryAccelerator). */
     val forceCpu: StateFlow<Boolean> = prefs.forceCpuFlow(runtime)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)

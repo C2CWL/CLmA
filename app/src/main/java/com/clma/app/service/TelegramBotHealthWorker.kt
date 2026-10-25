@@ -72,7 +72,7 @@ class TelegramBotHealthWorker(
     companion object {
         /**
          * Schedule (or update in place) the periodic health probe. Idempotent — calls from
-         * `RikkaHubApp.onCreate` and `CronBootReceiver` both end up with a single registered
+         * `ClmaApp.onCreate` and `CronBootReceiver` both end up with a single registered
          * worker. `UPDATE` (not `KEEP`) so an entry persisted by an older build — e.g. one
          * still carrying the pre-rename worker class name `me.rerere.rikkahub.service.
          * TelegramBotHealthWorker` — is rewritten to the current spec, while its period

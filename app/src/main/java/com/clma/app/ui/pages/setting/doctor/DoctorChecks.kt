@@ -1444,7 +1444,7 @@ class DoctorChecks(
      * health, whether the on-disk `.core-bundled-hash` sentinel still matches what the
      * currently-installed APK would seed. A stale sentinel is what froze bundled skill
      * updates before; it means seeding failed silently rather than that a re-seed is merely
-     * pending, since [com.clma.app.RikkaHubApp] runs the seed pass on every launch.
+     * pending, since [com.clma.app.ClmaApp] runs the seed pass on every launch.
      */
     private fun skillsChecks(): List<DoctorCheck> = buildList {
         val mgr = skillManager ?: return@buildList

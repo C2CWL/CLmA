@@ -19,7 +19,7 @@
   <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
   <!-- Android 17 (API 37) gates all local-network sockets behind this runtime
        permission. Required by SSH (LAN hosts) and the web server (LAN access);
-       the runtime check is centralized in RikkaHubApp / SshTool / the toggle UI
+       the runtime check is centralized in ClmaApp / SshTool / the toggle UI
        and short-circuits to "always granted" on older API levels where the
        permission doesn't exist. -->
   <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
@@ -139,7 +139,7 @@
   </queries>
 
   <application
-    android:name=".RikkaHubApp"
+    android:name=".ClmaApp"
     android:largeHeap="true"
     android:allowBackup="true"
     android:appCategory="productivity"

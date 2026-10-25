@@ -40,7 +40,7 @@ private const val PREFS_KEY_AUTO_APPROVE = "auto_approve_ids"
  *
  * Persistence: both sets are written to SharedPreferences so that if the process
  * is killed between mark() and unmark(), the IDs survive. On first call to
- * init(context), the prefs are read back. The startup sweep in RikkaHubApp clears
+ * init(context), the prefs are read back. The startup sweep in ClmaApp clears
  * any orphan conversations left by killed workers.
  */
 @OptIn(ExperimentalUuidApi::class)

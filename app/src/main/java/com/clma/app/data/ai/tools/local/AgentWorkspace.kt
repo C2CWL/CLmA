@@ -32,7 +32,7 @@ object AgentWorkspace {
     @Volatile
     private var workspaceDir: File? = null
 
-    /** Wire up at app start (RikkaHubApp.onCreate) — idempotent. */
+    /** Wire up at app start (ClmaApp.onCreate) — idempotent. */
     fun init(context: Context) {
         val dir = File(context.filesDir, DIR_NAME)
         if (!dir.exists()) dir.mkdirs()

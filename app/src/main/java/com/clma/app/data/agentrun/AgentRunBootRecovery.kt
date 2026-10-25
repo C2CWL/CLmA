@@ -12,7 +12,7 @@ private const val TAG = "AgentRunBootRecovery"
 /**
  * Phase 24 — cross-pillar boot-recovery sweep for the unified `agent_runs` ledger.
  *
- * Run once per process start from [com.clma.app.RikkaHubApp.onCreate], after Koin
+ * Run once per process start from [com.clma.app.ClmaApp.onCreate], after Koin
  * init. The ledger is the source of truth for "which autonomous runs were mid-flight when
  * the process died": any row still in `running` / `awaiting_approval` / `queued` that
  * hasn't been touched in [AgentRunDefaults.STRANDED_THRESHOLD_MS] is stranded — the

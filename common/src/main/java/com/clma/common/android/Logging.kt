@@ -83,14 +83,14 @@ object Logging {
     val version: StateFlow<Long> = _version.asStateFlow()
 
     // "Record requests" switch. Defaults to true to match Settings.recordRequests; :app
-    // restores the user's saved value from SettingsStore at startup (RikkaHubApp.onCreate),
+    // restores the user's saved value from SettingsStore at startup (ClmaApp.onCreate),
     // so this initial value only applies until settings have loaded.
     @Volatile
     private var requestLoggingEnabled = true
 
     // Modules below :app (e.g. :ai) have no BuildConfig of their own to gate verbose
     // android.util.Log calls with, the way :app already gates HttpLoggingInterceptor
-    // behind BuildConfig.DEBUG. RikkaHubApp.onCreate() sets this once from
+    // behind BuildConfig.DEBUG. ClmaApp.onCreate() sets this once from
     // BuildConfig.DEBUG so provider code can gate full request/response body logging
     // (which otherwise carries prompts and tool results into logcat on every release
     // build too) without a per-module build.gradle change.

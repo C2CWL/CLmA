@@ -41,7 +41,7 @@ object AcceleratorProbe {
      * that SoC family we keep CPU as the safe default; every other device defaults to
      * GPU and gets the speedup out of the box.
      *
-     * This is only the *initial* default. The per-device crash sweep in RikkaHubApp still
+     * This is only the *initial* default. The per-device crash sweep in ClmaApp still
      * backstops any device that crashes anyway by persisting forceCpu=true, and the
      * runtime's own GPU->CPU fallback handles a GPU that fails to initialise. So a wrong
      * guess here self-corrects; it is never load-bearing for safety.

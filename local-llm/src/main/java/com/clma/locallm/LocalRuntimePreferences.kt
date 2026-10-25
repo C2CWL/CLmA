@@ -42,7 +42,7 @@ class LocalRuntimePreferences(private val context: Context) {
     /** The default value for [forceCpuFlow] when the user has not set a preference.
      *  Computed once from the SoC: GPU for capable devices, CPU for Google Tensor (where
      *  LiteRT-LM 0.11.0's GPU path has a native SIGSEGV). [AcceleratorProbe.defaultForceCpu]
-     *  carries the rationale. The RikkaHubApp crash sweep + the runtime's GPU->CPU
+     *  carries the rationale. The ClmaApp crash sweep + the runtime's GPU->CPU
      *  fallback both still backstop a wrong guess. */
     private val defaultForceCpu: Boolean by lazy {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
@@ -57,7 +57,7 @@ class LocalRuntimePreferences(private val context: Context) {
         }
     }
 
-    /** Stamped by [RikkaHubApp]'s ApplicationExitInfo sweep when the previous process
+    /** Stamped by [ClmaApp]'s ApplicationExitInfo sweep when the previous process
      *  exited with REASON_CRASH_NATIVE inside liblitertlm_jni.so. The settings UI
      *  reads this, shows a friendly recovery banner, and clears it on dismiss. Value
      *  is the accelerator label that crashed (so the banner can name it). */
@@ -321,7 +321,7 @@ class LocalRuntimePreferences(private val context: Context) {
 
     /**
      * Wipe the entire vision-unavailable set for [runtime] and return the number of
-     * entries removed. Called once per app start from [RikkaHubApp]'s SDK-aware sweep so
+     * entries removed. Called once per app start from [ClmaApp]'s SDK-aware sweep so
      * the next inference can re-attempt GPU vision from scratch on every model the user
      * has installed. If the GPU vision encoder really is still broken on this device, the
      * runtime's text-only fallback in [LiteRtRuntime.ensureLoaded] re-stamps the relevant

@@ -15,7 +15,7 @@ import com.clma.app.service.LegacyComponentNames
 object AccessibilityServiceHandle {
 
     /**
-     * Application context, set once from `RikkaHubApp.onCreate`. Only used so the
+     * Application context, set once from `ClmaApp.onCreate`. Only used so the
      * service-not-active envelope can tell "the user never enabled it" apart from "the system
      * dropped it in the background" — the tool factories have no Context of their own.
      */

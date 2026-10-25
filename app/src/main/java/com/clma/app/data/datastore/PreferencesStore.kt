@@ -1146,7 +1146,7 @@ data class Settings(
     /**
      * Logs screen "记录请求" switch: keep successful HTTP requests (with bodies) in the log.
      * Failed requests are always logged regardless. On by default. Persisted here so it
-     * survives a restart; RikkaHubApp pushes the value into [com.clma.common.android.Logging].
+     * survives a restart; ClmaApp pushes the value into [com.clma.common.android.Logging].
      */
     val recordRequests: Boolean = true,
     val backupReminderConfig: BackupReminderConfig = BackupReminderConfig(),

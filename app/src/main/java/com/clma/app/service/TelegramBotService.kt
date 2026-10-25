@@ -214,7 +214,7 @@ class TelegramBotService : Service() {
         }
         isRunning = true
         // START_NOT_STICKY: don't auto-revive; revival without a fresh foreground ticket would
-        // crash with the same exception. The boot receiver, RikkaHubApp.onCreate, and the user
+        // crash with the same exception. The boot receiver, ClmaApp.onCreate, and the user
         // re-enable cover the legitimate restart paths.
         return START_NOT_STICKY
     }

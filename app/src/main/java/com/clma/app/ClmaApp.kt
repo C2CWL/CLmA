@@ -61,7 +61,7 @@ import org.koin.android.ext.koin.androidLogger
 import org.koin.androidx.workmanager.factory.KoinWorkerFactory
 import org.koin.core.context.startKoin
 
-private const val TAG = "RikkaHubApp"
+private const val TAG = "ClmaApp"
 
 const val CHAT_COMPLETED_NOTIFICATION_CHANNEL_ID = "chat_completed"
 const val CHAT_LIVE_UPDATE_NOTIFICATION_CHANNEL_ID = "chat_live_update"
@@ -71,7 +71,7 @@ const val FLOATING_BALL_NOTIFICATION_CHANNEL_ID = "floating_ball"
 /** Set once the removed floating ball's picked-icon files have been deleted from filesDir. */
 private const val LEGACY_BALL_ICONS_CLEANED_KEY = "edge_bar_legacy_ball_icons_cleaned"
 
-class RikkaHubApp : Application() {
+class ClmaApp : Application() {
     override fun onCreate() {
         super.onCreate()
         // Give the accessibility tool bridge an application context so its "service not active"
@@ -80,7 +80,7 @@ class RikkaHubApp : Application() {
         // Restore files and settings before eager Koin singletons or workers can access them.
         try {
             val restored = runBlocking(Dispatchers.IO) {
-                BackupManager.applyPendingRestore(this@RikkaHubApp, JsonInstant)
+                BackupManager.applyPendingRestore(this@ClmaApp, JsonInstant)
             }
             if (restored) {
                 Toast.makeText(this, R.string.backup_page_restore_success, Toast.LENGTH_LONG).show()
@@ -103,7 +103,7 @@ class RikkaHubApp : Application() {
         )
         startKoin {
             androidLogger()
-            androidContext(this@RikkaHubApp)
+            androidContext(this@ClmaApp)
             modules(appModule, viewModelModule, dataSourceModule, repositoryModule)
         }
         initWorkManager()
@@ -475,13 +475,13 @@ class RikkaHubApp : Application() {
                 val cfg = get<com.clma.app.data.telegram.TelegramBotPreferences>().current()
                 if (cfg.isUsable) {
                     Log.i(TAG, "startTelegramBotIfEnabled: re-starting bot service")
-                    com.clma.app.service.TelegramBotService.start(this@RikkaHubApp)
+                    com.clma.app.service.TelegramBotService.start(this@ClmaApp)
                     // Defense-in-depth against OEM aggressive task-killing: a 30-min
                     // periodic health probe re-starts the service if anything killed it
                     // outside our control. Idempotent — uses ExistingPeriodicWorkPolicy.UPDATE.
-                    com.clma.app.service.TelegramBotHealthWorker.schedule(this@RikkaHubApp)
+                    com.clma.app.service.TelegramBotHealthWorker.schedule(this@ClmaApp)
                 } else {
-                    com.clma.app.service.TelegramBotHealthWorker.cancel(this@RikkaHubApp)
+                    com.clma.app.service.TelegramBotHealthWorker.cancel(this@ClmaApp)
                 }
             }.onFailure {
                 Log.e(TAG, "startTelegramBotIfEnabled failed", it)
@@ -574,11 +574,11 @@ class RikkaHubApp : Application() {
             runCatching {
                 val settings = get<SettingsStore>().settingsFlowRaw.first()
                 if (!settings.floatingBallEnabled) return@runCatching
-                if (!Settings.canDrawOverlays(this@RikkaHubApp)) {
+                if (!Settings.canDrawOverlays(this@ClmaApp)) {
                     Log.w(TAG, "restoreFloatingBallIfEnabled: overlay permission not granted, skipping")
                     return@runCatching
                 }
-                FloatingBallService.start(this@RikkaHubApp)
+                FloatingBallService.start(this@ClmaApp)
             }.onFailure {
                 Log.e(TAG, "restoreFloatingBallIfEnabled failed", it)
             }
@@ -593,7 +593,7 @@ class RikkaHubApp : Application() {
                 if (settings.webServerEnabled) {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
                         ContextCompat.checkSelfPermission(
-                            this@RikkaHubApp,
+                            this@ClmaApp,
                             android.Manifest.permission.POST_NOTIFICATIONS
                         ) != PackageManager.PERMISSION_GRANTED
                     ) {
@@ -606,14 +606,14 @@ class RikkaHubApp : Application() {
                     if (Build.VERSION.SDK_INT >= 37 &&
                         !settings.webServerLocalhostOnly &&
                         ContextCompat.checkSelfPermission(
-                            this@RikkaHubApp,
+                            this@ClmaApp,
                             android.Manifest.permission.ACCESS_LOCAL_NETWORK
                         ) != PackageManager.PERMISSION_GRANTED
                     ) {
                         Log.w(TAG, "startWebServerIfEnabled: local network permission not granted, skipping")
                         return@launch
                     }
-                    val intent = Intent(this@RikkaHubApp, WebServerService::class.java).apply {
+                    val intent = Intent(this@ClmaApp, WebServerService::class.java).apply {
                         action = WebServerService.ACTION_START
                         putExtra(WebServerService.EXTRA_PORT, settings.webServerPort)
                         putExtra(WebServerService.EXTRA_LOCALHOST_ONLY, settings.webServerLocalhostOnly)
