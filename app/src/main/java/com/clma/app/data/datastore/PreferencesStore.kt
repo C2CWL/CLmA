@@ -1441,9 +1441,11 @@ fun Settings.resolveChatModel(conversationChatModelId: Uuid?, assistantId: Uuid?
         .firstNotNullOfOrNull { providers.findModelById(it) }
 }
 
-private const val FALLBACK_CONTEXT_COMPACTION_TARGET_TOKENS = 2_000
+private const val FALLBACK_CONTEXT_COMPACTION_TARGET_TOKENS = 4_000
+private const val MIN_DEFAULT_COMPACTION_TARGET_TOKENS = 2_000
+private const val MAX_DEFAULT_COMPACTION_TARGET_TOKENS = 8_000
 
-/** Returns the configured summary target, defaulting to 1% of the active context. */
+/** Returns the configured summary target, defaulting to 1% of the active context with safe bounds. */
 fun Settings.getContextCompactionTargetTokens(contextLength: Int?): Int {
     val configured = contextCompactionTargetTokensK
         ?.toLong()
@@ -1456,8 +1458,7 @@ fun Settings.getContextCompactionTargetTokens(contextLength: Int?): Int {
         ?.takeIf { it > 0 }
         ?.let { length ->
             (length.toLong() * DEFAULT_CONTEXT_COMPACTION_TARGET_PERCENT / 100L)
-                .coerceAtLeast(1L)
-                .coerceAtMost(Int.MAX_VALUE.toLong())
+                .coerceIn(MIN_DEFAULT_COMPACTION_TARGET_TOKENS.toLong(), MAX_DEFAULT_COMPACTION_TARGET_TOKENS.toLong())
                 .toInt()
         }
         ?: FALLBACK_CONTEXT_COMPACTION_TARGET_TOKENS
