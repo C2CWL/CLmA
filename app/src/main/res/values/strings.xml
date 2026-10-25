@@ -224,6 +224,15 @@
   <string name="backup_item_workspaces">Workspaces</string>
   <string name="backup_item_tool_outputs">Tool outputs</string>
   <string name="backup_item_config">Preferences</string>
+  <string name="backup_item_secrets">Secrets</string>
+  <string name="backup_secrets_encryption_password">Secrets Encryption Password</string>
+  <string name="backup_secrets_encryption_password_hint">Used to encrypt and decrypt sensitive credentials</string>
+  <string name="backup_secrets_password_required">Password required to encrypt backup secrets</string>
+  <string name="backup_secrets_enter_password">Enter password to decrypt secrets</string>
+  <string name="backup_secrets_password_dialog_title">Protect Secrets</string>
+  <string name="backup_secrets_password_dialog_restore_title">Enter Secrets Password</string>
+  <string name="backup_secrets_password_mismatch">Passwords do not match</string>
+  <string name="backup_secrets_confirm_password">Confirm Password</string>
   <string name="backup_page_backing_up">Backing up...</string>
   <string name="backup_page_backup_items">Backup Items</string>
   <string name="backup_page_backup_now">Backup Now</string>

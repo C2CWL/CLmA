@@ -118,15 +118,16 @@ class WebDavSync(
         Log.i(TAG, "deleteBackupFile: Deleted ${item.displayName}")
     }
 
-    suspend fun restoreFromLocalFile(file: File, config: WebDavConfig) {
-        restoreFromBackupFile(file, config)
+    suspend fun restoreFromLocalFile(file: File, config: WebDavConfig, encryptionPassword: String = config.encryptionPassword) {
+        restoreFromBackupFile(file, config, encryptionPassword)
     }
 
-    suspend fun prepareBackupFile(config: WebDavConfig): File = backupManager.createBackup(config.items)
+    suspend fun prepareBackupFile(config: WebDavConfig): File = backupManager.createBackup(config.items, config.encryptionPassword)
 
-    private suspend fun restoreFromBackupFile(backupFile: File, config: WebDavConfig) = backupManager.stageRestore(
+    suspend fun restoreFromBackupFile(backupFile: File, config: WebDavConfig, encryptionPassword: String = config.encryptionPassword) = backupManager.stageRestore(
         archive = backupFile,
         items = config.items,
+        encryptionPassword = encryptionPassword,
     )
 
 }

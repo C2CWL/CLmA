@@ -195,6 +195,15 @@
   <string name="backup_item_workspaces">工作区</string>
   <string name="backup_item_tool_outputs">工具产物</string>
   <string name="backup_item_config">偏好配置</string>
+  <string name="backup_item_secrets">安全密钥</string>
+  <string name="backup_secrets_encryption_password">密钥加密密码</string>
+  <string name="backup_secrets_encryption_password_hint">用于加密与解密敏感凭据 (至少 6 位)</string>
+  <string name="backup_secrets_password_required">已选择备份安全密钥，请输入加密密码</string>
+  <string name="backup_secrets_enter_password">请输入密钥解密密码</string>
+  <string name="backup_secrets_password_dialog_title">安全密钥保护</string>
+  <string name="backup_secrets_password_dialog_restore_title">输入安全密钥密码</string>
+  <string name="backup_secrets_password_mismatch">两次输入的密码不一致</string>
+  <string name="backup_secrets_confirm_password">确认密码</string>
   <string name="backup_page_backing_up">备份中...</string>
   <string name="backup_page_backup_items">备份项目</string>
   <string name="backup_page_backup_now">立即备份</string>

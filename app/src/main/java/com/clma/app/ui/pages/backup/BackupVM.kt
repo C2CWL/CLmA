@@ -107,18 +107,22 @@ class BackupVM(
         webDavSync.deleteBackupFile(settings.value.webDavConfig, item)
     }
 
-    suspend fun exportToFile(): File {
+    suspend fun exportToFile(encryptionPassword: String = ""): File {
         val file = webDavSync.prepareBackupFile(
-            settings.value.webDavConfig.copy(items = localBackupItems.value)
+            settings.value.webDavConfig.copy(
+                items = localBackupItems.value,
+                encryptionPassword = encryptionPassword,
+            )
         )
         recordBackupTime()
         return file
     }
 
-    suspend fun restoreFromLocalFile(file: File) {
+    suspend fun restoreFromLocalFile(file: File, encryptionPassword: String = "") {
         webDavSync.restoreFromLocalFile(
-            file,
-            settings.value.webDavConfig.copy(items = localBackupItems.value),
+            file = file,
+            config = settings.value.webDavConfig.copy(items = localBackupItems.value),
+            encryptionPassword = encryptionPassword,
         )
     }
 

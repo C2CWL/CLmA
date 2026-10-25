@@ -29,6 +29,7 @@ internal object BackupSizeEstimator {
                     File(filesDir, "${BackupLayout.DATASTORE_DIR}/$name").takeIf { it.isFile }?.length() ?: 0L
                 }
                 BackupItem.WORKSPACES -> workspacesSize(filesDir)
+                BackupItem.SECRETS -> estimateSecretsSize(filesDir)
                 else -> subtreeDirs[item]?.let { directorySize(File(filesDir, it)) } ?: 0L
             }
         }
@@ -45,5 +46,16 @@ internal object BackupSizeEstimator {
             .filter { it.isDirectory }
             .sumOf { directorySize(File(it, BackupLayout.WORKSPACE_FILES_DIR)) }
         return perWorkspace + directorySize(File(filesDir, BackupLayout.AGENT_WORKSPACE_DIR))
+    }
+
+    private fun estimateSecretsSize(filesDir: File): Long {
+        val prefsDir = File(filesDir.parentFile, "shared_prefs")
+        if (!prefsDir.isDirectory) return 0L
+        val secretFiles = listOf(
+            File(prefsDir, "agent_secrets.xml"),
+            File(prefsDir, "workflow_secrets.xml"),
+            File(prefsDir, "skill_secrets.xml"),
+        )
+        return secretFiles.filter { it.isFile }.sumOf { it.length() }
     }
 }

@@ -70,4 +70,5 @@ private fun backupItemLabelRes(item: BackupItem): Int = when (item) {
     BackupItem.WORKSPACES -> R.string.backup_item_workspaces
     BackupItem.TOOL_OUTPUTS -> R.string.backup_item_tool_outputs
     BackupItem.CONFIG -> R.string.backup_item_config
+    BackupItem.SECRETS -> R.string.backup_item_secrets
 }

@@ -1,6 +1,7 @@
 package com.clma.app.skills.js
 
 import android.content.Context
+import com.clma.app.data.sync.SkillSecretBackupItem
 import android.content.SharedPreferences
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
@@ -99,6 +100,22 @@ class SkillSecretsStore(context: Context) {
         }
         if (toRemove.isEmpty()) return
         prefs.edit { toRemove.forEach { remove(it) } }
+    }
+
+    fun exportAll(): List<SkillSecretBackupItem> =
+        list().mapNotNull { (skillName, secretName) ->
+            val value = get(skillName, secretName) ?: return@mapNotNull null
+            SkillSecretBackupItem(skillName = skillName, secretName = secretName, value = value)
+        }
+
+    fun importAll(items: List<SkillSecretBackupItem>) {
+        items.forEach { item ->
+            val (encrypted, iv) = encrypt(item.value)
+            prefs.edit {
+                putString(prefKey(item.skillName, item.secretName), encrypted)
+                putString(ivKey(item.skillName, item.secretName), iv)
+            }
+        }
     }
 
     // -- crypto -------------------------------------------------------------

@@ -10,6 +10,8 @@ package com.clma.app.data.sync
  */
 internal object BackupLayout {
 
+    const val SECRETS_FILE = "secrets.enc"
+
     /** Items whose whole `files/<dir>` subtree is archived as `<dir>/<relative>`. */
     val subtreeFolders: List<Pair<BackupItem, String>> = listOf(
         BackupItem.SKILLS to "skills",
@@ -57,6 +59,7 @@ internal object BackupLayout {
      * staged restore skips any entry this returns `null` for.
      */
     fun itemForEntry(name: String): BackupItem? {
+        if (name == SECRETS_FILE) return BackupItem.SECRETS
         val separator = name.indexOf('/')
         if (separator <= 0 || separator == name.length - 1) return null
         val top = name.substring(0, separator)

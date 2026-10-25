@@ -35,6 +35,9 @@ class BackupSizeEstimatorTest {
         write("files/workspaces/w1/files/x.txt", 20)
         write("files/workspaces/w1/linux/rootfs.bin", 5000) // excluded from backups
         write("files/workspace/notes.md", 5)
+        write("shared_prefs/agent_secrets.xml", 50)
+        write("shared_prefs/workflow_secrets.xml", 30)
+        write("shared_prefs/skill_secrets.xml", 20)
         val db = write("databases/rikka_hub", 400)
         val wal = File(temp.root, "databases/rikka_hub-wal") // missing is fine
 
@@ -45,6 +48,7 @@ class BackupSizeEstimatorTest {
         assertEquals(300L, sizes[BackupItem.VIDEOS])
         assertEquals(7L, sizes[BackupItem.CONFIG])
         assertEquals(25L, sizes[BackupItem.WORKSPACES])
+        assertEquals(100L, sizes[BackupItem.SECRETS])
         assertEquals(0L, sizes[BackupItem.SKILLS])
         assertEquals(BackupItem.selectable.toSet(), sizes.keys)
     }

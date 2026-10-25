@@ -36,6 +36,7 @@ class BackupLayoutTest {
 
     @Test
     fun `non-attachment and unsafe entries are rejected`() {
+        assertEquals(BackupItem.SECRETS, BackupLayout.itemForEntry(BackupLayout.SECRETS_FILE))
         assertNull(BackupLayout.itemForEntry("settings.json"))
         assertNull(BackupLayout.itemForEntry("database/rikka_hub"))
         assertNull(BackupLayout.itemForEntry("unknown/file"))

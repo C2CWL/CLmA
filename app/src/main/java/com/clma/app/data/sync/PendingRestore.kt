@@ -31,7 +31,10 @@ internal class PendingRestore(
         move(staging, pending)
     }
 
-    suspend fun apply(restoreSettings: suspend (String) -> Unit): Boolean {
+    suspend fun apply(
+        restoreSettings: suspend (String) -> Unit,
+        restoreSecrets: (suspend (String) -> Unit)? = null,
+    ): Boolean {
         // Completed restores must never be replayed, even if cleanup was interrupted.
         root.listFiles()?.filter {
             it.name.startsWith("completed-") || it.name.startsWith("preparing-")
@@ -66,6 +69,11 @@ internal class PendingRestore(
             }
             val settings = File(pending, "settings.json")
             if (settings.isFile) restoreSettings(settings.readText())
+
+            val stagedSecrets = File(pending, "staged_secrets.json")
+            if (stagedSecrets.isFile && restoreSecrets != null) {
+                restoreSecrets(stagedSecrets.readText())
+            }
         } catch (e: Exception) {
             try {
                 rollback(entries)

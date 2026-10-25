@@ -174,4 +174,20 @@ class PendingRestoreTest {
     }
 
     private class SimulatedProcessDeath : Error()
+
+    @Test fun appliesStagedSecretsWhenPresent() = runBlocking {
+        val restore = restore()
+        val staging = restore.createStagingDirectory()
+        write(File(staging, "staged_secrets.json"), "secret payload")
+        restore.publish(staging)
+
+        var invokedSecrets: String? = null
+        val restored = restore.apply(
+            restoreSettings = { },
+            restoreSecrets = { secrets -> invokedSecrets = secrets }
+        )
+
+        assertTrue(restored)
+        assertEquals("secret payload", invokedSecrets)
+    }
 }

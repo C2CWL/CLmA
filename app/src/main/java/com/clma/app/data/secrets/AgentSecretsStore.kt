@@ -1,6 +1,7 @@
 package com.clma.app.data.secrets
 
 import android.content.Context
+import com.clma.app.data.sync.AgentSecretBackupItem
 import android.content.SharedPreferences
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
@@ -104,6 +105,33 @@ class AgentSecretsStore(context: Context) {
             )
 
     fun has(name: String): Boolean = prefs.contains(secretKey(name))
+
+    fun exportAll(): List<AgentSecretBackupItem> =
+        list().mapNotNull { name ->
+            val value = get(name) ?: return@mapNotNull null
+            AgentSecretBackupItem(
+                name = name,
+                value = value,
+                createdAt = timestamp(createdKey(name)),
+                updatedAt = timestamp(updatedKey(name)),
+            )
+        }
+
+    fun importAll(items: List<AgentSecretBackupItem>) {
+        items.forEach { item ->
+            if (!isValidName(item.name)) return@forEach
+            val (encrypted, iv) = encrypt(item.value)
+            val now = System.currentTimeMillis()
+            val created = item.createdAt ?: now
+            val updated = item.updatedAt ?: now
+            prefs.edit {
+                putString(secretKey(item.name), encrypted)
+                putString(ivKey(item.name), iv)
+                putLong(createdKey(item.name), created)
+                putLong(updatedKey(item.name), updated)
+            }
+        }
+    }
 
     private fun encrypt(plain: String): Pair<String, String> = try {
         val cipher = Cipher.getInstance(TRANSFORMATION)

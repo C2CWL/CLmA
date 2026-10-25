@@ -1,6 +1,7 @@
 package com.clma.app.workflow.secrets
 
 import android.content.Context
+import com.clma.app.data.sync.WorkflowSecretBackupItem
 import android.content.SharedPreferences
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
@@ -79,6 +80,23 @@ class WorkflowSecretsStore(context: Context) {
 
     /** True when a value is stored under [name]. Used to report a missing secret early. */
     fun has(name: String): Boolean = prefs.contains(secretKey(name))
+
+    fun exportAll(): List<WorkflowSecretBackupItem> =
+        list().mapNotNull { name ->
+            val value = get(name) ?: return@mapNotNull null
+            WorkflowSecretBackupItem(name = name, value = value)
+        }
+
+    fun importAll(items: List<WorkflowSecretBackupItem>) {
+        items.forEach { item ->
+            if (!isValidName(item.name)) return@forEach
+            val (encrypted, iv) = encrypt(item.value)
+            prefs.edit {
+                putString(secretKey(item.name), encrypted)
+                putString(ivKey(item.name), iv)
+            }
+        }
+    }
 
     // -- crypto -------------------------------------------------------------
 
