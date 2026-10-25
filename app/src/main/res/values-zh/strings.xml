@@ -2821,7 +2821,7 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="assistant_page_context_reminder_threshold_value_tokens">%1$d%%（约 %2$s tokens，共 %3$s）</string>
   <string name="assistant_page_context_reminder_threshold_window_unknown">%1$d%%（模型上下文窗口未知，提醒不会触发）</string>
   <string name="assistant_page_tool_surface_mode">渐进式工具目录</string>
-  <string name="assistant_page_tool_surface_mode_desc">用 tool_search / tool_open 一对工具替换每次请求里已启用的本地工具与 MCP 工具，因此只发送模型实际打开的那些 schema。记忆、工作区、技能与 ask_user 等工具始终直挂，打开的工具在同一回合的下一步即可调用。可减少首轮工具 token，但工具列表会在回合间变化，可能损失提示缓存命中。默认关闭。</string>
+  <string name="assistant_page_tool_surface_mode_desc">用 tool_search / tool_open 一对工具替换每次请求里已启用的本地工具与 MCP 工具，因此只发送模型实际打开的那些 schema。记忆、工作区、技能与 ask_user 等工具始终直挂，打开的工具在同一回合的下一步即可调用。可减少首轮工具 token，但工具列表会在回合间变化，可能损失提示缓存命中。默认开启。</string>
   <string name="assistant_page_subagent_context_refs">子智能体上下文引用</string>
   <string name="assistant_page_subagent_context_refs_desc">让 subagent_dispatch 也能把本会话最近 N 个回合原文发给子智能体，因此引用刚讨论内容的任务无需重述。回合以纯文本传递——子智能体仍然无法读取本会话。默认关闭；关闭时工具 schema 与之前完全一致，现有会话发送的请求不变。</string>
   <string name="assistant_page_subagent_tool_surface">冻结子智能体工具面</string>
