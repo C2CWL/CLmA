@@ -10,6 +10,7 @@ import com.clma.ai.provider.Model
 import com.clma.ai.provider.TextGenerationResult
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class StreamChunkHandlerTest {
