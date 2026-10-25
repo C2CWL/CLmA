@@ -31,7 +31,8 @@ internal class PendingRestore(
         move(staging, pending)
     }
 
-    suspend fun apply(
+    /** Installs the staged payload. Deliberately not named `apply`, which silently falls back to the stdlib scope function. */
+    suspend fun installRestore(
         restoreSettings: suspend (String) -> Unit,
         restoreSecrets: (suspend (String) -> Unit)? = null,
     ): Boolean {

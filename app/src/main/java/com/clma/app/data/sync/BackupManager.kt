@@ -241,7 +241,7 @@ class BackupManager(
 
         /** Must finish before Koin, Room, SettingsStore or any background consumers are initialized. */
         suspend fun applyPendingRestore(context: Context, json: Json): Boolean = withContext(Dispatchers.IO) {
-            pendingRestore(context).apply(
+            pendingRestore(context).installRestore(
                 restoreSettings = { settingsJson ->
                     val settings = json.decodeFromString<Settings>(settingsJson)
                     SettingsStore.restoreBeforeInitialization(

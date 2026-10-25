@@ -47,17 +47,17 @@ class PendingRestoreTest {
         write(database(), "old database")
         listOf("-wal", "-shm", "-journal").forEach { write(File(database().path + it), "old") }
         stage(restore())
-        val restored = restore().apply {
+        val restored = restore().installRestore(restoreSettings = {
             assertEquals("new settings", it)
             assertEquals("new database", database().readText())
             assertEquals("new photo", File(temporary.root, "files/upload/photo").readText())
             listOf("-wal", "-shm", "-journal").forEach { suffix ->
                 assertFalse(File(database().path + suffix).exists())
             }
-        }
+        })
         assertTrue(restored)
         database().writeText("subsequent user changes")
-        assertFalse(restore().apply { error("Settings must not be applied again") })
+        assertFalse(restore().installRestore(restoreSettings = { error("Settings must not be applied again") }))
         assertEquals("subsequent user changes", database().readText())
     }
 
@@ -67,7 +67,7 @@ class PendingRestoreTest {
         write(File(temporary.root, "files/upload/photo"), "old photo")
         stage(restore())
         try {
-            restore().apply { throw IOException("Disk full") }
+            restore().installRestore(restoreSettings = { throw IOException("Disk full") })
             error("Expected failure")
         } catch (_: RestoreFailedException) {
             assertEquals("old database", database().readText())
@@ -75,7 +75,7 @@ class PendingRestoreTest {
             assertEquals("old photo", File(temporary.root, "files/upload/photo").readText())
         }
         stage(restore())
-        restore().apply { }
+        restore().installRestore(restoreSettings = { })
         assertEquals("new database", database().readText())
         assertFalse(File(database().path + "-wal").exists())
     }
@@ -89,7 +89,7 @@ class PendingRestoreTest {
         assertTrue(File(temporary.root, "restore/pending/journal.json.tmp").mkdir())
 
         try {
-            restore().apply { error("Settings must not be applied without a journal") }
+            restore().installRestore(restoreSettings = { error("Settings must not be applied without a journal") })
             error("Expected failure")
         } catch (e: RestoreFailedException) {
             assertTrue(e.cause is IOException)
@@ -101,10 +101,10 @@ class PendingRestoreTest {
         assertFalse(File(temporary.root, "restore/pending").exists())
         val failed = File(temporary.root, "restore").listFiles()!!.single { it.name.startsWith("failed-") }
         assertEquals("new database", File(failed, "payload/database/rikka_hub").readText())
-        assertFalse(restore().apply { error("Failed restore must not be replayed") })
+        assertFalse(restore().installRestore(restoreSettings = { error("Failed restore must not be replayed") }))
 
         stage(restore())
-        assertTrue(restore().apply { })
+        assertTrue(restore().installRestore(restoreSettings = { }))
         assertEquals("new database", database().readText())
     }
 
@@ -112,7 +112,7 @@ class PendingRestoreTest {
         write(database(), "old database")
         stage(restore())
         try {
-            restore().apply { throw SimulatedProcessDeath() }
+            restore().installRestore(restoreSettings = { throw SimulatedProcessDeath() })
         } catch (_: SimulatedProcessDeath) {
             // The live database has been replaced, but the original is still needed for recovery.
         }
@@ -120,7 +120,7 @@ class PendingRestoreTest {
         File(pending, "journal.json").writeText("invalid journal")
 
         try {
-            restore().apply { error("Settings must not be applied with an invalid journal") }
+            restore().installRestore(restoreSettings = { error("Settings must not be applied with an invalid journal") })
             error("Expected failure")
         } catch (_: SerializationException) {
             // Startup must stop because the live files may already have been replaced.
@@ -137,11 +137,11 @@ class PendingRestoreTest {
         stage(restore())
         try {
             // Error bypasses ordinary exception rollback, simulating process loss after file moves.
-            restore().apply { throw SimulatedProcessDeath() }
+            restore().installRestore(restoreSettings = { throw SimulatedProcessDeath() })
         } catch (_: SimulatedProcessDeath) {
             assertTrue(File(temporary.root, "restore/pending").exists())
         }
-        restore().apply { assertEquals("new settings", it) }
+        restore().installRestore(restoreSettings = { assertEquals("new settings", it) })
         assertEquals("new database", database().readText())
         assertFalse(File(database().path + "-wal").exists())
         assertFalse(File(temporary.root, "restore/pending").exists())
@@ -154,7 +154,7 @@ class PendingRestoreTest {
         val staging = restore.createStagingDirectory()
         write(File(staging, "payload/files/fonts/custom.ttf"), "font")
         restore.publish(staging)
-        restore.apply { error("No settings in backup") }
+        restore.installRestore(restoreSettings = { error("No settings in backup") })
         assertEquals("old database", database().readText())
         assertEquals("old wal", File(database().path + "-wal").readText())
         assertEquals("font", File(temporary.root, "files/fonts/custom.ttf").readText())
@@ -182,7 +182,7 @@ class PendingRestoreTest {
         restore.publish(staging)
 
         var invokedSecrets: String? = null
-        val restored = restore.apply(
+        val restored = restore.installRestore(
             restoreSettings = { },
             restoreSecrets = { secrets -> invokedSecrets = secrets }
         )
