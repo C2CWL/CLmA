@@ -271,6 +271,7 @@ val appModule = module {
             mcpManager = get(),
             skillManager = get(),
             workspaceRepository = get(),
+            conversationIndex = get(),
         )
     }
 
@@ -293,7 +294,9 @@ val appModule = module {
             skillManager = get(),
             toolApprovalPreferences = get(),
             workspaceRepository = get(),
-            folderRepository = get()
+            folderRepository = get(),
+            memoryIndex = get(),
+            conversationIndex = get(),
         )
     }
 

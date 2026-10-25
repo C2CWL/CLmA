@@ -111,6 +111,7 @@ import com.clma.app.data.ai.tools.CompactionToolResult
 import com.clma.app.data.ai.tools.buildCompactionTools
 import com.clma.app.data.ai.tools.createWorkspaceTools
 import com.clma.app.data.ai.tools.buildColdMemoryTools
+import com.clma.app.data.ai.tools.buildMemorySearchTool
 import com.clma.app.data.ai.tools.ColdMemoryDoc
 import com.clma.app.data.ai.tools.ColdMemoryRules
 import com.clma.app.data.ai.tools.ColdMemoryWriteResult
@@ -485,6 +486,8 @@ class ChatService(
     private val toolApprovalPreferences: com.clma.app.data.preferences.ToolApprovalPreferences,
     private val workspaceRepository: WorkspaceRepository,
     private val folderRepository: FolderRepository,
+    private val memoryIndex: com.clma.app.data.vector.MemoryIndexCoordinator,
+    private val conversationIndex: com.clma.app.data.vector.ConversationIndexCoordinator,
 ) {
     // workspace 系统提示注入 (依赖 workspaceRepository, 故在类内构造)
     private val workspaceReminderTransformer = WorkspaceReminderTransformer(workspaceRepository)
@@ -974,6 +977,15 @@ class ChatService(
                 updateConversationState(conversationId) { it.copy(assistantId = conversation.assistantId) }
             }
             settingsStore.updateAssistant(conversation.assistantId)
+            // 打开会话是索引最可能被用到的时刻。内部有防抖，快速切换会话不会重复扫描；
+            // 失败在协调器里记录，不会抛到这里。
+            runCatching {
+                com.clma.app.data.ai.AssistantResolver.byId(
+                    settingsStore.settingsFlow.value, conversation.assistantId
+                )
+            }.getOrNull()?.let { assistant ->
+                memoryIndex.requestSync(assistant)
+            }
         } else {
             // A send can race this asynchronous initialization for a brand-new conversation.
             // Do not replace a session that already has content or queued/in-flight work with
@@ -2538,6 +2550,10 @@ class ChatService(
                 }
             }
 
+            // 刚结束的这一轮应该在用户问起之前就能被搜到。内部有防抖，
+            // 连续消息只触发一轮，且只动这个会话的索引切片。
+            conversationIndex.requestSyncOf(conversationId)
+
             launchAuxJob(conversationId, AuxJobKind.TITLE) {
                 generateTitle(conversationId, finalConversation)
             }
@@ -2583,7 +2599,7 @@ class ChatService(
             null
         }
 
-        return buildColdMemoryTools(
+        val tools = buildColdMemoryTools(
             dirLabel = if (dir.isEmpty()) {
                 ColdMemoryRules.WORKSPACE_PREFIX
             } else {
@@ -2619,7 +2635,20 @@ class ChatService(
                     totalChars = text.length,
                 )
             },
+        ).toMutableList()
+
+        // Semantic search joins the exact-name tools. Registration does not depend on a model
+        // being installed: the tool reports that state itself, so the model falls back to
+        // memory_index instead of stopping.
+        tools += buildMemorySearchTool(
+            dirLabel = if (dir.isEmpty()) {
+                ColdMemoryRules.WORKSPACE_PREFIX
+            } else {
+                "${ColdMemoryRules.WORKSPACE_PREFIX}/$dir"
+            },
+            search = { query, limit -> memoryIndex.search(workspaceId, dir, query, limit) },
         )
+        return tools
     }
 
     /**

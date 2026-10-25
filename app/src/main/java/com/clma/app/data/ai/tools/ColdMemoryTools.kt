@@ -11,6 +11,10 @@ import kotlinx.serialization.json.put
 import com.clma.ai.core.InputSchema
 import com.clma.ai.core.Tool
 import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.vector.ColdMemorySearchOutcome
+import com.clma.app.data.vector.DEFAULT_SEARCH_LIMIT
+import com.clma.app.data.vector.MAX_SEARCH_LIMIT
+import com.clma.app.data.vector.MemorySearchEnvelope
 
 /**
  * T-06 / (7) — Cold memory: a plain Markdown knowledge base on disk, read on demand.
@@ -376,3 +380,64 @@ private fun errorEnvelope(code: String, detail: String): String = buildJsonObjec
     put("error", code)
     put("detail", detail)
 }.toString()
+
+/**
+ * 按语义搜索冷记忆。搜索和信封都是纯函数（见 [MemorySearchEnvelope]），
+ * 这个函数只负责工具契约：schema、名字、哪些失败算参数错误而不是结果。
+ */
+fun buildMemorySearchTool(
+    dirLabel: String,
+    search: suspend (query: String, limit: Int) -> ColdMemorySearchOutcome,
+): Tool = Tool(
+    name = "memory_search",
+    description = """
+        Search the cold-memory knowledge base by meaning, and get back the passages that match,
+        with the file each one came from.
+
+        Prefer this over guessing at file names from `memory_index` when you are looking for notes
+        about a topic. Each hit names its file, so `memory_read` can pull in the full document
+        when a passage is not enough.
+
+        Scores are cosine similarities between the query and each passage, and they are NOT
+        comparable between calls: a loosely related passage of one query can outscore a perfect
+        match of another. Compare the passages within one result set; never treat a particular
+        number as a relevance threshold.
+
+        If it reports that semantic search is unavailable, no embedding model is installed. Say so
+        to the user rather than retrying.
+    """.trimIndent(),
+    parameters = {
+        InputSchema.Obj(
+            properties = buildJsonObject {
+                put("query", buildJsonObject {
+                    put("type", "string")
+                    put("description", "What to look for, in natural language or keywords.")
+                })
+                put("limit", buildJsonObject {
+                    put("type", "integer")
+                    put("description", "Maximum passages to return. Defaults to ${DEFAULT_SEARCH_LIMIT}.")
+                })
+            },
+            required = listOf("query"),
+        )
+    },
+    needsApproval = { false },
+    execute = {
+        val params = it.jsonObject
+        val query = params["query"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
+        if (query.isEmpty()) {
+            return@Tool listOf(UIMessagePart.Text(MemorySearchEnvelope.missingQuery()))
+        }
+        // 超限就截断而不是拒绝：模型要 100 段是贪心不是错误，拒绝会让它多花一轮才知道上限。
+        val limit = params["limit"]?.jsonPrimitive?.intOrNull?.coerceIn(1, MAX_SEARCH_LIMIT)
+            ?: DEFAULT_SEARCH_LIMIT
+
+        val outcome = search(query, limit)
+        val body = if (outcome.available) {
+            MemorySearchEnvelope.hits(dirLabel, query, outcome)
+        } else {
+            MemorySearchEnvelope.unavailable(outcome.note)
+        }
+        listOf(UIMessagePart.Text(body))
+    },
+)

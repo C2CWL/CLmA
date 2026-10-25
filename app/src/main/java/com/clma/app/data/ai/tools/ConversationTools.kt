@@ -12,6 +12,10 @@ import com.clma.ai.core.Tool
 import com.clma.ai.ui.UIMessagePart
 import com.clma.app.data.db.fts.MessageSearchSort
 import com.clma.app.data.repository.ConversationRepository
+import com.clma.app.data.vector.ConversationIndexCoordinator
+import com.clma.app.data.vector.ConversationSearchEnvelope
+import com.clma.app.data.vector.DEFAULT_SEARCH_LIMIT
+import com.clma.app.data.vector.MAX_SEARCH_LIMIT
 import com.clma.app.utils.JsonInstantPretty
 import com.clma.app.utils.toLocalDate
 import kotlin.uuid.Uuid
@@ -23,6 +27,7 @@ import kotlin.uuid.Uuid
 fun createConversationTools(
     conversationRepo: ConversationRepository,
     assistantId: Uuid,
+    conversationIndex: ConversationIndexCoordinator? = null,
 ): List<Tool> = listOf(
     Tool(
         name = "recent_chats",
@@ -66,9 +71,19 @@ fun createConversationTools(
     Tool(
         name = "conversation_search",
         description = """
-            Full-text search across the user's past conversations to recall specific information they mentioned before.
-            Use focused keywords. Run multiple searches with different keywords if needed.
-            Each result includes the conversation title, a snippet with matched keywords wrapped in [brackets], and the date.
+            Search the user's past conversations by meaning, and get back the passages that match,
+            with the conversation and the date each one came from - including what was said in the
+            current conversation a moment ago.
+
+            Use this when you need something from before that you cannot quote. Describe the
+            conversation rather than guessing the words in it: this matches on meaning, so exact
+            wording matters less than it used to. Each result names its conversation.
+
+            Scores are cosine similarities and are NOT comparable between calls: compare the
+            passages within one result set, and never treat a number as a relevance threshold.
+
+            When no embedding model is installed this falls back to keyword search, and the result
+            says so.
         """.trimIndent(),
         parameters = {
             InputSchema.Obj(
@@ -89,26 +104,57 @@ fun createConversationTools(
             )
         },
         execute = {
-            val query = it.jsonObject["query"]?.jsonPrimitive?.contentOrNull
-                ?: error("query is required")
-            val limit = (it.jsonObject["limit"]?.jsonPrimitive?.intOrNull ?: 15).coerceIn(1, 50)
-            val results = conversationRepo
-                .searchMessages(query, MessageSearchSort.RELEVANCE)
-                .take(limit)
-            val payload = buildJsonArray {
-                results.forEach { result ->
-                    add(buildJsonObject {
-                        put("conversation_id", result.conversationId)
-                        put("title", result.title.ifBlank { "Untitled" })
-                        put("snippet", result.snippet)
-                        put("date", result.updateAt.toLocalDate())
-                    })
-                }
+            val query = it.jsonObject["query"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
+            if (query.isEmpty()) {
+                return@Tool listOf(UIMessagePart.Text(ConversationSearchEnvelope.missingQuery()))
             }
-            listOf(UIMessagePart.Text(JsonInstantPretty.encodeToString(payload)))
+            val limit = (it.jsonObject["limit"]?.jsonPrimitive?.intOrNull ?: DEFAULT_SEARCH_LIMIT)
+                .coerceIn(1, MAX_SEARCH_LIMIT)
+            // 向量索引可用就用语义搜索；没装嵌入模型时回退到原有的 FTS 关键词搜索，
+            // 结果里标明是关键词回退，避免模型把两种分数混着理解。
+            val response = conversationIndex?.search(query, limit)
+            val body = if (response != null && response.available) {
+                ConversationSearchEnvelope.hits(
+                    query = query,
+                    results = response.results,
+                    indexedMessages = response.indexedMessages,
+                    stale = response.stale,
+                )
+            } else {
+                // 没装嵌入模型、索引还没建好、或这次查询失败：回退到 FTS 关键词搜索。
+                keywordFallback(conversationRepo, query, limit)
+            }
+            listOf(UIMessagePart.Text(body))
         }
     )
 )
+
+
+/** 向量索引不可用时的关键词回退，沿用原来的 FTS5 搜索。返回 null 表示没有命中。 */
+private suspend fun keywordFallback(
+    conversationRepo: ConversationRepository,
+    query: String,
+    limit: Int,
+): String {
+    val results = conversationRepo
+        .searchMessages(query, MessageSearchSort.RELEVANCE)
+        .take(limit)
+    val payload = buildJsonObject {
+        put("mode", "keyword_fallback")
+        put("note", "语义搜索不可用，这是关键词匹配的结果。")
+        put("results", buildJsonArray {
+            results.forEach { result ->
+                add(buildJsonObject {
+                    put("conversation_id", result.conversationId)
+                    put("title", result.title.ifBlank { "Untitled" })
+                    put("snippet", result.snippet)
+                    put("date", result.updateAt.toLocalDate())
+                })
+            }
+        })
+    }
+    return JsonInstantPretty.encodeToString(payload)
+}
 
 /**
  * Creates the [current_conversation_search] tool allowing the model to recall earlier messages

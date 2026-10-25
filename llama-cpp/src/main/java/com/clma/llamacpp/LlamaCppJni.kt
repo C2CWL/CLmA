@@ -160,4 +160,41 @@ object LlamaCppJni {
             ),
             Charsets.UTF_8,
         )
+
+    // -----------------------------------------------------------------------
+    // Embeddings
+    // -----------------------------------------------------------------------
+    //
+    // A second, independent use of the same runtime: a GGUF embedding model loaded once and
+    // asked for one vector per text. Separate entry points rather than a mode of the chat
+    // ones, because the two have nothing in common past `llama_model_load_from_file` - no
+    // template, no sampler, no token stream - and mixing them would mean every chat call
+    // carries embedding branches it can never take.
+
+    /**
+     * Builds an embedding context for a loaded model and returns an opaque handle. Throws
+     * RuntimeException when the GGUF is not an embedding model at all (a generative one, a
+     * reranker), rather than handing back a handle that fails on the first use.
+     */
+    external fun nativeCreateEmbedContext(modelHandle: Long, nCtx: Int, nThreads: Int): Long
+
+    /** Releases a handle from [nativeCreateEmbedContext]. Safe to call with 0. Free it before
+     *  the model it was created from, as with the chat context. */
+    external fun nativeFreeEmbedContext(handle: Long)
+
+    /** What the engine makes of the loaded GGUF, as a JSON object: `dim`, `pooling`,
+     *  `has_encoder`, `has_decoder`, `n_ctx_train`. */
+    external fun nativeEmbedModelInfo(handle: Long): String
+
+    /**
+     * Embeds one text, returning its (unnormalised) pooled vector.
+     *
+     * Bytes, not a String, for the reason the chat path carries bytes: a document with an
+     * emoji in it is standard UTF-8, which is not what a jstring may hold.
+     */
+    external fun nativeEmbed(handle: Long, textUtf8: ByteArray): FloatArray
+
+    /** [nativeEmbed] with a String in and out. */
+    fun embed(handle: Long, text: String): FloatArray =
+        nativeEmbed(handle, text.toByteArray(Charsets.UTF_8))
 }
