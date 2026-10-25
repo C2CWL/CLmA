@@ -18,14 +18,16 @@ fun navigateToChatPage(
     initText: String? = null,
     initFiles: List<Uri> = emptyList(),
     nodeId: Uuid? = null,
+    isTemporary: Boolean = false,
 ) {
-    Log.i(TAG, "navigateToChatPage: navigate to $chatId")
+    Log.i(TAG, "navigateToChatPage: navigate to $chatId, isTemporary: $isTemporary")
     navigator.clearAndNavigate(
         Screen.Chat(
             id = chatId.toString(),
             text = initText,
             files = initFiles.map { it.toString() },
             nodeId = nodeId?.toString(),
+            isTemporary = isTemporary,
         )
     )
 }

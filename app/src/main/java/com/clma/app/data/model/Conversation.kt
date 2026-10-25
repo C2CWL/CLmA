@@ -36,7 +36,9 @@ data class Conversation(
     // 所属文件夹（助手内分组），null 表示未归入任何文件夹
     val folderId: Uuid? = null,
     @Transient
-    val newConversation: Boolean = false
+    val newConversation: Boolean = false,
+    @Transient
+    val isTemporary: Boolean = false,
 ) {
     val files: List<Uri>
         get() = messageNodes
@@ -110,12 +112,14 @@ data class Conversation(
             id: Uuid,
             assistantId: Uuid = DEFAULT_ASSISTANT_ID,
             messages: List<MessageNode> = emptyList(),
-            newConversation: Boolean = false
+            newConversation: Boolean = false,
+            isTemporary: Boolean = false,
         ) = Conversation(
             id = id,
             assistantId = assistantId,
             messageNodes = messages,
             newConversation = newConversation,
+            isTemporary = isTemporary,
         )
     }
 }
