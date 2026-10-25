@@ -1,6 +1,38 @@
 package com.clma.app.data.ai.prompts
 
 internal val DEFAULT_COMPRESS_PROMPT = """
+    You are a conversation compression assistant. Compress the conversation below into a dense, state-preserving summary (State Sheet) that lets another assistant seamlessly continue without the original messages.
+
+    Rules:
+    1. Target approximately {target_tokens} tokens. Output is cut off at the limit, so keep the section order strictly and never pad.
+    2. Write in {locale}; keep code, commands, identifiers, paths, URLs, and quotes exactly as-is.
+    3. Output ONLY the summary. First line MUST be: [Summary of previous conversation] (or its {locale} equivalent).
+    4. Terse, high-density facts, one bullet per point. Copy exact values verbatim (paths, URLs, commit SHAs, IDs, numbers, commands, errors).
+    5. Maintain a dedicated State Sheet: track active phase, environment variables, modified files, and component states explicitly.
+    6. Omit empty sections. Drop pleasantries, chit-chat, and superseded ideas; record only the latest authoritative state.
+    7. Input may contain earlier summaries: merge into a single unified summary, consolidating sections without duplicate headers.
+    8. Preserve completed tool calls and outcomes: tool name, key arguments, factual results or errors, and critical paths/IDs/state changes; never vaguely claim tools were run.
+
+    ## Goal & Current Phase — what the user wants, current milestone, active status
+    ## Active State Sheet — key variables, environments, file states, entities, IDs & flags
+    ## Progress & Open Items — completed items [x], unfinished work [ ], blockers, next immediate step
+    ## Decisions, Constraints & Rules — authoritative choices, forbidden actions, limits
+    ## Key Code, Files & Architecture — exact paths, symbols, commit SHAs, schema
+    ## Tool Execution History & Results — tool(args) → factual result/error (never omit key outputs)
+    ## User Preferences & Quirks — explicit preferences, habits, instructions
+
+    {additional_context}
+
+    <conversation>
+    {content}
+    </conversation>
+""".trimIndent()
+
+/**
+ * Structured prompt default v2 (before State Sheet specification).
+ * Kept verbatim so users who never customized the prompt are automatically upgraded.
+ */
+internal val LEGACY_DEFAULT_COMPRESS_PROMPT_V2 = """
     You are a conversation compression assistant. Compress the conversation below into a dense, structured summary that lets another assistant continue without the original messages.
 
     Rules:
@@ -27,7 +59,7 @@ internal val DEFAULT_COMPRESS_PROMPT = """
 """.trimIndent()
 
 /**
- * Previous built-in default (before the structured prompt). Kept verbatim so that users who
+ * Previous built-in default v1 (before the structured prompt). Kept verbatim so that users who
  * never customized the compress prompt are upgraded automatically.
  */
 internal val LEGACY_DEFAULT_COMPRESS_PROMPT_V1 = """
@@ -57,12 +89,16 @@ private fun normalizeCompressPrompt(text: String): String =
 
 /**
  * Returns the compress prompt to use for a stored preference value.
- * A missing value or an untouched legacy default maps to [DEFAULT_COMPRESS_PROMPT];
+ * A missing value or an untouched legacy default (V1 or V2) maps to [DEFAULT_COMPRESS_PROMPT];
  * any user-customized prompt is returned unchanged.
  */
 internal fun upgradeLegacyCompressPrompt(stored: String?): String {
     if (stored == null) return DEFAULT_COMPRESS_PROMPT
-    return if (normalizeCompressPrompt(stored) == normalizeCompressPrompt(LEGACY_DEFAULT_COMPRESS_PROMPT_V1)) {
+    val normalized = normalizeCompressPrompt(stored)
+    return if (
+        normalized == normalizeCompressPrompt(LEGACY_DEFAULT_COMPRESS_PROMPT_V1) ||
+        normalized == normalizeCompressPrompt(LEGACY_DEFAULT_COMPRESS_PROMPT_V2)
+    ) {
         DEFAULT_COMPRESS_PROMPT
     } else {
         stored

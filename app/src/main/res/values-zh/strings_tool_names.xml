@@ -26,6 +26,8 @@
   <string name="tool_display_desc_recent_chats">列出你最近的对话标题和时间</string>
   <string name="tool_display_name_conversation_search">搜索历史对话</string>
   <string name="tool_display_desc_conversation_search">按关键词搜索你过去的对话内容</string>
+  <string name="tool_display_name_current_conversation_search">搜索当前对话</string>
+  <string name="tool_display_desc_current_conversation_search">在当前对话的消息历史中进行全文检索</string>
   <string name="tool_display_name_compact_context">压缩对话上下文</string>
   <string name="tool_display_desc_compact_context">把本对话较早的内容总结压缩</string>
   <string name="tool_display_name_check_token_usage">查看 Token 用量</string>
@@ -34,6 +36,8 @@
   <string name="tool_display_desc_tool_search">按关键词在工具目录中查找工具</string>
   <string name="tool_display_name_tool_open">启用工具</string>
   <string name="tool_display_desc_tool_open">按名称启用工具，下一轮起可调用</string>
+  <string name="tool_display_name_tool_output_read">读取工具输出</string>
+  <string name="tool_display_desc_tool_output_read">分段切片读取或按正则筛选之前工具的执行输出</string>
   <string name="tool_display_name_get_time_info">获取当前时间</string>
   <string name="tool_display_desc_get_time_info">读取设备的日期、时间、星期和时区</string>
   <string name="tool_display_name_get_battery_status">查看电池状态</string>

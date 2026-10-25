@@ -56,7 +56,7 @@ class ToolExecutionRetryPolicyTest {
     @Test
     fun `read only tools without a safe prefix are eligible`() {
         val names = listOf(
-            "conversation_search", "recent_chats", "whisper_status", "tool_search",
+            "conversation_search", "current_conversation_search", "tool_output_read", "recent_chats", "whisper_status", "tool_search",
             "notification_status", "keyboard_editor_info", "keyboard_read_field",
             "file_info", "keystore_list_keys", "keystore_verify",
             "workspace_read_file", "workspace_read_folder", "workspace_background_status",

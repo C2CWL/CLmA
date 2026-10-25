@@ -109,3 +109,57 @@ fun createConversationTools(
         }
     )
 )
+
+/**
+ * Creates the [current_conversation_search] tool allowing the model to recall earlier messages
+ * or details within the active conversation via native SQLite FTS5 index.
+ */
+fun createCurrentConversationSearchTool(
+    conversationRepo: ConversationRepository,
+    conversationId: Uuid,
+): Tool = Tool(
+    name = "current_conversation_search",
+    description = """
+        Search earlier messages and turns in the CURRENT active conversation using native full-text search.
+        Use this when context has been compacted, or when you need to recall specific details, commands,
+        errors, code snippets, or user requirements discussed earlier in this session.
+        Matches are returned with surrounding snippet context.
+    """.trimIndent(),
+    parameters = {
+        InputSchema.Obj(
+            properties = buildJsonObject {
+                put("query", buildJsonObject {
+                    put("type", "string")
+                    put("description", "Keywords or search phrase to look up in the current conversation")
+                })
+                put("limit", buildJsonObject {
+                    put("type", "integer")
+                    put("description", "Maximum number of search results to return (default: 10, max: 30)")
+                })
+            },
+            required = listOf("query")
+        )
+    },
+    execute = {
+        val query = it.jsonObject["query"]?.jsonPrimitive?.contentOrNull
+            ?: error("query is required")
+        val limit = (it.jsonObject["limit"]?.jsonPrimitive?.intOrNull ?: 10).coerceIn(1, 30)
+        val results = conversationRepo
+            .searchMessages(
+                keyword = query,
+                sort = MessageSearchSort.RELEVANCE,
+                conversationId = conversationId,
+            )
+            .take(limit)
+        val payload = buildJsonArray {
+            results.forEach { result ->
+                add(buildJsonObject {
+                    put("message_id", result.messageId)
+                    put("snippet", result.snippet)
+                    put("date", result.updateAt.toLocalDate())
+                })
+            }
+        }
+        listOf(UIMessagePart.Text(JsonInstantPretty.encodeToString(payload)))
+    }
+)
