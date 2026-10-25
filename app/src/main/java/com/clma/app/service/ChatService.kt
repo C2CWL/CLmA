@@ -388,6 +388,7 @@ internal fun createForkConversation(
     lorebookIds = source.lorebookIds,
     workspaceCwd = source.workspaceCwd,
     folderId = source.folderId,
+    isTemporary = source.isTemporary,
 )
 
 data class ChatError(
@@ -946,7 +947,7 @@ class ChatService(
 
     // ---- 初始化对话 ----
 
-    suspend fun initializeConversation(conversationId: Uuid) {
+    suspend fun initializeConversation(conversationId: Uuid, isTemporary: Boolean = false) {
         val session = getOrCreateSession(conversationId) // 确保 session 存在
         val conversation = conversationRepo.getConversationById(conversationId)
         if (conversation != null) {
@@ -989,7 +990,8 @@ class ChatService(
             val newConversation = Conversation.ofId(
                 id = conversationId,
                 assistantId = assistant.id,
-                newConversation = true
+                newConversation = true,
+                isTemporary = isTemporary,
             ).updateCurrentMessages(assistant.presetMessages)
             updateConversation(conversationId, newConversation)
         }
@@ -2808,6 +2810,13 @@ class ChatService(
         suspend fun applyTitle(title: String?) {
             if (title.isNullOrBlank()) return
             // 生成完，conversation可能不是最新了，因此需要重新获取
+            if (conversation.isTemporary) {
+                val current = sessions[conversationId]?.state?.value ?: conversation
+                if (shouldWriteTitle(force, current.title)) {
+                    updateConversationState(conversationId) { it.copy(title = title) }
+                }
+                return
+            }
             conversationRepo.getConversationById(conversation.id)?.let {
                 if (shouldWriteTitle(force, it.title)) {
                     saveConversation(conversationId, it.copy(title = title))
@@ -3782,7 +3791,9 @@ class ChatService(
             sourceTokenEstimate = ContextBudgetPlanner.estimateInputTokens(messagesToCompress),
             createdAt = Instant.now(),
         )
-        conversationRepo.upsertCompaction(compaction)
+        if (!conversation.isTemporary) {
+            conversationRepo.upsertCompaction(compaction)
+        }
         compaction
     }
 
@@ -4078,6 +4089,7 @@ class ChatService(
     suspend fun renameConversation(conversationId: Uuid, title: String) {
         if (sessions.containsKey(conversationId)) {
             updateConversationState(conversationId) { it.copy(title = title) }
+            if (sessions[conversationId]?.state?.value?.isTemporary == true) return
         }
         conversationRepo.renameConversation(conversationId, title)
     }
@@ -4177,6 +4189,10 @@ class ChatService(
         conversation: Conversation,
         allowEmptySnapshot: Boolean = false,
     ) {
+        if (conversation.isTemporary) {
+            updateConversation(conversationId, conversation.copy())
+            return
+        }
         persistenceMutexFor(conversationId).withLock {
             val updatedConversation = conversation.copy()
             if (!persistConversationSnapshot(
@@ -4195,6 +4211,7 @@ class ChatService(
         updateSearchIndex: Boolean = true,
         allowEmptySnapshot: Boolean = false,
     ): Boolean {
+        if (conversation.isTemporary) return false
         if (conversation.id in deletedConversationIds) return false
         if (conversation.id in messageDeleteBarriers && !allowEmptySnapshot) return false
         val exists = conversationRepo.existsConversationById(conversation.id)

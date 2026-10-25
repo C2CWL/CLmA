@@ -1,5 +1,15 @@
 package com.clma.app.ui.pages.chat
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Badge
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import com.clma.app.ui.components.ui.AppDropdownMenu
+import com.clma.app.ui.components.ui.AppMenuEntry
+import me.rerere.hugeicons.stroke.ViewOff
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -82,9 +92,11 @@ internal fun CleanTopBar(
     previewMode: Boolean,
     onClickMenu: () -> Unit,
     onNewChat: () -> Unit,
+    onNewTemporaryChat: () -> Unit = {},
 ) {
     val scope = rememberCoroutineScope()
     val toaster = LocalToaster.current
+    var showNewChatMenu by remember { mutableStateOf(false) }
     // Same rename dialog state as the regular bar and the drawer's Rename item.
     val activity = LocalContext.current as ComponentActivity
     val drawerVm: ChatDrawerVM = koinViewModel(viewModelStoreOwner = activity)
@@ -135,12 +147,28 @@ internal fun CleanTopBar(
                     }
                     .padding(horizontal = 4.dp, vertical = CLEAN_TOP_BAR_TITLE_VERTICAL_PADDING_DP.dp),
             ) {
-                Text(
-                    text = conversation.title.ifBlank { stringResource(R.string.chat_page_new_chat) },
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    style = titleStyle,
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = if (conversation.isTemporary && conversation.title.isBlank()) {
+                            stringResource(R.string.chat_page_temporary_chat)
+                        } else {
+                            conversation.title.ifBlank { stringResource(R.string.chat_page_new_chat) }
+                        },
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = titleStyle,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+                    if (conversation.isTemporary) {
+                        Spacer(Modifier.width(6.dp))
+                        Icon(
+                            HugeIcons.ViewOff,
+                            contentDescription = stringResource(R.string.chat_page_temporary_chat),
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
                 if (model != null && showSubtitle) {
                     val usedTokens = remember(turnFooters, conversation) {
                         conversationUsedTokens(turnFooters, conversation)
@@ -181,11 +209,36 @@ internal fun CleanTopBar(
                         modifier = Modifier.size(CLEAN_TOP_BAR_ICON_DP.dp),
                     )
                 }
-                IconButton(onClick = onNewChat, modifier = Modifier.size(CLEAN_TOP_BAR_BUTTON_DP.dp)) {
-                    Icon(
-                        HugeIcons.MessageAdd01,
-                        stringResource(R.string.chat_page_new_message),
-                        modifier = Modifier.size(CLEAN_TOP_BAR_ICON_DP.dp),
+                Box {
+                    IconButton(onClick = { showNewChatMenu = true }, modifier = Modifier.size(CLEAN_TOP_BAR_BUTTON_DP.dp)) {
+                        Icon(
+                            HugeIcons.MessageAdd01,
+                            stringResource(R.string.chat_page_new_message),
+                            modifier = Modifier.size(CLEAN_TOP_BAR_ICON_DP.dp),
+                        )
+                    }
+                    AppDropdownMenu(
+                        expanded = showNewChatMenu,
+                        onDismissRequest = { showNewChatMenu = false },
+                        items = listOf(
+                            AppMenuEntry(
+                                text = stringResource(R.string.chat_page_new_chat),
+                                icon = HugeIcons.MessageAdd01,
+                                onClick = {
+                                    showNewChatMenu = false
+                                    onNewChat()
+                                }
+                            ),
+                            AppMenuEntry(
+                                text = stringResource(R.string.chat_page_temporary_chat),
+                                icon = HugeIcons.ViewOff,
+                                supporting = stringResource(R.string.chat_page_temporary_chat_desc),
+                                onClick = {
+                                    showNewChatMenu = false
+                                    onNewTemporaryChat()
+                                }
+                            )
+                        )
                     )
                 }
             }

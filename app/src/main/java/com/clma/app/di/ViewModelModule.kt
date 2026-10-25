@@ -38,6 +38,7 @@ val viewModelModule = module {
     viewModel<ChatVM> { params ->
         ChatVM(
             id = params.get(),
+            isTemporary = runCatching { params.get<Boolean>(1) }.getOrDefault(false),
             context = get(),
             settingsStore = get(),
             conversationRepo = get(),

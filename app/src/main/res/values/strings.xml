@@ -392,6 +392,8 @@
   <string name="chat_page_message_count">%d messages</string>
   <string name="chat_page_move_to_assistant">Move to Assistant</string>
   <string name="chat_page_new_chat">New Chat</string>
+  <string name="chat_page_temporary_chat">Temporary Chat</string>
+  <string name="chat_page_temporary_chat_desc">Doesn't save to history, disappears when closed</string>
   <string name="chat_page_new_message">New message</string>
   <string name="chat_page_nickname_placeholder">Please enter nickname</string>
   <string name="chat_page_no_conversations">No conversations</string>

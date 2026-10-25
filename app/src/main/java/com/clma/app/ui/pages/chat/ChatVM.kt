@@ -69,6 +69,7 @@ private const val DRAFT_SAVE_DEBOUNCE_MS = 400L
 
 class ChatVM(
     id: String,
+    val isTemporary: Boolean = false,
     private val context: Application,
     private val settingsStore: SettingsStore,
     private val conversationRepo: ConversationRepository,
@@ -173,35 +174,42 @@ class ChatVM(
 
         // 初始化对话
         viewModelScope.launch {
-            chatService.initializeConversation(_conversationId)
+            chatService.initializeConversation(_conversationId, isTemporary = isTemporary)
         }
 
-        // 记住对话ID, 方便下次启动恢复
-        context.writeStringPreference("lastConversationId", _conversationId.toString())
+        if (!isTemporary) {
+            // 记住对话ID, 方便下次启动恢复
+            context.writeStringPreference("lastConversationId", _conversationId.toString())
 
-        // 恢复上次未发送的草稿 (只恢复文本; 附件不猜)
-        drafts.get(_conversationId).takeIf { it.isNotBlank() }?.let(inputState::setMessageText)
+            // 恢复上次未发送的草稿 (只恢复文本; 附件不猜)
+            drafts.get(_conversationId).takeIf { it.isNotBlank() }?.let(inputState::setMessageText)
 
-        // 边打边存: collectLatest + delay 即防抖, 避免每键一次 IO。
-        // 编辑历史消息时不写草稿, 否则会把别人的消息当成草稿存下来。
-        viewModelScope.launch {
-            snapshotFlow { inputState.textContent.text.toString() }
-                .distinctUntilChanged()
-                .collectLatest { text ->
-                    delay(DRAFT_SAVE_DEBOUNCE_MS)
-                    if (!inputState.isEditing()) drafts.save(_conversationId, text)
-                }
+            // 边打边存: collectLatest + delay 即防抖, 避免每键一次 IO。
+            // 编辑历史消息时不写草稿, 否则会把别人的消息当成草稿存下来。
+            viewModelScope.launch {
+                snapshotFlow { inputState.textContent.text.toString() }
+                    .distinctUntilChanged()
+                    .collectLatest { text ->
+                        delay(DRAFT_SAVE_DEBOUNCE_MS)
+                        if (!inputState.isEditing()) drafts.save(_conversationId, text)
+                    }
+            }
         }
     }
 
     override fun onCleared() {
         voiceSession.stop()
-        if (!inputState.isEditing()) {
-            drafts.save(_conversationId, inputState.textContent.text.toString())
+        if (!isTemporary) {
+            if (!inputState.isEditing()) {
+                drafts.save(_conversationId, inputState.textContent.text.toString())
+            }
         }
         super.onCleared()
         // 移除对话引用
         chatService.removeConversationReference(_conversationId)
+        if (isTemporary) {
+            chatService.dropSession(_conversationId)
+        }
     }
 
     // 用户设置
@@ -425,7 +433,7 @@ class ChatVM(
 
     fun moveConversationToAssistant(conversation: Conversation, targetAssistantId: Uuid) {
         viewModelScope.launch {
-            val conversationFull = conversationRepo.getConversationById(conversation.id) ?: return@launch
+            val conversationFull = (if (isTemporary) conversation else conversationRepo.getConversationById(conversation.id)) ?: return@launch
             // Folders are per-assistant groupings; after switching assistant the old folder is
             // not visible under the new one, so clear the assignment to avoid losing the chat.
             val updatedConversation = conversationFull.copy(
@@ -453,7 +461,7 @@ class ChatVM(
 
     fun generateTitle(conversation: Conversation, force: Boolean = false) {
         viewModelScope.launch {
-            val conversationFull = conversationRepo.getConversationById(conversation.id) ?: return@launch
+            val conversationFull = (if (isTemporary) conversation else conversationRepo.getConversationById(conversation.id)) ?: return@launch
             chatService.generateTitle(_conversationId, conversationFull, force)
         }
     }

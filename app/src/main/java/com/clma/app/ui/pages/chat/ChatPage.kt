@@ -1,5 +1,11 @@
 package com.clma.app.ui.pages.chat
 
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import com.clma.app.ui.components.ui.AppDropdownMenu
+import com.clma.app.ui.components.ui.AppMenuEntry
+import me.rerere.hugeicons.stroke.ViewOff
 import android.net.Uri
 import android.os.Build
 import androidx.activity.ComponentActivity
@@ -125,10 +131,10 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.uuid.Uuid
 
 @Composable
-fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null) {
+fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null, isTemporary: Boolean = false) {
     val vm: ChatVM = koinViewModel(
         parameters = {
-            parametersOf(id.toString())
+            parametersOf(id.toString(), isTemporary)
         }
     )
     val filesManager: FilesManager = koinInject()
@@ -629,7 +635,7 @@ private fun ChatPageContent(
                     onForkMessage = {
                         scope.launch {
                             val fork = vm.forkMessage(message = it)
-                            navigateToChatPage(navController, chatId = fork.id)
+                            navigateToChatPage(navController, chatId = fork.id, isTemporary = fork.isTemporary)
                         }
                     },
                     onDelete = {
@@ -776,6 +782,7 @@ private fun ChatPageContent(
                                 previewMode = previewMode,
                                 onClickMenu = { previewMode = !previewMode },
                                 onNewChat = { navigateToChatPage(navController) },
+                                onNewTemporaryChat = { navigateToChatPage(navController, isTemporary = true) },
                             )
                         }
                     } else TopBar(
@@ -788,6 +795,9 @@ private fun ChatPageContent(
                         previewMode = previewMode,
                         onNewChat = {
                             navigateToChatPage(navController)
+                        },
+                        onNewTemporaryChat = {
+                            navigateToChatPage(navController, isTemporary = true)
                         },
                         onClickMenu = {
                             previewMode = !previewMode
@@ -904,12 +914,14 @@ private fun TopBar(
     previewMode: Boolean,
     onClickMenu: () -> Unit,
     onNewChat: () -> Unit,
+    onNewTemporaryChat: () -> Unit = {},
 ) {
     val scope = rememberCoroutineScope()
     val toaster = LocalToaster.current
     // 与抽屉的 Rename 菜单项共享同一个重命名对话框状态，见 ChatDrawerVM.conversationToRename
     val activity = LocalContext.current as ComponentActivity
     val drawerVm: ChatDrawerVM = koinViewModel(viewModelStoreOwner = activity)
+    var showNewChatMenu by remember { mutableStateOf(false) }
 
     TopAppBar(
         colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
@@ -973,12 +985,28 @@ private fun TopBar(
                     },
                 ) {
                     val model = settings.resolveChatModel(conversation.chatModelId, conversation.assistantId)
-                    Text(
-                        text = conversation.title.ifBlank { stringResource(R.string.chat_page_new_chat) },
-                        maxLines = 1,
-                        style = MaterialTheme.typography.bodyMedium,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = if (conversation.isTemporary && conversation.title.isBlank()) {
+                                stringResource(R.string.chat_page_temporary_chat)
+                            } else {
+                                conversation.title.ifBlank { stringResource(R.string.chat_page_new_chat) }
+                            },
+                            maxLines = 1,
+                            style = MaterialTheme.typography.bodyMedium,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false),
+                        )
+                        if (conversation.isTemporary) {
+                            Spacer(Modifier.width(6.dp))
+                            Icon(
+                                HugeIcons.ViewOff,
+                                contentDescription = stringResource(R.string.chat_page_temporary_chat),
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
                     if (model != null) {
                         // Aggregate conversation token consumption across all turns and tool calls.
                         // UsageLedger (turnFooters) is the ground truth (includes all tool loop steps);
@@ -1013,13 +1041,38 @@ private fun TopBar(
                 Icon(if (previewMode) HugeIcons.Cancel01 else HugeIcons.LeftToRightListBullet, stringResource(R.string.accessibility_chat_options))
             }
 
-            GlassTopBarButton(
-                onClick = {
-                    onNewChat()
-                },
-                hazeState = hazeState,
-            ) {
-                Icon(HugeIcons.MessageAdd01, stringResource(R.string.chat_page_new_message))
+            Box {
+                GlassTopBarButton(
+                    onClick = {
+                        showNewChatMenu = true
+                    },
+                    hazeState = hazeState,
+                ) {
+                    Icon(HugeIcons.MessageAdd01, stringResource(R.string.chat_page_new_message))
+                }
+                AppDropdownMenu(
+                    expanded = showNewChatMenu,
+                    onDismissRequest = { showNewChatMenu = false },
+                    items = listOf(
+                        AppMenuEntry(
+                            text = stringResource(R.string.chat_page_new_chat),
+                            icon = HugeIcons.MessageAdd01,
+                            onClick = {
+                                showNewChatMenu = false
+                                onNewChat()
+                            }
+                        ),
+                        AppMenuEntry(
+                            text = stringResource(R.string.chat_page_temporary_chat),
+                            icon = HugeIcons.ViewOff,
+                            supporting = stringResource(R.string.chat_page_temporary_chat_desc),
+                            onClick = {
+                                showNewChatMenu = false
+                                onNewTemporaryChat()
+                            }
+                        )
+                    )
+                )
             }
         },
     )
