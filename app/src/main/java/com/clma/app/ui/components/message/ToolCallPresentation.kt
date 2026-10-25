@@ -45,6 +45,7 @@ fun capsuleToolIcon(toolName: String): ImageVector = when (toolName) {
     // S1 Search — GlobalSearch (earth + loupe)
     "search_web",
     "conversation_search",
+    "current_conversation_search",
     -> HugeIcons.GlobalSearch
 
     // S2 Web
@@ -54,7 +55,8 @@ fun capsuleToolIcon(toolName: String): ImageVector = when (toolName) {
     -> HugeIcons.Internet
 
     // S3 Files
-    "workspace_read_file" -> HugeIcons.FileView
+    "workspace_read_file",
+    "tool_output_read" -> HugeIcons.FileView
     "workspace_edit_file" -> HugeIcons.FileEdit
     "workspace_write_file" -> HugeIcons.FileAdd
 

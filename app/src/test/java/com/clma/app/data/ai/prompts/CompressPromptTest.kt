@@ -7,24 +7,46 @@ import org.junit.Test
 
 class CompressPromptTest {
     @Test
-    fun `legacy default is upgraded to new default`() {
+    fun `legacy v1 default is upgraded to new default`() {
         assertNotEquals(LEGACY_DEFAULT_COMPRESS_PROMPT_V1, DEFAULT_COMPRESS_PROMPT)
         assertEquals(DEFAULT_COMPRESS_PROMPT, upgradeLegacyCompressPrompt(LEGACY_DEFAULT_COMPRESS_PROMPT_V1))
     }
 
     @Test
-    fun `legacy default with CRLF and surrounding whitespace is upgraded`() {
-        val crlf = LEGACY_DEFAULT_COMPRESS_PROMPT_V1.replace("\n", "\r\n") + "\r\n"
-        assertEquals(DEFAULT_COMPRESS_PROMPT, upgradeLegacyCompressPrompt(crlf))
-        assertEquals(DEFAULT_COMPRESS_PROMPT, upgradeLegacyCompressPrompt(LEGACY_DEFAULT_COMPRESS_PROMPT_V1 + "\n"))
-        assertEquals(DEFAULT_COMPRESS_PROMPT, upgradeLegacyCompressPrompt("  \n" + LEGACY_DEFAULT_COMPRESS_PROMPT_V1 + "\n\n"))
+    fun `legacy v2 default is upgraded to new default`() {
+        assertNotEquals(LEGACY_DEFAULT_COMPRESS_PROMPT_V2, DEFAULT_COMPRESS_PROMPT)
+        assertEquals(DEFAULT_COMPRESS_PROMPT, upgradeLegacyCompressPrompt(LEGACY_DEFAULT_COMPRESS_PROMPT_V2))
+    }
+
+    @Test
+    fun `legacy defaults with CRLF and surrounding whitespace are upgraded`() {
+        val crlf1 = LEGACY_DEFAULT_COMPRESS_PROMPT_V1.replace("
+", "
+") + "
+"
+        assertEquals(DEFAULT_COMPRESS_PROMPT, upgradeLegacyCompressPrompt(crlf1))
+        val crlf2 = LEGACY_DEFAULT_COMPRESS_PROMPT_V2.replace("
+", "
+") + "
+"
+        assertEquals(DEFAULT_COMPRESS_PROMPT, upgradeLegacyCompressPrompt(crlf2))
+
+        assertEquals(DEFAULT_COMPRESS_PROMPT, upgradeLegacyCompressPrompt(LEGACY_DEFAULT_COMPRESS_PROMPT_V2 + "
+"))
+        assertEquals(DEFAULT_COMPRESS_PROMPT, upgradeLegacyCompressPrompt("  
+" + LEGACY_DEFAULT_COMPRESS_PROMPT_V2 + "
+
+"))
     }
 
     @Test
     fun `custom prompt is left unchanged`() {
-        val custom = "Summarize briefly in {locale}.\n<conversation>\n{content}\n</conversation>"
+        val custom = "Summarize briefly in {locale}.
+<conversation>
+{content}
+</conversation>"
         assertEquals(custom, upgradeLegacyCompressPrompt(custom))
-        val tweakedLegacy = LEGACY_DEFAULT_COMPRESS_PROMPT_V1.replace("concise summary", "short summary")
+        val tweakedLegacy = LEGACY_DEFAULT_COMPRESS_PROMPT_V2.replace("dense, structured summary", "short summary")
         assertEquals(tweakedLegacy, upgradeLegacyCompressPrompt(tweakedLegacy))
         assertEquals(DEFAULT_COMPRESS_PROMPT, upgradeLegacyCompressPrompt(DEFAULT_COMPRESS_PROMPT))
     }

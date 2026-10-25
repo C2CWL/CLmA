@@ -38,6 +38,8 @@ class DisplaySettingToolCallStyleTest {
     fun `capsule copy covers web, shell, file, skill and memory tools`() {
         assertEquals(CapsuleToolKind.SEARCH, capsuleToolKind("search_web"))
         assertEquals(CapsuleToolKind.SEARCH, capsuleToolKind("conversation_search"))
+        assertEquals(CapsuleToolKind.SEARCH, capsuleToolKind("current_conversation_search"))
+        assertEquals(CapsuleToolKind.READ_FILE, capsuleToolKind("tool_output_read"))
         assertEquals(CapsuleToolKind.READ, capsuleToolKind("scrape_web"))
         assertEquals(CapsuleToolKind.READ, capsuleToolKind("web_extract"))
         assertEquals(CapsuleToolKind.FETCH, capsuleToolKind("web_fetch"))
@@ -73,6 +75,7 @@ class DisplaySettingToolCallStyleTest {
         assertEquals("qr-code", capsuleSubject(CapsuleToolKind.RUN_JS, arg))
         assertEquals("agent-core", capsuleSubject(CapsuleToolKind.SKILL, arg))
         assertEquals("/workspace/notes.md", capsuleSubject(CapsuleToolKind.READ_FILE, arg))
+        assertEquals("call_out.txt", capsuleSubject(CapsuleToolKind.READ_FILE) { if (it == "file") "call_out.txt" else null })
         assertEquals("/workspace/notes.md", capsuleSubject(CapsuleToolKind.WRITE_FILE, arg))
         assertEquals("/workspace/notes.md", capsuleSubject(CapsuleToolKind.EDIT_FILE, arg))
         assertEquals("edit", capsuleSubject(CapsuleToolKind.MEMORY, arg))

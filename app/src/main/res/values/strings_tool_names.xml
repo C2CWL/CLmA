@@ -26,6 +26,8 @@
   <string name="tool_display_desc_recent_chats">Lists your recent chat titles and dates</string>
   <string name="tool_display_name_conversation_search">Search chats</string>
   <string name="tool_display_desc_conversation_search">Full-text search across your past chats</string>
+  <string name="tool_display_name_current_conversation_search">Search this chat</string>
+  <string name="tool_display_desc_current_conversation_search">Full-text search across messages in the current conversation</string>
   <string name="tool_display_name_compact_context">Compact context</string>
   <string name="tool_display_desc_compact_context">Summarises earlier parts of this chat in place</string>
   <string name="tool_display_name_check_token_usage">Token usage</string>
@@ -34,6 +36,8 @@
   <string name="tool_display_desc_tool_search">Finds tools in the catalog by keyword</string>
   <string name="tool_display_name_tool_open">Activate tools</string>
   <string name="tool_display_desc_tool_open">Activates tools by name from the next turn</string>
+  <string name="tool_display_name_tool_output_read">Read tool output</string>
+  <string name="tool_display_desc_tool_output_read">Reads slices or filtered output of earlier tool executions</string>
   <string name="tool_display_name_get_time_info">Current time</string>
   <string name="tool_display_desc_get_time_info">Reads the device date, time, weekday and timezone</string>
   <string name="tool_display_name_get_battery_status">Battery status</string>

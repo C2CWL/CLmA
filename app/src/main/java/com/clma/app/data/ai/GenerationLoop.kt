@@ -2221,7 +2221,7 @@ class GenerationLoop(
             }
         }
 
-        if (totalChars <= MAX_TOOL_OUTPUT_CHARS || !hasShellAccess) return scrubbed
+        if (totalChars <= MAX_TOOL_OUTPUT_CHARS) return scrubbed
 
         Log.i(TAG, "maybeTruncateToolOutput: truncating tool $toolCallId output ($totalChars chars)")
 
@@ -2238,8 +2238,11 @@ class GenerationLoop(
                 buildString {
                     appendLine("[Tool output truncated: $totalChars characters total]")
                     appendLine("Full output saved to: /tool_outputs/$fileName")
-                    appendLine("Use shell to read: `cat /tool_outputs/$fileName`")
-                    appendLine("Use shell to search: `grep \"pattern\" /tool_outputs/$fileName`")
+                    appendLine("Use tool_output_read tool: `tool_output_read(file = \"$fileName\", offset = 1, limit = 200)`")
+                    if (hasShellAccess) {
+                        appendLine("Or use shell to read: `cat /tool_outputs/$fileName`")
+                        appendLine("Or use shell to search: `grep \"pattern\" /tool_outputs/$fileName`")
+                    }
                     appendLine()
                     append(preview)
                 }
@@ -2293,9 +2296,10 @@ class GenerationLoop(
         appendLine("[Original size: $totalChars characters]")
         if (fileName != null) {
             appendLine("Full output saved to: /tool_outputs/$fileName")
+            appendLine("Use tool_output_read tool: `tool_output_read(file = \"$fileName\", offset = 1, limit = 200)`")
             if (showShellHints) {
-                appendLine("Use shell to read: `cat /tool_outputs/$fileName`")
-                appendLine("Use shell to search: `grep \"pattern\" /tool_outputs/$fileName`")
+                appendLine("Or use shell to read: `cat /tool_outputs/$fileName`")
+                appendLine("Or use shell to search: `grep \"pattern\" /tool_outputs/$fileName`")
             }
         } else {
             appendLine("Full output could not be saved to disk; the trimmed text below is all that remains.")

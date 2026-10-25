@@ -107,6 +107,7 @@ class MessageFtsManager(private val database: AppDatabase) {
         keyword: String,
         sort: MessageSearchSort = MessageSearchSort.RELEVANCE,
         assistantId: String? = null,
+        conversationId: String? = null,
     ): List<MessageSearchResult> = withContext(Dispatchers.IO) {
         val results = mutableListOf<MessageSearchResult>()
         val assistantFilter = if (assistantId != null) {
@@ -120,6 +121,16 @@ class MessageFtsManager(private val database: AppDatabase) {
         } else {
             ""
         }
+        val conversationFilter = if (conversationId != null) {
+            "AND message_fts.conversation_id = ?"
+        } else {
+            ""
+        }
+        val args = buildList {
+            add(keyword)
+            if (assistantId != null) add(assistantId)
+            if (conversationId != null) add(conversationId)
+        }.toTypedArray()
         val cursor = db.query(
             """
             SELECT node_id, message_id, conversation_id, title, update_at,
@@ -127,10 +138,11 @@ class MessageFtsManager(private val database: AppDatabase) {
             FROM message_fts
             WHERE text MATCH jieba_query(?)
             $assistantFilter
+            $conversationFilter
             ORDER BY ${sort.orderBy}
             LIMIT 50
             """.trimIndent(),
-            if (assistantId != null) arrayOf(keyword, assistantId) else arrayOf(keyword)
+            args
         )
         Log.i(TAG, "search: $keyword")
         cursor.use {

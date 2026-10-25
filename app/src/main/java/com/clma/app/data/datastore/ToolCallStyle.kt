@@ -63,13 +63,13 @@ enum class CapsuleToolKind {
 }
 
 fun capsuleToolKind(toolName: String): CapsuleToolKind? = when (toolName) {
-    "search_web", "conversation_search" -> CapsuleToolKind.SEARCH
+    "search_web", "conversation_search", "current_conversation_search" -> CapsuleToolKind.SEARCH
     "scrape_web", "web_extract" -> CapsuleToolKind.READ
     "web_fetch" -> CapsuleToolKind.FETCH
     "workspace_shell" -> CapsuleToolKind.RUN
     "run_js" -> CapsuleToolKind.RUN_JS
     "use_skill" -> CapsuleToolKind.SKILL
-    "workspace_read_file" -> CapsuleToolKind.READ_FILE
+    "workspace_read_file", "tool_output_read" -> CapsuleToolKind.READ_FILE
     "workspace_write_file" -> CapsuleToolKind.WRITE_FILE
     "workspace_edit_file" -> CapsuleToolKind.EDIT_FILE
     "memory_tool" -> CapsuleToolKind.MEMORY
@@ -88,7 +88,7 @@ fun capsuleSubject(kind: CapsuleToolKind, arg: (String) -> String?): String? = w
     CapsuleToolKind.RUN -> arg("command")?.replace('\n', ' ')
     CapsuleToolKind.RUN_JS -> arg("skill_name") ?: arg("name")
     CapsuleToolKind.SKILL -> arg("name") ?: arg("skill_name")
-    CapsuleToolKind.READ_FILE,
+    CapsuleToolKind.READ_FILE -> arg("path") ?: arg("file")
     CapsuleToolKind.WRITE_FILE,
     CapsuleToolKind.EDIT_FILE,
     -> arg("path")
