@@ -30,7 +30,7 @@ class StreamChunkHandlerTest {
         assertEquals(MessageRole.ASSISTANT, messages.last().role)
         assertEquals("hello", messages.last().toText())
         assertEquals(model.id, messages.last().modelId)
-        assertNotNull(messages.last().finishedAt)
+        assertNull(messages.last().finishedAt)
     }
 
     @Test
@@ -42,7 +42,7 @@ class StreamChunkHandlerTest {
         messages = handler.handle(messages, StreamChunk.Finish(finishReason = "length"))
 
         assertEquals("partial", messages.last().toText())
-        assertNotNull(messages.last().finishedAt)
+        assertNull(messages.last().finishedAt)
     }
 
     @Test
