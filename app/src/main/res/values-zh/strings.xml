@@ -911,7 +911,7 @@
   <string name="setting_display_page_chat_layout_claude">暖阳</string>
   <string name="setting_display_page_clean_layout_glass_title">液态玻璃</string>
   <string name="setting_display_page_clean_layout_glass_desc">在简洁布局下为输入框和顶栏启用液态玻璃质感；关闭后两者均为扁平单色卡片</string>
-  <string name="setting_display_page_clean_layout_opacity_desc">0% 完全透明，100% 接近实心卡片；默认 40%</string>
+  <string name="setting_display_page_clean_layout_opacity_desc" formatted="false">0% 完全透明，100% 接近实心卡片；默认 40%</string>
   <string name="setting_display_page_clean_layout_top_opacity_title">顶栏不透明度</string>
   <string name="setting_display_page_clean_layout_bottom_opacity_title">输入框不透明度</string>
   <string name="setting_display_page_clean_layout_top_height_title">顶栏高度</string>
@@ -1354,7 +1354,7 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="skills_page_group_delete">删除分组</string>
   <string name="skills_page_group_delete_with_skills">删除分组并卸载技能</string>
   <string name="skills_page_group_delete_message">删除分组「%s」？组内技能会保留并回到「未分组」。</string>
-  <string name="skills_page_group_delete_with_skills_message">删除分组「%s」并卸载其 %2$d 个技能？此操作不可撤销。</string>
+  <string name="skills_page_group_delete_with_skills_message">删除分组「%1$s」并卸载其 %2$d 个技能？此操作不可撤销。</string>
   <string name="skills_page_group_created">分组已创建</string>
   <string name="speech_page_title">语音</string>
   <string name="speech_tab_asr">语音识别</string>

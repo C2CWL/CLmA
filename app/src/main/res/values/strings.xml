@@ -951,7 +951,7 @@
   <string name="setting_display_page_chat_layout_claude">Warm sun</string>
   <string name="setting_display_page_clean_layout_glass_title">Liquid glass</string>
   <string name="setting_display_page_clean_layout_glass_desc">Use liquid glass material for the clean layout input bar and header; when disabled, both use a flat solid card</string>
-  <string name="setting_display_page_clean_layout_opacity_desc">0% is fully clear, 100% is close to a solid card. Default 40%</string>
+  <string name="setting_display_page_clean_layout_opacity_desc" formatted="false">0% is fully clear, 100% is close to a solid card. Default 40%</string>
   <string name="setting_display_page_clean_layout_top_opacity_title">Header panel opacity</string>
   <string name="setting_display_page_clean_layout_bottom_opacity_title">Input panel opacity</string>
   <string name="setting_display_page_clean_layout_top_height_title">Header height</string>
@@ -1423,7 +1423,7 @@
   <string name="skills_page_group_delete">Delete group</string>
   <string name="skills_page_group_delete_with_skills">Delete group and uninstall skills</string>
   <string name="skills_page_group_delete_message">Delete group \"%s\"? Its skills stay installed and move back to Ungrouped.</string>
-  <string name="skills_page_group_delete_with_skills_message">Delete group \"%s\" and uninstall its %2$d skills? This cannot be undone.</string>
+  <string name="skills_page_group_delete_with_skills_message">Delete group \"%1$s\" and uninstall its %2$d skills? This cannot be undone.</string>
   <string name="skills_page_group_created">Group created</string>
   <string name="speech_page_title">Speech</string>
   <string name="speech_tab_asr">Speech Recognition</string>
