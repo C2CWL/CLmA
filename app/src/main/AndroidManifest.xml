@@ -239,18 +239,8 @@
     </activity-alias>
     <activity
       android:name=".ui.activity.ShortcutHandlerActivity"
-      android:exported="true"
-      android:theme="@android:style/Theme.Translucent.NoTitleBar">
-      <intent-filter>
-        <action android:name="android.intent.action.VIEW" />
-
-        <category android:name="android.intent.category.DEFAULT" />
-
-        <data
-          android:host="shortcut"
-          android:scheme="rikkahub" />
-      </intent-filter>
-    </activity>
+      android:exported="false"
+      android:theme="@android:style/Theme.Translucent.NoTitleBar" />
     <activity
       android:name=".ui.activity.CodexOAuthRedirectActivity"
       android:exported="true"
@@ -327,7 +317,8 @@
          until the user explicitly opts in via Settings. -->
     <receiver
       android:name=".automation.ExternalAutomationReceiver"
-      android:exported="true">
+      android:exported="true"
+      android:permission="android.permission.DUMP">
       <intent-filter>
         <action android:name="me.rerere.rikkahub.RUN_TASK" />
       </intent-filter>

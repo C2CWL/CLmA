@@ -44,7 +44,6 @@ private const val WEB_JWT_ISSUER = "rikkahub-web"
 private const val WEB_JWT_AUDIENCE = "rikkahub-web-client"
 private const val WEB_JWT_SUBJECT = "web-access"
 private const val WEB_JWT_TTL_MILLIS = 30L * 24 * 60 * 60 * 1000
-private const val WEB_ACCESS_TOKEN_QUERY_KEY = "access_token"
 private const val WEB_AUTH_REALM = "rikkahub-web-api"
 
 /**
@@ -102,10 +101,7 @@ fun Application.configureWebApi(
                     buildWebJwtVerifier(secret)
                 }
                 authHeader { call ->
-                    extractAccessToken(
-                        authorizationHeader = call.request.headers[HttpHeaders.Authorization],
-                        queryToken = call.request.queryParameters[WEB_ACCESS_TOKEN_QUERY_KEY]
-                    )?.let { token ->
+                    extractBearerToken(call.request.headers[HttpHeaders.Authorization])?.let { token ->
                         HttpAuthHeader.Single("Bearer", token)
                     }
                 }
@@ -216,10 +212,6 @@ private fun extractBearerToken(authorizationHeader: String?): String? {
     return authorizationHeader.substring(prefix.length).trim().takeIf { it.isNotEmpty() }
 }
 
-private fun extractAccessToken(authorizationHeader: String?, queryToken: String?): String? {
-    return extractBearerToken(authorizationHeader)
-        ?: queryToken?.trim()?.takeIf { it.isNotEmpty() }
-}
 
 private fun secureEquals(left: String, right: String): Boolean {
     return MessageDigest.isEqual(left.toByteArray(Charsets.UTF_8), right.toByteArray(Charsets.UTF_8))
