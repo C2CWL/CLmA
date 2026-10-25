@@ -2,23 +2,22 @@ package com.clma.app.data.ai.tools.local
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
 import android.media.ImageReader
+import android.os.ParcelFileDescriptor
 import android.util.Log
 import android.view.Surface
+import com.clma.app.virtualdisplay.VirtualDisplayLauncher
 
 /**
- * Manages virtual display lifecycle from the app process (no Shizuku/root needed for creation).
+ * Manages virtual display lifecycle, delegating to a privileged daemon process via Shizuku/Root
+ * (Aether agent mode approach) so displays carry privileged system flags (FLAG_PUBLIC, FLAG_TRUSTED,
+ * FLAG_OWN_FOCUS, FLAG_SUPPORTS_TOUCH, etc.) needed to run arbitrary apps and inject touch.
  *
- * Each virtual display is created with an [ImageReader]-backed [Surface] so the framework has a
- * valid render target. The display's content is readable via [captureFrame] (the `take_screenshot`
- * tool routes virtual-display captures here, because
- * `AccessibilityService.takeScreenshot(displayId)` returns `ERROR_TAKE_SCREENSHOT_INVALID_DISPLAY`
- * for any display other than `Display.DEFAULT_DISPLAY` — a platform limitation verified by CTS).
- *
- * Input injection and app launching on the virtual display require shell privileges and go
- * through Shizuku (`input -d <id>`, `am start --display <id>`) — see [VirtualDisplayTools].
+ * If the privileged launcher is unavailable (e.g. Shizuku not active and no Root), it seamlessly
+ * falls back to a local unprivileged VirtualDisplay in the app process.
  *
  * Thread-safety: all public methods are synchronized on the object's internal lock.
  * Created displays survive until [destroy] is called or the process dies.
@@ -27,21 +26,25 @@ object VirtualDisplayController {
 
     private const val TAG = "VirtualDisplayCtrl"
 
-    /** Displays created by this controller, keyed by display id. */
+    /** Managed display entries, keyed by display id. */
     private val displays = mutableMapOf<Int, DisplayEntry>()
 
     /** Lock for [displays]. */
     private val lock = Any()
 
-    /** An entry holding the VirtualDisplay and its ImageReader (for Surface lifecycle). */
-    private class DisplayEntry(
-        val display: VirtualDisplay,
-        val imageReader: ImageReader,
-        val name: String,
-        val width: Int,
-        val height: Int,
-        val densityDpi: Int,
-    )
+    private sealed class DisplayEntry {
+        abstract val info: DisplayInfo
+
+        data class Privileged(
+            override val info: DisplayInfo,
+        ) : DisplayEntry()
+
+        data class Local(
+            override val info: DisplayInfo,
+            val display: VirtualDisplay,
+            val imageReader: ImageReader,
+        ) : DisplayEntry()
+    }
 
     /**
      * Create a virtual display. Width/height are aligned to 16 (MediaCodec requirement; also
@@ -54,21 +57,39 @@ object VirtualDisplayController {
         if (densityDpi < 1 || densityDpi > 640) {
             return Result.Error("invalid_density", "density must be between 1 and 640")
         }
-        // Align to 16 (avoids IllegalArgumentException on some GPU/SurfaceFlinger paths).
         val alignedW = (width + 15) and 15.inv()
         val alignedH = (height + 15) and 15.inv()
         val name = "RikkaHub-VD-${System.currentTimeMillis()}"
+
+        // 1. Try privileged virtual display service via Shizuku/Root first
+        try {
+            val service = VirtualDisplayLauncher.getOrLaunch(context)
+            val displayId = service.createOwnedDisplay(name, alignedW, alignedH, densityDpi)
+            if (displayId > 0) {
+                val info = DisplayInfo(displayId, name, alignedW, alignedH, densityDpi)
+                displays[displayId] = DisplayEntry.Privileged(info)
+                Log.i(TAG, "Created privileged virtual display id=$displayId ${alignedW}x${alignedH} density=$densityDpi")
+                return Result.Ok(displayId)
+            } else {
+                Log.w(TAG, "createOwnedDisplay returned invalid displayId: $displayId")
+            }
+        } catch (t: Throwable) {
+            Log.w(TAG, "Privileged VirtualDisplayLauncher failed: ${t.message}. Falling back to local VirtualDisplay.")
+        }
+
+        // 2. Fall back to local unprivileged VirtualDisplay
         return try {
             val dm = context.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
             val imageReader = ImageReader.newInstance(alignedW, alignedH, 0x2 /* PixelFormat.RGBA_8888 */, 2)
             val surface = imageReader.surface
-            val display = createVirtualDisplay(dm, name, alignedW, alignedH, densityDpi, surface)
+            val display = createLocalVirtualDisplay(dm, name, alignedW, alignedH, densityDpi, surface)
             val id = display.display.displayId
-            displays[id] = DisplayEntry(display, imageReader, name, alignedW, alignedH, densityDpi)
-            Log.i(TAG, "Created virtual display id=$id ${alignedW}x${alignedH} density=$densityDpi")
+            val info = DisplayInfo(id, name, alignedW, alignedH, densityDpi)
+            displays[id] = DisplayEntry.Local(info, display, imageReader)
+            Log.i(TAG, "Created local fallback virtual display id=$id ${alignedW}x${alignedH} density=$densityDpi")
             Result.Ok(id)
         } catch (t: Throwable) {
-            Log.e(TAG, "createVirtualDisplay failed", t)
+            Log.e(TAG, "createLocalVirtualDisplay failed", t)
             Result.Error("create_failed", t.message ?: t::class.java.simpleName)
         }
     }
@@ -77,12 +98,22 @@ object VirtualDisplayController {
      * Destroy a virtual display by id. Returns true if found and destroyed.
      */
     fun destroy(displayId: Int): Boolean = synchronized(lock) {
-        val entry = displays.remove(displayId)
-        if (entry == null) return false
-        runCatching { entry.display.release() }
-        runCatching { entry.imageReader.close() }
-        Log.i(TAG, "Destroyed virtual display id=$displayId")
-        true
+        val entry = displays.remove(displayId) ?: return false
+        return when (entry) {
+            is DisplayEntry.Privileged -> {
+                VirtualDisplayLauncher.currentService()?.let { svc ->
+                    runCatching { svc.releaseDisplay(displayId) }
+                }
+                Log.i(TAG, "Destroyed privileged virtual display id=$displayId")
+                true
+            }
+            is DisplayEntry.Local -> {
+                runCatching { entry.display.release() }
+                runCatching { entry.imageReader.close() }
+                Log.i(TAG, "Destroyed local virtual display id=$displayId")
+                true
+            }
+        }
     }
 
     /** Destroy all displays. Called on process teardown. */
@@ -90,19 +121,14 @@ object VirtualDisplayController {
         displays.keys.toList().forEach { id ->
             destroy(id)
         }
+        VirtualDisplayLauncher.currentService()?.let { svc ->
+            runCatching { svc.destroy() }
+        }
     }
 
     /** List all managed virtual displays. */
     fun list(): List<DisplayInfo> = synchronized(lock) {
-        displays.values.map { e ->
-            DisplayInfo(
-                displayId = e.display.display.displayId,
-                name = e.name,
-                width = e.width,
-                height = e.height,
-                densityDpi = e.densityDpi,
-            )
-        }
+        displays.values.map { it.info }
     }
 
     /** True if a display with the given id is managed by this controller. */
@@ -111,7 +137,7 @@ object VirtualDisplayController {
     }
 
     /**
-     * Capture the latest rendered frame from a virtual display's [ImageReader].
+     * Capture the latest rendered frame from a virtual display.
      *
      * Returns a software [Bitmap] (ARGB_8888) sized to the display, or null when the display
      * is unknown or no frame has been rendered yet (callers may retry after a short delay).
@@ -119,26 +145,49 @@ object VirtualDisplayController {
      */
     fun captureFrame(displayId: Int): Bitmap? = synchronized(lock) {
         val entry = displays[displayId] ?: return null
+        return when (entry) {
+            is DisplayEntry.Privileged -> {
+                val svc = VirtualDisplayLauncher.currentService() ?: return null
+                val pfd = try {
+                    svc.captureFrameStream(displayId)
+                } catch (e: Exception) {
+                    Log.w(TAG, "captureFrameStream IPC failed: ${e.message}")
+                    null
+                } ?: return null
+                try {
+                    ParcelFileDescriptor.AutoCloseInputStream(pfd).use { stream ->
+                        BitmapFactory.decodeStream(stream)
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "decodeStream from captureFrameStream failed: ${e.message}")
+                    null
+                }
+            }
+            is DisplayEntry.Local -> {
+                captureLocalFrame(entry)
+            }
+        }
+    }
+
+    private fun captureLocalFrame(entry: DisplayEntry.Local): Bitmap? {
         val image = try {
             entry.imageReader.acquireLatestImage()
         } catch (e: Exception) {
             Log.w(TAG, "acquireLatestImage failed: ${e.message}")
             null
         } ?: return null
-        try {
+        return try {
             val plane = image.planes[0]
             val buffer = plane.buffer
             val pixelStride = plane.pixelStride
             val rowStride = plane.rowStride
-            // ImageReader rowStride may include padding beyond the visible width.
-            val rowPadding = rowStride - pixelStride * entry.width
-            val paddedWidth = entry.width + rowPadding / pixelStride
-            val bitmap = Bitmap.createBitmap(paddedWidth, entry.height, Bitmap.Config.ARGB_8888)
+            val rowPadding = rowStride - pixelStride * entry.info.width
+            val paddedWidth = entry.info.width + rowPadding / pixelStride
+            val bitmap = Bitmap.createBitmap(paddedWidth, entry.info.height, Bitmap.Config.ARGB_8888)
             buffer.rewind()
             bitmap.copyPixelsFromBuffer(buffer)
-            // Crop away the padding so the caller gets exactly the display dimensions.
-            if (paddedWidth != entry.width) {
-                Bitmap.createBitmap(bitmap, 0, 0, entry.width, entry.height).also { bitmap.recycle() }
+            if (paddedWidth != entry.info.width) {
+                Bitmap.createBitmap(bitmap, 0, 0, entry.info.width, entry.info.height).also { bitmap.recycle() }
             } else {
                 bitmap
             }
@@ -147,7 +196,7 @@ object VirtualDisplayController {
         }
     }
 
-    private fun createVirtualDisplay(
+    private fun createLocalVirtualDisplay(
         dm: DisplayManager,
         name: String,
         width: Int,

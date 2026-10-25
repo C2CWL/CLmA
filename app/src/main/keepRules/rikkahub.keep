@@ -45,7 +45,7 @@
 -keep class com.auth0.jwt.** { *; }
 
 # JLaTeXMath loads alphabet registrations and font descriptors by binary name.
--keep class org.scilab.forge.jlatexmath.** {*;}
+-keep class org.scilab.forge.jlatexmath.** { *; }
 
 # JSch: SSH client loads crypto providers (com.jcraft.jsch.jce.*) reflectively
 # from a static init table, so R8 can't see the dependency at compile time and
@@ -134,3 +134,9 @@
 -keepclassmembers class com.clma.app.shizuku.ShizukuUserService {
     public <init>(...);
 }
+
+# Privileged Virtual Display service: VirtualDisplayStarter is invoked via app_process CLI
+-keep class com.clma.app.virtualdisplay.VirtualDisplayStarter {
+    public static void main(java.lang.String[]);
+}
+-keep class com.clma.app.virtualdisplay.VirtualDisplayPrivilegedService { *; }
