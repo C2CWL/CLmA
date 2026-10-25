@@ -111,6 +111,7 @@ import com.clma.app.data.datastore.getCurrentChatModel
 import com.clma.app.data.datastore.isNotConfigured
 import com.clma.app.data.files.FilesManager
 import com.clma.app.data.preferences.ToolApprovalPreferences
+import com.clma.app.data.secrets.AgentSecretsStore
 import com.clma.app.ui.components.nav.BackButton
 import com.clma.app.ui.context.LocalNavController
 import com.clma.app.ui.context.Navigator
@@ -357,6 +358,7 @@ private class HubStatusSource(
     val maxToolSteps: Int,
     val notificationAccess: Boolean,
     val colorModeLabel: String,
+    val secretCount: Int,
 )
 
 @Composable
@@ -364,6 +366,7 @@ private fun rememberHubStatusSource(): HubStatusSource {
     val context = LocalContext.current
     val filesManager: FilesManager = koinInject()
     val approvalPrefs: ToolApprovalPreferences = koinInject()
+    val secretsStore: AgentSecretsStore = koinInject()
     // Turn budget and tool steps are stored in TermuxPreferences; read them the same way the
     // 运行与上下文 page does.
     val termuxVm: SettingTermuxViewModel = koinViewModel()
@@ -372,10 +375,13 @@ private fun rememberHubStatusSource(): HubStatusSource {
     val storage by produceState(-1 to 0L) { value = filesManager.countChatFiles() }
     val colorMode by rememberColorMode()
     var notificationAccess by remember { mutableStateOf(false) }
+    var secretCount by remember { mutableStateOf(0) }
     // Re-checked each time the hub comes back to the front (the user may have just granted it).
     LifecycleResumeEffect(context) {
         notificationAccess = NotificationManagerCompat.getEnabledListenerPackages(context)
             .contains(context.packageName)
+        // Names and timestamps only — entries() never decrypts a value, so this stays cheap.
+        secretCount = secretsStore.entries().size
         onPauseOrDispose { }
     }
     return HubStatusSource(
@@ -385,6 +391,7 @@ private fun rememberHubStatusSource(): HubStatusSource {
         maxToolSteps = termuxConfig.maxToolSteps,
         notificationAccess = notificationAccess,
         colorModeLabel = colorModeLabel(colorMode),
+        secretCount = secretCount,
     )
 }
 
@@ -477,6 +484,7 @@ private fun hubItemSummary(id: SettingsHubItemId, settings: Settings, status: Hu
             if (settings.recordRequests) R.string.setting_hub_summary_recording
             else R.string.setting_hub_summary_not_recording
         )
+        SettingsHubItemId.SECRETS -> count(status.secretCount)
         SettingsHubItemId.ABOUT -> "v${BuildConfig.VERSION_NAME}"
         // No cheap, reliable status for these (they need a database read, a service probe or an
         // external app check), so the row shows only its chevron.
@@ -485,7 +493,6 @@ private fun hubItemSummary(id: SettingsHubItemId, settings: Settings, status: Hu
         SettingsHubItemId.TERMUX,
         SettingsHubItemId.SSH,
         SettingsHubItemId.BROWSER,
-        SettingsHubItemId.SECRETS,
         SettingsHubItemId.PERMISSIONS,
         SettingsHubItemId.ACCESSIBILITY,
         SettingsHubItemId.SHIZUKU,
