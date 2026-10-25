@@ -20,31 +20,18 @@ class CompressPromptTest {
 
     @Test
     fun `legacy defaults with CRLF and surrounding whitespace are upgraded`() {
-        val crlf1 = LEGACY_DEFAULT_COMPRESS_PROMPT_V1.replace("
-", "
-") + "
-"
+        val crlf1 = LEGACY_DEFAULT_COMPRESS_PROMPT_V1.replace("\n", "\r\n") + "\r\n"
         assertEquals(DEFAULT_COMPRESS_PROMPT, upgradeLegacyCompressPrompt(crlf1))
-        val crlf2 = LEGACY_DEFAULT_COMPRESS_PROMPT_V2.replace("
-", "
-") + "
-"
+        val crlf2 = LEGACY_DEFAULT_COMPRESS_PROMPT_V2.replace("\n", "\r\n") + "\r\n"
         assertEquals(DEFAULT_COMPRESS_PROMPT, upgradeLegacyCompressPrompt(crlf2))
 
-        assertEquals(DEFAULT_COMPRESS_PROMPT, upgradeLegacyCompressPrompt(LEGACY_DEFAULT_COMPRESS_PROMPT_V2 + "
-"))
-        assertEquals(DEFAULT_COMPRESS_PROMPT, upgradeLegacyCompressPrompt("  
-" + LEGACY_DEFAULT_COMPRESS_PROMPT_V2 + "
-
-"))
+        assertEquals(DEFAULT_COMPRESS_PROMPT, upgradeLegacyCompressPrompt(LEGACY_DEFAULT_COMPRESS_PROMPT_V2 + "\n"))
+        assertEquals(DEFAULT_COMPRESS_PROMPT, upgradeLegacyCompressPrompt("  \n" + LEGACY_DEFAULT_COMPRESS_PROMPT_V2 + "\n\n"))
     }
 
     @Test
     fun `custom prompt is left unchanged`() {
-        val custom = "Summarize briefly in {locale}.
-<conversation>
-{content}
-</conversation>"
+        val custom = "Summarize briefly in {locale}.\n<conversation>\n{content}\n</conversation>"
         assertEquals(custom, upgradeLegacyCompressPrompt(custom))
         val tweakedLegacy = LEGACY_DEFAULT_COMPRESS_PROMPT_V2.replace("dense, structured summary", "short summary")
         assertEquals(tweakedLegacy, upgradeLegacyCompressPrompt(tweakedLegacy))
