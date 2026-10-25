@@ -41,6 +41,10 @@ import me.rerere.hugeicons.stroke.AiEditing
 import me.rerere.hugeicons.stroke.ArrowRight01
 import com.clma.app.R
 import com.clma.app.data.datastore.Settings
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.width
+import com.clma.app.data.datastore.ImageRecognitionMode
+import com.clma.app.ui.components.ui.Select
 import com.clma.app.ui.components.ai.ModelListSheet
 import com.clma.app.ui.components.ai.ReasoningButton
 import com.clma.app.ui.components.ai.rememberModelListState
@@ -143,6 +147,45 @@ private fun ModelSettingsPage(settings: Settings, vm: SettingVM, contentPadding:
                 modelId = settings.translateModeId,
                 providers = settings.providers,
                 onSelect = { vm.updateSettings(settings.copy(translateModeId = it.id)) },
+            )
+        }
+        item {
+            CardGroup(title = { Text(stringResource(R.string.setting_model_page_image_recognition_mode)) }) {
+                item(
+                    headlineContent = { Text(stringResource(R.string.setting_model_page_image_recognition_mode)) },
+                    supportingContent = {
+                        Text(
+                            when (settings.imageRecognitionMode) {
+                                ImageRecognitionMode.AUTO -> stringResource(R.string.setting_model_page_image_mode_auto)
+                                ImageRecognitionMode.ALWAYS_VISION -> stringResource(R.string.setting_model_page_image_mode_vision)
+                                ImageRecognitionMode.ALWAYS_OCR -> stringResource(R.string.setting_model_page_image_mode_ocr)
+                            }
+                        )
+                    },
+                    trailingContent = {
+                        Select(
+                            options = ImageRecognitionMode.entries,
+                            selectedOption = settings.imageRecognitionMode,
+                            onOptionSelected = {
+                                vm.updateSettings(settings.copy(imageRecognitionMode = it))
+                            },
+                            optionToString = { mode ->
+                                when (mode) {
+                                    ImageRecognitionMode.AUTO -> stringResource(R.string.setting_model_page_image_mode_auto)
+                                    ImageRecognitionMode.ALWAYS_VISION -> stringResource(R.string.setting_model_page_image_mode_vision)
+                                    ImageRecognitionMode.ALWAYS_OCR -> stringResource(R.string.setting_model_page_image_mode_ocr)
+                                }
+                            },
+                            modifier = Modifier.width(180.dp),
+                        )
+                    },
+                )
+            }
+            Text(
+                text = stringResource(R.string.setting_model_page_image_recognition_mode_desc),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
             )
         }
         item {

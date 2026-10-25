@@ -82,6 +82,13 @@ enum class AutoCompactionThresholdMode {
     TOKENS,
 }
 
+enum class ImageRecognitionMode {
+    AUTO,
+    ALWAYS_VISION,
+    ALWAYS_OCR,
+}
+
+
 /** Default automatic compaction summary target as a percentage of the active context. */
 const val DEFAULT_CONTEXT_COMPACTION_TARGET_PERCENT = 1
 
@@ -200,6 +207,7 @@ class SettingsStore(
         val TRANSLATION_PROMPT = stringPreferencesKey("translation_prompt")
         val TRANSLATE_THINKING_BUDGET = intPreferencesKey("translate_thinking_budget")
         val SUGGESTION_PROMPT = stringPreferencesKey("suggestion_prompt")
+        val IMAGE_RECOGNITION_MODE = stringPreferencesKey("image_recognition_mode")
         val OCR_MODEL = stringPreferencesKey("ocr_model")
         val OCR_PROMPT = stringPreferencesKey("ocr_prompt")
         val COMPRESS_MODEL = stringPreferencesKey("compress_model")
@@ -336,6 +344,7 @@ class SettingsStore(
                 preferences[TRANSLATION_PROMPT] = settings.translatePrompt
                 preferences[TRANSLATE_THINKING_BUDGET] = settings.translateThinkingBudget
                 preferences[SUGGESTION_PROMPT] = settings.suggestionPrompt
+                preferences[IMAGE_RECOGNITION_MODE] = settings.imageRecognitionMode.name
                 preferences[OCR_MODEL] = settings.ocrModelId.toString()
                 preferences[OCR_PROMPT] = settings.ocrPrompt
                 preferences[COMPRESS_MODEL] = settings.compressModelId.toString()
@@ -457,6 +466,9 @@ class SettingsStore(
                 translatePrompt = preferences[TRANSLATION_PROMPT] ?: DEFAULT_TRANSLATION_PROMPT,
                 translateThinkingBudget = preferences[TRANSLATE_THINKING_BUDGET] ?: 0,
                 suggestionPrompt = preferences[SUGGESTION_PROMPT] ?: DEFAULT_SUGGESTION_PROMPT,
+                imageRecognitionMode = preferences[IMAGE_RECOGNITION_MODE]
+                    ?.let { value -> runCatching { ImageRecognitionMode.valueOf(value) }.getOrNull() }
+                    ?: ImageRecognitionMode.AUTO,
                 ocrModelId = preferences[OCR_MODEL]?.let { runCatching { Uuid.parse(it) }.getOrNull() } ?: Uuid.random(),
                 ocrPrompt = preferences[OCR_PROMPT] ?: DEFAULT_OCR_PROMPT,
                 compressModelId = preferences[COMPRESS_MODEL]?.let { runCatching { Uuid.parse(it) }.getOrNull() } ?: DEFAULT_AUTO_MODEL_ID,
@@ -1019,6 +1031,7 @@ data class Settings(
     val translateThinkingBudget: Int = 0,
     val enableSuggestion: Boolean = true,
     val suggestionPrompt: String = DEFAULT_SUGGESTION_PROMPT,
+    val imageRecognitionMode: ImageRecognitionMode = ImageRecognitionMode.AUTO,
     val ocrModelId: Uuid = Uuid.random(),
     val ocrPrompt: String = DEFAULT_OCR_PROMPT,
     val compressModelId: Uuid = Uuid.random(),

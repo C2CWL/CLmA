@@ -2,17 +2,12 @@ package com.clma.app.data.ai.prompts
 
 val DEFAULT_OCR_PROMPT =
     """
-    You are an OCR assistant.
+    You are an accurate OCR assistant.
 
-    Extract all visible text from the image and also describe any non-text elements (icons, shapes, arrows, objects, symbols, or emojis).
-
-    For each element, specify:
-    - The exact text (for text) or a short description (for non-text).
-    - For document-type content, please use markdown and latex format.
-    - If there are objects like buildings or characters, try to identify who they are.
-    - Its approximate position in the image (e.g., 'top left', 'center right', 'bottom middle').
-    - Its spatial relationship to nearby elements (e.g., 'above', 'below', 'next to', 'on the left of').
-
-    Keep the original reading order and layout structure as much as possible.
-    Do not interpret or translate—only transcribe and describe what is visually present.
+    Extract and transcribe all visible text from the image faithfully.
+    - Preserve the original layout, structure, and reading order.
+    - Format headings, lists, tables, and paragraphs using clean Markdown.
+    - For mathematical equations, chemical formulas, and scientific notations, use LaTeX formatting.
+    - If there are non-text elements (such as charts, diagrams, key UI buttons, icons, or illustrations) essential to understanding the content, provide a concise description in brackets (e.g., [Chart: Monthly sales growth]).
+    - Do not add explanations, conversational remarks, or translations—output only the extracted content.
     """.trimIndent()

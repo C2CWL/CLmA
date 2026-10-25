@@ -17,6 +17,7 @@ import com.clma.ai.ui.UIMessagePart
 import com.clma.common.cache.LruCache
 import com.clma.common.cache.SingleFileCacheStore
 import com.clma.app.R
+import com.clma.app.data.datastore.ImageRecognitionMode
 import com.clma.app.data.datastore.SettingsStore
 import com.clma.app.data.datastore.findModelById
 import com.clma.app.data.datastore.findProvider
@@ -71,7 +72,14 @@ object OcrTransformer : InputMessageTransformer, KoinComponent {
         ctx: TransformerContext,
         messages: List<UIMessage>,
     ): List<UIMessage> {
-        if (ctx.model.inputModalities.contains(Modality.IMAGE)) {
+        val settings = get<SettingsStore>().settingsFlow.value
+        val shouldBypassOcr = when (settings.imageRecognitionMode) {
+            ImageRecognitionMode.ALWAYS_VISION -> true
+            ImageRecognitionMode.ALWAYS_OCR -> false
+            ImageRecognitionMode.AUTO -> ctx.model.inputModalities.contains(Modality.IMAGE)
+        }
+
+        if (shouldBypassOcr) {
             return messages
         }
 
@@ -79,6 +87,15 @@ object OcrTransformer : InputMessageTransformer, KoinComponent {
             message.parts.any { it is UIMessagePart.Image && it.url.startsWith("file:") }
         }
         if (!hasImages) return messages
+
+        // If the configured OCR model is missing or cannot be found, preserve the image parts
+        // directly (or fallback) rather than obliterating user images into "[Image]" placeholder.
+        val ocrModel = settings.findModelById(settings.ocrModelId)
+        val ocrProvider = ocrModel?.findProvider(settings.providers)
+        if (ocrModel == null || ocrProvider == null) {
+            Log.w(TAG, "transform: OCR model or provider not configured, bypassing OCR to preserve image")
+            return messages
+        }
 
         return withContext(Dispatchers.IO) {
             try {
@@ -102,7 +119,13 @@ object OcrTransformer : InputMessageTransformer, KoinComponent {
                         parts = message.parts.map { part ->
                             when {
                                 part is UIMessagePart.Image && part.url.startsWith("file:") -> {
-                                    UIMessagePart.Text(performOcr(part))
+                                    val ocrText = performOcr(part)
+                                    // If OCR completely failed and didn't yield text, retain original image
+                                    if (ocrText != null) {
+                                        UIMessagePart.Text(ocrText)
+                                    } else {
+                                        part
+                                    }
                                 }
 
                                 else -> part
@@ -116,7 +139,11 @@ object OcrTransformer : InputMessageTransformer, KoinComponent {
         }
     }
 
-    suspend fun performOcr(part: UIMessagePart.Image): String = runCatching {
+    /**
+     * Performs OCR on an image part. Returns OCR text wrapped in <image_file_ocr> tag,
+     * or null if OCR failed/timed out so caller can decide fallback.
+     */
+    suspend fun performOcr(part: UIMessagePart.Image): String? = runCatching {
         // Check cache first
         cache.get(part.url)?.let { cachedResult ->
             Log.i(TAG, "performOcr: Using cached result for ${part.url}")
@@ -124,8 +151,8 @@ object OcrTransformer : InputMessageTransformer, KoinComponent {
         }
 
         val settings = get<SettingsStore>().settingsFlow.value
-        val model = settings.findModelById(settings.ocrModelId) ?: return "[Image]"
-        val providerSetting = model.findProvider(settings.providers) ?: return "[Image]"
+        val model = settings.findModelById(settings.ocrModelId) ?: return null
+        val providerSetting = model.findProvider(settings.providers) ?: return null
         val provider = get<ProviderManager>().getProviderByType(providerSetting)
         val result = withTimeoutOrNull(OCR_TIMEOUT_MS) {
             provider.generateText(
@@ -146,11 +173,9 @@ object OcrTransformer : InputMessageTransformer, KoinComponent {
         }
         if (result == null) {
             Log.w(TAG, "performOcr: timed out after ${OCR_TIMEOUT_MS}ms for ${part.url}")
-            // Not cached: a timeout is usually transient/config-related, so a later retry
-            // should be allowed to reach the model again.
-            return "[Image: could not be read — the OCR model did not respond in time]"
+            return null
         }
-        val content = result.message.toText().ifBlank { "[ERROR, OCR failed]" }
+        val content = result.message.toText().ifBlank { return null }
         Log.i(TAG, "performOcr: $content")
         val ocrResult = """
             <image_file_ocr>
@@ -166,6 +191,7 @@ object OcrTransformer : InputMessageTransformer, KoinComponent {
         // Let a real cancellation (e.g. the user's /stop) propagate instead of swallowing
         // it into a fake OCR-failure string, which would defeat cooperative cancellation.
         if (it is kotlinx.coroutines.CancellationException) throw it
-        "[ERROR, OCR failed: $it]"
+        Log.e(TAG, "performOcr failed", it)
+        null
     }
 }

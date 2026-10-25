@@ -1039,6 +1039,11 @@
   <string name="setting_model_page_fast_model_desc">Model used for titles, chat suggestions, and other fast or background tasks</string>
   <string name="setting_model_page_compress_model_desc">Model for compressing conversation history</string>
   <string name="setting_model_page_compress_prompt_vars">Variables: {content}, {target_tokens}, {additional_context}</string>
+  <string name="setting_model_page_image_recognition_mode">Image Recognition Mode</string>
+  <string name="setting_model_page_image_recognition_mode_desc">Choose how uploaded images are handled in chat</string>
+  <string name="setting_model_page_image_mode_auto">Auto (Model Vision Preferred)</string>
+  <string name="setting_model_page_image_mode_vision">Always Native Vision (Pass Image)</string>
+  <string name="setting_model_page_image_mode_ocr">Always OCR (Extract to Text)</string>
   <string name="setting_model_page_ocr_model">OCR Model</string>
   <string name="setting_model_page_ocr_model_desc">Model used for optical character recognition on images</string>
   <string name="setting_model_page_ocr_prompt_vars">Variables: Image data: {images}</string>
