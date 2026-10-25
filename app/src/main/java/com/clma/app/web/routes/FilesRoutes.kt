@@ -17,6 +17,7 @@ import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.utils.io.readAvailable
 import com.clma.app.data.db.entity.ManagedFileEntity
+import com.clma.app.data.files.FileFolders
 import com.clma.app.data.files.FilesManager
 import com.clma.app.data.files.saveUploadFromBytes
 import com.clma.app.web.BadRequestException
@@ -27,6 +28,15 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 
 private const val MAX_UPLOAD_FILE_SIZE_BYTES = 20 * 1024 * 1024 // 20 MB
+
+private val ALLOWED_RELATIVE_PATH_ROOT_FOLDERS = setOf(
+    FileFolders.UPLOAD,
+    FileFolders.IMAGES,
+    FileFolders.VIDEOS,
+    FileFolders.SKILLS,
+    FileFolders.FONTS,
+    FileFolders.TOOL_OUTPUTS,
+)
 
 fun Route.filesRoutes(
     filesManager: FilesManager,
@@ -128,7 +138,14 @@ fun Route.filesRoutes(
             val file = File(filesDir, relativePath)
 
             // Ensure the file is within the app's files directory
-            if (!file.canonicalPath.startsWith(filesDir.canonicalPath)) {
+            val rootFolder = relativePath.substringBefore("/")
+            if (rootFolder !in ALLOWED_RELATIVE_PATH_ROOT_FOLDERS) {
+                throw BadRequestException("Access denied: path is outside allowed media and output folders")
+            }
+
+            val canonicalFilesDir = filesDir.canonicalPath
+            val canonicalPath = file.canonicalPath
+            if (!canonicalPath.startsWith(canonicalFilesDir + File.separator)) {
                 throw BadRequestException("Invalid file path")
             }
 

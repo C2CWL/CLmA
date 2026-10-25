@@ -642,7 +642,7 @@ class SettingsStore(
                 webServerPort = preferences[WEB_SERVER_PORT] ?: 8080,
                 webServerJwtEnabled = preferences[WEB_SERVER_JWT_ENABLED] == true,
                 webServerAccessPassword = preferences[WEB_SERVER_ACCESS_PASSWORD] ?: "",
-                webServerLocalhostOnly = preferences[WEB_SERVER_LOCALHOST_ONLY] == true,
+                webServerLocalhostOnly = preferences[WEB_SERVER_LOCALHOST_ONLY] != false,
                 floatingBallEnabled = preferences[FLOATING_BALL_ENABLED] == true,
                 // Old ball colours / opacities do not map onto the swatches: everyone starts on 1.
                 floatingBallBarColor = EdgeBarColor.fromId(preferences[FLOATING_BALL_BAR_COLOR]),
@@ -1126,7 +1126,7 @@ data class Settings(
     val webServerPort: Int = 8080,
     val webServerJwtEnabled: Boolean = false,
     val webServerAccessPassword: String = "",
-    val webServerLocalhostOnly: Boolean = false,
+    val webServerLocalhostOnly: Boolean = true,
     /**
      * Always-available edge bar (overlay that opens the app; it replaced the floating ball and keeps its
      * setting name). Off by default: it needs SYSTEM_ALERT_WINDOW and a persistent foreground

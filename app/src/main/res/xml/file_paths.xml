@@ -8,7 +8,25 @@
     path="." />
   <files-path
     name="upload"
-    path="." />
+    path="upload/" />
+  <files-path
+    name="images"
+    path="images/" />
+  <files-path
+    name="videos"
+    path="videos/" />
+  <files-path
+    name="skills"
+    path="skills/" />
+  <files-path
+    name="fonts"
+    path="fonts/" />
+  <files-path
+    name="tool_outputs"
+    path="tool_outputs/" />
+  <files-path
+    name="workspaces"
+    path="workspaces/" />
   <cache-path
     name="photos"
     path="photos/" />
