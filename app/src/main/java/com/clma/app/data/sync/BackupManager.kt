@@ -9,6 +9,9 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import com.clma.app.data.secrets.AgentSecretsStore
+import com.clma.app.workflow.secrets.WorkflowSecretsStore
+import com.clma.app.skills.js.SkillSecretsStore
 import com.clma.app.data.datastore.Settings
 import com.clma.app.data.datastore.SettingsStore
 import com.clma.app.data.datastore.migration.SettingsJsonMigrator
@@ -43,7 +46,7 @@ class BackupManager(
         )
     }
 
-    suspend fun createBackup(items: Collection<BackupItem>): File = withContext(Dispatchers.IO) {
+    suspend fun createBackup(items: Collection<BackupItem>, encryptionPassword: String = ""): File = withContext(Dispatchers.IO) {
         val selected = BackupItem.normalize(items).toSet()
         val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
         val archive = File.createTempFile("backup_${timestamp}_", ".zip", context.cacheDir)
@@ -74,6 +77,21 @@ class BackupManager(
                 }
                 if (BackupItem.WORKSPACES in selected) {
                     addWorkspaces(zip)
+                }
+                if (BackupItem.SECRETS in selected) {
+                    require(encryptionPassword.isNotBlank()) { "Encryption password is required to backup secrets" }
+                    val agentSecrets = AgentSecretsStore(context).exportAll()
+                    val workflowSecrets = WorkflowSecretsStore(context).exportAll()
+                    val skillSecrets = SkillSecretsStore(context).exportAll()
+                    val payload = SecretsBackupPayload(
+                        agentSecrets = agentSecrets,
+                        workflowSecrets = workflowSecrets,
+                        skillSecrets = skillSecrets,
+                    )
+                    val encryptedBytes = SecretsBackupCrypto.encrypt(payload, encryptionPassword.toCharArray(), json)
+                    val secretsFile = File(staging, BackupLayout.SECRETS_FILE)
+                    secretsFile.writeBytes(encryptedBytes)
+                    addFile(zip, secretsFile, BackupLayout.SECRETS_FILE)
                 }
             }
             archive
@@ -119,7 +137,7 @@ class BackupManager(
         )
     }
 
-    suspend fun stageRestore(archive: File, items: Collection<BackupItem>) =
+    suspend fun stageRestore(archive: File, items: Collection<BackupItem>, encryptionPassword: String = "") =
         withContext(Dispatchers.IO) {
             val selected = BackupItem.normalize(items).toSet()
             restoreMutex.withLock {
@@ -144,6 +162,8 @@ class BackupManager(
                                     if (BackupItem.DATABASE in selected) stagedWal else null
 
                                 DatabaseBackup.SHM -> null // Rebuilt by SQLite; never restore shared-memory state.
+                                BackupLayout.SECRETS_FILE ->
+                                    if (BackupItem.SECRETS in selected) File(staging, BackupLayout.SECRETS_FILE) else null
                                 else -> {
                                     val item = BackupLayout.itemForEntry(entry.name)
                                     if (item != null && item in selected) {
@@ -182,6 +202,15 @@ class BackupManager(
                         DatabaseBackup.removeSidecars(stagedDatabase)
                     }
 
+                    val secretsEncFile = File(staging, BackupLayout.SECRETS_FILE)
+                    if (secretsEncFile.exists() && BackupItem.SECRETS in selected) {
+                        require(encryptionPassword.isNotBlank()) { "Encryption password is required to restore secrets" }
+                        val payload = SecretsBackupCrypto.decrypt(secretsEncFile.readBytes(), encryptionPassword.toCharArray(), json)
+                        val stagedSecretsFile = File(staging, "staged_secrets.json")
+                        PendingRestore.writeDurably(stagedSecretsFile, json.encodeToString(SecretsBackupPayload.serializer(), payload))
+                        secretsEncFile.delete()
+                    }
+
                     val settingsFile = File(staging, "settings.json")
                     if (settingsFile.exists()) {
                         val settings = json.decodeFromString<Settings>(SettingsJsonMigrator.migrate(settingsFile.readText()))
@@ -212,19 +241,27 @@ class BackupManager(
 
         /** Must finish before Koin, Room, SettingsStore or any background consumers are initialized. */
         suspend fun applyPendingRestore(context: Context, json: Json): Boolean = withContext(Dispatchers.IO) {
-            pendingRestore(context).apply { settingsJson ->
-                // A backup carries absolute `file:///…/files/<relative>` URIs for avatars and chat
-                // wallpapers, naming the *exporting* install's files dir. Importing into a build
-                // with a different applicationId (upstream ↔ fork, release ↔ debug) would otherwise
-                // leave every image pointing at a directory that does not exist here. The payload
-                // is already installed when this callback runs, so a genuinely missing file
-                // degrades to Avatar.Dummy / no wallpaper instead of staying dangling.
-                val settings = json.decodeFromString<Settings>(settingsJson)
-                SettingsStore.restoreBeforeInitialization(
-                    context = context,
-                    settings = LocalUriRemap.apply(settings, context.filesDir),
-                )
-            }
+            pendingRestore(context).installRestore(
+                restoreSettings = { settingsJson ->
+                    val settings = json.decodeFromString<Settings>(settingsJson)
+                    SettingsStore.restoreBeforeInitialization(
+                        context = context,
+                        settings = LocalUriRemap.apply(settings, context.filesDir),
+                    )
+                },
+                restoreSecrets = { secretsJson ->
+                    val payload = json.decodeFromString(SecretsBackupPayload.serializer(), secretsJson)
+                    if (payload.agentSecrets.isNotEmpty()) {
+                        AgentSecretsStore(context).importAll(payload.agentSecrets)
+                    }
+                    if (payload.workflowSecrets.isNotEmpty()) {
+                        WorkflowSecretsStore(context).importAll(payload.workflowSecrets)
+                    }
+                    if (payload.skillSecrets.isNotEmpty()) {
+                        SkillSecretsStore(context).importAll(payload.skillSecrets)
+                    }
+                }
+            )
         }
     }
 }

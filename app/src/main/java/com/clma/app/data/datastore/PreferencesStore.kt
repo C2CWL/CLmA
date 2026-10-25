@@ -1329,6 +1329,7 @@ data class WebDavConfig(
     // still decodes because BackupItem keeps the legacy FILES value, and is expanded on the next
     // write by BackupItem.normalize.
     val items: List<BackupItem> = BackupItem.selectable,
+    val encryptionPassword: String = "",
 )
 
 @Serializable

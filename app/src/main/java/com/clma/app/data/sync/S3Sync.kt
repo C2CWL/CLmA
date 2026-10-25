@@ -102,11 +102,12 @@ class S3Sync(
         Log.i(TAG, "deleteS3BackupFile: Deleted ${item.key}")
     }
 
-    suspend fun prepareBackupFile(config: S3Config): File = backupManager.createBackup(config.items)
+    suspend fun prepareBackupFile(config: S3Config): File = backupManager.createBackup(config.items, config.encryptionPassword)
 
-    private suspend fun restoreFromBackupFile(backupFile: File, config: S3Config) = backupManager.stageRestore(
+    suspend fun restoreFromBackupFile(backupFile: File, config: S3Config, encryptionPassword: String = config.encryptionPassword) = backupManager.stageRestore(
         archive = backupFile,
         items = config.items,
+        encryptionPassword = encryptionPassword,
     )
 
 }

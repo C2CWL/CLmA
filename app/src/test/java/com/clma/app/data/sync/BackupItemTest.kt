@@ -30,8 +30,9 @@ class BackupItemTest {
             BackupItem.WORKSPACES,
             BackupItem.TOOL_OUTPUTS,
         ).forEach { assertTrue("expected $it", it in normalized) }
-        // CONFIG is newer than the umbrella and must not be silently enabled for old settings.
+        // CONFIG and SECRETS are newer than the umbrella and must not be silently enabled for old settings.
         assertFalse(BackupItem.CONFIG in normalized)
+        assertFalse(BackupItem.SECRETS in normalized)
     }
 
     @Test

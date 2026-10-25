@@ -192,6 +192,26 @@ fun S3Tab(
                     },
                 )
                 item(
+                    headlineContent = { Text(stringResource(R.string.backup_secrets_encryption_password)) },
+                    supportingContent = {
+                        var encVisible by remember { mutableStateOf(false) }
+                        OutlinedTextField(
+                            modifier = Modifier.fillMaxWidth(),
+                            value = s3Config.encryptionPassword,
+                            onValueChange = { updateS3Config(s3Config.copy(encryptionPassword = it)) },
+                            placeholder = { Text(stringResource(R.string.backup_secrets_encryption_password_hint)) },
+                            visualTransformation = if (encVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                            trailingIcon = {
+                                val image = if (encVisible) HugeIcons.ViewOff else HugeIcons.View
+                                IconButton(onClick = { encVisible = !encVisible }) {
+                                    Icon(imageVector = image, contentDescription = null)
+                                }
+                            },
+                            singleLine = true
+                        )
+                    },
+                )
+                item(
                     headlineContent = { Text(stringResource(R.string.backup_page_s3_region)) },
                     supportingContent = {
                         OutlinedTextField(

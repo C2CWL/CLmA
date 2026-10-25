@@ -29,6 +29,9 @@ enum class BackupItem {
 
     /** Non-[com.clma.app.data.datastore.Settings] preference stores (see [BackupLayout]). */
     CONFIG,
+
+    /** Encrypted secrets (agent, workflow, skills) protected with password. */
+    SECRETS,
     ;
 
     companion object {
@@ -43,6 +46,7 @@ enum class BackupItem {
             WORKSPACES,
             TOOL_OUTPUTS,
             CONFIG,
+            SECRETS,
         )
 
         /** What a legacy [FILES] selection covered, plus the file folders added with it. */
