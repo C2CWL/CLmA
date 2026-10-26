@@ -2038,6 +2038,7 @@ class ChatService(
         // failed generation, instead of starting over.
         continuationFromPartial: Boolean = false,
     ) {
+        com.clma.common.android.Logging.log(TAG, "handleMessageComplete triggered for conversation: $conversationId")
         // A generation is one "turn" for read_window_tree's snapshot: within it a re-read can be
         // answered with "unchanged" or a delta, but a diff never spans two turns — so a model
         // coming back to a screen (possibly after a compaction) always gets the whole tree.

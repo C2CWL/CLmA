@@ -7,8 +7,6 @@
   <string name="about_page_version">版本</string>
   <string name="about_page_website">项目地址</string>
   <string name="about_page_tagline">个人维护的 Android AI Agent 发行版</string>
-  <string name="about_page_upstream">上游项目</string>
-  <string name="about_page_upstream_url">RikkaHub Agent · Pure（wuyhong715）</string>
   <string name="add">添加</string>
   <string name="app_name">CLmA</string>
   <string name="asr_button_content_description">语音识别</string>

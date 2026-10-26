@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Card
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -162,7 +163,15 @@ private fun UnifiedLogList(
     var selectedLog by remember { mutableStateOf<LogEntry.RequestLog?>(null) }
     val sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded))
     val scope = rememberCoroutineScope()
-    val sortedLogs = remember(logs) { logs.sortedByDescending { it.timestamp } }
+    var filterMode by remember { mutableIntStateOf(0) } // 0: 全部, 1: 请求, 2: 系统
+    val filteredLogs = remember(logs, filterMode) {
+        val sorted = logs.sortedByDescending { it.timestamp }
+        when (filterMode) {
+            1 -> sorted.filterIsInstance<LogEntry.RequestLog>()
+            2 -> sorted.filterIsInstance<LogEntry.TextLog>()
+            else -> sorted
+        }
+    }
     // Collapsed by default: a full log file is thousands of lines, and the live list above
     // is what users usually want first.
     var earlierExpanded by remember { mutableStateOf(false) }
@@ -179,7 +188,30 @@ private fun UnifiedLogList(
             )
         }
 
-        items(sortedLogs, key = { it.id }, contentType = { it.javaClass.simpleName }) { log ->
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FilterChip(
+                    selected = filterMode == 0,
+                    onClick = { filterMode = 0 },
+                    label = { Text("全部 (${logs.size})") }
+                )
+                FilterChip(
+                    selected = filterMode == 1,
+                    onClick = { filterMode = 1 },
+                    label = { Text("网络请求 (${logs.count { it is LogEntry.RequestLog }})") }
+                )
+                FilterChip(
+                    selected = filterMode == 2,
+                    onClick = { filterMode = 2 },
+                    label = { Text("系统运行 (${logs.count { it is LogEntry.TextLog }})") }
+                )
+            }
+        }
+
+        items(filteredLogs, key = { it.id }, contentType = { it.javaClass.simpleName }) { log ->
             when (log) {
                 is LogEntry.RequestLog -> RequestLogCard(
                     log = log,

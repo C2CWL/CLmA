@@ -529,7 +529,6 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
             row(R.string.about_page_version),
             row(R.string.about_page_system),
             row(R.string.about_page_github),
-            row(R.string.about_page_upstream),
             row(R.string.about_page_license),
         ),
     ),

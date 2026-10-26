@@ -168,12 +168,6 @@ fun SettingAboutPage() {
                             headlineContent = { Text(stringResource(R.string.about_page_github)) },
                         )
                         item(
-                            onClick = { context.openUrl("https://github.com/wuyhong715/rikkahub-agent-pure") },
-                            leadingContent = { Icon(HugeIcons.Earth, null) },
-                            supportingContent = { Text(stringResource(R.string.about_page_upstream_url)) },
-                            headlineContent = { Text(stringResource(R.string.about_page_upstream)) },
-                        )
-                        item(
                             onClick = { context.openUrl("https://github.com/C2CWL/CLmA/blob/main/LICENSE") },
                             leadingContent = { Icon(HugeIcons.File02, null) },
                             supportingContent = { Text("AGPL-3.0") },
