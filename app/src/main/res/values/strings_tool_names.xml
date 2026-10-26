@@ -354,6 +354,8 @@
   <string name="tool_display_desc_memory_read">Reads one knowledge-base document</string>
   <string name="tool_display_name_memory_write">Write knowledge</string>
   <string name="tool_display_desc_memory_write">Adds or rewrites a knowledge-base document</string>
+  <string name="tool_display_name_memory_search">Search knowledge</string>
+  <string name="tool_display_desc_memory_search">Finds passages in the knowledge base by meaning</string>
   <string name="tool_display_name_keystore_generate_key">Generate hardware key</string>
   <string name="tool_display_desc_keystore_generate_key">Creates a hardware-backed Keystore key</string>
   <string name="tool_display_name_keystore_list_keys">List hardware keys</string>
