@@ -215,6 +215,7 @@ class SettingsStore(
         val COMPRESS_MODEL = stringPreferencesKey("compress_model")
         val COMPRESS_PROMPT = stringPreferencesKey("compress_prompt")
         val ENABLE_AUTO_COMPACTION = booleanPreferencesKey("enable_auto_compaction")
+        val ENABLE_TOMC_COMPACTION_LEDGER = booleanPreferencesKey("enable_tomc_compaction_ledger")
         val AUTO_COMPACTION_THRESHOLD_MODE = stringPreferencesKey("auto_compaction_threshold_mode")
         val AUTO_COMPACTION_THRESHOLD_PERCENT = intPreferencesKey("auto_compaction_threshold_percent")
         val AUTO_COMPACTION_THRESHOLD_TOKENS_K = intPreferencesKey("auto_compaction_threshold_tokens_k")
@@ -360,6 +361,7 @@ class SettingsStore(
                 preferences[COMPRESS_MODEL] = settings.compressModelId.toString()
                 preferences[COMPRESS_PROMPT] = settings.compressPrompt
                 preferences[ENABLE_AUTO_COMPACTION] = settings.enableAutoCompaction
+                preferences[ENABLE_TOMC_COMPACTION_LEDGER] = settings.enableTomcCompactionLedger
                 preferences[AUTO_COMPACTION_THRESHOLD_MODE] = settings.autoCompactionThresholdMode.name
                 preferences[AUTO_COMPACTION_THRESHOLD_PERCENT] =
                     settings.autoCompactionThresholdPercent.coerceIn(5, 95)
@@ -496,6 +498,7 @@ class SettingsStore(
                 assistantId = preferences[SELECT_ASSISTANT]?.let { runCatching { Uuid.parse(it) }.getOrNull() }
                     ?: DEFAULT_ASSISTANT_ID,
                 enableAutoCompaction = preferences[ENABLE_AUTO_COMPACTION] == true,
+                enableTomcCompactionLedger = preferences[ENABLE_TOMC_COMPACTION_LEDGER] ?: true,
                 autoCompactionThresholdMode = preferences[AUTO_COMPACTION_THRESHOLD_MODE]
                     ?.let { value -> runCatching { AutoCompactionThresholdMode.valueOf(value) }.getOrNull() }
                     ?: AutoCompactionThresholdMode.PERCENT,
@@ -1064,6 +1067,7 @@ data class Settings(
     val compressModelId: Uuid = Uuid.random(),
     val compressPrompt: String = DEFAULT_COMPRESS_PROMPT,
     val enableAutoCompaction: Boolean = false,
+    val enableTomcCompactionLedger: Boolean = true,
     val autoCompactionThresholdMode: AutoCompactionThresholdMode = AutoCompactionThresholdMode.PERCENT,
     val autoCompactionThresholdPercent: Int = 80,
     val autoCompactionThresholdTokensK: Int = 8,
@@ -1437,9 +1441,11 @@ fun Settings.resolveChatModel(conversationChatModelId: Uuid?, assistantId: Uuid?
         .firstNotNullOfOrNull { providers.findModelById(it) }
 }
 
-private const val FALLBACK_CONTEXT_COMPACTION_TARGET_TOKENS = 2_000
+private const val FALLBACK_CONTEXT_COMPACTION_TARGET_TOKENS = 4_000
+private const val MIN_DEFAULT_COMPACTION_TARGET_TOKENS = 2_000
+private const val MAX_DEFAULT_COMPACTION_TARGET_TOKENS = 8_000
 
-/** Returns the configured summary target, defaulting to 1% of the active context. */
+/** Returns the configured summary target, defaulting to 1% of the active context with safe bounds. */
 fun Settings.getContextCompactionTargetTokens(contextLength: Int?): Int {
     val configured = contextCompactionTargetTokensK
         ?.toLong()
@@ -1452,8 +1458,7 @@ fun Settings.getContextCompactionTargetTokens(contextLength: Int?): Int {
         ?.takeIf { it > 0 }
         ?.let { length ->
             (length.toLong() * DEFAULT_CONTEXT_COMPACTION_TARGET_PERCENT / 100L)
-                .coerceAtLeast(1L)
-                .coerceAtMost(Int.MAX_VALUE.toLong())
+                .coerceIn(MIN_DEFAULT_COMPACTION_TARGET_TOKENS.toLong(), MAX_DEFAULT_COMPACTION_TARGET_TOKENS.toLong())
                 .toInt()
         }
         ?: FALLBACK_CONTEXT_COMPACTION_TARGET_TOKENS

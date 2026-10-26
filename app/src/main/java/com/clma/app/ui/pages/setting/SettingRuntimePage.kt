@@ -152,6 +152,24 @@ private fun AutoCompactionSettingItem(
                 )
             },
         )
+        item(
+            headlineContent = {
+                Text(stringResource(R.string.setting_tomc_compaction_ledger))
+            },
+            supportingContent = {
+                Text(stringResource(R.string.setting_tomc_compaction_ledger_desc))
+            },
+            trailingContent = {
+                Switch(
+                    checked = settings.enableTomcCompactionLedger,
+                    onCheckedChange = {
+                        vm.updateSettings { current ->
+                            current.copy(enableTomcCompactionLedger = it)
+                        }
+                    },
+                )
+            },
+        )
         if (settings.enableAutoCompaction) {
             item(
                 headlineContent = {

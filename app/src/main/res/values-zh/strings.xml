@@ -2258,6 +2258,8 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="assistant_page_context_message_limit_hint">输入 0 表示不限制，否则越大越好，推荐设置为 0 或者 20 以上</string>
   <string name="assistant_page_context_message_limit_too_small">上下文消息限制不能小于 %1$d，已自动重置为 %1$d。</string>
   <string name="assistant_page_context_message_limit_warning">限制上下文会在每次上下文被修剪时使提示词缓存失效。更大的限制修剪频率更低；无限制则从不修剪，并保持缓存完全完好。</string>
+  <string name="setting_tomc_compaction_ledger">TOMC 状态账本</string>
+  <string name="setting_tomc_compaction_ledger_desc">压缩时保留明确任务及计划、执行、验证、失败和回滚状态</string>
   <string name="setting_model_page_enable_auto_compaction">启用自动上下文压缩</string>
   <string name="setting_model_page_enable_auto_compaction_desc">当对话接近模型的上下文上限时，自动总结较早的消息</string>
   <string name="setting_model_page_auto_compaction_threshold">压缩阈值</string>

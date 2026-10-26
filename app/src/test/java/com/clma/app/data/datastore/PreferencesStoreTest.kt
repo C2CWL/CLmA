@@ -22,8 +22,18 @@ class PreferencesStoreTest {
     fun `compression target uses a safe fallback without model metadata`() {
         val settings = Settings(contextCompactionTargetTokensK = null)
 
-        assertEquals(2_000, settings.getContextCompactionTargetTokens(null))
-        assertEquals(2_000, settings.getContextCompactionTargetTokens(0))
+        assertEquals(4_000, settings.getContextCompactionTargetTokens(null))
+        assertEquals(4_000, settings.getContextCompactionTargetTokens(0))
+    }
+
+    @Test
+    fun `compression target respects lower and upper bounds`() {
+        val settings = Settings()
+
+        // 100k context * 1% = 1,000, clamped to min 2,000
+        assertEquals(2_000, settings.getContextCompactionTargetTokens(100_000))
+        // 1,000k context * 1% = 10,000, clamped to max 8,000
+        assertEquals(8_000, settings.getContextCompactionTargetTokens(1_000_000))
     }
 
     @Test

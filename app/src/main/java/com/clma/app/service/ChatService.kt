@@ -85,6 +85,8 @@ import com.clma.ai.util.RequestTooLargeException
 import com.clma.ai.util.isRequestTooLarge
 import com.clma.app.data.ai.ContextCompactionPlanner
 import com.clma.app.data.ai.ContextCompactionPresentation
+import com.clma.app.data.ai.compaction.tomc.TomcSummaryLedger
+import com.clma.app.data.ai.compaction.tomc.TomcTurn
 import com.clma.app.data.ai.CompactedMessageView
 import com.clma.app.data.ai.ContextCompactionView
 import com.clma.app.data.ai.ToolSurfaceResolver
@@ -191,6 +193,9 @@ private const val COMPACTION_TAIL_BUDGET_PERCENT = 50
  */
 private const val COMPACTION_TOOL_KEEP_RECENT_MESSAGES = 32
 private const val MIN_AUTOMATIC_TAIL_BUDGET_TOKENS = 512
+private const val COMPACTION_TOOL_LEDGER_MAX_TOKENS = 1_500
+private const val MAX_CONSECUTIVE_AUTO_COMPACTION_FAILURES = 3
+private const val COMPACTION_SUMMARY_HEADER = "[Summary of previous conversation]"
 /**
  * Streaming chunks can arrive once per token. Persisting every chunk rewrites all message nodes
  * and can throttle the provider, while persisting only at the end loses the visible response when
@@ -522,6 +527,25 @@ class ChatService(
     private fun compactionMutexFor(conversationId: Uuid): Mutex =
         compactionMutexes.getOrPut(conversationId) { Mutex() }
 
+    private val autoCompactionFailureCounts = ConcurrentHashMap<Uuid, Int>()
+
+    private fun isAutoCompactionCircuitBroken(conversationId: Uuid): Boolean =
+        (autoCompactionFailureCounts[conversationId] ?: 0) >= MAX_CONSECUTIVE_AUTO_COMPACTION_FAILURES
+
+    private fun recordAutoCompactionFailure(conversationId: Uuid, error: Throwable) {
+        if (error is CancellationException) return
+        val count = autoCompactionFailureCounts.compute(conversationId) { _, current -> (current ?: 0) + 1 } ?: 1
+        Log.w(
+            TAG,
+            "Auto compaction failure #$count for $conversationId (limit=$MAX_CONSECUTIVE_AUTO_COMPACTION_FAILURES)",
+            error,
+        )
+    }
+
+    private fun clearAutoCompactionFailure(conversationId: Uuid) {
+        autoCompactionFailureCounts.remove(conversationId)
+    }
+
     /** Serialises full conversation rewrites, including periodic streaming snapshots. */
     private val persistenceMutexes = ConcurrentHashMap<Uuid, Mutex>()
     private fun persistenceMutexFor(conversationId: Uuid): Mutex =
@@ -825,6 +849,7 @@ class ChatService(
      * user reset it. Safe to call when no session exists — no-op.
      */
     fun dropSession(conversationId: Uuid) {
+        clearAutoCompactionFailure(conversationId)
         val session = sessions.remove(conversationId) ?: return
         session.cleanup()
         sessionMutexes.remove(conversationId)
@@ -2990,6 +3015,15 @@ class ChatService(
         // before it is sent (see PreSendContextGuard).
         // Pre-send compaction keeps the new user message itself raw, so it needs something
         // before that message to summarize.
+        if (!compactEntireContext && isAutoCompactionCircuitBroken(conversation.id)) {
+            Log.w(
+                TAG,
+                "Auto compaction circuit broken for ${conversation.id} due to repeated failures; " +
+                    "skipping automatic compaction pass",
+            )
+            return view
+        }
+
         val preSend = !force
         if (preSend) {
             val decision = preSendContextDecision(view, settings, model)
@@ -3091,11 +3125,13 @@ class ChatService(
                     }
                 }
             }
+            clearAutoCompactionFailure(conversation.id)
             val latestConversation = getConversationFlow(conversation.id).value
             return ContextCompactionView.build(latestConversation, compaction).copy(
                 newlyCreatedAutoCompaction = newlyCreatedAutoCompaction,
             )
         } catch (e: Exception) {
+            recordAutoCompactionFailure(conversation.id, e)
             // A failed pre-send compaction (e.g. the summary request failed) must not cost the
             // turn: send the uncompacted request as before; the context-limit retry still applies.
             if (e is CancellationException || !preSend) throw e
@@ -3186,6 +3222,7 @@ class ChatService(
         val compaction = conversationRepo.getCompaction(conversationId) ?: return
         if (ContextCompactionView.compactedPrefixUnchanged(compaction, before, after)) return
         Log.i(TAG, "Clearing compaction for $conversationId: compacted prefix changed ($reason)")
+        clearAutoCompactionFailure(conversationId)
         conversationRepo.clearCompaction(conversationId)
     }
 
@@ -3260,6 +3297,7 @@ class ChatService(
             conversation = conversation,
             settings = settings,
             messagesToCompress = messagesToCompress,
+            previousCompaction = currentView.compaction,
             rawTailStartIndex = rawTailStartIndex,
             additionalPrompt = "",
             targetTokens = targetTokens.coerceAtLeast(1),
@@ -3360,11 +3398,13 @@ class ChatService(
                     conversation = latestConversation,
                     settings = settingsStore.settingsFlow.first(),
                     messagesToCompress = messagesToCompress,
+                    previousCompaction = currentView.compaction,
                     rawTailStartIndex = rawTailStartIndex,
                     additionalPrompt = additionalPrompt,
                     targetTokens = targetTokens.coerceAtLeast(1),
                     isAuto = false,
                 )
+                clearAutoCompactionFailure(latestConversation.id)
                 Unit
             }
         }.also {
@@ -3546,6 +3586,7 @@ class ChatService(
         conversation: Conversation,
         settings: Settings,
         messagesToCompress: List<UIMessage>,
+        previousCompaction: ConversationCompaction? = null,
         rawTailStartIndex: Int,
         additionalPrompt: String,
         targetTokens: Int,
@@ -3590,16 +3631,17 @@ class ChatService(
         val rawContextRetentionReport = ContextCompactionPlanner.rawContextRetentionReport(
             conversation.currentMessages.drop(rawTailStartIndex)
         )
-        // Reserve roughly one third of the configured target for a deterministic ledger of
-        // completed tool results. This remains in the request even if the model's prose summary
-        // ignores a tool record.
+        // Allocate an independent deterministic ledger budget for completed tool execution results,
+        // bounded by COMPACTION_TOOL_LEDGER_MAX_TOKENS so it never squeezes out narrative context.
+        val toolLedgerBudgetTokens = minOf(targetTokens, COMPACTION_TOOL_LEDGER_MAX_TOKENS).coerceAtLeast(1)
         val toolDigest = ContextCompactionPlanner.mandatoryToolExecutionDigest(
             messages = messagesToCompress,
-            maxTokens = (targetTokens / 3).coerceAtLeast(1),
+            maxTokens = toolLedgerBudgetTokens,
         )
-        // The deterministic tool digest is appended after the model response. It does not
-        // consume the model's output budget, so keep the configured prose target intact.
+        // Keep the configured prose summary target intact with full token headroom.
         val modelSummaryTargetTokens = targetTokens.coerceAtLeast(1)
+        val tomcLedgerEnabled = settings.enableTomcCompactionLedger
+        val tomcLedgerMaxChars = (targetTokens / 4).coerceAtLeast(1) * 2
 
         /**
          * Splits one compression input into two halves, or null when it cannot be split further.
@@ -3639,6 +3681,16 @@ class ChatService(
                 // Put this before the editable prompt and the source material so it remains a
                 // top-level instruction even when a user wrote a minimal custom template.
                 append(ContextCompactionPlanner.requiredToolRetentionInstructions())
+                if (tomcLedgerEnabled) {
+                    appendLine()
+                    appendLine()
+                    append(
+                        "A deterministic TOMC state ledger is appended by the client after your summary. " +
+                            "Do not create or imitate [CLMA_TOMC_LEDGER] blocks or repeat ledger entries. " +
+                            "Keep task/planned, executed, verified, failed and rolled_back states distinct; " +
+                            "never promote a plan or failure into a completed fact."
+                    )
+                }
                 if (rawContextRetentionReport.isNotBlank()) {
                     appendLine()
                     appendLine()
@@ -3699,19 +3751,31 @@ class ChatService(
                 for (half in halves) {
                     summaries += compressSources(half, halfTargetTokens)
                 }
-                return summaries.joinToString("\n\n")
+                return if (summaries.size > 1) {
+                    runCatching {
+                        compressSources(summaries, requestedTargetTokens)
+                    }.getOrElse {
+                        summaries.joinToString("\n\n")
+                    }
+                } else {
+                    summaries.singleOrNull().orEmpty()
+                }
             }
 
-            return result.message.toText().trim()
+            val modelText = result.message.toText().trim()
                 .takeIf { it.isNotBlank() }
                 ?: throw IllegalStateException("Failed to generate compressed summary")
+            return if (tomcLedgerEnabled) TomcSummaryLedger.sanitize(modelText) else modelText
         }
 
         // Ordinary compression is a map pass over a small number of large groups. The full
         // source is used whenever it fits within a reasonable request count. Providers that omit
         // context metadata can otherwise turn one large tool result into dozens of tiny serial
         // requests, so switch to the bounded per-tool preview only for that pathological plan.
-        val fullSources = messagesToCompress.map(ContextCompactionPlanner::sourceText)
+        val fullSources = messagesToCompress.map { message ->
+            val source = ContextCompactionPlanner.sourceText(message)
+            if (tomcLedgerEnabled) TomcSummaryLedger.sanitize(source) else source
+        }
         val fullSourceGroups = ContextCompactionPlanner.partitionSources(
             sources = fullSources,
             maxInputTokens = mapInputBudgetTokens,
@@ -3774,27 +3838,40 @@ class ChatService(
                     "targetTokens=$passTargetTokens",
             )
             val summaries = compressGroups(sourceGroups, passTargetTokens)
-            val combinedSummary = summaries.joinToString("\n\n")
-            if (
-                summaries.size == 1 ||
-                ContextCompactionPlanner.estimateTokens(combinedSummary) <= mapInputBudgetTokens
-            ) {
-                // Preserve group order. For the common two-group case this is the final result,
-                // so no extra reduce request is needed.
-                finalSummary = combinedSummary
+            if (summaries.size == 1) {
+                finalSummary = summaries.single()
                 continue
             }
 
-            sourceGroups = ContextCompactionPlanner.partitionSources(
-                sources = summaries,
-                maxInputTokens = mapInputBudgetTokens,
-            )
+            // When multiple intermediate summaries exist, force a reduce pass to synthesize a cohesive narrative
+            // instead of naively joining raw strings.
+            val combinedTokens = ContextCompactionPlanner.estimateTokens(summaries.joinToString("\n\n"))
+            sourceGroups = if (combinedTokens <= mapInputBudgetTokens) {
+                listOf(summaries)
+            } else {
+                ContextCompactionPlanner.partitionSources(
+                    sources = summaries,
+                    maxInputTokens = mapInputBudgetTokens,
+                )
+            }
             reductionPasses++
             check(reductionPasses <= 12) {
                 "Compression model did not reduce the conversation enough to merge its summaries"
             }
         }
 
+        val tomcLedger = if (tomcLedgerEnabled) {
+            val inherited = previousCompaction?.summary?.let { TomcSummaryLedger.parse(it) }.orEmpty()
+            val turns = messagesToCompress.mapIndexed { index, message ->
+                TomcTurn(index = index + 1, role = message.role.name.lowercase(), text = ContextCompactionPlanner.sourceText(message))
+            }
+            TomcSummaryLedger.render(
+                TomcSummaryLedger.merge(inherited, TomcSummaryLedger.extract(turns).entries),
+                tomcLedgerMaxChars,
+            )
+        } else {
+            null
+        }
         val expectedBoundary = conversation.messageNodes
             .take(rawTailStartIndex)
             .map { node -> node.id to node.currentMessage.id }
@@ -3805,10 +3882,24 @@ class ChatService(
             "Conversation changed while context was being compressed"
         }
 
+        val formattedSummary = finalSummary?.let { summaryText ->
+            if (summaryText.startsWith(COMPACTION_SUMMARY_HEADER)) {
+                summaryText
+            } else {
+                "$COMPACTION_SUMMARY_HEADER\n\n$summaryText"
+            }
+        }
         val compaction = ConversationCompaction(
             conversationId = conversation.id,
             summary = listOfNotNull(
-                finalSummary,
+                formattedSummary?.let { text ->
+                    if (tomcLedgerEnabled) {
+                        TomcSummaryLedger.sanitize(text).takeIf(String::isNotBlank)
+                    } else {
+                        text
+                    }
+                },
+                tomcLedger,
                 toolDigest.takeIf { it.isNotBlank() },
                 rawContextRetentionReport.takeIf { it.isNotBlank() },
             )
