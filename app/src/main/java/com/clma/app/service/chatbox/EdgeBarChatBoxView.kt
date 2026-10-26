@@ -1,5 +1,7 @@
 package com.clma.app.service.chatbox
 
+import com.clma.app.service.ChatService
+
 import android.annotation.SuppressLint
 import android.app.Dialog
 import android.content.Context
@@ -74,6 +76,14 @@ internal class EdgeBarChatBoxView(
         fun onOpen()
         fun onStop()
         fun onSend(text: String)
+        fun onToolApproval(
+            toolCallId: String,
+            approved: Boolean,
+            reason: String,
+            scope: ChatService.ApprovalScope,
+            toolName: String,
+        )
+        fun onToolAnswer(toolCallId: String, answer: String)
 
         /** The box was closed by the user (arrow, back, tap outside) or by [dismiss]. */
         fun onDismissed()
