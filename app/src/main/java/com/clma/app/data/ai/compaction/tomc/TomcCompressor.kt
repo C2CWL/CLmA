@@ -38,6 +38,21 @@ internal object TomcCompressor {
     private const val EXCERPT_HEADER = "## 相关片段\n"
     private const val RECENT_QUERY_CHARS = 400
 
+    /**
+     * How many UNMATCHED turns the recency fill may add. The fallback exists to keep the live
+     * tail, not to fill the budget: without a cap, a long stretch of near-identical chatter
+     * ("第 1 轮… / 第 2 轮…") soaks up every remaining character while carrying no information.
+     */
+    private const val RECENT_FILL_LIMIT = 3
+
+    /**
+     * A segment must score at least this fraction of the best hit to be quoted. BM25 scores are
+     * not comparable across queries, so an absolute cut-off would be wrong; relative to the best
+     * hit it does the job — in a long thread, "继续推进界面细节" matches the live turn's "继续"
+     * with a tiny idf, and quoting forty of those would be pure waste.
+     */
+    private const val MATCH_RATIO = 0.3
+
     /** How the budget is split. Kept as a value so a test can pin the arithmetic. */
     data class Plan(val ledgerChars: Int, val excerptChars: Int) {
         val total: Int get() = ledgerChars + excerptChars
@@ -120,12 +135,35 @@ internal object TomcCompressor {
 
         val order = LinkedHashSet<Int>()
         order += turns.lastIndex
-        order += index.rank(queryTokens)
+        val scored = index.rankScored(queryTokens)
+        val best = scored.firstOrNull()?.second ?: 0.0
+        for ((position, weight) in scored) {
+            if (best <= 0.0 || weight < best * MATCH_RATIO) break
+            order += position
+        }
 
+        var filled = 0
+        for (position in turns.indices.reversed()) {
+            if (filled >= RECENT_FILL_LIMIT) break
+            if (position in order) continue
+            if (index.score(queryTokens, position) > 0.0) continue
+            order += position
+            filled += 1
+        }
+
+        val tokenSets = turns.map { TomcTokenizer.tokens(it.text).toSet() }
         val picked = ArrayList<Pair<TomcTurn, String>>()
+        val pickedTokens = ArrayList<Set<String>>()
         var used = 0
         for (position in order) {
             val turn = turns.getOrNull(position) ?: continue
+            // Near-duplicate suppression: a thread of "第 1 轮… / 第 2 轮…" turns is one piece of
+            // information repeated forty times, and quoting three of them says nothing new.
+            val tokens = tokenSets[position]
+            val redundant = tokens.isNotEmpty() && pickedTokens.any { previous ->
+                tokens.count { it in previous } * 5 >= tokens.size * 4
+            }
+            if (redundant) continue
             // +1 newline and +3 for the " …" a truncated body carries, so the assembled
             // text can never overshoot the budget it was given.
             val header = "[${turn.role} #${turn.index}] ".length + 4
@@ -134,6 +172,7 @@ internal object TomcCompressor {
             val body = turn.text.take(room).trim()
             if (body.isEmpty()) continue
             picked += turn to body
+            pickedTokens += tokens
             used += header + body.length + 1
         }
         return picked.sortedBy { it.first.index }

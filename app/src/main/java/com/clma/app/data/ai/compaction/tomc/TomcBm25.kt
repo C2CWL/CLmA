@@ -124,13 +124,16 @@ internal class TomcBm25(documents: List<List<String>>) {
      * produces the same selection — a compressor that reshuffles identical context breaks the
      * provider's prompt cache for no benefit.
      */
-    fun rank(query: List<String>, limit: Int = docs.size): List<Int> {
-        if (docs.isEmpty() || limit <= 0) return emptyList()
-        val matched = docs.indices
+    /** Indices that actually matched, best first, with their scores. Empty when nothing did. */
+    fun rankScored(query: List<String>): List<Pair<Int, Double>> =
+        docs.indices
             .map { it to score(query, it) }
             .filter { it.second > 0.0 }
             .sortedWith(compareByDescending<Pair<Int, Double>> { it.second }.thenBy { it.first })
-            .map { it.first }
+
+    fun rank(query: List<String>, limit: Int = docs.size): List<Int> {
+        if (docs.isEmpty() || limit <= 0) return emptyList()
+        val matched = rankScored(query).map { it.first }
         if (matched.isNotEmpty()) return matched.take(limit)
         return docs.indices.reversed().take(limit)
     }

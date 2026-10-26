@@ -62,6 +62,9 @@ class TomcCompressionBenchmarkTest {
         assertTrue("TOMC must respect the budget", compressed.usedChars <= budget)
         assertEquals(1.0, tomcRecall, 0.0)
         assertTrue("a tail window of the same size lost the facts: $tailRecall", tailRecall < tomcRecall)
+        // The recency fill is capped, so a wall of near-identical chatter cannot soak up the
+        // excerpt budget: 3 assignment turns + the newest turn + at most 3 filler turns.
+        assertTrue("excerpt picks: ${compressed.excerptTurns}", compressed.excerptTurns.size <= 7)
     }
 
     @Test
