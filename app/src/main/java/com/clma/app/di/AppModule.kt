@@ -297,6 +297,7 @@ val appModule = module {
             folderRepository = get(),
             memoryIndex = get(),
             conversationIndex = get(),
+            toolVectors = get(),
         )
     }
 

@@ -7,6 +7,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
@@ -22,6 +23,17 @@ internal const val TOOL_CATALOG_MAX_ACTIVE_SCHEMAS = 16
 internal const val TOOL_CATALOG_MAX_SUMMARY_CHARS = 180
 
 /**
+ * Page size for `tool_browse`.
+ *
+ * Sized so a catalogue of a few dozen tools fits in one answer while a 200-tool MCP surface
+ * stays readable: 40 short name+summary lines is roughly the point where a model still reads
+ * every line instead of skimming, and the reply always says how many entries remain so a second
+ * page is an obvious next step rather than a guess.
+ */
+internal const val TOOL_BROWSE_DEFAULT_PAGE = 40
+internal const val TOOL_BROWSE_MAX_PAGE = 60
+
+/**
  * How tools are surfaced to the model.
  *
  * [DIRECT] injects every tool's schema up front; [PROGRESSIVE_CATALOG] injects only
@@ -31,6 +43,29 @@ enum class ToolSurfaceMode { DIRECT, PROGRESSIVE_CATALOG }
 
 /** Where a catalogued tool comes from; used for scoring and serialized in search hits. */
 enum class ToolCatalogSource { LOCAL, MCP }
+
+/**
+ * What one `tool_search` query resolves to when a semantic channel is wired up.
+ *
+ * The lexical scorer is exact and free when the query *is* a tool's name, and blind the moment
+ * the model describes a tool instead of naming it — a request written in Chinese shares no
+ * characters with `scrape_web`, so `matchAll` returns nothing at all for it. The vector channel
+ * closes that gap, and this type is how its two possible failures reach the caller without being
+ * mistaken for "no tools matched":
+ *
+ * - [Ranked] is an answer, possibly empty. Empty means the catalogue genuinely holds nothing
+ *   close to the query.
+ * - [Unavailable] means no ranking could be produced at all — no embedding model installed, or
+ *   its vectors are still being computed. [note] is written for the model to act on (and relay),
+ *   which is the only way a missing embedding model ever becomes visible to the user.
+ *
+ * `buildToolCatalogTools` keeps this optional: without a semantic channel it still answers
+ * lexically, exactly as before.
+ */
+sealed interface ToolSearchAnswer {
+    data class Ranked(val entries: List<ToolCatalogEntry>) : ToolSearchAnswer
+    data class Unavailable(val note: String) : ToolSearchAnswer
+}
 
 /**
  * One catalog entry.
@@ -214,6 +249,21 @@ data class ToolSearchOutcome(
             }
         },
     )
+
+    companion object {
+        /**
+         * The answer when no ranking could be produced — the note is relayed verbatim, because a
+         * silent empty result is indistinguishable from "this catalogue has no such tool" and
+         * leaves the user with no thread to pull.
+         */
+        fun unavailable(note: String): String = Json.encodeToString(
+            JsonObject.serializer(),
+            buildJsonObject {
+                put("available", false)
+                put("note", note)
+            },
+        )
+    }
 }
 
 /**
@@ -334,19 +384,36 @@ class ToolActivationState(
 fun buildToolCatalogTools(
     catalog: ToolCatalog,
     activation: ToolActivationState,
+    /**
+     * How `tool_search` ranks, or null for the lexical-only path this tool has always had.
+     *
+     * Optional on purpose: [ToolCatalog] stays pure and model-free, the chat path owns the
+     * decision to embed, and every other caller (tests, the palette, a surface built without a
+     * vector index) keeps the exact behaviour it had. When non-null the answer is the fused
+     * ranking from [ToolSearchAnswer]; when an answer cannot be produced the note is passed to the
+     * model verbatim rather than degrading to a keyword pass that would look like a real result.
+     */
+    semanticSearch: (suspend (String) -> ToolSearchAnswer)? = null,
 ): List<Tool> = listOf(
     Tool(
         name = "tool_search",
         description = buildString {
             append(
                 """
-                Search the tool catalog by keyword and return matching tool names with short
-                summaries. Use this whenever you are unsure which tools exist. It returns
-                names and summaries ONLY — never schemas or parameters. To actually call a
-                tool, first activate it with tool_open; activation applies to your next
-                request, so a tool you open can be called in a later step of the same turn.
+                Search the tool catalog and return matching tool names with short summaries.
+                Use this whenever you are unsure which tools exist. It returns names and
+                summaries ONLY — never schemas or parameters. To actually call a tool, first
+                activate it with tool_open; activation applies to your next request, so a tool
+                you open can be called in a later step of the same turn.
                 """.trimIndent(),
             )
+            if (semanticSearch != null) {
+                append("\n\nMatching is semantic: describe what you want to do in your own words,")
+                append(" in any language, and a whole sentence works as well as an exact name.")
+                append(" If it reports that semantic search is unavailable, the embedding model is")
+                append(" missing or still warming up — use tool_browse to list the catalogue by")
+                append(" name instead of retrying the same search with other words.")
+            }
             if (catalog.categories.isNotEmpty()) {
                 append("\n\nCapability groups in this catalog: ")
                 append(catalog.categories.joinToString(", "))
@@ -366,14 +433,86 @@ fun buildToolCatalogTools(
         },
         execute = {
             val query = it.jsonObject["query"]?.jsonPrimitive?.contentOrNull.orEmpty()
-            val all = catalog.matchAll(query)
-            val limited = all.take(TOOL_CATALOG_MAX_SEARCH_RESULTS)
-            val outcome = ToolSearchOutcome(
-                hits = limited.map { e -> ToolSearchHit(e.name, e.summary, e.source) },
-                total = all.size,
-                truncated = all.size > limited.size,
+            // Two channels when one is wired up: the semantic answer already fuses the lexical
+            // ranking with the vector one (see ToolVectorIndex.answer), so the single `entries`
+            // list below describes the same ordering and `total` stays honest.
+            val answer = semanticSearch?.invoke(query)
+            val entries = when (answer) {
+                null -> catalog.matchAll(query)
+                is ToolSearchAnswer.Ranked -> answer.entries
+                // Not a smaller answer: the catalogue could not be ranked at all, and the note
+                // says why and what to do instead (tool_browse).
+                is ToolSearchAnswer.Unavailable -> null
+            }
+            val body = if (entries == null) {
+                ToolSearchOutcome.unavailable((answer as ToolSearchAnswer.Unavailable).note)
+            } else {
+                val limited = entries.take(TOOL_CATALOG_MAX_SEARCH_RESULTS)
+                ToolSearchOutcome(
+                    hits = limited.map { e -> ToolSearchHit(e.name, e.summary, e.source) },
+                    total = entries.size,
+                    truncated = entries.size > limited.size,
+                ).toJson()
+            }
+            listOf(UIMessagePart.Text(body))
+        },
+    ),
+    Tool(
+        name = "tool_browse",
+        description = """
+            List the tool catalogue by name, in catalogue order, with each entry's source and a
+            one-line summary. This is the index, not a search: it needs no query and no embedding
+            model. Use it when tool_search reports that semantic search is unavailable — then it
+            is the only way to find names — or to see what exists at all before deciding. Paged:
+            the answer says how many entries remain, and `offset` continues from there. Any
+            returned name can be passed straight to tool_open.
+        """.trimIndent(),
+        parameters = {
+            InputSchema.Obj(
+                properties = buildJsonObject {
+                    put("offset", buildJsonObject {
+                        put("type", "integer")
+                        put("description", "Index of the first entry to return. Default 0.")
+                    })
+                    put("limit", buildJsonObject {
+                        put("type", "integer")
+                        put(
+                            "description",
+                            "Page size, 1..$TOOL_BROWSE_MAX_PAGE. Default $TOOL_BROWSE_DEFAULT_PAGE.",
+                        )
+                    })
+                },
             )
-            listOf(UIMessagePart.Text(outcome.toJson()))
+        },
+        execute = {
+            val requestedOffset = it.jsonObject["offset"]?.jsonPrimitive?.intOrNull ?: 0
+            val limit = (it.jsonObject["limit"]?.jsonPrimitive?.intOrNull ?: TOOL_BROWSE_DEFAULT_PAGE)
+                .coerceIn(1, TOOL_BROWSE_MAX_PAGE)
+            val all = catalog.entries
+            val start = requestedOffset.coerceIn(0, all.size)
+            val page = all.drop(start).take(limit)
+            val body = buildJsonObject {
+                put("total", all.size)
+                put("offset", start)
+                put("returned", page.size)
+                put("remaining", (all.size - start - page.size).coerceAtLeast(0))
+                put(
+                    "entries",
+                    JsonArray(
+                        page.map { entry ->
+                            buildJsonObject {
+                                put("name", entry.name)
+                                put("summary", entry.summary.take(TOOL_CATALOG_MAX_SUMMARY_CHARS))
+                                put("source", entry.source.name)
+                            }
+                        },
+                    ),
+                )
+                if (all.isEmpty()) {
+                    put("note", "The catalogue is empty: no tools are registered for this turn.")
+                }
+            }
+            listOf(UIMessagePart.Text(Json.encodeToString(JsonObject.serializer(), body)))
         },
     ),
     Tool(

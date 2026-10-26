@@ -69,6 +69,20 @@ class ChatToolSurface internal constructor(
     private val fixed: List<Tool>,
     private val catalog: ToolCatalog? = null,
     private val activation: ToolActivationState? = null,
+    /**
+     * P3-03 — the names this turn's own request retrieved, best first, computed once when the
+     * surface is assembled.
+     *
+     * Fixed for the whole turn on purpose: the guess must not drift halfway through a turn, and
+     * re-embedding the user on every step would be work for nothing. Explicit activation is the
+     * dynamic half (see [tools]), because a tool the model opened has to be callable right away.
+     */
+    private val rankedNames: List<String> = emptyList(),
+    /**
+     * How `tool_search` ranks. Null keeps the lexical-only behaviour, which is what a surface
+     * built without a vector index (tests, the rerun path) gets.
+     */
+    private val semanticSearch: (suspend (String) -> ToolSearchAnswer)? = null,
 ) {
 
     /** True when this surface is catalogued (i.e. the assistant opted into the mode). */
@@ -76,18 +90,42 @@ class ChatToolSurface internal constructor(
 
     /**
      * The tool list to send with the next request: the fixed prefix, then `tool_search` /
-     * `tool_open`, then every currently activated schema in activation order. A direct surface
-     * is returned by reference, so the DIRECT path allocates nothing new.
+     * `tool_browse` / `tool_open` / `tool_close`, then every currently activated schema in
+     * activation order, then up to [ToolRankFusion.DEFAULT_TURN_TOOL_BUDGET] tools the user's own
+     * request retrieved.
+     *
+     * The retrieved tail is what makes progressive mode usable rather than one round trip away
+     * from every tool: screen automation should not have to discover `take_screenshot` before it
+     * can see the screen. It costs a bounded number of schemas — the ones already attached (fixed
+     * or activated) do not consume the budget, because they were going to be there anyway.
+     *
+     * A direct surface is returned by reference, so the DIRECT path allocates nothing new.
      */
     fun tools(): List<Tool> {
         val catalog = this.catalog ?: return fixed
         val activation = this.activation ?: return fixed
+        val attached = LinkedHashSet<String>(fixed.size + 16)
+        fixed.forEach { attached += it.name }
+        activation.active().forEach { attached += it }
+        val retrieved = if (rankedNames.isEmpty()) {
+            emptyList()
+        } else {
+            ToolRankFusion
+                .attachedForTurn(
+                    ranked = rankedNames,
+                    pinned = emptyList(),
+                    activated = attached.toList(),
+                )
+                .filterNot { it in attached }
+        }
         return buildList {
             addAll(fixed)
-            addAll(buildToolCatalogTools(catalog, activation))
+            addAll(buildToolCatalogTools(catalog, activation, semanticSearch))
             activation.active().forEach { name -> catalog.entry(name)?.let { add(it.tool) } }
+            retrieved.forEach { name -> catalog.entry(name)?.let { add(it.tool) } }
         }
     }
+
 
     /**
      * The schema of a catalogued-but-not-activated tool, or null when [name] is not catalogued
