@@ -42,7 +42,13 @@ object EmbeddingModelFiles {
     /** The same directory, for the app's real base directory. */
     fun dir(context: Context): File = dir(ModelInstall.localModelsDir(context))
 
-    fun dir(baseDir: File, runtime: LocalRuntime): File = ModelInstall.runtimeDir(baseDir, runtime)
+    fun dir(baseDir: File, runtime: LocalRuntime): File {
+        val subDir = when (runtime) {
+            LocalRuntime.LiteRT -> "litert"
+            LocalRuntime.LlamaCpp -> "llamacpp"
+        }
+        return File(baseDir, subDir)
+    }
 
     /** Every directory an embedding model may be installed in, for a given base (`local-models/`). */
     fun dirs(baseDir: File): List<File> =
