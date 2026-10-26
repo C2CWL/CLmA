@@ -528,6 +528,7 @@ internal class EdgeBarChatBoxView(
     private fun kindOf(item: ChatBoxItem): Int = when (item) {
         is ChatBoxItem.Bubble -> if (item.fromUser) KIND_USER else KIND_AI
         is ChatBoxItem.ToolChip -> KIND_TOOL
+        is ChatBoxItem.RequestSecretCard -> KIND_TOOL
     }
 
     private fun rawTextOf(item: ChatBoxItem): String = when (item) {
@@ -546,6 +547,11 @@ internal class EdgeBarChatBoxView(
             if (item.done) R.string.chat_box_tool_done else R.string.chat_box_tool_running,
             toolName(item.rawName),
         )
+        is ChatBoxItem.RequestSecretCard -> when {
+            item.isAnswered -> "✓ 已录入密钥：${item.storedName ?: item.secretName}"
+            item.isDenied -> "✕ 已拒绝录入密钥：${item.secretName}"
+            else -> "🔑 请求安全输入密钥：${item.secretName}"
+        }
     }
 
     private fun formatContent(item: ChatBoxItem): CharSequence = when (item) {
@@ -567,6 +573,7 @@ internal class EdgeBarChatBoxView(
             }
         }
         is ChatBoxItem.ToolChip -> rawTextOf(item)
+        is ChatBoxItem.RequestSecretCard -> rawTextOf(item)
     }
 
     private fun newRow(kind: Int, maxBubble: Int): TextView = TextView(context).apply {
