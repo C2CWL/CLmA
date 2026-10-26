@@ -37,6 +37,7 @@ import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Switch
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -86,6 +87,32 @@ fun S3Tab(
 
     fun updateS3Config(newConfig: S3Config) {
         vm.updateSettings(settings.copy(s3Config = newConfig))
+    }
+
+    var endpointText by remember { mutableStateOf(s3Config.endpoint) }
+    var accessKeyIdText by remember { mutableStateOf(s3Config.accessKeyId) }
+    var secretAccessKeyText by remember { mutableStateOf(s3Config.secretAccessKey) }
+    var bucketText by remember { mutableStateOf(s3Config.bucket) }
+    var encPasswordText by remember { mutableStateOf(s3Config.encryptionPassword) }
+    var regionText by remember { mutableStateOf(s3Config.region) }
+
+    LaunchedEffect(s3Config.endpoint) {
+        if (endpointText != s3Config.endpoint) endpointText = s3Config.endpoint
+    }
+    LaunchedEffect(s3Config.accessKeyId) {
+        if (accessKeyIdText != s3Config.accessKeyId) accessKeyIdText = s3Config.accessKeyId
+    }
+    LaunchedEffect(s3Config.secretAccessKey) {
+        if (secretAccessKeyText != s3Config.secretAccessKey) secretAccessKeyText = s3Config.secretAccessKey
+    }
+    LaunchedEffect(s3Config.bucket) {
+        if (bucketText != s3Config.bucket) bucketText = s3Config.bucket
+    }
+    LaunchedEffect(s3Config.encryptionPassword) {
+        if (encPasswordText != s3Config.encryptionPassword) encPasswordText = s3Config.encryptionPassword
+    }
+    LaunchedEffect(s3Config.region) {
+        if (regionText != s3Config.region) regionText = s3Config.region
     }
 
     val lastBackupText = if (settings.backupReminderConfig.lastBackupTime == 0L) {

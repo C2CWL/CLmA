@@ -36,6 +36,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -87,6 +88,28 @@ fun WebDavTab(
         vm.updateSettings(settings.copy(webDavConfig = newConfig))
     }
 
+    var urlText by remember { mutableStateOf(webDavConfig.url) }
+    var usernameText by remember { mutableStateOf(webDavConfig.username) }
+    var passwordText by remember { mutableStateOf(webDavConfig.password) }
+    var encPasswordText by remember { mutableStateOf(webDavConfig.encryptionPassword) }
+    var pathText by remember { mutableStateOf(webDavConfig.path) }
+
+    LaunchedEffect(webDavConfig.url) {
+        if (urlText != webDavConfig.url) urlText = webDavConfig.url
+    }
+    LaunchedEffect(webDavConfig.username) {
+        if (usernameText != webDavConfig.username) usernameText = webDavConfig.username
+    }
+    LaunchedEffect(webDavConfig.password) {
+        if (passwordText != webDavConfig.password) passwordText = webDavConfig.password
+    }
+    LaunchedEffect(webDavConfig.encryptionPassword) {
+        if (encPasswordText != webDavConfig.encryptionPassword) encPasswordText = webDavConfig.encryptionPassword
+    }
+    LaunchedEffect(webDavConfig.path) {
+        if (pathText != webDavConfig.path) pathText = webDavConfig.path
+    }
+
     val lastBackupText = if (settings.backupReminderConfig.lastBackupTime == 0L) {
         stringResource(R.string.backup_page_reminder_no_record)
     } else {
@@ -127,8 +150,11 @@ fun WebDavTab(
                     supportingContent = {
                         OutlinedTextField(
                             modifier = Modifier.fillMaxWidth(),
-                            value = webDavConfig.url,
-                            onValueChange = { updateWebDavConfig(webDavConfig.copy(url = it.trim())) },
+                            value = urlText,
+                            onValueChange = {
+                                urlText = it
+                                updateWebDavConfig(webDavConfig.copy(url = it.trim()))
+                            },
                             placeholder = { Text("https://example.com/dav") },
                             singleLine = true
                         )
@@ -139,8 +165,9 @@ fun WebDavTab(
                     supportingContent = {
                         OutlinedTextField(
                             modifier = Modifier.fillMaxWidth(),
-                            value = webDavConfig.username,
+                            value = usernameText,
                             onValueChange = {
+                                usernameText = it
                                 updateWebDavConfig(
                                     webDavConfig.copy(
                                         username = it.trim()
@@ -157,8 +184,11 @@ fun WebDavTab(
                         var passwordVisible by remember { mutableStateOf(false) }
                         OutlinedTextField(
                             modifier = Modifier.fillMaxWidth(),
-                            value = webDavConfig.password,
-                            onValueChange = { updateWebDavConfig(webDavConfig.copy(password = it.trim())) },
+                            value = passwordText,
+                            onValueChange = {
+                                passwordText = it
+                                updateWebDavConfig(webDavConfig.copy(password = it.trim()))
+                            },
                             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                             trailingIcon = {
                                 val image = if (passwordVisible) {
@@ -180,8 +210,11 @@ fun WebDavTab(
                         var encVisible by remember { mutableStateOf(false) }
                         OutlinedTextField(
                             modifier = Modifier.fillMaxWidth(),
-                            value = webDavConfig.encryptionPassword,
-                            onValueChange = { updateWebDavConfig(webDavConfig.copy(encryptionPassword = it)) },
+                            value = encPasswordText,
+                            onValueChange = {
+                                encPasswordText = it
+                                updateWebDavConfig(webDavConfig.copy(encryptionPassword = it))
+                            },
                             placeholder = { Text(stringResource(R.string.backup_secrets_encryption_password_hint)) },
                             visualTransformation = if (encVisible) VisualTransformation.None else PasswordVisualTransformation(),
                             trailingIcon = {
@@ -199,8 +232,11 @@ fun WebDavTab(
                     supportingContent = {
                         OutlinedTextField(
                             modifier = Modifier.fillMaxWidth(),
-                            value = webDavConfig.path,
-                            onValueChange = { updateWebDavConfig(webDavConfig.copy(path = it.trim())) },
+                            value = pathText,
+                            onValueChange = {
+                                pathText = it
+                                updateWebDavConfig(webDavConfig.copy(path = it.trim()))
+                            },
                             singleLine = true
                         )
                     },
