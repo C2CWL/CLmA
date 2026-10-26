@@ -1063,6 +1063,16 @@ class LocalTools(
                         definitions,
                     )
                 )
+                // Batch form of the same engine call: several tasks, one confirmation, results
+                // aggregated. Same gate and same profile as the single dispatch above — a NEVER
+                // profile registers neither.
+                tools.add(
+                    com.clma.app.subagent.missionDispatchTool(
+                        subAgentEngine,
+                        invocationContext,
+                        definitions,
+                    )
+                )
             }
             tools.add(com.clma.app.subagent.subagentListTool(subAgentRegistry, definitions))
             // P2-06b — the roster write tools. Registered alongside the reads; each one prompts

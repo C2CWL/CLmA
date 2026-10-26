@@ -404,6 +404,8 @@
   <string name="tool_display_desc_workflow_delete">删除工作流及其运行记录</string>
   <string name="tool_display_name_subagent_dispatch">派发子代理</string>
   <string name="tool_display_desc_subagent_dispatch">让子代理在后台独立完成子任务</string>
+  <string name="tool_display_name_mission_dispatch">任务派发</string>
+  <string name="tool_display_desc_mission_dispatch">一次把多个独立任务并行交给子代理</string>
   <string name="tool_display_name_subagent_list">列出子代理</string>
   <string name="tool_display_desc_subagent_list">列出子代理运行记录或已存专家</string>
   <string name="tool_display_name_subagent_get">查看子代理</string>

@@ -60,6 +60,15 @@ class SubAgentToolSurfaceTest {
     }
 
     @Test
+    fun `mission_dispatch is denied so a child cannot fan out again`() {
+        // Batch delegation is a second dispatch surface, not a `subagent_*` handle, so it is
+        // denied by name; otherwise every child request would carry a fork-bomb invitation the
+        // run-time guard then refuses.
+        assertEquals("tool_unavailable_headless", SubAgentToolSurface.denialReason("mission_dispatch"))
+        assertFalse(SubAgentToolSurface.safeNames(listOf("mission_dispatch")).contains("mission_dispatch"))
+    }
+
+    @Test
     fun `device UI bound tools are denied`() {
         val expected = setOf(
             "take_photo",
