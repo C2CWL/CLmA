@@ -1,7 +1,5 @@
 package com.clma.app.service.chatbox
 
-import com.clma.app.service.ChatService
-
 import android.annotation.SuppressLint
 import android.app.Dialog
 import android.content.Context
@@ -21,9 +19,12 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import android.text.Editable
 import android.text.InputType
 import android.text.TextUtils
+import android.text.TextWatcher
 import android.text.format.DateUtils
+import android.text.method.PasswordTransformationMethod
 import android.util.Log
 import android.util.TypedValue
 import android.view.Gravity
@@ -45,11 +46,15 @@ import androidx.annotation.RequiresApi
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.clma.app.R
+import com.clma.app.data.secrets.AgentSecretsStore
+import com.clma.app.service.ChatService
 import com.clma.app.service.EdgeBarLook
 import com.clma.app.service.taskcard.TaskCardPhase
 import com.clma.app.service.taskcard.TaskCardStatus
 import com.clma.app.service.taskcard.TaskCardStatusResolver
 import com.clma.app.service.taskcard.TaskCardToolNames
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import java.util.function.Consumer
 
 /**
@@ -518,18 +523,23 @@ internal class EdgeBarChatBoxView(
         val maxBubble = ((anchor?.screenWidth ?: context.resources.displayMetrics.widthPixels) * 0.62f).toInt()
         for ((i, item) in items.withIndex()) {
             val kind = kindOf(item)
-            val existing = list.getChildAt(i) as? TextView
+            val existing = list.getChildAt(i)
             val view = if (existing != null && existing.tag == kind) {
                 existing
             } else {
                 if (existing != null) list.removeViewAt(i)
-                newRow(kind, maxBubble).also { list.addView(it, i, rowParams(kind)) }
+                newRowView(kind, maxBubble).also { list.addView(it, i, rowParams(kind)) }
             }
-            val content = formatContent(item)
-            val raw = rawTextOf(item)
-            if (view.getTag(R.id.chat_box_row_raw) != raw) {
-                view.setTag(R.id.chat_box_row_raw, raw)
-                view.text = content
+            if (kind == KIND_REQUEST_SECRET) {
+                val holder = view.getTag(R.id.chat_box_row_holder) as? RequestSecretCardViewHolder
+                holder?.bind(item as ChatBoxItem.RequestSecretCard)
+            } else if (view is TextView) {
+                val content = formatContent(item)
+                val raw = rawTextOf(item)
+                if (view.getTag(R.id.chat_box_row_raw) != raw) {
+                    view.setTag(R.id.chat_box_row_raw, raw)
+                    view.text = content
+                }
             }
         }
         while (list.childCount > items.size) list.removeViewAt(list.childCount - 1)
@@ -538,7 +548,7 @@ internal class EdgeBarChatBoxView(
     private fun kindOf(item: ChatBoxItem): Int = when (item) {
         is ChatBoxItem.Bubble -> if (item.fromUser) KIND_USER else KIND_AI
         is ChatBoxItem.ToolChip -> KIND_TOOL
-        is ChatBoxItem.RequestSecretCard -> KIND_TOOL
+        is ChatBoxItem.RequestSecretCard -> KIND_REQUEST_SECRET
     }
 
     private fun rawTextOf(item: ChatBoxItem): String = when (item) {
@@ -557,11 +567,8 @@ internal class EdgeBarChatBoxView(
             if (item.done) R.string.chat_box_tool_done else R.string.chat_box_tool_running,
             toolName(item.rawName),
         )
-        is ChatBoxItem.RequestSecretCard -> when {
-            item.isAnswered -> "✓ 已录入密钥：${item.storedName ?: item.secretName}"
-            item.isDenied -> "✕ 已拒绝录入密钥：${item.secretName}"
-            else -> "🔑 请求安全输入密钥：${item.secretName}"
-        }
+        is ChatBoxItem.RequestSecretCard ->
+            "secret:${item.toolCallId}:${item.secretName}:${item.isPending}:${item.isAnswered}:${item.isDenied}:${item.storedName}"
     }
 
     private fun formatContent(item: ChatBoxItem): CharSequence = when (item) {
@@ -583,7 +590,12 @@ internal class EdgeBarChatBoxView(
             }
         }
         is ChatBoxItem.ToolChip -> rawTextOf(item)
-        is ChatBoxItem.RequestSecretCard -> rawTextOf(item)
+        is ChatBoxItem.RequestSecretCard -> ""
+    }
+
+    private fun newRowView(kind: Int, maxBubble: Int): View = when (kind) {
+        KIND_REQUEST_SECRET -> RequestSecretCardViewHolder().root
+        else -> newRow(kind, maxBubble)
     }
 
     private fun newRow(kind: Int, maxBubble: Int): TextView = TextView(context).apply {
@@ -627,10 +639,498 @@ internal class EdgeBarChatBoxView(
     }
 
     private fun rowParams(kind: Int) = LinearLayout.LayoutParams(
-        ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
+        if (kind == KIND_REQUEST_SECRET) ViewGroup.LayoutParams.MATCH_PARENT else ViewGroup.LayoutParams.WRAP_CONTENT,
+        ViewGroup.LayoutParams.WRAP_CONTENT,
     ).apply {
         gravity = if (kind == KIND_USER) Gravity.END else Gravity.START
         topMargin = dp(7)
+    }
+
+    private inner class RequestSecretCardViewHolder {
+        private val cardRoot = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            tag = KIND_REQUEST_SECRET
+            setTag(R.id.chat_box_row_holder, this@RequestSecretCardViewHolder)
+        }
+
+        val root: View get() = cardRoot
+
+        // --- Settled View (denied or answered) ---
+        private val settledView = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(12), dp(8), dp(12), dp(8))
+            background = rounded(palette.toolChip, dp(12).toFloat())
+            visibility = View.GONE
+        }
+        private val settledIcon = IconView(context, IconView.Kind.CHECK, palette.accent)
+        private val settledText = TextView(context).apply {
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+            setSingleLine(true)
+            ellipsize = TextUtils.TruncateAt.END
+        }
+
+        // --- Form View (pending or waiting) ---
+        private val formView = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(12), dp(10), dp(12), dp(10))
+            background = GradientDrawable().apply {
+                setColor(palette.aiBubble)
+                cornerRadius = dp(14).toFloat()
+                setStroke(dp(1), palette.inputBorder)
+            }
+        }
+
+        // Title row: Lock icon + "Secure input"
+        private val titleRow = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        private val lockIcon = IconView(context, IconView.Kind.LOCK, palette.accent)
+        private val titleText = TextView(context).apply {
+            setText(R.string.chat_message_tool_request_secret_title)
+            setTextColor(palette.title)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
+            typeface = Typeface.DEFAULT_BOLD
+            setSingleLine(true)
+            ellipsize = TextUtils.TruncateAt.END
+        }
+
+        // Prompt
+        private val promptText = TextView(context).apply {
+            setTextColor(palette.aiText)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+            setLineSpacing(dp(1.5f).toFloat(), 1f)
+            typeface = chatTypeface ?: Typeface.DEFAULT
+        }
+
+        // Waiting label (shown if !isPending)
+        private val waitingText = TextView(context).apply {
+            setText(R.string.chat_interactive_card_waiting)
+            setTextColor(palette.subtitle)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+        }
+
+        // Form content container (shown if isPending)
+        private val formInputs = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+
+        // Name & overwrite label
+        private val nameLabel = TextView(context).apply {
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+        }
+
+        // Hint label
+        private val hintLabel = TextView(context).apply {
+            setText(R.string.chat_message_tool_request_secret_hint)
+            setTextColor(palette.subtitle)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 10.5f)
+        }
+
+        // Value EditText
+        private val valueInput = EditText(context).apply {
+            setPadding(dp(10), dp(7), dp(10), dp(7))
+            setTextColor(palette.inputText)
+            setHintTextColor(palette.hint)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+            setHint(R.string.chat_message_tool_request_secret_value_label)
+            background = rounded(palette.inputBg, dp(8).toFloat()).apply {
+                setStroke(dp(1), palette.inputBorder)
+            }
+        }
+
+        // Confirm EditText
+        private val confirmInput = EditText(context).apply {
+            setPadding(dp(10), dp(7), dp(10), dp(7))
+            setTextColor(palette.inputText)
+            setHintTextColor(palette.hint)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+            setHint(R.string.chat_message_tool_request_secret_confirm_label)
+            background = rounded(palette.inputBg, dp(8).toFloat()).apply {
+                setStroke(dp(1), palette.inputBorder)
+            }
+        }
+
+        // Toggle show/hide plaintext button
+        private val toggleShowBtn = TextView(context).apply {
+            setText(R.string.chat_message_tool_request_secret_show)
+            setTextColor(palette.accent)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
+            isClickable = true
+            isFocusable = true
+            setPadding(dp(2), dp(4), dp(2), dp(4))
+        }
+
+        // Error message
+        private val errorText = TextView(context).apply {
+            setTextColor(palette.stopText)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+            visibility = View.GONE
+        }
+
+        // Buttons row
+        private val buttonsRow = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.END or Gravity.CENTER_VERTICAL
+        }
+
+        private val cancelBtn = TextView(context).apply {
+            setText(R.string.chat_interactive_card_cancel)
+            setTextColor(palette.subtitle)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+            setPadding(dp(10), dp(6), dp(10), dp(6))
+            isClickable = true
+            isFocusable = true
+        }
+
+        private val storeBtn = TextView(context).apply {
+            setText(R.string.chat_message_tool_request_secret_store)
+            setTextColor(0xFFFFFFFF.toInt())
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+            typeface = Typeface.DEFAULT_BOLD
+            setPadding(dp(12), dp(6), dp(12), dp(6))
+            background = rounded(palette.accent, dp(14).toFloat())
+            isClickable = true
+            isFocusable = true
+        }
+
+        private var boundToolCallId: String? = null
+        private var showPlain: Boolean = false
+        private var inFlight: Boolean = false
+        private var currentItem: ChatBoxItem.RequestSecretCard? = null
+
+        init {
+            cardRoot.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
+                override fun onViewAttachedToWindow(v: View) {}
+                override fun onViewDetachedFromWindow(v: View) {
+                    clearPlaintext()
+                }
+            })
+
+            // Settled view layout
+            val iconLp = LinearLayout.LayoutParams(dp(14), dp(14)).apply {
+                rightMargin = dp(6)
+            }
+            settledView.addView(settledIcon, iconLp)
+            settledView.addView(
+                settledText,
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ),
+            )
+            cardRoot.addView(
+                settledView,
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ),
+            )
+
+            // Form view layout
+            titleRow.addView(
+                lockIcon,
+                LinearLayout.LayoutParams(dp(15), dp(15)).apply {
+                    rightMargin = dp(6)
+                },
+            )
+            titleRow.addView(
+                titleText,
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ),
+            )
+            formView.addView(
+                titleRow,
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ),
+            )
+
+            val promptLp = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply { topMargin = dp(6) }
+            formView.addView(promptText, promptLp)
+
+            val waitingLp = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply { topMargin = dp(6) }
+            formView.addView(waitingText, waitingLp)
+
+            // Form inputs
+            val nameLp = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply { topMargin = dp(6) }
+            formInputs.addView(nameLabel, nameLp)
+
+            val hintLp = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply { topMargin = dp(4) }
+            formInputs.addView(hintLabel, hintLp)
+
+            val valLp = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply { topMargin = dp(8) }
+            formInputs.addView(valueInput, valLp)
+
+            val confLp = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply { topMargin = dp(6) }
+            formInputs.addView(confirmInput, confLp)
+
+            val toggleLp = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply { topMargin = dp(4) }
+            formInputs.addView(toggleShowBtn, toggleLp)
+
+            val errLp = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply { topMargin = dp(4) }
+            formInputs.addView(errorText, errLp)
+
+            // Buttons
+            val cancelLp = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply { rightMargin = dp(8) }
+            buttonsRow.addView(cancelBtn, cancelLp)
+            buttonsRow.addView(
+                storeBtn,
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ),
+            )
+
+            val btnRowLp = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply { topMargin = dp(8) }
+            formInputs.addView(buttonsRow, btnRowLp)
+
+            val formInputsLp = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply { topMargin = dp(4) }
+            formView.addView(formInputs, formInputsLp)
+
+            cardRoot.addView(
+                formView,
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ),
+            )
+
+            setupListeners()
+        }
+
+        private fun setupListeners() {
+            val watcher = object : TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                    errorText.text = null
+                    errorText.visibility = View.GONE
+                    updateStoreButtonState()
+                }
+                override fun afterTextChanged(s: Editable?) {}
+            }
+            valueInput.addTextChangedListener(watcher)
+            confirmInput.addTextChangedListener(watcher)
+
+            toggleShowBtn.setOnClickListener {
+                showPlain = !showPlain
+                toggleShowBtn.setText(
+                    if (showPlain) R.string.chat_message_tool_request_secret_hide
+                    else R.string.chat_message_tool_request_secret_show,
+                )
+                updateTransformation()
+            }
+
+            confirmInput.setOnEditorActionListener { _, actionId, _ ->
+                if (actionId == EditorInfo.IME_ACTION_DONE) {
+                    storeBtn.performClick()
+                    true
+                } else false
+            }
+
+            cancelBtn.setOnClickListener {
+                if (inFlight) return@setOnClickListener
+                val item = currentItem ?: return@setOnClickListener
+                inFlight = true
+                clearPlaintext()
+                callbacks.onToolApproval(
+                    item.toolCallId,
+                    false,
+                    INTERACTIVE_CANCEL_REASON,
+                    ChatService.ApprovalScope.Once,
+                    item.toolName,
+                )
+            }
+
+            storeBtn.setOnClickListener {
+                if (inFlight) return@setOnClickListener
+                val item = currentItem ?: return@setOnClickListener
+                val store = AgentSecretsStore(context)
+                val isPrivateKey = item.kind == "private_key"
+                val nameValid = store.isValidName(item.secretName)
+                val vText = valueInput.text?.toString().orEmpty()
+                val cText = confirmInput.text?.toString().orEmpty()
+
+                when {
+                    !nameValid -> showError("Invalid vault name")
+                    vText.isEmpty() -> showError("Value required")
+                    !isPrivateKey && vText != cText -> showError("Values do not match")
+                    else -> {
+                        inFlight = true
+                        val ok = store.set(item.secretName, vText)
+                        clearPlaintext()
+                        if (!ok) {
+                            inFlight = false
+                            showError("Failed to store secret")
+                            return@setOnClickListener
+                        }
+                        val answerPayload = buildJsonObject {
+                            put("stored", true)
+                            put("name", item.secretName)
+                            put("kind", item.kind)
+                        }
+                        callbacks.onToolAnswer(item.toolCallId, answerPayload.toString())
+                    }
+                }
+            }
+        }
+
+        private fun clearPlaintext() {
+            valueInput.setText("")
+            confirmInput.setText("")
+            imm().hideSoftInputFromWindow(cardRoot.windowToken, 0)
+        }
+
+        private fun showError(msg: String) {
+            errorText.text = msg
+            errorText.visibility = View.VISIBLE
+        }
+
+        private fun updateTransformation() {
+            val item = currentItem ?: return
+            val isPrivateKey = item.kind == "private_key"
+            val show = showPlain || isPrivateKey
+            valueInput.transformationMethod = if (show) null else PasswordTransformationMethod.getInstance()
+            confirmInput.transformationMethod = if (showPlain) null else PasswordTransformationMethod.getInstance()
+            valueInput.setSelection(valueInput.length())
+            confirmInput.setSelection(confirmInput.length())
+        }
+
+        private fun updateStoreButtonState() {
+            val item = currentItem ?: return
+            val isPrivateKey = item.kind == "private_key"
+            val store = AgentSecretsStore(context)
+            val nameValid = store.isValidName(item.secretName)
+            val vText = valueInput.text?.toString().orEmpty()
+            val cText = confirmInput.text?.toString().orEmpty()
+            val enabled = !inFlight && nameValid && vText.isNotEmpty() && (isPrivateKey || cText.isNotEmpty())
+            storeBtn.isEnabled = enabled
+            storeBtn.alpha = if (enabled) 1.0f else 0.5f
+            cancelBtn.isEnabled = !inFlight
+            cancelBtn.alpha = if (!inFlight) 1.0f else 0.5f
+        }
+
+        fun bind(item: ChatBoxItem.RequestSecretCard) {
+            currentItem = item
+            if (item.isDenied || item.isAnswered) {
+                clearPlaintext()
+                inFlight = false
+                formView.visibility = View.GONE
+                settledView.visibility = View.VISIBLE
+                if (item.isDenied) {
+                    settledIcon.setKind(IconView.Kind.CROSS)
+                    settledIcon.setIconColor(palette.subtitle)
+                    settledText.setText(R.string.chat_interactive_card_cancelled)
+                    settledText.setTextColor(palette.subtitle)
+                } else {
+                    settledIcon.setKind(IconView.Kind.CHECK)
+                    settledIcon.setIconColor(palette.accent)
+                    val sName = item.storedName?.ifBlank { item.secretName } ?: item.secretName
+                    settledText.text = context.getString(R.string.chat_message_tool_request_secret_stored, sName)
+                    settledText.setTextColor(palette.accent)
+                }
+                return
+            }
+
+            settledView.visibility = View.GONE
+            formView.visibility = View.VISIBLE
+
+            promptText.text = if (item.prompt.isNotBlank()) item.prompt else {
+                context.getString(R.string.chat_message_tool_request_secret_default_prompt, item.secretName.ifBlank { "…" })
+            }
+
+            if (!item.isPending) {
+                waitingText.visibility = View.VISIBLE
+                formInputs.visibility = View.GONE
+                return
+            }
+
+            waitingText.visibility = View.GONE
+            formInputs.visibility = View.VISIBLE
+
+            if (boundToolCallId != item.toolCallId) {
+                boundToolCallId = item.toolCallId
+                valueInput.setText("")
+                confirmInput.setText("")
+                showPlain = false
+                inFlight = false
+                errorText.text = null
+                errorText.visibility = View.GONE
+                toggleShowBtn.setText(R.string.chat_message_tool_request_secret_show)
+            }
+
+            val store = AgentSecretsStore(context)
+            val isPrivateKey = item.kind == "private_key"
+            val nameValid = store.isValidName(item.secretName)
+            val existsAlready = nameValid && store.has(item.secretName)
+
+            val baseNameLabel = context.getString(R.string.chat_message_tool_request_secret_name_label, item.secretName.ifBlank { "—" })
+            if (existsAlready) {
+                nameLabel.text = "$baseNameLabel · " + context.getString(R.string.chat_message_tool_request_secret_overwrite)
+                nameLabel.setTextColor(palette.accent)
+            } else {
+                nameLabel.text = baseNameLabel
+                nameLabel.setTextColor(palette.subtitle)
+            }
+
+            if (isPrivateKey) {
+                confirmInput.visibility = View.GONE
+                toggleShowBtn.visibility = View.GONE
+                valueInput.isSingleLine = false
+                valueInput.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE
+                valueInput.minLines = 3
+                valueInput.maxLines = 8
+            } else {
+                confirmInput.visibility = View.VISIBLE
+                toggleShowBtn.visibility = View.VISIBLE
+                valueInput.isSingleLine = true
+                valueInput.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+                valueInput.minLines = 1
+                valueInput.maxLines = 1
+                confirmInput.isSingleLine = true
+                confirmInput.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+            }
+
+            updateTransformation()
+            updateStoreButtonState()
+        }
     }
 
     /** Corner radii in dp: top-left, top-right, bottom-right, bottom-left. */
@@ -845,9 +1345,9 @@ internal class EdgeBarChatBoxView(
         setColor(color)
     }
 
-    /** Small stroked icons: plus, open (↗), chevrons, send arrow. */
-    private class IconView(context: Context, private val kind: Kind, color: Int) : View(context) {
-        enum class Kind { PLUS, OPEN, CHEVRON_UP, CHEVRON_LEFT, CHEVRON_RIGHT, SEND }
+    /** Small stroked icons: plus, open (↗), chevrons, send arrow, lock, check, cross. */
+    private class IconView(context: Context, private var kind: Kind, color: Int) : View(context) {
+        enum class Kind { PLUS, OPEN, CHEVRON_UP, CHEVRON_LEFT, CHEVRON_RIGHT, SEND, LOCK, CHECK, CROSS }
 
         private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             this.color = color
@@ -860,6 +1360,16 @@ internal class EdgeBarChatBoxView(
 
         init {
             importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        }
+
+        fun setIconColor(newColor: Int) {
+            paint.color = newColor
+            invalidate()
+        }
+
+        fun setKind(newKind: Kind) {
+            kind = newKind
+            invalidate()
         }
 
         override fun onDraw(canvas: Canvas) {
@@ -890,6 +1400,27 @@ internal class EdgeBarChatBoxView(
                 Kind.SEND -> {
                     path.moveTo(w / 2, h * 0.85f); path.lineTo(w / 2, h * 0.15f)
                     path.moveTo(w * 0.22f, h * 0.42f); path.lineTo(w / 2, h * 0.15f); path.lineTo(w * 0.78f, h * 0.42f)
+                }
+                Kind.LOCK -> {
+                    path.moveTo(w * 0.3f, h * 0.45f)
+                    path.lineTo(w * 0.3f, h * 0.28f)
+                    val arcRect = RectF(w * 0.3f, h * 0.12f, w * 0.7f, h * 0.44f)
+                    path.arcTo(arcRect, 180f, 180f, false)
+                    path.lineTo(w * 0.7f, h * 0.45f)
+                    path.moveTo(w * 0.22f, h * 0.45f)
+                    path.lineTo(w * 0.78f, h * 0.45f)
+                    path.lineTo(w * 0.78f, h * 0.85f)
+                    path.lineTo(w * 0.22f, h * 0.85f)
+                    path.close()
+                }
+                Kind.CHECK -> {
+                    path.moveTo(w * 0.18f, h * 0.52f)
+                    path.lineTo(w * 0.42f, h * 0.76f)
+                    path.lineTo(w * 0.82f, h * 0.26f)
+                }
+                Kind.CROSS -> {
+                    path.moveTo(w * 0.25f, h * 0.25f); path.lineTo(w * 0.75f, h * 0.75f)
+                    path.moveTo(w * 0.75f, h * 0.25f); path.lineTo(w * 0.25f, h * 0.75f)
                 }
             }
             canvas.drawPath(path, paint)
@@ -991,6 +1522,8 @@ internal class EdgeBarChatBoxView(
         const val KIND_USER = 1
         const val KIND_AI = 2
         const val KIND_TOOL = 3
+        const val KIND_REQUEST_SECRET = 4
+        const val INTERACTIVE_CANCEL_REASON = "User cancelled"
         const val MARGIN_DP = 10f
         const val GAP_DP = 4f
         const val PADDING_DP = 14f
