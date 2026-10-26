@@ -170,7 +170,7 @@ fun EmbeddingModelSheet(
                                 )
                             }
                             Switch(
-                                checked = settings.embeddingUseGpu,
+                                checked = settings.embeddingUseGpu == true,
                                 onCheckedChange = {
                                     vm.updateSettings(settings.copy(embeddingUseGpu = it))
                                 },

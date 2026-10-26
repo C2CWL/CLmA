@@ -48,10 +48,13 @@ import com.clma.app.ui.components.ui.Select
 import com.clma.app.ui.components.ai.ModelListSheet
 import com.clma.app.ui.components.ai.ReasoningButton
 import com.clma.app.ui.components.ai.rememberModelListState
+import com.clma.app.ui.components.nav.BackButton
 import com.clma.app.data.vector.CloudEmbeddingRules
 import com.clma.app.data.vector.EmbeddingModelFiles
 import com.clma.app.data.vector.EmbeddingReadiness
 import com.clma.app.ui.pages.setting.components.EmbeddingModelSheet
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import com.clma.app.ui.components.ui.CardGroup
 import com.clma.app.ui.theme.CustomColors
