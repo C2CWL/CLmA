@@ -57,7 +57,7 @@ class ChatToolSurfaceTest {
             catalog = catalogWith("set_volume"),
             activation = ToolActivationState(),
         )
-        assertEquals(listOf("core", "tool_search", "tool_open"), surface.tools().map { it.name })
+        assertEquals(listOf("core", "tool_search", "tool_open", "tool_close"), surface.tools().map { it.name })
     }
 
     @Test
