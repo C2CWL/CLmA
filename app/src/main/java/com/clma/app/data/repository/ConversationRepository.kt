@@ -281,6 +281,9 @@ class ConversationRepository(
             }
         }
 
+    /** 向量索引扫描用：所有会话 id，不加载消息正文。 */
+    suspend fun getAllConversationIds(): List<String> = conversationDAO.getAllIds()
+
     suspend fun getConversationById(uuid: Uuid): Conversation? {
         val entity = conversationDAO.getConversationById(uuid.toString())
         return if (entity != null) {
