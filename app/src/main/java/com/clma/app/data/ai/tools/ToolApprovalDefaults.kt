@@ -195,6 +195,9 @@ object ToolApprovalDefaults {
         // delegation happens. list / get / cancel are read-only or user-controlling and
         // have no entry here.
         "subagent_dispatch",
+        // Batch form of the same thing — one prompt covering every child, so the user approves
+        // the whole mission before any of it runs.
+        "mission_dispatch",
 
         // P2-06b — the roster WRITE tools. Approval-required for the same reason as
         // subagent_dispatch above: a stored expert becomes dispatchable immediately, and

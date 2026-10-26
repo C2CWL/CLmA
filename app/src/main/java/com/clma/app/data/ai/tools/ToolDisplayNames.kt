@@ -220,6 +220,7 @@ object ToolDisplayNames {
         "workflow_run" to Res(R.string.tool_display_name_workflow_run, R.string.tool_display_desc_workflow_run),
         "workflow_delete" to Res(R.string.tool_display_name_workflow_delete, R.string.tool_display_desc_workflow_delete),
         "subagent_dispatch" to Res(R.string.tool_display_name_subagent_dispatch, R.string.tool_display_desc_subagent_dispatch),
+        "mission_dispatch" to Res(R.string.tool_display_name_mission_dispatch, R.string.tool_display_desc_mission_dispatch),
         "subagent_list" to Res(R.string.tool_display_name_subagent_list, R.string.tool_display_desc_subagent_list),
         "subagent_get" to Res(R.string.tool_display_name_subagent_get, R.string.tool_display_desc_subagent_get),
         "subagent_cancel" to Res(R.string.tool_display_name_subagent_cancel, R.string.tool_display_desc_subagent_cancel),

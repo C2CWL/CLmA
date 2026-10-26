@@ -107,6 +107,15 @@ object SubAgentToolSurface {
     const val INTERNAL_TOOL_PREFIX: String = "subagent_"
 
     /**
+     * The batch form of the tools above, denied by name because it deliberately does not carry the
+     * `subagent_` prefix: it is not a handle on one run, it is a second delegation surface. A child
+     * that received it would see a fork bomb invitation in every request — the run-time
+     * `isHeadless` guard would refuse the call, but the model would still burn a tool trip
+     * discovering that, exactly the cost [INTERNAL_TOOL_PREFIX] exists to avoid.
+     */
+    const val MISSION_DISPATCH_TOOL_NAME: String = "mission_dispatch"
+
+    /**
      * `ask_user` is not a permission gate — it is a request for human input, and a headless run
      * has nobody to answer, so it degrades to an `ask_user_unavailable` envelope. It is excluded
      * to save the trip, not to fix a hang. (Verified 2026-10-01: `LocalTools` returns the
@@ -123,6 +132,7 @@ object SubAgentToolSurface {
     fun denialReason(toolName: String): String? = when {
         toolName.startsWith(INTERNAL_TOOL_PREFIX) -> "tool_unavailable_headless"
         toolName == ASK_USER_TOOL_NAME -> "tool_unavailable_headless"
+        toolName == MISSION_DISPATCH_TOOL_NAME -> "tool_unavailable_headless"
         toolName == REQUEST_SECRET_TOOL_NAME -> "tool_unavailable_headless"
         toolName in UI_BOUND_TOOL_NAMES -> "tool_unavailable_headless"
         toolName in ToolApprovalDefaults.NO_ALWAYS_ALLOW -> "tool_not_authorized"

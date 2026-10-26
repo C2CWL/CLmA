@@ -38,8 +38,8 @@
   <string name="tool_display_desc_tool_browse">Page through catalog tools by category</string>
   <string name="tool_display_name_tool_open">Activate tools</string>
   <string name="tool_display_desc_tool_open">Activates tools by name from the next turn</string>
-  <string name="tool_display_name_tool_close">Release tools</string>
-  <string name="tool_display_desc_tool_close">Releases activated tools to free slots</string>
+  <string name="tool_display_name_tool_close">Deactivate tools</string>
+  <string name="tool_display_desc_tool_close">Releases activated tools to free catalog slots and prompt tokens</string>
   <string name="tool_display_name_tool_output_read">Read tool output</string>
   <string name="tool_display_desc_tool_output_read">Reads slices or filtered output of earlier tool executions</string>
   <string name="tool_display_name_get_time_info">Current time</string>
@@ -408,6 +408,8 @@
   <string name="tool_display_desc_workflow_delete">Deletes a workflow and its history</string>
   <string name="tool_display_name_subagent_dispatch">Dispatch sub-agent</string>
   <string name="tool_display_desc_subagent_dispatch">Runs a sub-agent on a subtask</string>
+  <string name="tool_display_name_mission_dispatch">Mission dispatch</string>
+  <string name="tool_display_desc_mission_dispatch">Sends several independent tasks to sub-agents in parallel</string>
   <string name="tool_display_name_subagent_list">List sub-agents</string>
   <string name="tool_display_desc_subagent_list">Lists sub-agent runs or saved experts</string>
   <string name="tool_display_name_subagent_get">View sub-agent run</string>
