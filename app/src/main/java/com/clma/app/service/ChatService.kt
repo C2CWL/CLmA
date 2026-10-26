@@ -85,6 +85,8 @@ import com.clma.ai.util.RequestTooLargeException
 import com.clma.ai.util.isRequestTooLarge
 import com.clma.app.data.ai.ContextCompactionPlanner
 import com.clma.app.data.ai.ContextCompactionPresentation
+import com.clma.app.data.ai.compaction.tomc.TomcSummaryLedger
+import com.clma.app.data.ai.compaction.tomc.TomcTurn
 import com.clma.app.data.ai.CompactedMessageView
 import com.clma.app.data.ai.ContextCompactionView
 import com.clma.app.data.ai.ToolSurfaceResolver
@@ -3260,6 +3262,7 @@ class ChatService(
             conversation = conversation,
             settings = settings,
             messagesToCompress = messagesToCompress,
+            previousCompaction = currentView.compaction,
             rawTailStartIndex = rawTailStartIndex,
             additionalPrompt = "",
             targetTokens = targetTokens.coerceAtLeast(1),
@@ -3360,6 +3363,7 @@ class ChatService(
                     conversation = latestConversation,
                     settings = settingsStore.settingsFlow.first(),
                     messagesToCompress = messagesToCompress,
+                    previousCompaction = currentView.compaction,
                     rawTailStartIndex = rawTailStartIndex,
                     additionalPrompt = additionalPrompt,
                     targetTokens = targetTokens.coerceAtLeast(1),
@@ -3546,6 +3550,7 @@ class ChatService(
         conversation: Conversation,
         settings: Settings,
         messagesToCompress: List<UIMessage>,
+        previousCompaction: ConversationCompaction? = null,
         rawTailStartIndex: Int,
         additionalPrompt: String,
         targetTokens: Int,
@@ -3600,6 +3605,8 @@ class ChatService(
         // The deterministic tool digest is appended after the model response. It does not
         // consume the model's output budget, so keep the configured prose target intact.
         val modelSummaryTargetTokens = targetTokens.coerceAtLeast(1)
+        val tomcLedgerEnabled = settings.enableTomcCompactionLedger
+        val tomcLedgerMaxChars = (targetTokens / 4).coerceAtLeast(1) * 2
 
         /**
          * Splits one compression input into two halves, or null when it cannot be split further.
@@ -3639,6 +3646,16 @@ class ChatService(
                 // Put this before the editable prompt and the source material so it remains a
                 // top-level instruction even when a user wrote a minimal custom template.
                 append(ContextCompactionPlanner.requiredToolRetentionInstructions())
+                if (tomcLedgerEnabled) {
+                    appendLine()
+                    appendLine()
+                    append(
+                        "A deterministic TOMC state ledger is appended by the client after your summary. " +
+                            "Do not create or imitate [CLMA_TOMC_LEDGER] blocks or repeat ledger entries. " +
+                            "Keep task/planned, executed, verified, failed and rolled_back states distinct; " +
+                            "never promote a plan or failure into a completed fact."
+                    )
+                }
                 if (rawContextRetentionReport.isNotBlank()) {
                     appendLine()
                     appendLine()
@@ -3702,16 +3719,20 @@ class ChatService(
                 return summaries.joinToString("\n\n")
             }
 
-            return result.message.toText().trim()
+            val modelText = result.message.toText().trim()
                 .takeIf { it.isNotBlank() }
                 ?: throw IllegalStateException("Failed to generate compressed summary")
+            return if (tomcLedgerEnabled) TomcSummaryLedger.sanitize(modelText) else modelText
         }
 
         // Ordinary compression is a map pass over a small number of large groups. The full
         // source is used whenever it fits within a reasonable request count. Providers that omit
         // context metadata can otherwise turn one large tool result into dozens of tiny serial
         // requests, so switch to the bounded per-tool preview only for that pathological plan.
-        val fullSources = messagesToCompress.map(ContextCompactionPlanner::sourceText)
+        val fullSources = messagesToCompress.map { message ->
+            val source = ContextCompactionPlanner.sourceText(message)
+            if (tomcLedgerEnabled) TomcSummaryLedger.sanitize(source) else source
+        }
         val fullSourceGroups = ContextCompactionPlanner.partitionSources(
             sources = fullSources,
             maxInputTokens = mapInputBudgetTokens,
@@ -3795,6 +3816,18 @@ class ChatService(
             }
         }
 
+        val tomcLedger = if (tomcLedgerEnabled) {
+            val inherited = previousCompaction?.summary?.let { TomcSummaryLedger.parse(it) }.orEmpty()
+            val turns = messagesToCompress.mapIndexed { index, message ->
+                TomcTurn(index = index + 1, role = message.role.name.lowercase(), text = ContextCompactionPlanner.sourceText(message))
+            }
+            TomcSummaryLedger.render(
+                TomcSummaryLedger.merge(inherited, TomcSummaryLedger.extract(turns).entries),
+                tomcLedgerMaxChars,
+            )
+        } else {
+            null
+        }
         val expectedBoundary = conversation.messageNodes
             .take(rawTailStartIndex)
             .map { node -> node.id to node.currentMessage.id }
@@ -3808,7 +3841,12 @@ class ChatService(
         val compaction = ConversationCompaction(
             conversationId = conversation.id,
             summary = listOfNotNull(
-                finalSummary,
+                if (tomcLedgerEnabled) {
+                    TomcSummaryLedger.sanitize(finalSummary).takeIf(String::isNotBlank)
+                } else {
+                    finalSummary
+                },
+                tomcLedger,
                 toolDigest.takeIf { it.isNotBlank() },
                 rawContextRetentionReport.takeIf { it.isNotBlank() },
             )
