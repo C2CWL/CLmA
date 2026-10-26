@@ -107,7 +107,9 @@ import com.clma.app.data.repository.WorkspaceRepository
 import com.clma.app.service.ChatError
 import com.clma.app.ui.components.ai.ChatAttachmentPickerActions
 import com.clma.app.Screen
+import com.clma.app.data.datastore.KeepScreenOnMode
 import com.clma.app.ui.components.ai.ChatInput
+import com.clma.app.ui.components.ui.KeepScreenOn
 import com.clma.app.ui.components.ai.FilesPicker
 import com.clma.app.ui.components.ai.SearchMode
 import com.clma.app.ui.components.ai.completion.WorkspaceCompletionProvider
@@ -472,6 +474,15 @@ private fun ChatPageContent(
     }
 
     TTSAutoPlay(vm = vm, setting = setting, conversation = conversation)
+
+    val keepScreenOn = when (setting.displaySetting.keepScreenOnMode) {
+        KeepScreenOnMode.NEVER -> false
+        KeepScreenOnMode.WHILE_GENERATING -> loadingJob != null
+        KeepScreenOnMode.ALWAYS_IN_CHAT -> true
+    }
+    if (keepScreenOn) {
+        KeepScreenOn()
+    }
 
     Surface(
         color = MaterialTheme.colorScheme.background,
