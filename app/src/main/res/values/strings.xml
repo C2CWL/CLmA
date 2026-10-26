@@ -902,6 +902,11 @@
   <string name="setting_display_page_enable_latex_rendering_title">Enable LaTeX Rendering</string>
   <string name="setting_display_page_enable_message_generation_haptic_effect_desc">Enable haptic feedback when messages are being generated</string>
   <string name="setting_display_page_enable_message_generation_haptic_effect_title">Message Generation Haptic Effect</string>
+  <string name="setting_display_page_keep_screen_on_title">Keep Screen Awake</string>
+  <string name="setting_display_page_keep_screen_on_desc">Control screen timeout behaviour while chatting</string>
+  <string name="setting_display_page_keep_screen_on_never">Never</string>
+  <string name="setting_display_page_keep_screen_on_while_generating">While Generating</string>
+  <string name="setting_display_page_keep_screen_on_always_in_chat">Always in Chat</string>
   <string name="setting_display_page_font_size_preview">At four in the morning, I saw the begonia flowers still awake. I am often like this — lying awake alone in the quiet night, thinking: if someone is thinking of me at this moment, that would be wonderful.</string>
   <string name="setting_display_page_font_size_title">Chat Font Size</string>
   <string name="setting_display_page_ui_font_family_title">UI Font</string>

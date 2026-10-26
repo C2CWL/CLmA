@@ -194,6 +194,7 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
             row(R.string.setting_display_page_enable_auto_scroll_title, R.string.setting_display_page_enable_auto_scroll_desc),
             row(R.string.setting_display_page_enable_interject_title, R.string.setting_display_page_enable_interject_desc),
             row(R.string.setting_display_page_enable_message_generation_haptic_effect_title, R.string.setting_display_page_enable_message_generation_haptic_effect_desc),
+            row(R.string.setting_display_page_keep_screen_on_title, R.string.setting_display_page_keep_screen_on_desc),
             row(R.string.setting_display_page_skip_crop_image_title, R.string.setting_display_page_skip_crop_image_desc),
             row(R.string.setting_display_page_paste_long_text_as_file_title, R.string.setting_display_page_paste_long_text_as_file_desc),
             row(R.string.setting_display_page_paste_long_text_threshold_title),
