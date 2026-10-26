@@ -1,8 +1,14 @@
 package com.clma.app.service.chatbox
 
 import com.clma.ai.core.MessageRole
+import com.clma.ai.ui.ToolApprovalState
 import com.clma.ai.ui.UIMessage
 import com.clma.ai.ui.UIMessagePart
+import com.clma.app.utils.JsonInstant
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 /** One row of the edge-bar chat box's message list. */
 sealed interface ChatBoxItem {
@@ -16,6 +22,19 @@ sealed interface ChatBoxItem {
 
     /** A tool call chip: "✓ 已调用工具：XX" when [done], else "… 正在调用工具：XX". */
     data class ToolChip(val rawName: String, val done: Boolean) : ChatBoxItem
+
+    /** Interactive card for `request_secret` tool call. */
+    data class RequestSecretCard(
+        val toolCallId: String,
+        val toolName: String,
+        val secretName: String,
+        val prompt: String,
+        val kind: String,
+        val isPending: Boolean,
+        val isAnswered: Boolean,
+        val isDenied: Boolean,
+        val storedName: String? = null,
+    ) : ChatBoxItem
 }
 
 object ChatBoxItems {
@@ -61,7 +80,34 @@ object ChatBoxItems {
                     is UIMessagePart.Document, is UIMessagePart.Audio -> files++
                     is UIMessagePart.Tool -> {
                         flush()
-                        out += ChatBoxItem.ToolChip(part.toolName, part.isExecuted)
+                        if (part.toolName == "request_secret") {
+                            val args = runCatching { part.inputAsJson() as? JsonObject }.getOrNull()
+                            val name = args?.get("name")?.jsonPrimitive?.contentOrNull.orEmpty()
+                            val prompt = args?.get("prompt")?.jsonPrimitive?.contentOrNull.orEmpty()
+                            val kind = args?.get("kind")?.jsonPrimitive?.contentOrNull ?: "password"
+                            val isPending = part.isPending
+                            val isAnswered = part.approvalState is ToolApprovalState.Answered
+                            val isDenied = part.approvalState is ToolApprovalState.Denied
+                            val storedName = if (isAnswered) {
+                                runCatching {
+                                    val ans = (part.approvalState as ToolApprovalState.Answered).answer
+                                    JsonInstant.parseToJsonElement(ans).jsonObject["name"]?.jsonPrimitive?.contentOrNull
+                                }.getOrNull() ?: name
+                            } else null
+                            out += ChatBoxItem.RequestSecretCard(
+                                toolCallId = part.toolCallId,
+                                toolName = part.toolName,
+                                secretName = name,
+                                prompt = prompt,
+                                kind = kind,
+                                isPending = isPending,
+                                isAnswered = isAnswered,
+                                isDenied = isDenied,
+                                storedName = storedName,
+                            )
+                        } else {
+                            out += ChatBoxItem.ToolChip(part.toolName, part.isExecuted)
+                        }
                     }
                     else -> Unit
                 }
