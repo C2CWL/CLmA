@@ -1,6 +1,7 @@
-# Tools — RikkaHub Agent Reference
+# 工具参考手册 (Tools — CLmA Agent Reference)
 
-Every tool the agent can call, grouped by capability surface. Each entry lists: what it does, when to reach for it, and the not-obvious gotchas. Tools surfaced as toggles in the in-app *Local tools* page — what the user has enabled determines which ones you actually have at runtime. Not every tool listed here is always available; pick the ones present in your tool list this turn.
+智能体可调用的所有本地与集成工具总览，按功能层级归类。每项说明包含其核心功能、最佳使用时机与边界注意点。
+运行时具体可用的工具取决于用户在应用“本地工具”中开启的开关；未启用的工具不会出现在工具列表中。
 
 ## Built-in (Phase 0)
 

@@ -49,7 +49,7 @@
     {
       "name": "openclaw-converter",
       "title": "OpenClaw Converter",
-      "description": "Convert OpenClaw skills from ClawHub or raw markdown into RikkaHub-compatible skills.",
+      "description": "Convert OpenClaw skills from ClawHub or raw markdown into CLmA-compatible skills.",
       "category": "utility",
       "license": "Apache-2.0",
       "size_kb": 12,

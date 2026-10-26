@@ -263,6 +263,34 @@ internal class EdgeBarChatBoxController(
         }
     }
 
+    override fun onToolApproval(
+        toolCallId: String,
+        approved: Boolean,
+        reason: String,
+        scope: ChatService.ApprovalScope,
+        toolName: String,
+    ) {
+        val id = boundId ?: return
+        chatService.handleToolApproval(
+            conversationId = id,
+            toolCallId = toolCallId,
+            approved = approved,
+            reason = reason,
+            scope = scope,
+            toolName = toolName,
+        )
+    }
+
+    override fun onToolAnswer(toolCallId: String, answer: String) {
+        val id = boundId ?: return
+        chatService.handleToolApproval(
+            conversationId = id,
+            toolCallId = toolCallId,
+            approved = true,
+            answer = answer,
+        )
+    }
+
     override fun onSend(text: String) {
         val id = boundId ?: return
         val parts = listOf(UIMessagePart.Text(text))

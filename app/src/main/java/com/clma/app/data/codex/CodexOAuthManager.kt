@@ -209,11 +209,11 @@ class CodexOAuthManager(
                 <meta charset="utf-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1">
                 <meta http-equiv="refresh" content="0; url=$deepLink">
-                <title>RikkaHub Codex OAuth</title>
+                <title>CLmA Codex OAuth</title>
               </head>
               <body>
-                <p>${if (success) "Returning to RikkaHub..." else "Sign-in failed."}</p>
-                <p><a href="$deepLink">Return to RikkaHub</a></p>
+                <p>${if (success) "Returning to CLmA..." else "Sign-in failed."}</p>
+                <p><a href="$deepLink">Return to CLmA</a></p>
                 <script>
                   window.location.replace("$deepLink");
                   setTimeout(function () { window.location.href = "$deepLink"; }, 500);

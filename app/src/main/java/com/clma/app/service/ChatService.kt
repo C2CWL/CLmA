@@ -494,6 +494,13 @@ class ChatService(
     private val folderRepository: FolderRepository,
     private val memoryIndex: com.clma.app.data.vector.MemoryIndexCoordinator,
     private val conversationIndex: com.clma.app.data.vector.ConversationIndexCoordinator,
+    /**
+     * P3-03 — the semantic half of the tool catalogue: one vector per catalogued tool, so a turn
+     * can be handed the tools its own request retrieved, and `tool_search` can match a Chinese
+     * sentence to `scrape_web`. Reused across conversations because a catalogue is per app, not
+     * per chat.
+     */
+    private val toolVectors: com.clma.app.data.vector.ToolVectorIndex,
 ) {
     // workspace 系统提示注入 (依赖 workspaceRepository, 故在类内构造)
     private val workspaceReminderTransformer = WorkspaceReminderTransformer(workspaceRepository)
@@ -1796,6 +1803,8 @@ class ChatService(
      *   sub-agent), non-null = against that assistant's own servers (P2-04).
      * @param abortOnInvalidMcpNames when true, a server name outside `[A-Za-z0-9]+` is reported
      *   via [addError] and this returns null so the caller aborts the turn.
+     * @param lastUserText what the user actually asked for this turn. Empty means "no guess": the
+     *   surface then carries exactly the always-on tools plus what the model opened itself.
      */
     private suspend fun assembleChatToolSurface(
         surfaceAssistant: Assistant,
@@ -1808,6 +1817,7 @@ class ChatService(
         allowCatalog: Boolean,
         mcpScope: Assistant?,
         abortOnInvalidMcpNames: Boolean,
+        lastUserText: String = "",
     ): ChatToolSurface? {
         // Synchronise the live dispatch profile before tool resolution so subagent_dispatch is
         // registered when the profile != NEVER. generateText used to be the missing third call
@@ -1985,11 +1995,28 @@ class ChatService(
         // group switched off) so a stale activation can never inject a schema that no longer
         // exists (which would 400 the request).
         activation.retain(catalog.entries.mapTo(mutableSetOf()) { it.name })
+        // P3-03 — warm this catalogue's vectors in the background. The model spends a whole round
+        // trip thinking before it calls `tool_search`, and by then the ranking is normally ready;
+        // a search that arrives earlier waits a bounded moment instead of answering without
+        // vectors (see ToolVectorIndex.answer).
+        toolVectors.prewarm(catalog.entries)
+        // What this turn gets without asking: what the model opened on purpose plus what the
+        // user's own words retrieved. Screen automation must not have to discover
+        // `take_screenshot` before it can see the screen. An unrankable catalogue yields an empty
+        // ranking rather than a keyword guess, so such a turn carries only what was opened and
+        // reaches the rest through `tool_search`.
+        val ranked = if (lastUserText.isNotBlank()) {
+            toolVectors.ranking(lastUserText, catalog)
+        } else {
+            emptyList()
+        }
         return ChatToolSurface(
             fixed = com.clma.app.subagent.SubAgentSurface
                 .apply(conversationId = conversationId, tools = fixedTools),
             catalog = catalog,
             activation = activation,
+            rankedNames = ranked,
+            semanticSearch = { query -> toolVectors.answer(query, catalog) },
         )
     }
 
@@ -2149,6 +2176,15 @@ class ChatService(
             } else {
                 compactedMessageView!!.messages
             }
+            // P3-03 — what the user actually asked for. It decides which tools this turn is handed
+            // without the model having to go looking for them, which is the difference between
+            // progressive mode being usable and being one round trip away from every tool. The
+            // last *user* message, not the last message: after a tool call the newest message is a
+            // result, and the intent still lives in the request it answered.
+            val lastUserText = messagesForGeneration
+                .lastOrNull { it.role == MessageRole.USER }
+                ?.toText()
+                .orEmpty()
             // P2-05 — one surface per turn, assembled once and re-snapshotted per step (see
             // ChatToolSurface). A malformed MCP server name aborts the turn here, exactly as the
             // inline assembly used to.
@@ -2165,6 +2201,7 @@ class ChatService(
                 allowCatalog = surfaceAssistant.toolSurfaceMode == ToolSurfaceMode.PROGRESSIVE_CATALOG,
                 mcpScope = if (surfaceAssistant === assistant) null else surfaceAssistant,
                 abortOnInvalidMcpNames = true,
+                lastUserText = lastUserText,
             ) ?: return
 
             generationLoop.generateText(

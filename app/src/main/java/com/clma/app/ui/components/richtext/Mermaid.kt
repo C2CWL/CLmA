@@ -283,7 +283,7 @@ private fun buildMermaidHtml(
 
                         ctx.font = '14px Arial';
                         ctx.fillStyle = '${onBackground}';
-                        ctx.fillText('rikkahub-agent-pure', 20, canvas.height - 10);
+                        ctx.fillText('CLmA', 20, canvas.height - 10);
 
                         const pngBase64 = canvas.toDataURL('image/png').split(',')[1];
                         AndroidInterface.exportImage(pngBase64);

@@ -259,20 +259,20 @@ class WorkflowEngine(
                     ) == android.content.pm.PackageManager.PERMISSION_GRANTED
                 } else true
                 when {
-                    !fineGranted -> "geofence_unavailable: ACCESS_FINE_LOCATION not granted — open Settings → Apps → RikkaHub → Permissions → Location and pick Allow all the time"
-                    !bgGranted -> "geofence_unavailable: ACCESS_BACKGROUND_LOCATION not granted — open Settings → Apps → RikkaHub → Permissions → Location and pick Allow all the time"
+                    !fineGranted -> "geofence_unavailable: ACCESS_FINE_LOCATION not granted — open Settings → Apps → CLmA → Permissions → Location and pick Allow all the time"
+                    !bgGranted -> "geofence_unavailable: ACCESS_BACKGROUND_LOCATION not granted — open Settings → Apps → CLmA → Permissions → Location and pick Allow all the time"
                     else -> null
                 }
             }
             is com.clma.app.workflow.model.TriggerSpec.NotificationReceived -> {
                 if (!com.clma.app.data.ai.tools.local.NotificationListenerHandle.isBound()) {
-                    "notification_listener_not_enabled: enable the RikkaHub notification listener in Settings → Apps → Special access → Notification access"
+                    "notification_listener_not_enabled: enable the CLmA notification listener in Settings → Apps → Special access → Notification access"
                 } else null
             }
             is com.clma.app.workflow.model.TriggerSpec.AppLaunched,
             is com.clma.app.workflow.model.TriggerSpec.AppClosed -> {
                 if (!com.clma.app.data.ai.tools.local.AccessibilityServiceHandle.isRunning()) {
-                    "accessibility_not_enabled: enable the RikkaHub accessibility service in Settings → Accessibility (required for app_launched / app_closed triggers)"
+                    "accessibility_not_enabled: enable the CLmA accessibility service in Settings → Accessibility (required for app_launched / app_closed triggers)"
                 } else null
             }
             is com.clma.app.workflow.model.TriggerSpec.BluetoothDeviceConnected,

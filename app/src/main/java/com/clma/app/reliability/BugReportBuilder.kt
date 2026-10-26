@@ -62,7 +62,7 @@ class BugReportBuilder(private val context: Context) {
     }
 
     private fun buildMeta(): String = buildString {
-        append("App: rikkahub-agent\n")
+        append("App: CLmA\n")
         append("Version: ${BuildConfig.VERSION_NAME} (versionCode ${BuildConfig.VERSION_CODE})\n")
         append("Build type: ${BuildConfig.BUILD_TYPE}\n")
         append("Application ID: ${BuildConfig.APPLICATION_ID}\n")
@@ -75,8 +75,8 @@ class BugReportBuilder(private val context: Context) {
 
     private fun buildReadme(): String =
         """
-        rikkahub-agent bug report
-        =========================
+        CLmA bug report
+        ===============
 
         This ZIP was generated locally on the device. It contains:
           * meta.txt   — app version + device + Android info

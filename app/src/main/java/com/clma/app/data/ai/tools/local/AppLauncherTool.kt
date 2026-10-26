@@ -120,7 +120,7 @@ fun launchAppTool(
                             put("current_foreground", finalForeground.orEmpty())
                             put(
                                 "recovery",
-                                "The launch intent was dispatched but the OS did not move ${pkg} to the foreground within 2.5s. The user is likely actively viewing another app (often RikkaHub itself) — If the screen automation tools are enabled: do NOT pass package_name to read_window_tree on this turn. Either ask the user to switch to ${pkg}, or call read_window_tree with no package_name guard so you can see whatever IS currently on screen; otherwise ask the user to switch to the app manually."
+                                "The launch intent was dispatched but the OS did not move ${pkg} to the foreground within 2.5s. The user is likely actively viewing another app (often CLmA itself) — If the screen automation tools are enabled: do NOT pass package_name to read_window_tree on this turn. Either ask the user to switch to ${pkg}, or call read_window_tree with no package_name guard so you can see whatever IS currently on screen; otherwise ask the user to switch to the app manually."
                             )
                             if (wasOff) put("woke_screen", woke)
                         }.toString()

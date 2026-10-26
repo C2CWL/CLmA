@@ -127,6 +127,14 @@ val dataSourceModule = module {
             embeddings = get(),
         )
     }
+    // P3-03 — 工具目录的向量。只存在内存里：它完全可以由（模型、名字、描述）重算出来，
+    // 目录规模小、跟着 MCP 连接变而不是跟着对话变，落盘还要背上和记忆索引一样的失效逻辑。
+    single {
+        com.clma.app.data.vector.ToolVectorIndex(
+            embeddings = get(),
+            scope = get<AppScope>(),
+        )
+    }
     // 索引在后台跑，用应用自己的 scope：索引比任何一次会话都活得长，被关闭的页面取消掉的同步等于没做。
     single {
         com.clma.app.data.vector.MemoryIndexCoordinator(
@@ -309,7 +317,7 @@ val dataSourceModule = module {
                 if (originalRequest.header(HttpHeaders.UserAgent) == null) {
                     val userAgent = settingsStore.settingsFlow.value.networkSetting.userAgent
                         .trim()
-                        .ifEmpty { "RikkaHub-Android/${BuildConfig.VERSION_NAME}" }
+                        .ifEmpty { "CLmA-Android/${BuildConfig.VERSION_NAME}" }
                     requestBuilder.addHeader(HttpHeaders.UserAgent, userAgent)
                 }
 

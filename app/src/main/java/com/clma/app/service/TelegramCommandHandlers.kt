@@ -82,7 +82,7 @@ internal suspend fun TelegramBotService.handleBuiltInCommand(
 internal suspend fun TelegramBotService.sendStart(chatId: Long) {
     val (modelName, _) = activeModelDisplay()
     val msg = """
-        👋 Hey - RikkaHub agent here, running $modelName.
+        👋 Hey - CLmA agent here, running $modelName.
 
         Just talk to me normally. Or use one of these:
 
@@ -247,7 +247,7 @@ internal suspend fun TelegramBotService.handleStatusCommand(chatId: Long) {
     val whitelistLabel = if (whitelistCount == 1) "1 chat" else "$whitelistCount chats"
 
     val msg = buildString {
-        appendLine("📊 RikkaHub agent status")
+        appendLine("📊 CLmA agent status")
         appendLine()
         appendLine("${if (isRunning) "🟢" else "🔴"} Service: ${if (isRunning) "running" else "stopped"}")
         appendLine("👤 Assistant: ${assistant.name.ifBlank { "(default)" }}")

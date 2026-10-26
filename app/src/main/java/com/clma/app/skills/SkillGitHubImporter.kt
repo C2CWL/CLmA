@@ -29,7 +29,7 @@ object GitHubSkillImporter {
     data class Ref(val owner: String, val repo: String, val branch: String?, val path: String?)
 
     private const val MAX_ZIP_BYTES = 30L * 1024 * 1024
-    private const val USER_AGENT = "rikkahub-agent/skill-importer"
+    private const val USER_AGENT = "CLmA/skill-importer"
 
     /** Null when [url] is not a github.com repo/tree URL. Public for testability. */
     fun parse(url: String): Ref? {

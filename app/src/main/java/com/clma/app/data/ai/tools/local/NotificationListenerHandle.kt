@@ -41,6 +41,6 @@ object NotificationListenerHandle {
 
     fun notBoundEnvelope(): JsonObject = buildJsonObject {
         put("error", "notification_listener_not_bound")
-        put("recovery", "Enable RikkaHub in Settings → Notification access. Then return to the app.")
+        put("recovery", "Enable CLmA in Settings → Notification access. Then return to the app.")
     }
 }

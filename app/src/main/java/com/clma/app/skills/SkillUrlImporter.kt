@@ -181,7 +181,7 @@ class SkillUrlImporter(
     private fun fetch(url: String): String {
         val req = Request.Builder()
             .url(url)
-            .header("User-Agent", "rikkahub-agent/skill-importer")
+            .header("User-Agent", "CLmA/skill-importer")
             .header("Accept", "text/markdown, text/plain, application/json, */*")
             .build()
         httpClient.newCall(req).execute().use { resp ->
@@ -294,7 +294,7 @@ class SkillUrlImporter(
             }
             appendLine("## Source")
             appendLine()
-            appendLine("Imported from Hermes skill at $sourceUrl. Tool names were not transcoded — Hermes references its own tool surface, which doesn't always map 1:1 to RikkaHub's. Edit any tool references manually if the skill misbehaves.")
+            appendLine("Imported from Hermes skill at $sourceUrl. Tool names were not transcoded — Hermes references its own tool surface, which doesn't always map 1:1 to CLmA's. Edit any tool references manually if the skill misbehaves.")
         }
         return ToolNameTranscoder.transcode(body)
     }

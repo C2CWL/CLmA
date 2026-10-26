@@ -34,6 +34,8 @@
   <string name="tool_display_desc_check_token_usage">Shows this chat\'s token totals vs budget caps</string>
   <string name="tool_display_name_tool_search">Search tools</string>
   <string name="tool_display_desc_tool_search">Finds tools in the catalog by keyword</string>
+  <string name="tool_display_name_tool_browse">Browse tools</string>
+  <string name="tool_display_desc_tool_browse">Page through catalog tools by category</string>
   <string name="tool_display_name_tool_open">Activate tools</string>
   <string name="tool_display_desc_tool_open">Activates tools by name from the next turn</string>
   <string name="tool_display_name_tool_close">Deactivate tools</string>
