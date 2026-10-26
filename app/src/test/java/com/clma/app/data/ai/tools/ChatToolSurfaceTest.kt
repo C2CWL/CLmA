@@ -51,13 +51,16 @@ class ChatToolSurfaceTest {
     }
 
     @Test
-    fun `a progressive surface starts with the discovery pair only`() {
+    fun `a progressive surface starts with the discovery and control tools only`() {
         val surface = ChatToolSurface(
             fixed = listOf(fakeTool("core")),
             catalog = catalogWith("set_volume"),
             activation = ToolActivationState(),
         )
-        assertEquals(listOf("core", "tool_search", "tool_open"), surface.tools().map { it.name })
+        assertEquals(
+            listOf("core", "tool_search", "tool_browse", "tool_open", "tool_close"),
+            surface.tools().map { it.name },
+        )
     }
 
     @Test
