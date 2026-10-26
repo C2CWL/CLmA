@@ -483,11 +483,12 @@ fun ChatDrawerContent(
                 },
                 onDelete = {
                     scope.launch {
-                        vm.deleteConversation(it).join()
-                        conversations.refresh()
-                        if (it.id == current.id) {
+                        val deletingCurrent = it.id == current.id
+                        if (deletingCurrent) {
                             navigateToChatPage(navController)
                         }
+                        drawerVm.deleteConversations(listOf(it.id)).join()
+                        conversations.refresh()
                     }
                 },
                 onPin = {

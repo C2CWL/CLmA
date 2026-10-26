@@ -109,7 +109,10 @@ class ConversationSession(
     @Synchronized
     fun cancelJobs(): List<Job> = activeJobs.toList().also { jobs ->
         // Cancel waiters first so a predecessor finishing cannot start the next approval.
-        jobs.asReversed().forEach { it.cancel() }
+        jobs.asReversed().forEach {
+            it.cancel()
+            it.cancelChildren()
+        }
     }
 
     private fun scheduleIdleCheck() {
