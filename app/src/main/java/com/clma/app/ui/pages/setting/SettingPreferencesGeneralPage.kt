@@ -22,8 +22,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clma.app.R
 import com.clma.app.data.datastore.DisplaySetting
+import com.clma.app.data.datastore.KeepScreenOnMode
 import com.clma.app.ui.components.ui.CardGroup
 import com.clma.app.ui.components.ui.PercentSlider
+import com.clma.app.ui.components.ui.Select
 import com.clma.app.ui.hooks.rememberSharedPreferenceBoolean
 import com.clma.app.utils.plus
 import org.koin.androidx.compose.koinViewModel
@@ -190,6 +192,29 @@ fun SettingPreferencesGeneralPage(vm: SettingVM = koinViewModel()) {
                             onCheckedChange = {
                                 updateDisplaySetting(displaySetting.copy(enableMessageGenerationHapticEffect = it))
                             }
+                        )
+                    },
+                )
+                item(
+                    headlineContent = { Text(stringResource(R.string.setting_display_page_keep_screen_on_title)) },
+                    supportingContent = { Text(stringResource(R.string.setting_display_page_keep_screen_on_desc)) },
+                    trailingContent = {
+                        Select(
+                            options = KeepScreenOnMode.entries,
+                            selectedOption = displaySetting.keepScreenOnMode,
+                            onOptionSelected = {
+                                updateDisplaySetting(displaySetting.copy(keepScreenOnMode = it))
+                            },
+                            optionToString = {
+                                stringResource(
+                                    when (it) {
+                                        KeepScreenOnMode.NEVER -> R.string.setting_display_page_keep_screen_on_never
+                                        KeepScreenOnMode.WHILE_GENERATING -> R.string.setting_display_page_keep_screen_on_while_generating
+                                        KeepScreenOnMode.ALWAYS_IN_CHAT -> R.string.setting_display_page_keep_screen_on_always_in_chat
+                                    }
+                                )
+                            },
+                            modifier = Modifier.width(150.dp),
                         )
                     },
                 )
