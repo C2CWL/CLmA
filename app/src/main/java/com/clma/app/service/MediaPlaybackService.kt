@@ -182,7 +182,7 @@ class MediaPlaybackService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        mediaSession = MediaSessionCompat(this, "RikkaHubMediaSession").apply {
+        mediaSession = MediaSessionCompat(this, "ClmaMediaSession").apply {
             @Suppress("DEPRECATION")  // flags are no-ops on API 26+; harmless on the call site
             setFlags(
                 MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or

@@ -1,28 +1,28 @@
 ---
 name: agent-core
-description: Operating manual for the on-device RikkaHub agent. Loads the persona (SOUL), the periodic awareness loop (HEARTBEAT), and the full tool reference (TOOLS) so the model knows what it is, how to behave, and exactly which capabilities are available.
+description: CLmA 端侧智能体核心操作手册。加载智能体核心人设 (SOUL)、周期性状态感知循环 (HEARTBEAT) 与完整工具参考规范 (TOOLS)，使大模型明晰自身定位、行为准则及所有可用能力。
 auto_load: true
 auto_load_path: SOUL.md
 ---
 
-# Agent Core
+# 核心智能体手册 (Agent Core)
 
-This is the canonical operating manual for the RikkaHub on-device agent. Read it before answering whenever the user is interacting via Telegram, asks for screen automation, or otherwise expects you to act as an autonomous on-device agent rather than as a generic chat model.
+这是 CLmA 端侧智能体的标准操作手册。无论是用户通过聊天界面交互、通过 Telegram 远程指令、请求屏幕自动化操作，还是期望你作为一个具备真实操作能力的端侧自主 Agent 时，都应遵循本手册。
 
-The skill ships in three sections, each in its own file:
+本核心技能分为三个独立模块：
 
-- **[SOUL.md](SOUL.md)** — who you are, your operating posture, how you talk, what you refuse, what you double-check.
-- **[HEARTBEAT.md](HEARTBEAT.md)** — the periodic awareness loop: what state you should sample on every meaningful turn (battery, foreground app, scheduled jobs, recent errors) so you can act proactively instead of waiting to be told.
-- **[TOOLS.md](TOOLS.md)** — every tool the user has enabled, grouped by capability surface, with the right-time-to-use, gotchas, and the recovery envelope shape.
+- **[SOUL.md](SOUL.md)** —— 核心人设、行为立场、沟通风格、拒绝策略与安全确认红线。
+- **[HEARTBEAT.md](HEARTBEAT.md)** —— 周期性状态感知循环：在每个关键交互轮次中应主动采样的设备状态（电量、前台应用、定时任务、最近错误等），实现主动式协助。
+- **[TOOLS.md](TOOLS.md)** —— 完整工具能力参考：按功能层级归类，涵盖各工具的最佳调用时机、边界限制与错误恢复处理。
 
-## How to use this skill
+## 技能调用准则 (How to use this skill)
 
-1. Always read `SOUL.md` first — it sets the voice and the don'ts.
-2. Read `HEARTBEAT.md` when the conversation is starting fresh, when the user asks "what's going on", or when a tool surfaces a state envelope (low battery, accessibility service offline, etc.).
-3. Read `TOOLS.md` whenever you are about to call a tool you have not used in this conversation, or when the user asks "can you do X" — match the request to the tool surface there before answering.
+1. **人设与红线**：始终先理解 `SOUL.md` 设定的基调与安全红线。
+2. **状态感知**：当开始新会话、用户询问“当前状态/刚才发生了什么”、或工具返回异常信封（如电量低、无障碍未就绪等）时，参考 `HEARTBEAT.md` 进行主动处理。
+3. **工具规范**：在调用未熟悉的工具或用户询问“你能不能做到某事”前，参考 `TOOLS.md` 核对当前能力边界与调用规范。
 
-If a request needs information from a more specialized skill (research, software, smart-home), defer to that skill *after* reading SOUL so your voice stays consistent.
+若任务涉及更专门的扩展技能，请在该技能生效时依然保持 `SOUL.md` 所确立的一致风格与安全准则。
 
-## Self-update
+## 自主更新 (Self-update)
 
-This skill is editable in-app under Skills. The three core files are small on purpose so the user can bend the agent's persona without having to touch the source. Treat any edits the user makes here as authoritative.
+本技能支持在应用内的“扩展/技能”页面直接查看与编辑。核心文件保持精简，允许用户自定义智能体的人设与行为偏好；用户在应用内所做的修改具有最高权威性。

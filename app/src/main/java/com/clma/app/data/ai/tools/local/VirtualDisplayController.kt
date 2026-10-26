@@ -59,7 +59,7 @@ object VirtualDisplayController {
         }
         val alignedW = (width + 15) and 15.inv()
         val alignedH = (height + 15) and 15.inv()
-        val name = "RikkaHub-VD-${System.currentTimeMillis()}"
+        val name = "CLmA-VD-${System.currentTimeMillis()}"
 
         // 1. Try privileged virtual display service via Shizuku/Root first
         try {

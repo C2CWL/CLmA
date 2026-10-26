@@ -1,78 +1,56 @@
-# Heartbeat — Periodic Awareness Loop
+# 状态感知循环 (Heartbeat — Periodic Awareness Loop)
 
-You are running on a phone that the user is also using. Your awareness of device state matters — a stale answer based on yesterday's context is worse than asking. This file lists the things you should sample on every meaningful turn, and the thresholds that should change your behavior.
+智能体运行在用户正在日常使用的 Android 手机上。对设备实时状态的准确感知至关重要——基于过时状态做出的错误操作比直接询问更加糟糕。本手册列举了在关键交互轮次中应主动采样的设备状态，以及应当触发行为调整的阈值。
 
-## What to sample (cheap, run often)
+<!-- 1. 低成本采样：近乎零开销，高频使用 -->
+## 低成本状态采样 (Cheap, run often)
 
-These tools are nearly free; call them whenever the user's request depends on the answer.
+这类工具调用极快且几乎不消耗额度，在用户请求依赖时应主动调用：
 
-- **`get_time_info`** — date, weekday, timezone. Always check before scheduling jobs or interpreting "tomorrow", "next week", "in an hour".
-- **Recent action log** — when the conversation just started or the user said "what happened earlier", look at recently completed tool calls in this conversation history. Don't re-run them.
+- **`get_time_info`** —— 获取系统当前日期、星期、时区及时间戳。在处理定时任务、或解析“明天”、“下周”、“一小时后”等时间敏感词前务必核对。
+- **最近操作历史** —— 当新会话刚开始或用户询问“刚才做了什么”时，优先检查上下文中的最近工具调用记录，避免重复执行相同命令。
 
-## What to sample (mid-cost, run when relevant)
+<!-- 2. 中等成本采样：按需使用 -->
+## 中等成本采样 (Mid-cost, run when relevant)
 
-- **`get_battery_status`** — when scheduling something long-running, when the user says "I'm leaving the house", when a job's expected runtime is non-trivial. If `< 20%` and not charging, surface it.
-- **`get_location`** — only when the user's request actually depends on location ("nearest", "weather here", "am I home"). Never pre-fetch.
-- **`read_window_tree`** — before any `tap`, `click_node`, `scroll`, or `global_action` call, unless you already have a fresh tree from the same turn. The screen changes between turns even when you didn't act.
-- **`telegram_status`** — when the user asks why the bot is slow / not delivering, OR when an outbound `telegram_send_message` fails. The status envelope tells you whether the foreground service is alive.
-- **`list_recent_notifications`** — when the user asks "what notifications did I miss", "what's that ping", or anything implying notification history. Cheap (in-memory ring buffer). The auto-route forwarder already pushes whitelisted apps to Telegram in real time; the LLM does not need to poll — answer based on what's already in the chat history when relevant.
-- **`whisper_status`** — call this ONCE the moment an audio / voice / video-note attachment arrives, before promising any transcription. Returns `ready_to_transcribe` plus a list of `missing_steps`. Free, no approval needed. If `ready_to_transcribe: true`, proceed straight to `transcribe_audio_file`. If anything is missing, surface the gap to the user and ask for confirmation BEFORE running install commands (the build-from-source path takes ~5 minutes and downloads ~75 MB).
+- **`get_battery_status`** —— 准备执行长时间后台任务、用户提到“出门了”、或某任务耗时不容忽视时调用。若电量 `< 20%` 且未在充电，在回复中主动提示。
+- **`get_location`** —— 仅当用户明确请求依赖位置时调用（如“附近”、“本地天气”等）。严禁无理由预先拉取。
+- **`read_window_tree`** —— 在执行点击（`click_node`、`tap`）、滑动（`scroll`）等任何手势前调用，确保屏幕控件树最新。
+- **`telegram_status`** —— 当用户询问机器人为什么无响应/延迟高，或发送消息失败时调用，用于检查前台服务运行状态。
+- **`list_recent_notifications`** —— 当用户询问“刚才有什么通知”、“错过了什么消息”时调用。读取内存中的环形缓冲区，开销极低。
+- **`whisper_status`** —— 收到音频/语音条/视频附件时**第一时间调用一次**。检查本地转写环境是否就绪（`ready_to_transcribe`），若就绪则调用 `transcribe_audio_file`；若缺少依赖，先告知用户并询问确认后再安装（编译构建耗时约 5 分钟并下载 ~75MB）。
 
-## What to sample (expensive, only on demand)
+<!-- 3. 高成本采样：仅在明确需要时调用 -->
+## 高成本状态采样 (Expensive, only on demand)
 
-- **`take_screenshot`** — when `read_window_tree` doesn't show what you need (canvas-rendered UIs, games, captchas). Costs an OS-rate-limited capture and a vision-model turn.
-- **`list_jobs`** — only when the user asks about scheduled jobs or you suspect a clash before creating a new one.
-- **`list_installed_apps`** — only when you don't already know the package name. Cache the answer for the rest of the session.
+- **`take_screenshot`** —— 仅当 `read_window_tree` 无法获取到界面内容时使用（如 Canvas 渲染界面、游戏、验证码等）。会受到系统帧率限制并消耗大模型视觉上下文。
+- **`list_jobs`** —— 仅当用户查询定时任务或创建前怀疑有冲突时检查。
+- **`list_installed_apps`** —— 仅在未知晓目标应用包名时调用，调用后可在本会话内复用结果。
 
-## State envelopes — what to do when you see them
+<!-- 4. 常见异常状态信封与处置指南 -->
+## 异常信封处理指引 (State envelopes)
 
-Tools return structured `{error, recovery, ...}` envelopes when state is degraded. Treat each as an actionable signal.
+工具在异常时会返回结构化的 `{error, recovery, ...}` 信封，应作为明确的处置依据：
 
-| Envelope | What it means | What you do |
+| 异常信封 (Envelope) | 含义与原因 | 应对措施 |
 | --- | --- | --- |
-| `error: "AccessibilityService not active"` | Screen-automation tools all fail until enabled | Tell user once, deep-link them via the app's UI hint, then stop trying screen tools this turn. |
-| `error: "no_active_window"` | Transient — animations / lock screen / screen-off | Call `wake_screen` first; if `keyguard_secure:true`, ask the user to unlock. Otherwise retry one turn later. |
-| `error: "wrong_foreground_app", current: ...` | Some other app is in the foreground | Call `launch_app` first (it will auto-wake), then retry **without** the `package_name` guard if the user is actively viewing RikkaHub. |
-| `error: "launch_did_not_focus", current_foreground: ...` | `launch_app` dispatched but the OS did not move focus (usually because the user is physically looking at RikkaHub's chat) | Do NOT pass `package_name` to the next `read_window_tree` — drop the guard and read whatever IS on screen, or surface `recovery` to the user verbatim and stop trying to drive the target app this turn. |
-| `error: "node_not_editable"` | `set_text` target is not an input field | If the surface is Termux or a terminal, switch to `termux_run_command`. Otherwise re-locate the actual input. |
-| `error: "termux_not_installed"` / `"termux_permission_denied"` | Termux missing or `allow-external-apps` not set | Surface the recovery hint to the user verbatim — it tells them exactly what to fix. |
-| `error: "screenshot_unavailable", reason: "secure_surface"` | DRM / banking / password — never recoverable this session | Don't keep retrying. Tell the user what surface you can see instead. |
-| `error: "rate_limited"` | OS throttle on screenshot (~1/sec) | Wait, then retry. |
-| `recovery: "Enable RikkaHub in Settings ..."` | Some grant flow is missing | Surface the recovery hint to the user verbatim — it tells them exactly what to enable. |
-| `error: "notification_listener_not_bound"` | Listener service unbound | Surface the recovery hint verbatim. The user must enable RikkaHub in Settings → Notification access. |
-| `error: "requires_input"` (from notification_action_click) | The action needs typed input (RemoteInput) | Fall back to launch_app + set_text + click_node via screen automation. |
-| `error: "loop_detected"` (from any tool) | The host app blocked your call because you repeated this exact tool with identical args 3+ times in this turn without progress | STOP retrying. Either change args meaningfully, switch to a different tool, or reply to the user with what you have. The `recovery` field tells you exactly what to try. |
-| `error: "whisper_not_installed"` (from `transcribe_audio_file`) | whisper.cpp isn't in PATH or any known build location | Show the user the install commands from `hint`, ask for confirmation, run them, then retry. Do NOT silently install — the build takes ~5 minutes and downloads ~75 MB. |
-| `error: "whisper_model_missing"` (from `transcribe_audio_file`) | whisper-cli is installed but no `.bin` model file exists | Show the user the model-download command from `hint`, ask for confirmation, then run it. The tiny model is the safe default. |
-| `error: "termux_not_installed"` (from `transcribe_audio_file` / `whisper_status`) | Termux app isn't installed on the device | Tell the user transcription needs Termux from F-Droid. Don't keep retrying. |
-| `error: "termux_permission_not_granted"` (from `transcribe_audio_file` / `whisper_status`) | Termux toggle isn't enabled in this assistant's Local tools | Tell the user to flip Termux on under Settings → Assistant → Local tools. You can't enable it for them. |
+| `error: "AccessibilityService not active"` | 无障碍服务未开启或被系统杀掉 | 简明提示用户一次，引导其前往设置开启无障碍，本轮暂停屏幕操作。 |
+| `error: "no_active_window"` | 临时状态（锁屏、灭屏、转场过渡） | 先调用 `wake_screen`；若提示需要密码解锁（`keyguard_secure:true`）则提示用户解锁设备。 |
+| `error: "wrong_foreground_app", current: ...` | 目标应用不在前台 | 先调用 `launch_app` 调起（会自动亮屏）；若用户正停留在 CLmA 界面，可去掉包名保护直接读取当前屏幕。 |
+| `error: "launch_did_not_focus", current_foreground: ...` | 启动指令已发出但系统未切换前台焦点 | 下一步 `read_window_tree` 时切勿传入 `package_name` 限制，直接读取当前屏幕，或向用户展示 `recovery` 提示。 |
+| `error: "node_not_editable"` | 输入目标不是可编辑文本框 | 若为终端/Termux 界面应切换为 `termux_run_command`；否则重新定位实际输入框。 |
+| `error: "termux_not_installed"` / `"termux_permission_denied"` | Termux 未安装或未配置外部应用权限 | 直接将 `recovery` 建议原样展示给用户，引导其配置 `allow-external-apps`。 |
+| `error: "screenshot_unavailable", reason: "secure_surface"` | 触发安全界面（DRM/银行安全/密码输入） | 属于系统安全机制，停止重试，向用户如实说明当前处于受保护页面。 |
+| `error: "rate_limited"` | 屏幕截图触发系统频率限制（约 1 秒 1 次） | 稍作停顿后再尝试。 |
+| `recovery: "Enable CLmA in Settings ..."` | 缺失系统权限 | 直接向用户展示恢复建议，明确告知需在系统设置中授予相应权限。 |
+| `error: "notification_listener_not_bound"` | 通知监听服务未绑定 | 引导用户在系统设置 → 通知使用权中启用 CLmA。 |
+| `error: "loop_detected"` | 相同参数连续调用 3 次以上无进展触发防死循环限制 | **立即停止重试**。调整参数、更换工具或直接向用户总结当前遇到的阻碍。 |
 
-## Loop avoidance — token-cost discipline
+<!-- 5. 避免死循环与节约 Token 消耗 -->
+## 交互纪律：严禁死循环与无效调用 (Loop avoidance)
 
-**Hard rule:** every tool call costs the user money. If a tool returns the same result twice in a row, calling it a third time will return `loop_detected` and you will have wasted three turns. Specific anti-patterns to avoid:
-
-- **Browser typing:** Never drive Chrome's URL bar with `set_text`. The accessibility tree's editable target is unstable across Chrome's launch overlay, the Suggestions panel, and the omnibox. For searches use `open_url("https://www.google.com/search?q=…")`; for direct visits use `open_url("https://example.com")`. One tool call, done.
-- **Terminal typing:** Never `set_text` into Termux. Use `termux_run_command` with capture mode.
-- **Selector retries:** If `click_node(by=text, value="Send")` returned `no_match`, calling it again with the SAME `value` won't suddenly succeed. Try a different selector axis (`view_id_resource_name` if the app exposes one) or a different value.
-- **Self-diagnostic spam:** Don't call `notification_status` / `telegram_status` mid-task "to make sure" — they are diagnostic tools, only useful when something already returned a not-bound envelope.
-- **Re-reads with no action between:** After a successful `tap` / `click_node` / `swipe`, give the OS one beat before re-reading the tree. Reading the tree N times for the same on-screen state is wasted budget.
-- **package_name guards after launch_app:** If `launch_app` returned `confirmed_foreground:false` or `error:"launch_did_not_focus"`, do NOT pass `package_name` to the next `read_window_tree` / `click_node` / `find_node` — those guards will keep returning `wrong_foreground_app` and you will loop. Drop the guard and read the screen as-is.
-- **Clicking the N-th search result:** Don't fight the search-results page with `click_node` by text — the labels are often a mix of languages, ad markers, and rich snippets, and your selector will miss. If the user wants the top result, use `open_url("https://www.google.com/search?q=…&btnI=1")` (Google's "I'm Feeling Lucky" — lands directly on the first organic hit). If `btnI` doesn't fire, fall back to a coordinate `tap` near the top of the results area after one `read_window_tree`, not repeated text-selector retries.
-- **`play_media` to "hear" a voice note:** `play_media` plays audio TO THE USER'S DEVICE SPEAKER. It does NOT feed audio back to you. Calling it on a voice note and then claiming to know what was said is a hallucination — refuse. The correct path is `whisper_status` then `transcribe_audio_file(path)`.
-
-When in doubt, stop early and reply with what you have. Let the user redirect. The host app enforces a 3-call cap on identical (tool, args) pairs and a 32-step turn cap as a hard backstop, but you should never make the cap care.
-
-## Initial heartbeat (cold start of a Telegram conversation)
-
-When the user first messages the bot, do this in your head before replying:
-
-1. Note the `[telegram_context: ...]` preamble — the chat_id is in there. All scheduled jobs you create should route back to this chat_id via `telegram_send_message`.
-2. Check what skill files (this one, plus any others enabled) tell you about voice, posture, and tool surface.
-3. Don't do a status dump. Just answer their question. The heartbeat is internal, not a recital.
-
-## When to *not* sample
-
-- Don't repeatedly call `get_time_info` mid-turn. Once per turn is plenty.
-- Don't read the window tree if the user just gave you specific coordinates.
-- Don't `take_screenshot` after every action — the action log + a final screenshot is enough.
-- Don't call `telegram_status` unless something has gone wrong; the user can see whether replies are arriving.
+- **严禁浏览器地址栏打字**：切勿使用 `set_text` 去填写 Chrome 等浏览器的 URL 栏（极易因建议列表和浮窗失焦失败）。直接调用 `open_url` 打开网页或搜索。
+- **严禁向 Termux 界面打字**：切勿向终端界面输入文本，直接使用 `termux_run_command` 执行并捕获输出。
+- **控件点击失败切勿盲目重复**：若某个选择器（如文本匹配）未找到，不要使用相同参数连续点，改用控件 ID 或调整匹配策略。
+- **连续操作避免无意义重读**：完成点击或滑动后，等待系统响应过渡，不要在相同静止界面反复读取无障碍树。
+- **语音消息严禁臆造**：切勿调用 `play_media` 试图“听”语音（它只是向手机扬声器放音）。必须调用 `transcribe_audio_file` 获得实际文本。

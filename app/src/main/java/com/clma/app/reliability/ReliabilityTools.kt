@@ -31,7 +31,7 @@ import com.clma.ai.ui.UIMessagePart
 fun checkAppUpdatesTool(checker: GitHubReleaseChecker): Tool = Tool(
     name = "check_app_updates",
     description = """
-        Check GitHub Releases for a newer version of rikkahub-agent than the one currently
+        Check GitHub Releases for a newer version of CLmA than the one currently
         installed. Read-only. Returns the current version, the latest tag, whether an update
         is available, the release URL, and the release body for context. Use when the user
         asks "any updates?" or to schedule a periodic update reminder via cron.

@@ -69,7 +69,7 @@ class GitHubReleaseChecker(
             .get()
             .addHeader("Accept", "application/vnd.github+json")
             .addHeader("X-GitHub-Api-Version", "2022-11-28")
-            .addHeader("User-Agent", "rikkahub-agent/${BuildConfig.VERSION_NAME}")
+            .addHeader("User-Agent", "CLmA/${BuildConfig.VERSION_NAME}")
             .build()
         val response = try {
             client.newCall(req).execute()

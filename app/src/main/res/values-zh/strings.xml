@@ -810,7 +810,7 @@
   <string name="setting_asr_configure_step_itn">逆文本归一化</string>
   <string name="setting_asr_configure_step_itn_desc">把口语数字转成阿拉伯数字（如「三百」→「300」），方便后续处理</string>
   <string name="setting_asr_configure_step_timestamp">返回时间戳</string>
-  <string name="setting_asr_configure_step_timestamp_desc">在 delta 事件里返回词级时间戳。rikkahub 当前不消费时间戳，默认关闭节省 token</string>
+  <string name="setting_asr_configure_step_timestamp_desc">在 delta 事件里返回词级时间戳。CLmA 当前不消费时间戳，默认关闭节省 token</string>
   <string name="setting_asr_configure_step_hotwords">热词</string>
   <string name="setting_asr_configure_step_hotwords_desc">逗号分隔的热词列表，提升专有名词、术语的识别准确率</string>
   <string name="setting_asr_page_add_provider">添加ASR提供商</string>
@@ -1139,7 +1139,7 @@
   <string name="setting_page_web_server_address_note_desc">局域网地址：使用设备 WiFi IP，同一网络中的其他设备可访问。移动数据网络下不可用。
 本地地址：使用 localhost，仅限本设备访问。
 mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过名称访问，无需知道 IP。</string>
-  <string name="setting_page_web_server_desc">允许你通过网页访问 RikkaHub</string>
+  <string name="setting_page_web_server_desc">允许你通过网页访问 CLmA</string>
   <string name="setting_page_web_server_error">错误</string>
   <string name="setting_page_web_server_jwt_enable">启用身份验证</string>
   <string name="setting_page_web_server_jwt_enable_desc">访问网页界面时需要密码验证</string>
@@ -1475,7 +1475,7 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <!-- fork (agent) strings preserved from merge -->
   <string name="setting_display_page_show_date_below_name_desc">是否在昵称或模型名称下方显示消息日期</string>
   <string name="setting_display_page_show_date_below_name_title">显示昵称下方日期</string>
-  <string name="accessibility_service_summary">当大模型使用屏幕自动化工具时，允许 RikkaHub 点击、滑动、滚动、读取屏幕内容和截图。</string>
+  <string name="accessibility_service_summary">当大模型使用屏幕自动化工具时，允许 CLmA 点击、滑动、滚动、读取屏幕内容和截图。</string>
   <string name="assistant_page_fast_path_router">快速路径路由</string>
   <string name="assistant_page_fast_path_router_desc">对于高置信度的请求（如“我的电量是多少”、“现在几点”或“列出工作流”），跳过大模型。匹配的工具直接运行，你立即得到答案。保守策略 — 任何含糊的请求仍会交给模型。记录到 logcat（标签：FastPathRouter）。</string>
   <string name="assistant_page_local_tools_app_launcher_desc">按包名打开已安装的应用（例如 Termux、设置）并列出可用应用。与屏幕自动化配合可实现完整的界面控制。</string>
@@ -1605,7 +1605,7 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="assistant_page_local_tools_wifi_desc">读取当前 Wi-Fi 连接（SSID、IP、信号）。读取 SSID 需要位置权限。</string>
   <string name="assistant_page_local_tools_wifi_title">Wi-Fi 信息</string>
   <string name="assistant_page_local_tools_workflows_desc">让助手创建由触发器运行的自动化 — WiFi 连接、定时、地理围栏、通知到达等。</string>
-  <string name="assistant_page_local_tools_workflows_hint_message">工作流已启用。某些触发器类型需要开关无法请求的权限：\n\n• 地理围栏（你到达某地）：设置 → 应用 → RikkaHub → 权限 → 位置 → 始终允许。\n• 通知到达：设置 → 应用 → 特殊访问权限 → 通知使用权 → 启用 RikkaHub。\n• 应用启动/关闭：设置 → 无障碍 → 启用 RikkaHub。\n• 蓝牙连接/断开：在系统询问时授予 BLUETOOTH_CONNECT。\n\n定时、WiFi、耳机、电源、屏幕开/关和电池触发器开箱即用。当你创建需要额外设置的工作流时，助手会即时提示。</string>
+  <string name="assistant_page_local_tools_workflows_hint_message">工作流已启用。某些触发器类型需要开关无法请求的权限：\n\n• 地理围栏（你到达某地）：设置 → 应用 → CLmA → 权限 → 位置 → 始终允许。\n• 通知到达：设置 → 应用 → 特殊访问权限 → 通知使用权 → 启用 CLmA。\n• 应用启动/关闭：设置 → 无障碍 → 启用 CLmA。\n• 蓝牙连接/断开：在系统询问时授予 BLUETOOTH_CONNECT。\n\n定时、WiFi、耳机、电源、屏幕开/关和电池触发器开箱即用。当你创建需要额外设置的工作流时，助手会即时提示。</string>
   <string name="assistant_page_local_tools_workflows_hint_title">工作流需要额外设置</string>
   <string name="assistant_page_local_tools_workflows_title">工作流</string>
   <string name="browser_address_bar_back">浏览器后退</string>
@@ -1667,7 +1667,7 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="local_llm_download_cancel">取消</string>
   <string name="local_llm_download_continue">下载</string>
   <string name="local_llm_download_default">下载默认模型</string>
-  <string name="local_llm_download_message">RikkaHub 需要为此服务商下载一个入门模型。下载约 1.5 GB（Qwen2.5 1.5B Q8）。继续？</string>
+  <string name="local_llm_download_message">CLmA 需要为此服务商下载一个入门模型。下载约 1.5 GB（Qwen2.5 1.5B Q8）。继续？</string>
   <string name="local_llm_download_progress">正在下载… %1$d%%</string>
   <string name="local_llm_download_title">下载默认模型</string>
   <string name="local_llm_downloading_format">正在下载… %1$d%%（%2$s / %3$s）</string>
@@ -1774,27 +1774,27 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="setting_page_accessibility_no_actions">暂无最近操作。</string>
   <string name="setting_page_accessibility_open_settings">打开无障碍设置</string>
   <string name="setting_page_accessibility_repair">一键修复（Shizuku）</string>
-  <string name="setting_page_accessibility_repair_desc">系统把开关写回「关闭」时，用 RikkaHub 已有的 Shizuku 权限直接写回启用项，不必再去系统设置里开关一次。</string>
+  <string name="setting_page_accessibility_repair_desc">系统把开关写回「关闭」时，用 CLmA 已有的 Shizuku 权限直接写回启用项，不必再去系统设置里开关一次。</string>
   <string name="setting_page_accessibility_repair_ok_toast">已写回无障碍启用项。</string>
   <string name="setting_page_accessibility_repair_fail_toast">写回失败：%1$s</string>
   <string name="setting_page_accessibility_repair_shizuku_not_installed">需要 Shizuku：未安装 Shizuku 应用。</string>
   <string name="setting_page_accessibility_repair_shizuku_not_running">需要 Shizuku：Shizuku 服务未运行。</string>
-  <string name="setting_page_accessibility_repair_shizuku_permission_denied">需要 Shizuku：尚未授予 RikkaHub Shizuku 权限。</string>
+  <string name="setting_page_accessibility_repair_shizuku_permission_denied">需要 Shizuku：尚未授予 CLmA Shizuku 权限。</string>
   <string name="setting_page_accessibility_restricted_title">开关是灰色 / 打开后弹回？请放行「受限设置」</string>
-  <string name="setting_page_accessibility_restricted_help">Android 13 及以后，会对非应用商店安装的应用禁用此开关。请打开本应用的「应用信息」页 → 右上角 ⋮ → 允许受限设置，然后返回这里重新打开 RikkaHub。若找不到「允许受限设置」这一项，先点一下灰色开关让它弹出系统提示，该项就会出现。</string>
+  <string name="setting_page_accessibility_restricted_help">Android 13 及以后，会对非应用商店安装的应用禁用此开关。请打开本应用的「应用信息」页 → 右上角 ⋮ → 允许受限设置，然后返回这里重新打开 CLmA。若找不到「允许受限设置」这一项，先点一下灰色开关让它弹出系统提示，该项就会出现。</string>
   <string name="setting_page_accessibility_open_app_info">打开应用信息</string>
   <!-- 后台保活：部分国产系统会杀进程，连带把无障碍服务摘掉。 -->
   <string name="setting_page_accessibility_keepalive_section">后台保活</string>
-  <string name="setting_page_accessibility_keepalive_title_generic">被系统收回？把 RikkaHub 加入白名单</string>
-  <string name="setting_page_accessibility_keepalive_body_generic">部分系统（小米/华为/OPPO 等）会在后台清理应用，无障碍服务会随之被摘掉——表现是工具间歇报“服务未运行”，而系统开关看着仍然是开的。请允许 RikkaHub 自启动、允许后台运行，并在多任务界面把它锁定。</string>
+  <string name="setting_page_accessibility_keepalive_title_generic">被系统收回？把 CLmA 加入白名单</string>
+  <string name="setting_page_accessibility_keepalive_body_generic">部分系统（小米/华为/OPPO 等）会在后台清理应用，无障碍服务会随之被摘掉——表现是工具间歇报“服务未运行”，而系统开关看着仍然是开的。请允许 CLmA 自启动、允许后台运行，并在多任务界面把它锁定。</string>
   <string name="setting_page_accessibility_keepalive_title_vivo">Vivo/OriginOS 常见：无障碍被系统收回</string>
-  <string name="setting_page_accessibility_keepalive_body_vivo">OriginOS 的省电策略常把无障碍服务摘掉，工具会间歇报“服务未运行”。请三步都做：① 设置 → 应用与权限 → 权限管理 → RikkaHub → 自启动；② 设置 → 电池 → 后台耗电管理 → RikkaHub → 允许后台高耗电；③ 在最近任务里下拉 RikkaHub（或点卡片）锁定。</string>
+  <string name="setting_page_accessibility_keepalive_body_vivo">OriginOS 的省电策略常把无障碍服务摘掉，工具会间歇报“服务未运行”。请三步都做：① 设置 → 应用与权限 → 权限管理 → CLmA → 自启动；② 设置 → 电池 → 后台耗电管理 → CLmA → 允许后台高耗电；③ 在最近任务里下拉 CLmA（或点卡片）锁定。</string>
   <string name="setting_page_accessibility_keepalive_title_xiaomi">小米/HyperOS 常见：无障碍被系统收回</string>
-  <string name="setting_page_accessibility_keepalive_body_xiaomi">HyperOS 的省电策略常把无障碍服务摘掉，工具会间歇报“服务未运行”。请三步都做：① 设置 → 应用设置 → 应用管理 → RikkaHub → 省电策略 → 无限制；② 设置 → 应用管理 → RikkaHub → 自启动；③ 在最近任务里下拉 RikkaHub（或点卡片）锁定。</string>
+  <string name="setting_page_accessibility_keepalive_body_xiaomi">HyperOS 的省电策略常把无障碍服务摘掉，工具会间歇报“服务未运行”。请三步都做：① 设置 → 应用设置 → 应用管理 → CLmA → 省电策略 → 无限制；② 设置 → 应用管理 → CLmA → 自启动；③ 在最近任务里下拉 CLmA（或点卡片）锁定。</string>
   <string name="setting_page_accessibility_keepalive_title_huawei">华为/HarmonyOS 常见：无障碍被系统收回</string>
-  <string name="setting_page_accessibility_keepalive_body_huawei">HarmonyOS 的省电策略常把无障碍服务摘掉，工具会间歇报“服务未运行”。请三步都做：① 设置 → 应用 → 应用启动管理 → RikkaHub → 关闭“自动管理”，再手动打开自启动/关联启动/后台活动；② 设置 → 电池 → 更多电池设置 → 允许 RikkaHub 后台运行；③ 在最近任务里下拉 RikkaHub 锁定。</string>
+  <string name="setting_page_accessibility_keepalive_body_huawei">HarmonyOS 的省电策略常把无障碍服务摘掉，工具会间歇报“服务未运行”。请三步都做：① 设置 → 应用 → 应用启动管理 → CLmA → 关闭“自动管理”，再手动打开自启动/关联启动/后台活动；② 设置 → 电池 → 更多电池设置 → 允许 CLmA 后台运行；③ 在最近任务里下拉 CLmA 锁定。</string>
   <string name="setting_page_accessibility_keepalive_title_oppo">OPPO/ColorOS 常见：无障碍被系统收回</string>
-  <string name="setting_page_accessibility_keepalive_body_oppo">ColorOS 的省电策略常把无障碍服务摘掉，工具会间歇报“服务未运行”。请三步都做：① 设置 → 应用 → 应用管理 → RikkaHub → 耗电管理 → 允许完全后台行为（并允许自启动）；② 允许应用自启动/关联启动；③ 在最近任务卡片上点 ⋮ → 锁定。</string>
+  <string name="setting_page_accessibility_keepalive_body_oppo">ColorOS 的省电策略常把无障碍服务摘掉，工具会间歇报“服务未运行”。请三步都做：① 设置 → 应用 → 应用管理 → CLmA → 耗电管理 → 允许完全后台行为（并允许自启动）；② 允许应用自启动/关联启动；③ 在最近任务卡片上点 ⋮ → 锁定。</string>
   <string name="setting_page_accessibility_keepalive_battery_ok">电池优化：已加入白名单</string>
   <string name="setting_page_accessibility_keepalive_battery_needed">电池优化：未加入白名单 - 点击修复</string>
   <string name="setting_page_accessibility_keepalive_open_app_info">打开应用信息（设置自启动）</string>
@@ -1804,7 +1804,7 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="setting_page_accessibility_overlay_open_settings">授予在其他应用上层显示</string>
   <string name="setting_page_accessibility_overlay_section">活动悬浮窗</string>
   <string name="setting_page_accessibility_recent_section">最近操作</string>
-  <string name="setting_page_accessibility_status_help">RikkaHub 需要无障碍权限来为大模型执行点击、滑动和读取屏幕。打开 设置 → 无障碍 → 已安装的应用 → RikkaHub 并开启它。</string>
+  <string name="setting_page_accessibility_status_help">CLmA 需要无障碍权限来为大模型执行点击、滑动和读取屏幕。打开 设置 → 无障碍 → 已安装的应用 → CLmA 并开启它。</string>
   <string name="setting_page_accessibility_status_enabled_not_connected">服务：已开启，但未连接</string>
   <string name="setting_page_accessibility_status_enabled_help">系统里这个服务是开着的，但它还没连上应用——通常发生在进程刚重启之后。重开本页，或在系统设置里关一下再打开。</string>
   <string name="setting_page_accessibility_status_not_running">服务：未运行</string>
@@ -1828,7 +1828,7 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="setting_page_notifications_recent_empty">尚未捕获任何通知。</string>
   <string name="setting_page_notifications_recent_section">最近活动</string>
   <string name="setting_page_notifications_status_connected">服务：已连接</string>
-  <string name="setting_page_notifications_status_help">RikkaHub 需要通知访问权限来读取传入的通知。打开 设置 → 通知使用权 → 通知使用权 并启用 RikkaHub。</string>
+  <string name="setting_page_notifications_status_help">CLmA 需要通知访问权限来读取传入的通知。打开 设置 → 通知使用权 → 通知使用权 并启用 CLmA。</string>
   <string name="setting_page_notifications_status_not_connected">服务：未连接</string>
   <string name="setting_page_notifications_status_section">状态</string>
   <string name="setting_page_notifications_whitelist_help">其通知会自动转发到你默认 Telegram 聊天的应用。留空 = 不转发任何内容。在选择器中逐个开关应用。</string>
@@ -1844,7 +1844,7 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="setting_page_notifications_whitelist_summary_n_plural">%1$d 个应用已加入白名单</string>
   <string name="setting_page_notifications_whitelist_summary_zero">无白名单应用</string>
   <string name="setting_page_permissions">权限</string>
-  <string name="setting_page_permissions_desc">自动发现的 RikkaHub 使用的所有权限列表，每项都有一键授予按钮。</string>
+  <string name="setting_page_permissions_desc">自动发现的 CLmA 使用的所有权限列表，每项都有一键授予按钮。</string>
   <string name="setting_page_permissions_group_auto">自动授予</string>
   <string name="setting_page_permissions_group_runtime">运行时权限</string>
   <string name="setting_page_permissions_group_services">服务与集成</string>
@@ -1895,7 +1895,7 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="setting_page_scheduled_jobs_subtitle_when">时间：%1$s</string>
   <string name="setting_page_telegram">Telegram 机器人</string>
   <string name="setting_page_telegram_battery_already_ok">已从电池优化中加入白名单。</string>
-  <string name="setting_page_telegram_battery_desc">屏幕关闭时，激进的 OEM 系统（小米、OPPO、一加、Vivo）会切断非白名单应用的网络。机器人只能在偶尔的维护窗口期投递消息。点击将 RikkaHub 加入白名单。</string>
+  <string name="setting_page_telegram_battery_desc">屏幕关闭时，激进的 OEM 系统（小米、OPPO、一加、Vivo）会切断非白名单应用的网络。机器人只能在偶尔的维护窗口期投递消息。点击将 CLmA 加入白名单。</string>
   <string name="setting_page_telegram_battery_needed">电池优化：未加入白名单 - 点击修复</string>
   <string name="setting_page_telegram_battery_ok">电池优化：已加入白名单</string>
   <string name="setting_page_telegram_boot_note">启动后，机器人也会在设备开机时自动启动。</string>
@@ -2034,7 +2034,7 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="setting_page_workflows_subtitle_ran_success">运行于 %1$s • 成功</string>
   <string name="setting_page_workflows_subtitle_when">时间：%1$s</string>
   <string name="setting_provider_aicore_release_stage">发布阶段</string>
-  <string name="setting_provider_aicore_status_help">在设备本地运行。需要安装了 AICore 应用的 Pixel 8/9/10，并且加入 GenAI Prompt-API 抢先体验计划（单独的选择加入）。如果你在首次运行时看到 ErrorCode 606 / FEATURE_NOT_FOUND，说明你安装了 AICore 但没有 Prompt-API 通道 — 通过 GenAI Prompt-API 抢先体验表单申请访问权限，然后重启。通过提示工程支持工具调用 — Gemini Nano 发出 &lt;tool_call&gt; 标记，由 RikkaHub 解析并派发。</string>
+  <string name="setting_provider_aicore_status_help">在设备本地运行。需要安装了 AICore 应用的 Pixel 8/9/10，并且加入 GenAI Prompt-API 抢先体验计划（单独的选择加入）。如果你在首次运行时看到 ErrorCode 606 / FEATURE_NOT_FOUND，说明你安装了 AICore 但没有 Prompt-API 通道 — 通过 GenAI Prompt-API 抢先体验表单申请访问权限，然后重启。通过提示工程支持工具调用 — Gemini Nano 发出 &lt;tool_call&gt; 标记，由 CLmA 解析并派发。</string>
   <string name="setting_provider_delete_body">这将永久移除 %1$s 及其所有已配置的模型。你可以稍后重新添加。</string>
   <string name="setting_provider_delete_cancel">取消</string>
   <string name="setting_provider_delete_confirm">移除</string>
@@ -2419,7 +2419,7 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="setting_shizuku_toast_service_not_running">Shizuku 服务未运行</string>
   <string name="setting_shizuku_section_help">设置帮助</string>
   <string name="setting_shizuku_help_title">设置 Shizuku</string>
-  <string name="setting_shizuku_help_body">从其 GitHub 发布页面安装 Shizuku，然后启动其服务：在已 root 的设备上可通过 Shizuku 应用启动，或在 Android 11+ 上通过无线调试配对启动（开发者选项 → 无线调试 → 使用配对码配对设备，然后运行 Shizuku 提供的启动命令）。服务运行后，点击上方的权限以授予 RikkaHub 访问权限。</string>
+  <string name="setting_shizuku_help_body">从其 GitHub 发布页面安装 Shizuku，然后启动其服务：在已 root 的设备上可通过 Shizuku 应用启动，或在 Android 11+ 上通过无线调试配对启动（开发者选项 → 无线调试 → 使用配对码配对设备，然后运行 Shizuku 提供的启动命令）。服务运行后，点击上方的权限以授予 CLmA 访问权限。</string>
   <string name="local_llm_vision_unavailable_caption">此设备不支持视觉功能 — 仅以纯文本模式运行</string>
   <string name="local_llm_vision_retry">重试视觉功能</string>
   <string name="local_llm_perf_telemetry_format">预填充 %1$.1f tok/s · 解码 %2$.1f tok/s</string>
@@ -2653,7 +2653,7 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="search_page_scope_current_assistant">当前助手</string>
   <string name="search_page_scope_all_assistants">所有助手</string>
   <string name="perm_label_overlay">显示在其他应用上方</string>
-  <string name="perm_desc_overlay">允许 RikkaHub 在自动化过程中绘制"代理工作中"悬浮窗。</string>
+  <string name="perm_desc_overlay">允许 CLmA 在自动化过程中绘制"代理工作中"悬浮窗。</string>
   <string name="perm_label_write_settings">修改系统设置</string>
   <string name="perm_desc_write_settings">允许代理通过 set_brightness 调整亮度。</string>
   <string name="perm_label_dnd">勿扰模式访问</string>
@@ -2687,7 +2687,7 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="perm_label_send_sms">发送短信</string>
   <string name="perm_desc_send_sms">send_sms 工具用于以程序方式发送短信。</string>
   <string name="perm_label_termux_run">Termux RUN_COMMAND</string>
-  <string name="perm_desc_termux_run">允许 RikkaHub 在 Termux 中启动命令，供 termux_run_command 工具使用。</string>
+  <string name="perm_desc_termux_run">允许 CLmA 在 Termux 中启动命令，供 termux_run_command 工具使用。</string>
   <string name="perm_desc_runtime_default">一个或多个已启用工具所需的运行时权限。</string>
   <string name="perm_label_manage_storage">所有文件访问权限</string>
   <string name="perm_desc_manage_storage">允许代理读取和管理设备外部共享存储中的所有文件。</string>

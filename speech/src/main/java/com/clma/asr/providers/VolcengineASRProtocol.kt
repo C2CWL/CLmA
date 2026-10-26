@@ -21,7 +21,7 @@ import java.util.zip.GZIPOutputStream
 /** V3 binary framing and full-result decoding, shared by dictation and voice mode. */
 internal object VolcengineASRProtocol {
     fun request(provider: ASRProviderSetting.Volcengine): ByteArray = buildJsonObject {
-        putJsonObject("user") { put("uid", "rikkahub") }
+        putJsonObject("user") { put("uid", "clma") }
         putJsonObject("audio") {
             put("format", "pcm")
             put("codec", "raw")
