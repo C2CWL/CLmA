@@ -18,7 +18,7 @@ import com.clma.ai.ui.UIMessagePart
 // catalog summaries of the same length this file enforces when it serialises search hits.
 internal const val TOOL_CATALOG_MAX_SEARCH_RESULTS = 8
 internal const val TOOL_CATALOG_MAX_OPEN_PER_CALL = 4
-internal const val TOOL_CATALOG_MAX_ACTIVE_SCHEMAS = 12
+internal const val TOOL_CATALOG_MAX_ACTIVE_SCHEMAS = 16
 internal const val TOOL_CATALOG_MAX_SUMMARY_CHARS = 180
 
 /**
@@ -98,21 +98,39 @@ data class ToolOpenOutcome(
     val activated: List<String>,
     val alreadyActive: List<String>,
     val unknown: List<String>,
-    val rejectedOverCap: List<String>,
+    val rejectedOverCap: List<String> = emptyList(),
     val activeCount: Int,
+    val evicted: List<String> = emptyList(),
+    val rejectedOverCallLimit: List<String> = emptyList(),
 ) {
     fun toJson(): String {
         val note = buildString {
             append("Activated schemas are callable from your NEXT request onwards — including")
             append(" later steps of this same turn, so open a tool and then call it.")
             if (activated.isEmpty()) {
-                if (unknown.isEmpty() && alreadyActive.isEmpty() && rejectedOverCap.isEmpty()) {
+                if (unknown.isEmpty() && alreadyActive.isEmpty() &&
+                    rejectedOverCap.isEmpty() && rejectedOverCallLimit.isEmpty()
+                ) {
                     append(" No tool names were provided, so nothing was activated. Call tool_search")
                     append(" first to get exact names, then pass them in the names array.")
                 } else {
                     append(" Nothing was activated. Retry: run tool_search first to get exact names,")
                     append(" then call tool_open with those names.")
                 }
+            }
+            if (evicted.isNotEmpty()) {
+                append(" Active capacity ($TOOL_CATALOG_MAX_ACTIVE_SCHEMAS) reached; auto-evicted least recently used: ${evicted.joinToString(", ")}.")
+            }
+            if (rejectedOverCallLimit.isNotEmpty()) {
+                append(" One call opens at most $TOOL_CATALOG_MAX_OPEN_PER_CALL new schemas, so")
+                append(" ${rejectedOverCallLimit.joinToString(", ")} were left out: call tool_open")
+                append(" again with those names.")
+            }
+            if (rejectedOverCap.isNotEmpty()) {
+                append(" This chat already holds the maximum of $TOOL_CATALOG_MAX_ACTIVE_SCHEMAS")
+                append(" opened schemas, so ${rejectedOverCap.joinToString(", ")} could not be")
+                append(" opened. Release one you are done with using tool_close, then call tool_open")
+                append(" again.")
             }
         }
         return Json.encodeToString(
@@ -122,6 +140,47 @@ data class ToolOpenOutcome(
                 put("alreadyActive", JsonArray(alreadyActive.map { JsonPrimitive(it) }))
                 put("unknown", JsonArray(unknown.map { JsonPrimitive(it) }))
                 put("rejectedOverCap", JsonArray(rejectedOverCap.map { JsonPrimitive(it) }))
+                put("rejectedOverCallLimit", JsonArray(rejectedOverCallLimit.map { JsonPrimitive(it) }))
+                put("evicted", JsonArray(evicted.map { JsonPrimitive(it) }))
+                put("activeCount", activeCount)
+                put("note", note)
+            },
+        )
+    }
+}
+
+/**
+ * Result of one `tool_close` call — the inverse bookkeeping of [ToolOpenOutcome], so the model
+ * can tell "released", "you never opened that" and "no such tool" apart.
+ */
+data class ToolCloseOutcome(
+    val closed: List<String>,
+    val notActive: List<String>,
+    val unknown: List<String>,
+    val activeCount: Int,
+) {
+    fun toJson(): String {
+        val note = buildString {
+            append("Released schemas stop being sent from your next turn; the slot is free now.")
+            if (closed.isNotEmpty()) {
+                append(" Closed ${closed.joinToString(", ")}.")
+            }
+            if (notActive.isNotEmpty()) {
+                append(" ${notActive.joinToString(", ")} were not open — nothing to close.")
+                append(" A tool the user pinned for this assistant is sent with every request")
+                append(" regardless, so tool_close cannot remove it.")
+            }
+            if (unknown.isNotEmpty()) {
+                append(" ${unknown.joinToString(", ")} are not in the catalogue, so nothing was")
+                append(" closed for them. Use tool_search for exact names.")
+            }
+        }
+        return Json.encodeToString(
+            JsonObject.serializer(),
+            buildJsonObject {
+                put("closed", JsonArray(closed.map { JsonPrimitive(it) }))
+                put("notActive", JsonArray(notActive.map { JsonPrimitive(it) }))
+                put("unknown", JsonArray(unknown.map { JsonPrimitive(it) }))
                 put("activeCount", activeCount)
                 put("note", note)
             },
@@ -162,12 +221,16 @@ data class ToolSearchOutcome(
  * only for the lifetime of the conversation, which is exactly the "progressive"
  * contract (activation is per-session state, not data).
  */
-class ToolActivationState {
+class ToolActivationState(
+    initial: Set<String> = emptySet(),
+) {
     private val lock = Any()
-    private val activeNames = LinkedHashSet<String>()
+    private val activeNames = LinkedHashSet<String>(initial)
 
     /** Snapshot in insertion order (fresh copy, safe for the caller to mutate). */
     fun active(): Set<String> = synchronized(lock) { activeNames.toSet() }
+
+    fun contains(name: String): Boolean = synchronized(lock) { activeNames.contains(name) }
 
     fun clear() = synchronized(lock) { activeNames.clear() }
 
@@ -178,15 +241,21 @@ class ToolActivationState {
      * Activate [names] in the order given.
      *
      * Duplicate handling: the first occurrence is the one that activates; any later
-     * occurrence is reported in [ToolOpenOutcome.alreadyActive], because by then the
-     * name is already (or just became) active. Unknown names never consume the per-call
-     * budget, and the per-call budget is applied first-come-first-served.
+     * occurrence is reported in [ToolOpenOutcome.alreadyActive], and its recency is refreshed
+     * in the LRU set. Unknown names never consume the per-call budget, and the per-call
+     * budget is applied first-come-first-served.
+     *
+     * LRU eviction: when active schemas reach [TOOL_CATALOG_MAX_ACTIVE_SCHEMAS], the least
+     * recently used active schemas are evicted to make room, rather than rejecting the activation
+     * with an error. Evicted names are reported in [ToolOpenOutcome.evicted].
      */
     fun activate(catalog: ToolCatalog, names: List<String>): ToolOpenOutcome = synchronized(lock) {
         val activated = mutableListOf<String>()
         val alreadyActive = mutableListOf<String>()
         val unknown = mutableListOf<String>()
         val rejectedOverCap = mutableListOf<String>()
+        val rejectedOverCallLimit = mutableListOf<String>()
+        val evicted = mutableListOf<String>()
         var openedThisCall = 0
         for (name in names) {
             if (catalog.entry(name) == null) {
@@ -194,16 +263,20 @@ class ToolActivationState {
                 continue
             }
             if (name in activeNames) {
+                // Refresh LRU recency
+                activeNames.remove(name)
+                activeNames.add(name)
                 alreadyActive.add(name)
                 continue
             }
             if (openedThisCall >= TOOL_CATALOG_MAX_OPEN_PER_CALL) {
-                rejectedOverCap.add(name)
+                rejectedOverCallLimit.add(name)
                 continue
             }
             if (activeNames.size >= TOOL_CATALOG_MAX_ACTIVE_SCHEMAS) {
-                rejectedOverCap.add(name)
-                continue
+                val oldest = activeNames.iterator().next()
+                activeNames.remove(oldest)
+                evicted.add(oldest)
             }
             activeNames.add(name)
             activated.add(name)
@@ -215,15 +288,46 @@ class ToolActivationState {
             unknown = unknown,
             rejectedOverCap = rejectedOverCap,
             activeCount = activeNames.size,
+            evicted = evicted,
+            rejectedOverCallLimit = rejectedOverCallLimit,
+        )
+    }
+
+    /**
+     * Release [names] — the inverse of [activate]. The slot frees up *now*, so a `tool_open` in
+     * the same turn can use it; the schema itself stops being attached at the next turn, when the
+     * surface is rebuilt from the activation set. Names that were never opened, and names that are
+     * not in the catalogue at all, are reported apart rather than silently succeeding.
+     */
+    fun deactivate(catalog: ToolCatalog, names: List<String>): ToolCloseOutcome = synchronized(lock) {
+        val closed = mutableListOf<String>()
+        val notActive = mutableListOf<String>()
+        val unknown = mutableListOf<String>()
+        for (name in names) {
+            if (catalog.entry(name) == null) {
+                unknown.add(name)
+                continue
+            }
+            if (activeNames.remove(name)) {
+                closed.add(name)
+            } else {
+                notActive.add(name)
+            }
+        }
+        ToolCloseOutcome(
+            closed = closed,
+            notActive = notActive,
+            unknown = unknown,
+            activeCount = activeNames.size,
         )
     }
 }
 
 /**
- * The two catalogue tools that replace a full schema dump.
+ * The catalogue control tools that replace a full schema dump.
  *
- * Returns exactly two tools: `tool_search` (find names, no schema) and `tool_open`
- * (activate names, no schema). Real schemas surface only on the model's next *request* —
+ * `tool_search` finds names and carries no schema; `tool_open` attaches schemas; `tool_close`
+ * releases them again. Real schemas surface only on the model's next *request* —
  * which, since the generation loop re-reads the activation set between steps, is usually a
  * later step of the same turn rather than a new user message.
  */
@@ -278,7 +382,7 @@ fun buildToolCatalogTools(
             Activate tools by name so their schemas become callable. Names must be exact
             matches returned by tool_search. Activation applies to your next request — the
             same turn continues, so open now and call on the following step. Do not re-open
-            a tool that is already active.
+            a tool that is already active. Use tool_close to release tools you no longer need.
         """.trimIndent(),
         parameters = {
             InputSchema.Obj(
@@ -295,6 +399,34 @@ fun buildToolCatalogTools(
         execute = {
             val names = parseNames(it)
             listOf(UIMessagePart.Text(activation.activate(catalog, names).toJson()))
+        },
+    ),
+    Tool(
+        name = "tool_close",
+        description = """
+            Release entries you opened with tool_open and are finished with. The slot frees up
+            right away, so you can open a different entry in this same turn; the released schema
+            stops being sent from your next turn. Every schema you keep open is sent with every
+            request, so closing what you are done with leaves more room for the conversation.
+            Only closes what you opened: a tool the user pinned for this assistant is sent with
+            every request regardless. Names must be exact matches (from tool_search or from the
+            tools already in front of you).
+        """.trimIndent(),
+        parameters = {
+            InputSchema.Obj(
+                properties = buildJsonObject {
+                    put("names", buildJsonObject {
+                        put("type", "array")
+                        put("items", buildJsonObject { put("type", "string") })
+                        put("description", "Exact names of entries to release.")
+                    })
+                },
+                required = listOf("names"),
+            )
+        },
+        execute = {
+            val names = parseNames(it)
+            listOf(UIMessagePart.Text(activation.deactivate(catalog, names).toJson()))
         },
     ),
 )

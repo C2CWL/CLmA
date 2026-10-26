@@ -144,22 +144,56 @@ class ToolCatalogTest {
         val activation = ToolActivationState()
         val outcome = activation.activate(catalog, (1..8).map { "t_$it" })
         assertEquals(4, outcome.activated.size)
-        assertEquals(4, outcome.rejectedOverCap.size)
+        assertEquals(4, outcome.rejectedOverCallLimit.size)
+        assertTrue(outcome.rejectedOverCap.isEmpty())
         assertEquals(4, outcome.activeCount)
     }
 
     @Test
-    fun `activate caps the total number of active schemas`() {
-        // The per-call budget is 4, so reaching the total cap needs several calls.
-        val catalog = ToolCatalog((1..16).map { entry("t_$it") })
+    fun `activate auto-evicts least recently used schemas when capacity is reached`() {
+        val catalog = ToolCatalog((1..20).map { entry("t_$it") })
+        val activation = ToolActivationState()
+        // Activate 16 items in batches of 4 to reach capacity
+        activation.activate(catalog, listOf("t_1", "t_2", "t_3", "t_4"))
+        activation.activate(catalog, listOf("t_5", "t_6", "t_7", "t_8"))
+        activation.activate(catalog, listOf("t_9", "t_10", "t_11", "t_12"))
+        activation.activate(catalog, listOf("t_13", "t_14", "t_15", "t_16"))
+        assertEquals(16, activation.active().size)
+
+        // Activating t_17 and t_18 should evict t_1 and t_2 (FIFO / LRU head)
+        val outcome = activation.activate(catalog, listOf("t_17", "t_18"))
+        assertEquals(listOf("t_17", "t_18"), outcome.activated)
+        assertEquals(listOf("t_1", "t_2"), outcome.evicted)
+        assertTrue(outcome.rejectedOverCap.isEmpty())
+        assertEquals(16, outcome.activeCount)
+
+        val active = activation.active()
+        assertFalse(active.contains("t_1"))
+        assertFalse(active.contains("t_2"))
+        assertTrue(active.contains("t_3"))
+        assertTrue(active.contains("t_17"))
+        assertTrue(active.contains("t_18"))
+    }
+
+    @Test
+    fun `activate refreshes LRU recency for already active tools`() {
+        val catalog = ToolCatalog((1..20).map { entry("t_$it") })
         val activation = ToolActivationState()
         activation.activate(catalog, listOf("t_1", "t_2", "t_3", "t_4"))
         activation.activate(catalog, listOf("t_5", "t_6", "t_7", "t_8"))
         activation.activate(catalog, listOf("t_9", "t_10", "t_11", "t_12"))
-        val outcome = activation.activate(catalog, listOf("t_13", "t_14"))
-        assertTrue(outcome.activated.isEmpty())
-        assertEquals(listOf("t_13", "t_14"), outcome.rejectedOverCap)
-        assertEquals(12, outcome.activeCount)
+        activation.activate(catalog, listOf("t_13", "t_14", "t_15", "t_16"))
+
+        // Re-activate t_1 to refresh its recency
+        val refreshOutcome = activation.activate(catalog, listOf("t_1"))
+        assertEquals(listOf("t_1"), refreshOutcome.alreadyActive)
+
+        // Now activate t_17, oldest should be t_2, not t_1
+        val outcome = activation.activate(catalog, listOf("t_17"))
+        assertEquals(listOf("t_17"), outcome.activated)
+        assertEquals(listOf("t_2"), outcome.evicted)
+        assertTrue(activation.active().contains("t_1"))
+        assertFalse(activation.active().contains("t_2"))
     }
 
     @Test
@@ -207,10 +241,14 @@ class ToolCatalogTest {
             unknown = listOf("b"),
             rejectedOverCap = emptyList(),
             activeCount = 1,
+            evicted = emptyList(),
+            rejectedOverCallLimit = emptyList(),
         )
         val json = outcome.toJson()
         assertTrue(json.contains("\"alreadyActive\":[]"))
         assertTrue(json.contains("\"rejectedOverCap\":[]"))
+        assertTrue(json.contains("\"rejectedOverCallLimit\":[]"))
+        assertTrue(json.contains("\"evicted\":[]"))
         assertTrue(json.contains("\"activeCount\":1"))
     }
 
@@ -225,9 +263,35 @@ class ToolCatalogTest {
         )
         val note = outcome.toJson()
         assertTrue(note.contains("NEXT request"))
-        // Same-turn wording matters: the loop re-reads the surface per step, so a model that
-        // reads only "next turn" would waste a round-trip.
         assertTrue(note.contains("same turn"))
+    }
+
+    @Test
+    fun `deactivate releases open tools and reports unknown or not active`() {
+        val catalog = catalogOf("t_1", "t_2", "t_3")
+        val activation = ToolActivationState()
+        activation.activate(catalog, listOf("t_1", "t_2"))
+        val outcome = activation.deactivate(catalog, listOf("t_1", "t_3", "ghost"))
+        assertEquals(listOf("t_1"), outcome.closed)
+        assertEquals(listOf("t_3"), outcome.notActive)
+        assertEquals(listOf("ghost"), outcome.unknown)
+        assertEquals(1, outcome.activeCount)
+        assertEquals(listOf("t_2"), activation.active().toList())
+    }
+
+    @Test
+    fun `close outcome always serialises every list`() {
+        val outcome = ToolCloseOutcome(
+            closed = listOf("a"),
+            notActive = emptyList(),
+            unknown = listOf("b"),
+            activeCount = 0,
+        )
+        val json = outcome.toJson()
+        assertTrue(json.contains("\"closed\":[\"a\"]"))
+        assertTrue(json.contains("\"notActive\":[]"))
+        assertTrue(json.contains("\"unknown\":[\"b\"]"))
+        assertTrue(json.contains("\"activeCount\":0"))
     }
 
     // ------------------------------------------------------- local-group catalogue
@@ -294,9 +358,9 @@ class ToolCatalogTest {
     // ------------------------------------------------------------ tool wiring
 
     @Test
-    fun `factory returns the search and open tools`() {
+    fun `factory returns the search, open and close tools`() {
         val tools = buildToolCatalogTools(catalogOf("t_1"), ToolActivationState())
-        assertEquals(listOf("tool_search", "tool_open"), tools.map { it.name })
+        assertEquals(listOf("tool_search", "tool_open", "tool_close"), tools.map { it.name })
     }
 
     @Test
@@ -347,6 +411,26 @@ class ToolCatalogTest {
         val text = (parts.single() as UIMessagePart.Text).text
         assertTrue(activation.active().isEmpty())
         assertTrue(text.contains("tool_search"))
+    }
+
+    @Test
+    fun `tool_close execute deactivates requested names`() = runBlocking {
+        val activation = ToolActivationState()
+        val tools = buildToolCatalogTools(catalogOf("t_1", "t_2"), activation)
+        val open = tools.first { it.name == "tool_open" }
+        val close = tools.first { it.name == "tool_close" }
+
+        open.execute(buildJsonObject {
+            put("names", JsonArray(listOf(JsonPrimitive("t_1"), JsonPrimitive("t_2"))))
+        })
+        assertEquals(2, activation.active().size)
+
+        val parts = close.execute(buildJsonObject {
+            put("names", JsonArray(listOf(JsonPrimitive("t_1"))))
+        })
+        val text = (parts.single() as UIMessagePart.Text).text
+        assertTrue(text.contains("\"closed\":[\"t_1\"]"))
+        assertEquals(listOf("t_2"), activation.active().toList())
     }
 
     @Test
