@@ -1,5 +1,6 @@
 package com.clma.app.data.sync
 
+import com.clma.app.R
 import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
@@ -79,7 +80,9 @@ class BackupManager(
                     addWorkspaces(zip)
                 }
                 if (BackupItem.SECRETS in selected) {
-                    require(encryptionPassword.isNotBlank()) { "Encryption password is required to backup secrets" }
+                    require(encryptionPassword.isNotBlank()) {
+                        context.getString(R.string.backup_secrets_password_required)
+                    }
                     val agentSecrets = AgentSecretsStore(context).exportAll()
                     val workflowSecrets = WorkflowSecretsStore(context).exportAll()
                     val skillSecrets = SkillSecretsStore(context).exportAll()
@@ -204,7 +207,9 @@ class BackupManager(
 
                     val secretsEncFile = File(staging, BackupLayout.SECRETS_FILE)
                     if (secretsEncFile.exists() && BackupItem.SECRETS in selected) {
-                        require(encryptionPassword.isNotBlank()) { "Encryption password is required to restore secrets" }
+                        require(encryptionPassword.isNotBlank()) {
+                            context.getString(R.string.backup_secrets_enter_password)
+                        }
                         val payload = SecretsBackupCrypto.decrypt(secretsEncFile.readBytes(), encryptionPassword.toCharArray(), json)
                         val stagedSecretsFile = File(staging, "staged_secrets.json")
                         PendingRestore.writeDurably(stagedSecretsFile, json.encodeToString(SecretsBackupPayload.serializer(), payload))

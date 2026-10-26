@@ -1,38 +1,39 @@
 ---
 name: virtual-piano
-description: Show a playable 88-key virtual piano with synthesized note audio inside a webview.
+description: 在 WebView 内展示可弹奏的 88 键虚拟钢琴，带有合成音符音频。
 license: Apache-2.0
-compatibility: Requires the JS skills tool (run_js) to be enabled.
+compatibility: 需要启用 JS 技能工具 (run_js)。
 metadata:
   upstream: https://github.com/google-ai-edge/gallery
 ---
 
-# Virtual Piano
+# 虚拟钢琴 (Virtual Piano)
 
-A playable, horizontally-scrolling virtual piano keyboard that uses web audio.
+一个可交互弹奏、横向滚动的 88 键虚拟钢琴键盘，基于 Web Audio 合成音效。
 
-## Files
-- `scripts/index.html`: The local entry point that loads `scripts/index.js`.
-- `scripts/index.js`: Returns the webview URL `ui.html?v=<timestamp>` pointing to the local UI under `assets/`.
-- `assets/ui.html`: The piano keyboard UI (3D, 88 keys, horizontally scrolling); note audio is synthesized with WebAudio.
+## 结构说明
+- `scripts/index.html`: 本地入口文件，负责加载 `scripts/index.js`。
+- `scripts/index.js`: 返回指向 `assets/` 下本地界面的 WebView 链接 `ui.html?v=<timestamp>`。
+- `assets/ui.html`: 钢琴键盘界面（3D 视觉、88 键、横向滑动浏览）；音符通过 WebAudio 实时合成。
 
-## Prompts / Triggers
+## 示例触发词
+- "打开虚拟钢琴"
+- "弹钢琴"
+- "我想弹琴"
+- "显示钢琴键盘"
 - "Open virtual piano"
-- "Play the piano"
-- "I want to play piano"
-- "Show me a piano keyboard"
 
-## Instructions
+## 调用说明
 
-Call the `run_js` tool with:
+使用以下参数调用 `run_js` 工具：
 - skill_name: `virtual-piano`
 - script: `scripts/index.html`
-- data: A JSON string (any payload, the skill ignores it).
+- data: JSON 字符串（任意有效载荷，该技能会忽略具体参数）。
 
-The skill returns a `webview` result with a relative URL (`ui.html?v=...`). The chat surface decides how to render embedded webview returns; if it cannot inline the iframe it falls back to a clickable link.
+该技能返回一个带有相对路径 (`ui.html?v=...`) 的 `webview` 结果。聊天界面会自动处理嵌入式 WebView 的渲染；如果无法内嵌 iframe 则会降级显示为可点击卡片。
 
-Homepage: <https://github.com/google-ai-edge/gallery/tree/main/skills/featured/virtual-piano>
+主页：<https://github.com/google-ai-edge/gallery/tree/main/skills/featured/virtual-piano>
 
-## Attribution
+## 归属说明
 
-Ported from [google-ai-edge/gallery](https://github.com/google-ai-edge/gallery) under the Apache-2.0 licence. Original copyright Google LLC.
+基于 Apache-2.0 许可证移植自 [google-ai-edge/gallery](https://github.com/google-ai-edge/gallery)。版权所有 Google LLC。
