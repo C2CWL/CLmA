@@ -34,6 +34,7 @@ object ToolDisplayNames {
         "check_token_usage" to Res(R.string.tool_display_name_check_token_usage, R.string.tool_display_desc_check_token_usage),
         "tool_search" to Res(R.string.tool_display_name_tool_search, R.string.tool_display_desc_tool_search),
         "tool_open" to Res(R.string.tool_display_name_tool_open, R.string.tool_display_desc_tool_open),
+        "tool_close" to Res(R.string.tool_display_name_tool_close, R.string.tool_display_desc_tool_close),
         "tool_output_read" to Res(R.string.tool_display_name_tool_output_read, R.string.tool_display_desc_tool_output_read),
         "get_time_info" to Res(R.string.tool_display_name_get_time_info, R.string.tool_display_desc_get_time_info),
         "get_battery_status" to Res(R.string.tool_display_name_get_battery_status, R.string.tool_display_desc_get_battery_status),

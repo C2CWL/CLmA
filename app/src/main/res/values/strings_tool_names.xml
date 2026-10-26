@@ -36,6 +36,8 @@
   <string name="tool_display_desc_tool_search">Finds tools in the catalog by keyword</string>
   <string name="tool_display_name_tool_open">Activate tools</string>
   <string name="tool_display_desc_tool_open">Activates tools by name from the next turn</string>
+  <string name="tool_display_name_tool_close">Deactivate tools</string>
+  <string name="tool_display_desc_tool_close">Releases activated tools to free catalog slots and prompt tokens</string>
   <string name="tool_display_name_tool_output_read">Read tool output</string>
   <string name="tool_display_desc_tool_output_read">Reads slices or filtered output of earlier tool executions</string>
   <string name="tool_display_name_get_time_info">Current time</string>
