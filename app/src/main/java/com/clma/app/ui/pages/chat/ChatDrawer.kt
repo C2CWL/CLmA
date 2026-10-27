@@ -215,6 +215,15 @@ fun ChatDrawerContent(
             selectedIds + conversation.id
         }
     }
+    val currentViewIds by drawerVm.currentViewConversationIds.collectAsStateWithLifecycle()
+    val isAllSelected = currentViewIds.isNotEmpty() && selectedIds.containsAll(currentViewIds)
+    fun toggleSelectAll() {
+        selectedIds = if (isAllSelected) {
+            emptySet()
+        } else {
+            currentViewIds.toSet()
+        }
+    }
     // 大屏永久抽屉没有外层「关闭抽屉」返回键，这里直接退出多选。
     // 手机上 ChatPage 的返回键注册更晚，会改走 drawerVm.requestExitMultiSelect()。
     BackHandler(enabled = selectionMode) { exitSelection() }
@@ -531,6 +540,8 @@ fun ChatDrawerContent(
                     SelectionActionBar(
                         capsule = drawerCapsules,
                         count = selectedIds.size,
+                        isAllSelected = isAllSelected,
+                        onToggleSelectAll = { toggleSelectAll() },
                         onCancel = { exitSelection() },
                         onDelete = {
                             if (selectedIds.isNotEmpty()) showDeleteSelectedDialog = true
@@ -1199,6 +1210,8 @@ fun ChatDrawerContent(
 @Composable
 private fun SelectionActionBar(
     count: Int,
+    isAllSelected: Boolean,
+    onToggleSelectAll: () -> Unit,
     onCancel: () -> Unit,
     onDelete: () -> Unit,
     onMove: () -> Unit,
@@ -1211,99 +1224,133 @@ private fun SelectionActionBar(
         modifier = Modifier
             .fillMaxWidth()
             .then(
-                // 胶囊路径下没有外层卡片，多选栏自己带一层底板，免得按钮直接压在壁纸上。
                 if (capsule) {
                     Modifier
                         .clip(RoundedCornerShape(20.dp))
                         .background(drawerCapsuleColor())
-                        .padding(horizontal = 6.dp, vertical = 4.dp)
+                        .padding(horizontal = 8.dp, vertical = 6.dp)
                 } else {
                     Modifier
                 }
             ),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
+        // 第一行：全选/全不选切换、已选择数量、取消多选
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            TextButton(onClick = onCancel) {
-                Text(stringResource(R.string.chat_page_exit_multi_select))
+            TextButton(
+                onClick = onToggleSelectAll,
+                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp),
+            ) {
+                Text(
+                    text = stringResource(
+                        if (isAllSelected) R.string.chat_page_unselect_all
+                        else R.string.chat_page_select_all
+                    ),
+                    style = MaterialTheme.typography.labelLarge,
+                )
             }
             Text(
                 text = stringResource(R.string.chat_page_selected_count, count),
-                style = MaterialTheme.typography.labelLarge,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
             )
             TextButton(
-                onClick = onDelete,
-                enabled = canAct,
-                colors = ButtonDefaults.textButtonColors(
-                    contentColor = MaterialTheme.colorScheme.error,
-                ),
+                onClick = onCancel,
+                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp),
             ) {
-                Icon(HugeIcons.Delete01, null, modifier = Modifier.size(16.dp))
-                Spacer(Modifier.width(4.dp))
                 Text(
-                    text = stringResource(R.string.chat_page_delete),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                    text = stringResource(R.string.chat_page_exit_multi_select),
+                    style = MaterialTheme.typography.labelLarge,
                 )
             }
         }
+
+        // 第二行：操作按钮区（移至文件夹、新建文件夹、移至助手、删除），上下结构排版，避免文字水平截断
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(2.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // 三个动作等宽排一行，字号降到 labelMedium，窄抽屉里也能放下完整文案。
-            TextButton(
+            SelectionActionButton(
+                icon = HugeIcons.Folder01,
+                label = stringResource(R.string.chat_page_move_to_folder),
                 onClick = onMove,
                 enabled = canAct,
                 modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
-            ) {
-                Icon(HugeIcons.Folder01, null, modifier = Modifier.size(14.dp))
-                Spacer(Modifier.width(3.dp))
-                Text(
-                    text = stringResource(R.string.chat_page_move_to_folder),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.labelMedium,
-                )
-            }
-            TextButton(
+            )
+            SelectionActionButton(
+                icon = HugeIcons.FolderAdd,
+                label = stringResource(R.string.chat_page_create_folder),
                 onClick = onCreateAndMove,
                 enabled = canAct,
                 modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
-            ) {
-                Icon(HugeIcons.FolderAdd, null, modifier = Modifier.size(14.dp))
-                Spacer(Modifier.width(3.dp))
-                Text(
-                    text = stringResource(R.string.chat_page_create_folder),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.labelMedium,
-                )
-            }
-            TextButton(
+            )
+            SelectionActionButton(
+                icon = HugeIcons.LookTop,
+                label = stringResource(R.string.chat_page_move_to_assistant),
                 onClick = onMoveToAssistant,
                 enabled = canAct,
                 modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
-            ) {
-                Icon(HugeIcons.LookTop, null, modifier = Modifier.size(14.dp))
-                Spacer(Modifier.width(3.dp))
-                Text(
-                    text = stringResource(R.string.chat_page_move_to_assistant),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.labelMedium,
-                )
-            }
+            )
+            SelectionActionButton(
+                icon = HugeIcons.Delete01,
+                label = stringResource(R.string.chat_page_delete),
+                onClick = onDelete,
+                enabled = canAct,
+                isDestructive = true,
+                modifier = Modifier.weight(1f),
+            )
+        }
+    }
+}
+
+@Composable
+private fun SelectionActionButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    enabled: Boolean,
+    modifier: Modifier = Modifier,
+    isDestructive: Boolean = false,
+) {
+    val contentColor = when {
+        !enabled -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+        isDestructive -> MaterialTheme.colorScheme.error
+        else -> MaterialTheme.colorScheme.onSurface
+    }
+
+    Surface(
+        onClick = onClick,
+        enabled = enabled,
+        shape = RoundedCornerShape(12.dp),
+        color = Color.Transparent,
+        contentColor = contentColor,
+        modifier = modifier,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier.padding(horizontal = 2.dp, vertical = 6.dp),
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                modifier = Modifier.size(20.dp),
+            )
+            Spacer(Modifier.height(3.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            )
         }
     }
 }

@@ -225,4 +225,59 @@ class ArchiveToolsTest {
         assertTrue(isMalformedZipEntryName("caf\uFFFD.txt"))
         assertFalse(isMalformedZipEntryName("normal.txt"))
     }
+
+    @Test fun `unzip rejects sibling directory escape via prefix collision`() {
+        // Destination: <tmp>/dest
+        // Attacker creates a zip entry named "../dest_sibling/evil.txt" or "../dest2/file.txt".
+        // A naive targetPath.startsWith(canonicalRoot) would match because
+        // "/.../dest_sibling" starts with "/.../dest".
+        val evilZip = File(tmp.root, "sibling_escape.zip")
+        ZipOutputStream(evilZip.outputStream()).use { zos ->
+            zos.putNextEntry(ZipEntry("../safe_sibling/evil.txt"))
+            zos.write("escaped".toByteArray())
+            zos.closeEntry()
+        }
+        val safeDir = tmp.newFolder("safe")
+        val result = obj(execTool(
+            unzipFileTool(NULL_CONTEXT),
+            """{"source":"${evilZip.absolutePath}","destination_dir":"${safeDir.absolutePath}"}""",
+        ))
+        assertEquals("unsafe_zip_entry", result["error"]?.jsonPrimitive?.content)
+    }
+
+    @Test fun `zip_files skips symlinks and symlink cycles`() {
+        val srcDir = tmp.newFolder("symlink_src")
+        val normalFile = File(srcDir, "real.txt").apply { writeText("hello real") }
+
+        // Create an external file outside the source directory
+        val externalFile = tmp.newFile("outside.txt").apply { writeText("secret outside") }
+
+        // Symlink pointing outside
+        val linkToOutside = File(srcDir, "link_outside.txt")
+        runCatching {
+            java.nio.file.Files.createSymbolicLink(linkToOutside.toPath(), externalFile.toPath())
+        }
+
+        // Symlink loop (link pointing back to srcDir)
+        val linkLoop = File(srcDir, "loop_dir")
+        runCatching {
+            java.nio.file.Files.createSymbolicLink(linkLoop.toPath(), srcDir.toPath())
+        }
+
+        val zipPath = "${tmp.root.absolutePath}/symlink_test.zip"
+        val zipResult = obj(execTool(
+            zipFilesTool(NULL_CONTEXT),
+            """{"sources":["${srcDir.absolutePath}"],"destination":"$zipPath"}""",
+        ))
+        assertTrue(zipResult["success"]!!.jsonPrimitive.content.toBoolean())
+        assertEquals(1, zipResult["entry_count"]!!.jsonPrimitive.content.toInt())
+
+        val listResult = obj(execTool(
+            listZipContentsTool(NULL_CONTEXT),
+            """{"source":"$zipPath"}""",
+        ))
+        val entries = listResult["entries"]!!.jsonArray
+        assertEquals(1, entries.size)
+        assertTrue(entries[0].jsonObject["name"]!!.jsonPrimitive.content.endsWith("real.txt"))
+    }
 }

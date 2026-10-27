@@ -9,7 +9,6 @@ import android.widget.Toast
 import com.clma.app.BuildConfig
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
@@ -1046,26 +1045,11 @@ class GenerationLoop(
                             send(GenerationChunk.Messages(messages))
                         }
                     } else {
-                        // A stop mid-turn must leave the assistant message finalized the same
-                        // way a normal completion does below (e.g. ThinkTagTransformer closing
-                        // an unclosed <think> block) — otherwise stopGeneration persists a shape
-                        // the rest of the app never produces on its own. Reuse the exact same
-                        // transformer chain calls the success path runs, just before rethrowing.
-                        // The coroutine's Job is already cancelled here, so a plain suspend call
-                        // (transformer I/O, or emit reaching ChatService's collector and its own
-                        // suspend writes) would immediately re-throw — run under NonCancellable,
-                        // same as ChatService's own onCompletion persist for this exact reason.
-                        //
-                        // This flow ends in .flowOn(Dispatchers.IO), so this block runs in the
-                        // upstream producer coroutine: send() can still throw (e.g. the
-                        // downstream channel already closed because the consumer tore down
-                        // first) even under NonCancellable. That must never replace the
-                        // original CancellationException — best-effort only: log and fall
-                        // through to the unconditional rethrow below regardless.
-                        // (stopGeneration itself persists after joining these jobs, so skipping
-                        // this finalize on failure is safe — see ChatService.stopGeneration.)
+                        // Never suspend a final send after downstream cancellation: a full
+                        // channel plus NonCancellable can keep stopGeneration.join waiting forever.
+                        // Transformer cleanup is best-effort and bounded.
                         try {
-                            withContext(NonCancellable) {
+                            finalizeCancelledGeneration {
                                 messages = messages.visualTransforms(
                                     transformers = outputTransformers,
                                     context = context,
@@ -1086,7 +1070,7 @@ class GenerationLoop(
                                             .toLocalDateTime(TimeZone.currentSystemDefault())
                                     )
                                 }
-                                send(GenerationChunk.Messages(messages))
+                                trySend(GenerationChunk.Messages(messages))
                             }
                         } catch (finalizeError: Throwable) {
                             Log.w(TAG, "generateText: cancellation finalize failed, stop proceeds without it", finalizeError)
