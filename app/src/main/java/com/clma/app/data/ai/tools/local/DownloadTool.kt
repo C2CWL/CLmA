@@ -12,6 +12,7 @@ import kotlinx.serialization.json.put
 import com.clma.ai.core.InputSchema
 import com.clma.ai.core.Tool
 import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.ai.net.isBlockedDownloadUrl
 
 fun downloadTool(context: Context): Tool = Tool(
     name = "download_file",
@@ -40,6 +41,24 @@ fun downloadTool(context: Context): Tool = Tool(
         val url = params["url"]?.jsonPrimitive?.contentOrNull
             ?: error("url is required")
         val filenameParam = params["filename"]?.jsonPrimitive?.contentOrNull?.takeIf { s -> s.isNotEmpty() }
+
+        // DownloadManager is not behind withEgressGuard: without this pre-check the model could
+        // pull `http://127.0.0.1:8080/...` or a LAN/metadata address into public Downloads and
+        // then read it back with the (auto-approved) read_file tool.
+        if (isBlockedDownloadUrl(url)) {
+            return@Tool listOf(
+                UIMessagePart.Text(
+                    buildJsonObject {
+                        put("error", "blocked_private_address")
+                        put(
+                            "detail",
+                            "Downloads from loopback, private, link-local or otherwise non-routable " +
+                                "addresses are refused.",
+                        )
+                    }.toString()
+                )
+            )
+        }
 
         try {
             val uri = url.toUri()

@@ -14,8 +14,8 @@ import java.util.concurrent.TimeUnit
 
 /**
  * True when this address must never be a tool-driven HTTP target: loopback, link-local,
- * site-local (RFC1918), any-local, multicast, CGNAT (100.64.0.0/10), or IPv6 unique-local
- * (fc00::/7).
+ * site-local (RFC1918), any-local, multicast, CGNAT (100.64.0.0/10), IPv6 unique-local
+ * (fc00::/7), 0.0.0.0/8, and IPv4-mapped/compatible IPv6 forms of any of the above.
  *
  * 169.254.169.254, the cloud metadata address, falls out of the link-local check.
  */
@@ -31,12 +31,32 @@ internal fun InetAddress.isBlockedTarget(): Boolean {
         val first = b[0].toInt() and 0xFF
         val second = b[1].toInt() and 0xFF
         if (first == 100 && second in 64..127) return true
+        // 0.0.0.0/8 ("this network", RFC 791): only the exact 0.0.0.0 is covered by
+        // isAnyLocalAddress, but Linux routes the whole /8 to the local host.
+        if (first == 0) return true
     }
     // fc00::/7 (unique-local) is not covered by isSiteLocalAddress, which only matches
     // the deprecated fec0::/10 for Inet6Address.
     if (this is Inet6Address) {
-        val first = address[0].toInt() and 0xFF
+        val b = address
+        val first = b[0].toInt() and 0xFF
         if (first and 0xFE == 0xFC) return true
+        // IPv4-mapped (::ffff:a.b.c.d) and IPv4-compatible (::a.b.c.d) forms: the
+        // Inet6Address flag checks above look only at the v6 shape, so e.g.
+        // ::ffff:127.0.0.1 is neither "loopback" nor "site-local" to them, yet the
+        // socket still reaches 127.0.0.1. Unwrap and judge the embedded v4 address by
+        // the same rules instead of depending on platform-specific literal parsing
+        // (some stacks hand back an Inet4Address for a mapped literal, some don't).
+        // :: and ::1 take this shape too but already returned above; recursion is safe
+        // because a 4-byte address always materialises as Inet4Address.
+        val headIsZero = (0 until 10).all { b[it].toInt() == 0 }
+        val mapped = headIsZero &&
+            (b[10].toInt() and 0xFF) == 0xFF && (b[11].toInt() and 0xFF) == 0xFF
+        val compatible = headIsZero && b[10].toInt() == 0 && b[11].toInt() == 0
+        if (mapped || compatible) {
+            val embedded = InetAddress.getByAddress(byteArrayOf(b[12], b[13], b[14], b[15]))
+            if (embedded.isBlockedTarget()) return true
+        }
     }
     return false
 }
