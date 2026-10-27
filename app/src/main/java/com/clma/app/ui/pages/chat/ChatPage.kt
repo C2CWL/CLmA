@@ -166,17 +166,6 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null, is
     val drawerVm: ChatDrawerVM = koinViewModel(viewModelStoreOwner = activity)
     val multiSelectActive by drawerVm.multiSelectActive.collectAsStateWithLifecycle()
 
-    // 抽屉打开时：多选中先退出多选；否则关闭抽屉。
-    // 手机分支在 ModalNavigationDrawer 之后还有一个更晚的返回键，两处必须同一规则。
-    BackHandler(enabled = drawerState.isOpen && multiSelectActive) {
-        drawerVm.requestExitMultiSelect()
-    }
-    BackHandler(enabled = drawerState.isOpen && !multiSelectActive) {
-        scope.launch {
-            drawerState.close()
-        }
-    }
-
     // Shared Haze state between the chat page and the drawer: the page marks its background +
     // message list as the blur source (hazeSource), so the drawer's glass panel refracts the
     // page sitting behind it instead of showing an opaque block.
