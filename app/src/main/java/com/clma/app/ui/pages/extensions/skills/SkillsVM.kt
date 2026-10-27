@@ -339,6 +339,18 @@ class SkillsVM(
                 withContext(Dispatchers.Main) { onResult(true, entry.name) }
                 return@launch
             }
+            if (skillManager.isFeaturedSkill(entry.name)) {
+                val ok = skillManager.installFeaturedSkill(entry.name)
+                _skills.value = skillManager.listSkills()
+                withContext(Dispatchers.Main) {
+                    if (ok) {
+                        onResult(true, entry.name)
+                    } else {
+                        onResult(false, "skill_catalog_install_failed")
+                    }
+                }
+                return@launch
+            }
             val url = entry.sourceUrl
             if (url.isNullOrBlank()) {
                 withContext(Dispatchers.Main) { onResult(false, "skill_catalog_install_failed") }

@@ -241,6 +241,39 @@ class SkillManager(
     fun getSkillDir(skillName: String): File? = resolveSkillDir(skillName)
 
     /**
+     * Featured skills bundled in `assets/featured-skills/`.
+     */
+    fun featuredSkillNames(): Set<String> = runCatching {
+        context.assets.list("featured-skills").orEmpty().toSet()
+    }.getOrDefault(emptySet())
+
+    fun isFeaturedSkill(skillName: String): Boolean = skillName in featuredSkillNames()
+
+    /**
+     * Install a featured skill from `assets/featured-skills/<name>/` directly into the user's
+     * skills directory, bypassing network requests.
+     */
+    suspend fun installFeaturedSkill(skillName: String): Boolean = withContext(Dispatchers.IO) {
+        if (!isFeaturedSkill(skillName)) return@withContext false
+        val targetDir = SkillPaths.resolveSkillDir(getSkillsDir(), skillName) ?: return@withContext false
+        val assetRoot = "featured-skills"
+        try {
+            if (targetDir.exists()) targetDir.deleteRecursively()
+            copyAssetSkill(assetRoot, skillName, targetDir)
+            val sentinel = targetDir.resolve(".seeded")
+            sentinel.writeText(System.currentTimeMillis().toString())
+            val coreVersionFile = targetDir.resolve(".core-bundled-hash")
+            val bundledHash = computeBundledSkillHash(assetRoot, skillName)
+            coreVersionFile.writeText(bundledHash)
+            Log.i(TAG, "installFeaturedSkill: successfully installed $skillName from assets")
+            true
+        } catch (e: Exception) {
+            Log.w(TAG, "installFeaturedSkill: failed to install $skillName", e)
+            false
+        }
+    }
+
+    /**
      * Doctor support, read-only: the skill names currently bundled in
      * `assets/default-skills/`, so the Doctor can tell a "bundled" skill directory
      * (seeded from assets) apart from a user-added one without duplicating the seeding
@@ -416,6 +449,46 @@ class SkillManager(
                 Log.w(TAG, "seedDefaultSkillsIfNeeded: failed to seed $skillName", e)
             }
         }
+
+        // Auto-refresh legacy English default/featured skills if they belong to bundled
+        // or featured skills and contain NO CJK characters (i.e. untouched original English version).
+        // This ensures existing users smoothly transition to localized versions without clobbering
+        // any user edits or custom skills.
+        refreshLegacyEnglishFeaturedSkills()
+    }
+
+    /**
+     * Checks installed skills that match bundled or featured skill names. If an installed
+     * skill contains NO CJK characters in its SKILL.md, it is deemed an older English default/featured
+     * installation and is refreshed with the localized bundled/featured assets.
+     */
+    private fun refreshLegacyEnglishFeaturedSkills() {
+        val featuredNames = featuredSkillNames()
+        val defaultNames = bundledSkillNames()
+        val allPresetNames = featuredNames + defaultNames
+        val skillsDir = getSkillsDir()
+        val installedDirs = skillsDir.listFiles()?.filter { it.isDirectory && it.name in allPresetNames }.orEmpty()
+
+        for (dir in installedDirs) {
+            val skillName = dir.name
+            val skillFile = dir.resolve("SKILL.md")
+            if (!skillFile.exists()) continue
+            val content = runCatching { skillFile.readText() }.getOrNull() ?: continue
+            val hasCjk = containsCjk(content)
+            if (!hasCjk) {
+                // Untouched legacy English skill: safely refresh to localized version
+                val assetRoot = if (skillName in featuredNames) "featured-skills" else "default-skills"
+                try {
+                    dir.deleteRecursively()
+                    copyAssetSkill(assetRoot, skillName, dir)
+                    dir.resolve(".seeded").writeText(System.currentTimeMillis().toString())
+                    dir.resolve(".core-bundled-hash").writeText(computeBundledSkillHash(assetRoot, skillName))
+                    Log.i(TAG, "refreshLegacyEnglishFeaturedSkills: refreshed legacy English skill $skillName from $assetRoot")
+                } catch (e: Exception) {
+                    Log.w(TAG, "refreshLegacyEnglishFeaturedSkills: failed to refresh $skillName", e)
+                }
+            }
+        }
     }
 
     /**
@@ -532,6 +605,8 @@ class SkillManager(
             null
         }
     }
+
+    private fun containsCjk(text: String): Boolean = text.any { c -> c in '\u4e00'..'\u9fa5' }
 }
 
 internal enum class SeedDecision { SKIP, SEED }

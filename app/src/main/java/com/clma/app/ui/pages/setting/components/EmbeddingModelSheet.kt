@@ -196,7 +196,7 @@ fun EmbeddingModelSheet(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                 ) {
                                     Text(
-                                        text = "Downloading Model...",
+                                        text = stringResource(R.string.setting_model_page_embedding_downloading),
                                         style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.Medium,
                                     )
@@ -453,7 +453,7 @@ private fun CuratedEmbeddingEntryCard(
                         )
                     } else {
                         OutlinedButton(onClick = onSelect) {
-                            Text("Use")
+                            Text(stringResource(R.string.common_use))
                         }
                     }
                 } else {
@@ -470,7 +470,7 @@ private fun CuratedEmbeddingEntryCard(
                             modifier = Modifier.size(16.dp),
                         )
                         Spacer(modifier = Modifier.size(4.dp))
-                        Text("Install")
+                        Text(stringResource(R.string.common_install))
                     }
                 }
             }
@@ -495,7 +495,7 @@ private fun CuratedEmbeddingEntryCard(
                 SuggestionChip(
                     onClick = {},
                     enabled = false,
-                    label = { Text("${entry.dim}-dim") },
+                    label = { Text(stringResource(R.string.setting_model_page_embedding_dim, entry.dim)) },
                     colors = SuggestionChipDefaults.suggestionChipColors(
                         disabledContainerColor = MaterialTheme.colorScheme.surface,
                         disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -506,7 +506,7 @@ private fun CuratedEmbeddingEntryCard(
                 SuggestionChip(
                     onClick = {},
                     enabled = false,
-                    label = { Text("${entry.contextLabel} ctx") },
+                    label = { Text(stringResource(R.string.setting_model_page_embedding_ctx, entry.contextLabel)) },
                     colors = SuggestionChipDefaults.suggestionChipColors(
                         disabledContainerColor = MaterialTheme.colorScheme.surface,
                         disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -515,10 +515,10 @@ private fun CuratedEmbeddingEntryCard(
 
                 entry.tags.forEach { tag ->
                     val displayTag = when (tag) {
-                        "chinese" -> "Chinese Tuned"
-                        "multilingual" -> "Multilingual"
-                        "small" -> "Compact"
-                        "long-context" -> "Long Context"
+                        "chinese" -> stringResource(R.string.setting_model_page_embedding_tag_chinese)
+                        "multilingual" -> stringResource(R.string.setting_model_page_embedding_tag_multilingual)
+                        "small" -> stringResource(R.string.setting_model_page_embedding_tag_compact)
+                        "long-context" -> stringResource(R.string.setting_model_page_embedding_tag_long_context)
                         else -> tag
                     }
                     SuggestionChip(
@@ -574,7 +574,7 @@ private fun CloudEmbeddingCard(
                 )
                 if (!candidate.supported) {
                     Text(
-                        text = "Unsupported provider protocol (OpenAI protocol required)",
+                        text = stringResource(R.string.setting_model_page_embedding_unsupported_protocol),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error,
                     )

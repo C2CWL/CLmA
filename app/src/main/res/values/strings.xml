@@ -3332,4 +3332,15 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="chat_page_subagents_running">%1$d sub-agent(s) running · %2$s</string>
   <string name="chat_interject_unavailable">Generation already finished — send it as a normal message</string>
   <string name="chat_interjection_label">Interjection</string>
+
+  <!-- Embedding Model Sheet -->
+  <string name="common_use">Use</string>
+  <string name="setting_model_page_embedding_downloading">Downloading Model…</string>
+  <string name="setting_model_page_embedding_dim">%1$d-dim</string>
+  <string name="setting_model_page_embedding_ctx">%1$s ctx</string>
+  <string name="setting_model_page_embedding_tag_chinese">Chinese Tuned</string>
+  <string name="setting_model_page_embedding_tag_multilingual">Multilingual</string>
+  <string name="setting_model_page_embedding_tag_compact">Compact</string>
+  <string name="setting_model_page_embedding_tag_long_context">Long Context</string>
+  <string name="setting_model_page_embedding_unsupported_protocol">Unsupported provider protocol (OpenAI protocol required)</string>
 </resources>
