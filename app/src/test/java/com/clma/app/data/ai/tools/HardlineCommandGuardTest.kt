@@ -328,6 +328,35 @@ class HardlineCommandGuardTest {
         )
     }
 
+    @Test fun `root_exec and the workspace shells are guarded like every other shell`() {
+        // The highest-privilege tool we ship (`su -c`, UID 0) had no hardline arm at all, and the
+        // workspace shells — the two other command surfaces — were missing too. With YOLO on, or
+        // after one mistaken approval, `rm -rf /` ran as root.
+        assertNotNull(
+            "root_exec with rm -rf / should block",
+            HardlineCommandGuard.checkTool("root_exec", """{"command":"rm -rf /"}"""),
+        )
+        assertNotNull(
+            "workspace_shell with shutdown should block",
+            HardlineCommandGuard.checkTool("workspace_shell", """{"command":"shutdown -h now"}"""),
+        )
+        assertNotNull(
+            "workspace_run_background with rm -rf / should block",
+            HardlineCommandGuard.checkTool(
+                "workspace_run_background",
+                """{"command":"rm -rf /"}""",
+            ),
+        )
+        assertNull(
+            "an ordinary root command still passes",
+            HardlineCommandGuard.checkTool("root_exec", """{"command":"id"}"""),
+        )
+        assertNull(
+            "an ordinary workspace command still passes",
+            HardlineCommandGuard.checkTool("workspace_shell", """{"command":"ls -la /workspace"}"""),
+        )
+    }
+
     @Test fun `subagent_dispatch with a safe prompt passes`() {
         assertNull(
             "an ordinary research prompt should not match",
