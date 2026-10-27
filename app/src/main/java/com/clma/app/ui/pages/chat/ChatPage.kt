@@ -172,17 +172,6 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null, is
     val softwareKeyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
 
-    // 抽屉打开时：多选中先退出多选；否则关闭抽屉。
-    // 手机分支在 ModalNavigationDrawer 之后还有一个更晚的返回键，两处必须同一规则。
-    BackHandler(enabled = drawerState.isOpen && multiSelectActive) {
-        drawerVm.requestExitMultiSelect()
-    }
-    BackHandler(enabled = drawerState.isOpen && !multiSelectActive) {
-        scope.launch {
-            drawerState.close()
-        }
-    }
-
     // Clear input focus so popup transitions cannot reopen the keyboard.
     LaunchedEffect(drawerState.isOpen) {
         if (drawerState.isOpen) {
@@ -340,12 +329,6 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null, is
                     onDismissError = { vm.dismissError(it) },
                     onClearAllErrors = { vm.clearAllErrors() },
                 )
-            }
-            BackHandler(enabled = drawerState.isOpen && multiSelectActive) {
-                drawerVm.requestExitMultiSelect()
-            }
-            BackHandler(enabled = drawerState.isOpen && !multiSelectActive) {
-                scope.launch { drawerState.close() }
             }
         }
     }
