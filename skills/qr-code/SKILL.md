@@ -1,21 +1,21 @@
 ---
 name: qr-code
-description: Generate a 512x512 QR code PNG for a given URL. Returns a base64-encoded image. Works fully offline.
+description: 为指定链接生成 512x512 PNG 格式二维码。返回 Base64 编码图片，完全支持离线运行。
 license: Apache-2.0
-compatibility: Requires the JS skills tool (run_js) to be enabled.
+compatibility: 需要启用 JS 技能工具 (run_js)。
 metadata:
   upstream: https://github.com/google-ai-edge/gallery
 ---
 
-# Instructions
+# 调用说明
 
-You MUST use the `run_js` tool with the following exact parameters:
+必须使用以下参数调用 `run_js` 工具：
 
 - skill_name: `qr-code`
 - script: `scripts/index.html`
-- data: A JSON string with the following fields:
-  - url: String - the url to create QR code for
+- data: 包含以下字段的 JSON 字符串：
+  - url: 字符串 - 需要生成二维码的链接地址
 
-## Attribution
+## 归属说明
 
-Ported from [google-ai-edge/gallery](https://github.com/google-ai-edge/gallery) under the Apache-2.0 licence. Original copyright Google LLC.
+基于 Apache-2.0 许可证移植自 [google-ai-edge/gallery](https://github.com/google-ai-edge/gallery)。版权所有 Google LLC。

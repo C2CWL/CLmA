@@ -1,106 +1,92 @@
 ---
 name: openclaw-converter
-description: Convert OpenClaw skills from ClawHub (or raw markdown) into CLmA-compatible skills. Use whenever the user gives you an OpenClaw skill URL, a GitHub link to an OpenClaw skill, or raw OpenClaw skill markdown to convert.
+description: 将来自 ClawHub（或 Markdown 原文）的 OpenClaw 技能转换为 CLmA 兼容技能。在用户提供 OpenClaw 技能链接、GitHub 仓库或原始技能 Markdown 时使用。
 ---
 
-# OpenClaw to CLmA Skill Converter
+# OpenClaw 转 CLmA 技能转换器 (OpenClaw to CLmA Skill Converter)
 
-Convert OpenClaw skills from ClawHub (or raw markdown) into CLmA-compatible skills. Apply this whenever the user gives you an OpenClaw skill URL, a GitHub link to an OpenClaw skill, or raw OpenClaw skill markdown to convert.
+将来自 ClawHub（或 Markdown 原文）的 OpenClaw 技能转换为与 CLmA 规范兼容的技能格式。当用户提供 OpenClaw 技能链接、GitHub 链接或技能 Markdown 文本时自动执行。
 
-## How to Fetch the Source
+## 如何拉取技能源文档
 
-1. ClawHub URL (`https://clawhub.ai/<owner>/<slug>`): the page is a JS single-page app, so a plain fetch returns empty. Use the in-app browser instead: `browser_open` the URL, wait for content to render, extract the rendered SKILL.md text (cap around 16000 chars), then close the browser.
-2. GitHub raw URL: if you know the repo, try `https://raw.githubusercontent.com/<owner>/<repo>/main/SKILL.md`. Some skills live under `https://github.com/<owner>/<repo>/tree/main/skills/<name>`.
-3. Raw markdown from the user: if the user pastes the SKILL.md directly, use it as-is.
+1. ClawHub 页面 (`https://clawhub.ai/<owner>/<slug>`)：页面为 JS 单页应用，普通的网页抓取可能返回空。请使用内置浏览器工具：通过 `browser_open` 打开该链接，等待页面渲染完成后提取渲染出的 SKILL.md 文本（截取前 16000 字符以内），随后关闭浏览器。
+2. GitHub 原始链接：若已知仓库地址，优先尝试读取 `https://raw.githubusercontent.com/<owner>/<repo>/main/SKILL.md`；部分技能位于 `https://github.com/<owner>/<repo>/tree/main/skills/<name>` 路径下。
+3. 用户直接粘贴的 Markdown：若用户直接提供了 SKILL.md 文本，则直接以此为输入。
 
-## Conversion Rules
+## 转换适配规则
 
-### Paths
+### 路径映射 (Paths)
 
-| OpenClaw | CLmA |
+| OpenClaw 路径 | CLmA 对应路径 |
 |---|---|
 | `~/.openclaw/workspace/` | `~/` |
 | `~/.openclaw/workspace/.learnings/` | `~/learnings/` |
-| `~/.openclaw/skills/<name>/` | Installed via `skill_install_from_text`; files go to `~/` |
-| Any project-root `.learnings/` | `~/learnings/` |
+| `~/.openclaw/skills/<name>/` | 通过 `skill_install_from_text` 安装；文件存放在 `~/` |
+| 任意工程根目录的 `.learnings/` | `~/learnings/` |
 
-### Tool references
+### 工具调用映射 (Tool references)
 
-| OpenClaw tool / concept | CLmA equivalent | Notes |
+| OpenClaw 工具 / 概念 | CLmA 等价能力 | 适配说明 |
 |---|---|---|
-| `sessions_list` | Not available | Remove the section or note the limitation |
-| `sessions_history` | Not available | Remove the section or note the limitation |
-| `sessions_send` | `telegram_send_message` | Cross-session becomes cross-device notification |
-| `sessions_spawn` | `subagent_dispatch` | Only if the user has sub-agents enabled |
-| `clawdhub install <name>` | `skill_install_from_url` or `skill_install_from_text` | Replace install instructions |
-| `openclaw hooks enable` | `schedule_job` or `workflow_create` | Hooks become scheduled/workflow automation |
-| `memory` (OpenClaw) | `memory_tool` (create/edit/delete) | Same concept, different API |
-| Shell commands | `termux_run_command` | Prefix root commands with `su -c` |
-| File read/write | `write_text_file`, `read_file`, `list_files` | Same paths, adapted |
+| `sessions_list` | 暂不支持 | 移除该章节或注明环境限制 |
+| `sessions_history` | 暂不支持 | 移除该章节或注明环境限制 |
+| `sessions_send` | `telegram_send_message` | 跨会话交互转换为跨设备消息通知 |
+| `sessions_spawn` | `subagent_dispatch` | 仅在用户启用了子智能体分发时可用 |
+| `clawdhub install <name>` | `skill_install_from_url` 或 `skill_install_from_text` | 替换安装说明指令 |
+| `openclaw hooks enable` | `schedule_job` 或 `workflow_create` | Hook 机制转换为定时任务或自动化工作流 |
+| `memory` (OpenClaw) | `memory_tool` (create/edit/delete) | 概念相同，接口参数调整 |
+| Shell 终端命令 | `termux_run_command` | Root 权限命令添加 `su -c` 前缀 |
+| 文件读写操作 | `write_text_file`, `read_file`, `list_files` | 保持路径一致，适配为对应工具 |
 
-### Promotion targets
+### 存储目标映射 (Promotion targets)
 
-| OpenClaw target | CLmA target |
+| OpenClaw 目标 | CLmA 目标 |
 |---|---|
-| `CLAUDE.md` | A project-level file (if the project exists) or `~/learnings/` |
-| `AGENTS.md` | A CLmA skill file or `memory_tool` |
-| `SOUL.md` | `memory_tool` for behavioral patterns |
-| `TOOLS.md` | Update the relevant skill's content |
+| `CLAUDE.md` | 工程根目录同名文件（若存在对应项目）或 `~/learnings/` |
+| `AGENTS.md` | CLmA 技能文件或 `memory_tool` |
+| `SOUL.md` | `memory_tool`（用于持久化行为准则） |
+| `TOOLS.md` | 更新对应技能的工具使用说明 |
 | `MEMORY.md` | `memory_tool` |
-| `.github/copilot-instructions.md` | Keep as-is for GitHub Copilot users |
 
-### Sections to remove or replace
+### 需要剔除或替换的章节
 
-- "OpenClaw Setup" / "OpenClaw Workspace Structure": replace with CLmA workspace paths.
-- "Inter-Session Communication": remove `sessions_*` tools; if the concept is valuable, suggest `telegram_send_message` as a cross-session notification workaround.
-- "Hook Integration" / "Enable Hook": replace with CLmA workflows (`workflow_create`) or scheduled jobs (`schedule_job`).
-- "Claude Code / Codex Setup": remove entirely (other agent platforms).
-- Installation via `clawdhub` or `git clone`: replace with "install via `skill_install_from_url` or `skill_install_from_text`" and CLmA-compatible paths.
+- “OpenClaw Setup” / “OpenClaw Workspace Structure”：替换为 CLmA 的工作区路径说明。
+- “Inter-Session Communication”：移除 `sessions_*` 工具；若该设计至关重要，建议改用 `telegram_send_message` 作为跨端通知替代方案。
+- “Hook Integration” / “Enable Hook”：替换为 CLmA 的工作流 (`workflow_create`) 或定时任务 (`schedule_job`)。
+- “Claude Code / Codex Setup”：直接删除（针对其他外部平台）。
+- 通过 `clawdhub` 或 `git clone` 安装：替换为“通过 `skill_install_from_url` 或 `skill_install_from_text` 安装”以及 CLmA 兼容路径。
 
-### Sections to keep as-is
+### 保持原样的部分
 
-Logging formats (LEARNINGS.md / ERRORS.md structure), detection triggers, priority guidelines, area tags, best practices (unless they reference removed tools), and the core workflow / quick-reference table.
+日志记录格式（如 LEARNINGS.md / ERRORS.md 的文件结构）、触发时机、优先级策略、具体核心业务逻辑。
 
-### Format header
+### 格式头部规范 (Frontmatter)
 
-CLmA skills use a simple frontmatter block: `name`, `description`, and `auto_load`. Strip any OpenClaw YAML frontmatter and use the first `# Heading` as the title.
+CLmA 技能使用标准的 YAML Frontmatter 块：包含 `name`、`description` 和 `auto_load`。清除 OpenClaw 特有的 frontmatter 字段，并将一级标题 `# Heading` 作为技能展示标题。
 
-### Naming
+### 命名规范
 
-Lowercase with hyphens, max 40 chars. Keep the original name when possible.
+短横线命名法（kebab-case），小写字母，最长 40 个字符（例如：`github-pr-review`、`obsidian-sync`）。
 
-## Post-Install Checklist
-
-After `skill_install_from_text` returns ok:
-1. Confirm the skill installed and auto-enabled.
-2. If the skill needs directories (e.g. `~/learnings/`), create them with `write_text_file`.
-3. If the skill references external tools (whisper, docker, etc.), note the dependencies.
-4. Log the conversion to `~/learnings/LEARNINGS.md` as a `best_practice`.
-
-## Example Conversion Flow
+## 执行转换的标准工作流
 
 ```
-User: "fetch this skill and convert it https://clawhub.ai/owner/skill-name"
-
-1. browser_open(url)
-2. wait for the rendered article/markdown
-3. extract the page text (cap ~16000 chars)
-4. close the browser
-5. apply the conversion rules above to produce adapted markdown
+用户：“帮我拉取并转换这个技能 https://clawhub.ai/owner/skill-name”
+1. browser_open(url="https://clawhub.ai/owner/skill-name")
+2. 等待内容渲染
+3. 提取 SKILL.md 文本
+4. browser_close()
+5. 应用上述转换规则生成适配后的 Markdown
 6. skill_install_from_text(content=adapted, name="skill-name",
      source_label="Converted from <url> for CLmA")
-7. initialise any required directories
-8. confirm to the user
+7. 初始化所需的配套目录结构
+8. 向用户汇报转换与安装结果
 ```
 
-## Known Edge Cases
+## 已知边界情况
 
-- Minimal skills (a few paragraphs): only paths and tool names need changing.
-- Skills with hook scripts: the `scripts/` directory and hook setup are OpenClaw-specific; replace with CLmA workflows/scheduled jobs or remove.
-- Skills referencing `~/.openclaw/` paths: replace all with `~/` equivalents.
-- Skills with YAML frontmatter: strip the delimited block at the top.
-- Skills already installed: `skill_install_from_text` with the same name updates in place. Do not rename to force a new install; updating is preferred.
-
-## Triggers
-
-Apply this skill when the user gives you a ClawHub URL, says "convert this OpenClaw skill", says "make this work here" with OpenClaw skill content, pastes a raw OpenClaw SKILL.md to install, or asks to "fetch and convert" a skill from another agent platform.
+- 极简技能（仅有寥寥数段）：通常仅需调整工作路径与工具名称。
+- 带有 Hook 脚本的技能：OpenClaw 特有的 `scripts/` 目录与 Hook 设置需转换为 CLmA 工作流/定时任务，或予以精简移除。
+- 引用 `~/.openclaw/` 路径的技能：全部重定向至 `~/` 等价路径。
+- 带有 YAML frontmatter 的技能：统一规范化顶部声明。
+- 已存在的技能：同名调用 `skill_install_from_text` 会直接就地覆盖更新。优先更新而非重命名强行新建。

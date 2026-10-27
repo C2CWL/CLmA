@@ -1,28 +1,29 @@
 ---
 name: interactive-map
-description: Show an interactive Google Maps embed for a location. Returns a webview URL the chat surface can render.
+description: 显示指定地点的交互式 Google 地图嵌入组件。返回聊天界面可直接渲染的 WebView 链接。
 license: Apache-2.0
-compatibility: Requires the JS skills tool (run_js) and network access.
+compatibility: 需要启用 JS 技能工具 (run_js) 并具备网络访问权限。
 metadata:
   upstream: https://github.com/google-ai-edge/gallery
 ---
 
-# Interactive map
+# 交互式地图 (Interactive map)
 
-## Examples
+## 示例触发词
 
-- "Show [a place] on interactive map"
-- "Find [a place] on interactive map"
+- "在交互式地图上显示[地点]"
+- "在地图上查找[地点]"
+- "Show [place] on interactive map"
 
-## Instructions
+## 调用说明
 
-Call the `run_js` tool with the following exact parameters:
+使用以下参数调用 `run_js` 工具：
 
 - skill_name: `interactive-map`
 - script: `scripts/index.html`
-- data: A JSON string with the following field
-  - location: The location to show on the map.
+- data: 包含以下字段的 JSON 字符串
+  - location: 要在地图上显示的地点名称。
 
-## Attribution
+## 归属说明
 
-Ported from [google-ai-edge/gallery](https://github.com/google-ai-edge/gallery) under the Apache-2.0 licence. Original copyright Google LLC.
+基于 Apache-2.0 许可证移植自 [google-ai-edge/gallery](https://github.com/google-ai-edge/gallery)。版权所有 Google LLC。

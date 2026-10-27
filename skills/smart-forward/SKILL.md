@@ -1,51 +1,50 @@
 ---
 name: smart-forward
-description: Catch a notification from one app and forward its content to a contact in another (typically Telegram), with a one-line summary the recipient can act on. Useful for sharing OTPs, package tracking updates, news alerts, or "did you see this" moments.
+description: 捕获来自某个应用的通知内容，并将其关键信息转发给另一个应用中的联系人（通常为 Telegram），附带一句话行动摘要。适用于分享快递单号、日程提醒、重要预警或特定动态。
 allowed-tools: list_recent_notifications notification_action_click launch_app read_window_tree find_node click_node set_text take_screenshot telegram_send_message global_action
 ---
 
-# Smart-forward
+# 智能转发 (Smart-forward)
 
-Pick up a notification from app A and forward its substance to a contact in app B. Add a one-line summary on top so the recipient doesn't have to interpret the raw text.
+捕获应用 A 的通知，并将核心内容提取后转发给应用 B 的联系人。附带提炼的一句话摘要，避免接收方费力解读原始文本。
 
-## When to use
+## 触发时机
 
-- "Forward this email to <person>"
-- "Send <person> the tracking number that just came in"
-- "Tell <person> the OTP I just got" (be careful — see Don't section)
-- A notification arrives that matches a user-defined forwarding rule (workflow trigger)
+- “把这封邮件转发给 <人名>”
+- “把刚收到的快递单号发给 <人名>”
+- 收到命中特定转发规则的通知（工作流触发）
 
-## Steps
+## 执行步骤
 
-1. **Pick the source notification.** `list_recent_notifications` — find the entry the user is referring to (or the most recent if "this" / "that" was the demonstrative). Note the sender, the visible body text, and the source package.
-2. **Decide if the body needs more.** Notifications often truncate to 80-120 chars. If the user wants the full thing forwarded, open the app: `notification_action_click` with the entry's primary action, then `read_window_tree` on the resulting screen, pull the full message body as text.
-3. **Compose the summary.** One sentence. Examples:
-   - Tracking notif: "Your package is out for delivery — expected by 6 PM today."
-   - News alert: "Reuters: <headline>."
-   - Email: "<sender> sent you <subject> — <one-line gist>."
-   - OTP: NEVER FORWARD — see Don't.
-4. **Choose the destination.**
-   - If the user said "Telegram <name>": `telegram_send_message(chat_id = <name's chat id from whitelist>, text = <summary + body>)`.
-   - If the user said an SMS contact / a non-Telegram messenger: open the corresponding app, `find_node` for the contact, open the thread, paste-and-send via `set_text` + send-button click.
-5. **Confirm.** Reply to the user with "Forwarded to <person>" + a one-line preview.
-6. **Return home.** `global_action(action = "home")`.
+1. **选取来源通知**：通过 `list_recent_notifications` 找到用户所指的通知条目。记录发件人、可见正文与来源包名。
+2. **确认是否需要完整正文**：通知往往会被截断至 80-120 字符。若需完整正文，使用 `notification_action_click` 打开该条目，在目标界面调用 `read_window_tree` 抓取全文。
+3. **组织一句话摘要**：例如：
+   - 快递通知：“您的快递派送中——预计今日 18:00 送达。”
+   - 新闻预警：“路透社：<标题新闻>。”
+   - 邮件：“<发件人> 发送了主题为 <标题> 的邮件——<一句话重点>。”
+   - 验证码：**严禁自动转发**——参见禁忌规则。
+4. **发送至目标联系人**：
+   - 若发送至 Telegram：`telegram_send_message(chat_id = <白名单中的聊天ID>, text = <摘要 + 正文>)`。
+   - 若发送至短信或其他通讯软件：打开对应 App，通过 `find_node` 定位联系人会话，通过 `set_text` 粘贴并点击发送。
+5. **告知用户**：回复“已转发给 <联系人>”并展示单行预览。
+6. **返回桌面**：调用 `global_action(action = "home")`。
 
-## Tools used
+## 所需工具
 
 - `list_recent_notifications`, `notification_action_click`
 - `launch_app`, `read_window_tree`, `find_node`, `click_node`, `set_text`
-- `take_screenshot` (debugging only)
+- `take_screenshot` (排查调试)
 - `telegram_send_message`
 - `global_action`
 
-## Failure modes
+## 常见异常与注意事项
 
-- **Source app doesn't expose body in the accessibility tree.** Some banking / 2FA apps deliberately hide content. Forward the notification text only and mention "the app hides the rest — open it on your phone for the full thing".
-- **Destination contact ambiguous.** "Send Anna the article" — if there are two Annas in the whitelist, ask the user which one. Don't guess.
-- **Source notification already dismissed.** It still lives in the recent ring buffer for a few minutes — work from there, but the cached preview may be truncated.
+- **来源应用在无障碍树中隐藏正文**：部分银行或安全软件会主动遮蔽敏感内容。仅转发通知所显示的预览，并告知用户“应用屏蔽了界面内容，请在手机上查看完整详情”。
+- **目标联系人重名或不明确**：若白名单中存在多个同名联系人，务必先向用户确认具体是哪一位，禁止盲目猜测。
+- **通知已被划掉**：通知在最近环形缓冲区内仍会留存一段时间，可从中提取，但注意其文本可能存在字符截断。
 
-## Don't
+## 红线禁忌 (Don't)
 
-- **Never forward OTPs / verification codes / password-reset links** unless the user explicitly types the OTP themselves and asks you to relay it. The whole reason these things exist is that they shouldn't travel further than they have to. If the user asks "send Bob my OTP", refuse with "I won't auto-forward verification codes — they're meant for you only".
-- **Never forward a notification's full body to a chat that isn't on the user's whitelist.** Whitelisted chats are explicit; everything else is off-limits.
-- Don't summarise + forward the same content twice — if the user already replied "forward it" once, don't re-fire on the next "yes".
+- **绝不可自动转发一次性验证码 (OTP) / 登录校验码 / 密码重置链接**，除非用户本人在对话中明确输入并直接指示你转交。验证码机制的核心就是防范中间链路泄露。若用户要求“帮我把收到的验证码发给别人”，必须明确予以婉拒：“为了您的账户安全，验证码仅限本人使用，不支持自动代发”。
+- **严禁向未列入白名单的外部联系人转发通知全文**。
+- 避免重复转发同一条内容。
