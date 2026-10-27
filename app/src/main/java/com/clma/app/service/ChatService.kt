@@ -98,6 +98,9 @@ import com.clma.app.data.ai.tools.ToolCatalog
 import com.clma.app.data.ai.tools.ToolCatalogEntry
 import com.clma.app.data.ai.tools.ToolCatalogSource
 import com.clma.app.data.ai.tools.ToolSurfaceMode
+import com.clma.app.data.ai.tools.matchAll
+import com.clma.app.data.memory.ColdMemoryLexicalSearch
+import com.clma.app.data.memory.ColdMemorySearchOutcome
 import com.clma.app.data.ai.tools.ChatToolSurface
 import com.clma.app.data.ai.tools.CORE_LOCAL_TOOL_GROUPS
 import com.clma.app.data.ai.tools.LocalToolOption
@@ -492,15 +495,6 @@ class ChatService(
     private val toolApprovalPreferences: com.clma.app.data.preferences.ToolApprovalPreferences,
     private val workspaceRepository: WorkspaceRepository,
     private val folderRepository: FolderRepository,
-    private val memoryIndex: com.clma.app.data.vector.MemoryIndexCoordinator,
-    private val conversationIndex: com.clma.app.data.vector.ConversationIndexCoordinator,
-    /**
-     * P3-03 — the semantic half of the tool catalogue: one vector per catalogued tool, so a turn
-     * can be handed the tools its own request retrieved, and `tool_search` can match a Chinese
-     * sentence to `scrape_web`. Reused across conversations because a catalogue is per app, not
-     * per chat.
-     */
-    private val toolVectors: com.clma.app.data.vector.ToolVectorIndex,
 ) {
     // workspace 系统提示注入 (依赖 workspaceRepository, 故在类内构造)
     private val workspaceReminderTransformer = WorkspaceReminderTransformer(workspaceRepository)
@@ -1010,15 +1004,6 @@ class ChatService(
                 updateConversationState(conversationId) { it.copy(assistantId = conversation.assistantId) }
             }
             settingsStore.updateAssistant(conversation.assistantId)
-            // 打开会话是索引最可能被用到的时刻。内部有防抖，快速切换会话不会重复扫描；
-            // 失败在协调器里记录，不会抛到这里。
-            runCatching {
-                com.clma.app.data.ai.AssistantResolver.byId(
-                    settingsStore.settingsFlow.value, conversation.assistantId
-                )
-            }.getOrNull()?.let { assistant ->
-                memoryIndex.requestSync(assistant)
-            }
         } else {
             // A send can race this asynchronous initialization for a brand-new conversation.
             // Do not replace a session that already has content or queued/in-flight work with
@@ -1875,13 +1860,12 @@ class ChatService(
             // T-06 / (7) - cold memory (Markdown knowledge base). Same on both build paths so a
             // regenerate sees the surface the first pass had.
             addAll(createColdMemoryToolsIfConfigured(surfaceAssistant))
-            // Fidelity Trio: spilled output reader & current conversation search (vector + FTS5 fallback)
+            // Fidelity Trio: spilled output reader & current conversation search (SQLite FTS5)
             add(com.clma.app.data.ai.tools.createToolOutputReadTool(context))
             add(
                 com.clma.app.data.ai.tools.createCurrentConversationSearchTool(
                     conversationRepo = conversationRepo,
                     conversationId = conversationId,
-                    conversationIndex = conversationIndex,
                 )
             )
             if (surfaceAssistant.enabledSkills.isNotEmpty()) {
@@ -2001,18 +1985,12 @@ class ChatService(
         // group switched off) so a stale activation can never inject a schema that no longer
         // exists (which would 400 the request).
         activation.retain(catalog.entries.mapTo(mutableSetOf()) { it.name })
-        // P3-03 — warm this catalogue's vectors in the background. The model spends a whole round
-        // trip thinking before it calls `tool_search`, and by then the ranking is normally ready;
-        // a search that arrives earlier waits a bounded moment instead of answering without
-        // vectors (see ToolVectorIndex.answer).
-        toolVectors.prewarm(catalog.entries)
         // What this turn gets without asking: what the model opened on purpose plus what the
-        // user's own words retrieved. Screen automation must not have to discover
-        // `take_screenshot` before it can see the screen. An unrankable catalogue yields an empty
-        // ranking rather than a keyword guess, so such a turn carries only what was opened and
-        // reaches the rest through `tool_search`.
+        // user's own words matched lexically. Screen automation must not have to discover
+        // `take_screenshot` before it can see the screen. Ranking is pure text matching over the
+        // name/summary/source, so there is no index to warm and nothing to wait for.
         val ranked = if (lastUserText.isNotBlank()) {
-            toolVectors.ranking(lastUserText, catalog)
+            catalog.matchAll(lastUserText).map { it.name }
         } else {
             emptyList()
         }
@@ -2022,7 +2000,6 @@ class ChatService(
             catalog = catalog,
             activation = activation,
             rankedNames = ranked,
-            semanticSearch = { query -> toolVectors.answer(query, catalog) },
         )
     }
 
@@ -2620,10 +2597,6 @@ class ChatService(
                 }
             }
 
-            // 刚结束的这一轮应该在用户问起之前就能被搜到。内部有防抖，
-            // 连续消息只触发一轮，且只动这个会话的索引切片。
-            conversationIndex.requestSyncOf(conversationId)
-
             launchAuxJob(conversationId, AuxJobKind.TITLE) {
                 generateTitle(conversationId, finalConversation)
             }
@@ -2732,16 +2705,37 @@ class ChatService(
             },
         ).toMutableList()
 
-        // Semantic search joins the exact-name tools. Registration does not depend on a model
-        // being installed: the tool reports that state itself, so the model falls back to
-        // memory_index instead of stopping.
+        // Keyword search joins the exact-name tools. There is no index and no model: the call
+        // lists the directory, reads the Markdown files and scores them with BM25 on the spot, so
+        // a note is searchable the instant it is written. An unreadable directory is reported by
+        // the envelope rather than thrown, so the model still knows to fall back to memory_index.
         tools += buildMemorySearchTool(
             dirLabel = if (dir.isEmpty()) {
                 ColdMemoryRules.WORKSPACE_PREFIX
             } else {
                 "${ColdMemoryRules.WORKSPACE_PREFIX}/$dir"
             },
-            search = { query, limit -> memoryIndex.search(workspaceId, dir, query, limit) },
+            search = { query, limit ->
+                try {
+                    val documents = workspaceRepository
+                        .listFiles(workspaceId, WorkspaceStorageArea.FILES, dir)
+                        .filter { !it.isDirectory && ColdMemoryRules.isMarkdown(it.name) }
+                        .mapNotNull { file ->
+                            readFile(childPath(file.name))?.let { text ->
+                                ColdMemoryLexicalSearch.Document(name = file.name, text = text)
+                            }
+                        }
+                    ColdMemoryLexicalSearch.search(documents, query, limit)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Log.d(TAG, "coldMemorySearch: cannot read '$dir': ${e.message}")
+                    ColdMemorySearchOutcome(
+                        available = false,
+                        note = "the knowledge base could not be read: ${e.message ?: "unknown error"}",
+                    )
+                }
+            },
         )
         return tools
     }

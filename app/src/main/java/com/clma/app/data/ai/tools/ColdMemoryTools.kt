@@ -11,10 +11,10 @@ import kotlinx.serialization.json.put
 import com.clma.ai.core.InputSchema
 import com.clma.ai.core.Tool
 import com.clma.ai.ui.UIMessagePart
-import com.clma.app.data.vector.ColdMemorySearchOutcome
-import com.clma.app.data.vector.DEFAULT_SEARCH_LIMIT
-import com.clma.app.data.vector.MAX_SEARCH_LIMIT
-import com.clma.app.data.vector.MemorySearchEnvelope
+import com.clma.app.data.memory.ColdMemorySearchOutcome
+import com.clma.app.data.memory.DEFAULT_SEARCH_LIMIT
+import com.clma.app.data.memory.MAX_SEARCH_LIMIT
+import com.clma.app.data.memory.MemorySearchEnvelope
 
 /**
  * T-06 / (7) — Cold memory: a plain Markdown knowledge base on disk, read on demand.
@@ -455,7 +455,7 @@ private fun errorEnvelope(code: String, detail: String): String = buildJsonObjec
 }.toString()
 
 /**
- * 按语义搜索冷记忆。搜索和信封都是纯函数（见 [MemorySearchEnvelope]），
+ * 按关键词搜索冷记忆。搜索和信封都是纯函数（见 [MemorySearchEnvelope]），
  * 这个函数只负责工具契约：schema、名字、哪些失败算参数错误而不是结果。
  */
 fun buildMemorySearchTool(
@@ -464,20 +464,21 @@ fun buildMemorySearchTool(
 ): Tool = Tool(
     name = "memory_search",
     description = """
-        Search the cold-memory knowledge base by meaning, and get back the passages that match,
+        Search the cold-memory knowledge base by keyword, and get back the passages that match,
         with the file each one came from.
 
         Prefer this over guessing at file names from `memory_index` when you are looking for notes
         about a topic. Each hit names its file, so `memory_read` can pull in the full document
         when a passage is not enough.
 
-        Scores are cosine similarities between the query and each passage, and they are NOT
-        comparable between calls: a loosely related passage of one query can outscore a perfect
-        match of another. Compare the passages within one result set; never treat a particular
-        number as a relevance threshold.
+        Matching is lexical: a passage must share words (for Chinese, characters and character
+        pairs) with the query. Use the terms the notes themselves would use rather than a
+        paraphrase, and retry with fewer or different words when nothing matches. English words
+        are case-insensitive, and a file name counts as part of its own passages.
 
-        If it reports that semantic search is unavailable, no embedding model is installed. Say so
-        to the user rather than retrying.
+        Scores are BM25 relevance values and are NOT comparable between calls: a query made of
+        rare words scores higher overall than one made of common words. Compare the passages
+        within one result set; never treat a particular number as a relevance threshold.
     """.trimIndent(),
     parameters = {
         InputSchema.Obj(

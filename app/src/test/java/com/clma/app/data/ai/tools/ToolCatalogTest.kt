@@ -447,54 +447,13 @@ class ToolCatalogTest {
         assertEquals("mcp__vps__compute", results.single().jsonObject["name"]?.jsonPrimitive?.content)
     }
 
-    // ------------------------------------------------------- P3-03 semantic
-
     @Test
-    fun `without a semantic channel tool_search still ranks lexically`() = runBlocking {
-        // The backward-compatibility contract: a surface built with no vector index behaves
-        // exactly as it did before the semantic path existed.
+    fun `tool_search ranks lexically`() = runBlocking {
         val tools = buildToolCatalogTools(catalogOf("scrape_web"), ToolActivationState())
         val search = tools.first { it.name == "tool_search" }
         val text = (search.execute(buildJsonObject { put("query", "scrape") }).single() as UIMessagePart.Text).text
         assertTrue(text.contains("scrape_web"))
         assertFalse(text.contains("\"available\":false"))
-    }
-
-    @Test
-    fun `a ranked semantic answer is what tool_search returns`() = runBlocking {
-        val catalog = catalogOf("scrape_web", "take_screenshot")
-        val tools = buildToolCatalogTools(
-            catalog = catalog,
-            activation = ToolActivationState(),
-            // The query shares no characters with the tool's name: only the vector channel can
-            // produce this ordering, so seeing it proves the channel was used.
-            semanticSearch = { ToolSearchAnswer.Ranked(catalog.entries.reversed()) },
-        )
-        val search = tools.first { it.name == "tool_search" }
-        val text = (search.execute(buildJsonObject { put("query", "读取网页内容") }).single() as UIMessagePart.Text).text
-        val results = kotlinx.serialization.json.Json.parseToJsonElement(text).jsonObject["results"] as JsonArray
-        assertEquals(
-            listOf("take_screenshot", "scrape_web"),
-            results.map { it.jsonObject["name"]?.jsonPrimitive?.content },
-        )
-    }
-
-    @Test
-    fun `an unavailable semantic answer is relayed instead of guessed`() = runBlocking {
-        val catalog = catalogOf("scrape_web")
-        val tools = buildToolCatalogTools(
-            catalog = catalog,
-            activation = ToolActivationState(),
-            semanticSearch = { ToolSearchAnswer.Unavailable("install one in Settings") },
-        )
-        val search = tools.first { it.name == "tool_search" }
-        // A query that *would* match lexically: the point is that it is not silently answered
-        // that way when the semantic channel says it cannot rank.
-        val text = (search.execute(buildJsonObject { put("query", "scrape_web") }).single() as UIMessagePart.Text).text
-        val parsed = kotlinx.serialization.json.Json.parseToJsonElement(text).jsonObject
-        assertEquals("false", parsed["available"]?.jsonPrimitive?.content)
-        assertTrue(parsed["note"]?.jsonPrimitive?.content.orEmpty().contains("Settings"))
-        assertNull(parsed["results"])
     }
 
     // --------------------------------------------------------- tool_browse
@@ -541,19 +500,5 @@ class ToolCatalogTest {
         val browse = tools.first { it.name == "tool_browse" }
         val text = (browse.execute(JsonObject(emptyMap())).single() as UIMessagePart.Text).text
         assertTrue(text.contains("catalogue is empty"))
-    }
-
-    @Test
-    fun `the semantic capability is advertised only when it is wired up`() {
-        val lexical = buildToolCatalogTools(catalogOf("t_1"), ToolActivationState())
-            .first { it.name == "tool_search" }
-        val semantic = buildToolCatalogTools(
-            catalog = catalogOf("t_1"),
-            activation = ToolActivationState(),
-            semanticSearch = { ToolSearchAnswer.Ranked(emptyList()) },
-        ).first { it.name == "tool_search" }
-        assertFalse(lexical.description.contains("tool_browse"))
-        assertTrue(semantic.description.contains("tool_browse"))
-        assertTrue(semantic.description.contains("semantic"))
     }
 }

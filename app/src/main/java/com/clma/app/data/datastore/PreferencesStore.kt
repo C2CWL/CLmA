@@ -314,14 +314,6 @@ class SettingsStore(
         // 统计
         val LAUNCH_COUNT = intPreferencesKey("launch_count")
 
-        // 向量索引：嵌入模型选择。字段名与 key 名一一对应，SettingsPersistenceCoverageTest 会校验。
-        val EMBEDDING_MODEL_FILE = stringPreferencesKey("embedding_model_file")
-        val EMBEDDING_BACKEND = stringPreferencesKey("embedding_backend")
-        val EMBEDDING_CLOUD_MODEL = stringPreferencesKey("embedding_cloud_model")
-        val EMBEDDING_NATIVE_IMAGES = booleanPreferencesKey("embedding_native_images")
-        val EMBEDDING_USE_GPU = booleanPreferencesKey("embedding_use_gpu")
-        val EMBEDDING_SIGNATURE = intPreferencesKey("embedding_signature")
-
         // Uses the same DataStore singleton without starting settings flows or requiring Koin.
         internal suspend fun restoreBeforeInitialization(context: Context, settings: Settings) {
             require(!settings.init) { "Cannot restore uninitialized settings" }
@@ -435,16 +427,6 @@ class SettingsStore(
                 preferences[AI_LOG_LEVEL] = settings.aiLogLevel.preferenceName
                 preferences[BACKUP_REMINDER_CONFIG] = JsonInstant.encodeToString(settings.backupReminderConfig)
                 preferences[LAUNCH_COUNT] = settings.launchCount
-                preferences[EMBEDDING_MODEL_FILE] = settings.embeddingModelFile
-                preferences[EMBEDDING_BACKEND] = settings.embeddingBackend
-                preferences[EMBEDDING_CLOUD_MODEL] = settings.embeddingCloudModel
-                preferences[EMBEDDING_NATIVE_IMAGES] = settings.embeddingNativeImages
-                // 三态：缺省表示"用户没选"，默认值随模型走。remove 而不是写值，
-                // 这样"从未触碰"能跨重启保留。
-                settings.embeddingUseGpu
-                    ?.let { preferences[EMBEDDING_USE_GPU] = it }
-                    ?: preferences.remove(EMBEDDING_USE_GPU)
-                preferences[EMBEDDING_SIGNATURE] = settings.embeddingSignature
             }
         }
     }
@@ -677,13 +659,6 @@ class SettingsStore(
                     }
                 } ?: BackupReminderConfig(),
                 launchCount = preferences[LAUNCH_COUNT] ?: 0,
-                embeddingModelFile = preferences[EMBEDDING_MODEL_FILE] ?: "",
-                // 任何不是精确 "cloud" 的值都走本地模型，包括这个字段出现之前的所有安装。
-                embeddingBackend = preferences[EMBEDDING_BACKEND] ?: com.clma.app.data.vector.CloudEmbeddingRules.BACKEND_LOCAL,
-                embeddingCloudModel = preferences[EMBEDDING_CLOUD_MODEL] ?: "",
-                embeddingNativeImages = preferences[EMBEDDING_NATIVE_IMAGES] ?: true,
-                embeddingUseGpu = preferences[EMBEDDING_USE_GPU],
-                embeddingSignature = preferences[EMBEDDING_SIGNATURE] ?: 0,
             )
         }
         .map {
@@ -1181,35 +1156,6 @@ data class Settings(
     val backupReminderConfig: BackupReminderConfig = BackupReminderConfig(),
     val launchCount: Int = 0,
 
-    /**
-     * 向量索引用的本地 GGUF 文件名，空串表示在已安装的模型里自动选。
-     * 追加在末尾：新字段不得改变已有字段的位置。
-     */
-    val embeddingModelFile: String = "",
-    /**
-     * 嵌入后端：[com.clma.app.data.vector.CloudEmbeddingRules.BACKEND_LOCAL] 或
-     * [com.clma.app.data.vector.CloudEmbeddingRules.BACKEND_CLOUD]。
-     * 用字符串而不是枚举，因为磁盘上存的就是字符串；任何不是精确 "cloud" 的值都走本地模型。
-     */
-    val embeddingBackend: String = com.clma.app.data.vector.CloudEmbeddingRules.BACKEND_LOCAL,
-    /** 云端嵌入模型的 `Model.id`，仅当 [embeddingBackend] 为 cloud 时有效。 */
-    val embeddingCloudModel: String = "",
-    /**
-     * 是否允许把图片直接交给嵌入模型本身。默认开：视觉嵌入模型把图片和文字放进同一个空间，
-     * 不需要 OCR 或描述中转。单独做开关是因为它不便宜，也因为有人就是不想嵌入照片。
-     */
-    val embeddingNativeImages: Boolean = true,
-    /**
-     * 本地嵌入模型是否跑在 GPU 上，null 表示用户没选。
-     * null 是真值不是"关"：默认随模型走，嵌入图片的模型用 GPU，纯文本模型用 CPU。
-     * 两个加速器算出来的向量不完全相同，所以加速器是模型标识的一部分，切换会让整个索引失效重建。
-     */
-    val embeddingUseGpu: Boolean? = null,
-    /**
-     * 加载模型的哪个输入签名，0 表示用目录里的默认选择。
-     * 签名就是模型的真实窗口，引擎对超长文本是拒绝而不是截断，所以索引长笔记的人可能想要更宽的。
-     */
-    val embeddingSignature: Int = 0,
 ) {
     companion object {
         // 构造一个用于初始化的settings, 但它不能用于保存，防止使用初始值存储

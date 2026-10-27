@@ -1008,19 +1008,6 @@
   <string name="setting_mcp_page_url_label">URL</string>
   <string name="setting_model_page_chat_model">聊天模型</string>
   <string name="setting_model_page_chat_model_desc">全局默认的聊天模型</string>
-  <string name="setting_model_page_embedding_model">嵌入模型</string>
-  <string name="setting_model_page_embedding_model_desc">用于记忆、会话正文及工具语义检索的向量模型</string>
-  <string name="setting_model_page_embedding_backend_local">端侧本地模型 (llama.cpp)</string>
-  <string name="setting_model_page_embedding_backend_cloud">云端模型 (OpenAI API)</string>
-  <string name="setting_model_page_embedding_use_gpu">GPU 加速</string>
-  <string name="setting_model_page_embedding_use_gpu_desc">使用设备 GPU 加快向量生成与语义检索计算</string>
-  <string name="setting_model_page_embedding_installed_title">已安装的本地模型</string>
-  <string name="setting_model_page_embedding_curated_title">精选推荐端侧嵌入模型</string>
-  <string name="setting_model_page_embedding_cloud_title">云端嵌入模型</string>
-  <string name="setting_model_page_embedding_cloud_empty">未配置云端嵌入模型。请在服务商设置中添加类型为“嵌入”的模型。</string>
-  <string name="setting_model_page_embedding_local_empty">暂未安装本地嵌入模型，可从下方推荐列表一键下载。</string>
-  <string name="setting_model_page_embedding_auto_picked">自动选取 (%1$s)</string>
-  <string name="setting_model_page_embedding_status_not_ready">未就绪 (回退关键词检索)</string>
   <string name="setting_model_page_compress_model">压缩模型</string>
   <string name="setting_model_page_compress_model_desc">用于压缩对话历史的模型</string>
   <string name="setting_model_page_compress_prompt_vars">变量：{content}、{target_tokens}、{additional_context}</string>
@@ -3051,12 +3038,4 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
 
   <!-- Embedding Model Sheet -->
   <string name="common_use">使用</string>
-  <string name="setting_model_page_embedding_downloading">正在下载模型…</string>
-  <string name="setting_model_page_embedding_dim">%1$d 维</string>
-  <string name="setting_model_page_embedding_ctx">%1$s 上下文</string>
-  <string name="setting_model_page_embedding_tag_chinese">中文调优</string>
-  <string name="setting_model_page_embedding_tag_multilingual">多语言</string>
-  <string name="setting_model_page_embedding_tag_compact">轻量小巧</string>
-  <string name="setting_model_page_embedding_tag_long_context">长上下文</string>
-  <string name="setting_model_page_embedding_unsupported_protocol">服务商协议不支持（需 OpenAI 协议）</string>
 </resources>

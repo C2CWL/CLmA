@@ -14,8 +14,8 @@ import kotlin.uuid.Uuid
  * wait expired), and it spawned a whole new LLM turn just to say "done". An injection
  * instead rides the NEXT model request the conversation was going to make anyway — the very
  * next loop step when a generation is in flight, the user's next message otherwise — as a
- * request-only synthetic message that is never persisted, never rendered, and never embedded
- * into a vector index.
+ * request-only synthetic message that is never persisted, never rendered, and never persisted
+ * into the conversation.
  *
  * Lifecycle: writers `push` at any time; GenerationLoop `drain`s immediately before every
  * model request, so an in-flight turn sees the notice on its next step instead of after the
