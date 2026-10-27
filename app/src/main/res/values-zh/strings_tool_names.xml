@@ -358,6 +358,8 @@
   <string name="tool_display_desc_memory_read">读取知识库中的一篇文档</string>
   <string name="tool_display_name_memory_write">写入知识库</string>
   <string name="tool_display_desc_memory_write">新增或改写知识库文档，影响以后对话</string>
+  <string name="tool_display_name_memory_delete">删除知识库文档</string>
+  <string name="tool_display_desc_memory_delete">从知识库（冷记忆）中永久删除一篇文档</string>
   <string name="tool_display_name_memory_search">搜索知识库</string>
   <string name="tool_display_desc_memory_search">按语义在知识库中查找相关段落</string>
   <string name="tool_display_name_keystore_generate_key">生成硬件密钥</string>
