@@ -70,7 +70,8 @@ internal fun InetAddress.isBlockedTarget(): Boolean {
  * The entire answer set is rejected if any address in it is unsafe: accepting the safe
  * subset would let a hostile resolver smuggle a private address alongside a public one.
  */
-class GuardedDns(\n    private val delegate: Dns = Dns.SYSTEM,
+class GuardedDns(
+    private val delegate: Dns = Dns.SYSTEM,
     private val allowPrivate: Boolean = false,
 ) : Dns {
 
