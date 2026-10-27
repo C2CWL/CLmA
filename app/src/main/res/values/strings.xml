@@ -2501,6 +2501,8 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="chat_page_multi_select">Select Multiple</string>
   <string name="chat_page_selected_count">Selected: %1$d</string>
   <string name="chat_page_exit_multi_select">Cancel</string>
+  <string name="chat_page_select_all">Select all</string>
+  <string name="chat_page_unselect_all">Unselect all</string>
   <string name="chat_page_delete_selected_title">Delete selected chats?</string>
   <string name="chat_page_delete_selected_confirm">Delete %1$d selected conversations? This cannot be undone. Chats that are still generating will be stopped first.</string>
   <string name="chat_page_move_to_folder">Move to Folder</string>

@@ -92,12 +92,24 @@ private fun collectFileSources(raw: String, baseDir: String?): List<ArchiveSourc
         root.isDirectory -> "${root.name}/${f.relativeTo(root).path}"
         else -> f.name
     }
+    fun isSymlink(f: File): Boolean =
+        runCatching { java.nio.file.Files.isSymbolicLink(f.toPath()) }.getOrDefault(false)
+
     return if (root.isFile) {
         listOf(ArchiveSource(nameOf(root)) { runCatching { root.inputStream() }.getOrNull() })
     } else {
-        root.walkTopDown().filter { it.isFile }.map { f ->
-            ArchiveSource(nameOf(f)) { runCatching { f.inputStream() }.getOrNull() }
-        }.toList()
+        // Symlinks are skipped, and every child is re-checked: `walkTopDown().filter { isFile }`
+        // follows links, so a link inside the folder (or a loop) could pull files from outside the
+        // guarded tree into the archive — or hang the walk on a cycle.
+        root.walkTopDown()
+            .onEnter { !isSymlink(it) }
+            .filter { f ->
+                !isSymlink(f) && f.isFile && PathSafetyGuard.check(f.absolutePath) == null
+            }
+            .map { f ->
+                ArchiveSource(nameOf(f)) { runCatching { f.inputStream() }.getOrNull() }
+            }
+            .toList()
     }
 }
 
@@ -403,7 +415,13 @@ fun unzipFileTool(context: Context): Tool = Tool(
                         if (fileDestRoot != null) {
                             val target = File(fileDestRoot, name)
                             val canonicalRoot = fileDestRoot.canonicalPath
-                            if (target.canonicalPath != canonicalRoot && !target.canonicalPath.startsWith(canonicalRoot.trimEnd('/') + "/")) {
+                            // `startsWith` alone also accepts a sibling like "/sdcard/out_other"
+                            // when the destination is "/sdcard/out": require the separator (or an
+                            // exact match) so a pre-existing symlink cannot escape the directory.
+                            val targetPath = target.canonicalPath
+                            if (targetPath != canonicalRoot &&
+                                !targetPath.startsWith(canonicalRoot + File.separator)
+                            ) {
                                 return@Tool arcErr("unsafe_zip_entry", "entry" to name)
                             }
                             PathSafetyGuard.check(target.path)?.let { return@Tool arcErr(it.code, "detail" to it.detail) }
@@ -446,7 +464,7 @@ fun unzipFileTool(context: Context): Tool = Tool(
 private class ZipBombException : Exception()
 
 /**
- * Copy [ins] into [os], debiting [budget]\[0] (remaining total bytes) as it goes. Throws
+ * Copy [ins] into [os], debiting [budget][0] (remaining total bytes) as it goes. Throws
  * [ZipBombException] the moment the running total would exceed the extraction ceiling, so a
  * deflate bomb with a forged declared size is stopped before it fills storage.
  */

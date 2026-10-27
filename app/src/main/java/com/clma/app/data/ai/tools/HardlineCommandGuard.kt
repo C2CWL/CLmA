@@ -173,6 +173,14 @@ object HardlineCommandGuard {
                 checkCommand(input["command"]?.jsonPrimitive?.contentOrNull)
             toolName == "shizuku_exec" ->
                 checkCommand(input["command"]?.jsonPrimitive?.contentOrNull)
+            // root_exec runs the command as UID 0 through `su -c`, and the workspace shell tools
+            // run it in the proot container. They were the only shell surfaces with NO hardline
+            // arm at all, so with YOLO on (or after one mistaken approval) `rm -rf /`, `mkfs`,
+            // `dd of=/dev/mmcblk0` or `reboot` went straight through at root.
+            toolName == "root_exec" ||
+                toolName == "workspace_shell" ||
+                toolName == "workspace_run_background" ->
+                checkCommand(input["command"]?.jsonPrimitive?.contentOrNull)
             // Sub-agent dispatch — the spawned LLM gets the parent's full tool surface
             // headlessly, so a `task` / `prompt` containing a literal hardline-blocked
             // command (e.g. `rm -rf /`) shouldn't be authorised even if the parent

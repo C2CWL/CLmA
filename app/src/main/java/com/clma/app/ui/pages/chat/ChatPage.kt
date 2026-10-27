@@ -302,18 +302,13 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null, is
             ModalNavigationDrawer(
                 drawerState = drawerState,
                 drawerContent = {
-                    val isDrawerActive = drawerState.isOpen ||
-                        drawerState.isAnimationRunning ||
-                        drawerState.targetValue == DrawerValue.Open
-                    if (isDrawerActive) {
-                        ChatDrawerContent(
-                            navController = navController,
-                            current = conversation,
-                            vm = vm,
-                            settings = setting,
-                            hazeState = hazeState,
-                        )
-                    }
+                    ChatDrawerContent(
+                        navController = navController,
+                        current = conversation,
+                        vm = vm,
+                        settings = setting,
+                        hazeState = hazeState,
+                    )
                 }
             ) {
                 ChatPageContent(
