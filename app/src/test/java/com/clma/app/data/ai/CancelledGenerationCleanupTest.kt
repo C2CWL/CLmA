@@ -12,7 +12,7 @@ import org.junit.Test
 
 class CancelledGenerationCleanupTest {
     @Test
-    fun `cleanup runs after caller cancellation`() = runBlocking {
+    fun `cleanup runs after caller cancellation`(): Unit = runBlocking {
         var finalized = false
         val job = launch(start = CoroutineStart.UNDISPATCHED) {
             try {
@@ -26,7 +26,7 @@ class CancelledGenerationCleanupTest {
     }
 
     @Test
-    fun `full channel cannot hold cancellation cleanup forever`() = runBlocking {
+    fun `full channel cannot hold cancellation cleanup forever`(): Unit = runBlocking {
         val channel = Channel<Unit>(1)
         channel.send(Unit)
         val job = launch(start = CoroutineStart.UNDISPATCHED) {
@@ -39,5 +39,6 @@ class CancelledGenerationCleanupTest {
         withTimeout(5_000L) { job.cancelAndJoin() }
         assertTrue(job.isCompleted)
         channel.close()
+        Unit // JUnit 4 requires a void method; Channel.close() returns Boolean.
     }
 }
