@@ -1926,6 +1926,8 @@
   <string name="chat_page_multi_select">多選</string>
   <string name="chat_page_selected_count">已選擇：%1$d</string>
   <string name="chat_page_exit_multi_select">取消</string>
+  <string name="chat_page_select_all">全選</string>
+  <string name="chat_page_unselect_all">全不選</string>
   <string name="chat_page_delete_selected_title">刪除所選對話？</string>
   <string name="chat_page_delete_selected_confirm">將刪除 %1$d 個對話，無法復原。正在生成的對話會先停止。</string>
   <string name="chat_page_move_to_folder">移至資料夾</string>

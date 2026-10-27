@@ -2241,6 +2241,8 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="chat_page_multi_select">多选</string>
   <string name="chat_page_selected_count">已选择：%1$d</string>
   <string name="chat_page_exit_multi_select">取消</string>
+  <string name="chat_page_select_all">全选</string>
+  <string name="chat_page_unselect_all">全不选</string>
   <string name="chat_page_delete_selected_title">删除所选会话？</string>
   <string name="chat_page_delete_selected_confirm">将删除 %1$d 个会话，无法撤销。正在生成的会话会先停止。</string>
   <string name="chat_page_move_to_folder">移动到文件夹</string>
