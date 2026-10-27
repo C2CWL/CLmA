@@ -10,7 +10,7 @@
       "license": "Apache-2.0",
       "size_kb": 4,
       "runtime": "any",
-      "source_url": "https://github.com/wuyhong715/rikkahub-agent-pure/tree/master/skills/auto-reply",
+      "source_url": "https://github.com/C2CWL/CLmA/tree/main/skills/auto-reply",
       "is_bundled": false
     },
     {
@@ -21,7 +21,7 @@
       "license": "Apache-2.0",
       "size_kb": 4,
       "runtime": "any",
-      "source_url": "https://github.com/wuyhong715/rikkahub-agent-pure/tree/master/skills/morning-briefing",
+      "source_url": "https://github.com/C2CWL/CLmA/tree/main/skills/morning-briefing",
       "is_bundled": false
     },
     {
@@ -32,7 +32,7 @@
       "license": "Apache-2.0",
       "size_kb": 4,
       "runtime": "any",
-      "source_url": "https://github.com/wuyhong715/rikkahub-agent-pure/tree/master/skills/smart-forward",
+      "source_url": "https://github.com/C2CWL/CLmA/tree/main/skills/smart-forward",
       "is_bundled": false
     },
     {
@@ -43,7 +43,7 @@
       "license": "Apache-2.0",
       "size_kb": 5,
       "runtime": "any",
-      "source_url": "https://github.com/wuyhong715/rikkahub-agent-pure/tree/master/skills/notification-summarise-and-act",
+      "source_url": "https://github.com/C2CWL/CLmA/tree/main/skills/notification-summarise-and-act",
       "is_bundled": false
     },
     {
@@ -54,7 +54,7 @@
       "license": "Apache-2.0",
       "size_kb": 12,
       "runtime": "any",
-      "source_url": "https://github.com/wuyhong715/rikkahub-agent-pure/tree/master/skills/openclaw-converter",
+      "source_url": "https://github.com/C2CWL/CLmA/tree/main/skills/openclaw-converter",
       "is_bundled": false
     },
     {
@@ -65,7 +65,7 @@
       "license": "Apache-2.0",
       "size_kb": 12,
       "runtime": "js",
-      "source_url": "https://github.com/wuyhong715/rikkahub-agent-pure/tree/master/skills/calculate-hash",
+      "source_url": "https://github.com/C2CWL/CLmA/tree/main/skills/calculate-hash",
       "is_bundled": false
     },
     {
@@ -76,7 +76,7 @@
       "license": "Apache-2.0",
       "size_kb": 15,
       "runtime": "js",
-      "source_url": "https://github.com/wuyhong715/rikkahub-agent-pure/tree/master/skills/interactive-map",
+      "source_url": "https://github.com/C2CWL/CLmA/tree/main/skills/interactive-map",
       "is_bundled": false
     },
     {
@@ -87,7 +87,7 @@
       "license": "Apache-2.0",
       "size_kb": 8,
       "runtime": "any",
-      "source_url": "https://github.com/wuyhong715/rikkahub-agent-pure/tree/master/skills/kitchen-adventure",
+      "source_url": "https://github.com/C2CWL/CLmA/tree/main/skills/kitchen-adventure",
       "is_bundled": false
     },
     {
@@ -98,7 +98,7 @@
       "license": "Apache-2.0",
       "size_kb": 36,
       "runtime": "js",
-      "source_url": "https://github.com/wuyhong715/rikkahub-agent-pure/tree/master/skills/mood-tracker",
+      "source_url": "https://github.com/C2CWL/CLmA/tree/main/skills/mood-tracker",
       "is_bundled": false
     },
     {
@@ -109,7 +109,7 @@
       "license": "Apache-2.0",
       "size_kb": 35,
       "runtime": "js",
-      "source_url": "https://github.com/wuyhong715/rikkahub-agent-pure/tree/master/skills/qr-code",
+      "source_url": "https://github.com/C2CWL/CLmA/tree/main/skills/qr-code",
       "is_bundled": false
     },
     {
@@ -120,7 +120,7 @@
       "license": "Apache-2.0",
       "size_kb": 12,
       "runtime": "js",
-      "source_url": "https://github.com/wuyhong715/rikkahub-agent-pure/tree/master/skills/query-wikipedia",
+      "source_url": "https://github.com/C2CWL/CLmA/tree/main/skills/query-wikipedia",
       "is_bundled": false
     },
     {
@@ -131,7 +131,7 @@
       "license": "Apache-2.0",
       "size_kb": 23,
       "runtime": "js",
-      "source_url": "https://github.com/wuyhong715/rikkahub-agent-pure/tree/master/skills/text-spinner",
+      "source_url": "https://github.com/C2CWL/CLmA/tree/main/skills/text-spinner",
       "is_bundled": false
     },
     {
@@ -142,7 +142,7 @@
       "license": "Apache-2.0",
       "size_kb": 39,
       "runtime": "js",
-      "source_url": "https://github.com/wuyhong715/rikkahub-agent-pure/tree/master/skills/virtual-piano",
+      "source_url": "https://github.com/C2CWL/CLmA/tree/main/skills/virtual-piano",
       "is_bundled": false
     }
   ]
