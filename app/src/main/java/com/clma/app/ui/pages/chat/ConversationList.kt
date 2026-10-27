@@ -16,6 +16,8 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -30,6 +32,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.runtime.key
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -78,6 +81,7 @@ sealed class ConversationListItem {
 fun ConversationList(
     current: Conversation,
     conversations: LazyPagingItems<ConversationListItem>,
+    subAgentConversations: List<Conversation>,
     conversationJobs: Collection<Uuid>,
     listState: LazyListState,
     modifier: Modifier = Modifier,
@@ -93,12 +97,16 @@ fun ConversationList(
     onToggleSelect: (Conversation) -> Unit = {},
     onEnterSelection: (Conversation) -> Unit = {},
 ) {
+    val expandedParents = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateMapOf<Uuid, Boolean>() }
+    val childrenByParent = remember(subAgentConversations) { subAgentConversations.groupBy { it.parentConversationId } }
     var hasScrolledToCurrent by remember(current.id) { mutableStateOf(false) }
 
-    LaunchedEffect(current.id, conversations.itemCount, hasScrolledToCurrent) {
+    LaunchedEffect(current.id, conversations.itemCount, subAgentConversations, hasScrolledToCurrent) {
         if (hasScrolledToCurrent) return@LaunchedEffect
+        val parentId = subAgentConversations.firstOrNull { it.id == current.id }?.parentConversationId
+        if (parentId != null) expandedParents[parentId] = true
         val currentIndex = conversations.itemSnapshotList.items.indexOfFirst {
-            (it as? ConversationListItem.Item)?.conversation?.id == current.id
+            (it as? ConversationListItem.Item)?.conversation?.id.let { it == current.id || (parentId != null && it == parentId) }
         }
         if (currentIndex >= 0) {
             val isVisible = listState.layoutInfo.visibleItemsInfo.any { it.index == currentIndex }
@@ -148,7 +156,7 @@ fun ConversationList(
                 is ConversationListItem.DateHeader -> {
                     DateHeaderItem(
                         label = item.label,
-                        modifier = Modifier.animateItem()
+                        modifier = Modifier
                     )
                 }
 
@@ -159,22 +167,46 @@ fun ConversationList(
                 }
 
                 is ConversationListItem.Item -> {
-                    ConversationItem(
-                        conversation = item.conversation,
-                        selected = item.conversation.id == current.id,
-                        loading = item.conversation.id in conversationJobs,
-                        selectionMode = selectionMode,
-                        checked = item.conversation.id in selectedIds,
-                        onClick = onClick,
-                        onDelete = onDelete,
-                        onRename = onRename,
-                        onPin = onPin,
-                        onMoveToAssistant = onMoveToAssistant,
-                        onMoveToFolder = onMoveToFolder,
-                        onToggleSelect = onToggleSelect,
-                        onEnterSelection = onEnterSelection,
-                        modifier = Modifier.animateItem()
-                    )
+                    Column(modifier = Modifier.animateItem()) {
+                        ConversationItem(
+                            conversation = item.conversation,
+                            selected = item.conversation.id == current.id,
+                            loading = item.conversation.id in conversationJobs,
+                            selectionMode = selectionMode,
+                            checked = item.conversation.id in selectedIds,
+                            onClick = onClick,
+                            onDelete = onDelete,
+                            onRename = onRename,
+                            onPin = onPin,
+                            onMoveToAssistant = onMoveToAssistant,
+                            onMoveToFolder = onMoveToFolder,
+                            onToggleSelect = onToggleSelect,
+                            onEnterSelection = onEnterSelection,
+                            modifier = Modifier
+                        )
+                        val children = childrenByParent[item.conversation.id].orEmpty().filter { it.folderId == item.conversation.folderId }
+                        if (children.isNotEmpty()) {
+                            val expanded = expandedParents[item.conversation.id] == true
+                            Text(
+                                text = stringResource(R.string.chat_subagent_children, if (expanded) "▾" else "▸", children.size),
+                                modifier = Modifier.fillMaxWidth().clickable { expandedParents[item.conversation.id] = !expanded }.padding(start = 24.dp, top = 4.dp, bottom = 4.dp),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                            if (expanded) children.forEach { child ->
+                                key(child.id) {
+                                    ConversationItem(
+                                        conversation = child, selected = child.id == current.id,
+                                        loading = child.id in conversationJobs, selectionMode = selectionMode,
+                                        checked = child.id in selectedIds, onClick = onClick, onDelete = onDelete,
+                                        onRename = onRename, onPin = onPin, onMoveToAssistant = onMoveToAssistant,
+                                        onMoveToFolder = onMoveToFolder, onToggleSelect = onToggleSelect,
+                                        onEnterSelection = onEnterSelection, modifier = Modifier.padding(start = 20.dp),
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
 
                 null -> {

@@ -28,10 +28,10 @@ class SubAgentDispatchProfileTest {
     }
 
     @Test
-    fun `NORMAL matches old compiled defaults`() {
+    fun `NORMAL has increased per-assistant default`() {
         val c = SubAgentDispatchProfileRules.caps(SubAgentDispatchProfile.NORMAL)
         assertEquals(30, c.globalCap)
-        assertEquals(3, c.perAssistantCap)
+        assertEquals(8, c.perAssistantCap)
         assertEquals(30_000L, c.slotWaitMs)
         assertEquals(30, c.maxTripsCeiling)
         assertEquals(1800, c.timeoutCeilingSec)
@@ -80,9 +80,9 @@ class SubAgentDispatchProfileTest {
 
     @Test
     fun `effectivePerAssistantCap takes min of profile and assistant`() {
-        // NORMAL cap=3, assistant=5 → 3
-        assertEquals(3, SubAgentDispatchProfileRules.effectivePerAssistantCap(SubAgentDispatchProfile.NORMAL, 5))
-        // NORMAL cap=3, assistant=2 → 2
+        // NORMAL cap=8, assistant=5 → 5
+        assertEquals(5, SubAgentDispatchProfileRules.effectivePerAssistantCap(SubAgentDispatchProfile.NORMAL, 5))
+        // NORMAL cap=8, assistant=2 → 2
         assertEquals(2, SubAgentDispatchProfileRules.effectivePerAssistantCap(SubAgentDispatchProfile.NORMAL, 2))
         // BURST cap=8, assistant=16 → 8
         assertEquals(8, SubAgentDispatchProfileRules.effectivePerAssistantCap(SubAgentDispatchProfile.BURST, 16))

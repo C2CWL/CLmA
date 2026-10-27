@@ -70,6 +70,11 @@ class ConversationRepository(
             }
     }
 
+    fun observeSubAgentConversations(assistantId: Uuid): Flow<List<Conversation>> =
+        conversationDAO.observeSubAgentConversations(assistantId.toString()).map { rows ->
+            rows.map { conversationSummaryToConversation(it) }
+        }
+
     fun getConversationsOfAssistantPaging(assistantId: Uuid): Flow<PagingData<Conversation>> = Pager(
         config = PagingConfig(
             pageSize = PAGE_SIZE,
@@ -89,7 +94,7 @@ class ConversationRepository(
             initialLoadSize = INITIAL_LOAD_SIZE,
             enablePlaceholders = false
         ),
-        pagingSourceFactory = { conversationDAO.getUnfiledConversationsOfAssistantPaging(assistantId.toString()) }
+        pagingSourceFactory = { conversationDAO.getDrawerUnfiledPaging(assistantId.toString()) }
     ).flow.map { pagingData ->
         pagingData.map { entity ->
             conversationSummaryToConversation(entity)
@@ -106,7 +111,7 @@ class ConversationRepository(
             initialLoadSize = INITIAL_LOAD_SIZE,
             enablePlaceholders = false
         ),
-        pagingSourceFactory = { conversationDAO.getConversationsOfFolderPaging(folderId.toString()) }
+        pagingSourceFactory = { conversationDAO.getDrawerFolderPaging(folderId.toString()) }
     ).flow.map { pagingData ->
         pagingData.map { entity ->
             conversationSummaryToConversation(entity)
@@ -455,6 +460,7 @@ class ConversationRepository(
             workspaceCwd = conversation.workspaceCwd ?: "",
             folderId = conversation.folderId?.toString() ?: "",
             chatModelId = encodeChatModelId(conversation.chatModelId),
+            parentConversationId = conversation.parentConversationId?.toString() ?: "",
         )
     }
 
@@ -477,6 +483,7 @@ class ConversationRepository(
             workspaceCwd = conversationEntity.workspaceCwd.ifEmpty { null },
             folderId = conversationEntity.folderId.ifEmpty { null }?.let { Uuid.parse(it) },
             chatModelId = decodeChatModelId(conversationEntity.chatModelId),
+            parentConversationId = conversationEntity.parentConversationId.ifEmpty { null }?.let { runCatching { Uuid.parse(it) }.getOrNull() },
         )
     }
 
@@ -539,6 +546,7 @@ class ConversationRepository(
             updateAt = Instant.ofEpochMilli(entity.updateAt),
             messageNodes = emptyList(),
             folderId = entity.folderId.ifEmpty { null }?.let { Uuid.parse(it) },
+            parentConversationId = entity.parentConversationId.ifEmpty { null }?.let { runCatching { Uuid.parse(it) }.getOrNull() },
         )
     }
 
@@ -663,6 +671,7 @@ data class LightConversationEntity(
     val createAt: Long,
     val updateAt: Long,
     val folderId: String = "",
+    val parentConversationId: String = "",
 )
 
 data class ConversationPageResult(

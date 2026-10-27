@@ -1798,7 +1798,7 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="assistant_page_local_tools_reliability_title">Reliability</string>
   <string name="assistant_page_local_tools_reliability_desc">Let the assistant check GitHub for newer releases and build a redacted bug-report ZIP on demand. The bug report includes the last few thousand logcat lines (with secrets redacted) and the app version + device info — and explicitly excludes your conversations, tokens, and saved hosts.</string>
   <string name="assistant_page_local_tools_sub_agents_title">Sub-agents</string>
-  <string name="assistant_page_local_tools_sub_agents_desc">Let the assistant dispatch focused sub-tasks (research, multi-step work) as independent LLM runs in the background. Each run is approval-gated, capped (default 3 concurrent per assistant, and a configurable global cap (default 30)), and HARDLINE still applies inside.</string>
+  <string name="assistant_page_local_tools_sub_agents_desc">Let the assistant dispatch focused sub-tasks (research, multi-step work) as independent LLM runs in the background. Each run is approval-gated, capped (default 8 concurrent per assistant, and a configurable global cap (default 30)), and HARDLINE still applies inside.</string>
   <string name="assistant_page_local_tools_cost_guards_title">Cost guards</string>
   <string name="assistant_page_local_tools_cost_guards_desc">Let the assistant inspect its running token totals against the per-assistant soft / hard caps and self-throttle. Read-only — auto-stop integration with the streaming pipeline ships in a follow-up.</string>
   <string name="setting_page_accessibility">Accessibility</string>
@@ -3326,4 +3326,5 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
     <string name="setting_compaction_engine_model">Model</string>
     <string name="setting_compaction_engine_hybrid">Hybrid</string>
     <string name="setting_compaction_engine_desc">Applies to manual and automatic compaction. TOMC: CPU source selection, no model request. Hybrid: model summary plus independently preserved original evidence (one third of the target). Android adaptation of TOMC2, not the full Python compiler. Small budgets can omit important records; originals remain stored. Existing model mode stays selected until changed.</string>
+  <string name="chat_subagent_children">%1$s Sub-agents (%2$d)</string>
 </resources>

@@ -64,8 +64,9 @@ import com.clma.app.workflow.db.WorkflowRunEntity
         WorkspaceEntity::class,
         FolderEntity::class,
     ],
-    version = 31,
+    version = 32,
     autoMigrations = [
+        AutoMigration(from = 31, to = 32),
         AutoMigration(from = 1, to = 2),
         AutoMigration(from = 2, to = 3),
         AutoMigration(from = 3, to = 4),

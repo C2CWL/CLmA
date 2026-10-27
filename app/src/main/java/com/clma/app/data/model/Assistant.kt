@@ -67,7 +67,7 @@ data class Assistant(
     // own concurrency cap; we hard-cap globally at 16 across all assistants in the engine.
     val subAgentModelId: Uuid? = null,
     val subAgentSystemPrompt: String = "",
-    val maxConcurrentSubAgents: Int = 3,
+    val maxConcurrentSubAgents: Int = 8,
     // Phase 15 — Per-task token budget. Both null = no budget enforcement. The LLM
     // checks via `check_token_usage`; auto-stop integration into GenerationHandler is
     // Phase 15.5 follow-up.

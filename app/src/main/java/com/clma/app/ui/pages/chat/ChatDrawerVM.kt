@@ -65,6 +65,9 @@ class ChatDrawerVM(
         .flatMapLatest { folderRepo.getFoldersOfAssistant(it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val subAgentConversations = assistantIdFlow.flatMapLatest { conversationRepo.observeSubAgentConversations(it) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     val conversations: Flow<PagingData<ConversationListItem>> =
         combine(assistantIdFlow, _selectedFolderId) { assistantId, folderId ->
             assistantId to folderId

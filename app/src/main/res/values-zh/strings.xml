@@ -1571,7 +1571,7 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="assistant_page_local_tools_ssh_title">SSH</string>
   <string name="assistant_page_local_tools_storage_desc">读取内部和外部存储卷的总计/可用/已用空间。</string>
   <string name="assistant_page_local_tools_storage_title">存储信息</string>
-  <string name="assistant_page_local_tools_sub_agents_desc">让助手将专注的子任务（研究、多步骤工作）作为独立的大模型运行派发到后台。每次运行都需授权、有上限（每个助手默认并发 3 个，全局上限可配置（默认 30）），且内部仍然适用 HARDLINE。</string>
+  <string name="assistant_page_local_tools_sub_agents_desc">让助手将专注的子任务（研究、多步骤工作）作为独立的大模型运行派发到后台。每次运行都需授权、有上限（每个助手默认并发 8 个，全局上限可配置（默认 30）），且内部仍然适用 HARDLINE。</string>
   <string name="assistant_page_local_tools_sub_agents_title">子智能体</string>
   <string name="assistant_page_local_tools_system_intents_desc">让助手为你预填系统应用，由你最终确认：日历事件、新建联系人、邮件编辑器、短信编辑器、WiFi 设置、地图。没有你在目标应用中的点击，不会保存或发送任何内容。</string>
   <string name="assistant_page_local_tools_system_intents_title">系统 Intent</string>
@@ -3042,4 +3042,5 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
     <string name="setting_compaction_engine_model">自选模型</string>
     <string name="setting_compaction_engine_hybrid">联动</string>
     <string name="setting_compaction_engine_desc">手动与自动压缩共用。TOMC：CPU 选择原文，不请求模型；联动：模型摘要＋独立保留的原文证据（占目标三分之一）。这是 TOMC2 的 Android 适配，非完整 Python 编译器。预算过小仍可能漏掉重要记录，原文保留在会话库中。未切换时沿用模型模式。</string>
+  <string name="chat_subagent_children">%1$s 子智能体（%2$d）</string>
 </resources>
