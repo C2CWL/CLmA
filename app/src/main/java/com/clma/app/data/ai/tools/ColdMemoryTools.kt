@@ -49,6 +49,12 @@ data class ColdMemoryWriteResult(
     val totalChars: Int,
 )
 
+/** Result of a `memory_delete` call. */
+data class ColdMemoryDeleteResult(
+    val fileName: String,
+    val deleted: Boolean,
+)
+
 /** Outcome of resolving a model-supplied `file` argument against the directory listing. */
 sealed interface ColdMemoryLookup {
     data class Found(val name: String) : ColdMemoryLookup
@@ -84,6 +90,9 @@ object ColdMemoryRules {
 
     /** Cap on the `INDEX.md` body echoed by `memory_index`. */
     const val INDEX_MAX_CHARS = 16_000
+
+    /** Cap on the `INDEX.md` preview injected into system prompt. */
+    const val PROMPT_INDEX_MAX_CHARS = 4_000
 
     private const val MAX_CANDIDATES = 20
 
@@ -185,12 +194,14 @@ object ColdMemoryRules {
  * @param listDocs the Markdown files currently in the directory (INDEX.md included if present).
  * @param readDoc returns the file's text, or `null` when it does not exist.
  * @param writeDoc persists `content`, appending when `append` is true, and returns the result.
+ * @param deleteDoc deletes the file, returning `true` if deleted or `false` if it did not exist.
  */
 fun buildColdMemoryTools(
     dirLabel: String,
     listDocs: suspend () -> List<ColdMemoryDoc>,
     readDoc: suspend (name: String) -> String?,
     writeDoc: suspend (name: String, content: String, append: Boolean) -> ColdMemoryWriteResult,
+    deleteDoc: suspend (name: String) -> Boolean = { false },
 ): List<Tool> = listOf(
     Tool(
         name = "memory_index",
@@ -371,6 +382,68 @@ fun buildColdMemoryTools(
                 put("file", result.fileName)
                 put("mode", result.mode)
                 put("totalChars", result.totalChars)
+            }.toString()))
+        },
+    ),
+    Tool(
+        name = "memory_delete",
+        description = """
+            Delete a document from the cold-memory knowledge base.
+
+            Use it to prune obsolete notes, temporary task scratchpads, or documents whose content
+            has been superseded or merged. Do not let outdated notes accumulate.
+
+            Keep "${ColdMemoryRules.INDEX_FILE_NAME}" up to date when deleting a file (update it
+            using `memory_write`). "${ColdMemoryRules.INDEX_FILE_NAME}" cannot be deleted directly
+            with this tool.
+        """.trimIndent(),
+        parameters = {
+            InputSchema.Obj(
+                properties = buildJsonObject {
+                    put("file", buildJsonObject {
+                        put("type", "string")
+                        put("description", "File name, a single segment ending in .md, e.g. \"M13-old-topic.md\".")
+                    })
+                },
+                required = listOf("file"),
+            )
+        },
+        needsApproval = { true },
+        execute = {
+            val params = it.jsonObject
+            val name = params["file"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty()
+            if (name.isEmpty()) {
+                return@Tool listOf(UIMessagePart.Text(errorEnvelope("missing_argument", "file is required")))
+            }
+            if (!ColdMemoryRules.isValidWriteName(name)) {
+                return@Tool listOf(UIMessagePart.Text(buildJsonObject {
+                    put("error", "invalid_name")
+                    put("file", name)
+                    put(
+                        "detail",
+                        "Use a single file name ending in ${ColdMemoryRules.MARKDOWN_SUFFIX} " +
+                            "(no directory separators, no \"..\")."
+                    )
+                }.toString()))
+            }
+            if (name.equals(ColdMemoryRules.INDEX_FILE_NAME, ignoreCase = true)) {
+                return@Tool listOf(UIMessagePart.Text(buildJsonObject {
+                    put("error", "cannot_delete_index")
+                    put("file", name)
+                    put(
+                        "detail",
+                        "${ColdMemoryRules.INDEX_FILE_NAME} is the index root and cannot be deleted directly. " +
+                            "Update or truncate it using memory_write."
+                    )
+                }.toString()))
+            }
+            val deleted = deleteDoc(name)
+            listOf(UIMessagePart.Text(buildJsonObject {
+                put("file", name)
+                put("deleted", deleted)
+                if (!deleted) {
+                    put("note", "File did not exist or could not be deleted.")
+                }
             }.toString()))
         },
     ),

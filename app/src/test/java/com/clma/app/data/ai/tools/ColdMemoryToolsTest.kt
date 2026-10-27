@@ -50,6 +50,9 @@ class ColdMemoryToolsTest {
                     totalChars = next.length,
                 )
             },
+            deleteDoc = { name ->
+                store.remove(name) != null
+            },
         )
     }
 
@@ -190,9 +193,9 @@ class ColdMemoryToolsTest {
     // ---- memory_index ----------------------------------------------------------------------
 
     @Test
-    fun `the tool set is memory_index memory_read and memory_write`() {
+    fun `the tool set is memory_index memory_read memory_write and memory_delete`() {
         val tools = FakeDirectory().tools()
-        assertEquals(listOf("memory_index", "memory_read", "memory_write"), tools.map { it.name })
+        assertEquals(listOf("memory_index", "memory_read", "memory_write", "memory_delete"), tools.map { it.name })
     }
 
     @Test
@@ -384,12 +387,13 @@ class ColdMemoryToolsTest {
     // ---- approval + schema contract --------------------------------------------------------
 
     @Test
-    fun `only memory_write needs approval`() {
+    fun `memory_write and memory_delete need approval`() {
         val tools = FakeDirectory().tools()
         val args = Json.parseToJsonElement("{}")
         assertFalse(toolNamed(tools, "memory_index").needsApproval(args))
         assertFalse(toolNamed(tools, "memory_read").needsApproval(args))
         assertTrue(toolNamed(tools, "memory_write").needsApproval(args))
+        assertTrue(toolNamed(tools, "memory_delete").needsApproval(args))
     }
 
     @Test
@@ -415,5 +419,86 @@ class ColdMemoryToolsTest {
         val modes = schema.properties["mode"]!!.jsonObject["enum"]!!.jsonArray
             .map { it.jsonPrimitive.content }
         assertEquals(listOf("append", "overwrite"), modes)
+    }
+
+    // ---- memory_delete ----------------------------------------------------------------------
+
+    @Test
+    fun `memory_delete removes file successfully`() {
+        val dir = FakeDirectory(
+            mapOf(
+                "M01-keep.md" to "keep",
+                "M02-temp.md" to "temporary",
+            )
+        )
+        val json = Json.parseToJsonElement(
+            executeJson(
+                toolNamed(dir.tools(), "memory_delete"),
+                """{"file":"M02-temp.md"}""",
+            )
+        ).jsonObject
+
+        assertEquals(true, json["deleted"]!!.jsonPrimitive.boolean)
+        assertEquals("M02-temp.md", json["file"]!!.jsonPrimitive.content)
+        assertNull(dir.store["M02-temp.md"])
+        assertEquals("keep", dir.store["M01-keep.md"])
+    }
+
+    @Test
+    fun `memory_delete reports false when file does not exist`() {
+        val dir = FakeDirectory()
+        val json = Json.parseToJsonElement(
+            executeJson(
+                toolNamed(dir.tools(), "memory_delete"),
+                """{"file":"nonexistent.md"}""",
+            )
+        ).jsonObject
+
+        assertEquals(false, json["deleted"]!!.jsonPrimitive.boolean)
+        assertTrue(json.containsKey("note"))
+    }
+
+    @Test
+    fun `memory_delete refuses directory escape and invalid names`() {
+        val dir = FakeDirectory()
+        val escaped = Json.parseToJsonElement(
+            executeJson(
+                toolNamed(dir.tools(), "memory_delete"),
+                """{"file":"../secret.md"}""",
+            )
+        ).jsonObject
+        assertEquals("invalid_name", escaped["error"]!!.jsonPrimitive.content)
+
+        val nonMarkdown = Json.parseToJsonElement(
+            executeJson(
+                toolNamed(dir.tools(), "memory_delete"),
+                """{"file":"note.txt"}""",
+            )
+        ).jsonObject
+        assertEquals("invalid_name", nonMarkdown["error"]!!.jsonPrimitive.content)
+    }
+
+    @Test
+    fun `memory_delete refuses to delete INDEX md`() {
+        val dir = FakeDirectory(mapOf(ColdMemoryRules.INDEX_FILE_NAME to "# Index"))
+        val json = Json.parseToJsonElement(
+            executeJson(
+                toolNamed(dir.tools(), "memory_delete"),
+                """{"file":"${ColdMemoryRules.INDEX_FILE_NAME}"}""",
+            )
+        ).jsonObject
+
+        assertEquals("cannot_delete_index", json["error"]!!.jsonPrimitive.content)
+        assertEquals("# Index", dir.store[ColdMemoryRules.INDEX_FILE_NAME])
+    }
+
+    @Test
+    fun `memory_delete requires file argument`() {
+        val dir = FakeDirectory()
+        val json = Json.parseToJsonElement(
+            executeJson(toolNamed(dir.tools(), "memory_delete"), "{}")
+        ).jsonObject
+
+        assertEquals("missing_argument", json["error"]!!.jsonPrimitive.content)
     }
 }
