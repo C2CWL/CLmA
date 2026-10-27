@@ -75,7 +75,9 @@ object BrowserBackgroundHost {
             }
         }
         val (w, h, dpi) = defaultDisplaySize(context) ?: return@withContext null
-        val result = VirtualDisplayController.create(context, w, h, dpi)
+        // No live preview here: the browser runs unattended, and a floating window popping up
+        // over the chat is noise — the agent already reports what it read.
+        val result = VirtualDisplayController.create(context, w, h, dpi, showPreview = false)
         when (result) {
             is VirtualDisplayController.Result.Ok -> {
                 synchronized(lock) { browserDisplayId = result.value }
