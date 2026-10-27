@@ -162,7 +162,12 @@ fun zipFilesTool(context: Context): Tool = Tool(
 
         // Path-safety: every source and the destination must clear the guard before any
         // stream is opened (file:// → PathSafetyGuard, content:// → ContentUriSafetyGuard).
-        for (src in sources) guardArchivePath(src)?.let { return@Tool it }
+        for (src in sources) {
+            guardArchivePath(src)?.let { return@Tool it }
+            if (!isContent(src)) PathSafetyGuard.checkTree(File(src.removePrefix("file://")))?.let {
+                return@Tool arcErr(it.code, "detail" to it.detail)
+            }
+        }
         guardArchivePath(destination)?.let { return@Tool it }
 
         val archiveSources = mutableListOf<ArchiveSource>()
@@ -398,9 +403,10 @@ fun unzipFileTool(context: Context): Tool = Tool(
                         if (fileDestRoot != null) {
                             val target = File(fileDestRoot, name)
                             val canonicalRoot = fileDestRoot.canonicalPath
-                            if (!target.canonicalPath.startsWith(canonicalRoot)) {
+                            if (target.canonicalPath != canonicalRoot && !target.canonicalPath.startsWith(canonicalRoot.trimEnd('/') + "/")) {
                                 return@Tool arcErr("unsafe_zip_entry", "entry" to name)
                             }
+                            PathSafetyGuard.check(target.path)?.let { return@Tool arcErr(it.code, "detail" to it.detail) }
                             if (target.exists() && !overwrite) {
                                 return@Tool arcErr("entry_exists", "entry" to name)
                             }
