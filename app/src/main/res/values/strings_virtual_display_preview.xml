@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <!-- Floating live preview of a virtual display, shown while the agent drives it. -->
+  <string name="virtual_display_preview_title">Virtual display %1$d×%2$d</string>
+  <string name="virtual_display_preview_close">Close preview</string>
+</resources>
