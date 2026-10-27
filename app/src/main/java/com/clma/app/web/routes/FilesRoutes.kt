@@ -144,8 +144,13 @@ fun Route.filesRoutes(
             }
 
             val canonicalFilesDir = filesDir.canonicalPath
+            val canonicalRoot = File(filesDir, rootFolder).canonicalPath
             val canonicalPath = file.canonicalPath
-            if (!canonicalPath.startsWith(canonicalFilesDir + File.separator)) {
+            // Check both the selected root and its target: a symlinked root or a
+            // symlink below it must not redirect into another private directory.
+            if (!canonicalRoot.startsWith(canonicalFilesDir + File.separator) ||
+                canonicalRoot != File(canonicalFilesDir, rootFolder).path ||
+                !canonicalPath.startsWith(canonicalRoot + File.separator)) {
                 throw BadRequestException("Invalid file path")
             }
 
