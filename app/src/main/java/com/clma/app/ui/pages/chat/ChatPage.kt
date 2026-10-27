@@ -165,6 +165,7 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null, is
     val activity = LocalContext.current as ComponentActivity
     val drawerVm: ChatDrawerVM = koinViewModel(viewModelStoreOwner = activity)
     val multiSelectActive by drawerVm.multiSelectActive.collectAsStateWithLifecycle()
+
     // Shared Haze state between the chat page and the drawer: the page marks its background +
     // message list as the blur source (hazeSource), so the drawer's glass panel refracts the
     // page sitting behind it instead of showing an opaque block.
@@ -301,13 +302,18 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null, is
             ModalNavigationDrawer(
                 drawerState = drawerState,
                 drawerContent = {
-                    ChatDrawerContent(
-                        navController = navController,
-                        current = conversation,
-                        vm = vm,
-                        settings = setting,
-                        hazeState = hazeState,
-                    )
+                    val isDrawerActive = drawerState.isOpen ||
+                        drawerState.isAnimationRunning ||
+                        drawerState.targetValue == DrawerValue.Open
+                    if (isDrawerActive) {
+                        ChatDrawerContent(
+                            navController = navController,
+                            current = conversation,
+                            vm = vm,
+                            settings = setting,
+                            hazeState = hazeState,
+                        )
+                    }
                 }
             ) {
                 ChatPageContent(
@@ -329,6 +335,12 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null, is
                     onDismissError = { vm.dismissError(it) },
                     onClearAllErrors = { vm.clearAllErrors() },
                 )
+            }
+            BackHandler(enabled = drawerState.isOpen && multiSelectActive) {
+                drawerVm.requestExitMultiSelect()
+            }
+            BackHandler(enabled = drawerState.isOpen && !multiSelectActive) {
+                scope.launch { drawerState.close() }
             }
         }
     }

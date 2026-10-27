@@ -30,9 +30,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -358,11 +356,6 @@ class RouteActivity : FragmentActivity() {
             }
         }
 
-        var isInitialLaunch by remember { mutableStateOf(true) }
-        SideEffect {
-            isInitialLaunch = false
-        }
-
         SharedTransitionLayout {
             CompositionLocalProvider(
                 LocalNavController provides Navigator(backStack),
@@ -395,7 +388,7 @@ class RouteActivity : FragmentActivity() {
                         modifier = Modifier.fillMaxSize(),
                         onBack = { backStack.removeLastOrNull() },
                         transitionSpec = {
-                            if (isInitialLaunch || backStack.size == 1) fadeIn() togetherWith fadeOut()
+                            if (backStack.size == 1) fadeIn() togetherWith fadeOut()
                             else {
                                 slideInHorizontally { it } togetherWith
                                     slideOutHorizontally { -it / 2 } + scaleOut(targetScale = 0.7f) + fadeOut()
