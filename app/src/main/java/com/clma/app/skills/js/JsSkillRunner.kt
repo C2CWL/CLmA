@@ -174,7 +174,8 @@ class JsSkillRunner(private val context: Context) {
                     layoutParams = ViewGroup.LayoutParams(1, 1)
                 }
                 wv.addJavascriptInterface(BridgeImpl(deferred), JS_INTERFACE_NAME)
-                wv.webChromeClient = object : WebChromeClient() {\n                    override fun onConsoleMessage(consoleMessage: ConsoleMessage?): Boolean {
+                wv.webChromeClient = object : WebChromeClient() {
+                    override fun onConsoleMessage(consoleMessage: ConsoleMessage?): Boolean {
                         consoleMessage?.let {
                             Log.d(TAG, "[JS console] ${it.message()} (${it.sourceId()}:${it.lineNumber()})")
                         }
