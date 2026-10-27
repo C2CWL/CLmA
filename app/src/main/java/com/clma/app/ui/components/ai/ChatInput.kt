@@ -112,14 +112,12 @@ import com.clma.app.service.MessageQueueState
 import com.clma.app.service.QueuedMessage
 import com.clma.app.ui.components.ai.completion.ChatCompletionContext
 import com.clma.app.ui.components.ai.completion.ChatCompletionItem
-import com.clma.app.data.datastore.KeepScreenOnMode
 import com.clma.app.ui.components.ai.completion.ChatCompletionList
 import com.clma.app.ui.components.ai.completion.ChatCompletionProvider
 import com.clma.app.ui.components.message.WallpaperOnlySelection
 import com.clma.app.ui.components.ui.AutoAIIconFill
 import com.clma.app.ui.components.ui.CleanInputPaddingMaxDp
 import com.clma.app.ui.components.ui.CleanInputPaddingMinDp
-import com.clma.app.ui.components.ui.KeepScreenOn
 import com.clma.app.ui.components.ui.cleanPanelFill
 import com.clma.app.ui.components.ui.cleanGlassFill
 import com.clma.app.ui.components.ui.cleanPanelOutline
@@ -504,15 +502,6 @@ fun ChatInput(
                             }
                         },
                     )
-
-                    val keepScreenOn = when (settings.displaySetting.keepScreenOnMode) {
-                        KeepScreenOnMode.NEVER -> false
-                        KeepScreenOnMode.WHILE_GENERATING -> loading
-                        KeepScreenOnMode.ALWAYS_IN_CHAT -> true
-                    }
-                    if (keepScreenOn) {
-                        KeepScreenOn()
-                    }
                 }
             }
         }
