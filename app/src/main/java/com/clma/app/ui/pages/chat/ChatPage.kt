@@ -173,7 +173,6 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null, is
     // 抽屉打开时：多选中先退出多选；否则关闭抽屉。
     // 手机分支在 ModalNavigationDrawer 之后还有一个更晚的返回键，两处必须同一规则。
     }
-
     // Clear input focus so popup transitions cannot reopen the keyboard.
     LaunchedEffect(drawerState.isOpen) {
         if (drawerState.isOpen) {
