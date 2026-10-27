@@ -220,6 +220,7 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
         tabs = listOf(modelsModelTab, modelsPromptTab),
         items = listOf(
             row(R.string.setting_model_page_chat_model, R.string.setting_model_page_chat_model_desc, tab = modelsModelTab),
+            row(R.string.setting_model_page_embedding_model, R.string.setting_model_page_embedding_model_desc, tab = modelsModelTab),
             row(R.string.setting_model_page_fast_model, R.string.setting_model_page_fast_model_desc, tab = modelsModelTab),
             row(R.string.setting_model_page_translate_model, R.string.setting_model_page_translate_model_desc, tab = modelsModelTab),
             row(R.string.setting_model_page_image_recognition_mode, R.string.setting_model_page_image_recognition_mode_desc, tab = modelsModelTab),

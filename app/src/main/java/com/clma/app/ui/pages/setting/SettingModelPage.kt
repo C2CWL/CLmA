@@ -49,6 +49,13 @@ import com.clma.app.ui.components.ai.ModelListSheet
 import com.clma.app.ui.components.ai.ReasoningButton
 import com.clma.app.ui.components.ai.rememberModelListState
 import com.clma.app.ui.components.nav.BackButton
+import com.clma.app.data.vector.CloudEmbeddingRules
+import com.clma.app.data.vector.EmbeddingModelFiles
+import com.clma.app.data.vector.EmbeddingReadiness
+import com.clma.app.ui.pages.setting.components.EmbeddingModelSheet
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import com.clma.app.ui.components.ui.CardGroup
 import com.clma.app.ui.theme.CustomColors
 import com.clma.app.utils.plus
@@ -119,6 +126,12 @@ private fun ModelSettingsPage(settings: Settings, vm: SettingVM, contentPadding:
                 modelId = settings.chatModelId,
                 providers = settings.providers,
                 onSelect = { vm.updateSettings(settings.copy(chatModelId = it.id)) },
+            )
+        }
+        item {
+            EmbeddingSettingItem(
+                settings = settings,
+                vm = vm,
             )
         }
         item {
@@ -292,4 +305,76 @@ private fun ModelSettingItem(
     }
 
     ModelListSheet(state = state, onSelect = onSelect)
+}
+
+@Composable
+private fun EmbeddingSettingItem(
+    settings: Settings,
+    vm: SettingVM,
+) {
+    val context = LocalContext.current
+    val installedFiles = remember(settings) {
+        EmbeddingModelFiles.installedFiles(context)
+    }
+    var showSheet by remember { mutableStateOf(false) }
+
+    val isCloud = CloudEmbeddingRules.isCloud(settings.embeddingBackend)
+    val displayName = remember(settings, installedFiles) {
+        if (isCloud) {
+            EmbeddingReadiness.cloudModel(settings)?.displayName
+                ?: settings.embeddingCloudModel.ifBlank { null }
+        } else {
+            val file = EmbeddingReadiness.localModelFile(settings, installedFiles)
+            file ?: if (installedFiles.isEmpty()) null else settings.embeddingModelFile.ifBlank { null }
+        }
+    }
+
+    Column {
+        CardGroup(title = { Text(stringResource(R.string.setting_model_page_embedding_model)) }) {
+            item(
+                onClick = { showSheet = true },
+                headlineContent = { Text(stringResource(R.string.setting_model_page_embedding_model)) },
+                supportingContent = {
+                    val statusText = if (isCloud) {
+                        stringResource(R.string.setting_model_page_embedding_backend_cloud)
+                    } else {
+                        stringResource(R.string.setting_model_page_embedding_backend_local)
+                    }
+                    Text(statusText)
+                },
+                trailingContent = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Text(
+                            text = displayName ?: stringResource(R.string.setting_model_page_embedding_status_not_ready),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Icon(
+                            HugeIcons.ArrowRight01,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
+                },
+            )
+        }
+        Text(
+            text = stringResource(R.string.setting_model_page_embedding_model_desc),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
+        )
+    }
+
+    EmbeddingModelSheet(
+        show = showSheet,
+        onDismissRequest = { showSheet = false },
+        settings = settings,
+        vm = vm,
+    )
 }
