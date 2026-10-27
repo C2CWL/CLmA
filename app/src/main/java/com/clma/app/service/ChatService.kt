@@ -2220,8 +2220,7 @@ class ChatService(
                 // anything else) gets its runtime context into the system prompt without
                 // having to plumb a parameter all the way through sendMessage. Returns null
                 // for in-app conversations that didn't register one.
-                systemAddendum = com.clma.app.data.ai.tools
-                    .ConversationSystemAddendum.get(conversationId),
+                systemAddendum = buildEffectiveSystemAddendum(conversationId, surfaceAssistant),
                 isToolAutoApproved = { toolName ->
                     // The decision itself is pure — see ToolApprovalPolicy (unit-tested). Here
                     // we only supply the async inputs: the persisted blacklist + mode (one
@@ -2638,10 +2637,19 @@ class ChatService(
         return createWorkspaceTools(workspaceId, workspaceRepository, cwd)
     }
 
+    private suspend fun resolveColdMemoryWorkspaceId(assistant: Assistant): String? {
+        val configured = assistant.workspaceId?.toString()
+        if (!configured.isNullOrBlank() && workspaceRepository.getById(configured) != null) {
+            return configured
+        }
+        return workspaceRepository.getAll().firstOrNull()?.id
+    }
+
     /**
      * T-06 / (7) - cold memory (Markdown knowledge base). Built only when the assistant turned
-     * the feature on AND bound a workspace AND picked a directory inside it; otherwise this
-     * returns an empty list and the tool surface is byte-for-byte what it was before T-06.
+     * the feature on AND a usable workspace exists (either explicitly bound or falling back to
+     * the primary workspace) AND picked a directory inside it; otherwise this returns an empty
+     * list and the tool surface is byte-for-byte what it was before T-06.
      *
      * The directory is read through WorkspaceRepository, NOT through the workspace shell tools:
      * cold memory is plain file IO, so it keeps working even when the workspace rootfs was
@@ -2649,7 +2657,7 @@ class ChatService(
      */
     private suspend fun createColdMemoryToolsIfConfigured(assistant: Assistant): List<Tool> {
         if (!assistant.coldMemoryEnabled) return emptyList()
-        val workspaceId = assistant.workspaceId?.toString() ?: return emptyList()
+        val workspaceId = resolveColdMemoryWorkspaceId(assistant) ?: return emptyList()
         val dir = ColdMemoryRules.normalizeDir(assistant.coldMemoryDir) ?: return emptyList()
         if (workspaceRepository.getById(workspaceId) == null) return emptyList()
 
@@ -2700,6 +2708,22 @@ class ChatService(
                     totalChars = text.length,
                 )
             },
+            deleteDoc = { name ->
+                val path = childPath(name)
+                try {
+                    workspaceRepository.deleteFile(
+                        workspaceId,
+                        WorkspaceStorageArea.FILES,
+                        path,
+                        recursive = false,
+                    )
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Log.d(TAG, "coldMemory: cannot delete '$path': ${e.message}")
+                    false
+                }
+            },
         ).toMutableList()
 
         // Semantic search joins the exact-name tools. Registration does not depend on a model
@@ -2726,7 +2750,7 @@ class ChatService(
      */
     private suspend fun coldMemoryPlaybookReader(assistant: Assistant): (suspend (String) -> String?)? {
         if (!assistant.coldMemoryEnabled) return null
-        val workspaceId = assistant.workspaceId?.toString() ?: return null
+        val workspaceId = resolveColdMemoryWorkspaceId(assistant) ?: return null
         val dir = ColdMemoryRules.normalizeDir(assistant.coldMemoryDir) ?: return null
         if (workspaceRepository.getById(workspaceId) == null) return null
 
@@ -2761,7 +2785,7 @@ class ChatService(
         val snapshots = AutomationRecorder.drain()
         if (snapshots.isEmpty()) return
         if (!assistant.coldMemoryEnabled) return
-        val workspaceId = assistant.workspaceId?.toString() ?: return
+        val workspaceId = resolveColdMemoryWorkspaceId(assistant) ?: return
         val dir = ColdMemoryRules.normalizeDir(assistant.coldMemoryDir) ?: return
         if (workspaceRepository.getById(workspaceId) == null) return
 
@@ -2783,6 +2807,48 @@ class ChatService(
                 Log.d(TAG, "flushAutomationPlaybook($fileName) failed: ${e.message}")
             }
         }
+    }
+
+    private suspend fun buildEffectiveSystemAddendum(
+        conversationId: Uuid,
+        surfaceAssistant: Assistant,
+    ): String? {
+        val baseAddendum = com.clma.app.data.ai.tools.ConversationSystemAddendum.get(conversationId)
+        val coldMemoryIndexPrompt = readColdMemoryIndexPrompt(surfaceAssistant)
+        return when {
+            baseAddendum.isNullOrBlank() && coldMemoryIndexPrompt.isNullOrBlank() -> null
+            baseAddendum.isNullOrBlank() -> coldMemoryIndexPrompt
+            coldMemoryIndexPrompt.isNullOrBlank() -> baseAddendum
+            else -> "$baseAddendum\n\n$coldMemoryIndexPrompt"
+        }
+    }
+
+    private suspend fun readColdMemoryIndexPrompt(assistant: Assistant): String? {
+        if (!assistant.coldMemoryEnabled) return null
+        val workspaceId = resolveColdMemoryWorkspaceId(assistant) ?: return null
+        val dir = ColdMemoryRules.normalizeDir(assistant.coldMemoryDir) ?: return null
+        val indexPath = if (dir.isEmpty()) ColdMemoryRules.INDEX_FILE_NAME else "$dir/${ColdMemoryRules.INDEX_FILE_NAME}"
+        val indexContent = try {
+            workspaceRepository.readText(workspaceId, indexPath)?.trim()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            null
+        } ?: return null
+        if (indexContent.isEmpty()) return null
+
+        val cappedIndex = indexContent.take(ColdMemoryRules.PROMPT_INDEX_MAX_CHARS)
+        val truncatedNotice = if (indexContent.length > ColdMemoryRules.PROMPT_INDEX_MAX_CHARS) {
+            "\n[Index truncated to ${ColdMemoryRules.PROMPT_INDEX_MAX_CHARS} characters. Use memory_index to read the full listing.]"
+        } else ""
+
+        return """
+            **Cold Memory Index (${ColdMemoryRules.INDEX_FILE_NAME})**
+            Below is the current index of the cold-memory knowledge base. Use `memory_read` to retrieve documents when needed. You do not need to call `memory_index` unless you suspect the index on disk has changed.
+            ```markdown
+            $cappedIndex$truncatedNotice
+            ```
+        """.trimIndent()
     }
 
     // ---- 检查无效消息 ----

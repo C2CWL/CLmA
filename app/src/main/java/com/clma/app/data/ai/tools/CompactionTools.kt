@@ -77,7 +77,8 @@ fun buildCompactionTools(
 
             Call it when:
             - the context is dominated by very long tool outputs or old turns you are done with;
-            - you are about to start a long multi-step task and want headroom first.
+            - you are about to start a long multi-step task and want headroom first;
+            - before calling it, ensure any durable conclusions, critical design decisions, or context worth preserving across future turns have been archived to cold memory via `memory_write`.
 
             Do not call it when:
             - the current task still depends on exact text from earlier turns (file paths, ids,

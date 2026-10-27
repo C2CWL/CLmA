@@ -1573,6 +1573,8 @@ internal val DEFAULT_ASSISTANTS = listOf(
         // to avoid loops". Auto-enabling it on default assistants means new users get an
         // agent-aware model out of the box without having to discover the skill toggle.
         enabledSkills = setOf("agent-core") + DEFAULT_AUTO_ENABLED_SKILLS,
+        coldMemoryEnabled = true,
+        coldMemoryDir = "memory",
     ),
     Assistant(
         id = Uuid.parse("3d47790c-c415-4b90-9388-751128adb0a0"),
@@ -1593,6 +1595,8 @@ internal val DEFAULT_ASSISTANTS = listOf(
             - Remember to use Markdown syntax for formatting, and use latex for mathematical expressions.
         """.trimIndent(),
         enabledSkills = setOf("agent-core") + DEFAULT_AUTO_ENABLED_SKILLS,
+        coldMemoryEnabled = true,
+        coldMemoryDir = "memory",
     ),
 )
 
