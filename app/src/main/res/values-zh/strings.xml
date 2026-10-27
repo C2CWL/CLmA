@@ -3038,4 +3038,8 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
 
   <!-- Embedding Model Sheet -->
   <string name="common_use">使用</string>
+    <string name="setting_compaction_engine">压缩引擎</string>
+    <string name="setting_compaction_engine_model">自选模型</string>
+    <string name="setting_compaction_engine_hybrid">联动</string>
+    <string name="setting_compaction_engine_desc">手动与自动压缩共用。TOMC：CPU 选择原文，不请求模型；联动：模型摘要＋独立保留的原文证据（占目标三分之一）。这是 TOMC2 的 Android 适配，非完整 Python 编译器。预算过小仍可能漏掉重要记录，原文保留在会话库中。未切换时沿用模型模式。</string>
 </resources>

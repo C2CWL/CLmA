@@ -3322,4 +3322,8 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
 
   <!-- Embedding Model Sheet -->
   <string name="common_use">Use</string>
+    <string name="setting_compaction_engine">Compaction engine</string>
+    <string name="setting_compaction_engine_model">Model</string>
+    <string name="setting_compaction_engine_hybrid">Hybrid</string>
+    <string name="setting_compaction_engine_desc">Applies to manual and automatic compaction. TOMC: CPU source selection, no model request. Hybrid: model summary plus independently preserved original evidence (one third of the target). Android adaptation of TOMC2, not the full Python compiler. Small budgets can omit important records; originals remain stored. Existing model mode stays selected until changed.</string>
 </resources>
