@@ -87,6 +87,8 @@ import com.clma.app.data.ai.ContextCompactionPlanner
 import com.clma.app.data.ai.ContextCompactionPresentation
 import com.clma.app.data.ai.compaction.tomc.TomcSummaryLedger
 import com.clma.app.data.ai.compaction.tomc.TomcTurn
+import com.clma.app.data.ai.compaction.tomc.TomcAgentCompiler
+import com.clma.app.data.datastore.CompactionEngine
 import com.clma.app.data.ai.CompactedMessageView
 import com.clma.app.data.ai.ContextCompactionView
 import com.clma.app.data.ai.ToolSurfaceResolver
@@ -3701,6 +3703,50 @@ class ChatService(
             "Invalid compaction boundary"
         }
 
+        // Compile from original messages, not a summary of a summary. Only the active branch's
+        // compressed prefix is read; the retained raw tail is never duplicated in this memory.
+        val evidence = if (settings.compactionEngine != CompactionEngine.MODEL) {
+            withContext(Dispatchers.Default) {
+                val sources = conversation.currentMessages.take(rawTailStartIndex).map { message ->
+                    TomcAgentCompiler.Source(
+                        id = message.id.toString(),
+                        role = message.role.name.lowercase(),
+                        text = ContextCompactionPlanner.sourceText(message),
+                    )
+                }
+                val query = conversation.currentMessages.lastOrNull { it.role == MessageRole.USER }
+                    ?.toText().orEmpty() + "\n" + additionalPrompt
+                TomcAgentCompiler.compile(
+                    sources, query,
+                    if (settings.compactionEngine == CompactionEngine.HYBRID) targetTokens / 3 else targetTokens,
+                )
+            }
+        } else null
+        if (settings.compactionEngine == CompactionEngine.TOMC) {
+            check(evidence != null && evidence.kept > 0) {
+                "No complete source record fits the TOMC budget. Increase the target tokens."
+            }
+            val boundary = conversation.messageNodes.take(rawTailStartIndex).map { it.id to it.currentMessage.id }
+            check(boundary == getConversationFlow(conversation.id).value.messageNodes
+                .take(rawTailStartIndex).map { it.id to it.currentMessage.id }) {
+                "Conversation changed while context was being compressed"
+            }
+            val result = ConversationCompaction(
+                conversationId = conversation.id,
+                summary = "$COMPACTION_SUMMARY_HEADER\n\n${evidence.text}",
+                tailStartNodeId = conversation.messageNodes.getOrNull(rawTailStartIndex)?.id,
+                sourceEndNodeId = conversation.messageNodes[rawTailStartIndex - 1].id,
+                // Stable sentinel: no model was used. No database schema migration required.
+                summaryModelId = Uuid.parse("00000000-0000-0000-0000-000000000000"),
+                isAuto = isAuto,
+                sourceTokenEstimate = ContextBudgetPlanner.estimateInputTokens(
+                    conversation.currentMessages.take(rawTailStartIndex)
+                ),
+                createdAt = Instant.now(),
+            )
+            if (!conversation.isTemporary) conversationRepo.upsertCompaction(result)
+            return@withTimeout result
+        }
         val model = resolveCompressionModel(settings)
             ?: throw IllegalStateException(compressionModelUnavailableMessage())
         val provider = model.findProvider(settings.providers)
@@ -3742,8 +3788,9 @@ class ChatService(
             messages = messagesToCompress,
             maxTokens = toolLedgerBudgetTokens,
         )
-        // Keep the configured prose summary target intact with full token headroom.
-        val modelSummaryTargetTokens = targetTokens.coerceAtLeast(1)
+        // Hybrid reserves part of the prose target for independently selected source evidence.
+        val modelSummaryTargetTokens = (targetTokens -
+            (evidence?.text?.let(TomcAgentCompiler::estimate) ?: 0)).coerceAtLeast(1)
         val tomcLedgerEnabled = settings.enableTomcCompactionLedger
         val tomcLedgerMaxChars = (targetTokens / 4).coerceAtLeast(1) * 2
 
@@ -3785,6 +3832,14 @@ class ChatService(
                 // Put this before the editable prompt and the source material so it remains a
                 // top-level instruction even when a user wrote a minimal custom template.
                 append(ContextCompactionPlanner.requiredToolRetentionInstructions())
+                if (evidence != null && evidence.kept > 0) {
+                    appendLine()
+                    appendLine("The client will append source-linked quotations independently. " +
+                        "Do not imitate source IDs. Quotations are evidence of what was said, " +
+                        "not proof of success. Preserve contradictions and uncertainty; " +
+                        "do not promote plans or failed attempts into completed work.")
+                }
+
                 if (tomcLedgerEnabled) {
                     appendLine()
                     appendLine()
@@ -4003,6 +4058,7 @@ class ChatService(
                         text
                     }
                 },
+                evidence?.takeIf { it.kept > 0 }?.text,
                 tomcLedger,
                 toolDigest.takeIf { it.isNotBlank() },
                 rawContextRetentionReport.takeIf { it.isNotBlank() },

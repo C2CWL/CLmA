@@ -78,6 +78,9 @@ import java.io.File
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.uuid.Uuid
 
+/** MODEL preserves existing installations; local and hybrid are explicit opt-ins. */
+enum class CompactionEngine { MODEL, TOMC, HYBRID }
+
 enum class AutoCompactionThresholdMode {
     PERCENT,
     TOKENS,
@@ -213,6 +216,7 @@ class SettingsStore(
         val OCR_MODEL = stringPreferencesKey("ocr_model")
         val OCR_PROMPT = stringPreferencesKey("ocr_prompt")
         val COMPRESS_MODEL = stringPreferencesKey("compress_model")
+        val COMPACTION_ENGINE = stringPreferencesKey("compaction_engine")
         val COMPRESS_PROMPT = stringPreferencesKey("compress_prompt")
         val ENABLE_AUTO_COMPACTION = booleanPreferencesKey("enable_auto_compaction")
         val ENABLE_TOMC_COMPACTION_LEDGER = booleanPreferencesKey("enable_tomc_compaction_ledger")
@@ -351,6 +355,7 @@ class SettingsStore(
                 preferences[OCR_MODEL] = settings.ocrModelId.toString()
                 preferences[OCR_PROMPT] = settings.ocrPrompt
                 preferences[COMPRESS_MODEL] = settings.compressModelId.toString()
+                preferences[COMPACTION_ENGINE] = settings.compactionEngine.name
                 preferences[COMPRESS_PROMPT] = settings.compressPrompt
                 preferences[ENABLE_AUTO_COMPACTION] = settings.enableAutoCompaction
                 preferences[ENABLE_TOMC_COMPACTION_LEDGER] = settings.enableTomcCompactionLedger
@@ -476,6 +481,9 @@ class SettingsStore(
                 ocrModelId = preferences[OCR_MODEL]?.let { runCatching { Uuid.parse(it) }.getOrNull() } ?: Uuid.random(),
                 ocrPrompt = preferences[OCR_PROMPT] ?: DEFAULT_OCR_PROMPT,
                 compressModelId = preferences[COMPRESS_MODEL]?.let { runCatching { Uuid.parse(it) }.getOrNull() } ?: DEFAULT_AUTO_MODEL_ID,
+                compactionEngine = runCatching {
+                    CompactionEngine.valueOf(preferences[COMPACTION_ENGINE].orEmpty())
+                }.getOrDefault(CompactionEngine.MODEL),
                 compressPrompt = upgradeLegacyCompressPrompt(preferences[COMPRESS_PROMPT]),
                 assistantId = preferences[SELECT_ASSISTANT]?.let { runCatching { Uuid.parse(it) }.getOrNull() }
                     ?: DEFAULT_ASSISTANT_ID,
@@ -1040,6 +1048,7 @@ data class Settings(
     val ocrModelId: Uuid = Uuid.random(),
     val ocrPrompt: String = DEFAULT_OCR_PROMPT,
     val compressModelId: Uuid = Uuid.random(),
+    val compactionEngine: CompactionEngine = CompactionEngine.MODEL,
     val compressPrompt: String = DEFAULT_COMPRESS_PROMPT,
     val enableAutoCompaction: Boolean = false,
     val enableTomcCompactionLedger: Boolean = true,

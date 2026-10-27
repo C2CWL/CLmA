@@ -25,6 +25,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clma.app.R
+import com.clma.app.data.datastore.CompactionEngine
 import com.clma.app.data.datastore.AutoCompactionThresholdMode
 import com.clma.app.data.datastore.Settings
 import com.clma.app.ui.pages.setting.termux.SettingTermuxViewModel
@@ -150,6 +151,28 @@ private fun AutoCompactionSettingItem(
                         vm.updateSettings { current -> current.copy(enableAutoCompaction = it) }
                     },
                 )
+            },
+        )
+        item(
+            headlineContent = { Text(stringResource(R.string.setting_compaction_engine)) },
+            supportingContent = {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(stringResource(R.string.setting_compaction_engine_desc))
+                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                        val engines = listOf(
+                            CompactionEngine.MODEL to stringResource(R.string.setting_compaction_engine_model),
+                            CompactionEngine.TOMC to "TOMC",
+                            CompactionEngine.HYBRID to stringResource(R.string.setting_compaction_engine_hybrid),
+                        )
+                        engines.forEachIndexed { index, (engine, label) ->
+                            SegmentedButton(
+                                shape = SegmentedButtonDefaults.itemShape(index, engines.size),
+                                selected = settings.compactionEngine == engine,
+                                onClick = { vm.updateSettings { it.copy(compactionEngine = engine) } },
+                            ) { Text(label) }
+                        }
+                    }
+                }
             },
         )
         item(
