@@ -1875,9 +1875,15 @@ class ChatService(
             // T-06 / (7) - cold memory (Markdown knowledge base). Same on both build paths so a
             // regenerate sees the surface the first pass had.
             addAll(createColdMemoryToolsIfConfigured(surfaceAssistant))
-            // Fidelity Trio: spilled output reader & current conversation FTS5 search
+            // Fidelity Trio: spilled output reader & current conversation search (vector + FTS5 fallback)
             add(com.clma.app.data.ai.tools.createToolOutputReadTool(context))
-            add(com.clma.app.data.ai.tools.createCurrentConversationSearchTool(conversationRepo, conversationId))
+            add(
+                com.clma.app.data.ai.tools.createCurrentConversationSearchTool(
+                    conversationRepo = conversationRepo,
+                    conversationId = conversationId,
+                    conversationIndex = conversationIndex,
+                )
+            )
             if (surfaceAssistant.enabledSkills.isNotEmpty()) {
                 addAll(
                     createSkillTools(

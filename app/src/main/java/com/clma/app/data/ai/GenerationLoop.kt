@@ -567,6 +567,21 @@ private val FRESHNESS_TTL_MS_BY_TOOL: Map<String, Long> = mapOf(
 private val READ_ONLY_OBSERVATION_TOOLS: Set<String> =
     FRESHNESS_TTL_MS_BY_TOOL.keys + "find_node"
 
+internal val SEARCH_READONLY_TOOLS: Set<String> = setOf(
+    "current_conversation_search",
+    "conversation_search",
+    "search_web",
+    "memory_search",
+)
+
+internal const val SEARCH_SOFT_NUDGE_THRESHOLD = 3
+internal const val SEARCH_EXHAUSTION_THRESHOLD = 5
+
+internal enum class LoopBlockReason {
+    IDENTICAL_ARGS,
+    CONSECUTIVE_SEARCH_EXHAUSTED,
+}
+
 /** One prior executed tool call in the current turn, in chronological order. */
 internal data class PriorToolCall(
     val toolName: String,
@@ -577,6 +592,8 @@ internal data class PriorToolCall(
 internal data class LoopGuardDecision(
     val block: Boolean,
     val priorOccurrences: Int,
+    val blockReason: LoopBlockReason? = null,
+    val softNudge: String? = null,
 )
 
 /**
@@ -592,6 +609,63 @@ internal object LoopGuard {
         threshold: Int = LOOP_GUARD_REPEAT_THRESHOLD,
         readOnlyTools: Set<String> = READ_ONLY_OBSERVATION_TOOLS,
         freshnessTtlMs: Map<String, Long> = FRESHNESS_TTL_MS_BY_TOOL,
+        searchTools: Set<String> = SEARCH_READONLY_TOOLS,
+        searchSoftNudgeThreshold: Int = SEARCH_SOFT_NUDGE_THRESHOLD,
+        searchExhaustionThreshold: Int = SEARCH_EXHAUSTION_THRESHOLD,
+    ): LoopGuardDecision {
+        // 1. Check for runaway consecutive searches without operational progress.
+        // A model stuck in a search loop changes search keywords each time, evading identical-signature
+        // detection. Here, we track consecutive search calls since the last non-search tool call.
+        if (toolName in searchTools) {
+            val lastNonSearchIdx = priorCalls.indexOfLast { it.toolName !in searchTools }
+            val consecutiveSearches = if (lastNonSearchIdx >= 0) {
+                priorCalls.size - 1 - lastNonSearchIdx
+            } else {
+                priorCalls.size
+            }
+            if (consecutiveSearches >= searchExhaustionThreshold) {
+                return LoopGuardDecision(
+                    block = true,
+                    priorOccurrences = consecutiveSearches,
+                    blockReason = LoopBlockReason.CONSECUTIVE_SEARCH_EXHAUSTED,
+                )
+            }
+            val softNudge = if (consecutiveSearches >= searchSoftNudgeThreshold) {
+                "You have executed $consecutiveSearches consecutive search queries in this turn without taking operational action. If you cannot find what you are looking for, ask the user directly or proceed with available information instead of looping."
+            } else {
+                null
+            }
+            val identDecision = evaluateIdenticalCalls(
+                priorCalls = priorCalls,
+                toolName = toolName,
+                signature = signature,
+                nowMs = nowMs,
+                threshold = threshold,
+                readOnlyTools = readOnlyTools,
+                freshnessTtlMs = freshnessTtlMs,
+            )
+            return identDecision.copy(softNudge = softNudge)
+        }
+
+        return evaluateIdenticalCalls(
+            priorCalls = priorCalls,
+            toolName = toolName,
+            signature = signature,
+            nowMs = nowMs,
+            threshold = threshold,
+            readOnlyTools = readOnlyTools,
+            freshnessTtlMs = freshnessTtlMs,
+        )
+    }
+
+    private fun evaluateIdenticalCalls(
+        priorCalls: List<PriorToolCall>,
+        toolName: String,
+        signature: String,
+        nowMs: Long,
+        threshold: Int,
+        readOnlyTools: Set<String>,
+        freshnessTtlMs: Map<String, Long>,
     ): LoopGuardDecision {
         // For observation tools, only repeats since the most recent ACTION count: acting on
         // the world is progress, so identical observations taken before it are stale for
@@ -613,7 +687,11 @@ internal object LoopGuard {
         if (ttl != null && nowMs - matching.maxOf { it.epochMs } >= ttl) {
             return LoopGuardDecision(false, priorOccurrences)
         }
-        return LoopGuardDecision(true, priorOccurrences)
+        return LoopGuardDecision(
+            block = true,
+            priorOccurrences = priorOccurrences,
+            blockReason = LoopBlockReason.IDENTICAL_ARGS,
+        )
     }
 }
 
@@ -1311,25 +1389,32 @@ class GenerationLoop(
                         val priorOccurrences = loopDecision.priorOccurrences
                         if (loopDecision.block) {
                             loopGuardTripCount++
-                            Log.w(TAG, "generateText: loop-guard tripped on $signature (${priorOccurrences + 1} repeat, trip #$loopGuardTripCount this turn); injecting bail-out envelope")
+                            val (errorType, recoveryMsg) = if (loopDecision.blockReason == LoopBlockReason.CONSECUTIVE_SEARCH_EXHAUSTED) {
+                                "search_loop_detected" to (
+                                    "You have executed $priorOccurrences consecutive search queries in this turn without any operational progress. " +
+                                        "Stop searching. Do not retry searching with different keywords. Either: (a) summarize what you have found so far, " +
+                                        "(b) ask the user directly for missing details or clarification, or (c) take concrete operational actions."
+                                )
+                            } else {
+                                "loop_detected" to (
+                                    "You have already called ${tool.toolName} with identical arguments " +
+                                        "${priorOccurrences} time(s) in this turn without making progress. " +
+                                        "Stop retrying. Either: (a) change the args meaningfully, (b) try a " +
+                                        "different tool that addresses the underlying request, or (c) hand " +
+                                        "back to the user with what you have so far. Examples: for 'search " +
+                                        "X in chrome' use open_url(\"https://www.google.com/search?q=X\") " +
+                                        "instead of fighting Chrome's URL bar via set_text; for terminal " +
+                                        "tasks use termux_run_command instead of typing into Termux."
+                                )
+                            }
+                            Log.w(TAG, "generateText: loop-guard tripped on $signature ($errorType, $priorOccurrences occurrences, trip #$loopGuardTripCount this turn); injecting bail-out envelope")
                             executedTools += tool.copy(
                                 output = listOf(
                                     UIMessagePart.Text(
                                         json.encodeToString(
                                             buildJsonObject {
-                                                put("error", JsonPrimitive("loop_detected"))
-                                                put(
-                                                    "recovery", JsonPrimitive(
-                                                        "You have already called ${tool.toolName} with identical arguments " +
-                                                            "${priorOccurrences} time(s) in this turn without making progress. " +
-                                                            "Stop retrying. Either: (a) change the args meaningfully, (b) try a " +
-                                                            "different tool that addresses the underlying request, or (c) hand " +
-                                                            "back to the user with what you have so far. Examples: for 'search " +
-                                                            "X in chrome' use open_url(\"https://www.google.com/search?q=X\") " +
-                                                            "instead of fighting Chrome's URL bar via set_text; for terminal " +
-                                                            "tasks use termux_run_command instead of typing into Termux."
-                                                    )
-                                                )
+                                                put("error", JsonPrimitive(errorType))
+                                                put("recovery", JsonPrimitive(recoveryMsg))
                                             }
                                         )
                                     )
@@ -1501,6 +1586,18 @@ class GenerationLoop(
                                         })))
                                     }
                             }
+                            val adjustedResult = if (loopDecision.softNudge != null) {
+                                result + UIMessagePart.Text(
+                                    json.encodeToString(
+                                        buildJsonObject {
+                                            put("notice", JsonPrimitive("soft_nudge"))
+                                            put("message", JsonPrimitive(loopDecision.softNudge))
+                                        }
+                                    )
+                                )
+                            } else {
+                                result
+                            }
                             // Upstream tool-output truncation: when the workspace shell is
                             // available, oversized text output is spilled to /tool_outputs/
                             // and replaced with a preview + read/grep instructions so the
@@ -1514,7 +1611,7 @@ class GenerationLoop(
                                 input = redactSecrets(markedTool.inputAsJson()).toString(),
                                 output = maybeTruncateToolOutput(
                                     toolCallId = tool.toolCallId,
-                                    output = result,
+                                    output = adjustedResult,
                                     hasShellAccess = hasShellAccess,
                                     maxTokens = assistant.toolResultMaxTokens,
                                 )

@@ -109,4 +109,54 @@ class LoopGuardTest {
         val decision = evaluate(prior, "get_battery_status", nowMs = 5_000L)
         assertTrue(decision.block)
     }
+
+    @Test
+    fun consecutiveSearches_underSoftNudgeThreshold_doesNotNudgeOrBlock() {
+        val prior = listOf(
+            call("current_conversation_search", "{\"query\":\"database\"}"),
+            call("current_conversation_search", "{\"query\":\"sqlite error\"}"),
+        )
+        val decision = evaluate(prior, "current_conversation_search", "{\"query\":\"fts table\"}")
+        assertFalse(decision.block)
+        assertEquals(null, decision.softNudge)
+    }
+
+    @Test
+    fun consecutiveSearches_reachesSoftNudgeThreshold_includesNudge() {
+        val prior = listOf(
+            call("current_conversation_search", "{\"query\":\"query1\"}"),
+            call("search_web", "{\"query\":\"query2\"}"),
+            call("conversation_search", "{\"query\":\"query3\"}"),
+        )
+        val decision = evaluate(prior, "current_conversation_search", "{\"query\":\"query4\"}")
+        assertFalse(decision.block)
+        assertTrue(decision.softNudge?.contains("consecutive search queries") == true)
+    }
+
+    @Test
+    fun consecutiveSearches_reachesExhaustionThreshold_blocks() {
+        val prior = listOf(
+            call("current_conversation_search", "{\"query\":\"query1\"}"),
+            call("search_web", "{\"query\":\"query2\"}"),
+            call("conversation_search", "{\"query\":\"query3\"}"),
+            call("memory_search", "{\"query\":\"query4\"}"),
+            call("current_conversation_search", "{\"query\":\"query5\"}"),
+        )
+        val decision = evaluate(prior, "current_conversation_search", "{\"query\":\"query6\"}")
+        assertTrue("5 consecutive searches must be blocked from runaway loop", decision.block)
+        assertEquals(LoopBlockReason.CONSECUTIVE_SEARCH_EXHAUSTED, decision.blockReason)
+    }
+
+    @Test
+    fun interveningAction_resetsConsecutiveSearchCount() {
+        val prior = listOf(
+            call("current_conversation_search", "{\"query\":\"query1\"}"),
+            call("search_web", "{\"query\":\"query2\"}"),
+            call("workspace_shell", "{\"command\":\"cat log.txt\"}"), // operational progress
+            call("current_conversation_search", "{\"query\":\"query3\"}"),
+        )
+        val decision = evaluate(prior, "current_conversation_search", "{\"query\":\"query4\"}")
+        assertFalse("action resets consecutive search count", decision.block)
+        assertEquals(null, decision.softNudge)
+    }
 }
