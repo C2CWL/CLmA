@@ -473,6 +473,16 @@ fun ChatInput(
                                 // flip the slot to "send" and strand the recording).
                                 val voiceAvailable =
                                     !voiceState.isActive && (asrState.isAvailable || asrState.isRecording)
+                                // Stop must remain available even while a draft or recording is present.
+                                if (loading && (!state.isEmpty() || asrState.isRecording)) {
+                                    SendButton(
+                                        loading = true,
+                                        empty = true,
+                                        onClick = onCancelClick,
+                                        onLongClick = onCancelClick,
+                                        modifier = Modifier.testTag("chat_stop_button"),
+                                    )
+                                }
                                 when {
                                     asrState.isRecording -> AsrButton(state = asrState, onClick = onAsrClick)
 

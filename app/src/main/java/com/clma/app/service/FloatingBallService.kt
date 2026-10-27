@@ -124,9 +124,7 @@ class FloatingBallService : Service(), KoinComponent {
         }
 
         /**
-         * True while the bar is actually on screen. [AgentOverlay] reads this to decide whether
-         * the bar can carry the "agent is working" signal or whether it still needs its
-         * top-of-screen pill as a fallback.
+         * True while the bar is actually on screen. Working updates never start a hidden bar.
          */
         @Volatile
         var isShowing: Boolean = false
@@ -371,9 +369,7 @@ class FloatingBallService : Service(), KoinComponent {
     }
 
     private fun hideBar() {
-        // The bar is gone: forget the ids of the turns it was tracking, otherwise a re-shown bar
-        // would carry a stale "working" count into the next session.
-        AgentOverlay.reset()
+        // Hiding the bar does not end live turns; re-show adopts the live state.
         working = false
         unseenDone = false
         val view = barView ?: return
