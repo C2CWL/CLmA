@@ -4,6 +4,7 @@ import android.util.Log
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -109,7 +110,10 @@ class ConversationSession(
     @Synchronized
     fun cancelJobs(): List<Job> = activeJobs.toList().also { jobs ->
         // Cancel waiters first so a predecessor finishing cannot start the next approval.
-        jobs.asReversed().forEach { it.cancel() }
+        jobs.asReversed().forEach {
+            it.cancel()
+            it.cancelChildren()
+        }
     }
 
     private fun scheduleIdleCheck() {
