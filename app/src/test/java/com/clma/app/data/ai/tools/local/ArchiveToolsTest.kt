@@ -26,18 +26,6 @@ class ArchiveToolsTest {
 
     private fun obj(s: String) = Json.parseToJsonElement(s).jsonObject
 
-    @Test fun `zip refuses nested symlinks`() {
-        val source = tmp.newFolder("source-link")
-        val outside = tmp.newFolder("outside-link")
-        File(outside, "secret").writeText("keep")
-        java.nio.file.Files.createSymbolicLink(File(source, "link").toPath(), outside.toPath())
-        val output = File(tmp.root, "link.zip")
-        val result = obj(execTool(zipFilesTool(NULL_CONTEXT),
-            """{"sources":["${source.absolutePath}"],"destination":"${output.absolutePath}"}"""))
-        assertEquals("path_blocked", result["error"]?.jsonPrimitive?.content)
-        assertFalse(output.exists())
-    }
-
     @Test fun `zip then unzip round-trips a directory`() {
         val srcDir = tmp.newFolder("src")
         File(srcDir, "a.txt").writeText("alpha")

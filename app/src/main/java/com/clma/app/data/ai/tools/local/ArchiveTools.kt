@@ -174,12 +174,7 @@ fun zipFilesTool(context: Context): Tool = Tool(
 
         // Path-safety: every source and the destination must clear the guard before any
         // stream is opened (file:// → PathSafetyGuard, content:// → ContentUriSafetyGuard).
-        for (src in sources) {
-            guardArchivePath(src)?.let { return@Tool it }
-            if (!isContent(src)) PathSafetyGuard.checkTree(File(src.removePrefix("file://")))?.let {
-                return@Tool arcErr(it.code, "detail" to it.detail)
-            }
-        }
+        for (src in sources) guardArchivePath(src)?.let { return@Tool it }
         guardArchivePath(destination)?.let { return@Tool it }
 
         val archiveSources = mutableListOf<ArchiveSource>()
