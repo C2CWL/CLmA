@@ -33,7 +33,7 @@ class ArchiveToolsTest {
         java.nio.file.Files.createSymbolicLink(File(source, "link").toPath(), outside.toPath())
         val output = File(tmp.root, "link.zip")
         val result = obj(execTool(zipFilesTool(NULL_CONTEXT),
-            """{"sources":["${source.absolutePath}"],"destination":"${output.absolutePath}"}""))
+            """{"sources":["${source.absolutePath}"],"destination":"${output.absolutePath}"}"""))
         assertEquals("path_blocked", result["error"]?.jsonPrimitive?.content)
         assertFalse(output.exists())
     }
