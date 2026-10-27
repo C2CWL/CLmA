@@ -328,6 +328,7 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null, is
                     onClearAllErrors = { vm.clearAllErrors() },
                 )
             }
+        }
     }
 }
 
