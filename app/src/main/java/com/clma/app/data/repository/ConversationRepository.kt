@@ -189,6 +189,14 @@ class ConversationRepository(
         limit,
     )
 
+    fun getUnfiledConversationIdsFlow(assistantId: Uuid): Flow<List<Uuid>> =
+        conversationDAO.getUnfiledConversationIdsFlow(assistantId.toString())
+            .map { list -> list.map { Uuid.parse(it) } }
+
+    fun getConversationIdsOfFolderFlow(folderId: Uuid): Flow<List<Uuid>> =
+        conversationDAO.getConversationIdsOfFolderFlow(folderId.toString())
+            .map { list -> list.map { Uuid.parse(it) } }
+
     suspend fun getConversationsOfFolderPage(
         folderId: Uuid,
         offset: Int,
