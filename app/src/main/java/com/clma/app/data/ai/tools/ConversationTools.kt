@@ -158,18 +158,23 @@ private suspend fun keywordFallback(
 
 /**
  * Creates the [current_conversation_search] tool allowing the model to recall earlier messages
- * or details within the active conversation via native SQLite FTS5 index.
+ * or details within the active conversation via vector semantic search or native SQLite FTS5 index.
  */
 fun createCurrentConversationSearchTool(
     conversationRepo: ConversationRepository,
     conversationId: Uuid,
+    conversationIndex: ConversationIndexCoordinator? = null,
 ): Tool = Tool(
     name = "current_conversation_search",
     description = """
-        Search earlier messages and turns in the CURRENT active conversation using native full-text search.
+        Search earlier messages and turns in the CURRENT active conversation.
+        Supports semantic/vector matching with native full-text fallback.
         Use this when context has been compacted, or when you need to recall specific details, commands,
         errors, code snippets, or user requirements discussed earlier in this session.
         Matches are returned with surrounding snippet context.
+        NOTE: This tool only matches text and code logs. If the user previously sent an image/screenshot,
+        its visual contents CANNOT be found via text search. Do not continuously repeat or vary search
+        keywords if no matches are found; ask the user or proceed with available information.
     """.trimIndent(),
     parameters = {
         InputSchema.Obj(
@@ -187,23 +192,68 @@ fun createCurrentConversationSearchTool(
         )
     },
     execute = {
-        val query = it.jsonObject["query"]?.jsonPrimitive?.contentOrNull
+        val query = it.jsonObject["query"]?.jsonPrimitive?.contentOrNull?.trim()
             ?: error("query is required")
+        if (query.isEmpty()) {
+            return@Tool listOf(UIMessagePart.Text(ConversationSearchEnvelope.missingQuery()))
+        }
         val limit = (it.jsonObject["limit"]?.jsonPrimitive?.intOrNull ?: 10).coerceIn(1, 30)
-        val results = conversationRepo
-            .searchMessages(
-                keyword = query,
-                sort = MessageSearchSort.RELEVANCE,
-                conversationId = conversationId,
-            )
-            .take(limit)
-        val payload = buildJsonArray {
-            results.forEach { result ->
-                add(buildJsonObject {
-                    put("message_id", result.messageId)
-                    put("snippet", result.snippet)
-                    put("date", result.updateAt.toLocalDate())
+        val convIdStr = conversationId.toString()
+
+        // 1. Try vector semantic search first if index coordinator is available
+        val vectorResponse = conversationIndex?.search(query, limit * 2)
+        val vectorHits = if (vectorResponse != null && vectorResponse.available) {
+            vectorResponse.results.filter { it.conversationId == convIdStr }.take(limit)
+        } else {
+            emptyList()
+        }
+
+        val payload = if (vectorHits.isNotEmpty()) {
+            buildJsonObject {
+                put("mode", "semantic_vector")
+                put("query", query)
+                put("results", buildJsonArray {
+                    vectorHits.forEach { hit ->
+                        add(buildJsonObject {
+                            put("message_id", hit.messageId)
+                            put("snippet", hit.text)
+                            put("date", hit.date)
+                            put("score", hit.score)
+                        })
+                    }
                 })
+            }
+        } else {
+            // 2. Fall back to SQLite FTS5 keyword search
+            val results = conversationRepo
+                .searchMessages(
+                    keyword = query,
+                    sort = MessageSearchSort.RELEVANCE,
+                    conversationId = conversationId,
+                )
+                .take(limit)
+
+            buildJsonObject {
+                put("mode", if (vectorResponse?.available == true) "fts_fallback" else "fts_keyword")
+                put("query", query)
+                if (results.isEmpty()) {
+                    put("results", buildJsonArray { })
+                    put(
+                        "hint",
+                        "未在当前会话文本中找到匹配结果。请注意：若用户指的是图片、截图或未记录的外部信息，" +
+                            "文本检索无法获取其视觉内容；请勿连续更换关键词盲搜，应直接向用户提问或结合现有上下文回答。"
+                    )
+                } else {
+                    put("results", buildJsonArray {
+                        results.forEach { result ->
+                            add(buildJsonObject {
+                                put("message_id", result.messageId)
+                                put("snippet", result.snippet)
+                                put("date", result.updateAt.toLocalDate().toString())
+                            })
+                        }
+                    })
+                }
             }
         }
         listOf(UIMessagePart.Text(JsonInstantPretty.encodeToString(payload)))
