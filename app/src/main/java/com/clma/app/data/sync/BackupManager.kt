@@ -152,10 +152,23 @@ class BackupManager(
                     val stagedWal = File(stagedDatabase.path + "-wal")
                     val seen = mutableSetOf<String>()
                     var restoredEntries = 0
+                    var totalExtracted = 0L
+                    // Extraction budget: staging lives on internal storage, and a backup archive
+                    // is ultimately an untrusted zip (a shared file, a WebDAV/S3 copy) - without
+                    // a bound, a zip bomb fills the device. ArchiveTools / SkillZipImporter
+                    // already cap their extractions; restore gets the same treatment, plus a
+                    // free-space gate: staged bytes can never legitimately exceed the space the
+                    // volume had when staging started (apply only MOVES them on this volume),
+                    // and failing here beats an ENOSPC half-written file. usableSpace == 0 means
+                    // "unknown", so that gate is skipped rather than rejecting every restore.
+                    val freeBudget = staging.usableSpace
                     ZipFile(archive).use { zip ->
                         for (entry in zip.entries()) {
                             currentCoroutineContext().ensureActive()
                             if (entry.isDirectory) continue
+                            require(seen.size < RESTORE_MAX_ENTRIES) {
+                                "Backup has more than $RESTORE_MAX_ENTRIES entries"
+                            }
                             val target = when (entry.name) {
                                 "settings.json" -> File(staging, "settings.json")
                                 DatabaseBackup.ARCHIVE_DATABASE ->
@@ -180,7 +193,25 @@ class BackupManager(
                             }
                             zip.getInputStream(entry).use { input ->
                                 FileOutputStream(target).use { output ->
-                                    input.copyTo(output)
+                                    // Count as we stream; the declared entry size can lie.
+                                    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                                    var entryBytes = 0L
+                                    while (true) {
+                                        val read = input.read(buffer)
+                                        if (read < 0) break
+                                        entryBytes += read
+                                        totalExtracted += read
+                                        require(entryBytes <= RESTORE_MAX_ENTRY_BYTES) {
+                                            "Backup entry ${entry.name} exceeds the restore size limit"
+                                        }
+                                        require(totalExtracted <= RESTORE_MAX_TOTAL_BYTES) {
+                                            "Backup exceeds the restore size limit"
+                                        }
+                                        require(freeBudget <= 0L || totalExtracted <= freeBudget) {
+                                            "Backup needs more space than the device has free"
+                                        }
+                                        output.write(buffer, 0, read)
+                                    }
                                     output.fd.sync()
                                 }
                             }
@@ -238,6 +269,11 @@ class BackupManager(
     }
 
     companion object {
+        /** Extraction caps for staged restores - see the budget note in [stageRestore]. */
+        private const val RESTORE_MAX_ENTRIES = 200_000
+        private const val RESTORE_MAX_ENTRY_BYTES = 8L * 1024 * 1024 * 1024
+        private const val RESTORE_MAX_TOTAL_BYTES = 32L * 1024 * 1024 * 1024
+
         private fun pendingRestore(context: Context) = PendingRestore(
             root = File(context.noBackupFilesDir, "backup-restore"),
             databaseFile = context.getDatabasePath(SQLiteConfiguration.DATABASE_NAME),

