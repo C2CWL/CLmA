@@ -152,9 +152,12 @@ class BackupManager(
                     val stagedWal = File(stagedDatabase.path + "-wal")
                     val seen = mutableSetOf<String>()
                     var restoredEntries = 0
+                    val quota = RestoreQuota(availableBytes = { staging.usableSpace })
+                    val restoreContext = currentCoroutineContext()
                     ZipFile(archive).use { zip ->
                         for (entry in zip.entries()) {
                             currentCoroutineContext().ensureActive()
+                            quota.countEntry()
                             if (entry.isDirectory) continue
                             val target = when (entry.name) {
                                 "settings.json" -> File(staging, "settings.json")
@@ -180,7 +183,7 @@ class BackupManager(
                             }
                             zip.getInputStream(entry).use { input ->
                                 FileOutputStream(target).use { output ->
-                                    input.copyTo(output)
+                                    quota.copy(input, output) { restoreContext.ensureActive() }
                                     output.fd.sync()
                                 }
                             }
