@@ -17,7 +17,7 @@ package com.clma.app.subagent
  * rules. The result goes into the run's system prompt via
  * [com.clma.app.data.ai.tools.ConversationSystemAddendum] instead of being prepended
  * to the task text — the archived sub-agent conversation keeps a clean first user message,
- * and the vector index never embeds the scaffolding.
+ * and no scaffolding text is persisted into the archived conversation.
  *
  * Pure: no Android, no I/O — unit-tested on the JVM.
  */

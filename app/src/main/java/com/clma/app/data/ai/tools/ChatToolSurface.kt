@@ -78,11 +78,6 @@ class ChatToolSurface internal constructor(
      * dynamic half (see [tools]), because a tool the model opened has to be callable right away.
      */
     private val rankedNames: List<String> = emptyList(),
-    /**
-     * How `tool_search` ranks. Null keeps the lexical-only behaviour, which is what a surface
-     * built without a vector index (tests, the rerun path) gets.
-     */
-    private val semanticSearch: (suspend (String) -> ToolSearchAnswer)? = null,
 ) {
 
     /** True when this surface is catalogued (i.e. the assistant opted into the mode). */
@@ -120,7 +115,7 @@ class ChatToolSurface internal constructor(
         }
         return buildList {
             addAll(fixed)
-            addAll(buildToolCatalogTools(catalog, activation, semanticSearch))
+            addAll(buildToolCatalogTools(catalog, activation))
             activation.active().forEach { name -> catalog.entry(name)?.let { add(it.tool) } }
             retrieved.forEach { name -> catalog.entry(name)?.let { add(it.tool) } }
         }

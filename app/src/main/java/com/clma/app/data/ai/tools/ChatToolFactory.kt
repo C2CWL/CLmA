@@ -15,7 +15,6 @@ import com.clma.app.data.model.Assistant
 import com.clma.app.data.repository.ConversationRepository
 import com.clma.app.data.repository.MemoryRepository
 import com.clma.app.data.repository.WorkspaceRepository
-import com.clma.app.data.vector.ConversationIndexCoordinator
 import com.clma.workspace.WorkspaceShellStatus
 import kotlin.uuid.Uuid
 
@@ -37,7 +36,6 @@ class ChatToolFactory(
     private val mcpManager: McpManager,
     private val skillManager: SkillManager,
     private val workspaceRepository: WorkspaceRepository,
-    private val conversationIndex: ConversationIndexCoordinator,
 ) {
     suspend fun createTools(
         settings: Settings,
@@ -65,7 +63,7 @@ class ChatToolFactory(
         }
         addAll(ToolSurfaceResolver.resolve(localTools, assistant, ToolSurfaceResolver.contextless))
         if (assistant.enableRecentChatsReference) {
-            addAll(createConversationTools(conversationRepository, assistant.id, conversationIndex))
+            addAll(createConversationTools(conversationRepository, assistant.id))
         }
         addAll(createWorkspaceToolsIfReady(assistant.workspaceId?.toString(), workspaceCwd))
         if (assistant.enabledSkills.isNotEmpty()) {

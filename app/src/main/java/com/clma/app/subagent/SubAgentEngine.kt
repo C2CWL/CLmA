@@ -568,7 +568,7 @@ class SubAgentEngine(
         // (assistant default → expert → per-dispatch) and delivered through
         // [ConversationSystemAddendum] so it lands in the system slot instead of being
         // prepended to the task text: the archived conversation keeps a clean first user
-        // message, and the Moxw vector index never embeds the scaffolding. `request.systemPrompt`
+        // message, and no scaffolding text is persisted into the archived conversation. `request.systemPrompt`
         // is honoured here for the first time — it used to be parsed into SubAgentRequest and
         // then dropped on the floor.
         val systemPromptAddendum = composeSubAgentSystemPrompt(

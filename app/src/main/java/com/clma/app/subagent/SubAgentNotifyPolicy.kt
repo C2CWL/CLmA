@@ -36,7 +36,7 @@ internal fun shouldNotifyParent(run: SubAgentRun): Boolean = when (run.status) {
  * queue immediately before the parent's next model request and appends the notice as a
  * request-only synthetic message — so the model learns the outcome on its very next step
  * (mid-turn when a generation is in flight) without anything ever rendering in the chat
- * page or being persisted into the conversation / vector index.
+ * page or being persisted into the conversation.
  *
  * [usageLine] is pre-rendered by the caller (the engine, which owns the usage types) so this
  * function stays free of the data.usage module; pass null when the run billed nothing.
