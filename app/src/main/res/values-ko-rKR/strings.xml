@@ -1962,4 +1962,10 @@ mDNS 주소: .local 호스트네임을 사용하며, IP를 몰라도 같은 네�
   <string name="workspace_detail_settings_save_failed">설정 저장에 실패했습니다.</string>
   <string name="chat_page_continuing">연결이 끊겼습니다 — 응답을 이어서 작성 중 (%1$d/%2$d)</string>
   <string name="chat_page_subagents_running">하위 에이전트 %1$d개 실행 중 · %2$s</string>
+  <string name="subagent_notification_channel">하위 에이전트 완료 알림</string>
+  <string name="subagent_notification_title">하위 에이전트가 완료되었습니다</string>
+  <string name="subagent_notification_text">%1$s · %2$s</string>
+  <string name="subagent_notification_status_succeeded">완료</string>
+  <string name="subagent_notification_status_failed">실패</string>
+  <string name="subagent_notification_status_timed_out">시간 초과</string>
 </resources>

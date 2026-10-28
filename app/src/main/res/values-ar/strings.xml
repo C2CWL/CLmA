@@ -2148,4 +2148,10 @@
   <string name="table">جدول</string>
   <string name="chat_page_continuing">انقطع الاتصال — يتم متابعة الرد (%1$d/%2$d)</string>
   <string name="chat_page_subagents_running">الوكلاء الفرعيون قيد التشغيل: %1$d · %2$s</string>
+  <string name="subagent_notification_channel">اكتمال الوكلاء الفرعيين</string>
+  <string name="subagent_notification_title">انتهى الوكيل الفرعي</string>
+  <string name="subagent_notification_text">%1$s · %2$s</string>
+  <string name="subagent_notification_status_succeeded">اكتمل</string>
+  <string name="subagent_notification_status_failed">فشل</string>
+  <string name="subagent_notification_status_timed_out">انتهت المهلة</string>
 </resources>

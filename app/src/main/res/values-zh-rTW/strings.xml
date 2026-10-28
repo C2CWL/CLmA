@@ -2530,4 +2530,10 @@
     <string name="setting_compaction_engine_model">自選模型</string>
     <string name="setting_compaction_engine_hybrid">聯動</string>
     <string name="setting_compaction_engine_desc">手動與自動壓縮共用。TOMC：CPU 選取原文，不請求模型；聯動：模型摘要＋獨立保留的原文證據（佔目標三分之一）。這是 TOMC2 的 Android 適配，非完整 Python 編譯器。預算過小仍可能遺漏重要記錄，原文保留於會話資料庫。未切換時沿用模型模式。</string>
+  <string name="subagent_notification_channel">子智慧體完成通知</string>
+  <string name="subagent_notification_title">子智慧體已完成</string>
+  <string name="subagent_notification_text">%1$s · %2$s</string>
+  <string name="subagent_notification_status_succeeded">已完成</string>
+  <string name="subagent_notification_status_failed">失敗</string>
+  <string name="subagent_notification_status_timed_out">逾時</string>
 </resources>

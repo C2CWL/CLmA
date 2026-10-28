@@ -1962,4 +1962,10 @@
   <string name="workspace_detail_settings_save_failed">Не удалось сохранить настройки</string>
   <string name="chat_page_continuing">Соединение потеряно — продолжаю ответ (%1$d/%2$d)</string>
   <string name="chat_page_subagents_running">Субагентов выполняется: %1$d · %2$s</string>
+  <string name="subagent_notification_channel">Завершение субагентов</string>
+  <string name="subagent_notification_title">Субагент завершил работу</string>
+  <string name="subagent_notification_text">%1$s · %2$s</string>
+  <string name="subagent_notification_status_succeeded">готово</string>
+  <string name="subagent_notification_status_failed">ошибка</string>
+  <string name="subagent_notification_status_timed_out">истекло время</string>
 </resources>
