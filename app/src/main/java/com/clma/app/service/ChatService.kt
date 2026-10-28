@@ -1,5 +1,6 @@
 package com.clma.app.service
 
+import com.clma.app.diagnostics.FunctionalDiagnostics
 import android.app.Application
 import android.content.Context
 import android.os.SystemClock
@@ -707,6 +708,7 @@ class ChatService(
         solution: ChatErrorSolution? = null,
     ) {
         if (error is CancellationException) return
+        FunctionalDiagnostics.failure("chat.error")
         _errors.update { it + ChatError(title = title, error = error, conversationId = conversationId, solution = solution) }
     }
 
@@ -1086,6 +1088,7 @@ class ChatService(
 
     fun sendMessage(conversationId: Uuid, content: List<UIMessagePart>, answer: Boolean = true) {
         if (content.isEmptyInputMessage()) return
+        FunctionalDiagnostics.event("message.enqueue")
         val session = getOrCreateSession(conversationId)
         synchronized(session) {
             if (session.messageQueue.state.value.messages.isEmpty()) session.messageQueue.resume()
@@ -1173,6 +1176,10 @@ class ChatService(
         val conversationId = session.id
         val content = queued.parts
         val answer = queued.answer
+        val diagnosticInstance = System.identityHashCode(queued)
+        val diagnosticStart = SystemClock.elapsedRealtime()
+        FunctionalDiagnostics.event("message.dispatch", diagnosticInstance)
+        var diagnosticFailed = false
         val job = launchGenerationJob(
             conversationId = conversationId,
             keepAliveInBackground = answer,
@@ -1235,6 +1242,8 @@ class ChatService(
                 // The ordinary autoplay collector must not read a late voice reply again.
                 if (queued.reply == null) _generationDoneFlow.emit(conversationId)
             } catch (e: Exception) {
+                diagnosticFailed = true
+                FunctionalDiagnostics.event(if (e is CancellationException) "message.cancelled" else "message.failed", diagnosticInstance)
                 queued.reply?.completeExceptionally(e)
                 e.printStackTrace()
                 if (e is CancellationException) throw e
@@ -1243,6 +1252,12 @@ class ChatService(
             }
         }
         job.invokeOnCompletion { cause ->
+            val outcome = when {
+                cause is CancellationException -> "message.jobCancelled"
+                cause != null || diagnosticFailed -> "message.jobFailed"
+                else -> "message.jobFinished"
+            }
+            FunctionalDiagnostics.event(outcome, diagnosticInstance, SystemClock.elapsedRealtime() - diagnosticStart)
             if (cause != null) queued.reply?.completeExceptionally(cause)
             synchronized(session) {
                 if (session.submittingMessage?.id == queued.id) session.submittingMessage = null
@@ -4817,12 +4832,15 @@ class ChatService(
 
     // 停止当前会话生成任务（不清理会话缓存）
     suspend fun stopGeneration(conversationId: Uuid) {
+        val diagnosticStart = SystemClock.elapsedRealtime()
         // 用户主动停止：未消费的插话一并丢弃，避免下一轮突然冒出来。
         ConversationSteers.clear(conversationId)
         // Cancel BEFORE the mutex so the cancelled coroutines can drain their own writes
         // (which may try to acquire the same mutex via their save path). Also pause the
         // message queue so nothing auto-dispatches into the conversation we're stopping.
         val session = getOrCreateSession(conversationId)
+        val diagnosticInstance = System.identityHashCode(session)
+        FunctionalDiagnostics.event("stop.begin", diagnosticInstance)
         val jobs = synchronized(session) {
             session.messageQueue.pause()
             session.cancelJobs()
@@ -4858,5 +4876,6 @@ class ChatService(
             val updatedConversation = currentConversation.copy(messageNodes = updatedNodes)
             saveConversation(conversationId, updatedConversation)
         }
+        FunctionalDiagnostics.event("stop.finished", diagnosticInstance, SystemClock.elapsedRealtime() - diagnosticStart)
     }
 }

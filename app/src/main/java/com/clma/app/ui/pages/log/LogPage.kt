@@ -1,5 +1,7 @@
 package com.clma.app.ui.pages.log
 
+import com.clma.app.ui.hooks.rememberSharedPreferenceBoolean
+import com.clma.app.diagnostics.FunctionalDiagnostics
 import android.content.ClipData
 import androidx.compose.ui.platform.ClipEntry
 import me.rerere.hugeicons.HugeIcons
@@ -181,6 +183,8 @@ private fun UnifiedLogList(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         contentPadding = PaddingValues(16.dp)
     ) {
+        item { DiagnosticsSwitches() }
+
         item {
             RequestLoggingSwitchCard(
                 enabled = requestLoggingEnabled,
@@ -631,5 +635,30 @@ private fun EarlierLogLine(line: String) {
                 .fillMaxWidth()
                 .padding(horizontal = 4.dp)
         )
+    }
+}
+
+@Composable
+private fun DiagnosticsSwitches() {
+    var functions by rememberSharedPreferenceBoolean(FunctionalDiagnostics.FUNCTION_KEY)
+    var animation by rememberSharedPreferenceBoolean(FunctionalDiagnostics.ANIMATION_KEY)
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(stringResource(R.string.diagnostics_functions))
+                Switch(checked = functions, onCheckedChange = {
+                    functions = it
+                    FunctionalDiagnostics.configure(it, animation)
+                })
+            }
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(stringResource(R.string.diagnostics_animation))
+                Switch(checked = animation, onCheckedChange = {
+                    animation = it
+                    FunctionalDiagnostics.configure(functions, it)
+                })
+            }
+            Text(stringResource(R.string.diagnostics_description), style = MaterialTheme.typography.bodySmall)
+        }
     }
 }

@@ -3057,4 +3057,7 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="setting_runtime_timezone_dialog_title">选择时区</string>
   <string name="setting_runtime_timezone_custom_hint">自定义 IANA 时区（例如 Asia/Shanghai）</string>
   <string name="setting_runtime_timezone_invalid">无效的时区 ID</string>
+  <string name="diagnostics_functions">功能诊断</string>
+  <string name="diagnostics_animation">抽屉动画诊断</string>
+  <string name="diagnostics_description">默认关闭。仅记录状态、耗时与进程内实例编号，不记录聊天内容或密钥。动画诊断会增加开销，复现后请关闭。日志仅保存在本地，可在此页复制或清除。</string>
 </resources>

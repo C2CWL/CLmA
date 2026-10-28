@@ -1,5 +1,6 @@
 package com.clma.app.ui.pages.chat
 
+import com.clma.app.diagnostics.FunctionalDiagnostics
 import android.os.Build
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -137,6 +138,7 @@ fun ChatDrawerContent(
     hazeState: HazeState,
 ) {
     val scope = rememberCoroutineScope()
+    val diagnosticInstance = remember { System.identityHashCode(scope) }
     val context = LocalContext.current
     val toaster = LocalToaster.current
     val repo = koinInject<ConversationRepository>()
@@ -444,6 +446,10 @@ fun ChatDrawerContent(
     ModalDrawerSheet(
         modifier = Modifier
             .width(300.dp)
+            .onSizeChanged {
+                FunctionalDiagnostics.event("drawer.width", diagnosticInstance, value = it.width.toLong())
+                FunctionalDiagnostics.event("drawer.height", diagnosticInstance, value = it.height.toLong())
+            }
             .clip(drawerShape)
             .then(
                 if (drawerFrost != null) {
@@ -572,9 +578,11 @@ fun ChatDrawerContent(
                     AssistantPicker(
                         settings = settings,
                         onUpdateSettings = {
+                            FunctionalDiagnostics.event("assistant.switch.request")
                             val updateJob = vm.updateSettings(it)
                             scope.launch {
                                 updateJob.join()
+                                FunctionalDiagnostics.event("assistant.switch.settingsApplied")
                                 val id = if (context.readBooleanPreference("create_new_conversation_on_start", true)) {
                                     Uuid.random()
                                 } else {

@@ -1,16 +1,14 @@
 package com.clma.app.utils
 
+import com.clma.app.diagnostics.FunctionalDiagnostics
 import android.content.Context
 import android.net.Uri
-import android.util.Log
 import android.webkit.MimeTypeMap
 import com.clma.ai.ui.UIMessage
 import com.clma.ai.ui.UIMessagePart
 import com.clma.app.Screen
 import com.clma.app.ui.context.Navigator
 import kotlin.uuid.Uuid
-
-private const val TAG = "ChatUtil"
 
 fun navigateToChatPage(
     navigator: Navigator,
@@ -20,7 +18,7 @@ fun navigateToChatPage(
     nodeId: Uuid? = null,
     isTemporary: Boolean = false,
 ) {
-    Log.i(TAG, "navigateToChatPage: navigate to $chatId, isTemporary: $isTemporary")
+    FunctionalDiagnostics.event("chat.navigate.request")
     navigator.clearAndNavigate(
         Screen.Chat(
             id = chatId.toString(),
