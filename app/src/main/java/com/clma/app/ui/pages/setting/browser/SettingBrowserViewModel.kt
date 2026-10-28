@@ -54,6 +54,13 @@ class SettingBrowserViewModel(
         initialValue = false,
     )
 
+    /** Network proxy mode: "follow_app" or "direct". */
+    val networkProxyMode: StateFlow<String> = prefs.networkProxyModeFlow().stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = "follow_app",
+    )
+
     fun setToolEnabled(toolName: String, enabled: Boolean) {
         viewModelScope.launch { prefs.setToolEnabled(toolName, enabled) }
     }
@@ -64,6 +71,10 @@ class SettingBrowserViewModel(
 
     fun setPreferBackground(enabled: Boolean) {
         viewModelScope.launch { prefs.setPreferBackground(enabled) }
+    }
+
+    fun setNetworkProxyMode(mode: String) {
+        viewModelScope.launch { prefs.setNetworkProxyMode(mode) }
     }
 
     /** Persist a per-tool timeout given in seconds. Clamping happens in [BrowserPreferences]. */

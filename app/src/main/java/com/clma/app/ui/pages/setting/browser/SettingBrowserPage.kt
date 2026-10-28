@@ -38,6 +38,7 @@ import com.clma.app.R
 import com.clma.app.browser.BrowserActivity
 import com.clma.app.browser.BrowserSearchEngines
 import com.clma.app.browser.BrowserToolDefaults
+import com.clma.app.data.ai.tools.ToolDisplayNames
 import com.clma.app.ui.components.nav.BackButton
 import com.clma.app.ui.components.ui.CardGroup
 import com.clma.app.ui.context.LocalToaster
@@ -70,6 +71,7 @@ fun SettingBrowserPage(
     val singleTaskTimeoutMs by vm.singleTaskTimeoutMs.collectAsStateWithLifecycle()
     val searchEngineId by vm.searchEngineId.collectAsStateWithLifecycle()
     val preferBackground by vm.preferBackground.collectAsStateWithLifecycle()
+    val networkProxyMode by vm.networkProxyMode.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     var showClearConfirm by remember { mutableStateOf(false) }
@@ -144,6 +146,43 @@ fun SettingBrowserPage(
                         )
                     },
                 )
+                item(
+                    headlineContent = { Text(stringResource(R.string.setting_browser_network_proxy_mode)) },
+                    supportingContent = { Text(stringResource(R.string.setting_browser_network_proxy_mode_desc)) },
+                    trailingContent = {
+                        var modeMenu by remember { mutableStateOf(false) }
+                        Box {
+                            TextButton(onClick = { modeMenu = true }) {
+                                Text(
+                                    if (networkProxyMode == "direct") {
+                                        stringResource(R.string.setting_browser_network_proxy_mode_direct)
+                                    } else {
+                                        stringResource(R.string.setting_browser_network_proxy_mode_follow_app)
+                                    }
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = modeMenu,
+                                onDismissRequest = { modeMenu = false },
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.setting_browser_network_proxy_mode_follow_app)) },
+                                    onClick = {
+                                        modeMenu = false
+                                        vm.setNetworkProxyMode("follow_app")
+                                    },
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.setting_browser_network_proxy_mode_direct)) },
+                                    onClick = {
+                                        modeMenu = false
+                                        vm.setNetworkProxyMode("direct")
+                                    },
+                                )
+                            }
+                        }
+                    },
+                )
             }
 
             // Section: Tools enabled — three sub-CardGroups grouped by category, each with
@@ -159,14 +198,16 @@ fun SettingBrowserPage(
                 tools = BrowserToolDefaults.READ_TOOLS.toList()
                     .filter { it in BrowserToolDefaults.ALL_TOOLS }
                     // Stable display order — preserves the spec's table sequence.
-                    .sortedBy { BrowserToolDefaults.ALL_TOOLS.indexOf(it) },
+                    .sortedBy { BrowserToolDefaults.ALL_TOOLS.indexOf(it) } +
+                    BrowserToolDefaults.UPGRADE_READ,
                 toolStates = toolStates,
                 onToggle = vm::setToolEnabled,
             )
             ToolCategorySection(
                 heading = stringResource(R.string.setting_browser_category_write),
                 tools = BrowserToolDefaults.WRITE_TOOLS.toList()
-                    .sortedBy { BrowserToolDefaults.ALL_TOOLS.indexOf(it) },
+                    .sortedBy { BrowserToolDefaults.ALL_TOOLS.indexOf(it) } +
+                    BrowserToolDefaults.UPGRADE_WRITE,
                 toolStates = toolStates,
                 onToggle = vm::setToolEnabled,
             )
@@ -327,7 +368,7 @@ private fun toolDisplayTitle(toolName: String): String = when (toolName) {
     BrowserToolDefaults.PRESS_KEY -> stringResource(R.string.setting_browser_tool_press_key_title)
     BrowserToolDefaults.EVAL_JS -> stringResource(R.string.setting_browser_tool_eval_js_title)
     BrowserToolDefaults.DONE -> stringResource(R.string.setting_browser_tool_done_title)
-    else -> toolName
+    else -> ToolDisplayNames.resFor(toolName)?.let { stringResource(it.name) } ?: toolName
 }
 
 @Composable
@@ -349,5 +390,5 @@ private fun toolDisplayDesc(toolName: String): String = when (toolName) {
     BrowserToolDefaults.PRESS_KEY -> stringResource(R.string.setting_browser_tool_press_key_desc)
     BrowserToolDefaults.EVAL_JS -> stringResource(R.string.setting_browser_tool_eval_js_desc)
     BrowserToolDefaults.DONE -> stringResource(R.string.setting_browser_tool_done_desc)
-    else -> ""
+    else -> ToolDisplayNames.resFor(toolName)?.let { stringResource(it.description) } ?: ""
 }

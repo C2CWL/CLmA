@@ -2362,6 +2362,10 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="setting_browser_per_tool_timeout_unit">秒</string>
   <string name="setting_browser_single_task_timeout_desc">单次 AI 驱动浏览器任务的硬性上限，用于限制失控循环。范围为 1 分钟到 60 分钟。</string>
   <string name="setting_browser_single_task_timeout_unit">分钟</string>
+  <string name="setting_browser_network_proxy_mode">浏览器网络模式</string>
+  <string name="setting_browser_network_proxy_mode_desc">WebView 与后台下载流量是否跟随应用代理，或直连系统出口（仍受系统 VPN 影响）。</string>
+  <string name="setting_browser_network_proxy_mode_follow_app">跟随应用代理</string>
+  <string name="setting_browser_network_proxy_mode_direct">直接连接（不使用应用代理）</string>
   <string name="setting_page_termux">Termux</string>
   <string name="setting_page_termux_desc">Shell 命令、超时和 Termux 集成。</string>
   <string name="setting_page_shizuku">Shizuku</string>

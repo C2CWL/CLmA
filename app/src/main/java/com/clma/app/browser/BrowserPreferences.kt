@@ -72,6 +72,26 @@ class BrowserPreferences(private val context: Context) {
         store.edit { it[preferBackgroundKey] = enabled }
     }
 
+    // --- Network proxy mode -----------------------------------------------------------------
+
+    private val networkProxyModeKey = androidx.datastore.preferences.core.stringPreferencesKey("network_proxy_mode")
+
+    /**
+     * Network proxy mode for WebView and artifact downloads:
+     * - "follow_app": follows application network setting proxy (default)
+     * - "direct": direct connection, ignores application proxy (still subject to system VPN)
+     */
+    fun networkProxyModeFlow(): Flow<String> = store.data.map { prefs ->
+        val m = prefs[networkProxyModeKey] ?: "follow_app"
+        if (m in setOf("follow_app", "direct")) m else "follow_app"
+    }
+
+    suspend fun setNetworkProxyMode(mode: String) {
+        if (mode in setOf("follow_app", "direct")) {
+            store.edit { it[networkProxyModeKey] = mode }
+        }
+    }
+
     init {
         // Push the persisted (or default) timeout values into [BrowserController] — the
         // synchronous runtime source of truth read by every browser tool's withTimeoutOrNull
@@ -95,6 +115,15 @@ class BrowserPreferences(private val context: Context) {
             preferBackgroundFlow()
                 .distinctUntilChanged()
                 .onEach { BrowserController.preferBackground = it }
+                .collect {}
+        }
+        scope.launch {
+            networkProxyModeFlow()
+                .distinctUntilChanged()
+                .onEach { mode ->
+                    val settings = org.koin.core.context.GlobalContext.get().get<com.clma.app.data.datastore.SettingsStore>()
+                    BrowserNetworkController.configure(settings, mode, BrowserNetworkController.userAgent, null, emptyMap())
+                }
                 .collect {}
         }
     }
@@ -138,11 +167,12 @@ class BrowserPreferences(private val context: Context) {
     }
 
     /**
-     * Observe the full enabled-map. Emits one entry per tool in [BrowserToolDefaults.ALL_TOOLS],
+     * Observe the full enabled-map. Emits one entry per tool in [BrowserToolDefaults.TOGGLEABLE_TOOLS],
      * pre-merged with defaults so callers don't have to do the same fallback dance.
+     * Upgrade tools are absent from [BrowserToolDefaults.DEFAULT_ENABLED] and therefore default off.
      */
     fun observeAll(): Flow<Map<String, Boolean>> = store.data.map { prefs ->
-        BrowserToolDefaults.ALL_TOOLS.associateWith { tool ->
+        BrowserToolDefaults.TOGGLEABLE_TOOLS.associateWith { tool ->
             prefs[keyFor(tool)] ?: (BrowserToolDefaults.DEFAULT_ENABLED[tool] ?: false)
         }
     }
@@ -153,7 +183,7 @@ class BrowserPreferences(private val context: Context) {
      */
     suspend fun snapshot(): Map<String, Boolean> {
         val prefs: Preferences = store.data.first()
-        return BrowserToolDefaults.ALL_TOOLS.associateWith { tool ->
+        return BrowserToolDefaults.TOGGLEABLE_TOOLS.associateWith { tool ->
             prefs[keyFor(tool)] ?: (BrowserToolDefaults.DEFAULT_ENABLED[tool] ?: false)
         }
     }

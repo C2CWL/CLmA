@@ -49,14 +49,30 @@ object BrowserToolDefaults {
         CLICK, TYPE, SCROLL, SUBMIT, SELECT, PRESS_KEY, EVAL_JS, CLICK_AND_READ,
     )
 
+    /** Session/network tools added by the browser upgrade. Not part of [ALL_TOOLS]. */
+    val UPGRADE_READ: List<String> = listOf(
+        "browser_tab_list", "browser_task_status", "browser_download_status", "browser_site_status", "browser_network_status",
+    )
+    val UPGRADE_WRITE: List<String> = listOf(
+        "browser_tab_open", "browser_tab_select", "browser_tab_close", "browser_task_extend", "browser_task_cancel",
+        "browser_download", "browser_download_cancel", "browser_export_pdf", "browser_site_clear",
+        "browser_cookie_import", "browser_cookie_export", "browser_network_configure", "browser_network_export_har",
+    )
+    val UPGRADE_TOOLS: List<String> = UPGRADE_READ + UPGRADE_WRITE
     val LOOP_CONTROL_TOOLS: Set<String> = setOf(DONE)
 
-    /** Stable display order for the Settings page. Read first, then write, then loop-control. */
+    /**
+     * The original 18 tools. Catalogue tests pin this size and [DEFAULT_ENABLED]'s keys to it.
+     * Upgrade tools live in [UPGRADE_TOOLS] and are toggled via [TOGGLEABLE_TOOLS].
+     */
     val ALL_TOOLS: List<String> = listOf(
         OPEN, CURRENT_URL, SCREENSHOT, GET_TEXT, GET_DOM, GET_LINKS, BACK, FORWARD, WAIT_FOR,
         CLICK, TYPE, SCROLL, SUBMIT, SELECT, PRESS_KEY, EVAL_JS, CLICK_AND_READ,
         DONE,
     )
+
+    /** Settings page and tool registration: the original 18, then upgrade tools (default off). */
+    val TOGGLEABLE_TOOLS: List<String> = ALL_TOOLS + UPGRADE_TOOLS
 
     /**
      * Defaults baked in. Read tools + the loop-control tool default ON; write tools
@@ -72,7 +88,7 @@ object BrowserToolDefaults {
     enum class Category { READ, WRITE, LOOP_CONTROL }
 
     fun category(toolName: String): Category = when {
-        toolName in WRITE_TOOLS -> Category.WRITE
+        toolName in WRITE_TOOLS || toolName in UPGRADE_WRITE -> Category.WRITE
         toolName in LOOP_CONTROL_TOOLS -> Category.LOOP_CONTROL
         else -> Category.READ
     }
