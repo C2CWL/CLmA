@@ -144,6 +144,8 @@ object ToolDisplayNames {
         "virtual_display_text" to Res(R.string.tool_display_name_virtual_display_text, R.string.tool_display_desc_virtual_display_text),
         "virtual_display_key" to Res(R.string.tool_display_name_virtual_display_key, R.string.tool_display_desc_virtual_display_key),
         "virtual_display_destroy" to Res(R.string.tool_display_name_virtual_display_destroy, R.string.tool_display_desc_virtual_display_destroy),
+        "virtual_display_show_preview" to Res(R.string.tool_display_name_virtual_display_show_preview, R.string.tool_display_desc_virtual_display_show_preview),
+        "virtual_display_hide_preview" to Res(R.string.tool_display_name_virtual_display_hide_preview, R.string.tool_display_desc_virtual_display_hide_preview),
         "keyboard_editor_info" to Res(R.string.tool_display_name_keyboard_editor_info, R.string.tool_display_desc_keyboard_editor_info),
         "keyboard_read_field" to Res(R.string.tool_display_name_keyboard_read_field, R.string.tool_display_desc_keyboard_read_field),
         "keyboard_type" to Res(R.string.tool_display_name_keyboard_type, R.string.tool_display_desc_keyboard_type),

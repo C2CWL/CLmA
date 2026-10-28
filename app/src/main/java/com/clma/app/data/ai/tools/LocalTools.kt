@@ -922,6 +922,8 @@ class LocalTools(
             tools.add(com.clma.app.data.ai.tools.local.virtualDisplayCreateTool(context))
             tools.add(com.clma.app.data.ai.tools.local.virtualDisplayDestroyTool())
             tools.add(com.clma.app.data.ai.tools.local.virtualDisplayListTool())
+            tools.add(com.clma.app.data.ai.tools.local.virtualDisplayShowPreviewTool(context))
+            tools.add(com.clma.app.data.ai.tools.local.virtualDisplayHidePreviewTool())
             tools.add(com.clma.app.data.ai.tools.local.virtualDisplayLaunchTool(context))
             tools.add(com.clma.app.data.ai.tools.local.virtualDisplayTapTool(context))
             tools.add(com.clma.app.data.ai.tools.local.virtualDisplaySwipeTool(context))

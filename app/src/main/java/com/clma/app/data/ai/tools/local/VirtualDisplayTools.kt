@@ -1,6 +1,7 @@
 package com.clma.app.data.ai.tools.local
 
 import android.content.Context
+import android.provider.Settings
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -88,7 +89,12 @@ fun virtualDisplayCreateTool(context: Context): Tool = Tool(
                     put("width", (width + 15) and 15.inv())
                     put("height", (height + 15) and 15.inv())
                     put("density", density ?: 320)
-                    put("hint", "Use take_screenshot(display_id=${result.value}) or read_window_tree(display_id=${result.value}) to capture / inspect this display")
+                    put(
+                        "hint",
+                        "Use take_screenshot(display_id=${result.value}) or read_window_tree(display_id=${result.value}) " +
+                            "to capture / inspect this display. Closing the floating preview (✕) does NOT destroy it — " +
+                            "call virtual_display_show_preview to reopen, or virtual_display_destroy to tear it down.",
+                    )
                 }.toString()
             ))
             is VirtualDisplayController.Result.Error -> listOf(UIMessagePart.Text(
@@ -103,7 +109,12 @@ fun virtualDisplayCreateTool(context: Context): Tool = Tool(
 
 fun virtualDisplayDestroyTool(): Tool = Tool(
     name = "virtual_display_destroy",
-    description = "Destroy a virtual display by its display_id. Releases the surface and resources.",
+    description = """
+        Destroy a virtual display by its display_id and release its surface / resources.
+        This is NOT the same as hiding the floating preview: ✕ / virtual_display_hide_preview
+        only closes the preview window while the display keeps running. Prefer destroy when the
+        user is done with the virtual screen.
+    """.trimIndent().replace("\n", " "),
     parameters = {
         InputSchema.Obj(
             properties = buildJsonObject {
@@ -156,6 +167,104 @@ fun virtualDisplayListTool(): Tool = Tool(
                         })
                     }
                 }
+            }.toString()
+        ))
+    }
+)
+
+fun virtualDisplayShowPreviewTool(context: Context): Tool = Tool(
+    name = "virtual_display_show_preview",
+    description = """
+        Show (or re-show) the floating live preview for an existing virtual display. Closing the
+        preview with ✕ does not destroy the display — call this to bring the preview back without
+        creating a new display. Requires SYSTEM_ALERT_WINDOW. Do not use main-screen UI tools to
+        "open virtual display".
+    """.trimIndent().replace("\n", " "),
+    parameters = {
+        InputSchema.Obj(
+            properties = buildJsonObject {
+                put("display_id", buildJsonObject {
+                    put("type", "integer")
+                    put("description", "Display id returned by virtual_display_create / virtual_display_list")
+                })
+            },
+            required = listOf("display_id")
+        )
+    },
+    execute = { input ->
+        val displayId = input.jsonObject["display_id"]?.jsonPrimitive?.intOrNull
+        if (displayId == null) {
+            return@Tool listOf(UIMessagePart.Text(
+                buildJsonObject { put("error", "display_id is required") }.toString()
+            ))
+        }
+        if (!VirtualDisplayController.contains(displayId)) {
+            return@Tool listOf(UIMessagePart.Text(
+                buildJsonObject {
+                    put("error", "display_not_found")
+                    put("detail", "No managed virtual display with id=$displayId. Create one first or call virtual_display_list.")
+                }.toString()
+            ))
+        }
+        val app = context.applicationContext
+        if (!Settings.canDrawOverlays(app)) {
+            return@Tool listOf(UIMessagePart.Text(
+                buildJsonObject {
+                    put("error", "overlay_permission_required")
+                    put("detail", "SYSTEM_ALERT_WINDOW is not granted; cannot show the floating preview.")
+                }.toString()
+            ))
+        }
+        VirtualDisplayController.showPreview(app, displayId)
+        listOf(UIMessagePart.Text(
+            buildJsonObject {
+                put("success", true)
+                put("display_id", displayId)
+                put("hint", "Preview shown. ✕ only hides it; 🗑 / virtual_display_destroy tears the display down.")
+            }.toString()
+        ))
+    }
+)
+
+fun virtualDisplayHidePreviewTool(): Tool = Tool(
+    name = "virtual_display_hide_preview",
+    description = """
+        Hide the floating live preview for a virtual display without destroying it. The display
+        keeps running in the background — use virtual_display_show_preview to reopen, or
+        virtual_display_destroy to release resources.
+    """.trimIndent().replace("\n", " "),
+    parameters = {
+        InputSchema.Obj(
+            properties = buildJsonObject {
+                put("display_id", buildJsonObject {
+                    put("type", "integer")
+                    put("description", "Display id whose floating preview should be hidden")
+                })
+            },
+            required = listOf("display_id")
+        )
+    },
+    execute = { input ->
+        val displayId = input.jsonObject["display_id"]?.jsonPrimitive?.intOrNull
+        if (displayId == null) {
+            return@Tool listOf(UIMessagePart.Text(
+                buildJsonObject { put("error", "display_id is required") }.toString()
+            ))
+        }
+        if (!VirtualDisplayController.contains(displayId)) {
+            return@Tool listOf(UIMessagePart.Text(
+                buildJsonObject {
+                    put("error", "display_not_found")
+                    put("detail", "No managed virtual display with id=$displayId")
+                }.toString()
+            ))
+        }
+        VirtualDisplayController.hidePreview(displayId)
+        listOf(UIMessagePart.Text(
+            buildJsonObject {
+                put("success", true)
+                put("display_id", displayId)
+                put("hint", "Preview hidden; display still running. Call virtual_display_show_preview or virtual_display_destroy.")
             }.toString()
         ))
     }
