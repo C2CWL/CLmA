@@ -393,13 +393,54 @@ private fun AutoCompactionSettingItem(
 }
 
 
+private data class PresetZone(
+    val id: String?,
+    val labelRes: Int,
+)
+
+private fun formatUtcOffset(zoneId: java.time.ZoneId): String {
+    return runCatching {
+        val offset = zoneId.rules.getOffset(java.time.Instant.now())
+        val totalSeconds = offset.totalSeconds
+        if (totalSeconds == 0) return "UTC+0"
+        val hours = totalSeconds / 3600
+        val minutes = kotlin.math.abs((totalSeconds % 3600) / 60)
+        if (minutes == 0) {
+            String.format(java.util.Locale.ROOT, "UTC%+d", hours)
+        } else {
+            String.format(java.util.Locale.ROOT, "UTC%+d:%02d", hours, minutes)
+        }
+    }.getOrDefault("")
+}
+
 @Composable
 private fun TimezoneSettingItem(
     settings: Settings,
     vm: SettingVM,
 ) {
     var showDialog by remember { mutableStateOf(false) }
-    val currentTz = settings.customTimezone ?: stringResource(R.string.setting_runtime_timezone_follow_system)
+
+    val presetMap = mapOf(
+        "Asia/Shanghai" to stringResource(R.string.setting_runtime_timezone_shanghai),
+        "Asia/Hong_Kong" to stringResource(R.string.setting_runtime_timezone_hong_kong),
+        "Asia/Taipei" to stringResource(R.string.setting_runtime_timezone_taipei),
+        "Asia/Tokyo" to stringResource(R.string.setting_runtime_timezone_tokyo),
+        "Asia/Singapore" to stringResource(R.string.setting_runtime_timezone_singapore),
+        "UTC" to stringResource(R.string.setting_runtime_timezone_utc),
+        "America/New_York" to stringResource(R.string.setting_runtime_timezone_new_york),
+        "America/Los_Angeles" to stringResource(R.string.setting_runtime_timezone_los_angeles),
+        "Europe/London" to stringResource(R.string.setting_runtime_timezone_london),
+    )
+
+    val currentTz = if (settings.customTimezone == null) {
+        val sysOffset = formatUtcOffset(java.time.ZoneId.systemDefault())
+        "${stringResource(R.string.setting_runtime_timezone_follow_system)} ($sysOffset)"
+    } else {
+        val id = settings.customTimezone
+        val label = presetMap[id] ?: id
+        val offset = runCatching { formatUtcOffset(java.time.ZoneId.of(id)) }.getOrDefault("")
+        if (offset.isNotEmpty()) "$label ($offset)" else label
+    }
 
     CardGroup(
         modifier = Modifier.padding(horizontal = 8.dp),
@@ -437,18 +478,18 @@ private fun TimezoneSelectDialog(
     onDismiss: () -> Unit,
     onSelect: (String?) -> Unit,
 ) {
-    val commonZones = remember {
+    val presetZones = remember {
         listOf(
-            null, // 跟随系统
-            "Asia/Shanghai",
-            "Asia/Hong_Kong",
-            "Asia/Taipei",
-            "Asia/Tokyo",
-            "Asia/Singapore",
-            "UTC",
-            "America/New_York",
-            "America/Los_Angeles",
-            "Europe/London",
+            PresetZone(null, R.string.setting_runtime_timezone_follow_system),
+            PresetZone("Asia/Shanghai", R.string.setting_runtime_timezone_shanghai),
+            PresetZone("Asia/Hong_Kong", R.string.setting_runtime_timezone_hong_kong),
+            PresetZone("Asia/Taipei", R.string.setting_runtime_timezone_taipei),
+            PresetZone("Asia/Tokyo", R.string.setting_runtime_timezone_tokyo),
+            PresetZone("Asia/Singapore", R.string.setting_runtime_timezone_singapore),
+            PresetZone("UTC", R.string.setting_runtime_timezone_utc),
+            PresetZone("America/New_York", R.string.setting_runtime_timezone_new_york),
+            PresetZone("America/Los_Angeles", R.string.setting_runtime_timezone_los_angeles),
+            PresetZone("Europe/London", R.string.setting_runtime_timezone_london),
         )
     }
     var customInput by remember { mutableStateOf("") }
@@ -462,26 +503,40 @@ private fun TimezoneSelectDialog(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                commonZones.forEach { tz ->
-                    val label = tz ?: stringResource(R.string.setting_runtime_timezone_follow_system)
-                    val selected = currentValue == tz
+                presetZones.forEach { item ->
+                    val zone = item.id?.let { runCatching { java.time.ZoneId.of(it) }.getOrNull() }
+                        ?: java.time.ZoneId.systemDefault()
+                    val offsetText = formatUtcOffset(zone)
+                    val title = "${stringResource(item.labelRes)} ($offsetText)"
+                    val subtitle = item.id // null 为跟随系统，不需副标题
+                    val selected = currentValue == item.id
+
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { onSelect(tz) }
-                            .padding(vertical = 10.dp, horizontal = 8.dp),
+                            .clickable { onSelect(item.id) }
+                            .padding(vertical = 8.dp, horizontal = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         RadioButton(
                             selected = selected,
-                            onClick = { onSelect(tz) },
+                            onClick = { onSelect(item.id) },
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = label,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                        )
+                        Column {
+                            Text(
+                                text = title,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                            )
+                            if (subtitle != null) {
+                                Text(
+                                    text = subtitle,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
                     }
                 }
 

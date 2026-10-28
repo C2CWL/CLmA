@@ -3053,4 +3053,13 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="setting_runtime_timezone_dialog_title">选择时区</string>
   <string name="setting_runtime_timezone_custom_hint">自定义 IANA 时区（例如 Asia/Shanghai）</string>
   <string name="setting_runtime_timezone_invalid">无效的时区 ID</string>
+  <string name="setting_runtime_timezone_shanghai">北京时间 (中国标准时间)</string>
+  <string name="setting_runtime_timezone_hong_kong">香港时间</string>
+  <string name="setting_runtime_timezone_taipei">台北时间</string>
+  <string name="setting_runtime_timezone_tokyo">东京时间</string>
+  <string name="setting_runtime_timezone_singapore">新加坡时间</string>
+  <string name="setting_runtime_timezone_utc">协调世界时 (UTC)</string>
+  <string name="setting_runtime_timezone_new_york">纽约时间 (美东)</string>
+  <string name="setting_runtime_timezone_los_angeles">洛杉矶时间 (美西)</string>
+  <string name="setting_runtime_timezone_london">伦敦时间</string>
 </resources>

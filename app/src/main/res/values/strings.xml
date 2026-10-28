@@ -3337,4 +3337,13 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="setting_runtime_timezone_dialog_title">Select Timezone</string>
   <string name="setting_runtime_timezone_custom_hint">Custom IANA Timezone (e.g. Asia/Shanghai)</string>
   <string name="setting_runtime_timezone_invalid">Invalid timezone ID</string>
+  <string name="setting_runtime_timezone_shanghai">Beijing, Shanghai</string>
+  <string name="setting_runtime_timezone_hong_kong">Hong Kong</string>
+  <string name="setting_runtime_timezone_taipei">Taipei</string>
+  <string name="setting_runtime_timezone_tokyo">Tokyo</string>
+  <string name="setting_runtime_timezone_singapore">Singapore</string>
+  <string name="setting_runtime_timezone_utc">Coordinated Universal Time (UTC)</string>
+  <string name="setting_runtime_timezone_new_york">New York (Eastern)</string>
+  <string name="setting_runtime_timezone_los_angeles">Los Angeles (Pacific)</string>
+  <string name="setting_runtime_timezone_london">London</string>
 </resources>
