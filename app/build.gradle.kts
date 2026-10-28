@@ -29,8 +29,8 @@ android {
         applicationId = "com.clma.app"
         minSdk = 26
         targetSdk = 37
-        versionCode = 14
-        versionName = "0.7.4"
+        versionCode = 15
+        versionName = "0.7.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -145,16 +145,16 @@ android {
     lint {
         // FullBackupContent insists every <exclude> path lives under a previously
         // <include>'d root. Our backup_rules.xml + data_extraction_rules.xml use
-        // include="upload/" + explicit excludes for databases / sharedpref /
+        // include=\"upload/\" + explicit excludes for databases / sharedpref /
         // datastore/ / known_hosts / browser-profile/ / local-models/ as
         // belt-and-suspenders defence: if anyone later adds a broader <include>
-        // (e.g. domain="root"), the excludes still keep credentials and
+        // (e.g. domain=\"root\"), the excludes still keep credentials and
         // multi-GB local LLM weights off the cloud-backup path. Lint reads that
         // pattern as redundant; the runtime accepts it. Keep the rules; mute
         // the check.
         disable.add("FullBackupContent")
         // See skipLintVital above: the fast CI lane turns the release-build lint
-        // pass off, everything else keeps it on.
+        // pass off, everything else keeps it on sailing.
         checkReleaseBuilds = !skipLintVital
     }
     tasks.withType<KotlinCompile>().configureEach {
