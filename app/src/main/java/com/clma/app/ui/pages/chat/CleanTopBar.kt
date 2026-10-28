@@ -1,5 +1,6 @@
 package com.clma.app.ui.pages.chat
 
+import com.clma.app.diagnostics.FunctionalDiagnostics
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
@@ -122,7 +123,10 @@ internal fun CleanTopBar(
             if (!bigScreen) {
                 CleanTopBarButtonSize {
                     IconButton(
-                        onClick = { scope.launch { drawerState.open() } },
+                        onClick = {
+                            FunctionalDiagnostics.event("drawer.open.request", System.identityHashCode(drawerState))
+                            scope.launch { drawerState.open() }
+                        },
                         modifier = Modifier.size(CLEAN_TOP_BAR_BUTTON_DP.dp),
                     ) {
                         Icon(

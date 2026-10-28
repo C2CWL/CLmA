@@ -31,6 +31,7 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.PermanentNavigationDrawer
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SheetValue
@@ -175,9 +176,9 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null, is
     val softwareKeyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
 
-    // Clear input focus so popup transitions cannot reopen the keyboard.
-    LaunchedEffect(drawerState.isOpen) {
-        if (drawerState.isOpen) {
+    // Clear input focus when drawer starts opening or is open so popup transitions cannot reopen the keyboard.
+    LaunchedEffect(drawerState.targetValue) {
+        if (drawerState.targetValue == DrawerValue.Open) {
             focusManager.clearFocus(force = true)
             softwareKeyboardController?.hide()
         }
@@ -301,37 +302,44 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null, is
         }
 
         else -> {
-            ModalNavigationDrawer(
-                drawerState = drawerState,
-                drawerContent = {
-                    ChatDrawerContent(
-                        navController = navController,
-                        current = conversation,
-                        vm = vm,
-                        settings = setting,
-                        hazeState = hazeState,
-                    )
-                }
-            ) {
-                ChatPageContent(
-                    onStartVoiceMode = startVoiceMode,
-                    inputState = inputState,
-                    loadingJob = loadingJob,
-                    processingStatus = mergedStatus,
-                    setting = setting,
-                    conversation = conversation,
+            val parentMotionScheme = MaterialTheme.motionScheme
+            MaterialTheme(motionScheme = MotionScheme.standard()) {
+                ModalNavigationDrawer(
                     drawerState = drawerState,
-                    navController = navController,
-                    vm = vm,
-                    chatListState = chatListState,
-                    hazeState = hazeState,
-                    enableWebSearch = enableWebSearch,
-                    currentChatModel = currentChatModel,
-                    bigScreen = false,
-                    errors = errors,
-                    onDismissError = { vm.dismissError(it) },
-                    onClearAllErrors = { vm.clearAllErrors() },
-                )
+                    drawerContent = {
+                        MaterialTheme(motionScheme = parentMotionScheme) {
+                            ChatDrawerContent(
+                                navController = navController,
+                                current = conversation,
+                                vm = vm,
+                                settings = setting,
+                                hazeState = hazeState,
+                            )
+                        }
+                    }
+                ) {
+                    MaterialTheme(motionScheme = parentMotionScheme) {
+                        ChatPageContent(
+                            onStartVoiceMode = startVoiceMode,
+                            inputState = inputState,
+                            loadingJob = loadingJob,
+                            processingStatus = mergedStatus,
+                            setting = setting,
+                            conversation = conversation,
+                            drawerState = drawerState,
+                            navController = navController,
+                            vm = vm,
+                            chatListState = chatListState,
+                            hazeState = hazeState,
+                            enableWebSearch = enableWebSearch,
+                            currentChatModel = currentChatModel,
+                            bigScreen = false,
+                            errors = errors,
+                            onDismissError = { vm.dismissError(it) },
+                            onClearAllErrors = { vm.clearAllErrors() },
+                        )
+                    }
+                }
             }
             BackHandler(enabled = drawerState.isOpen && multiSelectActive) {
                 drawerVm.requestExitMultiSelect()
