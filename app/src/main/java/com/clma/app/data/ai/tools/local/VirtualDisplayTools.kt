@@ -2,6 +2,10 @@ package com.clma.app.data.ai.tools.local
 
 import android.content.Context
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import com.clma.app.virtualdisplay.VirtualDisplayLauncher
+import com.clma.app.virtualdisplay.VirtualDisplayUnicodeInput
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
@@ -294,9 +298,12 @@ fun virtualDisplayTapTool(context: Context): Tool = Tool(
 fun virtualDisplaySwipeTool(context: Context): Tool = Tool(
     name = "virtual_display_swipe",
     description = """
-        Swipe between two points on a virtual display. Requires Shizuku (uses `input -d <id>
-        swipe`). duration_ms is optional (default ~300ms). Use take_screenshot(display_id=N)
-        or read_window_tree(display_id=N) to verify the result.
+        Swipe on a virtual display. Default mode=precise uses a slow ease-out gesture and
+        stationary end samples to reduce fling; duration defaults to 900ms (minimum 600ms).
+        Near a target, use short strokes and re-read take_screenshot(display_id=N) after EVERY
+        stroke before deciding the next one. Gesture pixels are NOT page scroll pixels.
+        mode=fling explicitly opts into fast system input; do not use it for precision.
+        Precise mode requires a privileged VD service; no silent fast fallback.
     """.trimIndent().replace("\n", " "),
     parameters = {
         InputSchema.Obj(
@@ -309,9 +316,17 @@ fun virtualDisplaySwipeTool(context: Context): Tool = Tool(
                 put("y1", buildJsonObject { put("type", "integer"); put("description", "Start Y") })
                 put("x2", buildJsonObject { put("type", "integer"); put("description", "End X") })
                 put("y2", buildJsonObject { put("type", "integer"); put("description", "End Y") })
+                put("mode", buildJsonObject {
+                    put("type", "string")
+                    put("enum", kotlinx.serialization.json.buildJsonArray {
+                        add(kotlinx.serialization.json.JsonPrimitive("precise"))
+                        add(kotlinx.serialization.json.JsonPrimitive("fling"))
+                    })
+                    put("description", "precise (default, reduce overshoot) or explicit fling")
+                })
                 put("duration_ms", buildJsonObject {
                     put("type", "integer")
-                    put("description", "Swipe duration in ms (optional, default 300)")
+                    put("description", "Duration in ms: precise default 900, clamped 600..3000; fling default 300, range 50..3000")
                 })
             },
             required = listOf("display_id", "x1", "y1", "x2", "y2")
@@ -334,9 +349,37 @@ fun virtualDisplaySwipeTool(context: Context): Tool = Tool(
                 buildJsonObject { put("error", "display_not_found") }.toString()
             ))
         }
-        val cmd = buildSwipeCommand(displayId, x1, y1, x2, y2, durationMs)
-        val result = ShizukuManager.exec(context, cmd, SHELL_TIMEOUT_MS)
-        shizukuResultToParts(result)
+        val mode = input.jsonObject["mode"]?.jsonPrimitive?.contentOrNull ?: "precise"
+        if (mode !in setOf("precise", "fling")) {
+            return@Tool shizukuResultToParts(buildJsonObject { put("error", "invalid_swipe_mode") })
+        }
+        val info = VirtualDisplayController.list().firstOrNull { it.displayId == displayId }
+        if (info == null || x1 !in 0 until info.width || x2 !in 0 until info.width ||
+            y1 !in 0 until info.height || y2 !in 0 until info.height) {
+            return@Tool shizukuResultToParts(buildJsonObject { put("error", "coordinates_out_of_bounds") })
+        }
+        if (mode == "fling") {
+            val cmd = buildSwipeCommand(displayId, x1, y1, x2, y2, (durationMs ?: 300).coerceIn(50, 3000))
+            return@Tool shizukuResultToParts(ShizukuManager.exec(context, cmd, SHELL_TIMEOUT_MS))
+        }
+        val service = VirtualDisplayLauncher.currentService()
+            ?: return@Tool shizukuResultToParts(buildJsonObject {
+                put("error", "precise_swipe_unavailable")
+                put("detail", "Requires a running privileged VD service. No gesture sent; do not retry as fling for precise positioning.")
+            })
+        val effectiveDuration = (durationMs ?: 900).coerceIn(600, 3000)
+        val result = withContext(Dispatchers.IO) {
+            runCatching { service.preciseSwipe(displayId, x1, y1, x2, y2, effectiveDuration) }
+        }
+        shizukuResultToParts(buildJsonObject {
+            put("success", result.getOrDefault(false))
+            put("verified", false)
+            put("display_id", displayId)
+            put("mode", mode)
+            put("duration_ms", effectiveDuration)
+            if (result.isFailure) put("error", "precise_swipe_failed")
+            put("next_step", "Read take_screenshot(display_id=$displayId) before any next swipe; page displacement is not guaranteed. On failure a partial gesture may already have occurred: inspect, do not blindly repeat.")
+        })
     }
 )
 
@@ -383,9 +426,12 @@ fun virtualDisplayKeyTool(context: Context): Tool = Tool(
 fun virtualDisplayTextTool(context: Context): Tool = Tool(
     name = "virtual_display_text",
     description = """
-        Type text into the focused field on a virtual display. Requires Shizuku (uses `input
-        -d <id> text`). Text is shell-escaped. Note: this injects text, not IME — it works
-        for EditText fields but not for IME-dependent input methods.
+        Insert Unicode text (Chinese, emoji, etc.) into the focused editor on a virtual display.
+        Uses an accessibility InputConnection on Android 13+, even without an exposed window
+        tree. Requires active accessibility service and Shizuku to verify VD input focus.
+        Does not switch the user's keyboard or use a clipboard. Click the VD editor first.
+        If focus/session cannot be verified, fails without sending text. Submission is NOT
+        delivery confirmation: verify take_screenshot(display_id=N); do not blindly retry.
     """.trimIndent().replace("\n", " "),
     parameters = {
         InputSchema.Obj(
@@ -415,8 +461,9 @@ fun virtualDisplayTextTool(context: Context): Tool = Tool(
                 buildJsonObject { put("error", "display_not_found") }.toString()
             ))
         }
-        val cmd = buildTextCommand(displayId, text)
-        val result = ShizukuManager.exec(context, cmd, SHELL_TIMEOUT_MS)
-        shizukuResultToParts(result)
+        if (text.isEmpty()) {
+            return@Tool shizukuResultToParts(buildJsonObject { put("error", "empty_text") })
+        }
+        shizukuResultToParts(VirtualDisplayUnicodeInput.commit(context, displayId, text))
     }
 )

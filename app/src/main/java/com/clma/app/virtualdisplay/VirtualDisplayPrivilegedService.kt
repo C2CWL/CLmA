@@ -280,6 +280,17 @@ class VirtualDisplayPrivilegedService @Keep constructor(
         )
     }
 
+    override fun preciseSwipe(displayId: Int, x1: Int, y1: Int, x2: Int, y2: Int, durationMs: Int): Boolean {
+        synchronized(displayLock(displayId)) {
+            ensureManagedDisplay(displayId)
+            val holder = displays[displayId] ?: return false
+            require(x1 in 0 until holder.width && x2 in 0 until holder.width)
+            require(y1 in 0 until holder.height && y2 in 0 until holder.height)
+            require(durationMs in 600..3000)
+            return VirtualDisplayGesture.swipe(displayId, x1, y1, x2, y2, durationMs)
+        }
+    }
+
     override fun listDisplaysJson(): String =
         JSONArray().apply {
             displayManager.displays.forEach { display ->

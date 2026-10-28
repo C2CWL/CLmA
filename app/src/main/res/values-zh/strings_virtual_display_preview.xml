@@ -3,4 +3,7 @@
   <!-- Floating live preview of a virtual display, shown while the agent drives it. -->
   <string name="virtual_display_preview_title">虚拟屏 %1$d×%2$d</string>
   <string name="virtual_display_preview_close">关闭预览</string>
+  <string name="virtual_display_preview_shrink">缩小预览</string>
+  <string name="virtual_display_preview_enlarge">放大预览</string>
+  <string name="virtual_display_preview_scale_hint">双指缩放预览，不改变虚拟屏分辨率</string>
 </resources>

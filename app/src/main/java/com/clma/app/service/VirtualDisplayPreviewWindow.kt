@@ -17,6 +17,7 @@ import android.text.TextUtils
 import android.util.Log
 import android.util.TypedValue
 import android.view.Gravity
+import android.view.ScaleGestureDetector
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
@@ -156,6 +157,43 @@ object VirtualDisplayPreviewWindow {
             addView(preview)
         }
 
+        // Scale the preview only: VD geometry and agent screenshot coordinates never change.
+        fun resize(requestedWidth: Int) {
+            val current = params ?: return
+            val view = root ?: return
+            val ratio = info.height.toFloat() / info.width.coerceAtLeast(1)
+            val availableHeight = (screenH - dp(80)).coerceAtLeast(1)
+            val maxWidth = minOf(screenW - dp(16), (availableHeight / ratio).toInt()).coerceAtLeast(1)
+            val minWidth = dp(120).coerceAtMost(maxWidth)
+            contentWidth = requestedWidth.coerceIn(minWidth, maxWidth)
+            contentHeight = (contentWidth * ratio).toInt().coerceAtLeast(1)
+            preview.layoutParams = LinearLayout.LayoutParams(contentWidth, contentHeight)
+            current.x = current.x.coerceIn(0, (screenW - contentWidth).coerceAtLeast(0))
+            current.y = current.y.coerceIn(0, (screenH - contentHeight - dp(28)).coerceAtLeast(0))
+            runCatching { windowManager?.updateViewLayout(view, current) }
+        }
+        fun scaleButton(label: String, description: Int, factor: Float) = TextView(app).apply {
+            text = label
+            setTextColor(0xFFE6E6E6.toInt())
+            gravity = Gravity.CENTER
+            contentDescription = app.getString(description)
+            layoutParams = LinearLayout.LayoutParams(dp(32), ViewGroup.LayoutParams.MATCH_PARENT)
+            setOnClickListener { resize((contentWidth * factor).toInt()) }
+        }
+        header.addView(scaleButton("−", R.string.virtual_display_preview_shrink, 0.8f), 1)
+        header.addView(scaleButton("+", R.string.virtual_display_preview_enlarge, 1.25f), 2)
+        val scaler = ScaleGestureDetector(app, object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+            override fun onScale(detector: ScaleGestureDetector): Boolean {
+                resize((contentWidth * detector.scaleFactor).toInt())
+                return true
+            }
+        })
+        preview.contentDescription = app.getString(R.string.virtual_display_preview_scale_hint)
+        preview.setOnTouchListener { _, event ->
+            scaler.onTouchEvent(event)
+            true
+        }
+
         val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
         } else {
@@ -175,8 +213,7 @@ object VirtualDisplayPreviewWindow {
             y = (screenH - contentHeight - dp(28) - dp(110)).coerceAtLeast(dp(80))
         }
 
-        // Drag by the header only, so future in-place interaction (tap/swipe forwarding) can own
-        // the frame itself.
+        // Drag by the title/header; the frame owns pinch scaling and never forwards touches.
         header.setOnTouchListener { _, event ->
             val current = params ?: return@setOnTouchListener false
             when (event.actionMasked) {
@@ -189,8 +226,8 @@ object VirtualDisplayPreviewWindow {
                 }
                 MotionEvent.ACTION_MOVE -> {
                     val view = root ?: return@setOnTouchListener false
-                    current.x = (dragStartX + (event.rawX - dragDownX)).toInt().coerceAtLeast(0)
-                    current.y = (dragStartY + (event.rawY - dragDownY)).toInt().coerceAtLeast(0)
+                    current.x = (dragStartX + (event.rawX - dragDownX)).toInt().coerceIn(0, (screenW - contentWidth).coerceAtLeast(0))
+                    current.y = (dragStartY + (event.rawY - dragDownY)).toInt().coerceIn(0, (screenH - contentHeight - dp(28)).coerceAtLeast(0))
                     runCatching { windowManager?.updateViewLayout(view, current) }
                     true
                 }
@@ -204,6 +241,7 @@ object VirtualDisplayPreviewWindow {
             root = container
             windowManager = wm
             params = lp
+            resize(contentWidth)
             shownDisplayId = info.displayId
         } catch (t: Throwable) {
             Log.w(TAG, "addView failed", t)

@@ -14,5 +14,6 @@ interface IVirtualDisplayService {
     String listDisplaysJson() = 13;
     String listInstalledAppsJson() = 14;
     void linkClient(IBinder client) = 16;
+    boolean preciseSwipe(int displayId, int x1, int y1, int x2, int y2, int durationMs) = 17;
     void destroy() = 16777114;
 }

@@ -67,6 +67,10 @@ open class RikkaAccessibilityService : AccessibilityService() {
     // cancelled mid-wait, which the previous ticket counter did not.
     private val gestureMutex = Mutex()
 
+    @androidx.annotation.RequiresApi(33)
+    override fun onCreateInputMethod(): android.accessibilityservice.InputMethod =
+        com.clma.app.virtualdisplay.VirtualDisplayUnicodeInput.create(this)
+
     override fun onServiceConnected() {
         super.onServiceConnected()
         instance = this
@@ -75,6 +79,7 @@ open class RikkaAccessibilityService : AccessibilityService() {
     }
 
     override fun onUnbind(intent: android.content.Intent?): Boolean {
+        com.clma.app.virtualdisplay.VirtualDisplayUnicodeInput.clear()
         instance = null
         _running.value = false
         _lastActions.value = emptyList()
@@ -83,6 +88,7 @@ open class RikkaAccessibilityService : AccessibilityService() {
     }
 
     override fun onDestroy() {
+        com.clma.app.virtualdisplay.VirtualDisplayUnicodeInput.clear()
         instance = null
         _running.value = false
         gestureHandlerThread.quitSafely()

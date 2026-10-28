@@ -77,7 +77,7 @@ internal fun defaultFilter(n: AccessibilityNodeInfo, depth: Int): Boolean {
 
 /**
  * Finds the root [AccessibilityNodeInfo] of the topmost application window on the given
- * [displayId]. Uses [AccessibilityService.getWindows] (requires
+ * [displayId]. Uses getWindowsOnAllDisplays (API 30+, requires
  * `flagRetrieveInteractiveWindows`) and filters by [AccessibilityWindowInfo.getDisplayId]
  * (API 33+). Returns null when no window is found on that display.
  */
@@ -86,7 +86,13 @@ internal fun findRootOnDisplay(
     displayId: Int,
 ): AccessibilityNodeInfo? {
     val windows = try {
-        svc.windows
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            svc.windowsOnAllDisplays.get(displayId).orEmpty()
+        } else if (displayId == 0) {
+            svc.windows
+        } else {
+            emptyList()
+        }
     } catch (t: Throwable) {
         null
     } ?: return null
@@ -95,8 +101,10 @@ internal fun findRootOnDisplay(
     // IME) are skipped so the model sees the app content.
     return windows
         .filter { it.type == AccessibilityWindowInfo.TYPE_APPLICATION }
-        .firstOrNull { it.getDisplayIdCompat() == displayId }
-        ?.root
+        .sortedByDescending { it.layer }
+        .asSequence()
+        .mapNotNull { it.root }
+        .firstOrNull()
 }
 
 /** API-safe wrapper for AccessibilityWindowInfo.getDisplayId (added in API 33). */
@@ -140,7 +148,9 @@ fun readWindowTreeTool(
         )
     },
     execute = { input ->
-        com.clma.app.service.RikkaAccessibilityService.instance?.let { wakeScreenIfNeeded(it) }
+        if ((input.jsonObject["display_id"]?.jsonPrimitive?.intOrNull ?: 0) == 0) {
+            RikkaAccessibilityService.instance?.let { wakeScreenIfNeeded(it) }
+        }
         val verbose = input.jsonObject["verbose"]?.jsonPrimitive?.booleanOrNull ?: false
         val maxNodesRaw = input.jsonObject["max_nodes"]?.jsonPrimitive?.intOrNull ?: DEFAULT_MAX_NODES
         val maxNodes = maxNodesRaw.coerceIn(1, MAX_NODES_HARD_CEILING)
@@ -150,7 +160,7 @@ fun readWindowTreeTool(
         val displayId = input.jsonObject["display_id"]?.jsonPrimitive?.intOrNull ?: 0
 
         val payload = AccessibilityServiceHandle.withService { svc ->
-            // For non-default displays, find windows on that display via getWindows().
+            // Query the target display explicitly; getWindows() only covers the default display.
             // rootInActiveWindow only returns the default display's active window.
             val root = if (displayId != 0) {
                 if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
