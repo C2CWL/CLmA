@@ -40,6 +40,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -241,7 +242,6 @@ private fun parseMarkdown(content: String): MarkdownParseResult {
     return MarkdownParseResult(preprocessed, astTree, astTree.containsHtml())
 }
 
-@OptIn(FlowPreview::class)
 @Composable
 fun MarkdownBlock(
     content: String,
@@ -249,43 +249,64 @@ fun MarkdownBlock(
     style: TextStyle = LocalTextStyle.current,
     onClickCitation: (String) -> Unit = {}
 ) {
-    var (data, setData) = remember { mutableStateOf(parseMarkdown(content)) }
-
-    // 监听内容变化，重新解析AST树
-    // 这里在后台线程解析AST树, 防止频繁更新的时候掉帧
-    val updatedContent by rememberUpdatedState(content)
-    LaunchedEffect(Unit) {
-        snapshotFlow { updatedContent }
-            .distinctUntilChanged()
-            // 流式输出每个 token 都会推一次新文本，全量重解析 AST 是这条链路上最贵的
-            // CPU 活（长回复、多对话并行时直接体现为发热与掉帧）。80ms 的窗口把每秒
-            // 几十次解析合并成约 12 次；sample 只在窗口内有新值时才发射，窗口末尾
-            // 发射的也是最新值，所以尾部内容最多晚 80ms 渲染，不会丢字。
-            .sample(80)
-            .mapLatest { parseMarkdown(it) }
-            .catch { exception -> Log.e(TAG, "MarkdownBlock: failed to parse markdown", exception) }
-            .flowOn(Dispatchers.Default)
-            .collect { setData(it) }
-    }
-
-    if (data.hasHtml) {
-        MarkdownNew(
-            content = content,
-            modifier = modifier,
-            style = style,
-            onClickCitation = onClickCitation,
-        )
+    val split = remember(content) { streamingMarkdownSplit(content) }
+    if (split.prefix.isEmpty()) {
+        MarkdownParsed(content, modifier, style, onClickCitation, sampled = true)
     } else {
         ProvideTextStyle(style) {
-            Column(
-                modifier = modifier.padding(horizontal = 4.dp)
-            ) {
-                data.astTree.children.fastForEach { child ->
-                    MarkdownNode(
-                        node = child, content = data.preprocessed, onClickCitation = onClickCitation
-                    )
+            Column(modifier.padding(horizontal = 4.dp)) {
+                MarkdownParsed(split.prefix, onClickCitation = onClickCitation, sampled = false, includeChrome = false)
+                androidx.compose.runtime.key(split.prefix) {
+                    if (split.tail.isNotEmpty()) {
+                        MarkdownParsed(split.tail, onClickCitation = onClickCitation,
+                            sampled = split.tail.length >= 2000, includeChrome = false)
+                    }
                 }
             }
+        }
+    }
+}
+
+@OptIn(FlowPreview::class)
+@Composable
+private fun MarkdownParsed(
+    content: String,
+    modifier: Modifier = Modifier,
+    style: TextStyle = LocalTextStyle.current,
+    onClickCitation: (String) -> Unit,
+    sampled: Boolean,
+    includeChrome: Boolean = true,
+) {
+    val data = if (sampled) {
+        var parsed by remember { mutableStateOf(parseMarkdown(content)) }
+        val updatedContent by rememberUpdatedState(content)
+        LaunchedEffect(Unit) {
+            snapshotFlow { updatedContent }
+                .distinctUntilChanged()
+                .sample(80)
+                .mapLatest { parseMarkdown(it) }
+                .catch { Log.e(TAG, "MarkdownBlock: failed to parse markdown", it) }
+                .flowOn(Dispatchers.Default)
+                .collect { parsed = it }
+        }
+        parsed
+    } else {
+        // 前缀不随 token 变化，AST 同步缓存，避免异步切换的空白首帧。
+        remember(content) { parseMarkdown(content) }
+    }
+    if (data.hasHtml) {
+        MarkdownNew(content, modifier, style, onClickCitation)
+    } else if (includeChrome) {
+        ProvideTextStyle(style) {
+            Column(modifier.padding(horizontal = 4.dp)) {
+                data.astTree.children.fastForEach { child ->
+                    MarkdownNode(node = child, content = data.preprocessed, onClickCitation = onClickCitation)
+                }
+            }
+        }
+    } else {
+        data.astTree.children.fastForEach { child ->
+            MarkdownNode(node = child, content = data.preprocessed, onClickCitation = onClickCitation)
         }
     }
 }

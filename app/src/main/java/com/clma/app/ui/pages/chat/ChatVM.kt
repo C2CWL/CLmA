@@ -80,6 +80,10 @@ class ChatVM(
 ) : ViewModel() {
     private val _conversationId: Uuid = Uuid.parse(id)
     val conversation: StateFlow<Conversation> = chatService.getConversationFlow(_conversationId)
+    val conversationForUi: StateFlow<Conversation> = conversation
+        .throttleAppendOnlyStreaming()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), conversation.value)
+
     var chatListInitialized by mutableStateOf(false) // 聊天列表是否已经滚动到底部
 
     // 聊天输入状态 - 保存在 ViewModel 中避免 TransactionTooLargeException
@@ -480,6 +484,24 @@ class ChatVM(
         chatService.updateConversationState(_conversationId) {
             newConversation
         }
+    }
+
+    fun selectMessageBranch(nodeId: Uuid, selectIndex: Int) {
+        applyStreamingSafeConversationEdit { current ->
+            current.copy(messageNodes = current.messageNodes.map { node ->
+                if (node.id == nodeId && selectIndex in node.messages.indices) {
+                    node.copy(selectIndex = selectIndex)
+                } else node
+            })
+        }
+    }
+
+    fun updateCustomSystemPrompt(prompt: String?) {
+        applyStreamingSafeConversationEdit { it.copy(customSystemPrompt = prompt) }
+    }
+
+    fun applyStreamingSafeConversationEdit(edit: (Conversation) -> Conversation) {
+        chatService.updateConversationState(_conversationId, edit)
     }
 
     fun toggleMessageFavorite(node: MessageNode) {

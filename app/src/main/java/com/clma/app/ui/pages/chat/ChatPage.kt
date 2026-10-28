@@ -144,7 +144,7 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null, is
     val scope = rememberCoroutineScope()
 
     val setting by vm.settings.collectAsStateWithLifecycle()
-    val conversation by vm.conversation.collectAsStateWithLifecycle()
+    val conversation by vm.conversationForUi.collectAsStateWithLifecycle()
     val loadingJob by vm.conversationJob.collectAsStateWithLifecycle()
     val processingStatus by vm.processingStatus.collectAsStateWithLifecycle()
     val currentChatModel by vm.currentChatModel.collectAsStateWithLifecycle()
@@ -645,16 +645,7 @@ private fun ChatPageContent(
                         vm.deleteMessage(it)
                     },
                     onUpdateMessage = { newNode ->
-                        vm.updateConversation(
-                            conversation.copy(
-                                messageNodes = conversation.messageNodes.map { node ->
-                                    if (node.id == newNode.id) {
-                                        newNode
-                                    } else {
-                                        node
-                                    }
-                                }
-                            ))
+                        vm.selectMessageBranch(newNode.id, newNode.selectIndex)
                         vm.saveConversationAsync()
                     },
                     onClickSuggestion = { suggestion ->
@@ -691,7 +682,7 @@ private fun ChatPageContent(
                         vm.toggleMessageFavorite(node)
                     },
                     onConversationSystemPromptChange = { newPrompt ->
-                        vm.updateConversation(conversation.copy(customSystemPrompt = newPrompt))
+                        vm.updateCustomSystemPrompt(newPrompt)
                         vm.saveConversationAsync()
                     },
                 )
@@ -875,8 +866,14 @@ private fun ChatFilesPickerSheet(
                     )
                 )
             },
-            onUpdateConversation = {
-                vm.updateConversation(it)
+            onUpdateConversation = { edited ->
+                vm.applyStreamingSafeConversationEdit { current ->
+                    current.copy(
+                        workspaceCwd = if (edited.workspaceCwd != conversation.workspaceCwd) edited.workspaceCwd else current.workspaceCwd,
+                        modeInjectionIds = if (edited.modeInjectionIds != conversation.modeInjectionIds) edited.modeInjectionIds else current.modeInjectionIds,
+                        lorebookIds = if (edited.lorebookIds != conversation.lorebookIds) edited.lorebookIds else current.lorebookIds,
+                    )
+                }
                 vm.saveConversationAsync()
             },
             showInjectionSheet = showInjectionSheet,

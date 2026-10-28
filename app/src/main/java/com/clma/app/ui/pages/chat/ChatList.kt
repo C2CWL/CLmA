@@ -1,5 +1,9 @@
 package com.clma.app.ui.pages.chat
 
+import android.os.SystemClock
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Tick01
 import me.rerere.hugeicons.stroke.CursorPointer01
@@ -280,6 +284,8 @@ private fun ChatListNormal(
             var following by remember { mutableStateOf(false) }
 
             LaunchedEffect(state) {
+                var lastFollowAt: Long? = null
+                var trailing: Job? = null
                 // 四个信号必须在同一个快照里读：拆成两个 collector 时，同一个 apply 里会读到
                 // 彼此错位的值（正是上面说的那一帧）。
                 snapshotFlow {
@@ -291,11 +297,39 @@ private fun ChatListNormal(
                     )
                 }.collect { sample ->
                     when (autoFollowAction(sample, following)) {
-                        AutoFollowAction.PAUSE -> following = false
+                        AutoFollowAction.PAUSE -> {
+                            following = false
+                            trailing?.cancel()
+                            trailing = null
+                        }
                         AutoFollowAction.RESUME -> following = true
-                        AutoFollowAction.FOLLOW ->
-                            state.requestScrollToItem(conversationUpdated.messageNodes.size + 10)
-                        AutoFollowAction.NONE -> Unit
+                        AutoFollowAction.FOLLOW -> {
+                            val wait = followScrollDelayMs(SystemClock.uptimeMillis(), lastFollowAt)
+                            if (wait == 0L) {
+                                trailing?.cancel()
+                                trailing = null
+                                lastFollowAt = SystemClock.uptimeMillis()
+                                state.requestScrollToItem(conversationUpdated.messageNodes.size + 10)
+                            } else if (trailing?.isActive != true) {
+                                trailing = launch {
+                                    delay(wait)
+                                    trailing = null
+                                    // 延迟期间用户可能开始拖动，滚动前重新读取同一快照。
+                                    val latest = AutoFollowSample(
+                                        state.isScrollInProgress, state.canScrollForward,
+                                        state.layoutInfo.totalItemsCount, loadingState,
+                                    )
+                                    if (autoFollowAction(latest, following) == AutoFollowAction.FOLLOW) {
+                                        lastFollowAt = SystemClock.uptimeMillis()
+                                        state.requestScrollToItem(conversationUpdated.messageNodes.size + 10)
+                                    }
+                                }
+                            }
+                        }
+                        AutoFollowAction.NONE -> {
+                            trailing?.cancel()
+                            trailing = null
+                        }
                     }
                 }
             }

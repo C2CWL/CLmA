@@ -115,4 +115,12 @@ class ChatAutoFollowTest {
             autoFollowAction(sample(canScrollForward = false, loading = false), following = false),
         )
     }
+    @Test
+    fun `follow has immediate leading edge and bounded trailing delay`() {
+        assertEquals(0L, followScrollDelayMs(1000, null))
+        assertEquals(100L, followScrollDelayMs(1000, 1000))
+        assertEquals(60L, followScrollDelayMs(1040, 1000))
+        assertEquals(0L, followScrollDelayMs(1100, 1000))
+        assertEquals(0L, followScrollDelayMs(2000, 1000))
+    }
 }
