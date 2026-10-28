@@ -7,13 +7,6 @@ import kotlinx.serialization.Transient
 import kotlin.uuid.Uuid
 
 @Serializable
-data class BalanceOption(
-    val enabled: Boolean = false, // 是否开启余额获取功能
-    val apiPath: String = "/credits", // 余额获取API路径
-    val resultPath: String = "data.total_usage", // 余额获取JSON路径
-)
-
-@Serializable
 enum class ClaudePromptCacheTtl(val apiValue: String?) {
     @SerialName("5m")
     FIVE_MINUTES(null),
