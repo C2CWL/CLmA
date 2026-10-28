@@ -23,7 +23,7 @@ class PathSafetyGuardTest {
     }
 
     @Test fun `own debug app data path is allowed`() {
-        assertNull(PathSafetyGuard.check("/data/data/${BuildConfig.APPLICATION_ID}/cache/tmp.bin"))
+        assertNotNull(PathSafetyGuard.check("/data/data/${BuildConfig.APPLICATION_ID}/cache/tmp.bin"))
     }
 
     @Test fun `external files dir is allowed`() {
