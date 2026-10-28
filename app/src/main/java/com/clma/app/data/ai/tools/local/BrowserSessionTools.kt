@@ -14,8 +14,8 @@ import kotlinx.serialization.json.*
 
 /** Wrap legacy tools once: every call resolves ownership before touching a WebView. */
 fun scopedBrowserTool(name: String, context: Context, invocationContext: ToolInvocationContext?, settings: SettingsStore, vault: AgentSecretsStore): Tool? {
-    val owner = caller?.callerConversationId
-    val legacy = createBrowserTool(name, context, caller)
+    val owner = invocationContext?.callerConversationId
+    val legacy = createBrowserTool(name, context, invocationContext)
     val extra = name in BROWSER_UPGRADE_TOOLS
     if (legacy == null && !extra) return null
     val base = legacy ?: browserUpgradeTool(name, context, settings, vault, owner)
@@ -118,7 +118,7 @@ private fun browserUpgradeTool(name: String, context: Context, settings: Setting
         "browser_download" -> "Start bounded background HTTP(S) download to app-private storage. Returns job_id. Uses browser proxy mode; redirects, blob URLs and private targets unsupported. Credentials are not attached."
         "browser_export_pdf" -> "Export current tab as PDF in private storage; returns job_id. Query browser_download_status for completion/file/error."
         "browser_network_export_har" -> "Export redacted HAR skeleton with partial navigation observations; NOT a complete request/subresource capture. No cookies, headers, query strings or bodies."
-        else -> "Browser session operation: $name. Jobs and tabs are scoped to the calling conversation.",
+        else -> "Browser session operation: $name. Jobs and tabs are scoped to the calling conversation."
     },
     parameters = { InputSchema.Obj(buildJsonObject {
         when (name) {

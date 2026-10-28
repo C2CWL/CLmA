@@ -7,6 +7,8 @@ import android.print.PrintAttributes
 import android.print.PrintDocumentAdapter
 import android.print.PrintDocumentInfo
 import android.print.PageRange
+import android.print.printLayout
+import android.print.printWrite
 import android.webkit.WebView
 import com.clma.app.data.datastore.SettingsStore
 import com.clma.app.data.ai.net.isBlockedDownloadUrl
@@ -123,22 +125,9 @@ object BrowserArtifacts {
             .setResolution(PrintAttributes.Resolution("pdf", "PDF", 300, 300))
             .setMinMargins(PrintAttributes.Margins.NO_MARGINS).build()
         try {
-            val layout = CompletableDeferred<Unit>()
-            adapter.onStart()
-            adapter.onLayout(null, attributes, signal, object : PrintDocumentAdapter.LayoutResultCallback() {
-                override fun onLayoutFinished(info: PrintDocumentInfo?, changed: Boolean) { layout.complete(Unit) }
-                override fun onLayoutFailed(error: CharSequence?) { layout.completeExceptionally(IllegalStateException("pdf_layout_failed")) }
-                override fun onLayoutCancelled() { layout.cancel() }
-            }, null)
-            layout.await()
+            adapter.printLayout(attributes, signal)
             ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_CREATE or ParcelFileDescriptor.MODE_TRUNCATE or ParcelFileDescriptor.MODE_READ_WRITE).use { descriptor ->
-                val write = CompletableDeferred<Unit>()
-                adapter.onWrite(arrayOf(PageRange.ALL_PAGES), descriptor, signal, object : PrintDocumentAdapter.WriteResultCallback() {
-                    override fun onWriteFinished(pages: Array<out PageRange>?) { write.complete(Unit) }
-                    override fun onWriteFailed(error: CharSequence?) { write.completeExceptionally(IllegalStateException("pdf_write_failed")) }
-                    override fun onWriteCancelled() { write.cancel() }
-                })
-                write.await()
+                adapter.printWrite(descriptor, signal)
             }
         } finally { signal.cancel(); adapter.onFinish() }
     }
