@@ -133,11 +133,11 @@ data class Assistant(
     // T-06 / (7) - cold memory: a Markdown knowledge base on disk that the model searches and
     // reads on demand (memory_index / memory_read / memory_write / memory_delete), instead of the always-injected
     // short records kept by `memory_tool`. Enabled by default; the tools are registered when
-    // this is on, workspaceId (or fallback default workspace) is available, and coldMemoryDir is configured.
+    // this is on; storage belongs to this assistant, independent of its workspace.
     // Appended last on purpose: a new field may never shift the position of an existing one.
     val coldMemoryEnabled: Boolean = true,
-    // T-06 / (7) - the cold-memory directory INSIDE the bound workspace, in the same form the
-    // working-directory picker writes: "/workspace/notes/memory". Default is "memory" ("/workspace/memory").
+    // Relative subdirectory within assistant-owned cold memory. Legacy /workspace paths
+    // are accepted for non-destructive migration; experts retain their namespace here.
     // Appended last on purpose: a new field may never shift the position of an existing one.
     val coldMemoryDir: String? = "memory",
     // P2-02 - per-tool opt-out. `localTools` toggles a whole LocalToolOption group; this set

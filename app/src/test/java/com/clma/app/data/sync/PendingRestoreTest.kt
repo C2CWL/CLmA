@@ -160,6 +160,32 @@ class PendingRestoreTest {
         assertEquals("font", File(temporary.root, "files/fonts/custom.ttf").readText())
     }
 
+    @Test fun restoresAssistantMemoryAndPreferencesToTheirRealLocations() = runBlocking {
+        val restore = restore()
+        val staging = restore.createStagingDirectory()
+        write(File(staging, "payload/files/assistant_memory/id/memory/INDEX.md"), "index")
+        write(File(staging, "payload/files/shared_prefs/chat_drafts.xml"), "drafts")
+        restore.publish(staging)
+        assertTrue(restore.installRestore(restoreSettings = {}))
+        assertEquals("index", File(temporary.root, "files/assistant_memory/id/memory/INDEX.md").readText())
+        assertEquals("drafts", File(temporary.root, "shared_prefs/chat_drafts.xml").readText())
+        assertFalse(File(temporary.root, "files/shared_prefs/chat_drafts.xml").exists())
+    }
+
+    @Test fun preferenceRestoreRollsBackOnSettingsFailure() = runBlocking {
+        write(File(temporary.root, "shared_prefs/chat_drafts.xml"), "old drafts")
+        val restore = restore()
+        val staging = restore.createStagingDirectory()
+        write(File(staging, "payload/files/shared_prefs/chat_drafts.xml"), "new drafts")
+        write(File(staging, "settings.json"), "settings")
+        restore.publish(staging)
+        try {
+            restore.installRestore(restoreSettings = { error("settings failure") })
+            throw AssertionError("Expected restore failure")
+        } catch (_: RestoreFailedException) { }
+        assertEquals("old drafts", File(temporary.root, "shared_prefs/chat_drafts.xml").readText())
+    }
+
     @Test fun cannotReplaceAlreadyPendingRestore() {
         stage(restore())
         assertThrows(IllegalStateException::class.java) { restore().createStagingDirectory() }

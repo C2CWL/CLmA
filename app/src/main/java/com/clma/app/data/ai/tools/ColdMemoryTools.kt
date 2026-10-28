@@ -183,11 +183,11 @@ object ColdMemoryRules {
  * T-06 / (7) — builds the cold-memory tool set.
  *
  * Pure wiring: [listDocs] / [readDoc] / [writeDoc] are injected by `ChatService`, which routes
- * them at the workspace the assistant is bound to. This function never touches the filesystem
+ * them at the assistant-owned memory directory. This function never touches the filesystem
  * itself, so the whole surface can be tested with fakes.
  *
- * The factory is only called when the assistant enabled cold memory AND a workspace + directory
- * are configured. That keeps the default (flag off) tool list byte-for-byte identical to the
+ * The factory is only called when the assistant enabled cold memory AND its directory
+ * is configured. That keeps the default (flag off) tool list byte-for-byte identical to the
  * pre-T-06 one — the prompt cache never sees a new schema unless the user asked for it.
  *
  * @param dirLabel human-readable directory, echoed in the index envelope for orientation.

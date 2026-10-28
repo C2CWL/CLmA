@@ -35,7 +35,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,21 +47,16 @@ import androidx.compose.ui.util.fastForEach
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clma.app.R
 import com.clma.app.data.model.Assistant
+import com.clma.app.data.ai.tools.ColdMemoryRules
 import com.clma.app.data.model.AssistantMemory
-import com.clma.app.data.db.entity.WorkspaceEntity
-import com.clma.app.data.repository.WorkspaceRepository
-import com.clma.app.ui.components.ai.WorkspaceCwdPickerSheet
 import com.clma.app.ui.components.nav.BackButton
 import com.clma.app.ui.components.ui.CardGroup
 import com.clma.app.ui.components.ui.RikkaConfirmDialog
 import com.clma.app.ui.hooks.EditStateContent
 import com.clma.app.ui.hooks.useEditState
 import com.clma.app.ui.theme.CustomColors
-import com.clma.workspace.WorkspaceStorageArea
 import org.koin.androidx.compose.koinViewModel
-import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
-import kotlinx.coroutines.launch
 
 @Composable
 fun AssistantMemoryPage(id: String) {
@@ -73,7 +67,6 @@ fun AssistantMemoryPage(id: String) {
     )
     val assistant by vm.assistant.collectAsStateWithLifecycle()
     val memories by vm.memories.collectAsStateWithLifecycle()
-    val workspaces by vm.workspaces.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     Scaffold(
@@ -96,7 +89,6 @@ fun AssistantMemoryPage(id: String) {
             innerPadding = innerPadding,
             assistant = assistant,
             memories = memories,
-            workspaces = workspaces,
             onUpdateAssistant = { vm.update(it) },
             onDeleteMemory = { vm.deleteMemory(it) },
             onAddMemory = { vm.addMemory(it) },
@@ -110,7 +102,6 @@ private fun AssistantMemoryContent(
     innerPadding: PaddingValues,
     assistant: Assistant,
     memories: List<AssistantMemory>,
-    workspaces: List<WorkspaceEntity>,
     onUpdateAssistant: (Assistant) -> Unit,
     onAddMemory: (AssistantMemory) -> Unit,
     onUpdateMemory: (AssistantMemory) -> Unit,
@@ -127,13 +118,6 @@ private fun AssistantMemoryContent(
 
     var showTimeReminderIntervalDialog by remember(assistant.id) { mutableStateOf(false) }
     var timeReminderIntervalInput by remember(assistant.id) { mutableStateOf("") }
-
-    // T-06: the depth-of-memory picker. Only meaningful once the assistant is bound to a
-    // workspace AND cold memory is on — the sheet browses that workspace's files area.
-    var showColdMemoryDirPicker by remember(assistant.id) { mutableStateOf(false) }
-    val coldMemoryWorkspace = workspaces.find { it.id == assistant.workspaceId?.toString() }
-    val workspaceRepository: WorkspaceRepository = koinInject()
-    val scope = rememberCoroutineScope()
 
     if (showTimeReminderIntervalDialog) {
         val interval = timeReminderIntervalInput.toIntOrNull()?.takeIf { it > 0 }
@@ -296,64 +280,16 @@ private fun AssistantMemoryContent(
                     Switch(
                         checked = assistant.coldMemoryEnabled,
                         onCheckedChange = { enabled ->
-                            // The app used to leave the directory entirely to the user, but the
-                            // picker could only select a folder that already existed and offered
-                            // no way to make one — so cold memory could not actually be set up.
-                            // Seed a default directory and create it, so flipping the switch just
-                            // works; the picker is still there to change it.
-                            val workspace = coldMemoryWorkspace
-                            if (enabled && assistant.coldMemoryDir == null && workspace != null) {
-                                onUpdateAssistant(
-                                    assistant.copy(
-                                        coldMemoryEnabled = true,
-                                        coldMemoryDir = DEFAULT_COLD_MEMORY_DIR_ABSOLUTE,
-                                    )
-                                )
-                                scope.launch {
-                                    runCatching {
-                                        workspaceRepository.createDirectory(
-                                            workspace.id,
-                                            WorkspaceStorageArea.FILES,
-                                            DEFAULT_COLD_MEMORY_DIR_RELATIVE,
-                                        )
-                                    }
-                                }
-                            } else {
-                                onUpdateAssistant(assistant.copy(coldMemoryEnabled = enabled))
-                            }
+                            onUpdateAssistant(assistant.copy(coldMemoryEnabled = enabled))
                         }
                     )
                 }
             )
             if (assistant.coldMemoryEnabled) {
-                if (coldMemoryWorkspace == null) {
-                    item(
-                        headlineContent = {
-                            Text(stringResource(R.string.assistant_page_cold_memory_no_workspace))
-                        },
-                        supportingContent = {
-                            Text(stringResource(R.string.assistant_page_cold_memory_no_workspace_desc))
-                        },
-                    )
-                } else {
-                    item(
-                        headlineContent = { Text(stringResource(R.string.assistant_page_cold_memory_dir)) },
-                        supportingContent = {
-                            Text(
-                                text = assistant.coldMemoryDir
-                                    ?: stringResource(R.string.assistant_page_cold_memory_dir_unset)
-                            )
-                        },
-                        trailingContent = {
-                            Icon(
-                                imageVector = HugeIcons.ArrowRight01,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        },
-                        onClick = { showColdMemoryDirPicker = true },
-                    )
-                }
+                item(
+                    headlineContent = { Text(stringResource(R.string.assistant_page_cold_memory_dir)) },
+                    supportingContent = { Text("assistant-memory/${assistant.id}/${ColdMemoryRules.normalizeDir(assistant.coldMemoryDir ?: "memory").orEmpty()}") },
+                )
             }
         }
 
@@ -432,17 +368,6 @@ private fun AssistantMemoryContent(
         }
     }
 
-    if (showColdMemoryDirPicker && coldMemoryWorkspace != null) {
-        WorkspaceCwdPickerSheet(
-            workspaceId = coldMemoryWorkspace.id,
-            currentCwd = assistant.coldMemoryDir,
-            onSelectCwd = { selected ->
-                onUpdateAssistant(assistant.copy(coldMemoryDir = selected))
-            },
-            onDismiss = { showColdMemoryDirPicker = false },
-        )
-    }
-
     RikkaConfirmDialog(
         show = pendingDeleteMemory != null,
         title = stringResource(R.string.confirm_delete),
@@ -507,11 +432,3 @@ private fun MemoryItem(
         }
     }
 }
-
-/**
- * Where cold memory goes when the user turns the feature on without having picked a directory.
- * `<workspace>/memory` inside the files area — the same form the picker writes
- * ("/workspace/memory") and the relative form the repository methods take ("memory").
- */
-private const val DEFAULT_COLD_MEMORY_DIR_ABSOLUTE = "/workspace/memory"
-private const val DEFAULT_COLD_MEMORY_DIR_RELATIVE = "memory"

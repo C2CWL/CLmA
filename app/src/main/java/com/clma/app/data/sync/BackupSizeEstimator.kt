@@ -21,16 +21,19 @@ internal object BackupSizeEstimator {
      * @param databaseFiles the main database file plus its `-wal`, if any.
      */
     fun estimate(filesDir: File, databaseFiles: List<File>): Map<BackupItem, Long> {
-        val subtreeDirs = BackupLayout.subtreeFolders.toMap()
+        val subtreeDirs = BackupLayout.subtreeFolders.groupBy({ it.first }, { it.second })
         return BackupItem.selectable.associateWith { item ->
             when (item) {
                 BackupItem.DATABASE -> databaseFiles.filter { it.isFile }.sumOf { it.length() }
                 BackupItem.CONFIG -> BackupLayout.configStoreFiles.sumOf { name ->
                     File(filesDir, "${BackupLayout.DATASTORE_DIR}/$name").takeIf { it.isFile }?.length() ?: 0L
-                }
-                BackupItem.WORKSPACES -> workspacesSize(filesDir)
+                } + (File(filesDir, "known_hosts").takeIf { it.isFile }?.length() ?: 0L) +
+                    BackupLayout.sharedPreferenceFiles.sumOf { name ->
+                        File(filesDir.parentFile, "shared_prefs/$name").takeIf { it.isFile }?.length() ?: 0L
+                    }
+                BackupItem.WORKSPACES -> workspacesSize(filesDir) + directorySize(File(filesDir, "assistant_memory"))
                 BackupItem.SECRETS -> estimateSecretsSize(filesDir)
-                else -> subtreeDirs[item]?.let { directorySize(File(filesDir, it)) } ?: 0L
+                else -> subtreeDirs[item]?.sumOf { directorySize(File(filesDir, it)) } ?: 0L
             }
         }
     }

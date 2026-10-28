@@ -16,10 +16,12 @@ internal object BackupLayout {
     val subtreeFolders: List<Pair<BackupItem, String>> = listOf(
         BackupItem.SKILLS to "skills",
         BackupItem.UPLOAD to "upload",
+        BackupItem.UPLOAD to "browser-exports",
         BackupItem.IMAGES to "images",
         BackupItem.VIDEOS to "videos",
         BackupItem.FONTS to "fonts",
         BackupItem.TOOL_OUTPUTS to "tool_outputs",
+        BackupItem.WORKSPACES to "assistant_memory",
     )
 
     private val subtreeByDir: Map<String, BackupItem> =
@@ -36,6 +38,9 @@ internal object BackupLayout {
     const val AGENT_WORKSPACE_DIR = "workspace"
 
     const val DATASTORE_DIR = "datastore"
+
+    // Never include encrypted stores or headless auto-approval state as raw preferences.
+    val sharedPreferenceFiles: Set<String> = setOf("chat_drafts.xml", "rikkahub.preferences.xml")
 
     /**
      * Only these named preference stores are archived — the whole `datastore/` directory is not,
@@ -59,6 +64,7 @@ internal object BackupLayout {
      * staged restore skips any entry this returns `null` for.
      */
     fun itemForEntry(name: String): BackupItem? {
+        if (name == "known_hosts") return BackupItem.CONFIG
         if (name == SECRETS_FILE) return BackupItem.SECRETS
         val separator = name.indexOf('/')
         if (separator <= 0 || separator == name.length - 1) return null
@@ -76,6 +82,9 @@ internal object BackupLayout {
                 // Only the per-workspace `files/` area is ever archived (never `linux/`, `tmp/`).
                 if (segments.size >= 2 && segments[1] == WORKSPACE_FILES_DIR) BackupItem.WORKSPACES else null
             }
+
+            "shared_prefs" ->
+                if (rest in sharedPreferenceFiles) BackupItem.CONFIG else null
 
             DATASTORE_DIR ->
                 if (rest.indexOf('/') < 0 && rest in configStoreFiles) BackupItem.CONFIG else null

@@ -118,6 +118,8 @@ import com.clma.app.data.datastore.SkillGroupRules
 import com.clma.app.data.ai.tools.CompactionToolResult
 import com.clma.app.data.ai.tools.buildCompactionTools
 import com.clma.app.data.ai.tools.createWorkspaceTools
+import com.clma.app.data.memory.AssistantColdMemoryStore
+import java.io.File
 import com.clma.app.data.ai.tools.buildColdMemoryTools
 import com.clma.app.data.ai.tools.buildMemorySearchTool
 import com.clma.app.data.ai.tools.ColdMemoryDoc
@@ -165,7 +167,6 @@ import com.clma.app.data.repository.FolderRepository
 import com.clma.app.data.repository.MemoryRepository
 import com.clma.app.data.repository.WorkspaceRepository
 import com.clma.workspace.WorkspaceShellStatus
-import com.clma.workspace.WorkspaceStorageArea
 import com.clma.app.web.BadRequestException
 import com.clma.app.web.NotFoundException
 import com.clma.app.utils.applyPlaceholders
@@ -2633,34 +2634,35 @@ class ChatService(
         return createWorkspaceTools(workspaceId, workspaceRepository, cwd)
     }
 
-    private suspend fun resolveColdMemoryWorkspaceId(assistant: Assistant): String? {
-        val configured = assistant.workspaceId?.toString()
-        if (!configured.isNullOrBlank() && workspaceRepository.getById(configured) != null) {
-            return configured
+    private suspend fun coldMemoryStore(assistant: Assistant): AssistantColdMemoryStore? =
+        withContext(Dispatchers.IO) {
+            val relative = ColdMemoryRules.normalizeDir(assistant.coldMemoryDir ?: "memory")
+                ?: return@withContext null
+            val root = File(context.filesDir, "assistant_memory/${assistant.id}")
+            val directory = File(root, relative).canonicalFile
+            require(directory.toPath().startsWith(root.canonicalFile.toPath()))
+            if (File(directory, ".migrated").isFile) {
+                return@withContext AssistantColdMemoryStore(directory, null)
+            }
+            // Resolve the old workspace only for the non-destructive, one-time copy.
+            val workspace = assistant.workspaceId?.toString()?.let { workspaceRepository.getById(it) }
+                ?: workspaceRepository.getAll().firstOrNull()
+            val legacy = workspace?.let {
+                val files = File(context.filesDir, "workspaces/${it.root}/files").canonicalFile
+                File(files, relative).canonicalFile.takeIf { candidate ->
+                    candidate.toPath().startsWith(files.toPath())
+                }
+            }
+            AssistantColdMemoryStore(directory, legacy)
         }
-        return workspaceRepository.getAll().firstOrNull()?.id
-    }
 
-    /**
-     * T-06 / (7) - cold memory (Markdown knowledge base). Built only when the assistant turned
-     * the feature on AND a usable workspace exists (either explicitly bound or falling back to
-     * the primary workspace) AND picked a directory inside it; otherwise this returns an empty
-     * list and the tool surface is byte-for-byte what it was before T-06.
-     *
-     * The directory is read through WorkspaceRepository, NOT through the workspace shell tools:
-     * cold memory is plain file IO, so it keeps working even when the workspace rootfs was
-     * never installed (the `workspace_*` family deliberately requires a READY rootfs).
-     */
+    /** Cold memory is independent of workspace binding and rootfs readiness. */
     private suspend fun createColdMemoryToolsIfConfigured(assistant: Assistant): List<Tool> {
         if (!assistant.coldMemoryEnabled) return emptyList()
-        val workspaceId = resolveColdMemoryWorkspaceId(assistant) ?: return emptyList()
-        val dir = ColdMemoryRules.normalizeDir(assistant.coldMemoryDir) ?: return emptyList()
-        if (workspaceRepository.getById(workspaceId) == null) return emptyList()
-
-        fun childPath(name: String): String = if (dir.isEmpty()) name else "$dir/$name"
+        val store = coldMemoryStore(assistant) ?: return emptyList()
 
         suspend fun readFile(path: String): String? = try {
-            workspaceRepository.readText(workspaceId, path)
+            withContext(Dispatchers.IO) { store.readText(path) }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -2669,35 +2671,27 @@ class ChatService(
         }
 
         val tools = buildColdMemoryTools(
-            dirLabel = if (dir.isEmpty()) {
-                ColdMemoryRules.WORKSPACE_PREFIX
-            } else {
-                "${ColdMemoryRules.WORKSPACE_PREFIX}/$dir"
-            },
+            dirLabel = "assistant-memory/${assistant.id}",
             listDocs = {
                 try {
-                    workspaceRepository.listFiles(workspaceId, WorkspaceStorageArea.FILES, dir)
-                        .filter { !it.isDirectory }
-                        .map { ColdMemoryDoc(it.name, it.sizeBytes) }
+                    withContext(Dispatchers.IO) { store.listFiles() }
+                        .map { ColdMemoryDoc(it.name, it.length()) }
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    // The directory may not exist yet (cold memory is usable the moment a path
-                    // is picked; the first write creates it). Report an empty knowledge base
-                    // rather than failing the whole memory_index call.
-                    Log.d(TAG, "coldMemory: cannot list '$dir': ${e.message}")
+                    Log.d(TAG, "coldMemory: cannot list assistant memory: ${e.message}")
                     emptyList()
                 }
             },
-            readDoc = { name -> readFile(childPath(name)) },
+            readDoc = { name -> readFile(name) },
             writeDoc = { name, content, append ->
-                val path = childPath(name)
+                val path = name
                 val text = if (append) {
                     readFile(path).orEmpty() + content
                 } else {
                     content
                 }
-                workspaceRepository.writeText(workspaceId, path, text, overwrite = true)
+                withContext(Dispatchers.IO) { store.writeText(path, text) }
                 ColdMemoryWriteResult(
                     fileName = name,
                     mode = if (append) "append" else "overwrite",
@@ -2705,14 +2699,9 @@ class ChatService(
                 )
             },
             deleteDoc = { name ->
-                val path = childPath(name)
+                val path = name
                 try {
-                    workspaceRepository.deleteFile(
-                        workspaceId,
-                        WorkspaceStorageArea.FILES,
-                        path,
-                        recursive = false,
-                    )
+                    withContext(Dispatchers.IO) { store.delete(path) }
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
@@ -2727,18 +2716,12 @@ class ChatService(
         // a note is searchable the instant it is written. An unreadable directory is reported by
         // the envelope rather than thrown, so the model still knows to fall back to memory_index.
         tools += buildMemorySearchTool(
-            dirLabel = if (dir.isEmpty()) {
-                ColdMemoryRules.WORKSPACE_PREFIX
-            } else {
-                "${ColdMemoryRules.WORKSPACE_PREFIX}/$dir"
-            },
+            dirLabel = "assistant-memory/${assistant.id}",
             search = { query, limit ->
                 try {
-                    val documents = workspaceRepository
-                        .listFiles(workspaceId, WorkspaceStorageArea.FILES, dir)
-                        .filter { !it.isDirectory && ColdMemoryRules.isMarkdown(it.name) }
+                    val documents = withContext(Dispatchers.IO) { store.listFiles() }
                         .mapNotNull { file ->
-                            readFile(childPath(file.name))?.let { text ->
+                            readFile(file.name)?.let { text ->
                                 ColdMemoryLexicalSearch.Document(name = file.name, text = text)
                             }
                         }
@@ -2746,7 +2729,7 @@ class ChatService(
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    Log.d(TAG, "coldMemorySearch: cannot read '$dir': ${e.message}")
+                    Log.d(TAG, "coldMemorySearch: cannot read assistant memory: ${e.message}")
                     ColdMemorySearchOutcome(
                         available = false,
                         note = "the knowledge base could not be read: ${e.message ?: "unknown error"}",
@@ -2767,15 +2750,11 @@ class ChatService(
      */
     private suspend fun coldMemoryPlaybookReader(assistant: Assistant): (suspend (String) -> String?)? {
         if (!assistant.coldMemoryEnabled) return null
-        val workspaceId = resolveColdMemoryWorkspaceId(assistant) ?: return null
-        val dir = ColdMemoryRules.normalizeDir(assistant.coldMemoryDir) ?: return null
-        if (workspaceRepository.getById(workspaceId) == null) return null
-
-        fun childPath(name: String): String = if (dir.isEmpty()) name else "$dir/$name"
+        val store = coldMemoryStore(assistant) ?: return null
 
         return { fileName ->
             try {
-                workspaceRepository.readText(workspaceId, childPath(fileName))
+                withContext(Dispatchers.IO) { store.readText(fileName) }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -2802,24 +2781,19 @@ class ChatService(
         val snapshots = AutomationRecorder.drain()
         if (snapshots.isEmpty()) return
         if (!assistant.coldMemoryEnabled) return
-        val workspaceId = resolveColdMemoryWorkspaceId(assistant) ?: return
-        val dir = ColdMemoryRules.normalizeDir(assistant.coldMemoryDir) ?: return
-        if (workspaceRepository.getById(workspaceId) == null) return
+        val store = coldMemoryStore(assistant) ?: return
 
         for (snapshot in snapshots) {
             val fileName = AppPlaybookRules.fileNameFor(snapshot.packageName) ?: continue
-            val path = if (dir.isEmpty()) fileName else "$dir/$fileName"
+            val path = fileName
             runCatching {
-                val existing = runCatching { workspaceRepository.readText(workspaceId, path) }
+                val existing = runCatching { withContext(Dispatchers.IO) { store.readText(path) } }
                     .getOrNull()
                     .orEmpty()
                 val (prose, oldLines) = AppPlaybookFile.split(existing)
-                workspaceRepository.writeText(
-                    workspaceId,
-                    path,
-                    AppPlaybookFile.render(prose, AppPlaybookFile.mergeLines(oldLines, snapshot.lines)),
-                    overwrite = true,
-                )
+                withContext(Dispatchers.IO) {
+                    store.writeText(path, AppPlaybookFile.render(prose, AppPlaybookFile.mergeLines(oldLines, snapshot.lines)))
+                }
             }.onFailure { e ->
                 Log.d(TAG, "flushAutomationPlaybook($fileName) failed: ${e.message}")
             }
@@ -2842,11 +2816,10 @@ class ChatService(
 
     private suspend fun readColdMemoryIndexPrompt(assistant: Assistant): String? {
         if (!assistant.coldMemoryEnabled) return null
-        val workspaceId = resolveColdMemoryWorkspaceId(assistant) ?: return null
-        val dir = ColdMemoryRules.normalizeDir(assistant.coldMemoryDir) ?: return null
-        val indexPath = if (dir.isEmpty()) ColdMemoryRules.INDEX_FILE_NAME else "$dir/${ColdMemoryRules.INDEX_FILE_NAME}"
+        val store = coldMemoryStore(assistant) ?: return null
+        val indexPath = ColdMemoryRules.INDEX_FILE_NAME
         val indexContent = try {
-            workspaceRepository.readText(workspaceId, indexPath)?.trim()
+            withContext(Dispatchers.IO) { store.readText(indexPath) }?.trim()
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {

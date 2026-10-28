@@ -8,7 +8,7 @@ import com.clma.app.data.agentdef.AgentDefinitionDefaults.NAMESPACE_ROOT
  *
  * Kept as an object of pure functions (no Room, no Android, no `Assistant`) so the rule
  * "what may a namespace path contain" is unit-testable on a plain JVM, which matters because
- * the value ends up as a **file path** under the user's workspace. The rule is deliberately
+ * the value ends up as a **file path** under assistant-owned cold memory. The rule is deliberately
  * narrow: lowercase ASCII letters, digits and single dashes; no dots at all (so `..` cannot be
  * spelled), no separators, length-bounded. Anything that does not fit is normalised into
  * something that does, and [isValidSlug] is what the write path will re-check.
@@ -69,7 +69,7 @@ object AgentNamespace {
         return if (isValidSlug(cleaned)) cleaned else slugify(cleaned).ifEmpty { null }
     }
 
-    /** `agents/<slug>` — the expert's private directory inside the parent workspace. */
+    /** `agents/<slug>` — the expert's private directory inside the parent assistant memory. */
     fun namespaceDirFor(slug: String?): String? {
         val valid = normalizeSlug(slug) ?: return null
         return "$NAMESPACE_ROOT/$valid"
@@ -77,9 +77,7 @@ object AgentNamespace {
 
     /**
      * `agents/<slug>/memory` — what goes into the synthesised assistant's `coldMemoryDir`.
-     * Relative on purpose: `ColdMemoryRules.normalizeDir` resolves it against whichever
-     * workspace the run is bound to, so an expert follows its parent's workspace instead of
-     * pinning one.
+     * Relative to the parent assistant memory root, independent of workspace binding.
      */
     fun coldMemoryDirFor(slug: String?): String? {
         val dir = namespaceDirFor(slug) ?: return null
