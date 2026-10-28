@@ -38,4 +38,13 @@ class LoopPhaseTest {
             }
         }
     }
+
+    @Test
+    fun `a coarse phase is the wall-clock position in the loop`() {
+        assertEquals(0f, loopPhaseAt(0, 3200, 0.25f), 1e-6f)
+        assertEquals(0.5f, loopPhaseAt(1600, 3200, 0.25f), 1e-6f)
+        assertEquals(0.25f, loopPhaseAt(4000, 3200, 0f), 1e-6f)
+        assertEquals(0.75f, loopPhaseAt(-800, 3200, 0f), 1e-6f)
+        assertEquals(0.25f, loopPhaseAt(100, 0, 0.25f), 1e-6f)
+    }
 }

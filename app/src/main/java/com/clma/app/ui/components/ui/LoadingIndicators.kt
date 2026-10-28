@@ -68,6 +68,10 @@ fun ChatLoadingIndicator(
     photoShown: Boolean = false,
     hazeState: HazeState? = null,
 ) {
+    // 回复已经以 80ms 的步长在长，指示器再按屏幕刷新率重绘只是白抢 RenderThread/
+    // SurfaceFlinger（实测那两项是输入法候选框掉帧的主要对手）。回复中降到约 15fps；
+    // 思考/工作中文字不动，保持原速。
+    val frameIntervalMs = if (phase == GenerationPhase.REPLYING) 66L else 0L
     when (LocalSettings.current.displaySetting.effectiveLoadingIndicatorStyle) {
         LoadingIndicatorStyle.APP_ICON -> Row(
             modifier = Modifier.padding(8.dp),
@@ -89,15 +93,24 @@ fun ChatLoadingIndicator(
         }
 
         LoadingIndicatorStyle.ATOM_DOTS -> ThinkingRowSlot(photoShown, hazeState) { rowModifier ->
-            AtomDotsThinkingRow(phase = phase, processingStatus = processingStatus, modifier = rowModifier)
+            AtomDotsThinkingRow(
+                phase = phase, processingStatus = processingStatus, modifier = rowModifier,
+                frameIntervalMs = frameIntervalMs,
+            )
         }
 
         LoadingIndicatorStyle.BREATHING_ORB -> ThinkingRowSlot(photoShown, hazeState) { rowModifier ->
-            BreathingOrbThinkingRow(phase = phase, processingStatus = processingStatus, modifier = rowModifier)
+            BreathingOrbThinkingRow(
+                phase = phase, processingStatus = processingStatus, modifier = rowModifier,
+                frameIntervalMs = frameIntervalMs,
+            )
         }
 
         LoadingIndicatorStyle.TWIN_ORBIT -> ThinkingRowSlot(photoShown, hazeState) { rowModifier ->
-            TwinOrbitThinkingRow(phase = phase, processingStatus = processingStatus, modifier = rowModifier)
+            TwinOrbitThinkingRow(
+                phase = phase, processingStatus = processingStatus, modifier = rowModifier,
+                frameIntervalMs = frameIntervalMs,
+            )
         }
     }
 }
