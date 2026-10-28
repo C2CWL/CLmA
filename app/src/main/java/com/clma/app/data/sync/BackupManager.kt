@@ -64,6 +64,15 @@ class BackupManager(
                     addFile(zip, snapshot, DatabaseBackup.ARCHIVE_DATABASE)
                 }
                 if (BackupItem.CONFIG in selected) {
+                    for (name in BackupLayout.sharedPreferenceFiles) {
+                        // commit waits for pending apply writes before the XML snapshot is read.
+                        check(context.getSharedPreferences(name.removeSuffix(".xml"), Context.MODE_PRIVATE)
+                            .edit().commit()) { "Cannot flush backup preferences: $name" }
+                        val file = File(context.filesDir.parentFile, "shared_prefs/$name")
+                        if (file.isFile) addFile(zip, file, "shared_prefs/$name")
+                    }
+                    val knownHosts = File(context.filesDir, "known_hosts")
+                    if (knownHosts.isFile) addFile(zip, knownHosts, "known_hosts")
                     for (name in BackupLayout.configStoreFiles) {
                         val file = File(context.filesDir, "${BackupLayout.DATASTORE_DIR}/$name")
                         if (!file.isFile) continue

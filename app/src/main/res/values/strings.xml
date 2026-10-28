@@ -134,7 +134,7 @@
   <string name="assistant_page_context_reminder_threshold_value_tokens">%1$d%% (≈ %2$s tokens of %3$s)</string>
   <string name="assistant_page_context_reminder_threshold_window_unknown">%1$d%% (context window unknown, the reminder will not fire)</string>
   <string name="assistant_page_cold_memory">Cold memory (Markdown)</string>
-  <string name="assistant_page_cold_memory_desc">Adds memory_index / memory_read / memory_write tools that work on a folder of Markdown files inside the bound workspace. Unlike the records above, these documents stay on disk and are pulled in on demand, so a large knowledge base costs nothing until it is read. Off by default.</string>
+  <string name="assistant_page_cold_memory_desc">Markdown knowledge base owned by this assistant, independent of workspaces. Existing notes are copied without deleting the originals. Included in workspace backups.</string>
   <string name="assistant_page_cold_memory_no_workspace">No workspace bound</string>
   <string name="assistant_page_cold_memory_no_workspace_desc">Bind a workspace on the Basic settings page first. Cold memory lives inside a workspace folder.</string>
   <string name="assistant_page_cold_memory_dir">Knowledge base folder</string>
@@ -219,7 +219,7 @@
   <string name="backup_item_images">Images</string>
   <string name="backup_item_videos">Videos</string>
   <string name="backup_item_fonts">Fonts</string>
-  <string name="backup_item_workspaces">Workspaces</string>
+  <string name="backup_item_workspaces">Workspaces and assistant memory</string>
   <string name="backup_item_tool_outputs">Tool outputs</string>
   <string name="backup_item_config">Preferences</string>
   <string name="backup_item_secrets">Secrets</string>

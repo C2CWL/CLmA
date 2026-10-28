@@ -15,6 +15,19 @@ class BackupLayoutTest {
     }
 
     @Test
+    fun `assistant memory browser exports and known hosts are restorable`() {
+        assertEquals(BackupItem.WORKSPACES, BackupLayout.itemForEntry("assistant_memory/id/memory/INDEX.md"))
+        assertEquals(BackupItem.UPLOAD, BackupLayout.itemForEntry("browser-exports/report.pdf"))
+        assertEquals(BackupItem.CONFIG, BackupLayout.itemForEntry("known_hosts"))
+        assertNull(BackupLayout.itemForEntry("assistant_memory/../secret"))
+        assertNull(BackupLayout.itemForEntry("known_hosts/../secret"))
+        assertEquals(BackupItem.CONFIG, BackupLayout.itemForEntry("shared_prefs/chat_drafts.xml"))
+        assertEquals(BackupItem.CONFIG, BackupLayout.itemForEntry("shared_prefs/rikkahub.preferences.xml"))
+        assertNull(BackupLayout.itemForEntry("shared_prefs/agent_secrets.xml"))
+        assertNull(BackupLayout.itemForEntry("shared_prefs/headless_conversations.xml"))
+    }
+
+    @Test
     fun `workspace entries map only into the files area`() {
         assertEquals(BackupItem.WORKSPACES, BackupLayout.itemForEntry("workspaces/abc/files/a.txt"))
         assertEquals(BackupItem.WORKSPACES, BackupLayout.itemForEntry("workspaces/abc/files/deep/a.txt"))

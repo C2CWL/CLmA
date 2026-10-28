@@ -1,5 +1,6 @@
 package com.clma.app.data.sync
 
+import java.nio.file.Files
 import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -16,6 +17,25 @@ class BackupSizeEstimatorTest {
             parentFile?.mkdirs()
             writeBytes(ByteArray(bytes))
         }
+
+    @Test
+    fun `additional trees accumulate instead of replacing the first folder`() {
+        val root = Files.createTempDirectory("backup-size-extra").toFile()
+        try {
+            fun file(path: String, content: String) {
+                File(root, path).apply { parentFile.mkdirs(); writeText(content) }
+            }
+            file("upload/a", "abc")
+            file("browser-exports/b", "12345")
+            file("assistant_memory/id/memory/note.md", "notes")
+            file("workspace/a", "ab")
+            file("known_hosts", "host")
+            val sizes = BackupSizeEstimator.estimate(root, emptyList())
+            assertEquals(8L, sizes[BackupItem.UPLOAD])
+            assertEquals(7L, sizes[BackupItem.WORKSPACES])
+            assertEquals(4L, sizes[BackupItem.CONFIG])
+        } finally { root.deleteRecursively() }
+    }
 
     @Test
     fun `directory size sums nested files and is zero when missing`() {

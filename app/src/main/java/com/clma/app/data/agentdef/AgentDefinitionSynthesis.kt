@@ -31,10 +31,8 @@ fun AgentDefinition.toAssistant(parent: Assistant): Assistant = parent.copy(
     disabledLocalTools = disabledLocalTools ?: parent.disabledLocalTools,
     mcpServers = mcpServers?.let(::parseUuidSet) ?: parent.mcpServers,
     enabledSkills = skills ?: parent.enabledSkills,
-    // D9: the expert's private namespace *within the parent's workspace*. `workspaceId` is
-    // inherited on purpose — the namespace is a subdirectory, not a separate workspace — and
-    // this is inert unless the parent already enabled cold memory (T-06 gates the tools on
-    // `coldMemoryEnabled` + a bound workspace + a usable dir).
+    // Expert notes have a private subdirectory within the parent's assistant-owned memory.
+    // Workspace binding is inherited for workspace tools, not for cold-memory storage.
     coldMemoryDir = AgentNamespace.coldMemoryDirFor(slug) ?: parent.coldMemoryDir,
 )
 

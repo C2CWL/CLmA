@@ -135,6 +135,11 @@ internal class PendingRestore(
                 }
                 File(databaseFile.parentFile, name)
             }
+            path.startsWith("files/shared_prefs/") -> {
+                val name = path.removePrefix("files/shared_prefs/")
+                require(name in BackupLayout.sharedPreferenceFiles) { "Invalid preference restore path" }
+                resolveInside(File(filesDir.parentFile, "shared_prefs"), name)
+            }
             path.startsWith("files/") -> resolveInside(filesDir, path.removePrefix("files/"))
             else -> error("Invalid restore path: $path")
         }
