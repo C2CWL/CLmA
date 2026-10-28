@@ -47,3 +47,6 @@ internal fun autoFollowAction(sample: AutoFollowSample, following: Boolean): Aut
     following && sample.loading -> AutoFollowAction.FOLLOW
     else -> AutoFollowAction.NONE
 }
+
+internal fun followScrollDelayMs(now: Long, lastFollowAt: Long?, minIntervalMs: Long = 100): Long =
+    if (lastFollowAt == null) 0 else (minIntervalMs - (now - lastFollowAt)).coerceAtLeast(0)
