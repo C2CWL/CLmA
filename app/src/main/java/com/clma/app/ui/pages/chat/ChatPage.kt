@@ -157,7 +157,7 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null, is
     // already shows instead of adding a second surface.
     val subAgentRegistry: SubAgentRegistry = koinInject()
     val subAgentRuns by subAgentRegistry.runs.collectAsStateWithLifecycle()
-    val subAgentStatus = subAgentStatusLine(subAgentRuns)
+    val subAgentStatus = subAgentStatusLine(subAgentRuns, conversation.id)
     val mergedStatus = listOfNotNull(processingStatus, subAgentStatus)
         .joinToString(separator = "  ·  ")
         .ifBlank { null }
@@ -360,9 +360,12 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null, is
  * active, so the status line is exactly as before on an install that never dispatches.
  */
 @Composable
-private fun subAgentStatusLine(runs: Map<String, SubAgentRun>): String? {
+private fun subAgentStatusLine(runs: Map<String, SubAgentRun>, conversationId: Uuid): String? {
+    // Only THIS conversation's runs: the registry is process-wide and spans every assistant,
+    // so an unfiltered read made an unrelated chat announce "N sub-agents running".
     val active = runs.values.filter {
-        it.status == SubAgentStatus.RUNNING || it.status == SubAgentStatus.PENDING
+        (it.status == SubAgentStatus.RUNNING || it.status == SubAgentStatus.PENDING) &&
+            it.parentChatId == conversationId.toString()
     }
     if (active.isEmpty()) return null
     var nowMs by remember { mutableLongStateOf(System.currentTimeMillis()) }

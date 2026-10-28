@@ -1962,4 +1962,10 @@ mDNSアドレス: .localホスト名を使用し、IPを知らなくても同じ
   <string name="workspace_detail_settings_save_failed">設定の保存に失敗しました</string>
   <string name="chat_page_continuing">接続が切れました — 返信の続きを生成中（%1$d/%2$d）</string>
   <string name="chat_page_subagents_running">サブエージェント %1$d 件実行中 · %2$s</string>
+  <string name="subagent_notification_channel">サブエージェント完了通知</string>
+  <string name="subagent_notification_title">サブエージェントが完了しました</string>
+  <string name="subagent_notification_text">%1$s · %2$s</string>
+  <string name="subagent_notification_status_succeeded">完了</string>
+  <string name="subagent_notification_status_failed">失敗</string>
+  <string name="subagent_notification_status_timed_out">タイムアウト</string>
 </resources>

@@ -138,6 +138,11 @@ class SubAgentEngine(
         org.koin.java.KoinJavaComponent.getKoin().get<ChatService>()
     }
 
+    /** Application context, resolved the same lazy way as [chatService] — only notifications need it. */
+    private val appContext: android.content.Context by lazy {
+        org.koin.java.KoinJavaComponent.getKoin().get<android.content.Context>()
+    }
+
     /**
      * Phase 24 — maps a sub-agent run id to its `agent_runs` ledger row id. Populated when
      * the run is dispatched, consulted by [executeRun] / [markTerminal] when transitioning
@@ -870,6 +875,17 @@ class SubAgentEngine(
         )
         ConversationInjections.push(parentUuid, SubAgentCompletionNotice.format(run, usageLine))
         Log.i(TAG, "queued completion notice for sub-agent ${run.id} (${run.status}) into parent $parentChatId")
+        // Option C — an idle parent never issues the next request, so the injection above would
+        // sit in the queue unseen. Tell the user with a notification instead of starting a
+        // generation: no extra turn, no extra tokens, and the decision stays theirs. A parent
+        // that is generating already drains the queue on its next loop step, so it is skipped.
+        // Guarded: a missing notification grant (or an unmocked Context in a JVM test) must
+        // never turn a finished run into a failed one.
+        runCatching {
+            if (!chatService.isGenerating(parentUuid)) {
+                SubAgentCompletionNotifier.post(appContext, parentChatId, run)
+            }
+        }
     }
 
     /**

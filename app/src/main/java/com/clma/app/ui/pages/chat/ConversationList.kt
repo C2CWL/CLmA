@@ -184,7 +184,10 @@ fun ConversationList(
                             onEnterSelection = onEnterSelection,
                             modifier = Modifier
                         )
-                        val children = childrenByParent[item.conversation.id].orEmpty().filter { it.folderId == item.conversation.folderId }
+                        // A sub-agent conversation belongs under its parent and nowhere else. Requiring equal
+                        // folder ids here used to leave a child whose archive folder differed
+                        // from its parent's floating in the top-level list instead of nesting.
+                        val children = childrenByParent[item.conversation.id].orEmpty()
                         if (children.isNotEmpty()) {
                             val expanded = expandedParents[item.conversation.id] == true
                             Text(
