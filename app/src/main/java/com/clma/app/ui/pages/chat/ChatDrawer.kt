@@ -145,6 +145,7 @@ fun ChatDrawerContent(
     val drawerVm: ChatDrawerVM = koinViewModel(viewModelStoreOwner = activity)
 
     val conversations = drawerVm.conversations.collectAsLazyPagingItems()
+    val subAgentConversations by drawerVm.subAgentConversations.collectAsStateWithLifecycle()
     val folders by drawerVm.folders.collectAsStateWithLifecycle()
     val selectedFolderId by drawerVm.selectedFolderId.collectAsStateWithLifecycle()
     val archiveFolderId by drawerVm.archiveFolderId.collectAsStateWithLifecycle()
@@ -467,6 +468,7 @@ fun ChatDrawerContent(
             ConversationList(
                 current = current,
                 conversations = conversations,
+                subAgentConversations = subAgentConversations,
                 conversationJobs = conversationJobs.keys,
                 listState = conversationListState,
                 contentPadding = PaddingValues(top = topAreaHeight + 12.dp, bottom = bottomBarHeight + 12.dp),

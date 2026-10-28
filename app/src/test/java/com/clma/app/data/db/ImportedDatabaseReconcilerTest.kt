@@ -43,42 +43,37 @@ class ImportedDatabaseReconcilerTest {
             ?: error("could not find the AppDatabase schema export directory, tried: $candidates")
     }
 
-    private fun latestSchemaFile(): File {
-        val dir = findSchemaDir()
-        return dir.listFiles { f -> f.extension == "json" }
-            ?.maxByOrNull { it.nameWithoutExtension.toIntOrNull() ?: -1 }
-            ?: error("no schema JSON files found under ${dir.absolutePath}")
-    }
+    private fun stagingSchemaFile(): File = File(findSchemaDir(), "31.json")
 
-    private fun latestSchemaDatabaseObject(): JsonObject {
-        val file = latestSchemaFile()
+    private fun stagingSchemaDatabaseObject(): JsonObject {
+        val file = stagingSchemaFile()
         val root = Json.parseToJsonElement(file.readText()).jsonObject
         return root["database"]!!.jsonObject
     }
 
     @Test
-    fun `expected version matches the newest exported schema`() {
-        val database = latestSchemaDatabaseObject()
+    fun `expected version matches the staging exported schema`() {
+        val database = stagingSchemaDatabaseObject()
         val schemaVersion = database["version"]!!.jsonPrimitive.int
         assertEquals(schemaVersion, ImportedDatabaseReconciler.EXPECTED_VERSION)
     }
 
     @Test
-    fun `expected identity hash matches the newest exported schema`() {
-        val database = latestSchemaDatabaseObject()
+    fun `expected identity hash matches the staging exported schema`() {
+        val database = stagingSchemaDatabaseObject()
         val schemaHash = database["identityHash"]!!.jsonPrimitive.content
         assertEquals(schemaHash, ImportedDatabaseReconciler.EXPECTED_IDENTITY_HASH)
     }
 
     @Test
-    fun `expected version matches the newest schema file's own name`() {
-        val file = latestSchemaFile()
+    fun `expected version matches the staging schema file's own name`() {
+        val file = stagingSchemaFile()
         val nameVersion = file.nameWithoutExtension.toInt()
         assertEquals(nameVersion, ImportedDatabaseReconciler.EXPECTED_VERSION)
     }
 
     @Test
-    fun `expected version matches the version declared in AppDatabase`() {
+    fun `staging version precedes AppDatabase migration`() {
         val candidates = listOf(
             File("src/main/java/com/clma/app/data/db/AppDatabase.kt"),
             File("app/src/main/java/com/clma/app/data/db/AppDatabase.kt"),
@@ -90,7 +85,7 @@ class ImportedDatabaseReconcilerTest {
         }
         val declaredVersion = Regex("""version\s*=\s*(\d+)""").find(file.readText())
             ?.groupValues?.get(1)?.toInt()
-        assertEquals(declaredVersion, ImportedDatabaseReconciler.EXPECTED_VERSION)
+        assertEquals(declaredVersion, ImportedDatabaseReconciler.EXPECTED_VERSION + 1)
     }
 
     @Test

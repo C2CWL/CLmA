@@ -15,7 +15,7 @@ package com.clma.app.subagent
  *   layer) to do all work inline.
  * - [ASSIST]: conservative. Low caps, short slot wait, tight max_trips/timeout ceilings.
  *   Description tone discourages delegation ("only when your own context cannot fit the work").
- * - [NORMAL]: the previous default. Caps match the old compiled defaults (global 30, per-assistant 3).
+ * - [NORMAL]: standard dispatch (global 30, per-assistant 8).
  * - [BURST]: high concurrency. Encourages parallel dispatch in the tool description.
  * - [UNLEASHED]: maximum. Caps at the engine's hard limits, loosest ceilings, aggressive tone.
  */
@@ -51,9 +51,7 @@ enum class DescriptionTone { NEVER, ASSIST, NORMAL, BURST, UNLEASHED }
 /**
  * Pure mapping from a [SubAgentDispatchProfile] to its [DispatchCaps]. Unit-testable on a bare JVM.
  *
- * The [NORMAL] values are the old compiled defaults (global 30 = [SubAgentDefaults.GLOBAL_CONCURRENCY_CAP],
- * per-assistant 3 = [SubAgentDefaults.DEFAULT_MAX_TRIPS]'s sibling, slot wait 30s, trips 30, timeout 1800s)
- * so an install that never changes the profile behaves exactly as before.
+ * The [NORMAL] profile allows 8 concurrent runs per assistant, with a global cap of 30.
  */
 object SubAgentDispatchProfileRules {
 
@@ -69,7 +67,7 @@ object SubAgentDispatchProfileRules {
     fun caps(profile: SubAgentDispatchProfile): DispatchCaps = when (profile) {
         SubAgentDispatchProfile.NEVER -> DispatchCaps(0, 0, 0, 0, 0, DescriptionTone.NEVER)
         SubAgentDispatchProfile.ASSIST -> DispatchCaps(4, 1, 10_000L, 8, 300, DescriptionTone.ASSIST)
-        SubAgentDispatchProfile.NORMAL -> DispatchCaps(30, 3, 30_000L, 30, 1800, DescriptionTone.NORMAL)
+        SubAgentDispatchProfile.NORMAL -> DispatchCaps(30, 8, 30_000L, 30, 1800, DescriptionTone.NORMAL)
         SubAgentDispatchProfile.BURST -> DispatchCaps(48, 8, 60_000L, 30, 1800, DescriptionTone.BURST)
         SubAgentDispatchProfile.UNLEASHED -> DispatchCaps(64, 16, 120_000L, 60, 3600, DescriptionTone.UNLEASHED)
     }

@@ -65,6 +65,9 @@ class ChatDrawerVM(
         .flatMapLatest { folderRepo.getFoldersOfAssistant(it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val subAgentConversations = assistantIdFlow.flatMapLatest { conversationRepo.observeSubAgentConversations(it) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     /** 当前视图下所有会话的 ID 列表（实时响应增删改，仅查 id 列，性能轻量），供多选全选/全不选使用。 */
     val currentViewConversationIds: StateFlow<List<Uuid>> =
         combine(assistantIdFlow, _selectedFolderId) { assistantId, folderId ->

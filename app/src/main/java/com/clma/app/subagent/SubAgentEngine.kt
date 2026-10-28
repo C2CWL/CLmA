@@ -605,6 +605,7 @@ class SubAgentEngine(
             title = "[Sub-agent] ${request.label?.take(40) ?: request.task.take(40)}",
             chatModelId = resolvedChatModelId,
             folderId = archiveFolder,
+            parentConversationId = parentChatId?.let { runCatching { Uuid.parse(it) }.getOrNull() },
         )
         conversationRepo.insertConversation(conv)
         chatService.initializeConversation(conv.id)
