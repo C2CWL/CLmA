@@ -50,11 +50,13 @@ class ExternalAutomationReceiver : BroadcastReceiver(), KoinComponent {
 
         when (val classification = dispatcher.classifyCaller(callerLabel)) {
             is ExternalAutomationDispatcher.TrustResult.Disabled -> {
-                dispatcher.rejectAndCallback(callerLabel, action.orEmpty(), requestId, returnAction, returnPackage, "feature_disabled")
+                // Do not callback to unverified caller on reject; only log.
+                dispatcher.log(callerLabel, action.orEmpty(), "rejected:feature_disabled", requestId)
                 return
             }
             is ExternalAutomationDispatcher.TrustResult.PendingUserApproval -> {
-                dispatcher.rejectAndCallback(callerLabel, action.orEmpty(), requestId, returnAction, returnPackage, "untrusted_caller")
+                // Do not callback to untrusted caller on reject; only log.
+                dispatcher.log(callerLabel, action.orEmpty(), "rejected:untrusted_caller", requestId)
                 return
             }
             is ExternalAutomationDispatcher.TrustResult.Trusted -> { /* proceed */ }
