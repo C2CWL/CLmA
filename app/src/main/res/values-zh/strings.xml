@@ -3045,4 +3045,12 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
     <string name="setting_compaction_engine_hybrid">联动</string>
     <string name="setting_compaction_engine_desc">手动与自动压缩共用。TOMC：CPU 选择原文，不请求模型；联动：模型摘要＋独立保留的原文证据（占目标三分之一）。这是 TOMC2 的 Android 适配，非完整 Python 编译器。预算过小仍可能漏掉重要记录，原文保留在会话库中。未切换时沿用模型模式。</string>
   <string name="chat_subagent_children">%1$s 子智能体（%2$d）</string>
+
+  <!-- Runtime Timezone Settings -->
+  <string name="setting_runtime_timezone_title">应用时区</string>
+  <string name="setting_runtime_timezone_desc">解决开启代理/梯子导致系统时区漂移的问题。影响定时任务、提示词时间注入和时间工具。</string>
+  <string name="setting_runtime_timezone_follow_system">跟随系统</string>
+  <string name="setting_runtime_timezone_dialog_title">选择时区</string>
+  <string name="setting_runtime_timezone_custom_hint">自定义 IANA 时区（例如 Asia/Shanghai）</string>
+  <string name="setting_runtime_timezone_invalid">无效的时区 ID</string>
 </resources>

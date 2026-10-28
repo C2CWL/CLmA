@@ -134,6 +134,7 @@ import com.clma.app.data.event.AppEvent
 import com.clma.app.data.event.AppEventBus
 import com.clma.app.utils.readClipboardText
 import com.clma.app.utils.writeClipboardText
+import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.TextStyle
 import java.util.Locale
@@ -550,7 +551,9 @@ class LocalTools(
                 )
             },
             execute = {
-                val now = ZonedDateTime.now()
+                val customTz = settingsStore.settingsFlow.value.customTimezone
+                val zoneId = customTz?.let { runCatching { ZoneId.of(it) }.getOrNull() } ?: ZoneId.systemDefault()
+                val now = ZonedDateTime.now(zoneId)
                 val date = now.toLocalDate()
                 val time = now.toLocalTime().withNano(0)
                 val weekday = now.dayOfWeek

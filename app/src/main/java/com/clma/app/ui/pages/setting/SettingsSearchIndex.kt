@@ -237,6 +237,7 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
     SettingsSearchPageSpec(
         route = Screen.SettingRuntime,
         items = listOf(
+            row(R.string.setting_runtime_timezone_title, R.string.setting_runtime_timezone_desc),
             row(R.string.setting_model_page_generation_limits),
             row(R.string.setting_model_page_turn_budget, R.string.setting_model_page_turn_budget_desc),
             row(R.string.setting_model_page_max_tool_steps, R.string.setting_model_page_max_tool_steps_desc),

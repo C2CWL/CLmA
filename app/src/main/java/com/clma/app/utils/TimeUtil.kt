@@ -11,8 +11,7 @@ import java.time.format.TextStyle
 import java.time.temporal.ChronoField
 import java.util.Locale
 
-fun Instant.toLocalDate(): String {
-    val zoneId = ZoneId.systemDefault()
+fun Instant.toLocalDate(zoneId: ZoneId = ZoneId.systemDefault()): String {
     val localDateTime = this.atZone(zoneId).toLocalDateTime()
 
     return DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
@@ -20,8 +19,7 @@ fun Instant.toLocalDate(): String {
         .format(localDateTime)
 }
 
-fun Instant.toLocalDateTime(): String {
-    val zoneId = ZoneId.systemDefault()
+fun Instant.toLocalDateTime(zoneId: ZoneId = ZoneId.systemDefault()): String {
     val localDateTime = this.atZone(zoneId).toLocalDateTime()
 
     return DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)
@@ -29,8 +27,7 @@ fun Instant.toLocalDateTime(): String {
         .format(localDateTime)
 }
 
-fun Instant.toLocalTime(): String {
-    val zoneId = ZoneId.systemDefault()
+fun Instant.toLocalTime(zoneId: ZoneId = ZoneId.systemDefault()): String {
     val localDateTime = this.atZone(zoneId).toLocalDateTime()
 
     return DateTimeFormatter.ofLocalizedTime(FormatStyle.MEDIUM)

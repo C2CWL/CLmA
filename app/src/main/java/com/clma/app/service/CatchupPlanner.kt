@@ -34,10 +34,10 @@ object CatchupPlanner {
         val skippedCatchupCount: Int,
     )
 
-    fun plan(job: ScheduledJobEntity, lastRunMs: Long?, nowMs: Long): CatchupPlan {
+    fun plan(job: ScheduledJobEntity, lastRunMs: Long?, nowMs: Long, defaultZone: ZoneId = ZoneId.systemDefault()): CatchupPlan {
         return when (job.scheduleType) {
             "once" -> planOnce(job, nowMs)
-            "cron" -> planCron(job, lastRunMs, nowMs)
+            "cron" -> planCron(job, lastRunMs, nowMs, defaultZone)
             else   -> CatchupPlan(emptyList(), 0)
         }
     }
@@ -62,10 +62,10 @@ object CatchupPlanner {
         }
     }
 
-    private fun planCron(job: ScheduledJobEntity, lastRunMs: Long?, nowMs: Long): CatchupPlan {
+    private fun planCron(job: ScheduledJobEntity, lastRunMs: Long?, nowMs: Long, defaultZone: ZoneId = ZoneId.systemDefault()): CatchupPlan {
         val expr = job.cronExpression ?: return CatchupPlan(emptyList(), 0)
         val cron = CronExpressionParser.parse(expr).getOrNull() ?: return CatchupPlan(emptyList(), 0)
-        val zone = job.timezone?.let { runCatching { ZoneId.of(it) }.getOrNull() } ?: ZoneId.systemDefault()
+        val zone = job.timezone?.let { runCatching { ZoneId.of(it) }.getOrNull() } ?: defaultZone
         val et = ExecutionTime.forCron(cron)
 
         val from = (lastRunMs ?: job.createdAtMs)

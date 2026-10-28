@@ -22,17 +22,22 @@ object TimeReminderTransformer : InputMessageTransformer {
         messages: List<UIMessage>,
     ): List<UIMessage> {
         if (!ctx.assistant.enableTimeReminder) return messages
-        return applyTimeReminder(messages, ctx.assistant.timeReminderIntervalMinutes)
+        val zoneId = resolveZoneId(ctx.settings.customTimezone)
+        return applyTimeReminder(messages, ctx.assistant.timeReminderIntervalMinutes, zoneId)
     }
+
+    private fun resolveZoneId(customTz: String?): ZoneId =
+        customTz?.let { runCatching { ZoneId.of(it) }.getOrNull() } ?: ZoneId.systemDefault()
 }
 
 internal fun applyTimeReminder(
     messages: List<UIMessage>,
     intervalMinutes: Int = 60,
+    zoneId: ZoneId = ZoneId.systemDefault(),
 ): List<UIMessage> {
     val thresholdSeconds = intervalMinutes.coerceAtLeast(1).toLong() * 60
     val result = mutableListOf<UIMessage>()
-    val tz = TimeZone.currentSystemDefault()
+    val tz = runCatching { TimeZone.of(zoneId.id) }.getOrElse { TimeZone.currentSystemDefault() }
 
     var firstUserFound = false
     for (i in messages.indices) {
@@ -41,14 +46,14 @@ internal fun applyTimeReminder(
             val currInstant = current.createdAt.toInstant(tz)
             if (!firstUserFound) {
                 firstUserFound = true
-                result.add(buildTimeReminderMessage(null, currInstant))
+                result.add(buildTimeReminderMessage(null, currInstant, zoneId))
             } else {
                 val previous = messages[i - 1]
                 val prevInstant = previous.createdAt.toInstant(tz)
                 val gapSeconds = (currInstant - prevInstant).inWholeSeconds
 
                 if (gapSeconds > thresholdSeconds) {
-                    result.add(buildTimeReminderMessage(gapSeconds, currInstant))
+                    result.add(buildTimeReminderMessage(gapSeconds, currInstant, zoneId))
                 }
             }
         }
@@ -58,11 +63,11 @@ internal fun applyTimeReminder(
     return result
 }
 
-private fun buildTimeReminderMessage(gapSeconds: Long?, instant: Instant): UIMessage {
+private fun buildTimeReminderMessage(gapSeconds: Long?, instant: Instant, zoneId: ZoneId): UIMessage {
     val javaInstant = instant.toJavaInstant()
-    val dayOfWeek = javaInstant.atZone(ZoneId.systemDefault()).dayOfWeek
+    val dayOfWeek = javaInstant.atZone(zoneId).dayOfWeek
         .getDisplayName(TextStyle.FULL, Locale.getDefault())
-    val timeStr = javaInstant.toLocalDateTime()
+    val timeStr = javaInstant.toLocalDateTime(zoneId)
     val content = if (gapSeconds != null) {
         val gapText = formatGap(gapSeconds)
         "<time_reminder>Current time: $dayOfWeek, $timeStr ($gapText since last message)</time_reminder>"
