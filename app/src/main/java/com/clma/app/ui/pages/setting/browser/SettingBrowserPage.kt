@@ -38,6 +38,7 @@ import com.clma.app.R
 import com.clma.app.browser.BrowserActivity
 import com.clma.app.browser.BrowserSearchEngines
 import com.clma.app.browser.BrowserToolDefaults
+import com.clma.app.data.ai.tools.ToolDisplayNames
 import com.clma.app.ui.components.nav.BackButton
 import com.clma.app.ui.components.ui.CardGroup
 import com.clma.app.ui.context.LocalToaster
@@ -197,14 +198,16 @@ fun SettingBrowserPage(
                 tools = BrowserToolDefaults.READ_TOOLS.toList()
                     .filter { it in BrowserToolDefaults.ALL_TOOLS }
                     // Stable display order — preserves the spec's table sequence.
-                    .sortedBy { BrowserToolDefaults.ALL_TOOLS.indexOf(it) },
+                    .sortedBy { BrowserToolDefaults.ALL_TOOLS.indexOf(it) } +
+                    BrowserToolDefaults.UPGRADE_READ,
                 toolStates = toolStates,
                 onToggle = vm::setToolEnabled,
             )
             ToolCategorySection(
                 heading = stringResource(R.string.setting_browser_category_write),
                 tools = BrowserToolDefaults.WRITE_TOOLS.toList()
-                    .sortedBy { BrowserToolDefaults.ALL_TOOLS.indexOf(it) },
+                    .sortedBy { BrowserToolDefaults.ALL_TOOLS.indexOf(it) } +
+                    BrowserToolDefaults.UPGRADE_WRITE,
                 toolStates = toolStates,
                 onToggle = vm::setToolEnabled,
             )
@@ -365,7 +368,7 @@ private fun toolDisplayTitle(toolName: String): String = when (toolName) {
     BrowserToolDefaults.PRESS_KEY -> stringResource(R.string.setting_browser_tool_press_key_title)
     BrowserToolDefaults.EVAL_JS -> stringResource(R.string.setting_browser_tool_eval_js_title)
     BrowserToolDefaults.DONE -> stringResource(R.string.setting_browser_tool_done_title)
-    else -> toolName
+    else -> ToolDisplayNames.resFor(toolName)?.let { stringResource(it.name) } ?: toolName
 }
 
 @Composable
@@ -387,5 +390,5 @@ private fun toolDisplayDesc(toolName: String): String = when (toolName) {
     BrowserToolDefaults.PRESS_KEY -> stringResource(R.string.setting_browser_tool_press_key_desc)
     BrowserToolDefaults.EVAL_JS -> stringResource(R.string.setting_browser_tool_eval_js_desc)
     BrowserToolDefaults.DONE -> stringResource(R.string.setting_browser_tool_done_desc)
-    else -> ""
+    else -> ToolDisplayNames.resFor(toolName)?.let { stringResource(it.description) } ?: ""
 }

@@ -480,6 +480,7 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
             row(R.string.setting_browser_open),
             row(R.string.setting_browser_clear_data),
             row(R.string.setting_browser_prefer_background),
+            row(R.string.setting_browser_network_proxy_mode),
             row(R.string.setting_browser_tools_enabled_title),
             row(R.string.setting_browser_search_engine),
             row(R.string.setting_browser_per_tool_timeout),

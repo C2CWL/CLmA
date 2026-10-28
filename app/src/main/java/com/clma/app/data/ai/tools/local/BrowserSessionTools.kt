@@ -15,8 +15,8 @@ import kotlinx.serialization.json.*
 /** Wrap legacy tools once: every call resolves ownership before touching a WebView. */
 fun scopedBrowserTool(name: String, context: Context, invocationContext: ToolInvocationContext?, settings: SettingsStore, vault: AgentSecretsStore): Tool? {
     val owner = invocationContext?.callerConversationId
-    val legacy = createBrowserTool(name, context, invocationContext)
     val extra = name in BROWSER_UPGRADE_TOOLS
+    val legacy = if (extra) null else createBrowserTool(name, context, invocationContext)
     if (legacy == null && !extra) return null
     val base = legacy ?: browserUpgradeTool(name, context, settings, vault, owner)
     return base.copy(
@@ -83,13 +83,7 @@ fun scopedBrowserTool(name: String, context: Context, invocationContext: ToolInv
     )
 }
 
-val BROWSER_UPGRADE_TOOLS = listOf(
-    "browser_tab_open", "browser_tab_list", "browser_tab_select", "browser_tab_close",
-    "browser_task_status", "browser_task_extend", "browser_task_cancel",
-    "browser_download", "browser_download_status", "browser_download_cancel", "browser_export_pdf",
-    "browser_site_status", "browser_site_clear", "browser_cookie_import", "browser_cookie_export",
-    "browser_network_status", "browser_network_configure", "browser_network_export_har",
-)
+val BROWSER_UPGRADE_TOOLS = BrowserToolDefaults.UPGRADE_TOOLS
 
 internal fun field(type: String, description: String) = buildJsonObject { put("type", type); put("description", description) }
 internal fun browserText(value: JsonObject): List<UIMessagePart> = listOf(UIMessagePart.Text(value.toString()))
@@ -107,7 +101,7 @@ internal suspend fun tabInfo(tab: BrowserSessions.Tab): JsonObject = withContext
     }
 }
 
-private fun browserUpgradeTool(name: String, context: Context, settings: SettingsStore, vault: AgentSecretsStore, owner: String?): Tool = Tool(
+internal fun browserUpgradeTool(name: String, context: Context, settings: SettingsStore, vault: AgentSecretsStore, owner: String?): Tool = Tool(
     name = name,
     description = when (name) {
         "browser_tab_open" -> "Open an offscreen tab, max 4 per session / 12 process-wide. private=true returns unsupported; cookies are shared."
