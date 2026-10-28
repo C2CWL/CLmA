@@ -3344,4 +3344,21 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="diagnostics_functions">Functional diagnostics</string>
   <string name="diagnostics_animation">Drawer animation diagnostics</string>
   <string name="diagnostics_description">Off by default. Records states, timings and process-local instance numbers, not chat content or credentials. Animation diagnostics adds overhead; disable after reproduction. Logs stay local and can be copied or cleared here.</string>
+  <string name="provider_balance_expression_help">Paths, arrays and arithmetic: data.total - data.used; balance_infos[0].total_balance</string>
+  <string name="provider_balance_body">Query body (JSON object)</string>
+  <string name="provider_balance_headers">Query-only headers</string>
+  <string name="provider_balance_origin_help">Header overrides apply only to this query. Use a path appended to the base URL, or a full URL on the same origin. Redirects are not followed.</string>
+  <string name="provider_balance_header_name">Header name</string>
+  <string name="provider_balance_header_value">Header value</string>
+  <string name="provider_balance_add_header">Add query header</string>
+  <string name="provider_balance_remove_header">Remove header</string>
+  <string name="provider_balance_prefix">Prefix (e.g. $)</string>
+  <string name="provider_balance_suffix">Suffix (e.g. credits)</string>
+  <string name="provider_balance_decimals">Decimal places: %1$d</string>
+  <string name="provider_balance_animation">Animate balance text changes</string>
+  <string name="provider_balance_loading">Querying balance / quota…</string>
+  <string name="provider_balance_failed">Query failed. Check the endpoint, credentials and expression.</string>
+  <string name="provider_balance_stale">%1$s (refresh failed; previous value)</string>
+  <string name="provider_balance_refresh">Refresh balance / quota</string>
+  <string name="provider_balance_test">Test current balance / quota settings</string>
 </resources>

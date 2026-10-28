@@ -461,6 +461,7 @@ private fun SettingProviderConfigPage(
     }
     var internalProvider by remember(provider) { mutableStateOf(provider) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var balancePreview by remember(provider) { mutableStateOf<ProviderSetting?>(null) }
 
     Column(
         modifier = Modifier
@@ -483,7 +484,14 @@ private fun SettingProviderConfigPage(
                 balanceOption = internalProvider.balanceOption,
                 onEdit = { internalProvider = internalProvider.copyProvider(balanceOption = it) }
             )
-            ProviderBalanceText(providerSetting = provider, style = MaterialTheme.typography.labelSmall)
+            TextButton(onClick = { balancePreview = internalProvider }) {
+                Text(stringResource(R.string.provider_balance_test))
+            }
+            ProviderBalanceText(
+                providerSetting = balancePreview ?: provider,
+                style = MaterialTheme.typography.labelSmall,
+                allowRefresh = true,
+            )
         }
 
         Row(

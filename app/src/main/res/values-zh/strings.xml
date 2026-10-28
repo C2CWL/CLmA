@@ -3060,4 +3060,21 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="diagnostics_functions">功能诊断</string>
   <string name="diagnostics_animation">抽屉动画诊断</string>
   <string name="diagnostics_description">默认关闭。仅记录状态、耗时与进程内实例编号，不记录聊天内容或密钥。动画诊断会增加开销，复现后请关闭。日志仅保存在本地，可在此页复制或清除。</string>
+  <string name="provider_balance_expression_help">支持路径、数组和计算：data.total - data.used；balance_infos[0].total_balance</string>
+  <string name="provider_balance_body">查询请求体（JSON 对象）</string>
+  <string name="provider_balance_headers">仅用于余额查询的请求头</string>
+  <string name="provider_balance_origin_help">请求头覆盖仅用于此查询。路径追加到基础地址，也可填写同源完整地址；不跟随重定向。</string>
+  <string name="provider_balance_header_name">请求头名称</string>
+  <string name="provider_balance_header_value">请求头值</string>
+  <string name="provider_balance_add_header">添加查询请求头</string>
+  <string name="provider_balance_remove_header">移除此请求头</string>
+  <string name="provider_balance_prefix">前缀（如 ¥）</string>
+  <string name="provider_balance_suffix">后缀（如 点 / 次）</string>
+  <string name="provider_balance_decimals">小数位数：%1$d</string>
+  <string name="provider_balance_animation">余额文字变化动画</string>
+  <string name="provider_balance_loading">正在查询余额 / 额度…</string>
+  <string name="provider_balance_failed">查询失败，请检查接口、凭据和结果表达式。</string>
+  <string name="provider_balance_stale">%1$s（刷新失败，上次结果）</string>
+  <string name="provider_balance_refresh">刷新余额 / 额度</string>
+  <string name="provider_balance_test">测试当前余额 / 额度配置</string>
 </resources>

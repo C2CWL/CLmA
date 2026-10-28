@@ -40,7 +40,8 @@ import com.clma.ai.util.mergeCustomBody
 import com.clma.ai.util.mergeCustomHeaders
 import com.clma.ai.util.toHeaders
 import com.clma.common.http.await
-import com.clma.common.http.getByKey
+import com.clma.ai.provider.buildBalanceRequest
+import com.clma.ai.provider.formatBalanceResponse
 import okhttp3.MultipartBody
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -145,30 +146,14 @@ class OpenAIProvider(
 
     override suspend fun getBalance(providerSetting: ProviderSetting.OpenAI): String = withContext(Dispatchers.IO) {
         val key = keyRoulette.next(providerSetting.apiKey, providerSetting.id.toString())
-        val url = if (providerSetting.balanceOption.apiPath.startsWith("http")) {
-            providerSetting.balanceOption.apiPath
-        } else {
-            "${providerSetting.baseUrl}${providerSetting.balanceOption.apiPath}"
-        }
-        val request = Request.Builder()
-            .url(url)
-            .headers(providerSetting.mergeCustomHeaders())
-            .addHeader("Authorization", "Bearer $key")
-            .get()
-            .build()
-        val response = client.newCall(request).await()
-        if (!response.isSuccessful) {
-            error("Failed to get balance: ${response.code} ${response.body.string()}")
-        }
-
-        val bodyStr = response.body.string()
-        val bodyJson = json.parseToJsonElement(bodyStr).jsonObject
-        val value = bodyJson.getByKey(providerSetting.balanceOption.resultPath)
-        val digitalValue = value.toFloatOrNull()
-        if(digitalValue != null) {
-            "%.2f".format(digitalValue)
-        } else {
-            value
+        val request = buildBalanceRequest(
+            providerSetting.baseUrl, key, providerSetting.customHeaders, providerSetting.balanceOption,
+        )
+        // Balance POST endpoints are read queries, but redirects must not forward custom secrets.
+        val balanceClient = client.newBuilder().followRedirects(false).followSslRedirects(false).build()
+        balanceClient.newCall(request).await().use { response ->
+            check(response.isSuccessful) { "Balance query failed: HTTP ${response.code}" }
+            formatBalanceResponse(response.body.string(), providerSetting.balanceOption)
         }
     }
 
