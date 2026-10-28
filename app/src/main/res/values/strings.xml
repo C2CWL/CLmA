@@ -2089,6 +2089,10 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="setting_browser_single_task_timeout">Single-task timeout</string>
   <string name="setting_browser_single_task_timeout_desc">Hard cap on one AI-driven browser task to bound runaway loops. Range 1 min to 60 min.</string>
   <string name="setting_browser_single_task_timeout_unit">minutes</string>
+  <string name="setting_browser_network_proxy_mode">Browser network mode</string>
+  <string name="setting_browser_network_proxy_mode_desc">Whether WebView and download traffic follow the in-app network proxy or connect directly (subject to system VPN).</string>
+  <string name="setting_browser_network_proxy_mode_follow_app">Follow app proxy</string>
+  <string name="setting_browser_network_proxy_mode_direct">Direct (no app proxy)</string>
   <string name="setting_page_termux">Termux</string>
   <string name="setting_page_termux_desc">Shell commands, timeouts, and Termux integration.</string>
   <string name="setting_page_shizuku">Shizuku</string>

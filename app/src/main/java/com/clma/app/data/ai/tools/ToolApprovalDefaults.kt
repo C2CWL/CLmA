@@ -267,6 +267,17 @@ object ToolApprovalDefaults {
         // side carries the same trust footprint as plain browser_click, so it
         // inherits the same approval gate.
         "browser_click_and_read",
+        "browser_tab_close",
+        "browser_task_cancel",
+        "browser_task_extend",
+        "browser_download",
+        "browser_download_cancel",
+        "browser_export_pdf",
+        "browser_cookie_import",
+        "browser_cookie_export",
+        "browser_site_clear",
+        "browser_network_configure",
+        "browser_network_export_har",
 
         // web_fetch (item 1.2) — network egress. A bare HTTP GET/POST can exfiltrate
         // anything the LLM puts in the URL / body / headers, so it gets the same
@@ -338,6 +349,9 @@ object ToolApprovalDefaults {
         // the residual surface is too broad to ever blanket-allow. Every invocation gets
         // an explicit per-call approval card, no exceptions.
         "browser_eval_js",
+        "browser_cookie_import",
+        "browser_cookie_export",
+        "browser_site_clear",
         // Phase 25 — privilege-escalation surfaces that must confirm every single call:
         //  - keystore_generate_key: mints a hardware key that later sign/encrypt calls trust
         //  - keystore_decrypt: turns ciphertext back into plaintext the model then reads

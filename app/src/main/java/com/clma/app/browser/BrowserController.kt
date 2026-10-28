@@ -497,15 +497,17 @@ object BrowserController {
      * watching.
      */
     fun startTaskWindow() {
+        BrowserSessions.selected()?.let { it.clock.start(singleTaskTimeoutMs); return }
         if (currentTaskStartedAt == null) {
             resetActionTrail()
+            currentTaskStartedAt = System.currentTimeMillis()
         }
-        currentTaskStartedAt = System.currentTimeMillis()
         _taskActive.value = true
     }
 
     /** browser_done clears the task window (and stops the in-flight job log). The action trail is left intact — the DONE entry [recordAction] adds stays visible as the stripe's headline. */
     fun clearTaskWindow() {
+        BrowserSessions.selected()?.let { it.clock.finish(); return }
         currentTaskStartedAt = null
         _taskActive.value = false
     }
@@ -516,6 +518,7 @@ object BrowserController {
      * work so a runaway loop costs at most one envelope per call after the cap.
      */
     fun isWithinTaskWindow(): Boolean {
+        BrowserSessions.selected()?.let { return it.clock.allowed() }
         val started = currentTaskStartedAt ?: return true
         return System.currentTimeMillis() - started < singleTaskTimeoutMs
     }
@@ -536,7 +539,7 @@ object BrowserController {
      * Internal accessor used by [BrowserControllerHandle]. Returns the live WebView or null
      * (the WeakReference has been GC'd, no Activity, or no headless session).
      */
-    internal fun activeWebView(): WebView? = when (val m = mode) {
+    internal fun activeWebView(): WebView? = BrowserSessions.selected()?.view ?: when (val m = mode) {
         is Mode.Foreground -> m.activityRef.get()
         is Mode.Headless -> m.webView
         Mode.Idle -> null
@@ -590,6 +593,8 @@ object BrowserController {
      * fallback if no implementation is registered (e.g. from a JVM unit test).
      */
     suspend fun streamScreenshotIfHeadless(actionLabel: String) {
+        // Scoped tabs must never stream the global binding into a different conversation.
+        if (BrowserSessions.selected() != null) return
         val m = mode
         if (m !is Mode.Headless) return
         val webView = m.webView

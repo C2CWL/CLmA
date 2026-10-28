@@ -70,6 +70,7 @@ fun SettingBrowserPage(
     val singleTaskTimeoutMs by vm.singleTaskTimeoutMs.collectAsStateWithLifecycle()
     val searchEngineId by vm.searchEngineId.collectAsStateWithLifecycle()
     val preferBackground by vm.preferBackground.collectAsStateWithLifecycle()
+    val networkProxyMode by vm.networkProxyMode.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     var showClearConfirm by remember { mutableStateOf(false) }
@@ -142,6 +143,43 @@ fun SettingBrowserPage(
                             checked = preferBackground,
                             onCheckedChange = vm::setPreferBackground,
                         )
+                    },
+                )
+                item(
+                    headlineContent = { Text(stringResource(R.string.setting_browser_network_proxy_mode)) },
+                    supportingContent = { Text(stringResource(R.string.setting_browser_network_proxy_mode_desc)) },
+                    trailingContent = {
+                        var modeMenu by remember { mutableStateOf(false) }
+                        Box {
+                            TextButton(onClick = { modeMenu = true }) {
+                                Text(
+                                    if (networkProxyMode == "direct") {
+                                        stringResource(R.string.setting_browser_network_proxy_mode_direct)
+                                    } else {
+                                        stringResource(R.string.setting_browser_network_proxy_mode_follow_app)
+                                    }
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = modeMenu,
+                                onDismissRequest = { modeMenu = false },
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.setting_browser_network_proxy_mode_follow_app)) },
+                                    onClick = {
+                                        modeMenu = false
+                                        vm.setNetworkProxyMode("follow_app")
+                                    },
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.setting_browser_network_proxy_mode_direct)) },
+                                    onClick = {
+                                        modeMenu = false
+                                        vm.setNetworkProxyMode("direct")
+                                    },
+                                )
+                            }
+                        }
                     },
                 )
             }

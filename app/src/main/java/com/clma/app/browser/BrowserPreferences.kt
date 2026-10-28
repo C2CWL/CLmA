@@ -72,6 +72,26 @@ class BrowserPreferences(private val context: Context) {
         store.edit { it[preferBackgroundKey] = enabled }
     }
 
+    // --- Network proxy mode -----------------------------------------------------------------
+
+    private val networkProxyModeKey = androidx.datastore.preferences.core.stringPreferencesKey("network_proxy_mode")
+
+    /**
+     * Network proxy mode for WebView and artifact downloads:
+     * - "follow_app": follows application network setting proxy (default)
+     * - "direct": direct connection, ignores application proxy (still subject to system VPN)
+     */
+    fun networkProxyModeFlow(): Flow<String> = store.data.map { prefs ->
+        val m = prefs[networkProxyModeKey] ?: "follow_app"
+        if (m in setOf("follow_app", "direct")) m else "follow_app"
+    }
+
+    suspend fun setNetworkProxyMode(mode: String) {
+        if (mode in setOf("follow_app", "direct")) {
+            store.edit { it[networkProxyModeKey] = mode }
+        }
+    }
+
     init {
         // Push the persisted (or default) timeout values into [BrowserController] — the
         // synchronous runtime source of truth read by every browser tool's withTimeoutOrNull
@@ -95,6 +115,15 @@ class BrowserPreferences(private val context: Context) {
             preferBackgroundFlow()
                 .distinctUntilChanged()
                 .onEach { BrowserController.preferBackground = it }
+                .collect {}
+        }
+        scope.launch {
+            networkProxyModeFlow()
+                .distinctUntilChanged()
+                .onEach { mode ->
+                    val settings = org.koin.core.context.GlobalContext.get().get<com.clma.app.data.datastore.SettingsStore>()
+                    BrowserNetworkController.configure(settings, mode, BrowserNetworkController.userAgent, null, emptyMap())
+                }
                 .collect {}
         }
     }

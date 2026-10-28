@@ -1151,9 +1151,11 @@ class LocalTools(
             val browserPrefs = browserPreferences.snapshotBlocking()
             com.clma.app.browser.BrowserToolDefaults.ALL_TOOLS.forEach { name ->
                 if (browserPrefs[name] == true) {
-                    com.clma.app.data.ai.tools.local.createBrowserTool(
-                        toolName = name,
+                    com.clma.app.data.ai.tools.local.scopedBrowserTool(
+                        name = name,
                         context = context,
+                        settings = settingsStore,
+                        vault = agentSecretsStore,
                         // Pass 3: thread the caller context so browser_open can pick the
                         // foreground vs headless mode by reading HeadlessConversations.
                         invocationContext = invocationContext,
