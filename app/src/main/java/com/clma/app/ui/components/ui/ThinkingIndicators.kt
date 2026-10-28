@@ -58,8 +58,16 @@ internal const val ORBIT_STATIC_PHASE = 0.1f
 private val IndicatorSize = 20.dp
 
 @Composable
-private fun rememberThinkingPhase(staticPhase: Float, label: String): () -> Float =
-    rememberLoopPhase(THINKING_LOOP_MS, staticPhase = staticPhase, label = label)
+private fun rememberThinkingPhase(
+    staticPhase: Float,
+    label: String,
+    frameIntervalMs: Long = 0L,
+): () -> Float = rememberLoopPhase(
+    THINKING_LOOP_MS,
+    staticPhase = staticPhase,
+    label = label,
+    frameIntervalMs = frameIntervalMs,
+)
 
 /** Lift 0..1 of dot [index] (0..2): each rises in turn, twice per loop, resting half the time. */
 internal fun risingDotLift(phase: Float, index: Int): Float {
@@ -187,8 +195,9 @@ fun AtomDotsThinkingRow(
     phase: GenerationPhase,
     processingStatus: String?,
     modifier: Modifier = Modifier,
+    frameIntervalMs: Long = 0L,
 ) {
-    val t = rememberThinkingPhase(ATOM_DOTS_STATIC_PHASE, "atom-dots")
+    val t = rememberThinkingPhase(ATOM_DOTS_STATIC_PHASE, "atom-dots", frameIntervalMs)
     // Top-aligned, not centred: the label can now run to several lines, and centring would push
     // the atom and the rising dots into the middle of the block instead of beside the first line.
     Row(
@@ -272,8 +281,9 @@ fun BreathingOrbThinkingRow(
     phase: GenerationPhase,
     processingStatus: String?,
     modifier: Modifier = Modifier,
+    frameIntervalMs: Long = 0L,
 ) {
-    val t = rememberThinkingPhase(ORB_STATIC_PHASE, "breathing-orb")
+    val t = rememberThinkingPhase(ORB_STATIC_PHASE, "breathing-orb", frameIntervalMs)
     // Top-aligned so a multi-line status keeps the orb beside the first line (see ThinkingLabel).
     Row(
         modifier = modifier,
@@ -336,8 +346,9 @@ fun TwinOrbitThinkingRow(
     phase: GenerationPhase,
     processingStatus: String?,
     modifier: Modifier = Modifier,
+    frameIntervalMs: Long = 0L,
 ) {
-    val t = rememberThinkingPhase(ORBIT_STATIC_PHASE, "twin-orbit")
+    val t = rememberThinkingPhase(ORBIT_STATIC_PHASE, "twin-orbit", frameIntervalMs)
     // Top-aligned so a multi-line status keeps the orbit beside the first line (see ThinkingLabel).
     Row(
         modifier = modifier,
