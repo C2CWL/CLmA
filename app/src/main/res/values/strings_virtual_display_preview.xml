@@ -3,6 +3,7 @@
   <!-- Floating live preview of a virtual display, shown while the agent drives it. -->
   <string name="virtual_display_preview_title">Virtual display %1$d×%2$d</string>
   <string name="virtual_display_preview_close">Close preview</string>
+  <string name="virtual_display_preview_destroy">Destroy virtual display</string>
   <string name="virtual_display_preview_shrink">Shrink preview</string>
   <string name="virtual_display_preview_enlarge">Enlarge preview</string>
   <string name="virtual_display_preview_scale_hint">Pinch to resize preview; virtual display resolution is unchanged</string>

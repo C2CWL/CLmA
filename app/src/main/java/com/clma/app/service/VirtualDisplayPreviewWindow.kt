@@ -39,6 +39,10 @@ import com.clma.app.data.ai.tools.local.VirtualDisplayController
  * and the left/right edge bar ([FloatingBallService]). The window is a single instance; creating a
  * second display replaces the preview, destroying the shown display closes it.
  *
+ * Header actions are intentionally split: ✕ only hides this window (display keeps running);
+ * 🗑 calls [VirtualDisplayController.destroy] and tears the display down. Agents can also call
+ * `virtual_display_show_preview` / `virtual_display_hide_preview` without touching the UI.
+ *
  * No-ops silently when SYSTEM_ALERT_WINDOW has not been granted.
  */
 object VirtualDisplayPreviewWindow {
@@ -111,6 +115,25 @@ object VirtualDisplayPreviewWindow {
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f)
         }
 
+        // ✕ only hides the floating window; 🗑 destroys the underlying virtual display.
+        // Keeping them separate avoids the "I closed it so it must be gone" confusion.
+        val destroy = TextView(app).apply {
+            text = "🗑"
+            setTextColor(0xFFEF9A9A.toInt())
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
+            gravity = Gravity.CENTER
+            setPadding(dp(6), 0, dp(4), 0)
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.MATCH_PARENT,
+            )
+            contentDescription = app.getString(R.string.virtual_display_preview_destroy)
+            setOnClickListener {
+                // destroy() also closes this preview via hideIfShowing.
+                VirtualDisplayController.destroy(info.displayId)
+            }
+        }
+
         val close = TextView(app).apply {
             text = "✕"
             setTextColor(0xFFB0B0B0.toInt())
@@ -129,6 +152,7 @@ object VirtualDisplayPreviewWindow {
             orientation = LinearLayout.HORIZONTAL
             background = GradientDrawable().apply { setColor(0x33FFFFFF) }
             addView(title)
+            addView(destroy)
             addView(close)
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -180,6 +204,8 @@ object VirtualDisplayPreviewWindow {
             layoutParams = LinearLayout.LayoutParams(dp(32), ViewGroup.LayoutParams.MATCH_PARENT)
             setOnClickListener { resize((contentWidth * factor).toInt()) }
         }
+        // Insert zoom controls between the title and the destroy/close buttons.
+        // Final order: title | − | + | 🗑 | ✕
         header.addView(scaleButton("−", R.string.virtual_display_preview_shrink, 0.8f), 1)
         header.addView(scaleButton("+", R.string.virtual_display_preview_enlarge, 1.25f), 2)
         val scaler = ScaleGestureDetector(app, object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
