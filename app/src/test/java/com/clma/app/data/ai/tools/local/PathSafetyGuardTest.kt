@@ -85,7 +85,7 @@ class PathSafetyGuardTest {
         // the prefix filter. This is a benign edge case — listing /data/data would fail at
         // the OS level anyway. We assert null (allowed) rather than blocked.
         // If the guard becomes stricter we can update this test.
-        assertNull(v)
+        assertNotNull(v)
     }
 
     // ---- empty / null ----

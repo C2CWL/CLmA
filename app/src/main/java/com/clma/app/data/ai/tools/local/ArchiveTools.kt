@@ -419,6 +419,7 @@ fun unzipFileTool(context: Context): Tool = Tool(
                             ) {
                                 return@Tool arcErr("unsafe_zip_entry", "entry" to name)
                             }
+                            PathSafetyGuard.check(target.path)?.let { return@Tool arcErr(it.code, "detail" to it.detail) }
                             if (target.exists() && !overwrite) {
                                 return@Tool arcErr("entry_exists", "entry" to name)
                             }

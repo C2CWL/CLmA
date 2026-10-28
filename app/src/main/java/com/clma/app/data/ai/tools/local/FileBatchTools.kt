@@ -134,6 +134,8 @@ fun batchCopyTool(): Tool = Tool(
             val src = File(path)
             if (!src.exists()) { failed += path to "not_found"; continue }
             val target = File(destination, src.name)
+            val treeViolation = PathSafetyGuard.checkTree(src) ?: PathSafetyGuard.checkTree(target)
+            if (treeViolation != null) { failed += path to treeViolation.detail; continue }
             if (target.exists() && !overwrite) { failed += path to "destination_exists"; continue }
             try {
                 destination.mkdirs()
@@ -194,6 +196,8 @@ fun batchMoveTool(): Tool = Tool(
             val src = File(path)
             if (!src.exists()) { failed += path to "not_found"; continue }
             val target = File(destination, src.name)
+            val treeViolation = PathSafetyGuard.checkTree(src) ?: PathSafetyGuard.checkTree(target)
+            if (treeViolation != null) { failed += path to treeViolation.detail; continue }
             if (target.exists() && !overwrite) { failed += path to "destination_exists"; continue }
             try {
                 destination.mkdirs()
@@ -287,6 +291,8 @@ fun batchDeleteTool(): Tool = Tool(
             val v = PathSafetyGuard.check(path)
             if (v != null) { failed += path to v.detail; continue }
             val file = File(path)
+            val treeViolation = PathSafetyGuard.checkTree(file)
+            if (treeViolation != null) { failed += path to treeViolation.detail; continue }
             if (!file.exists()) { failed += path to "not_found"; continue }
             if (file.isDirectory && !file.listFiles().isNullOrEmpty() && !recursive) {
                 failed += path to "not_empty"; continue

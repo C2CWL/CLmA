@@ -33,6 +33,22 @@ class FileManagerToolTest {
     @get:Rule
     val tmp = TemporaryFolder()
 
+    @Test fun `private storage roots and other users are blocked`() {
+        listOf("/data/data", "/data/user", "/data/user_de", "/data/user/10/com.other.app/db", "/data/user_de/0/com.other.app/db").forEach {
+            assertNotNull("Expected blocked: $it", PathSafetyGuard.check(it))
+        }
+    }
+
+    @Test fun `recursive delete refuses symlinks without touching target`() {
+        val source = tmp.newFolder("source-link")
+        val outside = tmp.newFolder("outside-link")
+        val secret = File(outside, "secret").apply { writeText("keep") }
+        java.nio.file.Files.createSymbolicLink(File(source, "link").toPath(), outside.toPath())
+        val result = invokeTool(deleteFileTool(), """{"path":"${source.absolutePath}","recursive":true}""")
+        assertEquals("path_blocked", result["error"]?.jsonPrimitive?.content)
+        assertTrue(secret.exists())
+    }
+
     // ========== PathSafetyGuard integration via tools ==========
 
     @Test fun `list_files blocks system path`() {

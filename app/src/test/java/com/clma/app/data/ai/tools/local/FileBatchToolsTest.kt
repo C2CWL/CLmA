@@ -35,6 +35,18 @@ class FileBatchToolsTest {
     private fun JsonObject.failedPaths() =
         this["failed"]?.jsonArray?.map { it.jsonObject["path"]?.jsonPrimitive?.content }
 
+    @Test fun `batch copy refuses nested symlinks`() {
+        val source = tmp.newFolder("source-link")
+        val outside = tmp.newFolder("outside-link")
+        File(outside, "secret").writeText("keep")
+        java.nio.file.Files.createSymbolicLink(File(source, "link").toPath(), outside.toPath())
+        val dst = tmp.newFolder("dest-link")
+        val result = invoke(batchCopyTool(), """{"paths":["${source.absolutePath}"],"dst_dir":"${dst.absolutePath}"}""")
+        assertEquals(0, result.success())
+        assertEquals(listOf(source.absolutePath), result.failedPaths())
+        assertFalse(File(dst, source.name).exists())
+    }
+
     // ---------- batch_copy ----------
 
     @Test fun `batch_copy copies an explicit list`() {
