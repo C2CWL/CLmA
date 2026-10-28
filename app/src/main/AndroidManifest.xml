@@ -138,6 +138,9 @@
     </intent>
   </queries>
 
+  <!-- Scheduled jobs exact alarm waking -->
+  <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+
   <application
     android:name=".ClmaApp"
     android:largeHeap="true"
@@ -378,6 +381,11 @@
         <action android:name="android.service.notification.NotificationListenerService" />
       </intent-filter>
     </service>
+
+    <receiver
+      android:name=".service.CronAlarmReceiver"
+      android:enabled="true"
+      android:exported="false" />
 
     <receiver
       android:name=".service.CronBootReceiver"

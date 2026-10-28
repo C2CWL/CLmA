@@ -307,6 +307,9 @@ class SettingsStore(
         // AI logging
         val AI_LOG_LEVEL = stringPreferencesKey("ai_log_level")
 
+        // 自定义时区 (解决代理/跨时区场景下系统时区漂移)
+        val CUSTOM_TIMEZONE = stringPreferencesKey("custom_timezone")
+
         // 提示词注入
         val MODE_INJECTIONS = stringPreferencesKey("mode_injections")
         val LOREBOOKS = stringPreferencesKey("lorebooks")
@@ -427,6 +430,9 @@ class SettingsStore(
                 preferences[WEB_SERVER_LOCALHOST_ONLY] = settings.webServerLocalhostOnly
                 preferences[FLOATING_BALL_ENABLED] = settings.floatingBallEnabled
                 preferences[FLOATING_BALL_BAR_COLOR] = settings.floatingBallBarColor.id
+                settings.customTimezone?.let {
+                    preferences[CUSTOM_TIMEZONE] = it
+                } ?: preferences.remove(CUSTOM_TIMEZONE)
                 LEGACY_FLOATING_BALL_INT_KEYS.forEach { preferences.remove(it) }
                 LEGACY_FLOATING_BALL_STRING_KEYS.forEach { preferences.remove(it) }
                 preferences[AI_LOG_LEVEL] = settings.aiLogLevel.preferenceName
@@ -659,6 +665,7 @@ class SettingsStore(
                 floatingBallEnabled = preferences[FLOATING_BALL_ENABLED] == true,
                 // Old ball colours / opacities do not map onto the swatches: everyone starts on 1.
                 floatingBallBarColor = EdgeBarColor.fromId(preferences[FLOATING_BALL_BAR_COLOR]),
+                customTimezone = preferences[CUSTOM_TIMEZONE],
                 aiLogLevel = AiLogLevel.fromPreference(preferences[AI_LOG_LEVEL]),
                 backupReminderConfig = preferences[BACKUP_REMINDER_CONFIG]?.let { raw ->
                     runCatching { JsonInstant.decodeFromString<BackupReminderConfig>(raw) }.getOrElse {
@@ -1150,6 +1157,8 @@ data class Settings(
     val floatingBallEnabled: Boolean = false,
     /** Colour swatch of the edge bar. */
     val floatingBallBarColor: EdgeBarColor = EdgeBarColor.DEFAULT,
+    /** 自定义时区 ID（如 "Asia/Shanghai"），为空则跟随系统时区 */
+    val customTimezone: String? = null,
     val aiLogLevel: AiLogLevel = AiLogLevel.INFO,
     /**
      * Hide error cards after 5 seconds. Off by default: the card carries the explanation a

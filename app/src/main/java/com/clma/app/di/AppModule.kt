@@ -44,7 +44,7 @@ val appModule = module {
     single { ScheduledJobRepository(get<com.clma.app.data.db.AppDatabase>().scheduledJobDao()) }
     single { com.clma.app.data.repository.ScheduledJobRunRepository(get<com.clma.app.data.db.AppDatabase>().scheduledJobRunDao()) }
     single { com.clma.app.service.DirectModeActionRunner(get()) }
-    single { CronJobScheduler(get(), get()) }
+    single { CronJobScheduler(get(), get(), get()) }
     single { SshHostRepository(get<com.clma.app.data.db.AppDatabase>().sshHostDao()) }
     single { TelegramChatRepository(get<com.clma.app.data.db.AppDatabase>().telegramChatDao()) }
     single { TelegramBotPreferences(get()) }

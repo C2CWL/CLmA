@@ -1,10 +1,16 @@
 package com.clma.app.service
 
+import android.app.AlarmManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
+import android.os.Build
+import android.util.Log
 import androidx.work.Data
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import com.clma.app.data.datastore.SettingsStore
 import com.clma.app.data.db.entity.ScheduledJobEntity
 import com.clma.app.data.repository.ScheduledJobRepository
 import java.time.Instant
@@ -12,10 +18,12 @@ import java.time.ZoneId
 import java.util.concurrent.TimeUnit
 import kotlin.math.max
 
+private const val TAG = "CronJobScheduler"
+
 /**
- * Schedules / unschedules cron job executions via WorkManager. Each scheduled job has
- * a unique work name "cron_job_<id>" so we can deterministically replace or cancel its
- * pending run.
+ * Schedules / unschedules cron job executions via WorkManager and AlarmManager.
+ * Each scheduled job has a unique work name "cron_job_<id>" and an exact alarm
+ * set via [AlarmManager.setExactAndAllowWhileIdle] to pierce Doze mode / lock screen.
  *
  * Recurring jobs re-schedule themselves at the end of CronJobWorker.doWork(). Boot
  * recovery happens via CronBootReceiver which calls scheduleAllEnabled().
@@ -23,12 +31,14 @@ import kotlin.math.max
 class CronJobScheduler(
     private val context: Context,
     private val repo: ScheduledJobRepository,
+    private val settingsStore: SettingsStore? = null,
 ) {
     private val wm get() = WorkManager.getInstance(context)
 
     suspend fun schedule(job: ScheduledJobEntity) {
         val nowMs = System.currentTimeMillis()
-        val nextRun = nextRunMs(job, nowMs)
+        val defaultZone = resolveDefaultZone()
+        val nextRun = nextRunMs(job, nowMs, defaultZone)
         if (nextRun == null) {
             repo.update(terminalJobUpdate(job))
             cancel(job.id)
@@ -41,6 +51,7 @@ class CronJobScheduler(
             .setInputData(Data.Builder().putString(CronJobWorker.KEY_JOB_ID, job.id).build())
             .build()
         wm.enqueueUniqueWork(workNameFor(job.id), ExistingWorkPolicy.REPLACE, req)
+        setExactAlarm(job.id, nextRun)
     }
 
     /**
@@ -61,10 +72,55 @@ class CronJobScheduler(
 
     fun cancel(jobId: String) {
         wm.cancelUniqueWork(workNameFor(jobId))
+        cancelExactAlarm(jobId)
     }
 
     suspend fun scheduleAllEnabled() {
         repo.getEnabled().forEach { schedule(it) }
+    }
+
+    private fun resolveDefaultZone(): ZoneId {
+        val customTz = settingsStore?.settingsFlow?.value?.customTimezone
+        return customTz?.let { runCatching { ZoneId.of(it) }.getOrNull() } ?: ZoneId.systemDefault()
+    }
+
+    private fun getAlarmPendingIntent(jobId: String): PendingIntent {
+        val intent = Intent(context, CronAlarmReceiver::class.java).apply {
+            action = CronAlarmReceiver.ACTION_CRON_ALARM
+            putExtra(CronAlarmReceiver.KEY_JOB_ID, jobId)
+        }
+        val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        return PendingIntent.getBroadcast(context, jobId.hashCode(), intent, flags)
+    }
+
+    private fun setExactAlarm(jobId: String, triggerAtMs: Long) {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
+        val pendingIntent = getAlarmPendingIntent(jobId)
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                if (alarmManager.canScheduleExactAlarms()) {
+                    alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMs, pendingIntent)
+                } else {
+                    alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMs, pendingIntent)
+                }
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMs, pendingIntent)
+            } else {
+                alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerAtMs, pendingIntent)
+            }
+        } catch (e: Throwable) {
+            Log.w(TAG, "Failed to schedule exact alarm for job $jobId", e)
+        }
+    }
+
+    private fun cancelExactAlarm(jobId: String) {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
+        val pendingIntent = getAlarmPendingIntent(jobId)
+        try {
+            alarmManager.cancel(pendingIntent)
+        } catch (e: Throwable) {
+            Log.w(TAG, "Failed to cancel exact alarm for job $jobId", e)
+        }
     }
 
     private fun workNameFor(jobId: String) = "cron_job_$jobId"
@@ -78,7 +134,11 @@ class CronJobScheduler(
          * Pure function — no side effects, no Room access. Lives in the companion so
          * tests + the boot receiver can call it without instantiating a scheduler.
          */
-        fun nextRunMs(job: ScheduledJobEntity, nowMs: Long): Long? {
+        fun nextRunMs(
+            job: ScheduledJobEntity,
+            nowMs: Long,
+            defaultZone: ZoneId = ZoneId.systemDefault(),
+        ): Long? {
             if (!job.enabled) return null
             if (job.maxRuns != null && job.runsSoFar >= job.maxRuns) return null
             if (job.endAtUnixMs != null && nowMs > job.endAtUnixMs) return null
@@ -90,7 +150,7 @@ class CronJobScheduler(
                 }
                 "cron" -> {
                     val expr = job.cronExpression ?: return null
-                    val zone = job.timezone?.let { runCatching { ZoneId.of(it) }.getOrNull() } ?: ZoneId.systemDefault()
+                    val zone = job.timezone?.let { runCatching { ZoneId.of(it) }.getOrNull() } ?: defaultZone
                     val cron = CronExpressionParser.parse(expr).getOrNull() ?: return null
                     val basisMs = max(nowMs, job.startAtUnixMs ?: 0L) - 1L
                     val basisZdt = Instant.ofEpochMilli(basisMs).atZone(zone)

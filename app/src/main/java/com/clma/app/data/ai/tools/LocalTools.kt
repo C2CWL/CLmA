@@ -550,7 +550,9 @@ class LocalTools(
                 )
             },
             execute = {
-                val now = ZonedDateTime.now()
+                val customTz = settingsStore.settingsFlow.value.customTimezone
+                val zoneId = customTz?.let { runCatching { ZoneId.of(it) }.getOrNull() } ?: ZoneId.systemDefault()
+                val now = ZonedDateTime.now(zoneId)
                 val date = now.toLocalDate()
                 val time = now.toLocalTime().withNano(0)
                 val weekday = now.dayOfWeek

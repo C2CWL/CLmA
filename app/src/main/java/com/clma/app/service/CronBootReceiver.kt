@@ -127,9 +127,11 @@ class CronBootReceiver : BroadcastReceiver(), KoinComponent {
     private suspend fun applyCatchupAndSchedule(context: Context) {
         val nowMs = System.currentTimeMillis()
         val wm = WorkManager.getInstance(context)
+        val customTz = settingsStore.settingsFlowRaw.first().customTimezone
+        val defaultZone = customTz?.let { runCatching { java.time.ZoneId.of(it) }.getOrNull() } ?: java.time.ZoneId.systemDefault()
         for (job in repo.getEnabled()) {
             // Compute catchup plan based on the job's last fire vs now.
-            val plan = CatchupPlanner.plan(job, lastRunMs = job.lastRunAtMs, nowMs = nowMs)
+            val plan = CatchupPlanner.plan(job, lastRunMs = job.lastRunAtMs, nowMs = nowMs, defaultZone = defaultZone)
 
             // Enqueue catchup fires FIRST, then write skipped rows.
             // Write-order matters: if the process dies between enqueue and DB write,
