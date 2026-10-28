@@ -1,5 +1,6 @@
 package com.clma.app
 
+import com.clma.app.diagnostics.FunctionalDiagnostics
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Build
@@ -31,6 +32,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -80,6 +82,7 @@ import com.clma.app.ui.hooks.readStringPreference
 import com.clma.app.ui.hooks.rememberCustomTtsState
 import com.clma.app.ui.hooks.rememberCustomAsrState
 import com.clma.app.ui.hooks.rememberCurrentColorMode
+import com.clma.app.ui.hooks.rememberSharedPreferenceBoolean
 import com.clma.app.ui.pages.assistant.AssistantPage
 import com.clma.app.ui.pages.assistant.detail.AssistantBasicPage
 import com.clma.app.ui.pages.assistant.detail.AssistantDetailPage
@@ -196,6 +199,7 @@ class RouteActivity : FragmentActivity() {
         enableEdgeToEdge()
         disableNavigationBarContrast()
         super.onCreate(savedInstanceState)
+        FunctionalDiagnostics.event("activity.create", System.identityHashCode(this), if (savedInstanceState == null) 0 else 1)
         if (CrashHandler.hasCrashed(this)) {
             startActivity(Intent(this, SafeModeActivity::class.java))
             finish()
@@ -333,6 +337,14 @@ class RouteActivity : FragmentActivity() {
             rememberNavBackStack(Screen.Chat(initialChatIds[0]), Screen.Chat(initialChatIds[1]))
         } else {
             rememberNavBackStack(Screen.Chat(initialChatIds[0]))
+        }
+        val diagnosticFunctions by rememberSharedPreferenceBoolean(FunctionalDiagnostics.FUNCTION_KEY)
+        LaunchedEffect(backStack, diagnosticFunctions) {
+            if (!diagnosticFunctions) return@LaunchedEffect
+            snapshotFlow { backStack.toList() }.collect { stack ->
+                FunctionalDiagnostics.event("navigation.stackSize", value = stack.size.toLong())
+                FunctionalDiagnostics.event("navigation.chatOnTop", value = if (stack.lastOrNull() is Screen.Chat) 1 else 0)
+            }
         }
         SideEffect {
             navStack = backStack

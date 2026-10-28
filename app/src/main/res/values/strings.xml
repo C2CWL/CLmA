@@ -3341,4 +3341,7 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="setting_runtime_timezone_dialog_title">Select Timezone</string>
   <string name="setting_runtime_timezone_custom_hint">Custom IANA Timezone (e.g. Asia/Shanghai)</string>
   <string name="setting_runtime_timezone_invalid">Invalid timezone ID</string>
+  <string name="diagnostics_functions">Functional diagnostics</string>
+  <string name="diagnostics_animation">Drawer animation diagnostics</string>
+  <string name="diagnostics_description">Off by default. Records states, timings and process-local instance numbers, not chat content or credentials. Animation diagnostics adds overhead; disable after reproduction. Logs stay local and can be copied or cleared here.</string>
 </resources>

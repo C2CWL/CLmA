@@ -1,5 +1,6 @@
 package com.clma.app.ui.pages.chat
 
+import com.clma.app.diagnostics.FunctionalDiagnostics
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
@@ -161,6 +162,7 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null, is
         .ifBlank { null }
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    ObserveDrawerDiagnostics(drawerState, vm, setting.assistantId)
     // 与抽屉共享同一个 activity 级 ChatDrawerVM，返回键才能先退出多选而不是关掉抽屉。
     val activity = LocalContext.current as ComponentActivity
     val drawerVm: ChatDrawerVM = koinViewModel(viewModelStoreOwner = activity)
@@ -335,6 +337,7 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null, is
                 drawerVm.requestExitMultiSelect()
             }
             BackHandler(enabled = drawerState.isOpen && !multiSelectActive) {
+                FunctionalDiagnostics.event("drawer.close.back", System.identityHashCode(drawerState))
                 scope.launch { drawerState.close() }
             }
         }
@@ -927,6 +930,7 @@ private fun TopBar(
             if (!bigScreen) {
                 GlassTopBarButton(
                     onClick = {
+                        FunctionalDiagnostics.event("drawer.open.request", System.identityHashCode(drawerState))
                         scope.launch { drawerState.open() }
                     },
                     hazeState = hazeState,

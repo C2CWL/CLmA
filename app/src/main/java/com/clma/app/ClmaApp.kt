@@ -1,5 +1,6 @@
 package com.clma.app
 
+import com.clma.app.diagnostics.FunctionalDiagnostics
 import android.app.Application
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -101,6 +102,7 @@ class ClmaApp : Application() {
             dir = java.io.File(filesDir, "logs"),
             minLevel = if (BuildConfig.DEBUG) LogLevel.DEBUG else LogLevel.INFO,
         )
+        FunctionalDiagnostics.init(this)
         startKoin {
             androidLogger()
             androidContext(this@ClmaApp)
