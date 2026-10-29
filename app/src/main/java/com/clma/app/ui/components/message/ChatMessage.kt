@@ -183,7 +183,7 @@ fun ChatMessage(
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         // Gemini 布局：两侧都不再有头像行，用户消息只靠右对齐的胶囊区分。
-        if (!message.parts.isEmptyUIMessage() && !settings.displaySetting.usesGeminiChatUi) {
+        if (!message.parts.isEmptyUIMessage() && !settings.usesGeminiChatUi) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth(),
