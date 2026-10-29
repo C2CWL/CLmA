@@ -53,6 +53,7 @@ import com.clma.app.data.datastore.migration.PreferenceStoreV4Migration
 import com.clma.app.data.datastore.migration.PreferenceStoreV5Migration
 import com.clma.app.data.datastore.migration.PreferenceStoreV6Migration
 import com.clma.app.data.datastore.migration.PreferenceStoreV7Migration
+import com.clma.app.data.datastore.migration.PreferenceStoreV8Migration
 import com.clma.app.data.model.Assistant
 import com.clma.app.data.model.Avatar
 import com.clma.app.data.model.InjectionPosition
@@ -176,6 +177,7 @@ private fun createSettingsDataStore(context: Context): DataStore<Preferences> {
             PreferenceStoreV5Migration(),
             PreferenceStoreV6Migration(),
             PreferenceStoreV7Migration(),
+            PreferenceStoreV8Migration(),
         ),
         produceFile = { file },
     )

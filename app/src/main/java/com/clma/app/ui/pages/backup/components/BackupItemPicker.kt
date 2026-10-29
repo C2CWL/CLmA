@@ -68,6 +68,7 @@ private fun backupItemLabelRes(item: BackupItem): Int = when (item) {
     BackupItem.VIDEOS -> R.string.backup_item_videos
     BackupItem.FONTS -> R.string.backup_item_fonts
     BackupItem.WORKSPACES -> R.string.backup_item_workspaces
+    BackupItem.ASSISTANT_MEMORY -> R.string.backup_item_assistant_memory
     BackupItem.TOOL_OUTPUTS -> R.string.backup_item_tool_outputs
     BackupItem.CONFIG -> R.string.backup_item_config
     BackupItem.SECRETS -> R.string.backup_item_secrets

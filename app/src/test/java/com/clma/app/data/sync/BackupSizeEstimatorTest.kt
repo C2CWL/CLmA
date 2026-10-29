@@ -32,7 +32,8 @@ class BackupSizeEstimatorTest {
             file("known_hosts", "host")
             val sizes = BackupSizeEstimator.estimate(root, emptyList())
             assertEquals(8L, sizes[BackupItem.UPLOAD])
-            assertEquals(7L, sizes[BackupItem.WORKSPACES])
+            assertEquals(2L, sizes[BackupItem.WORKSPACES])
+            assertEquals(5L, sizes[BackupItem.ASSISTANT_MEMORY])
             assertEquals(4L, sizes[BackupItem.CONFIG])
         } finally { root.deleteRecursively() }
     }
@@ -68,6 +69,7 @@ class BackupSizeEstimatorTest {
         assertEquals(300L, sizes[BackupItem.VIDEOS])
         assertEquals(7L, sizes[BackupItem.CONFIG])
         assertEquals(25L, sizes[BackupItem.WORKSPACES])
+        assertEquals(0L, sizes[BackupItem.ASSISTANT_MEMORY])
         assertEquals(100L, sizes[BackupItem.SECRETS])
         assertEquals(0L, sizes[BackupItem.SKILLS])
         assertEquals(BackupItem.selectable.toSet(), sizes.keys)

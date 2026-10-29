@@ -28,6 +28,7 @@ class BackupItemTest {
             BackupItem.VIDEOS,
             BackupItem.FONTS,
             BackupItem.WORKSPACES,
+            BackupItem.ASSISTANT_MEMORY,
             BackupItem.TOOL_OUTPUTS,
         ).forEach { assertTrue("expected $it", it in normalized) }
         // CONFIG and SECRETS are newer than the umbrella and must not be silently enabled for old settings.
@@ -52,5 +53,15 @@ class BackupItemTest {
     @Test
     fun `normalize of empty stays empty`() {
         assertTrue(BackupItem.normalize(emptyList()).isEmpty())
+    }
+
+    @Test
+    fun `ASSISTANT_MEMORY is selectable immediately after WORKSPACES`() {
+        val selectable = BackupItem.selectable
+        assertTrue(BackupItem.ASSISTANT_MEMORY in selectable)
+        assertEquals(
+            BackupItem.ASSISTANT_MEMORY,
+            selectable[selectable.indexOf(BackupItem.WORKSPACES) + 1],
+        )
     }
 }

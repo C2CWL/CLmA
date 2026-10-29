@@ -12,6 +12,9 @@ internal object BackupLayout {
 
     const val SECRETS_FILE = "secrets.enc"
 
+    /** Assistant-owned cold memory tree archived as `assistant_memory/<id>/…`. */
+    const val ASSISTANT_MEMORY_DIR = "assistant_memory"
+
     /** Items whose whole `files/<dir>` subtree is archived as `<dir>/<relative>`. */
     val subtreeFolders: List<Pair<BackupItem, String>> = listOf(
         BackupItem.SKILLS to "skills",
@@ -21,7 +24,7 @@ internal object BackupLayout {
         BackupItem.VIDEOS to "videos",
         BackupItem.FONTS to "fonts",
         BackupItem.TOOL_OUTPUTS to "tool_outputs",
-        BackupItem.WORKSPACES to "assistant_memory",
+        BackupItem.ASSISTANT_MEMORY to ASSISTANT_MEMORY_DIR,
     )
 
     private val subtreeByDir: Map<String, BackupItem> =
@@ -92,4 +95,16 @@ internal object BackupLayout {
             else -> null
         }
     }
+
+    /**
+     * Whether a resolved archive [item] should be staged for restore given [selected].
+     *
+     * Pre-split archives packed `assistant_memory/` under the WORKSPACES selection only.
+     * Accept those entries when WORKSPACES is selected so old backups still restore cold
+     * memory without requiring the new chip. Not used by [BackupItem.normalize].
+     */
+    fun acceptsRestoreEntry(item: BackupItem, selected: Set<BackupItem>): Boolean =
+        item in selected ||
+            (item == BackupItem.ASSISTANT_MEMORY && BackupItem.WORKSPACES in selected)
+
 }

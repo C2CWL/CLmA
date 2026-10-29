@@ -190,7 +190,8 @@
   <string name="backup_item_images">图片</string>
   <string name="backup_item_videos">视频</string>
   <string name="backup_item_fonts">字体</string>
-  <string name="backup_item_workspaces">工作区与助手冷记忆</string>
+  <string name="backup_item_workspaces">工作区</string>
+  <string name="backup_item_assistant_memory">助手冷记忆</string>
   <string name="backup_item_tool_outputs">工具产物</string>
   <string name="backup_item_config">偏好配置</string>
   <string name="backup_item_secrets">安全密钥</string>
@@ -2946,7 +2947,7 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="assistant_page_tool_result_budget_active">限制：每条工具结果约 %d 个 token</string>
   <string name="assistant_page_tool_result_budget_off">使用默认上限（32 KB 字符，仅保留开头预览）</string>
   <string name="assistant_page_cold_memory">冷记忆（Markdown）</string>
-  <string name="assistant_page_cold_memory_desc">冷记忆跟随当前助手，不依赖工作区。旧笔记只复制不删除；随工作区备份项备份和恢复。</string>
+  <string name="assistant_page_cold_memory_desc">冷记忆跟随当前助手，不依赖工作区。旧笔记只复制不删除；随「助手冷记忆」备份项备份和恢复。</string>
   <string name="assistant_page_cold_memory_no_workspace">未绑定工作区</string>
   <string name="assistant_page_cold_memory_no_workspace_desc">请先在“基础设定”页绑定一个工作区。冷记忆存放在工作区的某个文件夹内。</string>
   <string name="assistant_page_cold_memory_dir">知识库文件夹</string>

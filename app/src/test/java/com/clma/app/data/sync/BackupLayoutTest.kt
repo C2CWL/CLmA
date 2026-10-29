@@ -1,7 +1,9 @@
 package com.clma.app.data.sync
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class BackupLayoutTest {
@@ -16,7 +18,7 @@ class BackupLayoutTest {
 
     @Test
     fun `assistant memory browser exports and known hosts are restorable`() {
-        assertEquals(BackupItem.WORKSPACES, BackupLayout.itemForEntry("assistant_memory/id/memory/INDEX.md"))
+        assertEquals(BackupItem.ASSISTANT_MEMORY, BackupLayout.itemForEntry("assistant_memory/id/memory/INDEX.md"))
         assertEquals(BackupItem.UPLOAD, BackupLayout.itemForEntry("browser-exports/report.pdf"))
         assertEquals(BackupItem.CONFIG, BackupLayout.itemForEntry("known_hosts"))
         assertNull(BackupLayout.itemForEntry("assistant_memory/../secret"))
@@ -58,5 +60,25 @@ class BackupLayoutTest {
         assertNull(BackupLayout.itemForEntry("upload/"))
         assertNull(BackupLayout.itemForEntry("/upload/x"))
         assertNull(BackupLayout.itemForEntry("upload"))
+    }
+
+    @Test
+    fun `assistant memory restores with its own item or legacy workspaces selection`() {
+        val memory = BackupItem.ASSISTANT_MEMORY
+        assertTrue(BackupLayout.acceptsRestoreEntry(memory, setOf(BackupItem.ASSISTANT_MEMORY)))
+        assertTrue(BackupLayout.acceptsRestoreEntry(memory, setOf(BackupItem.WORKSPACES)))
+        assertTrue(
+            BackupLayout.acceptsRestoreEntry(
+                memory,
+                setOf(BackupItem.WORKSPACES, BackupItem.ASSISTANT_MEMORY),
+            )
+        )
+        assertFalse(BackupLayout.acceptsRestoreEntry(memory, setOf(BackupItem.SKILLS)))
+        assertTrue(
+            BackupLayout.acceptsRestoreEntry(BackupItem.SKILLS, setOf(BackupItem.SKILLS))
+        )
+        assertFalse(
+            BackupLayout.acceptsRestoreEntry(BackupItem.SKILLS, setOf(BackupItem.WORKSPACES))
+        )
     }
 }

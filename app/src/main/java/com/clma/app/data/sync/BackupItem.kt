@@ -25,6 +25,9 @@ enum class BackupItem {
     VIDEOS,
     FONTS,
     WORKSPACES,
+
+    /** Assistant-owned cold memory under files/assistant_memory/. */
+    ASSISTANT_MEMORY,
     TOOL_OUTPUTS,
 
     /** Non-[com.clma.app.data.datastore.Settings] preference stores (see [BackupLayout]). */
@@ -44,6 +47,7 @@ enum class BackupItem {
             VIDEOS,
             FONTS,
             WORKSPACES,
+            ASSISTANT_MEMORY,
             TOOL_OUTPUTS,
             CONFIG,
             SECRETS,
@@ -57,6 +61,7 @@ enum class BackupItem {
             VIDEOS,
             FONTS,
             WORKSPACES,
+            ASSISTANT_MEMORY,
             TOOL_OUTPUTS,
         )
 
