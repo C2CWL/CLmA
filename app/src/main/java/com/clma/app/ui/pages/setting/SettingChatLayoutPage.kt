@@ -65,6 +65,7 @@ fun SettingChatLayoutPage(vm: SettingVM = koinViewModel()) {
                             optionToString = {
                                 stringResource(
                                     when (it) {
+                                        ChatLayout.GEMINI -> R.string.setting_display_page_chat_layout_gemini
                                         ChatLayout.ORIGINAL -> R.string.setting_display_page_chat_layout_original
                                         ChatLayout.CLEAN -> R.string.setting_display_page_chat_layout_clean
                                         ChatLayout.CLAUDE -> R.string.setting_display_page_chat_layout_claude
@@ -78,10 +79,13 @@ fun SettingChatLayoutPage(vm: SettingVM = koinViewModel()) {
                     },
                 )
                 // CLEAN / CLAUDE share the flat header + two-row composer; their panel knobs
-                // still apply. ORIGINAL hides them so the old chrome stays untouched.
-                if (displaySetting.effectiveChatLayout != ChatLayout.ORIGINAL) {
+                // still apply. ORIGINAL hides them so the old chrome stays untouched; GEMINI keeps
+                // the header height / composer inset (both still used) but drops the material
+                // knobs, because its header is bare text and its composer is a solid pill.
+                val layout = displaySetting.effectiveChatLayout
+                if (layout != ChatLayout.ORIGINAL) {
                     // Glass is a CLEAN-only material; CLAUDE keeps a solid paper card.
-                    if (displaySetting.effectiveChatLayout == ChatLayout.CLEAN) {
+                    if (layout == ChatLayout.CLEAN) {
                         item(
                             headlineContent = { Text(stringResource(R.string.setting_display_page_clean_layout_glass_title)) },
                             supportingContent = { Text(stringResource(R.string.setting_display_page_clean_layout_glass_desc)) },
@@ -95,7 +99,7 @@ fun SettingChatLayoutPage(vm: SettingVM = koinViewModel()) {
                             },
                         )
                     }
-                    item(
+                    if (layout != ChatLayout.GEMINI) item(
                         headlineContent = { Text(stringResource(R.string.setting_display_page_clean_layout_top_opacity_title)) },
                         supportingContent = {
                             Column {
@@ -151,7 +155,7 @@ fun SettingChatLayoutPage(vm: SettingVM = koinViewModel()) {
                             }
                         },
                     )
-                    item(
+                    if (layout != ChatLayout.GEMINI) item(
                         headlineContent = { Text(stringResource(R.string.setting_display_page_clean_layout_bottom_opacity_title)) },
                         supportingContent = {
                             Column {

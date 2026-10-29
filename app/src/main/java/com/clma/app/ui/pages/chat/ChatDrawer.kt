@@ -335,20 +335,24 @@ fun ChatDrawerContent(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    UIAvatar(
-                        name = settings.displaySetting.userNickname.ifBlank { stringResource(R.string.user_default_name) },
-                        value = settings.displaySetting.userAvatar,
-                        onUpdate = { newAvatar ->
-                            vm.updateSettings(
-                                settings.copy(
-                                    displaySetting = settings.displaySetting.copy(
-                                        userAvatar = newAvatar
+                    // 「显示用户头像」是一个全 App 的开关：关掉后这里也不画头像，
+                    // 只留昵称（点昵称仍可改名），抽屉的身份行因此更接近 Gemini 的极简样式。
+                    if (settings.displaySetting.showUserAvatar) {
+                        UIAvatar(
+                            name = settings.displaySetting.userNickname.ifBlank { stringResource(R.string.user_default_name) },
+                            value = settings.displaySetting.userAvatar,
+                            onUpdate = { newAvatar ->
+                                vm.updateSettings(
+                                    settings.copy(
+                                        displaySetting = settings.displaySetting.copy(
+                                            userAvatar = newAvatar
+                                        )
                                     )
                                 )
-                            )
-                        },
-                        modifier = Modifier.size(if (drawerCapsules) 44.dp else 50.dp),
-                    )
+                            },
+                            modifier = Modifier.size(if (drawerCapsules) 44.dp else 50.dp),
+                        )
+                    }
 
                     Text(
                         text = settings.displaySetting.userNickname.ifBlank { stringResource(R.string.user_default_name) },

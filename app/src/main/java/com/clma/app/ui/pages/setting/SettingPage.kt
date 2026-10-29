@@ -455,6 +455,7 @@ private fun hubItemSummary(id: SettingsHubItemId, settings: Settings, status: Hu
         }
         SettingsHubItemId.CHAT_LAYOUT -> stringResource(
             when (display.effectiveChatLayout) {
+                ChatLayout.GEMINI -> R.string.setting_display_page_chat_layout_gemini
                 ChatLayout.ORIGINAL -> R.string.setting_display_page_chat_layout_original
                 ChatLayout.CLEAN -> R.string.setting_display_page_chat_layout_clean
                 ChatLayout.CLAUDE -> R.string.setting_display_page_chat_layout_claude

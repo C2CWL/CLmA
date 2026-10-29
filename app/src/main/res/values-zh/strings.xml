@@ -907,11 +907,12 @@
   <string name="setting_display_page_show_token_usage_title">显示Token和上下文统计</string>
   <string name="setting_display_page_show_updates_desc">是否显示应用更新通知</string>
   <string name="setting_display_page_show_updates_title">显示更新</string>
-  <string name="setting_display_page_show_user_avatar_desc">是否在聊天消息中显示用户头像</string>
+  <string name="setting_display_page_show_user_avatar_desc">是否在聊天消息和侧边抽屉中显示用户头像</string>
   <string name="setting_display_page_clean_layout_title">简洁布局</string>
   <string name="setting_display_page_clean_layout_desc">扁平顶栏，标题下方显示模型名；输入框平时一行，点开后分两行，工具按钮在输入框下方</string>
   <string name="setting_display_page_chat_layout_title">聊天布局</string>
   <string name="setting_display_page_chat_layout_desc">聊天页整体样式：顶栏、输入框与消息呈现</string>
+  <string name="setting_display_page_chat_layout_gemini">Gemini</string>
   <string name="setting_display_page_chat_layout_original">原版</string>
   <string name="setting_display_page_chat_layout_clean">简洁</string>
   <string name="setting_display_page_chat_layout_claude">暖阳</string>

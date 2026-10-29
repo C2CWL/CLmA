@@ -338,10 +338,14 @@ private fun ChatListNormal(
         ChatFontProvider(displaySetting = settings.displaySetting) {
             val bounceEnabled = settings.displaySetting.enableBounceOverscroll
             // 暖阳：消息限宽居中，贴近安静阅读栏。
-            val claudeReading = settings.displaySetting.effectiveChatLayout == ChatLayout.CLAUDE
-            val messageModifier = if (claudeReading) {
+            // Gemini：同样限宽居中（阅读栏更宽一点），因为它也是"没有气泡、纯文本流"的排版。
+            val chatLayout = settings.displaySetting.effectiveChatLayout
+            val claudeReading = chatLayout == ChatLayout.CLAUDE
+            val geminiReading = chatLayout == ChatLayout.GEMINI
+            val centeredReading = claudeReading || geminiReading
+            val messageModifier = if (centeredReading) {
                 Modifier
-                    .widthIn(max = 720.dp)
+                    .widthIn(max = if (geminiReading) 760.dp else 720.dp)
                     .fillMaxWidth()
             } else {
                 Modifier.fillMaxWidth()
@@ -355,14 +359,20 @@ private fun ChatListNormal(
                     // The top inset is content padding rather than a modifier padding, so the messages
                     // can scroll UNDER the title bar (where they fade out) instead of being clipped by it.
                     contentPadding = PaddingValues(
-                        horizontal = if (claudeReading) 20.dp else 16.dp,
+                        horizontal = if (centeredReading) 20.dp else 16.dp,
                         vertical = 0.dp,
                     ) + PaddingValues(
                         top = innerPadding.calculateTopPadding(),
                         bottom = 32.dp + innerPadding.calculateBottomPadding(),
                     ),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(if (claudeReading) 16.dp else 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(
+                        when {
+                            geminiReading -> 24.dp
+                            claudeReading -> 16.dp
+                            else -> 12.dp
+                        }
+                    ),
                     modifier = Modifier
                         .fillMaxSize()
                         .bounceOverscroll(state, enabled = bounceEnabled)

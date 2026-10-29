@@ -8,16 +8,18 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Chat layout is a three-way selector that supersedes the old cleanLayout switch. Installs that
- * only knew the boolean must keep looking the same until the user picks an option.
+ * Chat layout is a four-way selector that supersedes the old cleanLayout switch. GEMINI is the
+ * default look; an install that only knew the boolean keeps whatever it said (clean stays clean,
+ * the old original chrome is gone and resolves to the new default).
  */
 class DisplaySettingChatLayoutTest {
 
     @Test
-    fun `chat layout is unset by default and resolves to original`() {
+    fun `chat layout is unset by default and resolves to gemini`() {
         val setting = DisplaySetting()
         assertNull(setting.chatLayout)
-        assertEquals(ChatLayout.ORIGINAL, setting.effectiveChatLayout)
+        assertEquals(ChatLayout.GEMINI, setting.effectiveChatLayout)
+        assertTrue(setting.usesGeminiChatUi)
         assertFalse(setting.cleanLayout)
     }
 
@@ -31,10 +33,28 @@ class DisplaySettingChatLayoutTest {
     }
 
     @Test
-    fun `legacy cleanLayout false resolves to original when chatLayout is unset`() {
+    fun `legacy cleanLayout false resolves to gemini when chatLayout is unset`() {
         val legacy = """{"cleanLayout":false,"showUserAvatar":true}"""
         val decoded = JsonInstant.decodeFromString<DisplaySetting>(legacy)
+        assertFalse(decoded.cleanLayout)
+        assertEquals(ChatLayout.GEMINI, decoded.effectiveChatLayout)
+    }
+
+    @Test
+    fun `picking original stays on original`() {
+        val decoded = JsonInstant.decodeFromString<DisplaySetting>("""{"chatLayout":"original"}""")
         assertEquals(ChatLayout.ORIGINAL, decoded.effectiveChatLayout)
+        assertFalse(decoded.usesGeminiChatUi)
+    }
+
+    @Test
+    fun `gemini serializes under its own name`() {
+        val json = JsonInstant.encodeToString(DisplaySetting(chatLayout = ChatLayout.GEMINI))
+        assertTrue(json.contains("\"chatLayout\":\"gemini\""))
+        assertEquals(
+            ChatLayout.GEMINI,
+            JsonInstant.decodeFromString<DisplaySetting>(json).effectiveChatLayout,
+        )
     }
 
     @Test
@@ -46,6 +66,13 @@ class DisplaySettingChatLayoutTest {
         val clean = DisplaySetting().withChatLayout(ChatLayout.CLEAN)
         assertEquals(ChatLayout.CLEAN, clean.chatLayout)
         assertTrue(clean.cleanLayout)
+
+        // GEMINI maps cleanLayout=true so an older build falls back to the closer chrome.
+        val gemini = DisplaySetting().withChatLayout(ChatLayout.GEMINI)
+        assertEquals(ChatLayout.GEMINI, gemini.chatLayout)
+        assertTrue(gemini.cleanLayout)
+        assertEquals(ChatLayout.GEMINI, gemini.effectiveChatLayout)
+        assertTrue(gemini.usesGeminiChatUi)
 
         // CLAUDE maps cleanLayout=true so an older build falls back to the closer chrome.
         val claude = DisplaySetting().withChatLayout(ChatLayout.CLAUDE)

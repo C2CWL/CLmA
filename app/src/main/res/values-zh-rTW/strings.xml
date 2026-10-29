@@ -724,10 +724,11 @@
   <string name="setting_display_page_show_token_usage_title">顯示Token和上下文統計</string>
   <string name="setting_display_page_show_updates_desc">是否顯示應用更新通知</string>
   <string name="setting_display_page_show_updates_title">顯示更新</string>
-  <string name="setting_display_page_show_user_avatar_desc">是否在聊天消息中顯示用戶頭像</string>
+  <string name="setting_display_page_show_user_avatar_desc">是否在聊天訊息和側邊抽屜中顯示用戶頭像</string>
   <string name="setting_display_page_clean_layout_title">簡潔版面</string>
   <string name="setting_display_page_chat_layout_title">聊天版面</string>
   <string name="setting_display_page_chat_layout_desc">聊天頁整體樣式：頂欄、輸入框與訊息呈現</string>
+  <string name="setting_display_page_chat_layout_gemini">Gemini</string>
   <string name="setting_display_page_chat_layout_original">原版</string>
   <string name="setting_display_page_chat_layout_clean">簡潔</string>
   <string name="setting_display_page_chat_layout_claude">暖陽</string>

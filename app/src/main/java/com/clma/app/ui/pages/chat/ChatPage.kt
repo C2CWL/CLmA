@@ -759,6 +759,9 @@ private fun ChatPageContent(
                 // CLEAN 与 CLAUDE 都走扁平顶栏 + 面板，不需要顶部溶解。
                 val chatLayout = setting.displaySetting.effectiveChatLayout
                 val cleanLayout = chatLayout != ChatLayout.ORIGINAL
+                // Gemini 的顶栏是纯文字（无面板），所以要像原版一样留一层顶部溶解，
+                // 否则滚动中的消息会直接撞在标题上。
+                val topDissolve = !cleanLayout || chatLayout == ChatLayout.GEMINI
 
                 // Top dissolve: extends below the title bar so incoming/outgoing messages
                 // fade in/out smoothly instead of clipping abruptly at the bar's bottom edge.
@@ -771,7 +774,7 @@ private fun ChatPageContent(
                 } else {
                     innerPadding.calculateTopPadding() + 64.dp + topFadeExtension
                 }
-                if (!cleanLayout) {
+                if (topDissolve) {
                     Box(
                         modifier = Modifier
                             .align(Alignment.TopCenter)

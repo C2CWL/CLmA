@@ -36,6 +36,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -271,8 +273,12 @@ internal fun CleanTopBarPanel(
     // CLAUDE (暖阳) keeps a solid paper header; glass is CLEAN-only.
     val glass = settings.displaySetting.effectiveChatLayout == ChatLayout.CLEAN &&
         settings.displaySetting.cleanLayoutGlass
+    // Gemini (默认) 的顶栏是纯文字：没有面板填充、没有描边、也不切圆角，标题直接浮在内容之上。
+    val gemini = settings.displaySetting.effectiveChatLayout == ChatLayout.GEMINI
     val opacity = settings.displaySetting.cleanLayoutTopOpacity
-    val shape = cleanHeaderShape()
+    // 圆角形状单独留着：玻璃配方只接受 RoundedCornerShape，Gemini 分支不画任何东西。
+    val roundedShape = cleanHeaderShape()
+    val shape: Shape = if (gemini) RectangleShape else roundedShape
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -282,7 +288,7 @@ internal fun CleanTopBarPanel(
                     Modifier.hazeGlass(
                         input = HazeInput.Sources(hazeState, selection = WallpaperOnlySelection),
                         style = rikkaGlassStyle(
-                            shape,
+                            roundedShape,
                             blurRadius = 12.dp,
                             depth = 0.4f,
                             tintStrength = opacity,
@@ -296,8 +302,12 @@ internal fun CleanTopBarPanel(
         tonalElevation = 0.dp,
         // Glass also gets the panel fill over the backdrop, or the opacity slider has nothing
         // visible to scale (see CleanGlassFillFactor).
-        color = if (glass) cleanGlassFill(opacity) else cleanPanelFill(opacity),
-        border = if (glass) null else BorderStroke(1.dp, cleanPanelOutline(darkTheme)),
+        color = when {
+            gemini -> Color.Transparent
+            glass -> cleanGlassFill(opacity)
+            else -> cleanPanelFill(opacity)
+        },
+        border = if (glass || gemini) null else BorderStroke(1.dp, cleanPanelOutline(darkTheme)),
         content = content,
     )
 }
