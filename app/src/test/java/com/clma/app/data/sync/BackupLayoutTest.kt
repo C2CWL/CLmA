@@ -16,7 +16,7 @@ class BackupLayoutTest {
 
     @Test
     fun `assistant memory browser exports and known hosts are restorable`() {
-        assertEquals(BackupItem.WORKSPACES, BackupLayout.itemForEntry("assistant_memory/id/memory/INDEX.md"))
+        assertEquals(BackupItem.ASSISTANT_MEMORY, BackupLayout.itemForEntry("assistant_memory/id/memory/INDEX.md"))
         assertEquals(BackupItem.UPLOAD, BackupLayout.itemForEntry("browser-exports/report.pdf"))
         assertEquals(BackupItem.CONFIG, BackupLayout.itemForEntry("known_hosts"))
         assertNull(BackupLayout.itemForEntry("assistant_memory/../secret"))
@@ -31,6 +31,7 @@ class BackupLayoutTest {
     fun `workspace entries map only into the files area`() {
         assertEquals(BackupItem.WORKSPACES, BackupLayout.itemForEntry("workspaces/abc/files/a.txt"))
         assertEquals(BackupItem.WORKSPACES, BackupLayout.itemForEntry("workspaces/abc/files/deep/a.txt"))
+        assertEquals(BackupItem.ASSISTANT_MEMORY, BackupLayout.itemForEntry("assistant_memory/id/memory/INDEX.md"))
         assertEquals(BackupItem.WORKSPACES, BackupLayout.itemForEntry("workspace/learnings/ERRORS.md"))
         // The proot rootfs and scratch dirs are never archived, so they must not restore either.
         assertNull(BackupLayout.itemForEntry("workspaces/abc/linux/bin/sh"))

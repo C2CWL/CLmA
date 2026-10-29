@@ -21,7 +21,7 @@ internal object BackupLayout {
         BackupItem.VIDEOS to "videos",
         BackupItem.FONTS to "fonts",
         BackupItem.TOOL_OUTPUTS to "tool_outputs",
-        BackupItem.WORKSPACES to "assistant_memory",
+        BackupItem.ASSISTANT_MEMORY to "assistant_memory",
     )
 
     private val subtreeByDir: Map<String, BackupItem> =

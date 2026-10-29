@@ -181,7 +181,11 @@ class BackupManager(
                                     if (BackupItem.SECRETS in selected) File(staging, BackupLayout.SECRETS_FILE) else null
                                 else -> {
                                     val item = BackupLayout.itemForEntry(entry.name)
-                                    if (item != null && item in selected) {
+                                    // Archives written by v0.7.8 stored assistant memory in
+                                    // the workspace slice; accept them under either choice.
+                                    val accepted = item != null && (item in selected ||
+                                        (item == BackupItem.ASSISTANT_MEMORY && BackupItem.WORKSPACES in selected))
+                                    if (accepted) {
                                         PendingRestore.resolveInside(File(payload, "files"), entry.name)
                                     } else null
                                 }

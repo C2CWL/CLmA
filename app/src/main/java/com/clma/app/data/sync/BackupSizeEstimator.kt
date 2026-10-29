@@ -31,7 +31,8 @@ internal object BackupSizeEstimator {
                     BackupLayout.sharedPreferenceFiles.sumOf { name ->
                         File(filesDir.parentFile, "shared_prefs/$name").takeIf { it.isFile }?.length() ?: 0L
                     }
-                BackupItem.WORKSPACES -> workspacesSize(filesDir) + directorySize(File(filesDir, "assistant_memory"))
+                BackupItem.WORKSPACES -> workspacesSize(filesDir)
+                BackupItem.ASSISTANT_MEMORY -> directorySize(File(filesDir, "assistant_memory"))
                 BackupItem.SECRETS -> estimateSecretsSize(filesDir)
                 else -> subtreeDirs[item]?.sumOf { directorySize(File(filesDir, it)) } ?: 0L
             }

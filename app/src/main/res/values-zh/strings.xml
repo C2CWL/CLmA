@@ -190,7 +190,8 @@
   <string name="backup_item_images">图片</string>
   <string name="backup_item_videos">视频</string>
   <string name="backup_item_fonts">字体</string>
-  <string name="backup_item_workspaces">工作区与助手冷记忆</string>
+  <string name="backup_item_workspaces">工作区</string>
+  <string name="backup_item_assistant_memory">助手冷记忆</string>
   <string name="backup_item_tool_outputs">工具产物</string>
   <string name="backup_item_config">偏好配置</string>
   <string name="backup_item_secrets">安全密钥</string>

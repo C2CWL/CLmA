@@ -27,6 +27,9 @@ enum class BackupItem {
     WORKSPACES,
     TOOL_OUTPUTS,
 
+    /** Assistant-owned cold memory, independent of any workspace. */
+    ASSISTANT_MEMORY,
+
     /** Non-[com.clma.app.data.datastore.Settings] preference stores (see [BackupLayout]). */
     CONFIG,
 
@@ -45,6 +48,7 @@ enum class BackupItem {
             FONTS,
             WORKSPACES,
             TOOL_OUTPUTS,
+            ASSISTANT_MEMORY,
             CONFIG,
             SECRETS,
         )
@@ -58,6 +62,9 @@ enum class BackupItem {
             FONTS,
             WORKSPACES,
             TOOL_OUTPUTS,
+            // v0.7.8 archived assistant memory under the WORKSPACES umbrella; legacy
+            // selections must keep covering it after the split.
+            ASSISTANT_MEMORY,
         )
 
         /**

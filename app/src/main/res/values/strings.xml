@@ -219,7 +219,8 @@
   <string name="backup_item_images">Images</string>
   <string name="backup_item_videos">Videos</string>
   <string name="backup_item_fonts">Fonts</string>
-  <string name="backup_item_workspaces">Workspaces and assistant memory</string>
+  <string name="backup_item_workspaces">Workspaces</string>
+  <string name="backup_item_assistant_memory">Assistant memory</string>
   <string name="backup_item_tool_outputs">Tool outputs</string>
   <string name="backup_item_config">Preferences</string>
   <string name="backup_item_secrets">Secrets</string>

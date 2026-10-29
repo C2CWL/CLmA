@@ -29,6 +29,7 @@ class BackupItemTest {
             BackupItem.FONTS,
             BackupItem.WORKSPACES,
             BackupItem.TOOL_OUTPUTS,
+            BackupItem.ASSISTANT_MEMORY,
         ).forEach { assertTrue("expected $it", it in normalized) }
         // CONFIG and SECRETS are newer than the umbrella and must not be silently enabled for old settings.
         assertFalse(BackupItem.CONFIG in normalized)
