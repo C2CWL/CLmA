@@ -43,6 +43,7 @@ import androidx.compose.material3.adaptive.currentWindowDpSize
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
@@ -313,42 +314,53 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null, is
 
         else -> {
             val parentMotionScheme = MaterialTheme.motionScheme
-            MaterialTheme(motionScheme = MotionScheme.standard()) {
-                ModalNavigationDrawer(
-                    drawerState = drawerState,
-                    drawerContent = {
-                        MaterialTheme(motionScheme = parentMotionScheme) {
-                            ChatDrawerContent(
-                                navController = navController,
-                                current = conversation,
-                                vm = vm,
-                                settings = setting,
-                                hazeState = hazeState,
-                            )
+            // The drawer gets a font-scale-independent density so a font size change (e.g. the UI
+            // font size loading after the cold-start layout) can't reset its anchor state; the
+            // app's real density is provided again inside. See drawerAnchorDensity.
+            val appDensity = LocalDensity.current
+            val drawerDensity = remember(appDensity.density) { drawerAnchorDensity(appDensity) }
+            CompositionLocalProvider(LocalDensity provides drawerDensity) {
+                MaterialTheme(motionScheme = MotionScheme.standard()) {
+                    ModalNavigationDrawer(
+                        drawerState = drawerState,
+                        drawerContent = {
+                            CompositionLocalProvider(LocalDensity provides appDensity) {
+                                MaterialTheme(motionScheme = parentMotionScheme) {
+                                    ChatDrawerContent(
+                                        navController = navController,
+                                        current = conversation,
+                                        vm = vm,
+                                        settings = setting,
+                                        hazeState = hazeState,
+                                    )
+                                }
+                            }
                         }
-                    }
-                ) {
-                    MaterialTheme(motionScheme = parentMotionScheme) {
-                        ChatPageContent(
-                            onStartVoiceMode = startVoiceMode,
-                            inputState = inputState,
-                            loadingJob = loadingJob,
-                            processingStatus = mergedStatus,
-                            setting = setting,
-                            conversation = conversation,
-                            drawerState = drawerState,
-                            navController = navController,
-                            vm = vm,
-                            chatListState = chatListState,
-                            hazeState = hazeState,
-                            enableWebSearch = enableWebSearch,
-                            currentChatModel = currentChatModel,
-                            bigScreen = false,
-                            errors = errors,
-                            onDismissError = { vm.dismissError(it) },
-                            onClearAllErrors = { vm.clearAllErrors() },
-                            onInputFocusChanged = { isTextInputFocused = it },
-                        )
+                    ) {
+                        CompositionLocalProvider(LocalDensity provides appDensity) {
+                            MaterialTheme(motionScheme = parentMotionScheme) {
+                                ChatPageContent(
+                                    onStartVoiceMode = startVoiceMode,
+                                    inputState = inputState,
+                                    loadingJob = loadingJob,
+                                    processingStatus = mergedStatus,
+                                    setting = setting,
+                                    conversation = conversation,
+                                    drawerState = drawerState,
+                                    navController = navController,
+                                    vm = vm,
+                                    chatListState = chatListState,
+                                    hazeState = hazeState,
+                                    enableWebSearch = enableWebSearch,
+                                    currentChatModel = currentChatModel,
+                                    bigScreen = false,
+                                    errors = errors,
+                                    onDismissError = { vm.dismissError(it) },
+                                    onClearAllErrors = { vm.clearAllErrors() },
+                                    onInputFocusChanged = { isTextInputFocused = it },
+                                )
+                            }
+                        }
                     }
                 }
             }
