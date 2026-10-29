@@ -35,6 +35,7 @@ import com.clma.app.data.ai.prompts.DEFAULT_TRANSLATION_PROMPT
 import com.clma.app.data.datastore.Settings
 import com.clma.app.ui.components.ai.ReasoningButton
 import com.clma.app.ui.components.ui.CardGroup
+import com.clma.app.ui.hooks.rememberSyncedTextField
 import com.clma.app.utils.plus
 
 @Composable
@@ -49,7 +50,7 @@ internal fun PromptSettingsPage(settings: Settings, vm: SettingVM, contentPaddin
                 title = stringResource(R.string.setting_model_page_prompt_translation),
                 promptDescription = stringResource(R.string.setting_model_page_translate_prompt_vars),
                 promptValue = settings.translatePrompt,
-                onPromptChange = { vm.updateSettings(settings.copy(translatePrompt = it)) },
+                onPromptChange = { text -> vm.updateSettings { it.copy(translatePrompt = text) } },
                 onResetPrompt = { vm.updateSettings(settings.copy(translatePrompt = DEFAULT_TRANSLATION_PROMPT)) },
                 reasoningLevel = ReasoningLevel.fromBudgetTokens(settings.translateThinkingBudget),
                 onUpdateReasoningLevel = { vm.updateSettings(settings.copy(translateThinkingBudget = it.budgetTokens)) },
@@ -60,7 +61,7 @@ internal fun PromptSettingsPage(settings: Settings, vm: SettingVM, contentPaddin
                 title = stringResource(R.string.setting_model_page_prompt_title),
                 promptDescription = stringResource(R.string.setting_model_page_suggestion_prompt_vars),
                 promptValue = settings.titlePrompt,
-                onPromptChange = { vm.updateSettings(settings.copy(titlePrompt = it)) },
+                onPromptChange = { text -> vm.updateSettings { it.copy(titlePrompt = text) } },
                 onResetPrompt = { vm.updateSettings(settings.copy(titlePrompt = DEFAULT_TITLE_PROMPT)) },
             )
         }
@@ -69,7 +70,7 @@ internal fun PromptSettingsPage(settings: Settings, vm: SettingVM, contentPaddin
                 title = stringResource(R.string.setting_model_page_prompt_suggestion),
                 promptDescription = stringResource(R.string.setting_model_page_suggestion_prompt_vars),
                 promptValue = settings.suggestionPrompt,
-                onPromptChange = { vm.updateSettings(settings.copy(suggestionPrompt = it)) },
+                onPromptChange = { text -> vm.updateSettings { it.copy(suggestionPrompt = text) } },
                 onResetPrompt = { vm.updateSettings(settings.copy(suggestionPrompt = DEFAULT_SUGGESTION_PROMPT)) },
             )
         }
@@ -78,7 +79,7 @@ internal fun PromptSettingsPage(settings: Settings, vm: SettingVM, contentPaddin
                 title = stringResource(R.string.setting_model_page_prompt_ocr),
                 promptDescription = stringResource(R.string.setting_model_page_ocr_prompt_vars),
                 promptValue = settings.ocrPrompt,
-                onPromptChange = { vm.updateSettings(settings.copy(ocrPrompt = it)) },
+                onPromptChange = { text -> vm.updateSettings { it.copy(ocrPrompt = text) } },
                 onResetPrompt = { vm.updateSettings(settings.copy(ocrPrompt = DEFAULT_OCR_PROMPT)) },
             )
         }
@@ -87,7 +88,7 @@ internal fun PromptSettingsPage(settings: Settings, vm: SettingVM, contentPaddin
                 title = stringResource(R.string.setting_model_page_prompt_compress),
                 promptDescription = stringResource(R.string.setting_model_page_compress_prompt_vars),
                 promptValue = settings.compressPrompt,
-                onPromptChange = { vm.updateSettings(settings.copy(compressPrompt = it)) },
+                onPromptChange = { text -> vm.updateSettings { it.copy(compressPrompt = text) } },
                 onResetPrompt = { vm.updateSettings(settings.copy(compressPrompt = DEFAULT_COMPRESS_PROMPT)) },
             )
         }
@@ -151,9 +152,16 @@ private fun PromptSettingItem(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                OutlinedTextField(
-                    value = promptValue,
+                // Local, IME-safe; binding promptValue directly let a late echo of an earlier
+                // keystroke overwrite the IME composition.
+                val promptField = rememberSyncedTextField(
+                    externalValue = promptValue,
+                    key = Unit,
                     onValueChange = onPromptChange,
+                )
+                OutlinedTextField(
+                    value = promptField.value,
+                    onValueChange = promptField::onValueChange,
                     modifier = Modifier.fillMaxWidth(),
                     maxLines = 15,
                 )

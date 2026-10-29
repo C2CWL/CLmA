@@ -38,7 +38,9 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -63,6 +65,9 @@ import com.clma.app.ui.components.ui.Select
 import com.clma.app.ui.components.ui.TagsInput
 import com.clma.app.ui.components.ui.AssistantAvatar
 import com.clma.app.ui.hooks.heroAnimation
+import com.clma.app.ui.hooks.positiveIntEcho
+import com.clma.app.ui.hooks.positiveLongEcho
+import com.clma.app.ui.hooks.rememberSyncedTextField
 import com.clma.app.ui.theme.CustomColors
 import com.clma.app.utils.formatNumber
 import com.clma.app.utils.toFixed
@@ -165,15 +170,14 @@ internal fun AssistantBasicContent(
                 modifier = Modifier.padding(8.dp),
 
                 ) {
+                // Local, IME-safe state: the persisted name arrives back asynchronously and must
+                // not be pushed into the field while the IME is composing.
+                val nameField = rememberSyncedTextField(assistant.name, key = assistant.id) { text ->
+                    vm.updateAssistant { it.copy(name = text) }
+                }
                 OutlinedTextField(
-                    value = assistant.name,
-                    onValueChange = {
-                        onUpdate(
-                            assistant.copy(
-                                name = it
-                            )
-                        )
-                    },
+                    value = nameField.value,
+                    onValueChange = nameField::onValueChange,
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -393,11 +397,16 @@ internal fun AssistantBasicContent(
                     )
                 }
             ) {
-                var contextMessageLimitInput by remember(
-                    assistant.id,
-                    assistant.contextMessageLimit
-                ) {
-                    mutableStateOf(assistant.contextMessageLimit.toString())
+                // Was `remember(assistant.id, assistant.contextMessageLimit)` + a write per keystroke:
+                // every async echo re-keyed the state and could drop digits typed in the meantime.
+                val contextMessageLimitField = rememberSyncedTextField(
+                    externalValue = assistant.contextMessageLimit.toString(),
+                    key = assistant.id,
+                    expectedEcho = { input -> input.toIntOrNull()?.toString() ?: assistant.contextMessageLimit.toString() },
+                ) { input ->
+                    input.toIntOrNull()?.let { limit ->
+                        vm.updateAssistant { it.copy(contextMessageLimit = limit) }
+                    }
                 }
                 var contextMessageLimitFocused by remember(assistant.id) {
                     mutableStateOf(false)
@@ -405,28 +414,25 @@ internal fun AssistantBasicContent(
                 val focusManager = LocalFocusManager.current
 
                 fun commitContextMessageLimit() {
-                    val value = contextMessageLimitInput.toIntOrNull()
+                    val value = contextMessageLimitField.text.toIntOrNull()
                     if (value == null) {
-                        contextMessageLimitInput = assistant.contextMessageLimit.toString()
+                        contextMessageLimitField.replaceText(assistant.contextMessageLimit.toString())
                         return
                     }
 
-                    contextMessageLimitInput = value.toString()
+                    contextMessageLimitField.replaceText(value.toString())
                     if (value != assistant.contextMessageLimit) {
-                        onUpdate(assistant.copy(contextMessageLimit = value))
+                        vm.updateAssistant { it.copy(contextMessageLimit = value) }
                     }
                 }
 
                 OutlinedTextField(
-                    value = contextMessageLimitInput,
+                    value = contextMessageLimitField.value,
                     onValueChange = { input ->
-                        if (input.all(Char::isDigit) &&
-                            (input.isEmpty() || input.toIntOrNull() != null)
+                        if (input.text.all(Char::isDigit) &&
+                            (input.text.isEmpty() || input.text.toIntOrNull() != null)
                         ) {
-                            contextMessageLimitInput = input
-                            input.toIntOrNull()
-                                ?.takeIf { it != assistant.contextMessageLimit }
-                                ?.let { onUpdate(assistant.copy(contextMessageLimit = it)) }
+                            contextMessageLimitField.onValueChange(input)
                         }
                     },
                     modifier = Modifier
@@ -524,20 +530,21 @@ internal fun AssistantBasicContent(
                     Text(stringResource(R.string.assistant_page_max_tokens_desc))
                 }
             ) {
+                val maxTokensField = rememberSyncedTextField(
+                    externalValue = assistant.maxTokens?.toString() ?: "",
+                    key = assistant.id,
+                    expectedEcho = ::positiveIntEcho,
+                ) { text ->
+                    val tokens = if (text.isBlank()) {
+                        null
+                    } else {
+                        text.toIntOrNull()?.takeIf { it > 0 }
+                    }
+                    vm.updateAssistant { it.copy(maxTokens = tokens) }
+                }
                 OutlinedTextField(
-                    value = assistant.maxTokens?.toString() ?: "",
-                    onValueChange = { text ->
-                        val tokens = if (text.isBlank()) {
-                            null
-                        } else {
-                            text.toIntOrNull()?.takeIf { it > 0 }
-                        }
-                        onUpdate(
-                            assistant.copy(
-                                maxTokens = tokens
-                            )
-                        )
-                    },
+                    value = maxTokensField.value,
+                    onValueChange = maxTokensField::onValueChange,
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = {
                         Text(stringResource(R.string.assistant_page_max_tokens_no_limit))
@@ -561,20 +568,21 @@ internal fun AssistantBasicContent(
                     Text(stringResource(R.string.assistant_page_tool_result_budget_desc))
                 }
             ) {
+                val toolResultMaxTokensField = rememberSyncedTextField(
+                    externalValue = assistant.toolResultMaxTokens?.toString() ?: "",
+                    key = assistant.id,
+                    expectedEcho = ::positiveIntEcho,
+                ) { text ->
+                    val tokens = if (text.isBlank()) {
+                        null
+                    } else {
+                        text.toIntOrNull()?.takeIf { it > 0 }
+                    }
+                    vm.updateAssistant { it.copy(toolResultMaxTokens = tokens) }
+                }
                 OutlinedTextField(
-                    value = assistant.toolResultMaxTokens?.toString() ?: "",
-                    onValueChange = { text ->
-                        val tokens = if (text.isBlank()) {
-                            null
-                        } else {
-                            text.toIntOrNull()?.takeIf { it > 0 }
-                        }
-                        onUpdate(
-                            assistant.copy(
-                                toolResultMaxTokens = tokens
-                            )
-                        )
-                    },
+                    value = toolResultMaxTokensField.value,
+                    onValueChange = toolResultMaxTokensField::onValueChange,
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = {
                         Text(stringResource(R.string.assistant_page_tool_result_budget_placeholder))
@@ -721,14 +729,23 @@ internal fun AssistantBasicContent(
                 val reminderModel = settings.findModelById(assistant.chatModelId ?: settings.chatModelId)
                 val reminderWindow = settings.getEffectiveContextLength(reminderModel)
                 val tokensMode = settings.autoCompactionThresholdMode == AutoCompactionThresholdMode.TOKENS
-                var reminderInput by remember(reminderPercent) {
-                    mutableStateOf(reminderPercent.toString())
-                }
                 val commitReminderPercent: (Int) -> Unit = { percent ->
                     val normalized = percent.coerceIn(5, 95)
                     if (normalized != assistant.contextBudgetReminderPercent) {
-                        onUpdate(assistant.copy(contextBudgetReminderPercent = normalized))
+                        vm.updateAssistant { it.copy(contextBudgetReminderPercent = normalized) }
                     }
+                }
+                // Local field state; slider moves still come through as external changes.
+                val reminderField = rememberSyncedTextField(
+                    externalValue = reminderPercent.toString(),
+                    key = assistant.id,
+                    expectedEcho = { input ->
+                        input.toIntOrNull()?.takeIf { it in 5..95 }?.toString() ?: reminderPercent.toString()
+                    },
+                ) { input ->
+                    input.toIntOrNull()
+                        ?.takeIf { it in 5..95 }
+                        ?.let(commitReminderPercent)
                 }
                 HorizontalDivider()
                 FormItem(
@@ -759,12 +776,16 @@ internal fun AssistantBasicContent(
                         rangeHint = "5% – 95%",
                     )
                     OutlinedTextField(
-                        value = reminderInput,
+                        value = reminderField.value,
                         onValueChange = { value ->
-                            reminderInput = value.filter(Char::isDigit).take(2)
-                            reminderInput.toIntOrNull()
-                                ?.takeIf { it in 5..95 }
-                                ?.let(commitReminderPercent)
+                            val filtered = value.text.filter(Char::isDigit).take(2)
+                            reminderField.onValueChange(
+                                if (filtered == value.text) {
+                                    value
+                                } else {
+                                    TextFieldValue(filtered, TextRange(filtered.length))
+                                }
+                            )
                         },
                         singleLine = true,
                         suffix = { Text("%") },
@@ -774,9 +795,9 @@ internal fun AssistantBasicContent(
                             .fillMaxWidth()
                             .onFocusChanged { focusState ->
                                 if (!focusState.isFocused) {
-                                    val normalized = reminderInput.toIntOrNull()?.coerceIn(5, 95)
+                                    val normalized = reminderField.text.toIntOrNull()?.coerceIn(5, 95)
                                         ?: reminderPercent
-                                    reminderInput = normalized.toString()
+                                    reminderField.replaceText(normalized.toString())
                                     if (normalized != reminderPercent) commitReminderPercent(normalized)
                                 }
                             },
@@ -978,20 +999,21 @@ internal fun AssistantBasicContent(
                     Text(stringResource(R.string.assistant_page_orchestration_budget_desc))
                 }
             ) {
+                val orchestrationBudgetField = rememberSyncedTextField(
+                    externalValue = assistant.orchestrationTokenBudget?.toString() ?: "",
+                    key = assistant.id,
+                    expectedEcho = ::positiveLongEcho,
+                ) { text ->
+                    val tokens = if (text.isBlank()) {
+                        null
+                    } else {
+                        text.toLongOrNull()?.takeIf { it > 0 }
+                    }
+                    vm.updateAssistant { it.copy(orchestrationTokenBudget = tokens) }
+                }
                 OutlinedTextField(
-                    value = assistant.orchestrationTokenBudget?.toString() ?: "",
-                    onValueChange = { text ->
-                        val tokens = if (text.isBlank()) {
-                            null
-                        } else {
-                            text.toLongOrNull()?.takeIf { it > 0 }
-                        }
-                        onUpdate(
-                            assistant.copy(
-                                orchestrationTokenBudget = tokens
-                            )
-                        )
-                    },
+                    value = orchestrationBudgetField.value,
+                    onValueChange = orchestrationBudgetField::onValueChange,
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = {
                         Text(stringResource(R.string.assistant_page_orchestration_budget_no_limit))

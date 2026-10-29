@@ -55,6 +55,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dokar.sonner.ToastType
 import kotlinx.coroutines.launch
 import com.clma.ai.provider.ModelType
+import com.clma.app.ui.hooks.rememberSyncedTextField
 import com.clma.app.R
 import com.clma.app.ui.components.ai.ModelSelector
 import com.clma.app.ui.components.nav.BackButton
@@ -133,9 +134,11 @@ fun TranslatorPage(vm: TranslatorVM = koinViewModel()) {
         ) {
             // 输入区域
             Column {
+                // Local, IME-safe state; the collected StateFlow value lags a frame behind the IME.
+                val inputField = rememberSyncedTextField(inputText, key = Unit) { vm.updateInputText(it) }
                 OutlinedTextField(
-                    value = inputText,
-                    onValueChange = { vm.updateInputText(it) },
+                    value = inputField.value,
+                    onValueChange = inputField::onValueChange,
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text(stringResource(R.string.translator_page_input_placeholder)) },
                     colors = OutlinedTextFieldDefaults.colors(

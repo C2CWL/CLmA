@@ -76,13 +76,17 @@ fun SettingSearchDetailPage(
 
     val service = settings.searchServices.find { it.id == serviceId } ?: return
     val serviceIndex = settings.searchServices.indexOf(service)
-    var options by remember(service) { mutableStateOf(service) }
+    // Keyed on the id, not the whole object: re-keying on every persisted echo used to reset the
+    // editor to a stale copy while the user was still typing (IME desync / lost characters).
+    var options by remember(service.id) { mutableStateOf(service) }
 
     fun save(updated: SearchServiceOptions) {
         options = updated
-        val newServices = settings.searchServices.toMutableList()
-        newServices[serviceIndex] = updated
-        vm.updateSettings(settings.copy(searchServices = newServices))
+        vm.updateSettings { current ->
+            current.copy(
+                searchServices = current.searchServices.map { if (it.id == updated.id) updated else it }
+            )
+        }
     }
 
     Scaffold(

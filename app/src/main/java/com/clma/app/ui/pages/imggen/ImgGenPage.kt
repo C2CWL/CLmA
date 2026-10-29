@@ -99,6 +99,7 @@ import me.rerere.hugeicons.stroke.Delete01
 import me.rerere.hugeicons.stroke.FloppyDisk
 import me.rerere.hugeicons.stroke.Image03
 import me.rerere.hugeicons.stroke.Tools
+import com.clma.app.ui.hooks.rememberSyncedTextField
 import com.clma.app.R
 import com.clma.app.data.datastore.Settings
 import com.clma.app.data.files.FileUtils
@@ -372,9 +373,11 @@ private fun InputBar(
             )
         }
 
+        // Local, IME-safe state; the collected StateFlow value lags a frame behind the IME.
+        val promptField = rememberSyncedTextField(prompt, key = Unit, onValueChange = vm::updatePrompt)
         OutlinedTextField(
-            value = prompt,
-            onValueChange = vm::updatePrompt,
+            value = promptField.value,
+            onValueChange = promptField::onValueChange,
             placeholder = { Text(stringResource(R.string.imggen_page_prompt_placeholder)) },
             modifier = Modifier
                 .fillMaxWidth()

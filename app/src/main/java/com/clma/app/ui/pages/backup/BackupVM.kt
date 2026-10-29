@@ -69,6 +69,13 @@ class BackupVM(
         }
     }
 
+    /** Atomic read-modify-write; use for per-keystroke text edits so they never build on a stale snapshot. */
+    fun updateSettings(transform: (Settings) -> Settings) {
+        viewModelScope.launch {
+            settingsStore.update(transform)
+        }
+    }
+
     fun updateLocalBackupItems(items: List<BackupItem>) {
         localBackupItems.value = items
     }

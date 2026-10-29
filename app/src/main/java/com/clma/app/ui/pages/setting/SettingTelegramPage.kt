@@ -52,6 +52,7 @@ import me.rerere.hugeicons.stroke.ViewOff
 import com.clma.app.R
 import com.clma.app.data.telegram.TelegramBotConfig
 import com.clma.app.data.telegram.TelegramBotPreferences
+import com.clma.app.ui.hooks.rememberSyncedTextField
 import com.clma.app.service.TelegramBotService
 import com.clma.app.ui.components.nav.BackButton
 import com.clma.app.ui.components.ui.CardGroup
@@ -77,20 +78,44 @@ fun SettingTelegramPage() {
     val toaster = LocalToaster.current
     val noTokenToast = stringResource(R.string.setting_page_telegram_no_token_toast)
 
-    var tokenText by remember(cfg.token) { mutableStateOf(cfg.token) }
-    var defaultChatText by remember(cfg.defaultChatId) {
-        mutableStateOf(cfg.defaultChatId?.toString() ?: "")
+    // Local, IME-safe text state. These used to be re-keyed on every DataStore emission, so a
+    // late echo of an earlier keystroke replaced what the IME was still composing.
+    val tokenField = rememberSyncedTextField(cfg.token, key = Unit) { text ->
+        scope.launch { prefs.update { it.copy(token = text) } }
     }
-    var whitelistText by remember(cfg.whitelist) {
-        mutableStateOf(cfg.whitelist.sorted().joinToString(","))
+    val defaultChatField = rememberSyncedTextField(
+        externalValue = cfg.defaultChatId?.toString() ?: "",
+        key = Unit,
+        expectedEcho = { it.toLongOrNull()?.toString() ?: "" },
+    ) { text ->
+        val parsed = text.toLongOrNull()
+        scope.launch { prefs.update { it.copy(defaultChatId = parsed) } }
+    }
+    val whitelistField = rememberSyncedTextField(
+        externalValue = cfg.whitelist.sorted().joinToString(","),
+        key = Unit,
+        expectedEcho = { parseTelegramWhitelist(it).sorted().joinToString(",") },
+    ) { text ->
+        val ids = parseTelegramWhitelist(text)
+        scope.launch { prefs.update { it.copy(whitelist = ids) } }
     }
     var tokenVisible by remember { mutableStateOf(false) }
-    var proxyHostText by remember(cfg.proxyHost) { mutableStateOf(cfg.proxyHost) }
-    var proxyPortText by remember(cfg.proxyPort) {
-        mutableStateOf(if (cfg.proxyPort == 0) "" else cfg.proxyPort.toString())
+    val proxyHostField = rememberSyncedTextField(cfg.proxyHost, key = Unit) { text ->
+        scope.launch { prefs.update { it.copy(proxyHost = text) } }
     }
-    var proxyUsernameText by remember(cfg.proxyUsername) { mutableStateOf(cfg.proxyUsername) }
-    var proxyPasswordText by remember(cfg.proxyPassword) { mutableStateOf(cfg.proxyPassword) }
+    val proxyPortField = rememberSyncedTextField(
+        externalValue = if (cfg.proxyPort == 0) "" else cfg.proxyPort.toString(),
+        key = Unit,
+        expectedEcho = { text -> (text.toIntOrNull() ?: 0).let { if (it == 0) "" else it.toString() } },
+    ) { text ->
+        scope.launch { prefs.update { it.copy(proxyPort = text.toIntOrNull() ?: 0) } }
+    }
+    val proxyUsernameField = rememberSyncedTextField(cfg.proxyUsername, key = Unit) { text ->
+        scope.launch { prefs.update { it.copy(proxyUsername = text) } }
+    }
+    val proxyPasswordField = rememberSyncedTextField(cfg.proxyPassword, key = Unit) { text ->
+        scope.launch { prefs.update { it.copy(proxyPassword = text) } }
+    }
     var proxyPasswordVisible by remember { mutableStateOf(false) }
     val serviceRunning = TelegramBotService.isRunning
 
@@ -164,13 +189,8 @@ fun SettingTelegramPage() {
                         supportingContent = { Text(stringResource(R.string.setting_page_telegram_token_desc)) },
                         trailingContent = {
                             TextField(
-                                value = tokenText,
-                                onValueChange = { value ->
-                                    tokenText = value.trim()
-                                    scope.launch {
-                                        prefs.update { it.copy(token = tokenText) }
-                                    }
-                                },
+                                value = tokenField.text,
+                                onValueChange = { value -> tokenField.onTextChange(value.trim()) },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                                 visualTransformation = if (tokenVisible) VisualTransformation.None else PasswordVisualTransformation(),
                                 trailingIcon = {
@@ -198,14 +218,9 @@ fun SettingTelegramPage() {
                         supportingContent = { Text(stringResource(R.string.setting_page_telegram_default_chat_desc)) },
                         trailingContent = {
                             TextField(
-                                value = defaultChatText,
+                                value = defaultChatField.text,
                                 onValueChange = { value ->
-                                    val cleaned = value.filter { it.isDigit() || it == '-' }
-                                    defaultChatText = cleaned
-                                    val parsed = cleaned.toLongOrNull()
-                                    scope.launch {
-                                        prefs.update { it.copy(defaultChatId = parsed) }
-                                    }
+                                    defaultChatField.onTextChange(value.filter { it.isDigit() || it == '-' })
                                 },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 singleLine = true,
@@ -224,16 +239,8 @@ fun SettingTelegramPage() {
                         supportingContent = { Text(stringResource(R.string.setting_page_telegram_whitelist_desc)) },
                         trailingContent = {
                             TextField(
-                                value = whitelistText,
-                                onValueChange = { value ->
-                                    whitelistText = value
-                                    val ids = value.split(",")
-                                        .mapNotNull { it.trim().toLongOrNull() }
-                                        .toSet()
-                                    scope.launch {
-                                        prefs.update { it.copy(whitelist = ids) }
-                                    }
-                                },
+                                value = whitelistField.text,
+                                onValueChange = whitelistField::onTextChange,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 singleLine = true,
                                 modifier = Modifier.width(220.dp),
@@ -325,11 +332,8 @@ fun SettingTelegramPage() {
                         headlineContent = { Text(stringResource(R.string.setting_page_telegram_proxy_host)) },
                         trailingContent = {
                             TextField(
-                                value = proxyHostText,
-                                onValueChange = { value ->
-                                    proxyHostText = value.trim()
-                                    scope.launch { prefs.update { it.copy(proxyHost = proxyHostText) } }
-                                },
+                                value = proxyHostField.text,
+                                onValueChange = { value -> proxyHostField.onTextChange(value.trim()) },
                                 singleLine = true,
                                 modifier = Modifier.width(200.dp),
                                 enabled = !cfg.enabled,
@@ -346,13 +350,9 @@ fun SettingTelegramPage() {
                         headlineContent = { Text(stringResource(R.string.setting_page_telegram_proxy_port)) },
                         trailingContent = {
                             TextField(
-                                value = proxyPortText,
+                                value = proxyPortField.text,
                                 onValueChange = { value ->
-                                    val cleaned = value.filter { it.isDigit() }.take(5)
-                                    proxyPortText = cleaned
-                                    scope.launch {
-                                        prefs.update { it.copy(proxyPort = cleaned.toIntOrNull() ?: 0) }
-                                    }
+                                    proxyPortField.onTextChange(value.filter { it.isDigit() }.take(5))
                                 },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 singleLine = true,
@@ -371,11 +371,8 @@ fun SettingTelegramPage() {
                         headlineContent = { Text(stringResource(R.string.setting_page_telegram_proxy_username)) },
                         trailingContent = {
                             TextField(
-                                value = proxyUsernameText,
-                                onValueChange = { value ->
-                                    proxyUsernameText = value
-                                    scope.launch { prefs.update { it.copy(proxyUsername = proxyUsernameText) } }
-                                },
+                                value = proxyUsernameField.text,
+                                onValueChange = proxyUsernameField::onTextChange,
                                 singleLine = true,
                                 modifier = Modifier.width(200.dp),
                                 enabled = !cfg.enabled,
@@ -392,11 +389,8 @@ fun SettingTelegramPage() {
                         headlineContent = { Text(stringResource(R.string.setting_page_telegram_proxy_password)) },
                         trailingContent = {
                             TextField(
-                                value = proxyPasswordText,
-                                onValueChange = { value ->
-                                    proxyPasswordText = value
-                                    scope.launch { prefs.update { it.copy(proxyPassword = proxyPasswordText) } }
-                                },
+                                value = proxyPasswordField.text,
+                                onValueChange = proxyPasswordField::onTextChange,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                                 visualTransformation = if (proxyPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                                 trailingIcon = {
@@ -439,6 +433,9 @@ fun SettingTelegramPage() {
  * one-tap deep-link to the system prompt. Re-checks state on every onResume so returning
  * from system settings updates the row instantly.
  */
+private fun parseTelegramWhitelist(text: String): Set<Long> =
+    text.split(",").mapNotNull { it.trim().toLongOrNull() }.toSet()
+
 @Composable
 private fun BatteryOptimizationCard() {
     val ctx = LocalContext.current
