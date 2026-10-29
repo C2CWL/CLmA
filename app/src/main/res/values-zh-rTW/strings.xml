@@ -2397,6 +2397,7 @@
   <string name="setting_sub_agents_page_token_budget">編排 token 上限</string>
   <string name="setting_sub_agents_page_token_budget_hint">該專家編排樹的 token 上限。留空則繼承父助手的預算；兩者都為空表示不限。</string>
   <string name="chat_message_turn_calls">%1$d 次呼叫</string>
+  <string name="chat_message_turn_total_tokens">總計 %1$s tokens</string>
   <string name="chat_message_turn_pending">統計中…</string>
   <string name="chat_message_turn_elapsed">本回合用時</string>
   <string name="chat_message_turn_speed">生成速度</string>
