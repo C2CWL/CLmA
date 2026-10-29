@@ -148,7 +148,7 @@ jobs:
       # The old debug build is gone on purpose: it compiled every library subproject
       # a second time and rebuilt the llama.cpp native libs a second time, for an
       # artifact nothing shipped. The published APK is `app-*-clma-unsigned.apk`,
-      # re-signed on the VPS with p2.keystore (dl2.sh apk-clma).
+      # re-signed on the UK VPS by /root/clma-signing/bin/relprep.py with clma-release.jks (looks for artifact apk-clma, falls back to apk-pure).
       #
       # Library modules' JVM unit tests are listed explicitly (testDebugUnitTest
       # for every module that has src/test): :app:testClmaUnitTest does not run
