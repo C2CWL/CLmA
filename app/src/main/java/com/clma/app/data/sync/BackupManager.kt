@@ -181,7 +181,7 @@ class BackupManager(
                                     if (BackupItem.SECRETS in selected) File(staging, BackupLayout.SECRETS_FILE) else null
                                 else -> {
                                     val item = BackupLayout.itemForEntry(entry.name)
-                                    if (item != null && item in selected) {
+                                    if (item != null && BackupLayout.acceptsRestoreEntry(item, selected)) {
                                         PendingRestore.resolveInside(File(payload, "files"), entry.name)
                                     } else null
                                 }

@@ -69,6 +69,14 @@ object SettingsJsonMigrator {
                 root["contextCompactionTargetTokensK"] = JsonNull
             }
 
+            // V8: pre-split WORKSPACES selection also covered assistant cold memory.
+            for (key in listOf("webDavConfig", "s3Config")) {
+                root[key]?.let { element ->
+                    val migrated = migrateBackupConfigItemsJson(JsonInstant.encodeToString(element))
+                    root[key] = JsonInstant.parseToJsonElement(migrated)
+                }
+            }
+
             JsonInstant.encodeToString(JsonObject(root))
         }.onFailure {
             Log.e(TAG, "migrate: Failed to migrate settings JSON, using original", it)
