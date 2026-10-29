@@ -27,6 +27,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,6 +56,7 @@ import com.clma.app.ui.components.nav.BackButton
 import com.clma.app.ui.components.ui.CardGroup
 import com.clma.app.ui.components.ui.Switch
 import com.clma.app.ui.context.LocalToaster
+import com.clma.app.ui.hooks.rememberSyncedTextField
 import com.clma.app.ui.theme.CustomColors
 import com.clma.app.utils.plus
 import okhttp3.OkHttpClient
@@ -73,8 +75,11 @@ private const val MAX_WATCHDOG_DIGITS = 5
 fun SettingPreferencesNetworkPage(vm: SettingVM = koinViewModel()) {
     val httpClient = koinInject<OkHttpClient>()
     val settings by vm.settings.collectAsStateWithLifecycle()
-    var userAgent by remember(settings.networkSetting.userAgent) {
-        mutableStateOf(settings.networkSetting.userAgent)
+    // Local, IME-safe; re-keying on every persisted echo used to clobber in-progress input.
+    val userAgentField = rememberSyncedTextField(settings.networkSetting.userAgent, key = Unit) { value ->
+        vm.updateSettings { current ->
+            current.copy(networkSetting = current.networkSetting.copy(userAgent = value))
+        }
     }
     var proxyUrl by remember(settings.networkSetting.proxyUrl) {
         mutableStateOf(settings.networkSetting.proxyUrl)
@@ -99,12 +104,7 @@ fun SettingPreferencesNetworkPage(vm: SettingVM = koinViewModel()) {
     var proxyTesting by remember { mutableStateOf(false) }
 
     fun updateUserAgent(value: String) {
-        userAgent = value
-        vm.updateSettings(
-            settings.copy(
-                networkSetting = settings.networkSetting.copy(userAgent = value),
-            )
-        )
+        userAgentField.onTextChange(value)
     }
 
     fun saveProxy() {
@@ -378,8 +378,8 @@ fun SettingPreferencesNetworkPage(vm: SettingVM = koinViewModel()) {
                                 verticalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
                                 OutlinedTextField(
-                                    value = userAgent,
-                                    onValueChange = ::updateUserAgent,
+                                    value = userAgentField.value,
+                                    onValueChange = userAgentField::onValueChange,
                                     modifier = Modifier.fillMaxWidth(),
                                     label = {
                                         Text(stringResource(R.string.setting_page_preferences_network_user_agent))
@@ -397,7 +397,7 @@ fun SettingPreferencesNetworkPage(vm: SettingVM = koinViewModel()) {
                                 )
                                 TextButton(
                                     onClick = { updateUserAgent("") },
-                                    enabled = userAgent.isNotEmpty(),
+                                    enabled = userAgentField.text.isNotEmpty(),
                                 ) {
                                     Text(stringResource(R.string.setting_model_page_reset_to_default))
                                 }
@@ -481,16 +481,26 @@ private fun SilentWatchdogSecondsField(
     label: String,
     onCommit: (Int) -> Unit,
 ) {
-    var text by remember(value) { mutableStateOf(value.toString()) }
+    // Local text; the persisted value only replaces it when it changes from elsewhere
+    // (a late echo of an earlier keystroke must not overwrite the digits typed since).
+    val field = rememberSyncedTextField(
+        externalValue = value.toString(),
+        key = Unit,
+        expectedEcho = { typed ->
+            typed.toIntOrNull()?.takeIf { it in 0..NetworkSetting.MAX_WATCHDOG_SECONDS }?.toString() ?: typed
+        },
+    ) { typed ->
+        typed.toIntOrNull()
+            ?.takeIf { it in 0..NetworkSetting.MAX_WATCHDOG_SECONDS }
+            ?.let(onCommit)
+    }
+    val text = field.text
     val parsed = text.toIntOrNull()
     val outOfRange = parsed == null || parsed !in 0..NetworkSetting.MAX_WATCHDOG_SECONDS
     OutlinedTextField(
         value = text,
         onValueChange = { raw ->
-            text = raw.filter(Char::isDigit).take(MAX_WATCHDOG_DIGITS)
-            text.toIntOrNull()
-                ?.takeIf { it in 0..NetworkSetting.MAX_WATCHDOG_SECONDS }
-                ?.let(onCommit)
+            field.onTextChange(raw.filter(Char::isDigit).take(MAX_WATCHDOG_DIGITS))
         },
         singleLine = true,
         isError = outOfRange,
@@ -507,7 +517,8 @@ private fun SilentWatchdogSecondsField(
         modifier = Modifier
             .fillMaxWidth()
             .onFocusChanged { focusState ->
-                if (!focusState.isFocused) text = value.toString()
+                // Only invalid input snaps back; valid input has already been committed.
+                if (!focusState.isFocused && outOfRange) field.replaceText(value.toString())
             },
     )
 }
@@ -522,16 +533,22 @@ private fun StreamRetryCountField(
     value: Int,
     onCommit: (Int) -> Unit,
 ) {
-    var text by remember(value) { mutableStateOf(value.toString()) }
+    val latestValue by rememberUpdatedState(value)
+    val field = rememberSyncedTextField(
+        externalValue = value.toString(),
+        key = Unit,
+        expectedEcho = { typed -> typed.toIntOrNull()?.coerceIn(0, 10)?.toString() ?: typed },
+    ) { typed ->
+        typed.toIntOrNull()?.let { parsed ->
+            val normalized = parsed.coerceIn(0, 10)
+            if (normalized != latestValue) onCommit(normalized)
+        }
+    }
 
     OutlinedTextField(
-        value = text,
+        value = field.text,
         onValueChange = { new ->
-            text = new.filter { it.isDigit() }.take(2)
-            text.toIntOrNull()?.let { parsed ->
-                val normalized = parsed.coerceIn(0, 10)
-                if (normalized != value) onCommit(normalized)
-            }
+            field.onTextChange(new.filter { it.isDigit() }.take(2))
         },
         singleLine = true,
         label = { Text(stringResource(R.string.setting_page_preferences_network_stream_retries_input)) },
@@ -540,8 +557,8 @@ private fun StreamRetryCountField(
             .fillMaxWidth()
             .onFocusChanged { focusState ->
                 if (!focusState.isFocused) {
-                    val normalized = text.toIntOrNull()?.coerceIn(0, 10) ?: value
-                    text = normalized.toString()
+                    val normalized = field.text.toIntOrNull()?.coerceIn(0, 10) ?: value
+                    field.replaceText(normalized.toString())
                     if (normalized != value) onCommit(normalized)
                 }
             },

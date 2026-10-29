@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -44,13 +43,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -91,6 +88,8 @@ import com.clma.app.ui.components.ui.FormItem
 import com.clma.app.ui.components.ui.Select
 import com.clma.app.ui.components.ui.Tag
 import com.clma.app.ui.components.ui.TextArea
+import com.clma.app.ui.hooks.rememberSyncedTextField
+import com.clma.app.ui.hooks.rememberSyncedTextFieldState
 import com.clma.app.ui.theme.ChatFontProvider
 import com.clma.app.ui.theme.CustomColors
 import com.clma.app.ui.theme.JetbrainsMono
@@ -135,7 +134,8 @@ fun AssistantPromptPage(id: String) {
             innerPadding = innerPadding,
             assistant = assistant,
             settings = settings,
-            onUpdate = { vm.update(it) }
+            onUpdate = { vm.update(it) },
+            onUpdateAssistant = { transform -> vm.updateAssistant(transform) },
         )
     }
 }
@@ -145,7 +145,8 @@ private fun AssistantPromptContent(
     innerPadding: PaddingValues,
     assistant: Assistant,
     settings: Settings,
-    onUpdate: (Assistant) -> Unit
+    onUpdate: (Assistant) -> Unit,
+    onUpdateAssistant: ((Assistant) -> Assistant) -> Unit,
 ) {
     val context = LocalContext.current
     val templateTransformer = koinInject<TemplateTransformer>()
@@ -166,17 +167,13 @@ private fun AssistantPromptContent(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                val systemPromptValue = rememberTextFieldState(
-                    initialText = assistant.systemPrompt,
-                )
-                LaunchedEffect(Unit) {
-                    snapshotFlow { systemPromptValue.text }.collect {
-                        onUpdate(
-                            assistant.copy(
-                                systemPrompt = it.toString()
-                            )
-                        )
-                    }
+                // Local state; writes go through an atomic transform so they never resurrect a
+                // stale copy of the assistant (the old collector captured the first-composition one).
+                val systemPromptValue = rememberSyncedTextFieldState(
+                    externalValue = assistant.systemPrompt,
+                    key = assistant.id,
+                ) { text ->
+                    onUpdateAssistant { it.copy(systemPrompt = text) }
                 }
 
                 TextArea(
@@ -287,16 +284,16 @@ private fun AssistantPromptContent(
                     }
                 },
                 content = {
-                    val missingMessage = "{{ message }}" !in assistant.messageTemplate
+                    val messageTemplateField = rememberSyncedTextField(
+                        externalValue = assistant.messageTemplate,
+                        key = assistant.id,
+                    ) { text ->
+                        onUpdateAssistant { it.copy(messageTemplate = text) }
+                    }
+                    val missingMessage = "{{ message }}" !in messageTemplateField.text
                     OutlinedTextField(
-                        value = assistant.messageTemplate,
-                        onValueChange = {
-                            onUpdate(
-                                assistant.copy(
-                                    messageTemplate = it
-                                )
-                            )
-                        },
+                        value = messageTemplateField.value,
+                        onValueChange = messageTemplateField::onValueChange,
                         modifier = Modifier.fillMaxWidth(),
                         minLines = 5,
                         maxLines = 15,
@@ -461,21 +458,26 @@ private fun AssistantPromptContent(
                                 Icon(HugeIcons.Cancel01, null)
                             }
                         }
-                        OutlinedTextField(
-                            value = presetMessage.toText(),
-                            onValueChange = { text ->
-                                onUpdate(
-                                    assistant.copy(
-                                        presetMessages = assistant.presetMessages.mapIndexed { i, msg ->
-                                            if (i == index) {
-                                                msg.copy(parts = listOf(UIMessagePart.Text(text)))
-                                            } else {
-                                                msg
-                                            }
+                        val presetMessageId = presetMessage.id
+                        val presetMessageField = rememberSyncedTextField(
+                            externalValue = presetMessage.toText(),
+                            key = presetMessageId,
+                        ) { text ->
+                            onUpdateAssistant { current ->
+                                current.copy(
+                                    presetMessages = current.presetMessages.map { msg ->
+                                        if (msg.id == presetMessageId) {
+                                            msg.copy(parts = listOf(UIMessagePart.Text(text)))
+                                        } else {
+                                            msg
                                         }
-                                    )
+                                    }
                                 )
-                            },
+                            }
+                        }
+                        OutlinedTextField(
+                            value = presetMessageField.value,
+                            onValueChange = presetMessageField::onValueChange,
                             modifier = Modifier.fillMaxWidth(),
                             maxLines = 6
                         )
@@ -539,6 +541,7 @@ private fun AssistantPromptContent(
                             AssistantRegexCard(
                                 regex = regex,
                                 onUpdate = onUpdate,
+                                onUpdateAssistant = onUpdateAssistant,
                                 assistant = assistant,
                                 index = index,
                                 modifier = Modifier.scale(if (isDragging) 0.95f else 1f),
@@ -582,6 +585,7 @@ private fun AssistantPromptContent(
 private fun AssistantRegexCard(
     regex: AssistantRegex,
     onUpdate: (Assistant) -> Unit,
+    onUpdateAssistant: ((Assistant) -> Assistant) -> Unit,
     assistant: Assistant,
     index: Int,
     modifier: Modifier = Modifier,
@@ -649,61 +653,48 @@ private fun AssistantRegexCard(
             }
 
             if (expanded) {
+                val regexId = regex.id
+                val updateRegex: ((AssistantRegex) -> AssistantRegex) -> Unit = { transform ->
+                    onUpdateAssistant { current ->
+                        current.copy(
+                            regexes = current.regexes.map { reg ->
+                                if (reg.id == regexId) transform(reg) else reg
+                            }
+                        )
+                    }
+                }
+                val nameField = rememberSyncedTextField(regex.name, key = regexId) { name ->
+                    updateRegex { it.copy(name = name) }
+                }
+                val findRegexField = rememberSyncedTextField(
+                    externalValue = regex.findRegex,
+                    key = regexId,
+                    expectedEcho = { it.trim() },
+                ) { findRegex ->
+                    updateRegex { it.copy(findRegex = findRegex.trim()) }
+                }
+                val replaceStringField = rememberSyncedTextField(regex.replaceString, key = regexId) { replaceString ->
+                    updateRegex { it.copy(replaceString = replaceString) }
+                }
 
                 OutlinedTextField(
-                    value = regex.name,
-                    onValueChange = { name ->
-                        onUpdate(
-                            assistant.copy(
-                                regexes = assistant.regexes.mapIndexed { i, reg ->
-                                    if (i == index) {
-                                        reg.copy(name = name)
-                                    } else {
-                                        reg
-                                    }
-                                }
-                            )
-                        )
-                    },
+                    value = nameField.value,
+                    onValueChange = nameField::onValueChange,
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text(stringResource(R.string.assistant_page_regex_name)) }
                 )
 
                 OutlinedTextField(
-                    value = regex.findRegex,
-                    onValueChange = { findRegex ->
-                        onUpdate(
-                            assistant.copy(
-                                regexes = assistant.regexes.mapIndexed { i, reg ->
-                                    if (i == index) {
-                                        reg.copy(findRegex = findRegex.trim())
-                                    } else {
-                                        reg
-                                    }
-                                }
-                            )
-                        )
-                    },
+                    value = findRegexField.value,
+                    onValueChange = findRegexField::onValueChange,
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text(stringResource(R.string.assistant_page_regex_find_regex)) },
                     placeholder = { Text("e.g., \\b\\w+@\\w+\\.\\w+\\b") },
                 )
 
                 OutlinedTextField(
-                    value = regex.replaceString,
-                    onValueChange = { replaceString ->
-                        onUpdate(
-                            assistant.copy(
-                                regexes = assistant.regexes.mapIndexed { i, reg ->
-                                    if (i == index) {
-                                        reg.copy(replaceString = replaceString)
-                                    } else {
-                                        reg
-                                    }
-                                }
-                            )
-                        )
-                    },
+                    value = replaceStringField.value,
+                    onValueChange = replaceStringField::onValueChange,
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text(stringResource(R.string.assistant_page_regex_replace_string)) },
                     placeholder = { Text("e.g., [EMAIL]") }

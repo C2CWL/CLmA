@@ -56,7 +56,7 @@ fun AssistantRequestPage(id: String) {
         AssistantRequestContent(
             innerPadding = innerPadding,
             assistant = assistant,
-            onUpdate = { vm.update(it) }
+            onUpdate = { transform -> vm.updateAssistant(transform) }
         )
     }
 }
@@ -65,7 +65,8 @@ fun AssistantRequestPage(id: String) {
 internal fun AssistantRequestContent(
     innerPadding: PaddingValues,
     assistant: Assistant,
-    onUpdate: (Assistant) -> Unit
+    // Atomic transform of the latest stored assistant, so a keystroke never writes back a stale copy.
+    onUpdate: ((Assistant) -> Assistant) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -78,12 +79,8 @@ internal fun AssistantRequestContent(
     ) {
         CustomHeaders(
             headers = assistant.customHeaders,
-            onUpdate = {
-                onUpdate(
-                    assistant.copy(
-                        customHeaders = it
-                    )
-                )
+            onUpdate = { headers ->
+                onUpdate { it.copy(customHeaders = headers) }
             }
         )
 
@@ -91,12 +88,8 @@ internal fun AssistantRequestContent(
 
         CustomBodies(
             customBodies = assistant.customBodies,
-            onUpdate = {
-                onUpdate(
-                    assistant.copy(
-                        customBodies = it
-                    )
-                )
+            onUpdate = { bodies ->
+                onUpdate { it.copy(customBodies = bodies) }
             }
         )
     }

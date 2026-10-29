@@ -23,6 +23,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clma.app.R
 import com.clma.app.data.datastore.DisplaySetting
 import com.clma.app.data.datastore.KeepScreenOnMode
+import com.clma.app.ui.hooks.rememberSyncedTextField
 import com.clma.app.ui.components.ui.CardGroup
 import com.clma.app.ui.components.ui.PercentSlider
 import com.clma.app.ui.components.ui.Select
@@ -266,9 +267,22 @@ fun SettingPreferencesGeneralPage(vm: SettingVM = koinViewModel()) {
                     item(
                         headlineContent = { Text(stringResource(R.string.setting_display_page_paste_long_text_threshold_title)) },
                         supportingContent = {
-                            var thresholdText by remember(displaySetting.pasteLongTextThreshold) {
-                                mutableStateOf(displaySetting.pasteLongTextThreshold.toString())
+                            // Local, IME-safe; only a change from elsewhere replaces the typed text.
+                            val thresholdField = rememberSyncedTextField(
+                                externalValue = settings.displaySetting.pasteLongTextThreshold.toString(),
+                                key = Unit,
+                                expectedEcho = { typed -> parsePasteLongTextThreshold(typed)?.toString() ?: typed },
+                            ) { typed ->
+                                parsePasteLongTextThreshold(typed)?.let { threshold ->
+                                    displaySetting = displaySetting.copy(pasteLongTextThreshold = threshold)
+                                    vm.updateSettings { current ->
+                                        current.copy(
+                                            displaySetting = current.displaySetting.copy(pasteLongTextThreshold = threshold)
+                                        )
+                                    }
+                                }
                             }
+                            val thresholdText = thresholdField.text
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically,
@@ -277,10 +291,7 @@ fun SettingPreferencesGeneralPage(vm: SettingVM = koinViewModel()) {
                                 TextField(
                                     value = thresholdText,
                                     onValueChange = { value ->
-                                        thresholdText = value.filter { it.isDigit() }
-                                        parsePasteLongTextThreshold(thresholdText)?.let { threshold ->
-                                            updateDisplaySetting(displaySetting.copy(pasteLongTextThreshold = threshold))
-                                        }
+                                        thresholdField.onTextChange(value.filter { it.isDigit() })
                                     },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                     singleLine = true,

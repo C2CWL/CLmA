@@ -54,6 +54,7 @@ import me.rerere.hugeicons.stroke.Stop
 import com.clma.app.R
 import com.clma.app.data.datastore.SettingsStore
 import com.clma.app.service.WebServerService
+import com.clma.app.ui.hooks.rememberSyncedTextField
 import com.clma.app.ui.components.nav.BackButton
 import com.clma.app.ui.components.ui.CardGroup
 import com.clma.app.ui.components.ui.permission.PermissionManager
@@ -80,12 +81,34 @@ fun SettingWebPage() {
     val clipboardManager = LocalClipboardManager.current
     val toaster = LocalToaster.current
     val copiedText = stringResource(R.string.copied)
-    var portText by remember(settings.webServerPort) {
-        mutableStateOf(settings.webServerPort.toString())
+    // Local, IME-safe text state; the persisted value only replaces it when changed from elsewhere.
+    val portField = rememberSyncedTextField(
+        externalValue = settings.webServerPort.toString(),
+        key = Unit,
+        expectedEcho = { typed -> typed.toIntOrNull()?.takeIf { it in 1024..65535 }?.toString() ?: typed },
+    ) { typed ->
+        val port = typed.toIntOrNull()
+        if (port != null && port in 1024..65535) {
+            scope.launch {
+                settingsStore.update { it.copy(webServerPort = port) }
+            }
+        }
     }
-    var accessPasswordText by remember(settings.webServerAccessPassword) {
-        mutableStateOf(settings.webServerAccessPassword)
+    val portText = portField.text
+    val accessPasswordField = rememberSyncedTextField(
+        externalValue = settings.webServerAccessPassword,
+        key = Unit,
+    ) { value ->
+        scope.launch {
+            settingsStore.update {
+                it.copy(
+                    webServerAccessPassword = value,
+                    webServerJwtEnabled = it.webServerJwtEnabled && value.isNotBlank()
+                )
+            }
+        }
     }
+    val accessPasswordText = accessPasswordField.text
     var passwordVisible by remember {
         mutableStateOf(false)
     }
@@ -210,13 +233,7 @@ fun SettingWebPage() {
                             TextField(
                                 value = portText,
                                 onValueChange = { value ->
-                                    portText = value.filter { it.isDigit() }
-                                    val port = portText.toIntOrNull()
-                                    if (port != null && port in 1024..65535) {
-                                        scope.launch {
-                                            settingsStore.update { it.copy(webServerPort = port) }
-                                        }
-                                    }
+                                    portField.onTextChange(value.filter { it.isDigit() })
                                 },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 singleLine = true,
@@ -273,18 +290,8 @@ fun SettingWebPage() {
                         supportingContent = { Text(stringResource(R.string.setting_page_web_server_password_desc)) },
                         trailingContent = {
                             TextField(
-                                value = accessPasswordText,
-                                onValueChange = { value ->
-                                    accessPasswordText = value
-                                    scope.launch {
-                                        settingsStore.update {
-                                            it.copy(
-                                                webServerAccessPassword = value,
-                                                webServerJwtEnabled = it.webServerJwtEnabled && value.isNotBlank()
-                                            )
-                                        }
-                                    }
-                                },
+                                value = accessPasswordField.value,
+                                onValueChange = accessPasswordField::onValueChange,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                                 visualTransformation = if (passwordVisible) {
                                     VisualTransformation.None

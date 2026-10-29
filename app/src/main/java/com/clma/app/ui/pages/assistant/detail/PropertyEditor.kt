@@ -35,6 +35,7 @@ import com.clma.app.R
 import com.clma.app.ui.components.ui.CardGroup
 import com.clma.app.ui.components.ui.SelectTextField
 import com.clma.app.ui.components.richtext.HighlightCodeVisualTransformation
+import com.clma.app.ui.hooks.rememberSyncedTextField
 import com.clma.app.ui.theme.JetbrainsMono
 import com.clma.app.ui.theme.LocalDarkMode
 
@@ -76,8 +77,30 @@ fun CustomHeaders(headers: List<CustomHeader>, onUpdate: (List<CustomHeader>) ->
         Spacer(Modifier.height(8.dp))
 
         headers.forEachIndexed { index, header ->
-            var headerName by remember(header.name) { mutableStateOf(header.name) }
-            var headerValue by remember(header.value) { mutableStateOf(header.value) }
+            // Local field state: the list may be persisted asynchronously, and re-keying the text on
+            // every echo used to fight the IME (duplicated characters / jumping cursor).
+            val headerNameField = rememberSyncedTextField(
+                externalValue = header.name,
+                key = index,
+                expectedEcho = { it.trim() },
+            ) { name ->
+                val updatedHeaders = headers.toMutableList()
+                if (index in updatedHeaders.indices) {
+                    updatedHeaders[index] = updatedHeaders[index].copy(name = name.trim())
+                    onUpdate(updatedHeaders)
+                }
+            }
+            val headerValueField = rememberSyncedTextField(
+                externalValue = header.value,
+                key = index,
+                expectedEcho = { it.trim() },
+            ) { value ->
+                val updatedHeaders = headers.toMutableList()
+                if (index in updatedHeaders.indices) {
+                    updatedHeaders[index] = updatedHeaders[index].copy(value = value.trim())
+                    onUpdate(updatedHeaders)
+                }
+            }
 
             CardGroup {
                 item(
@@ -86,29 +109,17 @@ fun CustomHeaders(headers: List<CustomHeader>, onUpdate: (List<CustomHeader>) ->
                             modifier = Modifier.fillMaxWidth(),
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
-                            val updateHeaderName = { name: String ->
-                                headerName = name
-                                val updatedHeaders = headers.toMutableList()
-                                updatedHeaders[index] = updatedHeaders[index].copy(name = name.trim())
-                                onUpdate(updatedHeaders)
-                            }
                             SelectTextField(
-                                value = headerName,
-                                options = commonHeaderNames(headerName),
-                                onValueChange = updateHeaderName,
-                                onOptionSelected = updateHeaderName,
+                                value = headerNameField.text,
+                                options = commonHeaderNames(headerNameField.text),
+                                onValueChange = headerNameField::onTextChange,
+                                onOptionSelected = { name: String -> headerNameField.onTextChange(name) },
                                 label = { Text(stringResource(R.string.assistant_page_header_name)) },
                                 modifier = Modifier.fillMaxWidth()
                             )
                             OutlinedTextField(
-                                value = headerValue,
-                                onValueChange = {
-                                    headerValue = it
-                                    val updatedHeaders = headers.toMutableList()
-                                    updatedHeaders[index] =
-                                        updatedHeaders[index].copy(value = it.trim())
-                                    onUpdate(updatedHeaders)
-                                },
+                                value = headerValueField.value,
+                                onValueChange = headerValueField::onValueChange,
                                 label = { Text(stringResource(R.string.assistant_page_header_value)) },
                                 modifier = Modifier.fillMaxWidth()
                             )
@@ -157,11 +168,45 @@ fun CustomBodies(customBodies: List<CustomBody>, onUpdate: (List<CustomBody>) ->
         Spacer(Modifier.height(8.dp))
 
         customBodies.forEachIndexed { index, body ->
-            var bodyKey by remember(body.key) { mutableStateOf(body.key) }
-            var bodyValueString by remember(body.value) {
-                mutableStateOf(jsonLenient.encodeToString(JsonElement.serializer(), body.value))
+            val bodyKeyField = rememberSyncedTextField(
+                externalValue = body.key,
+                key = index,
+                expectedEcho = { it.trim() },
+            ) { key ->
+                val updatedBodies = customBodies.toMutableList()
+                if (index in updatedBodies.indices) {
+                    updatedBodies[index] = updatedBodies[index].copy(key = key.trim())
+                    onUpdate(updatedBodies)
+                }
             }
             var jsonParseError by remember { mutableStateOf<String?>(null) }
+            // The persisted value is a JsonElement; compare in its re-encoded form so our own
+            // writes are recognised as echoes and the user's formatting is left alone.
+            val bodyValueField = rememberSyncedTextField(
+                externalValue = jsonLenient.encodeToString(JsonElement.serializer(), body.value),
+                key = index,
+                expectedEcho = { text ->
+                    runCatching {
+                        jsonLenient.encodeToString(JsonElement.serializer(), jsonLenient.parseToJsonElement(text))
+                    }.getOrNull() ?: text
+                },
+            ) { newString ->
+                try {
+                    val newJsonValue = jsonLenient.parseToJsonElement(newString)
+                    val updatedBodies = customBodies.toMutableList()
+                    if (index in updatedBodies.indices) {
+                        updatedBodies[index] = updatedBodies[index].copy(value = newJsonValue)
+                        onUpdate(updatedBodies)
+                    }
+                    jsonParseError = null
+                } catch (e: Exception) {
+                    jsonParseError =
+                        context.getString(
+                            R.string.assistant_page_invalid_json,
+                            e.message?.take(100) ?: ""
+                        )
+                }
+            }
 
             CardGroup {
                 item(
@@ -171,35 +216,14 @@ fun CustomBodies(customBodies: List<CustomBody>, onUpdate: (List<CustomBody>) ->
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             OutlinedTextField(
-                                value = bodyKey,
-                                onValueChange = {
-                                    bodyKey = it
-                                    val updatedBodies = customBodies.toMutableList()
-                                    updatedBodies[index] = updatedBodies[index].copy(key = it.trim())
-                                    onUpdate(updatedBodies)
-                                },
+                                value = bodyKeyField.value,
+                                onValueChange = bodyKeyField::onValueChange,
                                 label = { Text(stringResource(R.string.assistant_page_body_key)) },
                                 modifier = Modifier.fillMaxWidth()
                             )
                             OutlinedTextField(
-                                value = bodyValueString,
-                                onValueChange = { newString ->
-                                    bodyValueString = newString
-                                    try {
-                                        val newJsonValue = jsonLenient.parseToJsonElement(newString)
-                                        val updatedBodies = customBodies.toMutableList()
-                                        updatedBodies[index] =
-                                            updatedBodies[index].copy(value = newJsonValue)
-                                        onUpdate(updatedBodies)
-                                        jsonParseError = null
-                                    } catch (e: Exception) {
-                                        jsonParseError =
-                                            context.getString(
-                                                R.string.assistant_page_invalid_json,
-                                                e.message?.take(100) ?: ""
-                                            )
-                                    }
-                                },
+                                value = bodyValueField.value,
+                                onValueChange = bodyValueField::onValueChange,
                                 label = { Text(stringResource(R.string.assistant_page_body_value)) },
                                 modifier = Modifier.fillMaxWidth(),
                                 isError = jsonParseError != null,

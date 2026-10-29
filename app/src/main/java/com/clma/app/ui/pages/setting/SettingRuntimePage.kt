@@ -42,6 +42,7 @@ import com.clma.app.data.datastore.AutoCompactionThresholdMode
 import com.clma.app.data.datastore.Settings
 import com.clma.app.ui.pages.setting.termux.SettingTermuxViewModel
 import com.clma.app.ui.pages.setting.termux.TimeoutInput
+import com.clma.app.ui.hooks.rememberSyncedTextField
 import com.clma.app.ui.components.ui.CardGroup
 import com.clma.app.ui.components.ui.SettingSlider
 import com.clma.app.ui.components.ui.parseIntInRange
@@ -138,14 +139,51 @@ private fun AutoCompactionSettingItem(
     var threshold by remember(settings.autoCompactionThresholdPercent) {
         mutableFloatStateOf(settings.autoCompactionThresholdPercent.toFloat())
     }
-    var tokenThreshold by remember(settings.autoCompactionThresholdTokensK) {
-        mutableStateOf(settings.autoCompactionThresholdTokensK.toString())
+    // Local, IME-safe text state. Previously each was re-keyed on the persisted value, so a late
+    // echo of an earlier keystroke reset the field while the user was still typing.
+    val tokenThresholdField = rememberSyncedTextField(
+        externalValue = settings.autoCompactionThresholdTokensK.toString(),
+        key = Unit,
+        expectedEcho = { typed ->
+            typed.toIntOrNull()?.coerceIn(1, Int.MAX_VALUE / 1_000)?.toString() ?: typed
+        },
+    ) { typed ->
+        typed.toIntOrNull()?.let { parsed ->
+            val normalized = parsed.coerceIn(1, Int.MAX_VALUE / 1_000)
+            if (normalized != settings.autoCompactionThresholdTokensK) {
+                vm.updateSettings { current ->
+                    current.copy(autoCompactionThresholdTokensK = normalized)
+                }
+            }
+        }
     }
-    var compactionTargetTokensK by remember(settings.contextCompactionTargetTokensK) {
-        mutableStateOf(settings.contextCompactionTargetTokensK?.toString().orEmpty())
+    val compactionTargetTokensKField = rememberSyncedTextField(
+        externalValue = settings.contextCompactionTargetTokensK?.toString().orEmpty(),
+        key = Unit,
+        expectedEcho = { typed ->
+            typed.toIntOrNull()?.coerceIn(1, Int.MAX_VALUE / 1_000)?.toString().orEmpty()
+        },
+    ) { typed ->
+        val normalized = typed.toIntOrNull()?.coerceIn(1, Int.MAX_VALUE / 1_000)
+        if (normalized != settings.contextCompactionTargetTokensK) {
+            vm.updateSettings { current ->
+                current.copy(contextCompactionTargetTokensK = normalized)
+            }
+        }
     }
-    var keepRecentToolCalls by remember(settings.autoCompactionKeepRecentToolCalls) {
-        mutableStateOf(settings.autoCompactionKeepRecentToolCalls.toString())
+    val keepRecentToolCallsField = rememberSyncedTextField(
+        externalValue = settings.autoCompactionKeepRecentToolCalls.toString(),
+        key = Unit,
+        expectedEcho = { typed -> typed.toIntOrNull()?.coerceIn(0, 1_000)?.toString() ?: typed },
+    ) { typed ->
+        typed.toIntOrNull()?.let { parsed ->
+            val normalized = parsed.coerceIn(0, 1_000)
+            if (normalized != settings.autoCompactionKeepRecentToolCalls) {
+                vm.updateSettings { current ->
+                    current.copy(autoCompactionKeepRecentToolCalls = normalized)
+                }
+            }
+        }
     }
 
     CardGroup(
@@ -258,17 +296,9 @@ private fun AutoCompactionSettingItem(
                             )
                         } else {
                             OutlinedTextField(
-                                value = tokenThreshold,
+                                value = tokenThresholdField.text,
                                 onValueChange = { value ->
-                                    tokenThreshold = value.filter(Char::isDigit).take(7)
-                                    tokenThreshold.toIntOrNull()?.let { parsed ->
-                                        val normalized = parsed.coerceIn(1, Int.MAX_VALUE / 1_000)
-                                        if (normalized != settings.autoCompactionThresholdTokensK) {
-                                            vm.updateSettings { current ->
-                                                current.copy(autoCompactionThresholdTokensK = normalized)
-                                            }
-                                        }
-                                    }
+                                    tokenThresholdField.onTextChange(value.filter(Char::isDigit).take(7))
                                 },
                                 singleLine = true,
                                 suffix = { Text("k") },
@@ -283,12 +313,12 @@ private fun AutoCompactionSettingItem(
                                     .fillMaxWidth()
                                     .onFocusChanged { focusState ->
                                         if (!focusState.isFocused) {
-                                            val parsed = tokenThreshold.toIntOrNull()
+                                            val parsed = tokenThresholdField.text.toIntOrNull()
                                             if (parsed == null) {
-                                                tokenThreshold = settings.autoCompactionThresholdTokensK.toString()
+                                                tokenThresholdField.replaceText(settings.autoCompactionThresholdTokensK.toString())
                                             } else {
                                                 val normalized = parsed.coerceIn(1, Int.MAX_VALUE / 1_000)
-                                                tokenThreshold = normalized.toString()
+                                                tokenThresholdField.replaceText(normalized.toString())
                                                 if (normalized != settings.autoCompactionThresholdTokensK) {
                                                     vm.updateSettings { current ->
                                                         current.copy(autoCompactionThresholdTokensK = normalized)
@@ -308,17 +338,9 @@ private fun AutoCompactionSettingItem(
                 },
                 supportingContent = {
                     OutlinedTextField(
-                        value = keepRecentToolCalls,
+                        value = keepRecentToolCallsField.text,
                         onValueChange = { value ->
-                            keepRecentToolCalls = value.filter(Char::isDigit).take(4)
-                            keepRecentToolCalls.toIntOrNull()?.let { parsed ->
-                                val normalized = parsed.coerceIn(0, 1_000)
-                                if (normalized != settings.autoCompactionKeepRecentToolCalls) {
-                                    vm.updateSettings { current ->
-                                        current.copy(autoCompactionKeepRecentToolCalls = normalized)
-                                    }
-                                }
-                            }
+                            keepRecentToolCallsField.onTextChange(value.filter(Char::isDigit).take(4))
                         },
                         singleLine = true,
                         supportingText = {
@@ -333,10 +355,10 @@ private fun AutoCompactionSettingItem(
                             .fillMaxWidth()
                             .onFocusChanged { focusState ->
                                 if (!focusState.isFocused) {
-                                    val normalized = keepRecentToolCalls.toIntOrNull()
+                                    val normalized = keepRecentToolCallsField.text.toIntOrNull()
                                         ?.coerceIn(0, 1_000)
                                         ?: settings.autoCompactionKeepRecentToolCalls
-                                    keepRecentToolCalls = normalized.toString()
+                                    keepRecentToolCallsField.replaceText(normalized.toString())
                                     if (normalized != settings.autoCompactionKeepRecentToolCalls) {
                                         vm.updateSettings { current ->
                                             current.copy(autoCompactionKeepRecentToolCalls = normalized)
@@ -354,16 +376,9 @@ private fun AutoCompactionSettingItem(
             },
             supportingContent = {
                 OutlinedTextField(
-                    value = compactionTargetTokensK,
+                    value = compactionTargetTokensKField.text,
                     onValueChange = { value ->
-                        compactionTargetTokensK = value.filter(Char::isDigit).take(7)
-                        val normalized = compactionTargetTokensK.toIntOrNull()
-                            ?.coerceIn(1, Int.MAX_VALUE / 1_000)
-                        if (normalized != settings.contextCompactionTargetTokensK) {
-                            vm.updateSettings { current ->
-                                current.copy(contextCompactionTargetTokensK = normalized)
-                            }
-                        }
+                        compactionTargetTokensKField.onTextChange(value.filter(Char::isDigit).take(7))
                     },
                     singleLine = true,
                     suffix = { Text("k") },
@@ -375,10 +390,10 @@ private fun AutoCompactionSettingItem(
                         .fillMaxWidth()
                         .onFocusChanged { focusState ->
                             if (!focusState.isFocused) {
-                                val normalized = compactionTargetTokensK.toIntOrNull()
+                                val normalized = compactionTargetTokensKField.text.toIntOrNull()
                                     ?.coerceIn(1, Int.MAX_VALUE / 1_000)
                                 val normalizedValue = normalized?.toString().orEmpty()
-                                compactionTargetTokensK = normalizedValue
+                                compactionTargetTokensKField.replaceText(normalizedValue)
                                 if (normalized != settings.contextCompactionTargetTokensK) {
                                     vm.updateSettings { current ->
                                         current.copy(contextCompactionTargetTokensK = normalized)

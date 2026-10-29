@@ -37,7 +37,6 @@ import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Switch
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -58,6 +57,7 @@ import com.clma.app.data.sync.BackupItem
 import com.clma.app.data.sync.S3BackupItem
 import com.clma.app.data.sync.s3.S3Config
 import com.clma.app.ui.components.ui.CardGroup
+import com.clma.app.ui.hooks.rememberSyncedTextField
 import com.clma.app.ui.context.LocalToaster
 import com.clma.app.ui.pages.backup.BackupVM
 import com.clma.app.ui.pages.backup.components.BackupItemPicker
@@ -89,30 +89,47 @@ fun S3Tab(
         vm.updateSettings(settings.copy(s3Config = newConfig))
     }
 
-    var endpointText by remember { mutableStateOf(s3Config.endpoint) }
-    var accessKeyIdText by remember { mutableStateOf(s3Config.accessKeyId) }
-    var secretAccessKeyText by remember { mutableStateOf(s3Config.secretAccessKey) }
-    var bucketText by remember { mutableStateOf(s3Config.bucket) }
-    var encPasswordText by remember { mutableStateOf(s3Config.encryptionPassword) }
-    var regionText by remember { mutableStateOf(s3Config.region) }
-
-    LaunchedEffect(s3Config.endpoint) {
-        if (endpointText != s3Config.endpoint) endpointText = s3Config.endpoint
+    // Local, IME-safe field state; persisted asynchronously via an atomic transform.
+    val endpointField = rememberSyncedTextField(
+        externalValue = s3Config.endpoint,
+        key = Unit,
+        expectedEcho = { it.trim() },
+    ) { text ->
+        vm.updateSettings { it.copy(s3Config = it.s3Config.copy(endpoint = text.trim())) }
     }
-    LaunchedEffect(s3Config.accessKeyId) {
-        if (accessKeyIdText != s3Config.accessKeyId) accessKeyIdText = s3Config.accessKeyId
+    val accessKeyIdField = rememberSyncedTextField(
+        externalValue = s3Config.accessKeyId,
+        key = Unit,
+        expectedEcho = { it.trim() },
+    ) { text ->
+        vm.updateSettings { it.copy(s3Config = it.s3Config.copy(accessKeyId = text.trim())) }
     }
-    LaunchedEffect(s3Config.secretAccessKey) {
-        if (secretAccessKeyText != s3Config.secretAccessKey) secretAccessKeyText = s3Config.secretAccessKey
+    val secretAccessKeyField = rememberSyncedTextField(
+        externalValue = s3Config.secretAccessKey,
+        key = Unit,
+        expectedEcho = { it.trim() },
+    ) { text ->
+        vm.updateSettings { it.copy(s3Config = it.s3Config.copy(secretAccessKey = text.trim())) }
     }
-    LaunchedEffect(s3Config.bucket) {
-        if (bucketText != s3Config.bucket) bucketText = s3Config.bucket
+    val bucketField = rememberSyncedTextField(
+        externalValue = s3Config.bucket,
+        key = Unit,
+        expectedEcho = { it.trim() },
+    ) { text ->
+        vm.updateSettings { it.copy(s3Config = it.s3Config.copy(bucket = text.trim())) }
     }
-    LaunchedEffect(s3Config.encryptionPassword) {
-        if (encPasswordText != s3Config.encryptionPassword) encPasswordText = s3Config.encryptionPassword
+    val encPasswordField = rememberSyncedTextField(
+        externalValue = s3Config.encryptionPassword,
+        key = Unit,
+    ) { text ->
+        vm.updateSettings { it.copy(s3Config = it.s3Config.copy(encryptionPassword = text)) }
     }
-    LaunchedEffect(s3Config.region) {
-        if (regionText != s3Config.region) regionText = s3Config.region
+    val regionField = rememberSyncedTextField(
+        externalValue = s3Config.region,
+        key = Unit,
+        expectedEcho = { it.trim() },
+    ) { text ->
+        vm.updateSettings { it.copy(s3Config = it.s3Config.copy(region = text.trim())) }
     }
 
     val lastBackupText = if (settings.backupReminderConfig.lastBackupTime == 0L) {
@@ -155,8 +172,8 @@ fun S3Tab(
                     supportingContent = {
                         OutlinedTextField(
                             modifier = Modifier.fillMaxWidth(),
-                            value = s3Config.endpoint,
-                            onValueChange = { updateS3Config(s3Config.copy(endpoint = it.trim())) },
+                            value = endpointField.value,
+                            onValueChange = endpointField::onValueChange,
                             placeholder = { Text("https://s3.amazonaws.com") },
                             singleLine = true
                         )
@@ -167,8 +184,8 @@ fun S3Tab(
                     supportingContent = {
                         OutlinedTextField(
                             modifier = Modifier.fillMaxWidth(),
-                            value = s3Config.accessKeyId,
-                            onValueChange = { updateS3Config(s3Config.copy(accessKeyId = it.trim())) },
+                            value = accessKeyIdField.value,
+                            onValueChange = accessKeyIdField::onValueChange,
                             singleLine = true
                         )
                     },
@@ -179,8 +196,8 @@ fun S3Tab(
                         var passwordVisible by remember { mutableStateOf(false) }
                         OutlinedTextField(
                             modifier = Modifier.fillMaxWidth(),
-                            value = s3Config.secretAccessKey,
-                            onValueChange = { updateS3Config(s3Config.copy(secretAccessKey = it.trim())) },
+                            value = secretAccessKeyField.value,
+                            onValueChange = secretAccessKeyField::onValueChange,
                             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                             trailingIcon = {
                                 val image = if (passwordVisible) {
@@ -201,8 +218,8 @@ fun S3Tab(
                     supportingContent = {
                         OutlinedTextField(
                             modifier = Modifier.fillMaxWidth(),
-                            value = s3Config.bucket,
-                            onValueChange = { updateS3Config(s3Config.copy(bucket = it.trim())) },
+                            value = bucketField.value,
+                            onValueChange = bucketField::onValueChange,
                             placeholder = { Text("my-bucket") },
                             singleLine = true
                         )
@@ -224,8 +241,8 @@ fun S3Tab(
                         var encVisible by remember { mutableStateOf(false) }
                         OutlinedTextField(
                             modifier = Modifier.fillMaxWidth(),
-                            value = s3Config.encryptionPassword,
-                            onValueChange = { updateS3Config(s3Config.copy(encryptionPassword = it)) },
+                            value = encPasswordField.value,
+                            onValueChange = encPasswordField::onValueChange,
                             placeholder = { Text(stringResource(R.string.backup_secrets_encryption_password_hint)) },
                             visualTransformation = if (encVisible) VisualTransformation.None else PasswordVisualTransformation(),
                             trailingIcon = {
@@ -243,8 +260,8 @@ fun S3Tab(
                     supportingContent = {
                         OutlinedTextField(
                             modifier = Modifier.fillMaxWidth(),
-                            value = s3Config.region,
-                            onValueChange = { updateS3Config(s3Config.copy(region = it.trim())) },
+                            value = regionField.value,
+                            onValueChange = regionField::onValueChange,
                             placeholder = { Text("auto") },
                             singleLine = true
                         )
