@@ -86,7 +86,7 @@ matrix itself.
 ## Verification
 
 The pure parts are pinned by JVM unit tests (`app/src/test/…/providers/openai/*VideoRequestTest.kt`)
-and run in CI: `:app:assemblePure`, `:app:testPureUnitTest`, `:ai:testDebugUnitTest`. Real clips
+and run in CI: `:app:assembleClma`, `:app:testClmaUnitTest`, `:ai:testDebugUnitTest`. Real clips
 still require a real key and a real device — the request shapes are verified against the vendors'
 published contracts, not against live traffic.
 

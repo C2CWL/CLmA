@@ -9,7 +9,7 @@ on:
       # Maintenance branches (CI tweaks, dependency bumps, docs) build too — they
       # are still code that will be merged, so they deserve the same gate.
       - 'chore/**'
-    # Doc-only pushes (README, notes, licence) do not need a 13-20 min assemblePure
+    # Doc-only pushes (README, notes, licence) do not need a 13-20 min assembleClma
     # run: no source, resource or build file changes are involved. A push is
     # skipped only when *every* changed path matches; mixing docs with code still
     # triggers CI. Add `[skip ci]` to the commit message for one-off skips.
@@ -39,7 +39,7 @@ concurrency:
 
 jobs:
   assemble:
-    name: assemblePure + unit tests
+    name: assembleClma + unit tests
     runs-on: ubuntu-latest
     timeout-minutes: 150
     # NDK >= r23 reads this and, when ccache is on PATH, routes the C/C++
@@ -143,19 +143,19 @@ jobs:
           fi
 
       # Single Gradle invocation: one daemon, one configuration phase. Build only
-      # the shipping variant ("pure": R8 + optimized resource shrinking, keep rules
+      # the shipping variant ("clma", formerly "pure": R8 + optimized resource shrinking, keep rules
       # in src/main/keepRules) and run the JVM unit tests against that same variant.
       # The old debug build is gone on purpose: it compiled every library subproject
       # a second time and rebuilt the llama.cpp native libs a second time, for an
-      # artifact nothing shipped. The published APK is `app-*-pure-unsigned.apk`,
-      # re-signed on the VPS with p2.keystore (dl2.sh apk-pure).
+      # artifact nothing shipped. The published APK is `app-*-clma-unsigned.apk`,
+      # re-signed on the VPS with p2.keystore (dl2.sh apk-clma).
       #
       # Library modules' JVM unit tests are listed explicitly (testDebugUnitTest
-      # for every module that has src/test): :app:testPureUnitTest does not run
+      # for every module that has src/test): :app:testClmaUnitTest does not run
       # them. :ai was the first one wired in (provider request-shape tests); the
       # rest followed with the com.clma package rename so every moved test runs
       # at least once in CI. They are plain JVM tests, seconds not minutes.
-      - name: Assemble pure APK + unit tests
+      - name: Assemble CLmA APK + unit tests
         env:
           # Fast lane: a push to a feature branch (feat/**) skips the release
           # lint pass. Pushes to main/master and pull requests keep lintVital as
@@ -172,20 +172,20 @@ jobs:
             :material3:testDebugUnitTest :oauth:testDebugUnitTest :search:testDebugUnitTest \
             :speech:testDebugUnitTest :web:testDebugUnitTest :workspace:testDebugUnitTest"
           # --continue: one failing module must not hide the results of the others.
-          ./gradlew :app:assemblePure :app:testPureUnitTest $LIB_TESTS --continue $FLAGS --stacktrace
+          ./gradlew :app:assembleClma :app:testClmaUnitTest $LIB_TESTS --continue $FLAGS --stacktrace
 
-      - name: Show pure APK sizes
-        run: ls -la app/build/outputs/apk/pure/*.apk || true
+      - name: Show CLmA APK sizes
+        run: ls -la app/build/outputs/apk/clma/*.apk || true
 
       - name: Show ccache stats
         if: always()
         run: ccache -s -v || true
 
-      - name: Upload pure APK
+      - name: Upload CLmA APK
         uses: actions/upload-artifact@v4
         with:
-          name: apk-pure
-          path: app/build/outputs/apk/pure/*.apk
+          name: apk-clma
+          path: app/build/outputs/apk/clma/*.apk
           if-no-files-found: error
           retention-days: 14
 
