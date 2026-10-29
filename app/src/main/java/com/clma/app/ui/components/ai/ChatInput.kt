@@ -168,6 +168,9 @@ fun ChatInput(
     onStartVoiceMode: (() -> Unit)? = null,
     voiceState: VoiceSessionState = VoiceSessionState(),
     onStopVoiceMode: () -> Unit = {},
+    // Reports the text field's focus to the page, e.g. so opening the drawer only clears focus
+    // when the field really holds it. Defaults to a no-op for callers that do not care.
+    onInputFocusChanged: (Boolean) -> Unit = {},
 ) {
     val toaster = LocalToaster.current
     val assistant = settings.getCurrentAssistant()
@@ -443,7 +446,10 @@ fun ChatInput(
                                 state = state,
                                 completionProviders = completionProviders,
                                 onSendMessage = { sendMessage() },
-                                onFocusChanged = { isFocused = it },
+                                onFocusChanged = {
+                                    isFocused = it
+                                    onInputFocusChanged(it)
+                                },
                                 modifier = Modifier.fillMaxWidth(),
                             )
                         },

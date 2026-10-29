@@ -176,11 +176,20 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null, is
     val softwareKeyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
 
-    // Clear input focus when drawer starts opening or is open so popup transitions cannot reopen the keyboard.
+    // Whether the chat text field holds focus, reported up from ChatInput.
+    var isTextInputFocused by remember { mutableStateOf(false) }
+
+    // Hide the keyboard as soon as the drawer starts opening so popup transitions cannot reopen it.
+    // Focus is only cleared when the text field actually holds it: an unconditional
+    // clearFocus(force = true) also drops the window's view focus on every open, which the drawer's
+    // own requestFocus() then takes back right as it settles, and on a fresh window that IME/insets
+    // round trip showed up as a one-frame flash of the fully opened drawer.
     LaunchedEffect(drawerState.targetValue) {
         if (drawerState.targetValue == DrawerValue.Open) {
-            focusManager.clearFocus(force = true)
             softwareKeyboardController?.hide()
+            if (shouldClearFocusOnDrawerOpen(drawerState.targetValue, isTextInputFocused)) {
+                focusManager.clearFocus()
+            }
         }
     }
 
@@ -297,6 +306,7 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null, is
                     errors = errors,
                     onDismissError = { vm.dismissError(it) },
                     onClearAllErrors = { vm.clearAllErrors() },
+                    onInputFocusChanged = { isTextInputFocused = it },
                 )
             }
         }
@@ -337,18 +347,42 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null, is
                             errors = errors,
                             onDismissError = { vm.dismissError(it) },
                             onClearAllErrors = { vm.clearAllErrors() },
+                            onInputFocusChanged = { isTextInputFocused = it },
                         )
                     }
                 }
             }
-            BackHandler(enabled = drawerState.isOpen && multiSelectActive) {
-                drawerVm.requestExitMultiSelect()
-            }
-            BackHandler(enabled = drawerState.isOpen && !multiSelectActive) {
-                FunctionalDiagnostics.event("drawer.close.back", System.identityHashCode(drawerState))
-                scope.launch { drawerState.close() }
-            }
+            DrawerBackHandlers(
+                drawerState = drawerState,
+                multiSelectActive = multiSelectActive,
+                onExitMultiSelect = { drawerVm.requestExitMultiSelect() },
+                onCloseDrawer = {
+                    FunctionalDiagnostics.event("drawer.close.back", System.identityHashCode(drawerState))
+                    scope.launch { drawerState.close() }
+                },
+            )
         }
+    }
+}
+
+/**
+ * Back handling while the modal drawer is open: first leave multi-select, otherwise close the
+ * drawer. drawerState.isOpen is read only here, so the drawer settling open recomposes this small
+ * scope instead of the whole ChatPage.
+ */
+@Composable
+private fun DrawerBackHandlers(
+    drawerState: DrawerState,
+    multiSelectActive: Boolean,
+    onExitMultiSelect: () -> Unit,
+    onCloseDrawer: () -> Unit,
+) {
+    val drawerOpen = drawerState.isOpen
+    BackHandler(enabled = drawerOpen && multiSelectActive) {
+        onExitMultiSelect()
+    }
+    BackHandler(enabled = drawerOpen && !multiSelectActive) {
+        onCloseDrawer()
     }
 }
 
@@ -409,6 +443,7 @@ private fun ChatPageContent(
     errors: List<ChatError>,
     onDismissError: (Uuid) -> Unit,
     onClearAllErrors: () -> Unit,
+    onInputFocusChanged: (Boolean) -> Unit = {},
 ) {
     val scope = rememberCoroutineScope()
     val toaster = LocalToaster.current
@@ -507,6 +542,7 @@ private fun ChatPageContent(
                 val voiceState by vm.voiceSession.state.collectAsStateWithLifecycle()
                 ChatInput(
                     onStartVoiceMode = onStartVoiceMode,
+                    onInputFocusChanged = onInputFocusChanged,
                     voiceState = voiceState,
                     onStopVoiceMode = vm.voiceSession::stop,
                     state = inputState,
