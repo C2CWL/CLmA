@@ -103,12 +103,14 @@ android {
             buildConfigField("String", "UPDATE_API_URL", "\"\"")
         }
         // Shipping variant for CLmA (derived from RikkaHub Agent · Pure).
+        // Build type `clma` (formerly `pure`): tasks assembleClma / testClmaUnitTest,
+        // APKs land in build/outputs/apk/clma/ as app-<abi|universal>-clma-unsigned.apk.
         // Same release-grade R8 + resource shrinking as `release`; keep rules
         // still live in src/main/keepRules/rikkahub.keep. applicationId is
         // com.clma.app with no suffix so it coexists with upstream packages.
-        create("pure") {
+        create("clma") {
             // The library subprojects (:ai, :local-llm, :llama-cpp, …) only
-            // publish debug/release variants, so "pure" resolves to their
+            // publish debug/release variants, so "clma" resolves to their
             // release variant.
             matchingFallbacks += listOf("release")
             optimization {
@@ -175,11 +177,11 @@ android {
 
 // AGP 9 only creates a JVM unit-test task for the default tested build type
 // (debug): `unitTestEnabled` / `enableUnitTest` are gone, and a non-default
-// build type has to opt in through the host-tests API. CI ships `pure`, so run
+// build type has to opt in through the host-tests API. CI ships `clma`, so run
 // the unit tests against that same variant — which also means the debug variant
 // (and its own copy of the llama.cpp native libs) is never built in CI.
 androidComponents {
-    beforeVariants(selector().withBuildType("pure")) { variantBuilder ->
+    beforeVariants(selector().withBuildType("clma")) { variantBuilder ->
         (variantBuilder as? HasHostTestsBuilder)
             ?.hostTests
             ?.get(HostTestBuilder.UNIT_TEST_TYPE)
