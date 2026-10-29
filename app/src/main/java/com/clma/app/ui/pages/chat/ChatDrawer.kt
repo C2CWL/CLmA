@@ -122,6 +122,7 @@ import dev.chrisbanes.haze.blur.hazeBlur
 import dev.chrisbanes.haze.blur.material3.Material3
 import com.clma.app.ui.hooks.EditStateContent
 import com.clma.app.ui.hooks.readBooleanPreference
+import com.clma.app.ui.hooks.rememberSharedPreferenceBoolean
 import com.clma.app.ui.hooks.useEditState
 import com.clma.app.utils.navigateToChatPage
 import com.clma.app.utils.toDp
@@ -139,6 +140,8 @@ fun ChatDrawerContent(
 ) {
     val scope = rememberCoroutineScope()
     val diagnosticInstance = remember { System.identityHashCode(scope) }
+    // Diagnostic build: per-frame drawer flicker probe, off unless the switch is on.
+    val drawerFlickerProbe by rememberSharedPreferenceBoolean(FunctionalDiagnostics.ANIMATION_KEY)
     val context = LocalContext.current
     val toaster = LocalToaster.current
     val repo = koinInject<ConversationRepository>()
@@ -450,6 +453,7 @@ fun ChatDrawerContent(
                 FunctionalDiagnostics.event("drawer.width", diagnosticInstance, value = it.width.toLong())
                 FunctionalDiagnostics.event("drawer.height", diagnosticInstance, value = it.height.toLong())
             }
+            .then(if (drawerFlickerProbe) Modifier.drawerFlickerPlacementMarker() else Modifier)
             .clip(drawerShape)
             .then(
                 if (drawerFrost != null) {
