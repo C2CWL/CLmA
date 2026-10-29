@@ -54,6 +54,7 @@ import com.clma.app.data.datastore.migration.PreferenceStoreV5Migration
 import com.clma.app.data.datastore.migration.PreferenceStoreV6Migration
 import com.clma.app.data.datastore.migration.PreferenceStoreV7Migration
 import com.clma.app.data.datastore.migration.PreferenceStoreV8Migration
+import com.clma.app.data.datastore.migration.PreferenceStoreV9Migration
 import com.clma.app.data.model.Assistant
 import com.clma.app.data.model.Avatar
 import com.clma.app.data.model.InjectionPosition
@@ -178,6 +179,7 @@ private fun createSettingsDataStore(context: Context): DataStore<Preferences> {
             PreferenceStoreV6Migration(),
             PreferenceStoreV7Migration(),
             PreferenceStoreV8Migration(),
+            PreferenceStoreV9Migration(),
         ),
         produceFile = { file },
     )
@@ -1259,7 +1261,14 @@ data class DisplaySetting(
     val edgeBarTaskCard: Boolean = true,
     /** Edge bar: once green (reply finished), a tap opens the chat box (true) or returns to the app (false). */
     val edgeBarDoneTapOpensChatBox: Boolean = true,
-    val showUserAvatar: Boolean = true,
+    /**
+     * 用户头像开关：聊天气泡旁与侧边抽屉共用。
+     *
+     * 默认关闭——Gemini 风格的用户回合只靠右对齐的胶囊区分，不画头像。老版本把 true 连同
+     * 默认值一起存进了 JSON，由 PreferenceStoreV9Migration 一次性改写为 false；用户之后
+     * 主动打开仍然有效（版本戳保证迁移只跑一次）。
+     */
+    val showUserAvatar: Boolean = false,
     val showAssistantBubble: Boolean = false,
     val bubbleOpacity: Float = 1.0f,
     // 简洁布局：扁平顶栏 + 两行输入框。默认关，关时与原来完全一致。

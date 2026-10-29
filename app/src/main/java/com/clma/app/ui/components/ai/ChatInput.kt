@@ -267,6 +267,8 @@ fun ChatInput(
     val chatLayout = settings.displaySetting.effectiveChatLayout
     val cleanLayout = chatLayout != ChatLayout.ORIGINAL
     val claudeLayout = chatLayout == ChatLayout.CLAUDE
+    // Gemini：同样走扁平顶栏/扁平输入条，但永远是 28dp 的全圆胶囊，不做玻璃。
+    val geminiLayout = chatLayout == ChatLayout.GEMINI
     // Claude layout prefers a solid card (no glass) so the 24dp composer reads like paper.
     // 「模糊效果」(DisplaySetting.enableBlurEffect) 只负责这一条输入条（见设置页文案）。
     // 之前这里无视该开关、永远走玻璃，开关等于摆设；现在关掉即退回实心卡片，
@@ -275,12 +277,14 @@ fun ChatInput(
         ChatLayout.ORIGINAL -> true
         ChatLayout.CLEAN -> settings.displaySetting.cleanLayoutGlass
         ChatLayout.CLAUDE -> false
+        ChatLayout.GEMINI -> false
     }
     val expanded = naturallyExpanded
     // Animate the corner along with the layout change below, so the pill does not snap between
     // its 28dp and 16dp radii while the bar is growing. Clean = flatter 14dp; Claude = 24dp card.
     val containerCorner by animateDpAsState(
         targetValue = when {
+            geminiLayout -> if (expanded) 24.dp else 28.dp
             claudeLayout -> 24.dp
             cleanLayout -> 14.dp
             expanded -> 16.dp
@@ -296,7 +300,13 @@ fun ChatInput(
     // rikkaGlassStyle's tintStrength plus cleanGlassFill laid over the backdrop (0 = clear).
     val darkTheme = LocalDarkMode.current
     val cleanOpacity = if (cleanLayout) settings.displaySetting.cleanLayoutBottomOpacity else 1f
-    val cleanCardColor = cleanPanelFill(cleanOpacity)
+    // Gemini：输入条是一块安静的实色胶囊（surfaceContainerHigh），不跟随简洁布局的面板浓度
+    // 滑块，也没有描边——那是 CLEAN / CLAUDE 的卡片语言。
+    val cleanCardColor = if (geminiLayout) {
+        MaterialTheme.colorScheme.surfaceContainerHigh
+    } else {
+        cleanPanelFill(cleanOpacity)
+    }
     val cleanCardOutline = cleanPanelOutline(darkTheme)
 
     Surface(
@@ -356,7 +366,7 @@ fun ChatInput(
                     useGlass -> Color.Transparent
                     else -> cleanCardColor
                 },
-                border = if (useGlass) null else BorderStroke(1.dp, cleanCardOutline),
+                border = if (useGlass || geminiLayout) null else BorderStroke(1.dp, cleanCardOutline),
             ) {
                 Column(
                     // Extra inset so the round buttons stay clear of the capsule's edge; the

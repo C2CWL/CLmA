@@ -90,6 +90,7 @@ import com.clma.app.Screen
 import com.clma.app.data.datastore.ChatLayout
 import com.clma.app.data.datastore.ToolCallStyle
 import com.clma.app.data.datastore.effectiveChatLayout
+import com.clma.app.data.datastore.usesGeminiChatUi
 import com.clma.app.data.model.Assistant
 import com.clma.app.data.model.AssistantAffectScope
 import com.clma.app.data.model.AssistantBackgroundMode
@@ -181,7 +182,8 @@ fun ChatMessage(
         horizontalAlignment = if (message.role == MessageRole.USER) Alignment.End else Alignment.Start,
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        if (!message.parts.isEmptyUIMessage()) {
+        // Gemini 布局：两侧都不再有头像行，用户消息只靠右对齐的胶囊区分。
+        if (!message.parts.isEmptyUIMessage() && !settings.usesGeminiChatUi) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth(),
@@ -370,10 +372,11 @@ private fun MessagePartsBlock(
     // 消息输出HapticFeedback
     val hapticFeedback = LocalHapticFeedback.current
     val settings = LocalSettings.current
-    // 暖阳布局：助手消息默认无气泡，贴近安静的阅读栏。
+    // 暖阳 / Gemini 布局：助手消息不带气泡，贴近安静的阅读栏（强制的，不跟开关走）。
     val showAssistantBubble =
         settings.displaySetting.showAssistantBubble &&
-            settings.displaySetting.effectiveChatLayout != ChatLayout.CLAUDE
+            settings.displaySetting.effectiveChatLayout != ChatLayout.CLAUDE &&
+            settings.displaySetting.effectiveChatLayout != ChatLayout.GEMINI
     val partsState by rememberUpdatedState(parts)
 
     val handleClickCitation: (String) -> Unit = remember {
@@ -547,9 +550,15 @@ private fun MessagePartsBlock(
                                         scope = AssistantAffectScope.USER,
                                         visual = true,
                                     ),
-                                    bubbleColor = MaterialTheme.colorScheme.primaryContainer.copy(
-                                        alpha = settings.displaySetting.bubbleOpacity,
-                                    ),
+                                    // Gemini 的用户气泡是一块安静的灰面，不是主题色块。
+                                    bubbleColor = (
+                                        if (settings.displaySetting.usesGeminiChatUi) {
+                                            MaterialTheme.colorScheme.surfaceContainerHighest
+                                        } else {
+                                            MaterialTheme.colorScheme.primaryContainer
+                                        }
+                                    ).copy(alpha = settings.displaySetting.bubbleOpacity),
+                                    capsule = settings.displaySetting.usesGeminiChatUi,
                                     onClick = { onUserMessageClick?.invoke() },
                                     onClickCitation = handleClickCitation,
                                 )
@@ -835,6 +844,8 @@ private fun UserMessageBubble(
     bubbleColor: Color,
     onClick: () -> Unit,
     onClickCitation: (String) -> Unit,
+    // Gemini 风格：更大的圆角胶囊，右下角收一点，读起来像一语气泡而不是卡片。
+    capsule: Boolean = false,
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
     var showToggle by remember(text) { mutableStateOf(UserMessageCollapse.likelyOverflows(text)) }
@@ -842,11 +853,15 @@ private fun UserMessageBubble(
     val collapsed = showToggle && !expanded
     Surface(
         modifier = Modifier.animateContentSize(),
-        shape = RoundedCornerShape(16.dp),
+        shape = if (capsule) {
+            RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp, bottomEnd = 6.dp, bottomStart = 22.dp)
+        } else {
+            RoundedCornerShape(16.dp)
+        },
         color = bubbleColor,
         onClick = onClick,
     ) {
-        Column(modifier = Modifier.padding(8.dp)) {
+        Column(modifier = Modifier.padding(if (capsule) 12.dp else 8.dp)) {
             Box(
                 modifier = Modifier
                     .clipToBounds()
