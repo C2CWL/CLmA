@@ -13,6 +13,16 @@ import org.junit.Test
 class StreamingUiThrottleTest {
     private fun gate() = StreamingUiGate<String>(80) { a, b -> b.startsWith(a) }
 
+    @Test fun `short render window publishes latest text after 32 milliseconds`() {
+        val gate = StreamingUiGate<String>(32) { a, b -> b.startsWith(a) }
+        assertEquals("a", gate.onNext("a", 0))
+        assertNull(gate.onNext("ab", 10))
+        assertNull(gate.onNext("abc", 20))
+        assertEquals(12L, gate.millisUntilFlush(20))
+        assertEquals("abc", gate.flush(32))
+        assertNull(gate.millisUntilFlush(32))
+    }
+
     @Test fun `first update is immediate and pending uses latest value`() {
         val gate = gate()
         assertEquals("a", gate.onNext("a", 0))

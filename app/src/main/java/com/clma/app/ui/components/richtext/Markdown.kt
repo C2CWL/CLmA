@@ -85,12 +85,11 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
 import androidx.core.net.toUri
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.mapLatest
-import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -267,7 +266,6 @@ fun MarkdownBlock(
     }
 }
 
-@OptIn(FlowPreview::class)
 @Composable
 private fun MarkdownParsed(
     content: String,
@@ -283,7 +281,7 @@ private fun MarkdownParsed(
         LaunchedEffect(Unit) {
             snapshotFlow { updatedContent }
                 .distinctUntilChanged()
-                .sample(80)
+                .conflate()
                 .mapLatest { parseMarkdown(it) }
                 .catch { Log.e(TAG, "MarkdownBlock: failed to parse markdown", it) }
                 .flowOn(Dispatchers.Default)
