@@ -60,6 +60,7 @@ import com.clma.app.data.datastore.migration.PreferenceStoreV6Migration
 import com.clma.app.data.datastore.migration.PreferenceStoreV7Migration
 import com.clma.app.data.datastore.migration.PreferenceStoreV8Migration
 import com.clma.app.data.datastore.migration.PreferenceStoreV9Migration
+import com.clma.app.data.datastore.migration.PreferenceStoreV10Migration
 import com.clma.app.data.model.Assistant
 import com.clma.app.data.model.Avatar
 import com.clma.app.data.model.InjectionPosition
@@ -188,6 +189,7 @@ private fun createSettingsDataStore(context: Context): DataStore<Preferences> {
             PreferenceStoreV7Migration(),
             PreferenceStoreV8Migration(),
             PreferenceStoreV9Migration(),
+            PreferenceStoreV10Migration(),
         ),
         produceFile = { file },
     )
@@ -523,7 +525,7 @@ class SettingsStore(
                     ?: AutoCompactionThresholdMode.PERCENT,
                 autoCompactionThresholdPercent = (preferences[AUTO_COMPACTION_THRESHOLD_PERCENT] ?: 80)
                     .coerceIn(5, 95),
-                autoCompactionThresholdTokensK = (preferences[AUTO_COMPACTION_THRESHOLD_TOKENS_K] ?: 8)
+                autoCompactionThresholdTokensK = (preferences[AUTO_COMPACTION_THRESHOLD_TOKENS_K] ?: 32)
                     .coerceIn(1, Int.MAX_VALUE / 1_000),
                 autoCompactionKeepRecentToolCalls =
                     (preferences[AUTO_COMPACTION_KEEP_RECENT_TOOL_CALLS] ?: 5).coerceIn(0, 1_000),
@@ -1137,7 +1139,7 @@ data class Settings(
     val enableTomcCompactionLedger: Boolean = true,
     val autoCompactionThresholdMode: AutoCompactionThresholdMode = AutoCompactionThresholdMode.PERCENT,
     val autoCompactionThresholdPercent: Int = 80,
-    val autoCompactionThresholdTokensK: Int = 8,
+    val autoCompactionThresholdTokensK: Int = 32,
     /** Number of most-recent executed tool calls kept raw during the first automatic pass. */
     val autoCompactionKeepRecentToolCalls: Int = 5,
     /**
