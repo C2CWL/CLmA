@@ -1494,7 +1494,7 @@
   <string name="setting_model_page_auto_compaction_tokens">عتبة الرموز (Tokens)</string>
   <string name="setting_model_page_auto_compaction_tokens_desc">أدخل العتبة بآلاف الرموز (Tokens). على سبيل المثال، 8k تعني 8,000 رمز.</string>
   <string name="setting_model_page_context_compaction_target">هدف الضغط</string>
-  <string name="setting_model_page_context_compaction_target_desc">اضبط حجم الملخص المستهدف بآلاف الرموز (Tokens). اتركه فارغًا لاستخدام 1٪ من السياق الحالي (على سبيل المثال، 3k لسياق حجمه 300k).</string>
+  <string name="setting_model_page_context_compaction_target_desc">اضبط حجم الملخص المستهدف بآلاف الرموز (Tokens). اتركه فارغًا لاستخدام 20٪ من السياق الحالي مع حد 4k–64k (على سبيل المثال، حوالي 26k لسياق حجمه 128k).</string>
   <string name="setting_model_page_auto_compaction_keep_tool_calls">الاحتفاظ بأحدث استدعاءات الأدوات</string>
   <string name="setting_model_page_auto_compaction_keep_tool_calls_desc">يحافظ الضغط التلقائي على الإدخال والنتيجة الأصليين لهذه الاستدعاءات. اضبط القيمة على 0 لضغط السياق الحالي بالكامل.</string>
   <string name="setting_page_preferences_network_stream_retries">محاولات إعادة تدفق Response API</string>
