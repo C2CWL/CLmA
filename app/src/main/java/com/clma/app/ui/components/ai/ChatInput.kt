@@ -507,8 +507,10 @@ fun ChatInput(
                                 // flip the slot to "send" and strand the recording).
                                 val voiceAvailable =
                                     !voiceState.isActive && (asrState.isAvailable || asrState.isRecording)
-                                // Stop must remain available even while a draft or recording is present.
-                                if (loading && (!hasDraftContent || asrState.isRecording)) {
+                                // Extra cancel only while the slot below is taken by Send (a draft) or
+                                // the mic (recording). An empty draft already uses that slot as cancel;
+                                // drawing it here too shows two cancel buttons.
+                                if (loading && (hasDraftContent || asrState.isRecording)) {
                                     SendButton(
                                         loading = true,
                                         empty = true,
