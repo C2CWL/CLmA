@@ -165,7 +165,8 @@ fun SettingsSearchPage(vm: SettingVM = koinViewModel()) {
                                             Text(
                                                 when (result) {
                                                     is SettingsSearchEntry -> stringResource(result.titleRes)
-                                                    is SettingsSearchDynamicEntry -> result.title
+                                                    is SettingsSearchDynamicEntry ->
+                                                        if (result.titleRes != 0) stringResource(result.titleRes) else result.title
                                                 }
                                             )
                                         },

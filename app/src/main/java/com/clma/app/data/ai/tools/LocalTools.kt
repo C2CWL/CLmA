@@ -78,16 +78,12 @@ import com.clma.app.data.ai.tools.local.toastTool
 import com.clma.app.data.ai.tools.local.torchTool
 import com.clma.app.data.ai.tools.local.vibrateTool
 import com.clma.app.data.ai.tools.local.wifiInfoTool
-import com.clma.app.data.ai.tools.local.deleteSshHostTool
-import com.clma.app.data.ai.tools.local.forgetSshHostKeyTool
 import com.clma.app.data.ai.tools.local.listSshHostsTool
 import com.clma.app.data.ai.tools.local.requestSecretTool
-import com.clma.app.data.ai.tools.local.saveSshHostTool
 import com.clma.app.data.ai.tools.local.secretDeleteTool
 import com.clma.app.data.ai.tools.local.secretListTool
 import com.clma.app.data.ai.tools.local.sshDownloadTool
 import com.clma.app.data.ai.tools.local.sshExecSavedTool
-import com.clma.app.data.ai.tools.local.sshExecTool
 import com.clma.app.data.ai.tools.local.sshUploadTool
 import com.clma.app.data.ai.tools.local.REQUEST_SECRET_TOOL_NAME
 import com.clma.app.data.secrets.AgentSecretsStore
@@ -779,6 +775,7 @@ class LocalTools(
         options: List<LocalToolOption>,
         invocationContext: ToolInvocationContext = ToolInvocationContext.EMPTY,
         disabledToolNames: Set<String> = emptySet(),
+        enabledSshHosts: Set<String> = emptySet(),
     ): List<Tool> {
         val tools = mutableListOf<Tool>()
         if (options.contains(LocalToolOption.JavascriptEngine)) {
@@ -890,15 +887,11 @@ class LocalTools(
         if (options.contains(LocalToolOption.Fingerprint)) {
             tools.add(fingerprintTool(context, biometricResultBuffer))
         }
-        if (options.contains(LocalToolOption.Ssh)) {
-            tools.add(sshExecTool(context, agentSecretsStore))
-            tools.add(saveSshHostTool(sshHostRepository, agentSecretsStore))
-            tools.add(listSshHostsTool(sshHostRepository))
-            tools.add(deleteSshHostTool(sshHostRepository))
-            tools.add(sshExecSavedTool(context, sshHostRepository, agentSecretsStore))
-            tools.add(sshUploadTool(context, sshHostRepository))
-            tools.add(sshDownloadTool(context, sshHostRepository))
-            tools.add(forgetSshHostKeyTool(context))
+        if (options.contains(LocalToolOption.Ssh) && enabledSshHosts.isNotEmpty()) {
+            tools.add(listSshHostsTool(sshHostRepository, enabledSshHosts))
+            tools.add(sshExecSavedTool(context, sshHostRepository, agentSecretsStore, enabledSshHosts))
+            tools.add(sshUploadTool(context, sshHostRepository, enabledSshHosts))
+            tools.add(sshDownloadTool(context, sshHostRepository, enabledSshHosts))
         }
         if (options.contains(LocalToolOption.Shizuku)) {
             tools.add(com.clma.app.data.ai.tools.local.shizukuExecTool(context))

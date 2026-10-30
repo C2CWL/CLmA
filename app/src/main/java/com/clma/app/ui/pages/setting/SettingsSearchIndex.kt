@@ -633,8 +633,10 @@ private fun SettingsSearchItem.searchFields(text: (Int) -> String): List<Pair<St
             item.descriptionRes?.let { add(text(it) to RANK_DESCRIPTION) }
         }
         is SettingsSearchDynamicEntry -> {
-            add(item.title to RANK_TITLE)
+            if (item.titleRes != 0) add(text(item.titleRes) to RANK_TITLE)
+            if (item.title.isNotBlank()) add(item.title to RANK_TITLE)
             item.subtitle?.let { add(it to RANK_DESCRIPTION) }
+            if (item.descriptionRes != 0) add(text(item.descriptionRes) to RANK_DESCRIPTION)
         }
     }
     breadcrumbRes.forEach { add(text(it) to RANK_PATH) }
