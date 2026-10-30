@@ -55,6 +55,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -88,6 +89,7 @@ import dev.chrisbanes.haze.glass.hazeGlass
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.launch
 import com.clma.ai.core.ReasoningLevel
 import com.clma.ai.provider.Model
 import com.clma.ai.provider.ModelAbility
@@ -1008,6 +1010,7 @@ private fun TextInputRow(
 private fun rememberPasteLongTextAsFileListener(state: ChatInputState): ReceiveContentListener {
     val settings = LocalSettings.current
     val filesManager: FilesManager = koinInject()
+    val scope = rememberCoroutineScope()
     return remember(
         settings.displaySetting.pasteLongTextAsFile, settings.displaySetting.pasteLongTextThreshold
     ) {
@@ -1017,11 +1020,13 @@ private fun rememberPasteLongTextAsFileListener(state: ChatInputState): ReceiveC
                     transferableContent.consume { item ->
                         val uri = item.uri
                         if (uri != null) {
-                            state.addImages(
-                                filesManager.createChatFilesByContents(
-                                    listOf(uri)
+                            scope.launch {
+                                state.addImages(
+                                    filesManager.createChatFilesByContents(
+                                        listOf(uri)
+                                    )
                                 )
-                            )
+                            }
                         }
                         uri != null
                     }
