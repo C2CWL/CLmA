@@ -13,15 +13,20 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStoreFile
 import io.pebbletemplates.pebble.PebbleEngine
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.retryWhen
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
@@ -70,7 +75,6 @@ import com.clma.app.subagent.SubAgentDispatchProfile
 import com.clma.app.ui.theme.CustomTheme
 import com.clma.app.ui.theme.PresetThemes
 import com.clma.app.utils.JsonInstant
-import com.clma.app.utils.toMutableStateFlow
 import com.clma.search.SearchCommonOptions
 import com.clma.search.SearchServiceOptions
 import com.clma.tts.provider.TTSProviderSetting
@@ -185,6 +189,15 @@ private fun createSettingsDataStore(context: Context): DataStore<Preferences> {
     )
 }
 
+/**
+ * A snapshot already in flight must not overwrite a newer write. [Settings.init] is the
+ * stand-in used before the first disk read, and it always yields.
+ */
+internal fun shouldApplySettingsSnapshot(current: Settings, incoming: Settings): Boolean {
+    if (current.init) return true
+    return incoming.settingsRevision >= current.settingsRevision
+}
+
 class SettingsStore(
     context: Context,
     scope: AppScope,
@@ -229,6 +242,7 @@ class SettingsStore(
         val AUTO_COMPACTION_THRESHOLD_TOKENS_K = intPreferencesKey("auto_compaction_threshold_tokens_k")
         val AUTO_COMPACTION_KEEP_RECENT_TOOL_CALLS = intPreferencesKey("auto_compaction_keep_recent_tool_calls")
         val CONTEXT_COMPACTION_TARGET_TOKENS_K = intPreferencesKey("context_compaction_target_tokens_k")
+        val SETTINGS_REVISION = longPreferencesKey("settings_revision")
         val RESPONSE_STREAM_MAX_RETRIES = intPreferencesKey("response_stream_max_retries")
 
         // 提供商
@@ -377,6 +391,7 @@ class SettingsStore(
                     preferences[CONTEXT_COMPACTION_TARGET_TOKENS_K] =
                         targetTokensK.coerceIn(1, Int.MAX_VALUE / 1_000)
                 } ?: preferences.remove(CONTEXT_COMPACTION_TARGET_TOKENS_K)
+                preferences[SETTINGS_REVISION] = settings.settingsRevision
                 preferences[RESPONSE_STREAM_MAX_RETRIES] = settings.responseStreamMaxRetries.coerceIn(0, 10)
 
                 preferences[PROVIDERS] = JsonInstant.encodeToString(settings.providers)
@@ -510,6 +525,7 @@ class SettingsStore(
                     (preferences[AUTO_COMPACTION_KEEP_RECENT_TOOL_CALLS] ?: 5).coerceIn(0, 1_000),
                 contextCompactionTargetTokensK = preferences[CONTEXT_COMPACTION_TARGET_TOKENS_K]
                     ?.coerceIn(1, Int.MAX_VALUE / 1_000),
+                settingsRevision = preferences[SETTINGS_REVISION] ?: 0L,
                 responseStreamMaxRetries = (preferences[RESPONSE_STREAM_MAX_RETRIES] ?: 5)
                     .coerceIn(0, 10),
                 assistantTags = preferences[ASSISTANT_TAGS]?.let { raw ->
@@ -876,16 +892,36 @@ class SettingsStore(
             get<PebbleEngine>().templateCache.invalidateAll()
         }
 
-    val settingsFlow = settingsFlowRaw
-        .distinctUntilChanged()
-        .toMutableStateFlow(scope, Settings.dummy())
+    val settingsFlow = MutableStateFlow(Settings.dummy())
+
+    init {
+        scope.launch {
+            runCatching {
+                settingsFlowRaw.distinctUntilChanged().collect { incoming ->
+                    val current = settingsFlow.value
+                    if (shouldApplySettingsSnapshot(current, incoming)) {
+                        settingsFlow.value = incoming
+                    } else {
+                        Log.w(
+                            TAG,
+                            "drop stale settings snapshot in=${incoming.settingsRevision} mem=${current.settingsRevision} ${compactionTrace(incoming)}",
+                        )
+                    }
+                }
+            }.onFailure {
+                Log.e(TAG, "settings flow collection stopped", it)
+            }
+        }
+    }
 
     suspend fun update(settings: Settings) {
-        if(settings.init) {
+        if (settings.init) {
             Log.w(TAG, "Cannot update dummy settings")
             return
         }
+        if (awaitLoadedSettings() == null) return
         transformLock.withLock {
+            if (settingsFlow.value.init) return@withLock
             updateInternal(settings)
         }
     }
@@ -896,10 +932,24 @@ class SettingsStore(
      * bug), `settingsFlow` must still match what's actually on disk rather than a value
      * that was never persisted, or observers would react to a change that silently rolls
      * back on the next app launch.
+     *
+     * The revision stamped here is taken from memory, not from [settings]. A restore or a
+     * caller holding an older copy must still land above any snapshot already emitted.
      */
     private suspend fun updateInternal(settings: Settings) {
-        persistSettings(dataStore, settings)
-        settingsFlow.value = settings
+        if (settings.init) {
+            Log.w(TAG, "Cannot update dummy settings")
+            return
+        }
+        val previous = settingsFlow.value
+        val stamped = settings.copy(
+            settingsRevision = previous.settingsRevision + 1,
+        )
+        if (!previous.init && compactionTrace(previous) != compactionTrace(stamped)) {
+            Log.w(TAG, "compaction write rev=${stamped.settingsRevision} ${compactionTrace(stamped)} was ${compactionTrace(previous)}")
+        }
+        persistSettings(dataStore, stamped)
+        settingsFlow.value = stamped
     }
 
     /** Serialises every settings write: both transform-based `update {fn}` calls and
@@ -914,10 +964,28 @@ class SettingsStore(
     private val transformLock = kotlinx.coroutines.sync.Mutex()
 
     suspend fun update(fn: (Settings) -> Settings) {
+        if (awaitLoadedSettings() == null) return
         transformLock.withLock {
-            updateInternal(fn(settingsFlow.value))
+            val current = settingsFlow.value
+            if (current.init) return@withLock
+            updateInternal(fn(current))
         }
     }
+
+    /** Disk has not been read yet. Writing now would persist [Settings.dummy] and wipe the file. */ 
+    private suspend fun awaitLoadedSettings(): Settings? {
+        settingsFlow.value.takeIf { !it.init }?.let { return it }
+        Log.w(TAG, "settings update waiting for initial load")
+        val loaded = withTimeoutOrNull(5_000) { settingsFlow.first { !it.init } }
+        if (loaded == null) Log.e(TAG, "settings update aborted, store still uninitialized")
+        return loaded
+    }
+
+    private fun compactionTrace(settings: Settings): String =
+        "engine=${settings.compactionEngine} ledger=${settings.enableTomcCompactionLedger} " +
+            "mode=${settings.autoCompactionThresholdMode} percent=${settings.autoCompactionThresholdPercent} " +
+            "tokensK=${settings.autoCompactionThresholdTokensK} keep=${settings.autoCompactionKeepRecentToolCalls} " +
+            "target=${settings.contextCompactionTargetTokensK}"
 
     // 只原子地修改单个 key, 不能用 update() 写回整份快照
     suspend fun incrementLaunchCount(): Int {
@@ -1177,6 +1245,12 @@ data class Settings(
     val recordRequests: Boolean = true,
     val backupReminderConfig: BackupReminderConfig = BackupReminderConfig(),
     val launchCount: Int = 0,
+    /**
+     * Monotonic generation of the last settings write. A DataStore emission with an older
+     * generation is dropped, so a snapshot that was already in flight cannot snap the UI
+     * back to the previous value. Appended last so existing positional constructors stay valid.
+     */
+    val settingsRevision: Long = 0,
 
 ) {
     companion object {
