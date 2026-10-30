@@ -23,7 +23,7 @@ internal object EdgeBarLook {
     /** Outline width of swatches that have one. */
     const val OUTLINE_DP = 1f
 
-    /** Hold this long before a drag moves the bar; plain swipes never move it. */
+    /** Hold this long before a drag moves the bar; early finger movement does not cancel the hold. */
     const val LONG_PRESS_MS = 450L
 
     /** Gap kept between the bar and the status / navigation bars. */

@@ -61,8 +61,7 @@ private const val TAG = "FloatingBallService"
  *                          idle; or, per the settings, bring the main app to the front (an
  *                          existing task is resumed, not duplicated; see [openMainApp]);
  *  - long press, drag    → move the bar freely; on release it snaps to the left, right or top
- *                          edge ([EdgeBarLook.edgeAfterDrag]); edge and position are saved;
- *  - anything else (a plain swipe) does nothing.
+ *                          edge ([EdgeBarLook.edgeAfterDrag]); edge and position are saved.
  *
  * It is also the "agent is working" light: [AgentOverlay] hands the signal here whenever the bar
  * is on screen (see [setWorking]); a finished reply turns the bar green until the bar is tapped
@@ -188,6 +187,8 @@ class FloatingBallService : Service(), KoinComponent {
 
     /** Set by the long-press timer; from then on the gesture moves the bar instead of tapping. */
     private var dragArmed = false
+    private var dragOffsetX = 0f
+    private var dragOffsetY = 0f
 
     private val longPressRunnable = Runnable {
         val view = barView ?: return@Runnable
@@ -198,7 +199,8 @@ class FloatingBallService : Service(), KoinComponent {
         params.x = barLeft(params)
         params.gravity = Gravity.TOP or Gravity.LEFT
         updateLayout(view, params)
-        clearGestureExclusion(view)
+        // Keep navigation gestures from taking over when the drag reaches a screen edge.
+        updateGestureExclusion(view)
         view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
     }
 
@@ -396,15 +398,16 @@ class FloatingBallService : Service(), KoinComponent {
         val touchSlop = ViewConfiguration.get(this).scaledTouchSlop
         var downRawX = 0f
         var downRawY = 0f
-        /** The finger moved before the long press armed: a swipe, which does nothing. */
-        var swiped = false
+        var moved = false
 
         view.setOnTouchListener { _, event ->
             when (event.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
                     downRawX = event.rawX
                     downRawY = event.rawY
-                    swiped = false
+                    dragOffsetX = event.rawX - barLeft(params)
+                    dragOffsetY = event.rawY - params.y
+                    moved = false
                     dragArmed = false
                     mainHandler.removeCallbacks(longPressRunnable)
                     mainHandler.postDelayed(longPressRunnable, EdgeBarLook.LONG_PRESS_MS)
@@ -412,25 +415,23 @@ class FloatingBallService : Service(), KoinComponent {
                 }
 
                 MotionEvent.ACTION_MOVE -> {
+                    if (!dragArmed) return@setOnTouchListener true
                     val dx = event.rawX - downRawX
                     val dy = event.rawY - downRawY
-                    if (dragArmed) {
-                        // Free 2-D drag (centred on the finger); the edge is decided on release.
-                        val screen = screenSize()
-                        val x = (event.rawX - params.width / 2f).toInt()
-                            .coerceIn(0, (screen.width - params.width).coerceAtLeast(0))
-                        val y = (event.rawY - params.height / 2f).toInt()
-                            .coerceIn(0, (screen.height - params.height).coerceAtLeast(0))
-                        if (x != params.x || y != params.y) {
-                            params.x = x
-                            params.y = y
-                            updateLayout(view, params)
-                        }
-                    } else if (!swiped && (abs(dx) > touchSlop || abs(dy) > touchSlop)) {
-                        // Low sensitivity: moving before the long press is recognised is a plain
-                        // swipe — never a drag, never a tap.
-                        swiped = true
-                        mainHandler.removeCallbacks(longPressRunnable)
+                    if (!moved && abs(dx) <= touchSlop && abs(dy) <= touchSlop) {
+                        return@setOnTouchListener true
+                    }
+                    moved = true
+                    // Keep the initial finger offset so arming the drag does not make the bar jump.
+                    val screen = screenSize()
+                    val x = (event.rawX - dragOffsetX).toInt()
+                        .coerceIn(0, (screen.width - params.width).coerceAtLeast(0))
+                    val y = (event.rawY - dragOffsetY).toInt()
+                        .coerceIn(0, (screen.height - params.height).coerceAtLeast(0))
+                    if (x != params.x || y != params.y) {
+                        params.x = x
+                        params.y = y
+                        updateLayout(view, params)
                     }
                     true
                 }
@@ -455,10 +456,10 @@ class FloatingBallService : Service(), KoinComponent {
                             savePosition(newEdge, params)
                         }
                         // A cancelled gesture (e.g. taken by the system) is never a tap.
-                        !cancelled && !swiped -> onBarTap()
+                        !cancelled && !moved -> onBarTap()
                     }
                     dragArmed = false
-                    swiped = false
+                    moved = false
                     true
                 }
 
