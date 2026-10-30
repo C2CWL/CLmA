@@ -1,6 +1,7 @@
 package com.clma.app.ui.pages.chat
 
 import com.clma.app.diagnostics.FunctionalDiagnostics
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
@@ -27,6 +28,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -464,6 +466,7 @@ private fun ChatPageContent(
     val turnFooters by vm.turnFooters.collectAsStateWithLifecycle()
     var previewMode by rememberSaveable { mutableStateOf(false) }
     val assistant = setting.getCurrentAssistant()
+    val geminiLayout = setting.displaySetting.effectiveChatLayout == ChatLayout.GEMINI
     val compressAndContinueLabel = stringResource(R.string.chat_suggestion_compress_continue)
     var showFilesSheet by remember { mutableStateOf(false) }
     val attachmentPickerActions = rememberChatAttachmentPickerActions(
@@ -545,322 +548,346 @@ private fun ChatPageContent(
             // Keyed so the usage line under replies can blur the wallpaper alone.
             modifier = Modifier.hazeSource(hazeState, key = CHAT_WALLPAPER_HAZE_KEY),
         )
-        Scaffold(
-            // The title bar is drawn inside the content instead (see the overlay below): Scaffold
-            // places its content over the top bar, and the conversation has to scroll UNDER the
-            // title and fade out behind it.
-            topBar = {},
-            bottomBar = {
-                val messageQueue by vm.messageQueue.collectAsStateWithLifecycle()
-                val voiceState by vm.voiceSession.state.collectAsStateWithLifecycle()
-                ChatInput(
-                    onStartVoiceMode = onStartVoiceMode,
-                    onInputFocusChanged = onInputFocusChanged,
-                    voiceState = voiceState,
-                    onStopVoiceMode = vm.voiceSession::stop,
-                    state = inputState,
-                    messageQueue = messageQueue,
-                    onRemoveQueuedMessage = vm::removeQueuedMessage,
-                    onBeginEditQueuedMessage = vm::beginEditQueuedMessage,
-                    onFinishEditQueuedMessage = vm::finishEditQueuedMessage,
-                    onResumeMessageQueue = vm::resumeMessageQueue,
-                    loading = loadingJob != null,
-                    settings = setting,
-                    hazeState = hazeState,
-                    completionProviders = completionProviders,
-                    onCancelClick = {
-                        vm.stopGeneration()
-                    },
-                    onSendClick = {
-                        // Settings.dummy() is still standing in for the real settings: nothing
-                        // resolves yet, so do nothing (the draft stays) rather than misreport.
-                        if (setting.init) return@ChatInput
-                        if (currentChatModel == null) {
-                            toaster.show(
-                                context.getString(R.string.chat_select_model_first),
-                                type = ToastType.Error,
-                            )
-                            // Dead-end fix: instead of only refusing, take the user to the
-                            // first-run checklist so they can see everything that still needs
-                            // setting up — and land on the "add a model" step.
-                            navController.navigate(Screen.GettingStarted)
-                            return@ChatInput
-                        }
-                        if (inputState.isEditing()) {
-                            vm.handleMessageEdit(
-                                parts = inputState.getContents(),
-                                messageId = inputState.editingMessage!!,
-                            )
-                        } else {
-                            vm.handleMessageSend(inputState.getContents())
-                            scope.launch {
-                                delay(100.milliseconds)
-                                chatListState.requestScrollToItem(conversation.currentMessages.size + 5)
+        GeminiChatDrawer(
+            enabled = geminiLayout,
+            settings = setting,
+            conversation = conversation,
+            turnFooters = turnFooters,
+            previewMode = previewMode,
+            onTogglePreview = { previewMode = !previewMode },
+            onNewChat = { navigateToChatPage(navController) },
+            onNewTemporaryChat = { navigateToChatPage(navController, isTemporary = true) },
+        ) { openChatDrawer ->
+            Scaffold(
+                // The title bar is drawn inside the content instead (see the overlay below): Scaffold
+                // places its content over the top bar, and the conversation has to scroll UNDER the
+                // title and fade out behind it.
+                topBar = {},
+                bottomBar = {
+                    val messageQueue by vm.messageQueue.collectAsStateWithLifecycle()
+                    val voiceState by vm.voiceSession.state.collectAsStateWithLifecycle()
+                    ChatInput(
+                        onStartVoiceMode = onStartVoiceMode,
+                        onInputFocusChanged = onInputFocusChanged,
+                        voiceState = voiceState,
+                        onStopVoiceMode = vm.voiceSession::stop,
+                        state = inputState,
+                        messageQueue = messageQueue,
+                        onRemoveQueuedMessage = vm::removeQueuedMessage,
+                        onBeginEditQueuedMessage = vm::beginEditQueuedMessage,
+                        onFinishEditQueuedMessage = vm::finishEditQueuedMessage,
+                        onResumeMessageQueue = vm::resumeMessageQueue,
+                        loading = loadingJob != null,
+                        settings = setting,
+                        hazeState = hazeState,
+                        completionProviders = completionProviders,
+                        onCancelClick = {
+                            vm.stopGeneration()
+                        },
+                        onSendClick = {
+                            // Settings.dummy() is still standing in for the real settings: nothing
+                            // resolves yet, so do nothing (the draft stays) rather than misreport.
+                            if (setting.init) return@ChatInput
+                            if (currentChatModel == null) {
+                                toaster.show(
+                                    context.getString(R.string.chat_select_model_first),
+                                    type = ToastType.Error,
+                                )
+                                // Dead-end fix: instead of only refusing, take the user to the
+                                // first-run checklist so they can see everything that still needs
+                                // setting up — and land on the "add a model" step.
+                                navController.navigate(Screen.GettingStarted)
+                                return@ChatInput
                             }
-                        }
-                        inputState.clearInput()
-                    },
-                    onLongSendClick = {
-                        if (inputState.isEditing()) {
-                            vm.handleMessageEdit(
-                                parts = inputState.getContents(),
-                                messageId = inputState.editingMessage!!,
-                            )
-                        } else {
-                            vm.handleMessageSend(content = inputState.getContents(), answer = false)
-                            scope.launch {
-                                chatListState.requestScrollToItem(conversation.currentMessages.size + 5)
-                            }
-                        }
-                        inputState.clearInput()
-                    },
-                    onInterjectClick = if (setting.displaySetting.enableInterject) {
-                        {
-                            // 生成中插话：并入当前回合，而不是排队等本轮结束。
-                            // 竞态下（生成刚好结束）保留草稿并提示，不静默吞掉输入。
-                            if (vm.interjectMessage(inputState.getContents())) {
-                                inputState.clearInput()
+                            if (inputState.isEditing()) {
+                                vm.handleMessageEdit(
+                                    parts = inputState.getContents(),
+                                    messageId = inputState.editingMessage!!,
+                                )
+                            } else {
+                                vm.handleMessageSend(inputState.getContents())
                                 scope.launch {
                                     delay(100.milliseconds)
                                     chatListState.requestScrollToItem(conversation.currentMessages.size + 5)
                                 }
-                            } else {
-                                toaster.show(context.getString(R.string.chat_interject_unavailable))
                             }
-                        }
-                    } else null,
-                    onUpdateAssistant = {
-                        vm.updateSettings(
-                            setting.copy(
-                                assistants = setting.assistants.map { assistant ->
-                                    if (assistant.id == it.id) {
-                                        it
-                                    } else {
-                                        assistant
-                                    }
+                            inputState.clearInput()
+                        },
+                        onLongSendClick = {
+                            if (inputState.isEditing()) {
+                                vm.handleMessageEdit(
+                                    parts = inputState.getContents(),
+                                    messageId = inputState.editingMessage!!,
+                                )
+                            } else {
+                                vm.handleMessageSend(content = inputState.getContents(), answer = false)
+                                scope.launch {
+                                    chatListState.requestScrollToItem(conversation.currentMessages.size + 5)
                                 }
+                            }
+                            inputState.clearInput()
+                        },
+                        onInterjectClick = if (setting.displaySetting.enableInterject) {
+                            {
+                                // 生成中插话：并入当前回合，而不是排队等本轮结束。
+                                // 竞态下（生成刚好结束）保留草稿并提示，不静默吞掉输入。
+                                if (vm.interjectMessage(inputState.getContents())) {
+                                    inputState.clearInput()
+                                    scope.launch {
+                                        delay(100.milliseconds)
+                                        chatListState.requestScrollToItem(conversation.currentMessages.size + 5)
+                                    }
+                                } else {
+                                    toaster.show(context.getString(R.string.chat_interject_unavailable))
+                                }
+                            }
+                        } else null,
+                        onUpdateAssistant = {
+                            vm.updateSettings(
+                                setting.copy(
+                                    assistants = setting.assistants.map { assistant ->
+                                        if (assistant.id == it.id) {
+                                            it
+                                        } else {
+                                            assistant
+                                        }
+                                    }
+                                )
                             )
-                        )
-                    },
-                    enableSearch = enableWebSearch,
-                    conversationChatModelId = conversation.chatModelId,
-                    conversationId = conversation.id,
-                    onUpdateChatModel = onUpdateChatModel,
-                    onUpdateModelReasoningLevel = { model, level ->
-                        vm.setModelReasoningLevel(model, level)
-                    },
-                    onUpdateSearchMode = onUpdateSearchMode,
-                    onUpdateSearchService = onUpdateSearchService,
-                    onMoreClick = {
-                        showFilesSheet = true
-                    },
-                )
-            },
-            containerColor = Color.Transparent,
-        ) { innerPadding ->
-            // The title bar rides above the message list, so its measured height is what the list
-            // has to stay clear of at rest; the rest of the inset becomes content padding, which is
-            // what lets messages scroll underneath the bar.
-            var topBarHeightPx by remember { mutableStateOf(0) }
-            val topBarHeight = with(LocalDensity.current) { topBarHeightPx.toDp() }
-            val layoutDirection = LocalLayoutDirection.current
-            val listInset = PaddingValues(
-                start = innerPadding.calculateLeftPadding(layoutDirection),
-                top = if (topBarHeightPx > 0) {
-                    topBarHeight
-                } else {
-                    innerPadding.calculateTopPadding() + 64.dp
+                        },
+                        enableSearch = enableWebSearch,
+                        conversationChatModelId = conversation.chatModelId,
+                        conversationId = conversation.id,
+                        onUpdateChatModel = onUpdateChatModel,
+                        onUpdateModelReasoningLevel = { model, level ->
+                            vm.setModelReasoningLevel(model, level)
+                        },
+                        onUpdateSearchMode = onUpdateSearchMode,
+                        onUpdateSearchService = onUpdateSearchService,
+                        onMoreClick = {
+                            showFilesSheet = true
+                        },
+                    )
                 },
-                end = innerPadding.calculateRightPadding(layoutDirection),
-                bottom = innerPadding.calculateBottomPadding(),
-            )
-
-            Box(modifier = Modifier.fillMaxSize()) {
-                ChatList(
-                    innerPadding = listInset,
-                    conversation = conversation,
-                    turnFooters = turnFooters,
-                    state = chatListState,
-                    loading = loadingJob != null,
-                    processingStatus = processingStatus,
-                    previewMode = previewMode,
-                    settings = setting,
-                    hazeState = hazeState,
-                    errors = errors,
-                    onDismissError = onDismissError,
-                    onClearAllErrors = onClearAllErrors,
-                    onRegenerate = {
-                        vm.regenerateAtMessage(it)
+                containerColor = Color.Transparent,
+            ) { innerPadding ->
+                // The title bar rides above the message list, so its measured height is what the list
+                // has to stay clear of at rest; the rest of the inset becomes content padding, which is
+                // what lets messages scroll underneath the bar.
+                var topBarHeightPx by remember { mutableStateOf(0) }
+                val topBarHeight = with(LocalDensity.current) { topBarHeightPx.toDp() }
+                val layoutDirection = LocalLayoutDirection.current
+                val listInset = PaddingValues(
+                    start = innerPadding.calculateLeftPadding(layoutDirection),
+                    top = if (topBarHeightPx > 0) {
+                        topBarHeight
+                    } else {
+                        innerPadding.calculateTopPadding() + 64.dp
                     },
-                    onEdit = {
-                        inputState.editingMessage = it.id
-                        inputState.setContents(it.parts)
-                    },
-                    onForkMessage = {
-                        scope.launch {
-                            val fork = vm.forkMessage(message = it)
-                            navigateToChatPage(navController, chatId = fork.id, isTemporary = fork.isTemporary)
-                        }
-                    },
-                    onDelete = {
-                        // Deletion is persisted by ChatService and must not be blocked by a
-                        // stale UI job reference (especially after an offline/disconnected turn).
-                        vm.deleteMessage(it)
-                    },
-                    onUpdateMessage = { newNode ->
-                        vm.selectMessageBranch(newNode.id, newNode.selectIndex)
-                        vm.saveConversationAsync()
-                    },
-                    onClickSuggestion = { suggestion ->
-                        if (suggestion == compressAndContinueLabel) {
-                            // Not a message: compress the history, then resume the turn.
-                            vm.compressAndContinue()
-                        } else {
-                            inputState.editingMessage = null
-                            inputState.setMessageText(suggestion)
-                        }
-                    },
-                    onTranslate = { message, locale ->
-                        vm.translateMessage(message, locale)
-                    },
-                    onClearTranslation = { message ->
-                        vm.clearTranslationField(message.id)
-                    },
-                    onJumpToMessage = { index ->
-                        previewMode = false
-                        scope.launch {
-                            chatListState.requestScrollToItem(index)
-                        }
-                    },
-                    onToolApproval = { toolCallId, approved, reason, scope, toolName ->
-                        vm.handleToolApproval(toolCallId, approved, reason, scope, toolName)
-                    },
-                    onToolAnswer = { toolCallId, answer ->
-                        vm.handleToolAnswer(toolCallId, answer)
-                    },
-                    onRerunTool = { toolCallId ->
-                        vm.rerunTool(toolCallId)
-                    },
-                    onToggleFavorite = { node ->
-                        vm.toggleMessageFavorite(node)
-                    },
-                    onConversationSystemPromptChange = { newPrompt ->
-                        vm.updateCustomSystemPrompt(newPrompt)
-                        vm.saveConversationAsync()
-                    },
+                    end = innerPadding.calculateRightPadding(layoutDirection),
+                    bottom = innerPadding.calculateBottomPadding(),
                 )
-                val darkTheme = LocalDarkMode.current
-                // Fade scrims over the list: content dissolves as it slides under the top bar
-                // (top dissolve) and down into the floating input bar (bottom dissolve), while
-                // the liquid glass controls refract whatever passes behind them.
-                val photoShown = chatPhotoShown(
-                    effectiveBackground(
+
+                Box(modifier = Modifier.fillMaxSize()) {
+                    ChatList(
+                        innerPadding = listInset,
+                        conversation = conversation,
+                        turnFooters = turnFooters,
+                        state = chatListState,
+                        loading = loadingJob != null,
+                        processingStatus = processingStatus,
+                        previewMode = previewMode,
+                        settings = setting,
+                        hazeState = hazeState,
+                        errors = errors,
+                        onDismissError = onDismissError,
+                        onClearAllErrors = onClearAllErrors,
+                        onRegenerate = {
+                            vm.regenerateAtMessage(it)
+                        },
+                        onEdit = {
+                            inputState.editingMessage = it.id
+                            inputState.setContents(it.parts)
+                        },
+                        onForkMessage = {
+                            scope.launch {
+                                val fork = vm.forkMessage(message = it)
+                                navigateToChatPage(navController, chatId = fork.id, isTemporary = fork.isTemporary)
+                            }
+                        },
+                        onDelete = {
+                            // Deletion is persisted by ChatService and must not be blocked by a
+                            // stale UI job reference (especially after an offline/disconnected turn).
+                            vm.deleteMessage(it)
+                        },
+                        onUpdateMessage = { newNode ->
+                            vm.selectMessageBranch(newNode.id, newNode.selectIndex)
+                            vm.saveConversationAsync()
+                        },
+                        onClickSuggestion = { suggestion ->
+                            if (suggestion == compressAndContinueLabel) {
+                                // Not a message: compress the history, then resume the turn.
+                                vm.compressAndContinue()
+                            } else {
+                                inputState.editingMessage = null
+                                inputState.setMessageText(suggestion)
+                            }
+                        },
+                        onTranslate = { message, locale ->
+                            vm.translateMessage(message, locale)
+                        },
+                        onClearTranslation = { message ->
+                            vm.clearTranslationField(message.id)
+                        },
+                        onJumpToMessage = { index ->
+                            previewMode = false
+                            scope.launch {
+                                chatListState.requestScrollToItem(index)
+                            }
+                        },
+                        onToolApproval = { toolCallId, approved, reason, scope, toolName ->
+                            vm.handleToolApproval(toolCallId, approved, reason, scope, toolName)
+                        },
+                        onToolAnswer = { toolCallId, answer ->
+                            vm.handleToolAnswer(toolCallId, answer)
+                        },
+                        onRerunTool = { toolCallId ->
+                            vm.rerunTool(toolCallId)
+                        },
+                        onToggleFavorite = { node ->
+                            vm.toggleMessageFavorite(node)
+                        },
+                        onConversationSystemPromptChange = { newPrompt ->
+                            vm.updateCustomSystemPrompt(newPrompt)
+                            vm.saveConversationAsync()
+                        },
+                    )
+                    val darkTheme = LocalDarkMode.current
+                    // Fade scrims over the list: content dissolves as it slides under the top bar
+                    // (top dissolve) and down into the floating input bar (bottom dissolve), while
+                    // the liquid glass controls refract whatever passes behind them.
+                    val photoShown = chatPhotoShown(
+                        effectiveBackground(
+                            darkTheme = darkTheme,
+                            background = assistant.background,
+                            darkBackground = assistant.darkBackground,
+                            lightBackground = assistant.lightBackground,
+                            mode = assistant.backgroundMode,
+                        ),
+                        assistant.useGradientBackground,
+                    )
+                    val topFade = titleBarFade(
                         darkTheme = darkTheme,
-                        background = assistant.background,
-                        darkBackground = assistant.darkBackground,
-                        lightBackground = assistant.lightBackground,
-                        mode = assistant.backgroundMode,
-                    ),
-                    assistant.useGradientBackground,
-                )
-                val topFade = titleBarFade(
-                    darkTheme = darkTheme,
-                    photoShown = photoShown,
-                )
-                val bottomFade = bottomBarFade(darkTheme = darkTheme, photoShown = photoShown)
-                val fadeColor = MaterialTheme.colorScheme.background
-                // CLEAN 与 CLAUDE 都走扁平顶栏 + 面板，不需要顶部溶解。
-                val chatLayout = setting.displaySetting.effectiveChatLayout
-                val cleanLayout = chatLayout != ChatLayout.ORIGINAL
-                // Gemini 的顶栏是纯文字（无面板），所以要像原版一样留一层顶部溶解，
-                // 否则滚动中的消息会直接撞在标题上。
-                val topDissolve = !cleanLayout || chatLayout == ChatLayout.GEMINI
+                        photoShown = photoShown,
+                    )
+                    val bottomFade = bottomBarFade(darkTheme = darkTheme, photoShown = photoShown)
+                    val fadeColor = MaterialTheme.colorScheme.background
+                    // CLEAN 与 CLAUDE 都走扁平顶栏 + 面板，不需要顶部溶解。
+                    val chatLayout = setting.displaySetting.effectiveChatLayout
+                    val cleanLayout = chatLayout != ChatLayout.ORIGINAL
+                    val topDissolve = !cleanLayout
 
-                // Top dissolve: extends below the title bar so incoming/outgoing messages
-                // fade in/out smoothly instead of clipping abruptly at the bar's bottom edge.
-                // The clean layout has a real panel up there (CleanTopBarPanel) with an edge and a
-                // fill of its own, so it needs no dissolve — and the dissolve was the white haze
-                // that made the top look wrong over a photo.
-                val topFadeExtension = 40.dp
-                val topFadeHeight = if (topBarHeightPx > 0) {
-                    topBarHeight + topFadeExtension
-                } else {
-                    innerPadding.calculateTopPadding() + 64.dp + topFadeExtension
-                }
-                if (topDissolve) {
+                    // Top dissolve: extends below the title bar so incoming/outgoing messages
+                    // fade in/out smoothly instead of clipping abruptly at the bar's bottom edge.
+                    // The clean layout has a real panel up there (CleanTopBarPanel) with an edge and a
+                    // fill of its own, so it needs no dissolve — and the dissolve was the white haze
+                    // that made the top look wrong over a photo.
+                    val topFadeExtension = 40.dp
+                    val topFadeHeight = if (topBarHeightPx > 0) {
+                        topBarHeight + topFadeExtension
+                    } else {
+                        innerPadding.calculateTopPadding() + 64.dp + topFadeExtension
+                    }
+                    if (topDissolve) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopCenter)
+                                .fillMaxWidth()
+                                .height(topFadeHeight)
+                                .background(
+                                    Brush.verticalGradient(
+                                        0f to fadeColor.copy(alpha = topFade.topAlpha),
+                                        (if (topBarHeightPx > 0) (topBarHeight / topFadeHeight).coerceIn(0.3f, 0.7f) else 0.5f) to
+                                            fadeColor.copy(alpha = topFade.midAlpha),
+                                        1f to Color.Transparent,
+                                    )
+                                )
+                        )
+                    }
+
+                    // Bottom dissolve: smooth fade-out as messages slide down toward the bottom bar.
+                    val bottomBarHeight = innerPadding.calculateBottomPadding()
+                    val bottomFadeExtension = 48.dp
+                    val bottomFadeHeight = bottomBarHeight + bottomFadeExtension
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .height(bottomFadeHeight)
+                            .background(
+                                Brush.verticalGradient(
+                                    0f to Color.Transparent,
+                                    (bottomFadeExtension / bottomFadeHeight).coerceIn(0.2f, 0.6f) to
+                                        fadeColor.copy(alpha = bottomFade.midAlpha),
+                                    1f to fadeColor.copy(alpha = bottomFade.bottomAlpha),
+                                )
+                            )
+                    )
+
                     Box(
                         modifier = Modifier
                             .align(Alignment.TopCenter)
                             .fillMaxWidth()
-                            .height(topFadeHeight)
-                            .background(
-                                Brush.verticalGradient(
-                                    0f to fadeColor.copy(alpha = topFade.topAlpha),
-                                    (if (topBarHeightPx > 0) (topBarHeight / topFadeHeight).coerceIn(0.3f, 0.7f) else 0.5f) to
-                                        fadeColor.copy(alpha = topFade.midAlpha),
-                                    1f to Color.Transparent,
+                            .onSizeChanged { topBarHeightPx = it.height },
+                    ) {
+                        if (geminiLayout) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                if (!bigScreen) {
+                                    IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                                        Icon(HugeIcons.Menu03, stringResource(R.string.menu))
+                                    }
+                                }
+                                Spacer(Modifier.weight(1f))
+                                IconButton(onClick = openChatDrawer) {
+                                    Icon(HugeIcons.LeftToRightListBullet, stringResource(R.string.accessibility_chat_options))
+                                }
+                            }
+                        } else if (chatLayout != ChatLayout.ORIGINAL) {
+                            CleanTopBarPanel(settings = setting, hazeState = hazeState) {
+                                CleanTopBar(
+                                    settings = setting,
+                                    conversation = conversation,
+                                    turnFooters = turnFooters,
+                                    drawerState = drawerState,
+                                    bigScreen = bigScreen,
+                                    previewMode = previewMode,
+                                    onClickMenu = { previewMode = !previewMode },
+                                    onNewChat = { navigateToChatPage(navController) },
+                                    onNewTemporaryChat = { navigateToChatPage(navController, isTemporary = true) },
                                 )
-                            )
-                    )
-                }
-
-                // Bottom dissolve: smooth fade-out as messages slide down toward the bottom bar.
-                val bottomBarHeight = innerPadding.calculateBottomPadding()
-                val bottomFadeExtension = 48.dp
-                val bottomFadeHeight = bottomBarHeight + bottomFadeExtension
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                        .height(bottomFadeHeight)
-                        .background(
-                            Brush.verticalGradient(
-                                0f to Color.Transparent,
-                                (bottomFadeExtension / bottomFadeHeight).coerceIn(0.2f, 0.6f) to
-                                    fadeColor.copy(alpha = bottomFade.midAlpha),
-                                1f to fadeColor.copy(alpha = bottomFade.bottomAlpha),
-                            )
+                            }
+                        } else TopBar(
+                            settings = setting,
+                            conversation = conversation,
+                            turnFooters = turnFooters,
+                            bigScreen = bigScreen,
+                            drawerState = drawerState,
+                            hazeState = hazeState,
+                            previewMode = previewMode,
+                            onNewChat = {
+                                navigateToChatPage(navController)
+                            },
+                            onNewTemporaryChat = {
+                                navigateToChatPage(navController, isTemporary = true)
+                            },
+                            onClickMenu = {
+                                previewMode = !previewMode
+                            },
                         )
-                )
-
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .fillMaxWidth()
-                        .onSizeChanged { topBarHeightPx = it.height },
-                ) {
-                    if (chatLayout != ChatLayout.ORIGINAL) {
-                        CleanTopBarPanel(settings = setting, hazeState = hazeState) {
-                            CleanTopBar(
-                                settings = setting,
-                                conversation = conversation,
-                                turnFooters = turnFooters,
-                                drawerState = drawerState,
-                                bigScreen = bigScreen,
-                                previewMode = previewMode,
-                                onClickMenu = { previewMode = !previewMode },
-                                onNewChat = { navigateToChatPage(navController) },
-                                onNewTemporaryChat = { navigateToChatPage(navController, isTemporary = true) },
-                            )
-                        }
-                    } else TopBar(
-                        settings = setting,
-                        conversation = conversation,
-                        turnFooters = turnFooters,
-                        bigScreen = bigScreen,
-                        drawerState = drawerState,
-                        hazeState = hazeState,
-                        previewMode = previewMode,
-                        onNewChat = {
-                            navigateToChatPage(navController)
-                        },
-                        onNewTemporaryChat = {
-                            navigateToChatPage(navController, isTemporary = true)
-                        },
-                        onClickMenu = {
-                            previewMode = !previewMode
-                        },
-                    )
+                    }
                 }
             }
         }
