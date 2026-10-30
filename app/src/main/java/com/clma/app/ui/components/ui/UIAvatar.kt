@@ -84,7 +84,7 @@ fun TextAvatar(
     ) {
         Text(
             text = text.take(1).uppercase(),
-            color = color,
+            color = LocalContentColor.current,
             maxLines = 1,
             overflow = TextOverflow.Clip,
             autoSize = TextAutoSize.StepBased(
@@ -176,8 +176,8 @@ fun UIAvatar(
             color = MaterialTheme.colorScheme.secondaryContainer,
         ) {
             Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.fillMaxSize()
             ) {
                 when (value) {
                     is Avatar.Image -> {
@@ -196,7 +196,9 @@ fun UIAvatar(
                                 minFontSize = 15.sp,
                                 maxFontSize = 30.sp,
                             ),
-                            lineHeight = 0.8.em
+                            lineHeight = 0.8.em,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(5.dp)
                         )
                     }
 
@@ -210,8 +212,7 @@ fun UIAvatar(
                         } else {
                             ProceduralAvatar(
                                 name = name,
-                                modifier = Modifier.fillMaxSize(),
-                                loading = loading,
+                                modifier = Modifier.fillMaxSize()
                             )
                         }
                     }
@@ -235,7 +236,7 @@ fun UIAvatar(
                     modifier = Modifier
                         .size(10.dp)
                         .padding(1.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = MaterialTheme.colorScheme.onTertiaryContainer
                 )
             }
         }
@@ -306,7 +307,9 @@ fun UIAvatar(
 
     if (showEmojiPicker) {
         ModalBottomSheet(
-            onDismissRequest = { showEmojiPicker = false },
+            onDismissRequest = {
+                showEmojiPicker = false
+            },
             sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded))
         ) {
             EmojiPicker(
@@ -391,7 +394,7 @@ fun AssistantAvatar(
             val modelId = assistant.chatModelId ?: settings.chatModelId
             settings.providers
                 .asSequence()
-                .flatMap { it.models }
+                .flatMap { it.models.asSequence() }
                 .firstOrNull { it.id == modelId }
                 ?.modelId
         } else {
@@ -440,12 +443,12 @@ private fun hslToColor(h: Float, s: Float, l: Float): Color {
     val hPrime = h / 60f
     val x = c * (1f - abs(hPrime % 2f - 1f))
     val (r1, g1, b1) = when {
-        hPrime < 1f -> Triple(x, c, x)
+        hPrime < 1f -> Triple(c, x, 0f)
         hPrime < 2f -> Triple(x, c, 0f)
         hPrime < 3f -> Triple(0f, c, x)
         hPrime < 4f -> Triple(0f, x, c)
         hPrime < 5f -> Triple(x, 0f, c)
-        else        -> Triple(c, x, 0f)
+        else        -> Triple(c, 0f, x)
     }
     val m = l - c / 2f
     return Color(r1 + m, g1 + m, b1 + m)
@@ -456,8 +459,8 @@ private fun hslToColor(h: Float, s: Float, l: Float): Color {
 private fun PreviewUIAvatar() {
     var loading by remember { mutableStateOf(true) }
     Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        modifier = Modifier.padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         UIAvatar(
             name = "John Doe",
@@ -468,7 +471,7 @@ private fun PreviewUIAvatar() {
         UIAvatar(
             name = "John Doe",
             value = Avatar.Dummy,
-            loading = loading
+            loading = loading,
         )
 
         Button(

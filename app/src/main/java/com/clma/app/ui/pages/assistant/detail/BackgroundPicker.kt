@@ -151,15 +151,15 @@ fun BackgroundPicker(
 
         if (currentValue != null) {
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = stringResource(R.string.assistant_page_background_set),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f)
                 )
                 TextButton(
                     onClick = {
@@ -315,7 +315,7 @@ fun BackgroundModeSelector(
             Select(
                 options = AssistantBackgroundMode.entries,
                 selectedOption = mode,
-                onOptionSelected = { onModeChange(it) },
+                onOptionSelected = onModeChange,
                 optionToString = {
                     stringResource(
                         when (it) {
@@ -325,6 +325,7 @@ fun BackgroundModeSelector(
                     )
                 },
                 containerColor = CustomColors.cardColorsOnSurfaceContainer.containerColor,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                 modifier = Modifier.width(150.dp),
             )
         },
