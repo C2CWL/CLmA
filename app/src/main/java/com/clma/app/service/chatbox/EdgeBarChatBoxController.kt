@@ -62,7 +62,9 @@ internal class EdgeBarChatBoxController(
     private var boundId: Uuid? = null
     private var bindJob: Job? = null
     private var openJob: Job? = null
+    private var conversationsJob: Job? = null
     private var conversation: Conversation? = null
+    private var conversations = emptyList<EdgeBarChatBoxView.ConversationOption>()
 
     val isShowing: Boolean get() = view?.isShowing == true
 
@@ -164,7 +166,6 @@ internal class EdgeBarChatBoxController(
     private fun onJobs(jobs: Map<Uuid, Job?>) {
         val now = SystemClock.elapsedRealtime()
         val active = jobs.mapNotNull { (id, job) -> job?.let { id to it } }.toMap()
-        val wasGenerating = boundId?.let { isGeneratingNow(it) } ?: false
         for ((id, entry) in generating) {
             if (id !in active) recentlyEnded[id] = now - entry.second
         }
@@ -175,7 +176,10 @@ internal class EdgeBarChatBoxController(
             if (previous == null || previous.first !== job) generating[id] = job to now
         }
         val isGenerating = boundId?.let { isGeneratingNow(it) } ?: false
-        if (wasGenerating != isGenerating) render()
+        conversations = conversations.map {
+            it.copy(working = isGeneratingNow(Uuid.parse(it.id)))
+        }
+        render()
     }
 
     private fun newestGenerating(): Uuid? = generating.maxByOrNull { it.value.second }?.key
@@ -193,6 +197,7 @@ internal class EdgeBarChatBoxController(
 
     private fun show() {
         val a = anchor()
+        if (conversationsJob == null) observeConversations()
         if (a == null) {
             unbind()
             return
@@ -201,6 +206,28 @@ internal class EdgeBarChatBoxController(
         val v = view ?: EdgeBarChatBoxView(themedContext, this).also { view = it }
         v.show(currentState(), a, isDark(), typeface)
         if (!v.isShowing) unbind()
+    }
+
+    private fun observeConversations() {
+        conversationsJob = scope.launch {
+            val assistantId = settingsStore.settingsFlow.value.assistantId
+            conversationRepo.getConversationsOfAssistant(assistantId).collect { recent ->
+                conversations = recent.take(30).map(::conversationOption)
+                if (isShowing) render()
+            }
+        }
+    }
+
+    private fun conversationOption(c: Conversation): EdgeBarChatBoxView.ConversationOption {
+        val settings = settingsStore.settingsFlow.value
+        return EdgeBarChatBoxView.ConversationOption(
+            id = c.id.toString(),
+            title = c.title.ifBlank { context.getString(R.string.chat_box_untitled) },
+            assistantName = settings.getAssistantById(c.assistantId)?.name
+                ?: context.getString(R.string.chat_box_assistant_default),
+            working = isGeneratingNow(c.id),
+            selected = c.id == boundId,
+        )
     }
 
     private fun render() {
@@ -233,6 +260,7 @@ internal class EdgeBarChatBoxController(
             title = c?.title.orEmpty(),
             mode = mode,
             items = ChatBoxItems.build(messages),
+            conversations = conversations.map { it.copy(selected = it.id == id?.toString()) },
         )
     }
 
@@ -243,6 +271,17 @@ internal class EdgeBarChatBoxController(
     }
 
     // ---- EdgeBarChatBoxView.Callbacks ----
+
+    override fun onSelectConversation() {
+        if (conversationsJob != null) return
+        observeConversations()
+    }
+
+    override fun onConversationSelected(id: String) {
+        val uuid = runCatching { Uuid.parse(id) }.getOrNull() ?: return
+        if (uuid != boundId) bind(uuid)
+        render()
+    }
 
     override fun onNewConversation() {
         bind(Uuid.random())

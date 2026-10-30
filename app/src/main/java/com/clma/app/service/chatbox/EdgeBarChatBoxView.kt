@@ -39,6 +39,7 @@ import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.PopupMenu
 import android.widget.ProgressBar
 import android.widget.ScrollView
 import android.widget.TextView
@@ -77,6 +78,8 @@ internal class EdgeBarChatBoxView(
     private val callbacks: Callbacks,
 ) {
     interface Callbacks {
+        fun onSelectConversation()
+        fun onConversationSelected(id: String)
         fun onNewConversation()
         fun onOpen()
         fun onStop()
@@ -100,10 +103,19 @@ internal class EdgeBarChatBoxView(
         data class Done(val elapsedMs: Long) : Mode
     }
 
+    data class ConversationOption(
+        val id: String,
+        val title: String,
+        val assistantName: String,
+        val working: Boolean,
+        val selected: Boolean,
+    )
+
     data class State(
         val title: String,
         val mode: Mode,
         val items: List<ChatBoxItem>,
+        val conversations: List<ConversationOption> = emptyList(),
     )
 
     /** Where the bar is, in screen pixels (its window bounds), and the screen it is on. */
@@ -145,6 +157,7 @@ internal class EdgeBarChatBoxView(
     private lateinit var scroll: ScrollView
     private lateinit var list: LinearLayout
     private lateinit var input: EditText
+    private var conversationMenu: PopupMenu? = null
 
     private var windowBackground: Drawable? = null
 
@@ -276,6 +289,8 @@ internal class EdgeBarChatBoxView(
 
     private fun onDismissInternal() {
         if (dialog == null) return
+        conversationMenu?.dismiss()
+        conversationMenu = null
         handler.removeCallbacks(ticker)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) unregisterBlurListener()
         dialog = null
@@ -287,6 +302,8 @@ internal class EdgeBarChatBoxView(
 
     private fun rebuild() {
         val d = dialog ?: return
+        conversationMenu?.dismiss()
+        conversationMenu = null
         val typed = input.text?.toString().orEmpty()
         palette = ChatBoxPalette.of(dark, glass)
         buildContent()
@@ -308,6 +325,9 @@ internal class EdgeBarChatBoxView(
             typeface = Typeface.DEFAULT_BOLD
             setSingleLine(true)
             ellipsize = TextUtils.TruncateAt.END
+            setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.chat_box_arrow_down, 0)
+            compoundDrawablePadding = dp(4)
+            compoundDrawableTintList = ColorStateList.valueOf(p.subtitle)
         }
         subtitleView = TextView(context).apply {
             setTextColor(p.subtitle)
@@ -324,17 +344,22 @@ internal class EdgeBarChatBoxView(
         val collapseButton = iconButton(collapseKind(), R.string.chat_box_collapse, filled = false) {
             dismiss()
         }
+        val conversationButton = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            isClickable = true
+            isFocusable = true
+            contentDescription = context.getString(R.string.chat_box_select_conversation)
+            setOnClickListener { anchorView -> showConversationMenu(anchorView) }
+            addView(titleView)
+            addView(subtitleView, LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
+            ).apply { topMargin = dp(1) })
+        }
         val header = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             addView(appIconView(), LinearLayout.LayoutParams(dp(32), dp(32)))
-            addView(LinearLayout(context).apply {
-                orientation = LinearLayout.VERTICAL
-                addView(titleView)
-                addView(subtitleView, LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
-                ).apply { topMargin = dp(1) })
-            }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+            addView(conversationButton, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
                 leftMargin = dp(10)
                 rightMargin = dp(6)
             })
@@ -456,6 +481,32 @@ internal class EdgeBarChatBoxView(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT,
             ).apply { topMargin = dp(8) })
         }
+    }
+
+    private fun showConversationMenu(anchorView: View) {
+        val conversations = state?.conversations.orEmpty()
+        if (conversations.isEmpty()) {
+            callbacks.onSelectConversation()
+            return
+        }
+        val popup = PopupMenu(context, anchorView)
+        conversations.forEachIndexed { index, conversation ->
+            val title = conversation.title + if (conversation.working) {
+                " · ${context.getString(R.string.chat_box_working_short)}"
+            } else {
+                ""
+            }
+            popup.menu.add(0, index, index, "$title\n${conversation.assistantName}")
+                .isCheckable = conversation.selected
+        }
+        popup.menu.setGroupCheckable(0, true, true)
+        popup.setOnMenuItemClickListener { item ->
+            conversations.getOrNull(item.itemId)?.let { callbacks.onConversationSelected(it.id) }
+            true
+        }
+        popup.setOnDismissListener { conversationMenu = null }
+        conversationMenu = popup
+        popup.show()
     }
 
     private fun render(s: State) {
