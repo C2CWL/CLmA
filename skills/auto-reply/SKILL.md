@@ -10,7 +10,7 @@ allowed-tools: list_recent_notifications list_active_notifications launch_app re
 
 ## 触发时机
 
-用户提出类似以下要求时使用：“帮我回复一下 <人名>”、“发微信告诉 <人名> 我在路上了”、“起草一条回复上一条消息”、“有未读直接回复”；或者你在 `list_recent_notifications` 中检测到来自即时通讯软件（微信 / Telegram / WhatsApp / QQ / 钉钉 / 飞书 / 邮件等）的未读消息，且用户已授权你自主处理回复。
+用户提出类似以下要求时使用：“帮我回复一下 <人名>”、“发微信告诉 <人名> 我在路上了”、“起草一条回复上一条消息”、“有未读直接回复”；或者你在 `list_recent_notifications` 中检测到来自即时通讯软件（微信 / WhatsApp / QQ / 钉钉 / 飞书 / 邮件等）的未读消息，且用户已授权你自主处理回复。
 
 注意：若用户仅要求向某位新联系人发起全新会话，请勿使用此技能——应根据具体应用调用对应工具或打开 App。
 

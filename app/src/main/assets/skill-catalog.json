@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-10-27",
+  "updated_at": "2026-10-30",
   "skills": [
     {
       "name": "auto-reply",
@@ -27,7 +27,7 @@
     {
       "name": "smart-forward",
       "title": "智能转发",
-      "description": "捕获特定应用通知，自动总结要点并转发至另一联系人（如 Telegram）。",
+      "description": "捕获特定应用通知，自动总结要点并转发至另一联系人。",
       "category": "automation",
       "license": "Apache-2.0",
       "size_kb": 4,

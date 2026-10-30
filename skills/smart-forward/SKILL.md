@@ -1,7 +1,7 @@
 ---
 name: smart-forward
-description: 捕获来自某个应用的通知内容，并将其关键信息转发给另一个应用中的联系人（通常为 Telegram），附带一句话行动摘要。适用于分享快递单号、日程提醒、重要预警或特定动态。
-allowed-tools: list_recent_notifications notification_action_click launch_app read_window_tree find_node click_node set_text take_screenshot telegram_send_message global_action
+description: 捕获来自某个应用的通知内容，并将其关键信息转发给另一个应用中的联系人，附带一句话行动摘要。适用于分享快递单号、日程提醒、重要预警或特定动态。
+allowed-tools: list_recent_notifications notification_action_click launch_app read_window_tree find_node click_node set_text take_screenshot global_action
 ---
 
 # 智能转发 (Smart-forward)
@@ -24,8 +24,7 @@ allowed-tools: list_recent_notifications notification_action_click launch_app re
    - 邮件：“<发件人> 发送了主题为 <标题> 的邮件——<一句话重点>。”
    - 验证码：**严禁自动转发**——参见禁忌规则。
 4. **发送至目标联系人**：
-   - 若发送至 Telegram：`telegram_send_message(chat_id = <白名单中的聊天ID>, text = <摘要 + 正文>)`。
-   - 若发送至短信或其他通讯软件：打开对应 App，通过 `find_node` 定位联系人会话，通过 `set_text` 粘贴并点击发送。
+   - 打开短信或目标通讯软件：打开对应 App，通过 `find_node` 定位联系人会话，通过 `set_text` 粘贴并点击发送。
 5. **告知用户**：回复“已转发给 <联系人>”并展示单行预览。
 6. **返回桌面**：调用 `global_action(action = "home")`。
 
@@ -34,7 +33,6 @@ allowed-tools: list_recent_notifications notification_action_click launch_app re
 - `list_recent_notifications`, `notification_action_click`
 - `launch_app`, `read_window_tree`, `find_node`, `click_node`, `set_text`
 - `take_screenshot` (排查调试)
-- `telegram_send_message`
 - `global_action`
 
 ## 常见异常与注意事项

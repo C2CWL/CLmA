@@ -54,7 +54,7 @@
   model_present, model_path, ready_to_transcribe, missing_steps[], install_commands}`.
   Free/no approval. Call this BEFORE `transcribe_audio_file`.
 - **`transcribe_audio_file(path, language?)`** — transcribe speech in an audio file to text
-  using whisper.cpp (via Termux). Accepts OGG/Opus (Telegram voice notes), WAV, MP3, M4A,
+  using whisper.cpp (via Termux). Accepts OGG/Opus, WAV, MP3, M4A,
   FLAC. Returns `{success, text, language, audio_duration_sec, transcription_time_sec}`.
   Requires Termux + whisper-cli + a model file.
   **NO HALLUCINATION RULE: `play_media` plays audio to the device speaker — it does NOT
@@ -153,15 +153,14 @@ Always read the screen *before* gesturing. The right pattern is `read_window_tre
 
 ## Notification awareness
 
-When `notification_listener` is enabled, the bound listener service maintains a 100-entry ring buffer of recent notifications and (optionally) auto-forwards whitelisted packages to the user's default Telegram chat.
+When `notification_listener` is enabled, the bound listener service maintains a 100-entry ring buffer of recent notifications.
 
 - **`list_recent_notifications`** — historical lookup. Filter by `package_name`, `since_unix_ms`, or `limit` (default 50). Returns the ring buffer; entries persist until evicted by the 100-cap or until the process dies. Use this when the user asks "what was that ping a minute ago".
 - **`list_active_notifications`** — only the notifications still being shown by their owning apps right now. Use this when you intend to act on something the user can see in the shade (dismiss it, click an action).
 - **`dismiss_notification`** — `cancelNotification(key)`. Only works on currently active notifications; ring-buffer keys for already-dismissed notifications return `not_found`.
 - **`notification_action_click`** — fire one of a notification's action buttons. Pass `action_index` (0-based) OR `action_title` (case-insensitive). If the action requires text input (e.g. WhatsApp Reply with RemoteInput), returns `requires_input` — fall back to `launch_app` + `set_text` + `click_node` from screen automation.
-- **`notification_status`** — service bound, ring buffer size, whitelist size, default Telegram chat configured.
+- **`notification_status`** — service bound and ring buffer size.
 
-The auto-route forwarder is fire-and-forget — it formats the notification as `🔔 [App] Title: Text` and calls Telegram directly without an LLM round-trip. Empty whitelist by default; the user opts apps in via Settings → Notifications.
 
 ## Detecting Termux addons
 
@@ -202,14 +201,6 @@ Termux:API, Termux:Boot, etc. are real installed packages but have **no launcher
 - `schedule_job`, `list_jobs`, `delete_job`, `pause_job`, `resume_job`
 - `trigger_job_now(id)` — fire immediately, doesn't disturb the schedule
 - `get_job_history(id, limit?)` — last N runs newest-first, with outcomes
-
-## Telegram bot (LLM-side)
-
-- **`telegram_set_token`** / **`telegram_status`** / **`telegram_enable`** / **`telegram_disable`** — bot lifecycle.
-- **`telegram_add_whitelist`** / **`telegram_remove_whitelist`** — restrict who the bot replies to.
-- **`telegram_set_default_chat`** / **`telegram_set_assistant`** — defaults for proactive sends.
-- **`telegram_send_message`** / **`telegram_send_photo`** / **`telegram_send_document`** — outbound to a specific chat_id.
-- **`telegram_set_commands`** / **`telegram_get_commands`** / **`telegram_delete_commands`** — control the `/`-prefix menu Telegram users see when typing.
 
 ## Universal envelope shapes
 
