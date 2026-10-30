@@ -31,6 +31,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -62,6 +63,9 @@ import com.clma.app.data.model.Avatar
 import com.clma.app.ui.components.ai.useCropLauncher
 import com.clma.app.ui.hooks.rememberAvatarShape
 import org.koin.compose.koinInject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 
 @Composable
@@ -80,7 +84,7 @@ fun TextAvatar(
     ) {
         Text(
             text = text.take(1).uppercase(),
-            color = LocalContentColor.current,
+            color = color,
             maxLines = 1,
             overflow = TextOverflow.Clip,
             autoSize = TextAutoSize.StepBased(
@@ -109,6 +113,7 @@ fun UIAvatar(
 ) {
     val filesManager: FilesManager = koinInject()
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var showPickOption by remember { mutableStateOf(false) }
     var showEmojiPicker by remember { mutableStateOf(false) }
     var showUrlInput by remember { mutableStateOf(false) }
@@ -116,9 +121,11 @@ fun UIAvatar(
     var preCropTempFile by remember { mutableStateOf<File?>(null) }
 
     fun saveAvatarImage(uri: Uri) {
-        val localUris = filesManager.createChatFilesByContents(listOf(uri))
-        localUris.firstOrNull()?.let { localUri ->
-            onUpdate?.invoke(Avatar.Image(localUri.toString()))
+        scope.launch {
+            val localUris = filesManager.createChatFilesByContents(listOf(uri))
+            localUris.firstOrNull()?.let { localUri ->
+                onUpdate?.invoke(Avatar.Image(localUri.toString()))
+            }
         }
     }
 
@@ -138,17 +145,21 @@ fun UIAvatar(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let { selectedUri ->
-            val tempFile = File(context.appTempFolder, "avatar_pick_${System.currentTimeMillis()}.jpg")
-            runCatching {
-                context.contentResolver.openInputStream(selectedUri)?.use { input ->
-                    tempFile.outputStream().use { output -> input.copyTo(output) }
-                } ?: error("Failed to open input stream for $selectedUri")
-                preCropTempFile?.delete()
-                preCropTempFile = tempFile
-                launchImageCrop(tempFile.toUri())
-            }.onFailure {
-                tempFile.delete()
-                launchImageCrop(selectedUri)
+            scope.launch {
+                val tempFile = File(context.appTempFolder, "avatar_pick_${System.currentTimeMillis()}.jpg")
+                runCatching {
+                    withContext(Dispatchers.IO) {
+                        context.contentResolver.openInputStream(selectedUri)?.use { input ->
+                            tempFile.outputStream().use { output -> input.copyTo(output) }
+                        } ?: error("Failed to open input stream for $selectedUri")
+                    }
+                    preCropTempFile?.delete()
+                    preCropTempFile = tempFile
+                    launchImageCrop(tempFile.toUri())
+                }.onFailure {
+                    tempFile.delete()
+                    launchImageCrop(selectedUri)
+                }
             }
         }
     }
@@ -165,8 +176,8 @@ fun UIAvatar(
             color = MaterialTheme.colorScheme.secondaryContainer,
         ) {
             Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
             ) {
                 when (value) {
                     is Avatar.Image -> {
@@ -185,9 +196,7 @@ fun UIAvatar(
                                 minFontSize = 15.sp,
                                 maxFontSize = 30.sp,
                             ),
-                            lineHeight = 0.8.em,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(5.dp)
+                            lineHeight = 0.8.em
                         )
                     }
 
@@ -201,7 +210,8 @@ fun UIAvatar(
                         } else {
                             ProceduralAvatar(
                                 name = name,
-                                modifier = Modifier.fillMaxSize()
+                                modifier = Modifier.fillMaxSize(),
+                                loading = loading,
                             )
                         }
                     }
@@ -225,7 +235,7 @@ fun UIAvatar(
                     modifier = Modifier
                         .size(10.dp)
                         .padding(1.dp),
-                    tint = MaterialTheme.colorScheme.onTertiaryContainer
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -296,9 +306,7 @@ fun UIAvatar(
 
     if (showEmojiPicker) {
         ModalBottomSheet(
-            onDismissRequest = {
-                showEmojiPicker = false
-            },
+            onDismissRequest = { showEmojiPicker = false },
             sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded))
         ) {
             EmojiPicker(
@@ -383,7 +391,7 @@ fun AssistantAvatar(
             val modelId = assistant.chatModelId ?: settings.chatModelId
             settings.providers
                 .asSequence()
-                .flatMap { it.models.asSequence() }
+                .flatMap { it.models }
                 .firstOrNull { it.id == modelId }
                 ?.modelId
         } else {
@@ -432,12 +440,12 @@ private fun hslToColor(h: Float, s: Float, l: Float): Color {
     val hPrime = h / 60f
     val x = c * (1f - abs(hPrime % 2f - 1f))
     val (r1, g1, b1) = when {
-        hPrime < 1f -> Triple(c, x, 0f)
+        hPrime < 1f -> Triple(x, c, x)
         hPrime < 2f -> Triple(x, c, 0f)
         hPrime < 3f -> Triple(0f, c, x)
         hPrime < 4f -> Triple(0f, x, c)
         hPrime < 5f -> Triple(x, 0f, c)
-        else        -> Triple(c, 0f, x)
+        else        -> Triple(c, x, 0f)
     }
     val m = l - c / 2f
     return Color(r1 + m, g1 + m, b1 + m)
@@ -448,8 +456,8 @@ private fun hslToColor(h: Float, s: Float, l: Float): Color {
 private fun PreviewUIAvatar() {
     var loading by remember { mutableStateOf(true) }
     Column(
-        modifier = Modifier.padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         UIAvatar(
             name = "John Doe",
@@ -460,7 +468,7 @@ private fun PreviewUIAvatar() {
         UIAvatar(
             name = "John Doe",
             value = Avatar.Dummy,
-            loading = loading,
+            loading = loading
         )
 
         Button(

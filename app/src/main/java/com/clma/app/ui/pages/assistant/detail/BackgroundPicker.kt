@@ -25,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,6 +40,7 @@ import com.clma.app.ui.components.ui.FormItem
 import com.clma.app.ui.components.ui.Select
 import com.clma.app.ui.theme.CustomColors
 import org.koin.compose.koinInject
+import kotlinx.coroutines.launch
 
 /** Which wallpaper slot the user is editing. */
 enum class BackgroundSlot {
@@ -66,6 +68,7 @@ fun BackgroundPicker(
     onUpdate: (slot: BackgroundSlot, value: String?) -> Unit
 ) {
     val filesManager: FilesManager = koinInject()
+    val scope = rememberCoroutineScope()
     var selectedSlot by remember { mutableStateOf(BackgroundSlot.COMMON) }
     var showPickOption by remember { mutableStateOf(false) }
     var showUrlInput by remember { mutableStateOf(false) }
@@ -74,10 +77,13 @@ fun BackgroundPicker(
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        uri?.let {
-            val localUris = filesManager.createChatFilesByContents(listOf(it))
-            localUris.firstOrNull()?.let { localUri ->
-                onUpdate(selectedSlot, localUri.toString())
+        uri?.let { selectedUri ->
+            val slot = selectedSlot
+            scope.launch {
+                val localUris = filesManager.createChatFilesByContents(listOf(selectedUri))
+                localUris.firstOrNull()?.let { localUri ->
+                    onUpdate(slot, localUri.toString())
+                }
             }
         }
     }
@@ -145,15 +151,15 @@ fun BackgroundPicker(
 
         if (currentValue != null) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(
                     text = stringResource(R.string.assistant_page_background_set),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 )
                 TextButton(
                     onClick = {
@@ -309,7 +315,7 @@ fun BackgroundModeSelector(
             Select(
                 options = AssistantBackgroundMode.entries,
                 selectedOption = mode,
-                onOptionSelected = onModeChange,
+                onOptionSelected = { onModeChange(it) },
                 optionToString = {
                     stringResource(
                         when (it) {
@@ -319,7 +325,6 @@ fun BackgroundModeSelector(
                     )
                 },
                 containerColor = CustomColors.cardColorsOnSurfaceContainer.containerColor,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                 modifier = Modifier.width(150.dp),
             )
         },
