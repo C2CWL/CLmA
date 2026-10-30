@@ -2807,6 +2807,7 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="setting_sub_agents_page_token_budget">编排 token 上限</string>
   <string name="setting_sub_agents_page_token_budget_hint">该专家编排树的 token 上限。留空则继承父助手的预算；两者都为空表示不限。</string>
   <string name="chat_message_turn_calls">%1$d 次调用</string>
+  <string name="chat_message_turn_total_tokens">总计 %1$s tokens</string>
   <string name="chat_message_turn_pending">统计中…</string>
   <string name="chat_message_turn_elapsed">本回合用时</string>
   <string name="chat_message_turn_speed">生成速度</string>

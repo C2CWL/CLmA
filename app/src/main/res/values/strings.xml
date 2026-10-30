@@ -3151,6 +3151,7 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="setting_sub_agents_page_token_budget">Orchestration token budget</string>
   <string name="setting_sub_agents_page_token_budget_hint">Ceiling for this expert\'s dispatch tree. Leave empty to inherit the parent assistant\'s budget; unlimited when both are empty.</string>
   <string name="chat_message_turn_calls">%1$d calls</string>
+  <string name="chat_message_turn_total_tokens">Total %1$s tokens</string>
   <string name="chat_message_turn_pending">counting…</string>
   <string name="chat_message_turn_elapsed">Turn elapsed</string>
   <string name="chat_message_turn_speed">Generation speed</string>

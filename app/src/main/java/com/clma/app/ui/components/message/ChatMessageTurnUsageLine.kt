@@ -70,6 +70,12 @@ internal fun TurnUsageLine(
                 Text(text = stringResource(R.string.chat_message_turn_pending))
             } else {
                 Text(text = stringResource(R.string.chat_message_turn_calls, usage.callCount))
+                Text(
+                    text = stringResource(
+                        R.string.chat_message_turn_total_tokens,
+                        (usage.inputTokens + usage.outputTokens).tokensText(),
+                    ),
+                )
                 StatsItem(
                     icon = {
                         Icon(
