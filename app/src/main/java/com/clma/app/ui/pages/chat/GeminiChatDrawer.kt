@@ -97,7 +97,7 @@ internal fun GeminiChatDrawer(
                             val change = event.changes.firstOrNull() ?: break
                             drag += change.positionChange().x
                         } while (change.pressed)
-                        if (down.position.x < size.width * 0.28f && drag > swipeThreshold) {
+                        if (down.position.x > size.width * 0.72f && drag < -swipeThreshold) {
                             scope.launch { state.open() }
                         }
                     }
