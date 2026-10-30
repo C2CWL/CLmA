@@ -541,6 +541,7 @@ private fun ChatPageContent(
     ) {
         AssistantBackground(
             setting = setting,
+            emptyConversation = conversation.messageNodes.isEmpty(),
             // Keyed so the usage line under replies can blur the wallpaper alone.
             modifier = Modifier.hazeSource(hazeState, key = CHAT_WALLPAPER_HAZE_KEY),
         )

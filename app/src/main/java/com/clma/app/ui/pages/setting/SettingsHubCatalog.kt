@@ -167,50 +167,37 @@ val settingsHubSections: List<SettingsHubSectionDef> = listOf(
         items = listOf(
             SettingsHubItemId.PROVIDERS,
             SettingsHubItemId.MODELS,
-            SettingsHubItemId.ASSISTANT,
-            SettingsHubItemId.PROMPTS,
             SettingsHubItemId.SEARCH,
             SettingsHubItemId.SPEECH,
         ),
     ),
     SettingsHubSectionDef(
-        id = SettingsHubSectionId.AGENT,
-        titleRes = R.string.setting_hub_group_agent,
+        id = SettingsHubSectionId.CHAT,
+        titleRes = R.string.setting_hub_group_chat,
         items = listOf(
-            SettingsHubItemId.WORKSPACES,
-            SettingsHubItemId.SKILLS,
-            SettingsHubItemId.MCP,
-            SettingsHubItemId.SUB_AGENTS,
-            SettingsHubItemId.TOOL_APPROVALS,
+            SettingsHubItemId.ASSISTANT,
+            SettingsHubItemId.PROMPTS,
             SettingsHubItemId.RUNTIME,
+            SettingsHubItemId.QUICK_MESSAGES,
         ),
     ),
     SettingsHubSectionDef(
         id = SettingsHubSectionId.CONNECTIONS,
         titleRes = R.string.setting_hub_group_connections,
         items = listOf(
+            SettingsHubItemId.WORKSPACES,
+            SettingsHubItemId.SKILLS,
+            SettingsHubItemId.MCP,
+            SettingsHubItemId.SUB_AGENTS,
+            SettingsHubItemId.TOOL_APPROVALS,
             SettingsHubItemId.NETWORK,
             SettingsHubItemId.TERMUX,
             SettingsHubItemId.SSH,
             SettingsHubItemId.BROWSER,
-            SettingsHubItemId.SECRETS,
-        ),
-    ),
-    SettingsHubSectionDef(
-        id = SettingsHubSectionId.DEVICE,
-        titleRes = R.string.setting_hub_group_device,
-        items = listOf(
             SettingsHubItemId.PERMISSIONS,
             SettingsHubItemId.ACCESSIBILITY,
             SettingsHubItemId.SHIZUKU,
             SettingsHubItemId.NOTIF_ACCESS,
-            SettingsHubItemId.FLOATING_BALL,
-        ),
-    ),
-    SettingsHubSectionDef(
-        id = SettingsHubSectionId.AUTOMATION,
-        titleRes = R.string.setting_hub_group_automation,
-        items = listOf(
             SettingsHubItemId.WORKFLOWS,
             SettingsHubItemId.SCHEDULED,
             SettingsHubItemId.TELEGRAM,
@@ -225,16 +212,10 @@ val settingsHubSections: List<SettingsHubSectionDef> = listOf(
             SettingsHubItemId.COLOR_MODE,
             SettingsHubItemId.FONTS,
             SettingsHubItemId.CHAT_LAYOUT,
-        ),
-    ),
-    SettingsHubSectionDef(
-        id = SettingsHubSectionId.CHAT,
-        titleRes = R.string.setting_hub_group_chat,
-        items = listOf(
             SettingsHubItemId.MESSAGE_DISPLAY,
             SettingsHubItemId.INPUT,
-            SettingsHubItemId.QUICK_MESSAGES,
             SettingsHubItemId.NOTIF_PREFS,
+            SettingsHubItemId.FLOATING_BALL,
         ),
     ),
     SettingsHubSectionDef(
@@ -243,7 +224,7 @@ val settingsHubSections: List<SettingsHubSectionDef> = listOf(
         items = listOf(
             SettingsHubItemId.BACKUP,
             SettingsHubItemId.FILES,
-            SettingsHubItemId.LOGS,
+            SettingsHubItemId.SECRETS,
         ),
     ),
     SettingsHubSectionDef(
@@ -251,6 +232,7 @@ val settingsHubSections: List<SettingsHubSectionDef> = listOf(
         titleRes = R.string.setting_hub_group_about,
         items = listOf(
             SettingsHubItemId.DOCTOR,
+            SettingsHubItemId.LOGS,
             SettingsHubItemId.ABOUT,
             SettingsHubItemId.SHARE,
         ),
