@@ -1055,6 +1055,20 @@ class SettingsStore(
         }
     }
 
+    suspend fun updateModelServiceTier(modelId: Uuid, serviceTier: String?) {
+        update { settings ->
+            settings.copy(
+                providers = settings.providers.map { provider ->
+                    provider.copyProvider(
+                        models = provider.models.map { model ->
+                            if (model.id == modelId) model.copy(serviceTier = serviceTier) else model
+                        }
+                    )
+                }
+            )
+        }
+    }
+
     suspend fun updateAssistantWebSearch(assistantId: Uuid, enabled: Boolean) {
         update { settings ->
             settings.copy(

@@ -740,6 +740,11 @@
   <string name="reasoning_off">Off</string>
   <string name="reasoning_off_desc">Turn off reasoning functionality, the model will directly answer questions.</string>
   <string name="reasoning_picker_hint">Not all models support depth adjustment. Refer to the model and provider documentation.</string>
+  <string name="codex_speed_title">Codex speed</string>
+  <string name="codex_speed_standard">Standard</string>
+  <string name="codex_speed_fast">Fast</string>
+  <string name="codex_speed_standard_hint">Standard speed and usage.</string>
+  <string name="codex_speed_fast_hint">Faster, usually about 2.5× usage. The multiplier may change with Codex policy; refer to the official documentation.</string>
   <string name="reasoning_picker_title">Adjust Model Thinking Depth</string>
   <string name="reasoning_xhigh">Research</string>
   <string name="regenerate">Regenerate</string>

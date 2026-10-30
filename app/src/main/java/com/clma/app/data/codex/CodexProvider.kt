@@ -176,6 +176,7 @@ class CodexProvider(
                 if (stream) add(CustomHeader("Accept", "text/event-stream"))
             },
             customBody = params.customBody + listOfNotNull(
+                params.model.serviceTier?.let { tier -> CustomBody("service_tier", JsonPrimitive(tier)) },
                 reasoningEffort?.let { effort ->
                     CustomBody(
                         key = "reasoning",
