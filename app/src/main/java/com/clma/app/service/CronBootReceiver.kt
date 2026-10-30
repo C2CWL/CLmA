@@ -31,7 +31,6 @@ class CronBootReceiver : BroadcastReceiver(), KoinComponent {
     private val scheduler: CronJobScheduler by inject()
     private val repo: ScheduledJobRepository by inject()
     private val runRepo: ScheduledJobRunRepository by inject()
-    private val telegramPrefs: com.clma.app.data.telegram.TelegramBotPreferences by inject()
     private val settingsStore: SettingsStore by inject()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -45,15 +44,6 @@ class CronBootReceiver : BroadcastReceiver(), KoinComponent {
             try {
                 sweepStrandedRunRows(context)
                 applyCatchupAndSchedule(context)
-
-                // Re-start Telegram bot if it was enabled (existing behavior) AND
-                // re-arm the periodic health probe. Both are idempotent — the probe uses
-                // ExistingPeriodicWorkPolicy.UPDATE so re-arming on every boot is harmless.
-                val cfg = try { telegramPrefs.current() } catch (_: Throwable) { null }
-                if (cfg != null && cfg.isUsable) {
-                    com.clma.app.service.TelegramBotService.start(context)
-                    com.clma.app.service.TelegramBotHealthWorker.schedule(context)
-                }
 
                 // Phase 12 — fire any boot-completed workflows. The dispatcher reads the
                 // boot trigger family which has been bound to current matching workflows

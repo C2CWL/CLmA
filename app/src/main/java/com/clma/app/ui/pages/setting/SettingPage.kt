@@ -95,7 +95,6 @@ import me.rerere.hugeicons.stroke.ServerStack01
 import me.rerere.hugeicons.stroke.Share04
 import me.rerere.hugeicons.stroke.Shield01
 import me.rerere.hugeicons.stroke.SmartPhone01
-import me.rerere.hugeicons.stroke.Telegram
 import me.rerere.hugeicons.stroke.TextFont
 import me.rerere.hugeicons.stroke.Tick01
 import me.rerere.hugeicons.stroke.Timer01
@@ -530,7 +529,6 @@ private fun hubItemSummary(id: SettingsHubItemId, settings: Settings, status: Hu
         SettingsHubItemId.SHIZUKU,
         SettingsHubItemId.WORKFLOWS,
         SettingsHubItemId.SCHEDULED,
-        SettingsHubItemId.TELEGRAM,
         SettingsHubItemId.MESSAGE_DISPLAY,
         SettingsHubItemId.DOCTOR,
         SettingsHubItemId.SHARE -> null
@@ -562,7 +560,6 @@ private fun hubItemIcon(id: SettingsHubItemId): ImageVector = when (id) {
     SettingsHubItemId.FLOATING_BALL -> HugeIcons.Message01
     SettingsHubItemId.WORKFLOWS -> HugeIcons.Connect
     SettingsHubItemId.SCHEDULED -> HugeIcons.Clock02
-    SettingsHubItemId.TELEGRAM -> HugeIcons.Telegram
     SettingsHubItemId.WEB -> HugeIcons.ServerStack01
     SettingsHubItemId.VISUAL_STYLE -> HugeIcons.Palette
     SettingsHubItemId.COLOR_MODE -> HugeIcons.Moon02

@@ -25,8 +25,6 @@ import com.clma.app.data.files.SkillManager
 import com.clma.app.data.repository.ConversationRepository
 import com.clma.app.data.repository.ScheduledJobRepository
 import com.clma.app.data.repository.ScheduledJobRunRepository
-import com.clma.app.data.telegram.TelegramBotPreferences
-import com.clma.app.service.TelegramBotService
 import com.clma.app.shizuku.ShizukuManager
 import com.clma.app.shizuku.ShizukuStatus
 import com.clma.app.subagent.SubAgentModelResolver
@@ -52,7 +50,6 @@ import com.clma.app.R
 private object Capability {
     val Notifications: Set<LocalToolOption> = setOf(
         LocalToolOption.Notification,        // post_notification tool
-        LocalToolOption.TelegramBot,         // FGS notification
         LocalToolOption.CronJobs,            // CronJobWorker FGS notification
         LocalToolOption.Workflows,           // WorkflowTimeCronWorker FGS notification
     )
@@ -74,7 +71,6 @@ private object Capability {
         LocalToolOption.Ssh,                 // ssh_exec calls into termux ssh
     )
     val BatteryWhitelist: Set<LocalToolOption> = setOf(
-        LocalToolOption.TelegramBot,         // long-poll loop
         LocalToolOption.CronJobs,            // worker fires
         LocalToolOption.Workflows,           // trigger receivers + cron worker
     )
@@ -125,7 +121,6 @@ private fun LocalToolOption.shortName(ctx: Context): String = when (this) {
     LocalToolOption.Termux -> ctx.getString(R.string.tool_name_termux)
     LocalToolOption.SpeechToText -> ctx.getString(R.string.tool_name_stt)
     LocalToolOption.Ssh -> ctx.getString(R.string.tool_name_ssh)
-    LocalToolOption.TelegramBot -> ctx.getString(R.string.tool_name_tg_bot)
     LocalToolOption.CronJobs -> ctx.getString(R.string.tool_name_cron)
     LocalToolOption.Workflows -> ctx.getString(R.string.tool_name_workflows)
     LocalToolOption.Notification -> ctx.getString(R.string.tool_name_notification)
@@ -157,7 +152,6 @@ private fun LocalToolOption.shortName(ctx: Context): String = when (this) {
 class DoctorChecks(
     private val context: Context,
     private val settingsStore: SettingsStore,
-    private val telegramPrefs: TelegramBotPreferences,
     private val workflowRepository: WorkflowRepository,
     private val scheduledJobRepository: ScheduledJobRepository,
     private val scheduledJobRunRepository: ScheduledJobRunRepository,
@@ -495,77 +489,6 @@ class DoctorChecks(
     // ----- Background services ---------------------------------------------------------
 
     private suspend fun serviceChecks(enabled: Set<LocalToolOption>): List<DoctorCheck> = buildList {
-        val tg = telegramPrefs.current()
-        // Telegram bot: token, enabled flag, FGS state should agree.
-        if (tg.enabled) {
-            add(
-                DoctorCheck(
-                    id = "service.telegram_token",
-                    category = DoctorCategory.Services,
-                    label = context.getString(R.string.doctor_check_tg_token),
-                    // Don't render any portion of the token — Telegram bot tokens are
-                    // formatted "<bot_id>:<secret>" and even the first 6 chars reveal the
-                    // bot id, which an attacker could use to enumerate bot endpoints.
-                    detail = if (tg.token.isNotBlank()) context.getString(R.string.doctor_detail_tg_token_ok, tg.token.length)
-                    else context.getString(R.string.doctor_detail_tg_token_missing),
-                    severity = if (tg.token.isNotBlank()) Severity.OK else Severity.FAIL,
-                    fix = if (tg.token.isBlank())
-                        FixAction.OpenAppRoute(context.getString(R.string.doctor_fix_open_telegram), AppRouteKey.SettingTelegram)
-                    else null,
-                )
-            )
-            add(
-                DoctorCheck(
-                    id = "service.telegram_running",
-                    category = DoctorCategory.Services,
-                    label = context.getString(R.string.doctor_check_tg_fgs),
-                    detail = if (TelegramBotService.isRunning) context.getString(R.string.doctor_detail_tg_running)
-                    else context.getString(R.string.doctor_detail_tg_stopped),
-                    severity = when {
-                        TelegramBotService.isRunning -> Severity.OK
-                        tg.token.isBlank() -> Severity.INFO  // token issue covers this
-                        else -> Severity.FAIL
-                    },
-                )
-            )
-        } else {
-            add(
-                DoctorCheck(
-                    id = "service.telegram_off",
-                    category = DoctorCategory.Services,
-                    label = context.getString(R.string.doctor_check_tg_bot),
-                    detail = context.getString(R.string.doctor_detail_tg_disabled),
-                    severity = Severity.INFO,
-                )
-            )
-        }
-        // Telegram proxy configuration: informational only, no reachability probe (out of
-        // scope per the doctor-refresh plan). Exists so a user reporting "the bot stopped
-        // working" can see at a glance whether a proxy is in the path.
-        runCatching {
-            add(
-                DoctorCheck(
-                    id = "service.telegram_proxy",
-                    category = DoctorCategory.Services,
-                    label = context.getString(R.string.doctor_check_tg_proxy),
-                    detail = if (tg.proxyEnabled)
-                        context.getString(R.string.doctor_detail_tg_proxy_configured, tg.proxyType, tg.proxyHost, tg.proxyPort)
-                    else
-                        context.getString(R.string.doctor_detail_tg_no_proxy),
-                    severity = Severity.INFO,
-                )
-            )
-        }.onFailure {
-            add(
-                DoctorCheck(
-                    id = "service.telegram_proxy",
-                    category = DoctorCategory.Services,
-                    label = context.getString(R.string.doctor_check_tg_proxy),
-                    detail = context.getString(R.string.doctor_detail_probe_failed, it::class.simpleName ?: "?", it.message ?: "?"),
-                    severity = Severity.WARN,
-                )
-            )
-        }
         // AccessibilityService binding — only flagged if a tool that needs it is enabled.
         val accNeeders = requirersOf(Capability.Accessibility, enabled)
         if (accNeeders.isNotEmpty()) {
@@ -630,7 +553,6 @@ class DoctorChecks(
     /**
      * Informational section. All rows are [Severity.INFO] — these are status rows, not
      * problem rows. The single "default assistant" row surfaces the assistant that:
-     *   - New Telegram conversations use (when no explicit assistantId is configured).
      *   - Cron jobs run as (their assistantId is locked at job creation time, but new jobs
      *     inherit from the Settings default).
      *   - New in-app chats default to.
@@ -638,7 +560,6 @@ class DoctorChecks(
      * A WARN row fires when the global assistant list is empty — that's a sign the settings
      * store was corrupted or a migration wiped the assistants list.
      *
-     * A separate row shows the Telegram-bot-configured override if one is set.
      */
     private suspend fun assistantChecks(): List<DoctorCheck> = buildList {
         runCatching {
@@ -674,34 +595,6 @@ class DoctorChecks(
                     fix = FixAction.OpenAppRoute(context.getString(R.string.doctor_fix_open_assistants), AppRouteKey.Assistant),
                 )
             )
-
-            // Row 3: Telegram-bot assistant override (if set)
-            val tg = telegramPrefs.current()
-            if (tg.enabled && tg.assistantId != null) {
-                val tgAssistant = tg.assistantId.let { id ->
-                    runCatching {
-                        val uuid = kotlin.uuid.Uuid.parse(id)
-                        AssistantResolver.byId(assistants, uuid)
-                    }.getOrNull()
-                }
-                add(
-                    DoctorCheck(
-                        id = "assistant.telegram_override",
-                        category = DoctorCategory.AssistantInfo,
-                        label = context.getString(R.string.doctor_check_tg_assistant_override),
-                        detail = when {
-                            tgAssistant != null ->
-                                context.getString(R.string.doctor_detail_tg_assistant_override_2, tgAssistant.name.ifBlank { context.getString(R.string.doctor_unnamed_paren) }, tgAssistant.id.toString().take(8))
-                            else ->
-                                context.getString(R.string.doctor_detail_tg_assistant_missing_2, tg.assistantId.take(8))
-                        },
-                        severity = if (tgAssistant != null) Severity.INFO else Severity.WARN,
-                        fix = if (tgAssistant == null)
-                            FixAction.OpenAppRoute(context.getString(R.string.doctor_fix_open_telegram), AppRouteKey.SettingTelegram)
-                        else null,
-                    )
-                )
-            }
 
             // Row 4: experts whose configured model no longer resolves. This is the #28
             // failure class made visible: an expert with a stale/deleted model id used to fall

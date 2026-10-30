@@ -4,20 +4,20 @@ import com.clma.app.data.ai.tools.ToolInvocationContext
 
 /**
  * Side-effect surface for interactive tools to stream a post-action screenshot back
- * to the originating remote chat (Telegram bot / cron / sub-agent). Implementation
+ * to the originating headless caller (cron / sub-agent). Implementation
  * registered in Koin; default [NoOp] when no streaming surface is wired.
  *
  * Contract:
  *  - Best-effort only: implementations MUST swallow all exceptions with logging.
- *  - Only fires when [invocationContext] is non-null, headless=true, and a Telegram chat
- *    mapping exists for [invocationContext.callerConversationId].
+ *  - Only fires when [invocationContext] is non-null and the caller has a
+ *    registered headless screenshot transport.
  *  - The tool's own return value is unchanged — this is a pure side-effect.
  */
 interface InteractiveToolStreamer {
 
     /**
      * Capture the current screen (via AccessibilityService) and send it to the originating
-     * Telegram chat. No-ops silently when the context isn't headless or no chat mapping
+     * caller. No-ops silently when the context isn't headless or no transport
      * exists.
      *
      * @param invocationContext  Who triggered the tool; null is treated as non-headless.

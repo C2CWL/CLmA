@@ -831,7 +831,6 @@ internal fun localToolTitleRes(option: LocalToolOption): Int = when (option) {
         LocalToolOption.CronJobs -> R.string.assistant_page_local_tools_cron_jobs_title
         LocalToolOption.Files -> R.string.assistant_page_local_tools_files_title
         LocalToolOption.Ssh -> R.string.assistant_page_local_tools_ssh_title
-        LocalToolOption.TelegramBot -> R.string.assistant_page_local_tools_telegram_title
         LocalToolOption.McpControl -> R.string.assistant_page_local_tools_mcp_control_title
         LocalToolOption.ExternalAutomation -> R.string.assistant_page_local_tools_external_automation_title
         LocalToolOption.Reliability -> R.string.assistant_page_local_tools_reliability_title

@@ -94,7 +94,6 @@ class SettingsSearchQueryTest {
 
     @Test
     fun `other formerly missing pages are found`() {
-        assertTop("机器人 Token", Screen.SettingTelegram)
         assertTop("单任务超时", Screen.SettingBrowser)
         assertTop("自定义主题", Screen.SettingTheme)
         assertTop("审批模式", Screen.SettingToolApprovals)

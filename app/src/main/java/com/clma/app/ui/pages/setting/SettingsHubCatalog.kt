@@ -43,7 +43,6 @@ enum class SettingsHubItemId {
     // 自动化与远程
     WORKFLOWS,
     SCHEDULED,
-    TELEGRAM,
     WEB,
 
     // 外观与视觉基调
@@ -137,7 +136,6 @@ val settingsHubItems: Map<SettingsHubItemId, SettingsHubItemDef> = listOf(
 
     hubItem(SettingsHubItemId.WORKFLOWS, Screen.SettingWorkflows, R.string.setting_page_workflows, R.string.setting_page_workflows_desc),
     hubItem(SettingsHubItemId.SCHEDULED, Screen.SettingScheduledJobs, R.string.setting_page_scheduled_jobs, R.string.setting_page_scheduled_jobs_desc),
-    hubItem(SettingsHubItemId.TELEGRAM, Screen.SettingTelegram, R.string.setting_page_telegram, R.string.setting_page_telegram_desc),
     hubItem(SettingsHubItemId.WEB, Screen.SettingWeb, R.string.setting_page_web_server, R.string.setting_page_web_server_desc),
 
     hubItem(SettingsHubItemId.VISUAL_STYLE, Screen.SettingPreferencesTheme, R.string.setting_visual_style_title, R.string.setting_visual_style_desc),
@@ -200,7 +198,6 @@ val settingsHubSections: List<SettingsHubSectionDef> = listOf(
             SettingsHubItemId.NOTIF_ACCESS,
             SettingsHubItemId.WORKFLOWS,
             SettingsHubItemId.SCHEDULED,
-            SettingsHubItemId.TELEGRAM,
             SettingsHubItemId.WEB,
         ),
     ),

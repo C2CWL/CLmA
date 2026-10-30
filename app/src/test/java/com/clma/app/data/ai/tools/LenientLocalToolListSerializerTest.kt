@@ -37,6 +37,15 @@ class LenientLocalToolListSerializerTest {
     }
 
     @Test
+    fun `removed telegram option is ignored in existing assistant settings`() {
+        val decoded = json.decodeFromString(
+            LenientLocalToolListSerializer,
+            """[{"type":"time_info"},{"type":"telegram_bot"},{"type":"ask_user"}]""",
+        )
+        assertEquals(listOf(LocalToolOption.TimeInfo, LocalToolOption.AskUser), decoded)
+    }
+
+    @Test
     fun encode_matchesStrictListSerializer() {
         val tools = listOf(LocalToolOption.TimeInfo, LocalToolOption.Clipboard)
         val lenient = json.encodeToString(LenientLocalToolListSerializer, tools)

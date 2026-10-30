@@ -1178,7 +1178,7 @@ mDNS 주소: .local 호스트네임을 사용하며, IP를 몰라도 같은 네�
   <string name="assistant_page_local_tools_cost_guards_title">비용 가드</string>
   <string name="assistant_page_local_tools_cron_jobs_desc">어시스턴트가 프롬프트를 나중에 백그라운드에서 실행하도록 예약할 수 있습니다 — 한 번 또는 일정 간격으로. 작업은 앱 종료 및 재부팅 후에도 유지됩니다.</string>
   <string name="assistant_page_local_tools_cron_jobs_title">예약 작업</string>
-  <string name="assistant_page_local_tools_cron_jobs_toast_hint">참고: 예약 작업은 활성화한 도구를 사용합니다. 작업이 SSH, Telegram 또는 다른 도구를 호출하는 경우 해당 토글도 켜져 있어야 합니다.</string>
+  <string name="assistant_page_local_tools_cron_jobs_toast_hint">참고: 예약 작업은 활성화한 도구를 사용합니다. 작업이 SSH, 다른 도구를 호출하는 경우 해당 토글도 켜져 있어야 합니다.</string>
   <string name="assistant_page_local_tools_dialog_dismiss">확인</string>
   <string name="assistant_page_local_tools_download_desc">URL에서 파일을 공용 다운로드 폴더로 내려받고, 텍스트 내용(메모, 전사, 농담, 스크립트)을 파일로 저장합니다.</string>
   <string name="assistant_page_local_tools_download_title">다운로드</string>
@@ -1203,7 +1203,6 @@ mDNS 주소: .local 호스트네임을 사용하며, IP를 몰라도 같은 네�
   <string name="assistant_page_local_tools_mic_recorder_title">마이크 녹음</string>
   <string name="assistant_page_local_tools_notification_desc">사용자를 대신하여 Android 알림을 게시합니다.</string>
   <string name="assistant_page_local_tools_notification_title">알림</string>
-  <string name="assistant_page_local_tools_notifications_desc">LLM이 다른 앱의 수신 알림을 읽을 수 있도록 합니다. 화이트리스트 앱은 기본 Telegram 채팅으로도 자동 전달됩니다. 설정 -&gt; 알림 에서 구성하세요.</string>
   <string name="assistant_page_local_tools_notifications_title">알림 인식</string>
   <string name="assistant_page_local_tools_perm_denied_toast">%1$s 권한이 거부되었습니다</string>
   <string name="assistant_page_local_tools_perm_needed">권한 필요 — 탭하여 부여</string>
@@ -1242,10 +1241,6 @@ mDNS 주소: .local 호스트네임을 사용하며, IP를 몰라도 같은 네�
   <string name="assistant_page_local_tools_sub_agents_title">서브 에이전트</string>
   <string name="assistant_page_local_tools_system_intents_desc">어시스턴트가 최종 확정용으로 시스템 앱을 미리 채울 수 있습니다: 캘린더 일정, 새 연락처, 이메일 작성, SMS 작성, WiFi 설정, 지도. 대상 앱에서 탭하지 않으면 아무것도 저장되거나 전송되지 않습니다.</string>
   <string name="assistant_page_local_tools_system_intents_title">시스템 인텐트</string>
-  <string name="assistant_page_local_tools_telegram_desc">어시스턴트를 Telegram 봇으로 실행 — 메시지·파일 송수신, /명령 관리. 전적으로 도구로 구성(토큰, 화이트리스트, 기본 채팅 설정 후 활성화). 포그라운드 서비스가 롱 폴링을 처리합니다.</string>
-  <string name="assistant_page_local_tools_telegram_notoken_message">토글은 켜져 있지만 아직 봇 토큰이 설정되지 않았습니다.\n\n쉬운 방법: 채팅에서 어시스턴트에게 요청 — "Telegram 봇을 설정해줘, 내 토큰은 …, 내 사용자 ID는 …, 나를 기본 채팅으로 설정하고, 활성화해줘."\n\n수동 방법: Telegram에서 @BotFather에게 /newbot 을 보내 토큰을 받고, @userinfobot 에게 /start 를 보내 숫자 사용자 ID를 받으세요. 그런 다음 어시스턴트에게 요청하거나 설정 → Telegram 봇 에 붙여넣으세요.</string>
-  <string name="assistant_page_local_tools_telegram_notoken_title">Telegram 봇에는 토큰이 필요합니다</string>
-  <string name="assistant_page_local_tools_telegram_title">Telegram 봇</string>
   <string name="assistant_page_local_tools_telephony_desc">SIM 및 네트워크 정보(이동통신사, 네트워크 유형)를 읽습니다. READ_PHONE_STATE가 필요합니다.</string>
   <string name="assistant_page_local_tools_telephony_title">전화 정보</string>
   <string name="assistant_page_local_tools_termux_postgrant_command">mkdir -p ~/.termux &amp;&amp; echo \'allow-external-apps=true\' &gt;&gt; ~/.termux/termux.properties</string>
@@ -1447,8 +1442,6 @@ mDNS 주소: .local 호스트네임을 사용하며, IP를 몰라도 같은 네�
   <string name="setting_page_notifications_action_ago_hours">%1$d시간 전</string>
   <string name="setting_page_notifications_action_ago_minutes">%1$d분 전</string>
   <string name="setting_page_notifications_action_ago_seconds">%1$d초 전</string>
-  <string name="setting_page_notifications_default_chat_set">기본 Telegram 채팅: %1$s</string>
-  <string name="setting_page_notifications_default_chat_unset">기본 Telegram 채팅: 설정되지 않음(자동 라우팅 비활성화)</string>
   <string name="setting_page_notifications_open_settings">알림 액세스 설정 열기</string>
   <string name="setting_page_notifications_recent_empty">아직 캡처된 알림이 없습니다.</string>
   <string name="setting_page_notifications_recent_section">최근 활동</string>
@@ -1456,18 +1449,6 @@ mDNS 주소: .local 호스트네임을 사용하며, IP를 몰라도 같은 네�
   <string name="setting_page_notifications_status_help">RikkaHub는 수신 알림을 읽으려면 알림 액세스가 필요합니다. 설정 → 알림 액세스 → 알림 액세스 를 열고 RikkaHub를 활성화하세요.</string>
   <string name="setting_page_notifications_status_not_connected">서비스: 연결되지 않음</string>
   <string name="setting_page_notifications_status_section">상태</string>
-  <string name="setting_page_notifications_whitelist_help">알림이 기본 Telegram 채팅으로 자동 전달되는 앱입니다. 비어 있음 = 아무것도 전달 안 함. 선택기에서 각 앱을 켜거나 끄세요.</string>
-  <string name="setting_page_notifications_whitelist_label">화이트리스트 앱</string>
-  <string name="setting_page_notifications_whitelist_manage">화이트리스트 앱 관리</string>
-  <string name="setting_page_notifications_whitelist_picker_done">완료</string>
-  <string name="setting_page_notifications_whitelist_picker_empty">필터와 일치하는 설치된 앱이 없습니다.</string>
-  <string name="setting_page_notifications_whitelist_picker_search">앱 검색</string>
-  <string name="setting_page_notifications_whitelist_picker_show_only_selected">화이트리스트만 표시</string>
-  <string name="setting_page_notifications_whitelist_picker_title">화이트리스트 앱</string>
-  <string name="setting_page_notifications_whitelist_section">자동 라우팅 화이트리스트</string>
-  <string name="setting_page_notifications_whitelist_summary_n">%1$d개 앱이 화이트리스트에 등록됨</string>
-  <string name="setting_page_notifications_whitelist_summary_n_plural">%1$d개 앱이 화이트리스트에 등록됨</string>
-  <string name="setting_page_notifications_whitelist_summary_zero">화이트리스트 앱 없음</string>
   <string name="setting_page_permissions">권한</string>
   <string name="setting_page_permissions_desc">RikkaHub가 사용하는 모든 권한을 자동으로 검색한 목록이며, 각 항목에 원탭 부여 버튼이 있습니다.</string>
   <string name="setting_page_permissions_group_auto">자동 부여</string>
@@ -1517,32 +1498,13 @@ mDNS 주소: .local 호스트네임을 사용하며, IP를 몰라도 같은 네�
   <string name="setting_page_scheduled_jobs_subtitle_never_run">발생한 적 없음</string>
   <string name="setting_page_scheduled_jobs_subtitle_ran">마지막 발생 %1$s</string>
   <string name="setting_page_scheduled_jobs_subtitle_when">시점: %1$s</string>
-  <string name="setting_page_telegram">Telegram 봇</string>
-  <string name="setting_page_telegram_battery_already_ok">이미 배터리 최적화 화이트리스트에 등록되어 있습니다.</string>
-  <string name="setting_page_telegram_battery_desc">화면이 꺼지면 공격적인 OEM ROM(Xiaomi, OPPO, OnePlus, Vivo)은 등록되지 않은 앱의 네트워크를 차단합니다. 봇은 가끔 있는 유지 관리 시간에만 전달할 수 있습니다. 탭하여 RikkaHub를 화이트리스트에 등록하세요.</string>
-  <string name="setting_page_telegram_battery_needed">배터리 최적화: 등록 안 됨 - 탭하여 수정</string>
-  <string name="setting_page_telegram_battery_ok">배터리 최적화: 화이트리스트 등록됨</string>
-  <string name="setting_page_telegram_boot_note">시작하면 봇은 기기 부팅 시에도 자동으로 시작됩니다.</string>
-  <string name="setting_page_telegram_default_chat">기본 채팅</string>
-  <string name="setting_page_telegram_default_chat_desc">LLM이 chat_id를 생략할 때(예: cron 작업 알림) 발신 메시지가 가는 곳. 본인의 Telegram 숫자 사용자 ID를 사용하세요.</string>
-  <string name="setting_page_telegram_desc">LLM을 Telegram 봇으로 실행 — 어떤 기기에서든 원격으로 대화하세요.</string>
-  <string name="setting_page_telegram_no_token_toast">먼저 봇 토큰을 설정하세요.</string>
-  <string name="setting_page_telegram_start">시작</string>
-  <string name="setting_page_telegram_status_running">실행 중</string>
-  <string name="setting_page_telegram_status_starting">시작 중…</string>
-  <string name="setting_page_telegram_status_stopped">중지됨</string>
-  <string name="setting_page_telegram_stop">중지</string>
-  <string name="setting_page_telegram_token">봇 토큰</string>
-  <string name="setting_page_telegram_token_desc">@BotFather에서 가져옵니다. 편집하려면 봇을 중지해야 합니다.</string>
-  <string name="setting_page_telegram_whitelist">허용된 채팅 ID</string>
-  <string name="setting_page_telegram_whitelist_desc">쉼표로 구분. 비어 있음 = 아무도 허용 안 함. @userinfobot으로 본인 ID를 확인하세요.</string>
   <string name="setting_page_tool_approvals">도구 승인</string>
   <string name="setting_page_tool_approvals_desc">“항상 허용”으로 영구적으로 부여한 도구입니다. 언제든지 취소할 수 있습니다.</string>
   <string name="setting_page_tool_approvals_empty">아직 “항상 허용”이 부여된 도구가 없습니다. 봇은 부작용이 있는 도구를 실행하기 전에 묻습니다.</string>
   <string name="setting_page_tool_approvals_header">아래 도구는 이 기기에서 절대 묻지 않고 실행됩니다. 모델에게 이 기능을 맡기는 것을 더 이상 신뢰하지 않으면 취소하세요.</string>
   <string name="setting_page_tool_approvals_revoke">취소</string>
   <string name="setting_page_tool_approvals_revoke_all">모두 취소</string>
-  <string name="setting_page_tool_approvals_yolo_dialog_body">모든 도구 — 로컬 셸, SSH, 파일 쓰기, 화면 자동화, Telegram 발신, MCP — 가 묻지 않고 실행됩니다. 에이전트가 메시지 전송, 원격 호스트에서 명령 실행, 사진 촬영, 파일 쓰기, 작업 예약을 모두 확인 없이 할 수 있습니다.\n\nHARDLINE 보호는 여전히 적용됩니다: rm -rf /, mkfs, shutdown / reboot, 블록 장치로의 dd, 포크 폭탄, 인코딩된 페이로드 파이프 — 이것들은 계속 차단됩니다.\n\n이것은 위험한 기능입니다. 모델 + 어시스턴트 설정 + 본인의 프롬프트가 책임감 있게 동작한다고 신뢰하는 경우에만 활성화하세요.</string>
+  <string name="setting_page_tool_approvals_yolo_dialog_body">모든 도구 — 로컬 셸, SSH, 파일 쓰기, 화면 자동화, MCP — 가 묻지 않고 실행됩니다. 에이전트가 메시지 전송, 원격 호스트에서 명령 실행, 사진 촬영, 파일 쓰기, 작업 예약을 모두 확인 없이 할 수 있습니다.\n\nHARDLINE 보호는 여전히 적용됩니다: rm -rf /, mkfs, shutdown / reboot, 블록 장치로의 dd, 포크 폭탄, 인코딩된 페이로드 파이프 — 이것들은 계속 차단됩니다.\n\n이것은 위험한 기능입니다. 모델 + 어시스턴트 설정 + 본인의 프롬프트가 책임감 있게 동작한다고 신뢰하는 경우에만 활성화하세요.</string>
   <string name="setting_page_tool_approvals_yolo_dialog_cancel">승인 유지</string>
   <string name="setting_page_tool_approvals_yolo_dialog_confirm">예, 나는 바보입니다, 활성화</string>
   <string name="setting_page_tool_approvals_yolo_dialog_title">모든 승인 프롬프트를 끌까요?</string>

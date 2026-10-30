@@ -15,8 +15,6 @@ import com.clma.ai.core.InputSchema
 import com.clma.ai.core.Tool
 import com.clma.ai.ui.UIMessagePart
 import com.clma.app.data.notifications.NotificationEntry
-import com.clma.app.data.notifications.NotificationListenerPreferences
-import com.clma.app.data.telegram.TelegramBotPreferences
 import com.clma.app.service.RikkaNotificationListenerService
 
 private fun NotificationEntry.toJson(): JsonObject = buildJsonObject {
@@ -317,29 +315,21 @@ fun notificationReplyTool(): Tool = Tool(
     }
 )
 
-fun notificationStatusTool(
-    listenerPrefs: NotificationListenerPreferences,
-    telegramPrefs: TelegramBotPreferences,
-): Tool = Tool(
+fun notificationStatusTool(): Tool = Tool(
     name = "notification_status",
     description = """
         Returns a snapshot of the notification listener subsystem: whether the OS has bound
-        the service, ring buffer size, current whitelist size, and whether a default Telegram
-        chat is configured (which auto-route forwarding requires).
+        the service and ring buffer size.
     """.trimIndent().replace("\n", " "),
     parameters = { InputSchema.Obj(properties = buildJsonObject {}) },
     execute = {
         val bound = NotificationListenerHandle.isBound()
         val ringSize = RikkaNotificationListenerService.instance?.recent?.value?.size ?: 0
-        val cfg = try { listenerPrefs.current() } catch (_: Throwable) { null }
-        val tg = try { telegramPrefs.current() } catch (_: Throwable) { null }
         listOf(
             UIMessagePart.Text(
                 buildJsonObject {
                     put("service_bound", bound)
                     put("ring_buffer_count", ringSize)
-                    put("whitelist_count", cfg?.whitelist?.size ?: 0)
-                    put("has_default_telegram_chat", tg?.defaultChatId != null && tg.enabled)
                 }.toString()
             )
         )

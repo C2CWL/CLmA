@@ -324,10 +324,15 @@ class ToolNameTranscoderTest {
         assertEquals(input, out)
     }
 
+    @Test fun `unsupported messaging tools are not mapped`() {
+        val input = "`TodoWrite` and `send_message`"
+        assertEquals(input, ToolNameTranscoder.transcode(input))
+    }
+
     @Test fun `Hermes-style names mapped inside code spans`() {
         val input = "Use `send_message` to ping mom. Use `open_app` to launch."
         val out = ToolNameTranscoder.transcode(input)
-        assertTrue(out.contains("telegram_send_message"))
+        assertTrue(out.contains("`send_message`"))
         assertTrue(out.contains("launch_app"))
     }
 }

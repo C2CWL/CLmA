@@ -182,7 +182,6 @@ class SettingsSearchCoverageTest {
         "SettingSsh" to listOf("ui/pages/setting/SettingSshPage.kt"),
         "SettingSecrets" to listOf("ui/pages/setting/SettingSecretsPage.kt"),
         "SettingWeb" to listOf("ui/pages/setting/SettingWebPage.kt"),
-        "SettingTelegram" to listOf("ui/pages/setting/SettingTelegramPage.kt"),
         "SettingBrowser" to listOf("ui/pages/setting/browser/SettingBrowserPage.kt"),
         "Backup" to listOf(
             "ui/pages/backup/BackupPage.kt",

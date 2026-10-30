@@ -11,10 +11,6 @@ import com.clma.app.data.event.AppEventBus
 import com.clma.app.data.ai.tools.local.InteractiveToolStreamer
 import com.clma.app.data.repository.ScheduledJobRepository
 import com.clma.app.data.repository.SshHostRepository
-import com.clma.app.data.repository.TelegramChatRepository
-import com.clma.app.data.notifications.NotificationListenerPreferences
-import com.clma.app.data.telegram.TelegramBotClient
-import com.clma.app.data.telegram.TelegramBotPreferences
 import com.clma.app.service.ChatService
 import com.clma.app.service.CronJobScheduler
 import com.clma.app.ui.pages.extensions.workspace.WorkspaceTerminalSessionManager
@@ -46,39 +42,11 @@ val appModule = module {
     single { com.clma.app.service.DirectModeActionRunner(get()) }
     single { CronJobScheduler(get(), get(), get()) }
     single { SshHostRepository(get<com.clma.app.data.db.AppDatabase>().sshHostDao()) }
-    single { TelegramChatRepository(get<com.clma.app.data.db.AppDatabase>().telegramChatDao()) }
-    single { TelegramBotPreferences(get()) }
     single { com.clma.app.browser.BrowserPreferences(get()) }
     single { com.clma.app.data.preferences.TermuxPreferences(get()) }
-    // Pass 3: Telegram-bound screenshot streamer for headless browser mode. Bound to the
-    // [BrowserScreenshotStreamer] interface so [BrowserController.streamScreenshotIfHeadless]
-    // can resolve it lazily via Koin without taking a constructor dep — avoids a cycle
-    // through TelegramBotClient → TelegramBotPreferences → ... → LocalTools → controller.
-    single<com.clma.app.browser.BrowserScreenshotStreamer> {
-        com.clma.app.data.telegram.TelegramBrowserScreenshotStreamer(get(), get(), get())
-    }
-    // Interactive-tool post-action screenshot streamer for headless mode (Telegram bot /
-    // cron / sub-agent). Resolves lazily inside each interactive tool's execute lambda so
-    // there's no DI cycle through LocalTools → ChatService → ... → TelegramBotClient.
-    single<InteractiveToolStreamer> {
-        com.clma.app.data.telegram.TelegramInteractiveToolStreamer(get(), get(), get(), get())
-    }
     single { com.clma.app.data.preferences.ToolApprovalPreferences(get()) }
-    single {
-        TelegramBotClient(
-            tokenProvider = { runCatching { kotlinx.coroutines.runBlocking { get<TelegramBotPreferences>().current().token } }.getOrDefault("") },
-            proxyConfigProvider = {
-                runCatching {
-                    kotlinx.coroutines.runBlocking { get<TelegramBotPreferences>().current() }
-                }.getOrDefault(com.clma.app.data.telegram.TelegramBotConfig())
-            },
-        )
-    }
-    // Phase 24 — Telegram long-poll stall tracker. Shared singleton: TelegramBotService's
-    // poll loop calls markUpdate() on every getUpdates; the in-service stall checker and
-    // DoctorChecks read it. No cross-dependencies, so no DI-cycle risk.
-    single { com.clma.app.data.telegram.TelegramPollStallTracker() }
-    single { NotificationListenerPreferences(get()) }
+    single<com.clma.app.browser.BrowserScreenshotStreamer> { com.clma.app.browser.BrowserScreenshotStreamer.NoOp }
+    single<InteractiveToolStreamer> { InteractiveToolStreamer.NoOp }
 
     // Phase 13: External Automation Intent API
     single { com.clma.app.automation.ExternalAutomationConfig(get()) }
@@ -198,9 +166,6 @@ val appModule = module {
             settingsStore = get(),
             sshHostRepository = get(),
             agentSecretsStore = get(),
-            telegramBotPreferences = get(),
-            telegramBotClient = get(),
-            notificationListenerPreferences = get(),
             mcpManager = get(),
             externalAutomationConfig = get(),
             gitHubReleaseChecker = get(),
@@ -313,7 +278,6 @@ val appModule = module {
         com.clma.app.ui.pages.setting.doctor.DoctorChecks(
             context = get(),
             settingsStore = get(),
-            telegramPrefs = get(),
             workflowRepository = get(),
             scheduledJobRepository = get(),
             scheduledJobRunRepository = get(),

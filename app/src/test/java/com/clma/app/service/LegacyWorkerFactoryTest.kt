@@ -11,7 +11,6 @@ class LegacyWorkerFactoryTest {
         assertEquals(
             mapOf(
                 "me.rerere.rikkahub.service.CronJobWorker" to "com.clma.app.service.CronJobWorker",
-                "me.rerere.rikkahub.service.TelegramBotHealthWorker" to "com.clma.app.service.TelegramBotHealthWorker",
                 "me.rerere.rikkahub.workflow.trigger.WorkflowTimeCronWorker" to "com.clma.app.workflow.trigger.WorkflowTimeCronWorker",
             ),
             LegacyWorkerFactory.LEGACY_WORKER_CLASS_NAMES,
@@ -24,7 +23,6 @@ class LegacyWorkerFactoryTest {
         assertEquals(
             setOf(
                 CronJobWorker::class.java.name,
-                TelegramBotHealthWorker::class.java.name,
                 WorkflowTimeCronWorker::class.java.name,
             ),
             targets,

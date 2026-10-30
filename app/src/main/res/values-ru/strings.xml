@@ -1178,7 +1178,7 @@
   <string name="assistant_page_local_tools_cost_guards_title">Контроль расходов</string>
   <string name="assistant_page_local_tools_cron_jobs_desc">Позволяет ассистенту планировать запуск запросов в фоне позже — однократно или с интервалом. Задачи сохраняются после закрытия приложения и перезагрузки.</string>
   <string name="assistant_page_local_tools_cron_jobs_title">Запланированные задачи</string>
-  <string name="assistant_page_local_tools_cron_jobs_toast_hint">Внимание: запланированные задачи используют включённые вами инструменты. Если задача вызывает SSH, Telegram или любой другой инструмент, эти переключатели тоже должны быть включены.</string>
+  <string name="assistant_page_local_tools_cron_jobs_toast_hint">Внимание: запланированные задачи используют включённые вами инструменты. Если задача вызывает SSH, любой другой инструмент, эти переключатели тоже должны быть включены.</string>
   <string name="assistant_page_local_tools_dialog_dismiss">Понятно</string>
   <string name="assistant_page_local_tools_download_desc">Загрузка файлов по URL в общую папку загрузок и сохранение текстового содержимого (заметки, расшифровки, шутки, скрипты) в виде файлов.</string>
   <string name="assistant_page_local_tools_download_title">Загрузка</string>
@@ -1203,7 +1203,6 @@
   <string name="assistant_page_local_tools_mic_recorder_title">Запись с микрофона</string>
   <string name="assistant_page_local_tools_notification_desc">Публикация уведомлений Android от имени пользователя.</string>
   <string name="assistant_page_local_tools_notification_title">Уведомление</string>
-  <string name="assistant_page_local_tools_notifications_desc">Позволяет LLM читать входящие уведомления от других приложений. Приложения из белого списка также автоматически пересылаются в ваш чат Telegram по умолчанию. Настройте в Настройки -&gt; Уведомления.</string>
   <string name="assistant_page_local_tools_notifications_title">Распознавание уведомлений</string>
   <string name="assistant_page_local_tools_perm_denied_toast">Разрешение %1$s отклонено</string>
   <string name="assistant_page_local_tools_perm_needed">Требуется разрешение — нажмите, чтобы предоставить</string>
@@ -1242,10 +1241,6 @@
   <string name="assistant_page_local_tools_sub_agents_title">Субагенты</string>
   <string name="assistant_page_local_tools_system_intents_desc">Позволяет ассистенту предзаполнять системные приложения для финального оформления вами: событие календаря, новый контакт, составитель письма, составитель SMS, настройки WiFi, Карты. Ничего не сохраняется и не отправляется без вашего нажатия в приложении назначения.</string>
   <string name="assistant_page_local_tools_system_intents_title">Системные намерения</string>
-  <string name="assistant_page_local_tools_telegram_desc">Запуск ассистента как Telegram-бота — отправка/получение сообщений, файлов, управление /командами. Полностью настраивается через инструменты (задайте токен, белый список, чат по умолчанию, затем включите). Фоновая служба обрабатывает длинный опрос.</string>
-  <string name="assistant_page_local_tools_telegram_notoken_message">Переключатель включён, но токен бота ещё не задан.\n\nПростой способ: попросите ассистента в чате — "Настрой Telegram-бота, мой токен …, мой ID пользователя …, сделай меня чатом по умолчанию, включи его."\n\nРучной способ: напишите @BotFather в Telegram /newbot для получения токена и @userinfobot /start для вашего числового ID пользователя. Затем попросите ассистента или вставьте их в Настройки → Telegram-бот.</string>
-  <string name="assistant_page_local_tools_telegram_notoken_title">Telegram-боту нужен токен</string>
-  <string name="assistant_page_local_tools_telegram_title">Telegram-бот</string>
   <string name="assistant_page_local_tools_telephony_desc">Чтение сведений о SIM и сети (оператор, тип сети). Требуется READ_PHONE_STATE.</string>
   <string name="assistant_page_local_tools_telephony_title">Сведения о телефонии</string>
   <string name="assistant_page_local_tools_termux_postgrant_command">mkdir -p ~/.termux &amp;&amp; echo \'allow-external-apps=true\' &gt;&gt; ~/.termux/termux.properties</string>
@@ -1447,8 +1442,6 @@
   <string name="setting_page_notifications_action_ago_hours">%1$d ч назад</string>
   <string name="setting_page_notifications_action_ago_minutes">%1$d мин назад</string>
   <string name="setting_page_notifications_action_ago_seconds">%1$d с назад</string>
-  <string name="setting_page_notifications_default_chat_set">Чат Telegram по умолчанию: %1$s</string>
-  <string name="setting_page_notifications_default_chat_unset">Чат Telegram по умолчанию: не задан (автомаршрутизация отключена)</string>
   <string name="setting_page_notifications_open_settings">Открыть настройки доступа к уведомлениям</string>
   <string name="setting_page_notifications_recent_empty">Пока не захвачено ни одного уведомления.</string>
   <string name="setting_page_notifications_recent_section">Недавняя активность</string>
@@ -1456,18 +1449,6 @@
   <string name="setting_page_notifications_status_help">RikkaHub нужен доступ к уведомлениям для чтения входящих уведомлений. Откройте Настройки → Доступ к уведомлениям → Доступ к уведомлениям и включите RikkaHub.</string>
   <string name="setting_page_notifications_status_not_connected">Служба: не подключена</string>
   <string name="setting_page_notifications_status_section">Статус</string>
-  <string name="setting_page_notifications_whitelist_help">Приложения, уведомления которых автоматически пересылаются в ваш чат Telegram по умолчанию. Пусто = ничего не пересылается. Включайте или выключайте каждое приложение в списке выбора.</string>
-  <string name="setting_page_notifications_whitelist_label">Приложения в белом списке</string>
-  <string name="setting_page_notifications_whitelist_manage">Управление приложениями в белом списке</string>
-  <string name="setting_page_notifications_whitelist_picker_done">Готово</string>
-  <string name="setting_page_notifications_whitelist_picker_empty">Нет установленных приложений, соответствующих фильтру.</string>
-  <string name="setting_page_notifications_whitelist_picker_search">Поиск приложений</string>
-  <string name="setting_page_notifications_whitelist_picker_show_only_selected">Показать только из белого списка</string>
-  <string name="setting_page_notifications_whitelist_picker_title">Приложения в белом списке</string>
-  <string name="setting_page_notifications_whitelist_section">Белый список автомаршрутизации</string>
-  <string name="setting_page_notifications_whitelist_summary_n">%1$d приложение в белом списке</string>
-  <string name="setting_page_notifications_whitelist_summary_n_plural">%1$d приложений в белом списке</string>
-  <string name="setting_page_notifications_whitelist_summary_zero">Нет приложений в белом списке</string>
   <string name="setting_page_permissions">Разрешения</string>
   <string name="setting_page_permissions_desc">Автоматически обнаруженный список всех разрешений, используемых RikkaHub, с кнопкой предоставления в одно нажатие для каждого.</string>
   <string name="setting_page_permissions_group_auto">Предоставлены автоматически</string>
@@ -1517,32 +1498,13 @@
   <string name="setting_page_scheduled_jobs_subtitle_never_run">Не срабатывала</string>
   <string name="setting_page_scheduled_jobs_subtitle_ran">Последнее срабатывание %1$s</string>
   <string name="setting_page_scheduled_jobs_subtitle_when">Когда: %1$s</string>
-  <string name="setting_page_telegram">Telegram-бот</string>
-  <string name="setting_page_telegram_battery_already_ok">Уже в белом списке оптимизации батареи.</string>
-  <string name="setting_page_telegram_battery_desc">При выключении экрана агрессивные OEM-прошивки (Xiaomi, OPPO, OnePlus, Vivo) отключают сеть для приложений не из белого списка. Бот сможет доставлять только во время редких окон обслуживания. Нажмите, чтобы добавить RikkaHub в белый список.</string>
-  <string name="setting_page_telegram_battery_needed">Оптимизация батареи: не в белом списке - нажмите для исправления</string>
-  <string name="setting_page_telegram_battery_ok">Оптимизация батареи: в белом списке</string>
-  <string name="setting_page_telegram_boot_note">После запуска бот также автоматически запускается при загрузке устройства.</string>
-  <string name="setting_page_telegram_default_chat">Чат по умолчанию</string>
-  <string name="setting_page_telegram_default_chat_desc">Куда идут исходящие сообщения, когда LLM опускает chat_id (например, оповещения cron-задач). Используйте свой числовой ID пользователя Telegram.</string>
-  <string name="setting_page_telegram_desc">Запуск LLM как Telegram-бота — общайтесь с ним удалённо с любого устройства.</string>
-  <string name="setting_page_telegram_no_token_toast">Сначала задайте токен бота.</string>
-  <string name="setting_page_telegram_start">Запустить</string>
-  <string name="setting_page_telegram_status_running">Работает</string>
-  <string name="setting_page_telegram_status_starting">Запуск…</string>
-  <string name="setting_page_telegram_status_stopped">Остановлен</string>
-  <string name="setting_page_telegram_stop">Остановить</string>
-  <string name="setting_page_telegram_token">Токен бота</string>
-  <string name="setting_page_telegram_token_desc">От @BotFather. Для редактирования бот должен быть остановлен.</string>
-  <string name="setting_page_telegram_whitelist">Разрешённые ID чатов</string>
-  <string name="setting_page_telegram_whitelist_desc">Через запятую. Пусто = никто. Узнайте свой ID через @userinfobot.</string>
   <string name="setting_page_tool_approvals">Разрешения инструментов</string>
   <string name="setting_page_tool_approvals_desc">Инструменты, которым вы навсегда дали разрешение через «Всегда разрешать». Можно отозвать в любой момент.</string>
   <string name="setting_page_tool_approvals_empty">Пока ни одному инструменту не выдано «Всегда разрешать». Бот будет спрашивать перед запуском любого инструмента с побочными эффектами.</string>
   <string name="setting_page_tool_approvals_header">Инструменты ниже выполняются без запроса на этом устройстве. Отзовите, если больше не доверяете модели эту возможность.</string>
   <string name="setting_page_tool_approvals_revoke">Отозвать</string>
   <string name="setting_page_tool_approvals_revoke_all">Отозвать всё</string>
-  <string name="setting_page_tool_approvals_yolo_dialog_body">Каждый инструмент — локальная оболочка, SSH, запись файлов, автоматизация экрана, отправка в Telegram, MCP — будет выполняться без запроса у вас. Агент сможет отправлять сообщения, выполнять команды на удалённых хостах, делать фотографии, записывать файлы, планировать задачи — всё без подтверждения.\n\nЗащита HARDLINE по-прежнему действует: rm -rf /, mkfs, shutdown / reboot, dd на блочные устройства, fork-бомба, конвейеры с закодированной нагрузкой — это всё остаётся заблокированным.\n\nЭто опасная функция. Включайте, только если доверяете модели + конфигурации ассистента + собственным запросам в ответственном поведении.</string>
+  <string name="setting_page_tool_approvals_yolo_dialog_body">Каждый инструмент — локальная оболочка, SSH, запись файлов, автоматизация экрана, MCP — будет выполняться без запроса у вас. Агент сможет отправлять сообщения, выполнять команды на удалённых хостах, делать фотографии, записывать файлы, планировать задачи — всё без подтверждения.\n\nЗащита HARDLINE по-прежнему действует: rm -rf /, mkfs, shutdown / reboot, dd на блочные устройства, fork-бомба, конвейеры с закодированной нагрузкой — это всё остаётся заблокированным.\n\nЭто опасная функция. Включайте, только если доверяете модели + конфигурации ассистента + собственным запросам в ответственном поведении.</string>
   <string name="setting_page_tool_approvals_yolo_dialog_cancel">Оставить одобрения</string>
   <string name="setting_page_tool_approvals_yolo_dialog_confirm">Да, я ГЛУПЫЙ, включить</string>
   <string name="setting_page_tool_approvals_yolo_dialog_title">Отключить все запросы одобрения?</string>
