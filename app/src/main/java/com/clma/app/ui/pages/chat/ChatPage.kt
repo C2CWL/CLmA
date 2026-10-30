@@ -849,7 +849,7 @@ private fun ChatPageContent(
                             ) {
                                 if (!bigScreen) {
                                     GeminiTopButton(
-                                        icon = HugeIcons.Menu03,
+                                        icon = HugeIcons.LeftToRightListBullet,
                                         description = stringResource(R.string.menu),
                                         onClick = { scope.launch { drawerState.open() } },
                                     )
