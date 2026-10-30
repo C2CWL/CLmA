@@ -36,5 +36,5 @@ internal fun isAppendOnlyStreamingUpdate(old: Conversation, new: Conversation): 
     }
 }
 
-internal fun Flow<Conversation>.throttleAppendOnlyStreaming(windowMs: Long = 80): Flow<Conversation> =
+internal fun Flow<Conversation>.throttleAppendOnlyStreaming(windowMs: Long = 32): Flow<Conversation> =
     throttleStreamingUpdates(windowMs, ::isAppendOnlyStreamingUpdate)
