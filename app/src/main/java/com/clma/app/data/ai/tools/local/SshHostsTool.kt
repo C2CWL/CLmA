@@ -140,12 +140,12 @@ fun saveSshHostTool(
 )
 
 /** List saved hosts. Secrets omitted — only metadata + which auth method is configured. */
-fun listSshHostsTool(repo: SshHostRepository): Tool = Tool(
+fun listSshHostsTool(repo: SshHostRepository, allowedNames: Set<String>? = null): Tool = Tool(
     name = "list_ssh_hosts",
     description = "List all saved SSH hosts (name, host, port, user, has_password, has_private_key). Secrets are not returned.".trimIndent().replace("\n", " "),
     parameters = { InputSchema.Obj(properties = buildJsonObject {}) },
     execute = {
-        val all = repo.getAll()
+        val all = repo.getAll().filter { allowedNames == null || it.name in allowedNames }
         listOf(
             UIMessagePart.Text(
                 buildJsonObject {
@@ -238,6 +238,7 @@ fun sshExecSavedTool(
     context: Context,
     repo: SshHostRepository,
     secrets: AgentSecretsStore,
+    allowedNames: Set<String>? = null,
 ): Tool = Tool(
     name = "ssh_exec_saved",
     description = """
@@ -276,6 +277,9 @@ fun sshExecSavedTool(
         val p = input.jsonObject
         val name = p["name"]?.jsonPrimitive?.contentOrNull ?: error("name is required")
         val command = p["command"]?.jsonPrimitive?.contentOrNull ?: error("command is required")
+        if (allowedNames != null && name !in allowedNames) {
+            return@Tool listOf(UIMessagePart.Text(buildJsonObject { put("error", "host_not_enabled_for_assistant") }.toString()))
+        }
         val stdin = resolveSecretOrPlain(
             secrets,
             refName = p["stdin_secret"]?.jsonPrimitive?.contentOrNull,

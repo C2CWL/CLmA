@@ -88,6 +88,7 @@ import com.clma.app.ui.pages.assistant.detail.AssistantBasicPage
 import com.clma.app.ui.pages.assistant.detail.AssistantDetailPage
 import com.clma.app.ui.pages.assistant.detail.AssistantExtensionsPage
 import com.clma.app.ui.pages.assistant.detail.AssistantLocalToolPage
+import com.clma.app.ui.pages.assistant.detail.AssistantSshPage
 import com.clma.app.ui.pages.assistant.detail.AssistantMcpPage
 import com.clma.app.ui.pages.assistant.detail.AssistantMemoryPage
 import com.clma.app.ui.pages.assistant.detail.AssistantPromptPage
@@ -475,6 +476,10 @@ class RouteActivity : FragmentActivity() {
                                 AssistantLocalToolPage(key.id)
                             }
 
+                            entry<Screen.AssistantSsh> { key ->
+                                AssistantSshPage(key.id)
+                            }
+
                             entry<Screen.AssistantInjections> { key ->
                                 AssistantExtensionsPage(key.id)
                             }
@@ -809,6 +814,9 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data class AssistantLocalTool(val id: String) : Screen
+
+    @Serializable
+    data class AssistantSsh(val id: String) : Screen
 
     @Serializable
     data class AssistantInjections(val id: String) : Screen

@@ -165,6 +165,9 @@ data class Assistant(
     // Appended last on purpose: a new field may never shift the position of an existing one.
     @EncodeDefault(EncodeDefault.Mode.NEVER)
     val contextBudgetReminderPercent: Int = 70,
+    /** Saved SSH hosts available to this assistant; empty disables SSH access. */
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val enabledSshHosts: Set<String> = emptySet(),
 )
 
 @Serializable

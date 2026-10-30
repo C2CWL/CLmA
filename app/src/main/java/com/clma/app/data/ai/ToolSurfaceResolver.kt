@@ -56,6 +56,7 @@ object ToolSurfaceResolver {
         invocationContext = context,
         // P2-02 - the per-tool deny-list rides along with the option list it refines.
         disabledToolNames = assistant.disabledLocalTools,
+        enabledSshHosts = assistant.enabledSshHosts,
     )
 
     /**
@@ -84,6 +85,7 @@ object ToolSurfaceResolver {
                 options = listOf(option),
                 invocationContext = context,
                 disabledToolNames = assistant.disabledLocalTools,
+                enabledSshHosts = assistant.enabledSshHosts,
             ),
         )
     }

@@ -136,6 +136,13 @@ fun AssistantDetailPage(id: String) {
                         trailingContent = { Icon(HugeIcons.ArrowRight01, null) },
                     )
                     item(
+                        onClick = { navController.navigate(Screen.AssistantSsh(id)) },
+                        leadingContent = { Icon(HugeIcons.Wrench01, null) },
+                        supportingContent = { Text(stringResource(R.string.assistant_detail_ssh_desc)) },
+                        headlineContent = { Text(stringResource(R.string.assistant_detail_ssh_title)) },
+                        trailingContent = { Icon(HugeIcons.ArrowRight01, null) },
+                    )
+                    item(
                         onClick = { navController.navigate(Screen.AssistantLocalTool(id)) },
                         leadingContent = { Icon(HugeIcons.BookOpen01, null) },
                         supportingContent = { Text(stringResource(R.string.assistant_detail_local_tools_desc)) },
