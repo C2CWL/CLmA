@@ -35,9 +35,9 @@ class SettingsSearchDynamicTest {
         )
         val entry = entries.single()
         assertEquals(Screen.WorkspaceDetail("w"), entry.route)
-        // Workspaces is a hub row now (extensions intermediate page is gone).
+        // Workspaces is a hub row in the tools group (extensions intermediate page is gone).
         assertEquals(listOf(R.string.extensions_page_workspace), entry.breadcrumbRes)
-        assertEquals(R.string.setting_hub_group_agent, entry.groupRes)
+        assertEquals(R.string.setting_hub_group_connections, entry.groupRes)
     }
 
     @Test

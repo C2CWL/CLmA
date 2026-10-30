@@ -1,15 +1,15 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='UTF-8'?>
 <!-- 设置首页重组：分组标题、首页行名、右侧状态摘要和拆出的新页面。 -->
 <resources>
   <string name="setting_hub_group_models">模型与服务</string>
   <string name="setting_hub_group_agent">Agent 与工具</string>
-  <string name="setting_hub_group_connections">连接与执行环境</string>
+  <string name="setting_hub_group_connections">工具与连接</string>
   <string name="setting_hub_group_device">设备与权限</string>
   <string name="setting_hub_group_automation">自动化与远程</string>
-  <string name="setting_hub_group_appearance">外观与视觉基调</string>
-  <string name="setting_hub_group_chat">聊天</string>
-  <string name="setting_hub_group_data">数据</string>
-  <string name="setting_hub_group_about">关于</string>
+  <string name="setting_hub_group_appearance">外观与交互</string>
+  <string name="setting_hub_group_chat">助手与对话</string>
+  <string name="setting_hub_group_data">数据与隐私</string>
+  <string name="setting_hub_group_about">关于与诊断</string>
   <string name="setting_hub_search_hint">搜索设置项…</string>
   <string name="setting_hub_providers">提供商与密钥</string>
   <string name="setting_hub_default_model">默认模型</string>

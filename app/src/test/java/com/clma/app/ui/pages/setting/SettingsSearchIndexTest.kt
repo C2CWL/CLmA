@@ -122,6 +122,23 @@ class SettingsSearchIndexTest {
     }
 
     @Test
+    fun `six hub groups own every setting exactly once`() {
+        assertEquals(6, settingsHubSections.size)
+        val items = settingsHubSections.flatMap { it.items }
+        assertEquals(SettingsHubItemId.entries.toSet(), items.toSet())
+        assertEquals(items.size, items.distinct().size)
+    }
+
+    @Test
+    fun `assistant and context live together while secrets belong to privacy`() {
+        fun groupOf(id: SettingsHubItemId) = settingsHubSections.single { id in it.items }.id
+        assertEquals(SettingsHubSectionId.CHAT, groupOf(SettingsHubItemId.ASSISTANT))
+        assertEquals(SettingsHubSectionId.CHAT, groupOf(SettingsHubItemId.RUNTIME))
+        assertEquals(SettingsHubSectionId.DATA, groupOf(SettingsHubItemId.SECRETS))
+        assertEquals(SettingsHubSectionId.ABOUT, groupOf(SettingsHubItemId.LOGS))
+    }
+
+    @Test
     fun `network sits in the connections group`() {
         val entry = settingsSearchIndex(developerMode = false)
             .single { it.route == Screen.SettingPreferencesNetwork && it.parentTitleRes == null }

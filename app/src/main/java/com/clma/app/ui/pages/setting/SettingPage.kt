@@ -5,6 +5,7 @@ import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -40,10 +41,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -171,6 +174,7 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = innerPadding + PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item("search") {
                 HubSearchBox(onClick = { navController.navigate(Screen.SettingsSearch) })
@@ -183,40 +187,67 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
             }
 
             settingsHubSections.forEach { section ->
-                item("title_${section.id.name}") {
-                    Text(
-                        text = stringResource(section.titleRes),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(start = 12.dp, top = 20.dp, bottom = 8.dp),
-                    )
-                }
                 item(section.id.name) {
+                    var expanded by rememberSaveable { mutableStateOf(false) }
                     HubGroupCard {
-                        section.items.forEachIndexed { index, itemId ->
-                            if (index > 0) HubRowDivider()
-                            val def = settingsHubItems.getValue(itemId)
-                            HubRow(
-                                icon = hubItemIcon(itemId),
-                                title = stringResource(def.titleRes),
-                                summary = hubItemSummary(itemId, settings, statusSource),
-                                onClick = {
-                                    when (itemId) {
-                                        SettingsHubItemId.SHARE -> {
-                                            val intent = Intent(Intent.ACTION_SEND)
-                                            intent.type = "text/plain"
-                                            intent.putExtra(Intent.EXTRA_TEXT, shareText)
-                                            try {
-                                                context.startActivity(Intent.createChooser(intent, shareLabel))
-                                            } catch (e: ActivityNotFoundException) {
-                                                Toast.makeText(context, noShareApp, Toast.LENGTH_SHORT).show()
-                                            }
-                                        }
-
-                                        else -> def.route?.let { navController.navigate(it) }
-                                    }
-                                },
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable(
+                                    role = Role.Button,
+                                    onClickLabel = stringResource(if (expanded) R.string.chat_message_collapse else R.string.chat_message_expand),
+                                ) { expanded = !expanded }
+                                .heightIn(min = 76.dp)
+                                .padding(horizontal = 18.dp, vertical = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(Modifier.weight(1f)) {
+                                Text(
+                                    text = stringResource(section.titleRes),
+                                    style = MaterialTheme.typography.titleMedium,
+                                )
+                                Text(
+                                    text = section.items.take(3).joinToString(" · ") {
+                                        context.getString(settingsHubItems.getValue(it).titleRes)
+                                    },
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                            Icon(
+                                HugeIcons.ArrowRight01,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp).rotate(if (expanded) 90f else 0f),
                             )
+                        }
+                        if (expanded) {
+                            section.items.forEach { itemId ->
+                                HubRowDivider()
+                                val def = settingsHubItems.getValue(itemId)
+                                HubRow(
+                                    icon = hubItemIcon(itemId),
+                                    title = stringResource(def.titleRes),
+                                    summary = hubItemSummary(itemId, settings, statusSource),
+                                    onClick = {
+                                        when (itemId) {
+                                            SettingsHubItemId.SHARE -> {
+                                                val intent = Intent(Intent.ACTION_SEND)
+                                                intent.type = "text/plain"
+                                                intent.putExtra(Intent.EXTRA_TEXT, shareText)
+                                                try {
+                                                    context.startActivity(Intent.createChooser(intent, shareLabel))
+                                                } catch (e: ActivityNotFoundException) {
+                                                    Toast.makeText(context, noShareApp, Toast.LENGTH_SHORT).show()
+                                                }
+                                            }
+
+                                            else -> def.route?.let { navController.navigate(it) }
+                                        }
+                                    },
+                                )
+                            }
                         }
                     }
                 }
@@ -310,7 +341,7 @@ private fun HubRow(
             modifier = Modifier
                 .size(HubIconSize)
                 .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primaryContainer),
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh),
             contentAlignment = Alignment.Center,
         ) {
             Icon(

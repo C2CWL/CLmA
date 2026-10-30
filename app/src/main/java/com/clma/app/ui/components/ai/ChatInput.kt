@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -267,7 +268,7 @@ fun ChatInput(
     val chatLayout = settings.displaySetting.effectiveChatLayout
     val cleanLayout = chatLayout != ChatLayout.ORIGINAL
     val claudeLayout = chatLayout == ChatLayout.CLAUDE
-    // Gemini：同样走扁平顶栏/扁平输入条，但永远是 28dp 的全圆胶囊，不做玻璃。
+    // Gemini：同样走扁平顶栏/扁平输入条，但收起为胶囊、展开为圆角容器，不做玻璃。
     val geminiLayout = chatLayout == ChatLayout.GEMINI
     // Claude layout prefers a solid card (no glass) so the 24dp composer reads like paper.
     // 「模糊效果」(DisplaySetting.enableBlurEffect) 只负责这一条输入条（见设置页文案）。
@@ -316,6 +317,14 @@ fun ChatInput(
             modifier = modifier
                 .imePadding()
                 .navigationBarsPadding()
+                .then(
+                    if (geminiLayout) Modifier
+                        .fillMaxWidth()
+                        .wrapContentWidth(Alignment.CenterHorizontally)
+                        .widthIn(max = 800.dp)
+                        .fillMaxWidth()
+                    else Modifier
+                )
                 .padding(horizontal = if (cleanLayout) 12.dp else 24.dp)
                 .padding(bottom = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
