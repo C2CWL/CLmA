@@ -81,20 +81,6 @@ import com.clma.app.data.ai.tools.local.wifiInfoTool
 import com.clma.app.data.ai.tools.local.deleteSshHostTool
 import com.clma.app.data.ai.tools.local.forgetSshHostKeyTool
 import com.clma.app.data.ai.tools.local.listSshHostsTool
-import com.clma.app.data.ai.tools.local.telegramAddWhitelistTool
-import com.clma.app.data.ai.tools.local.telegramDeleteCommandsTool
-import com.clma.app.data.ai.tools.local.telegramDisableTool
-import com.clma.app.data.ai.tools.local.telegramEnableTool
-import com.clma.app.data.ai.tools.local.telegramGetCommandsTool
-import com.clma.app.data.ai.tools.local.telegramRemoveWhitelistTool
-import com.clma.app.data.ai.tools.local.telegramSendDocumentTool
-import com.clma.app.data.ai.tools.local.telegramSendMessageTool
-import com.clma.app.data.ai.tools.local.telegramSendPhotoTool
-import com.clma.app.data.ai.tools.local.telegramSetAssistantTool
-import com.clma.app.data.ai.tools.local.telegramSetCommandsTool
-import com.clma.app.data.ai.tools.local.telegramSetDefaultChatTool
-import com.clma.app.data.ai.tools.local.telegramSetTokenTool
-import com.clma.app.data.ai.tools.local.telegramStatusTool
 import com.clma.app.data.ai.tools.local.requestSecretTool
 import com.clma.app.data.ai.tools.local.saveSshHostTool
 import com.clma.app.data.ai.tools.local.secretDeleteTool
@@ -196,7 +182,6 @@ sealed class LocalToolOption {
     @Serializable @SerialName("cron_jobs")       data object CronJobs       : LocalToolOption()
     @Serializable @SerialName("ssh")             data object Ssh            : LocalToolOption()
     @Serializable @SerialName("shizuku")         data object Shizuku        : LocalToolOption()
-    @Serializable @SerialName("telegram_bot")    data object TelegramBot    : LocalToolOption()
     @Serializable @SerialName("screen_automation") data object ScreenAutomation : LocalToolOption()
     @Serializable @SerialName("app_launcher")      data object AppLauncher       : LocalToolOption()
     @Serializable @SerialName("termux")            data object Termux            : LocalToolOption()
@@ -372,9 +357,6 @@ class LocalTools(
     private val settingsStore: com.clma.app.data.datastore.SettingsStore,
     private val sshHostRepository: com.clma.app.data.repository.SshHostRepository,
     private val agentSecretsStore: AgentSecretsStore,
-    private val telegramBotPreferences: com.clma.app.data.telegram.TelegramBotPreferences,
-    private val telegramBotClient: com.clma.app.data.telegram.TelegramBotClient,
-    private val notificationListenerPreferences: com.clma.app.data.notifications.NotificationListenerPreferences,
     private val mcpManager: com.clma.app.data.ai.mcp.McpManager,
     private val externalAutomationConfig: com.clma.app.automation.ExternalAutomationConfig,
     private val gitHubReleaseChecker: com.clma.app.reliability.GitHubReleaseChecker,
@@ -931,22 +913,6 @@ class LocalTools(
             tools.add(com.clma.app.data.ai.tools.local.virtualDisplayKeyTool(context))
             tools.add(com.clma.app.data.ai.tools.local.virtualDisplayTextTool(context))
         }
-        if (options.contains(LocalToolOption.TelegramBot)) {
-            tools.add(telegramSetTokenTool(telegramBotPreferences, telegramBotClient))
-            tools.add(telegramStatusTool(context, telegramBotPreferences, telegramBotClient))
-            tools.add(telegramEnableTool(context, telegramBotPreferences))
-            tools.add(telegramDisableTool(context, telegramBotPreferences))
-            tools.add(telegramAddWhitelistTool(telegramBotPreferences))
-            tools.add(telegramRemoveWhitelistTool(telegramBotPreferences))
-            tools.add(telegramSetDefaultChatTool(telegramBotPreferences))
-            tools.add(telegramSetAssistantTool(telegramBotPreferences))
-            tools.add(telegramSendMessageTool(telegramBotPreferences, telegramBotClient))
-            tools.add(telegramSendPhotoTool(telegramBotPreferences, telegramBotClient))
-            tools.add(telegramSendDocumentTool(telegramBotPreferences, telegramBotClient))
-            tools.add(telegramSetCommandsTool(telegramBotPreferences, telegramBotClient))
-            tools.add(telegramGetCommandsTool(telegramBotClient))
-            tools.add(telegramDeleteCommandsTool(telegramBotPreferences, telegramBotClient))
-        }
         if (options.contains(LocalToolOption.CronJobs)) {
             tools.add(com.clma.app.data.ai.tools.local.scheduleJobTool(scheduledJobRepository, cronJobScheduler, settingsStore,
                 knownToolNamesProvider = { tools.map { it.name } }))
@@ -1000,7 +966,7 @@ class LocalTools(
             tools.add(dismissNotificationTool())
             tools.add(notificationActionClickTool())
             tools.add(notificationReplyTool())
-            tools.add(notificationStatusTool(notificationListenerPreferences, telegramBotPreferences))
+            tools.add(notificationStatusTool())
         }
         if (options.contains(LocalToolOption.Files)) {
             tools.add(listFilesTool())

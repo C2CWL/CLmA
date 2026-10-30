@@ -109,6 +109,8 @@ class ClmaApp : Application() {
             modules(appModule, viewModelModule, dataSourceModule, repositoryModule)
         }
         initWorkManager()
+        // Retire the periodic probe persisted by older builds.
+        WorkManager.getInstance(this).cancelUniqueWork("telegram_bot_health")
         this.createNotificationChannel()
 
         // Restore the Logs screen "record requests" switch from settings (and keep it in sync):
@@ -154,17 +156,8 @@ class ClmaApp : Application() {
         // Bring the edge bar back if it was left on
         restoreFloatingBallIfEnabled()
 
-        // Eagerly construct ChatService on the main thread. Its constructor calls
-        // LifecycleRegistry.addObserver which throws if it runs off-main, and the Telegram
-        // bot service runs on Dispatchers.IO — without this priming, the first inbound bot
-        // message after a fresh app start crashes the bot's handleIncoming with
-        // "addObserver must be called on the main thread" because Koin's lazy factory
-        // builds ChatService on the IO thread.
+        // ChatService registers lifecycle observers and must be constructed on main.
         eagerlyInitChatService()
-
-        // Start Telegram bot if previously enabled — service is START_NOT_STICKY so OS won't
-        // auto-revive it after a process kill; we need to bring it back ourselves.
-        startTelegramBotIfEnabled()
 
         // Initialise the agent's `~` workspace at /data/data/<pkg>/files/workspace/.
         // Tools resolve `~` and `~/foo` paths to this dir, giving the LLM a stable
@@ -471,26 +464,6 @@ class ClmaApp : Application() {
         )
     }
 
-    private fun startTelegramBotIfEnabled() {
-        get<AppScope>().launch(Dispatchers.IO) {
-            runCatching {
-                val cfg = get<com.clma.app.data.telegram.TelegramBotPreferences>().current()
-                if (cfg.isUsable) {
-                    Log.i(TAG, "startTelegramBotIfEnabled: re-starting bot service")
-                    com.clma.app.service.TelegramBotService.start(this@ClmaApp)
-                    // Defense-in-depth against OEM aggressive task-killing: a 30-min
-                    // periodic health probe re-starts the service if anything killed it
-                    // outside our control. Idempotent — uses ExistingPeriodicWorkPolicy.UPDATE.
-                    com.clma.app.service.TelegramBotHealthWorker.schedule(this@ClmaApp)
-                } else {
-                    com.clma.app.service.TelegramBotHealthWorker.cancel(this@ClmaApp)
-                }
-            }.onFailure {
-                Log.e(TAG, "startTelegramBotIfEnabled failed", it)
-            }
-        }
-    }
-
     private fun cleanupWorkspaceTempDirs() {
         get<AppScope>().launch(Dispatchers.IO) {
             runCatching {
@@ -555,7 +528,7 @@ class ClmaApp : Application() {
      * Bring the edge bar (formerly the floating ball) back after a process start when it is still
      * enabled. The service is
      * START_NOT_STICKY (so turning it off is final), which means the OS will not revive it on its
-     * own — we do it here, the same way [startTelegramBotIfEnabled] handles the bot.
+     * own — we restore it here.
      *
      * Skipped when SYSTEM_ALERT_WINDOW is missing: FloatingBallService would immediately stop
      * itself anyway, and we avoid leaving a useless foreground service behind.

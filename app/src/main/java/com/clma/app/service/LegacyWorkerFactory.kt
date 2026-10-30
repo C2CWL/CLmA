@@ -14,8 +14,7 @@ import com.clma.app.workflow.trigger.WorkflowTimeCronWorker
  *
  * This factory maps those old names onto the moved classes so already-queued work keeps
  * running until it is naturally re-enqueued under the new name (cron jobs are re-armed with
- * REPLACE on boot / package replace, workflow timers with REPLACE at startup, the Telegram
- * health probe with UPDATE). It returns null for every other name so the next factory /
+ * REPLACE on boot / package replace, workflow timers with REPLACE at startup). It returns null for every other name so the next factory /
  * WorkManager's default reflection handles it.
  */
 class LegacyWorkerFactory : WorkerFactory() {
@@ -25,7 +24,6 @@ class LegacyWorkerFactory : WorkerFactory() {
         workerParameters: WorkerParameters,
     ): ListenableWorker? = when (LEGACY_WORKER_CLASS_NAMES[workerClassName]) {
         CronJobWorker::class.java.name -> CronJobWorker(appContext, workerParameters)
-        TelegramBotHealthWorker::class.java.name -> TelegramBotHealthWorker(appContext, workerParameters)
         WorkflowTimeCronWorker::class.java.name -> WorkflowTimeCronWorker(appContext, workerParameters)
         else -> null
     }
@@ -35,8 +33,6 @@ class LegacyWorkerFactory : WorkerFactory() {
         val LEGACY_WORKER_CLASS_NAMES: Map<String, String> = mapOf(
             "me.rerere.rikkahub.service.CronJobWorker" to
                 CronJobWorker::class.java.name,
-            "me.rerere.rikkahub.service.TelegramBotHealthWorker" to
-                TelegramBotHealthWorker::class.java.name,
             "me.rerere.rikkahub.workflow.trigger.WorkflowTimeCronWorker" to
                 WorkflowTimeCronWorker::class.java.name,
         )

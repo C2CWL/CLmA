@@ -318,7 +318,6 @@ object LocalToolGroups {
         LocalToolOption.CronJobs,
         LocalToolOption.Files,
         LocalToolOption.Ssh,
-        LocalToolOption.TelegramBot,
         LocalToolOption.McpControl,
         LocalToolOption.ExternalAutomation,
         LocalToolOption.Reliability,

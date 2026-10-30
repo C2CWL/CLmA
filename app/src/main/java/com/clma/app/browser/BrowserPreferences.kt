@@ -19,8 +19,7 @@ import kotlinx.coroutines.launch
 private val Context.browserDataStore by preferencesDataStore(name = "browser_prefs")
 
 /**
- * DataStore-backed per-tool toggle store for the in-app browser. Mirrors
- * [com.clma.app.data.telegram.TelegramBotPreferences] in shape: a single store,
+ * DataStore-backed per-tool toggle store for the in-app browser: a single store,
  * suspend reads/writes, and an observable Flow.
  *
  * Pass 1 lays the wiring. Pass 2's tool factories will call [isToolEnabled] before

@@ -1038,7 +1038,7 @@
   <string name="setting_page_hub_chat_actions">聊天操作</string>
   <string name="setting_page_hub_app_alerts">应用提醒</string>
   <string name="setting_page_hub_notif_access">通知读取</string>
-  <string name="setting_page_hub_notif_access_desc">读取系统通知与 Telegram 自动转发白名单</string>
+  <string name="setting_page_hub_notif_access_desc">读取系统通知与近期活动</string>
   <string name="setting_page_hub_network_desc">代理、User-Agent、重试与流式超时</string>
 
   <string name="setting_page_general_group_conversation">会话</string>
@@ -1510,7 +1510,7 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="assistant_page_local_tools_cost_guards_title">成本守护</string>
   <string name="assistant_page_local_tools_cron_jobs_desc">让助手安排提示词稍后在后台运行 — 一次性或按间隔重复。任务在应用关闭和重启后仍然有效。</string>
   <string name="assistant_page_local_tools_cron_jobs_title">定时任务</string>
-  <string name="assistant_page_local_tools_cron_jobs_toast_hint">注意：定时任务使用你已启用的工具。如果某个任务调用 SSH、Telegram 或任何其他工具，那些开关也必须打开。</string>
+  <string name="assistant_page_local_tools_cron_jobs_toast_hint">注意：定时任务使用你已启用的工具。如果某个任务调用 SSH、任何其他工具，那些开关也必须打开。</string>
   <string name="assistant_page_local_tools_dialog_dismiss">知道了</string>
   <string name="assistant_page_local_tools_download_desc">从网址下载文件到公共下载文件夹，并将文本内容（笔记、转录、笑话、脚本）保存为文件。</string>
   <string name="assistant_page_local_tools_download_title">下载</string>
@@ -1538,7 +1538,7 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="assistant_page_local_tools_mic_recorder_title">麦克风录音</string>
   <string name="assistant_page_local_tools_notification_desc">代表用户发布 Android 通知。</string>
   <string name="assistant_page_local_tools_notification_title">通知</string>
-  <string name="assistant_page_local_tools_notifications_desc">让大模型读取来自其他应用的传入通知。白名单应用还会自动转发到你的默认 Telegram 聊天。在 设置 -&gt; 通知 中配置。</string>
+  <string name="assistant_page_local_tools_notifications_desc">让大模型读取来自其他应用的传入通知。在 设置 -&gt; 通知 中配置。</string>
   <string name="assistant_page_local_tools_notifications_title">通知感知</string>
   <string name="assistant_page_local_tools_perm_denied_toast">%1$s 权限被拒绝</string>
   <string name="assistant_page_local_tools_perm_needed">需要权限 — 点击授予</string>
@@ -1577,10 +1577,6 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="assistant_page_local_tools_sub_agents_title">子智能体</string>
   <string name="assistant_page_local_tools_system_intents_desc">让助手为你预填系统应用，由你最终确认：日历事件、新建联系人、邮件编辑器、短信编辑器、WiFi 设置、地图。没有你在目标应用中的点击，不会保存或发送任何内容。</string>
   <string name="assistant_page_local_tools_system_intents_title">系统 Intent</string>
-  <string name="assistant_page_local_tools_telegram_desc">将助手作为 Telegram 机器人运行 — 收发消息、文件，管理 /命令。完全通过工具配置（设置 token、白名单、默认聊天，然后启用）。前台服务处理长轮询。</string>
-  <string name="assistant_page_local_tools_telegram_notoken_message">开关已打开，但尚未设置机器人 Token。\n\n简单方法：在聊天中让助手 — "设置 Telegram 机器人，我的 token 是 …，我的用户 ID 是 …，把我设为默认聊天，并启用它。"\n\n手动方法：在 Telegram 上向 @BotFather 发送 /newbot 获取 token，向 @userinfobot 发送 /start 获取你的数字用户 ID。然后让助手设置，或在 设置 → Telegram 机器人 中粘贴。</string>
-  <string name="assistant_page_local_tools_telegram_notoken_title">Telegram 机器人需要 Token</string>
-  <string name="assistant_page_local_tools_telegram_title">Telegram 机器人</string>
   <string name="assistant_page_local_tools_telephony_desc">读取 SIM 卡和网络信息（运营商、网络类型）。需要 READ_PHONE_STATE 权限。</string>
   <string name="assistant_page_local_tools_telephony_title">电话信息</string>
   <string name="assistant_page_local_tools_termux_postgrant_command">mkdir -p ~/.termux &amp;&amp; echo \'allow-external-apps=true\' &gt;&gt; ~/.termux/termux.properties</string>
@@ -1827,8 +1823,6 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="setting_page_notifications_action_ago_hours">%1$d 小时前</string>
   <string name="setting_page_notifications_action_ago_minutes">%1$d 分钟前</string>
   <string name="setting_page_notifications_action_ago_seconds">%1$d 秒前</string>
-  <string name="setting_page_notifications_default_chat_set">默认 Telegram 聊天：%1$s</string>
-  <string name="setting_page_notifications_default_chat_unset">默认 Telegram 聊天：未设置（自动路由已禁用）</string>
   <string name="setting_page_notifications_open_settings">打开通知使用权设置</string>
   <string name="setting_page_notifications_recent_empty">尚未捕获任何通知。</string>
   <string name="setting_page_notifications_recent_section">最近活动</string>
@@ -1836,18 +1830,6 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="setting_page_notifications_status_help">CLmA 需要通知访问权限来读取传入的通知。打开 设置 → 通知使用权 → 通知使用权 并启用 CLmA。</string>
   <string name="setting_page_notifications_status_not_connected">服务：未连接</string>
   <string name="setting_page_notifications_status_section">状态</string>
-  <string name="setting_page_notifications_whitelist_help">其通知会自动转发到你默认 Telegram 聊天的应用。留空 = 不转发任何内容。在选择器中逐个开关应用。</string>
-  <string name="setting_page_notifications_whitelist_label">白名单应用</string>
-  <string name="setting_page_notifications_whitelist_manage">管理白名单应用</string>
-  <string name="setting_page_notifications_whitelist_picker_done">完成</string>
-  <string name="setting_page_notifications_whitelist_picker_empty">没有匹配筛选条件的已安装应用。</string>
-  <string name="setting_page_notifications_whitelist_picker_search">搜索应用</string>
-  <string name="setting_page_notifications_whitelist_picker_show_only_selected">仅显示白名单</string>
-  <string name="setting_page_notifications_whitelist_picker_title">白名单应用</string>
-  <string name="setting_page_notifications_whitelist_section">自动路由白名单</string>
-  <string name="setting_page_notifications_whitelist_summary_n">%1$d 个应用已加入白名单</string>
-  <string name="setting_page_notifications_whitelist_summary_n_plural">%1$d 个应用已加入白名单</string>
-  <string name="setting_page_notifications_whitelist_summary_zero">无白名单应用</string>
   <string name="setting_page_permissions">权限</string>
   <string name="setting_page_permissions_desc">自动发现的 CLmA 使用的所有权限列表，每项都有一键授予按钮。</string>
   <string name="setting_page_permissions_group_auto">自动授予</string>
@@ -1898,25 +1880,6 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="setting_page_scheduled_jobs_subtitle_never_run">从未触发</string>
   <string name="setting_page_scheduled_jobs_subtitle_ran">上次触发 %1$s</string>
   <string name="setting_page_scheduled_jobs_subtitle_when">时间：%1$s</string>
-  <string name="setting_page_telegram">Telegram 机器人</string>
-  <string name="setting_page_telegram_battery_already_ok">已从电池优化中加入白名单。</string>
-  <string name="setting_page_telegram_battery_desc">屏幕关闭时，激进的 OEM 系统（小米、OPPO、一加、Vivo）会切断非白名单应用的网络。机器人只能在偶尔的维护窗口期投递消息。点击将 CLmA 加入白名单。</string>
-  <string name="setting_page_telegram_battery_needed">电池优化：未加入白名单 - 点击修复</string>
-  <string name="setting_page_telegram_battery_ok">电池优化：已加入白名单</string>
-  <string name="setting_page_telegram_boot_note">启动后，机器人也会在设备开机时自动启动。</string>
-  <string name="setting_page_telegram_default_chat">默认聊天</string>
-  <string name="setting_page_telegram_default_chat_desc">当大模型省略 chat_id 时（例如定时任务提醒），外发消息的去向。使用你的 Telegram 数字用户 ID。</string>
-  <string name="setting_page_telegram_desc">将大模型作为 Telegram 机器人运行 — 从任何设备远程与它聊天。</string>
-  <string name="setting_page_telegram_no_token_toast">请先设置机器人 Token。</string>
-  <string name="setting_page_telegram_start">启动</string>
-  <string name="setting_page_telegram_status_running">运行中</string>
-  <string name="setting_page_telegram_status_starting">正在启动…</string>
-  <string name="setting_page_telegram_status_stopped">已停止</string>
-  <string name="setting_page_telegram_stop">停止</string>
-  <string name="setting_page_telegram_token">机器人 Token</string>
-  <string name="setting_page_telegram_token_desc">来自 @BotFather。必须停止机器人才能编辑。</string>
-  <string name="setting_page_telegram_whitelist">允许的聊天 ID</string>
-  <string name="setting_page_telegram_whitelist_desc">用逗号分隔。留空 = 不允许任何人。用 @userinfobot 查找你的 ID。</string>
   <string name="setting_page_tool_approvals">工具授权</string>
   <string name="setting_page_tool_approvals_desc">审批模式（自动/通用/手动）与运行前需询问的工具。</string>
   <string name="setting_page_tool_approvals_empty">黑名单为空 — 没有任何工具需要审批。</string>
@@ -1931,7 +1894,7 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="setting_page_tool_approvals_add_recommended">加入常见危险工具</string>
   <string name="setting_page_tool_approvals_no_match">没有匹配的工具。</string>
   <string name="setting_page_tool_approvals_load_failed">无法加载工具列表。</string>
-  <string name="setting_page_tool_approvals_yolo_dialog_body">每个工具 — 本地 shell、SSH、文件写入、屏幕自动化、Telegram 外发、MCP，以及黑名单里的全部工具 — 都将无需询问你直接运行。智能体可能发送消息、在远程主机上运行命令、拍照、写入文件、安排任务，全部无需确认。\n\nHARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备 dd、fork 炸弹、编码载荷管道 — 这些仍会被拦截。\n\n这是个危险操作。仅在你信任模型 + 助手配置 + 你自己的提示词会负责任地行事时才启用。</string>
+  <string name="setting_page_tool_approvals_yolo_dialog_body">每个工具 — 本地 shell、SSH、文件写入、屏幕自动化、MCP，以及黑名单里的全部工具 — 都将无需询问你直接运行。智能体可能发送消息、在远程主机上运行命令、拍照、写入文件、安排任务，全部无需确认。\n\nHARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备 dd、fork 炸弹、编码载荷管道 — 这些仍会被拦截。\n\n这是个危险操作。仅在你信任模型 + 助手配置 + 你自己的提示词会负责任地行事时才启用。</string>
   <string name="setting_page_tool_approvals_mode_title">审批模式</string>
   <string name="setting_page_tool_approvals_mode_auto">自动</string>
   <string name="setting_page_tool_approvals_mode_semi">通用</string>
@@ -1942,7 +1905,7 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="setting_page_tool_approvals_blacklist_ignored">自动模式下黑名单被忽略 — 所有工具无需询问（仍开启审批的高风险工具除外）。</string>
   <string name="setting_page_tool_approvals_blacklist_manual">手动模式下每个工具都会询问。下方黑名单仅在通用模式下生效。</string>
   <string name="setting_page_tool_approvals_auto_dialog_title">切换到自动模式？</string>
-  <string name="setting_page_tool_approvals_auto_dialog_body">每个工具 — 本地 shell、SSH、文件写入、屏幕自动化、Telegram 外发、MCP 服务器工具、以及黑名单里的全部工具 — 都将无需询问你直接运行。
+  <string name="setting_page_tool_approvals_auto_dialog_body">每个工具 — 本地 shell、SSH、文件写入、屏幕自动化、MCP 服务器工具、以及黑名单里的全部工具 — 都将无需询问你直接运行。
 
 提权类工具（添加 MCP 服务器、安装技能、eval_js、密钥库操作、NFC 写入、目录授权）仍每次需要确认，除非你已手动关闭其审批。
 
@@ -1966,7 +1929,7 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="setting_page_tool_approvals_waiver_risk_grant_directory">会获得整个目录的长期读写权限</string>
   <string name="setting_page_tool_approvals_waiver_risk_mcp_relayed">第三方服务器的工具行为不透明，可能读写、删除或外发数据</string>
   <string name="setting_page_tool_approvals_waiver_risk_generic">该工具属于高权限操作，默认每次都需要你确认</string>
-  <string name="setting_page_tool_approvals_waiver_risk_remote">Telegram 等远程会话同样不再询问，任何被允许的聊天对象都可能触发</string>
+  <string name="setting_page_tool_approvals_waiver_risk_remote">后台任务同样不再询问，可能在没有活动对话时触发工具</string>
   <string name="setting_page_tool_approvals_waiver_risk_injection">模型可能被网页、文件或消息中的恶意内容诱导（提示词注入）</string>
   <string name="setting_page_tool_approvals_waiver_risk_unattended">无人值守任务（定时/子代理/工作流）仍会拒绝此类工具；HARDLINE 拦截（rm -rf / 等）仍然生效</string>
   <string name="setting_page_tool_approvals_waiver_disclaimer">我已阅读并理解上述风险，自愿关闭审批，并对由此产生的一切后果（包括数据丢失、隐私泄露、账号或财产损失）自行承担全部责任，与本应用及其开发者无关。</string>
@@ -2317,14 +2280,6 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="setting_page_search_web_fetch_tools_desc">允许助手直接抓取并阅读网页内容。默认开启；关闭后将仅依赖你配置的搜索提供商。</string>
   <string name="stats_page_cache_hit_rate">缓存命中率</string>
   <string name="theme_name_claude">Claude 暖调</string>
-  <string name="setting_page_telegram_proxy_enabled">代理</string>
-  <string name="setting_page_telegram_proxy_enabled_desc">让 Bot 自身的网络请求通过代理转发。编辑前必须先停止 Bot。</string>
-  <string name="setting_page_telegram_proxy_type">代理类型</string>
-  <string name="setting_page_telegram_proxy_type_desc">SOCKS5 不支持身份验证，因此下方的用户名/密码仅适用于 HTTP。</string>
-  <string name="setting_page_telegram_proxy_host">代理主机</string>
-  <string name="setting_page_telegram_proxy_port">代理端口</string>
-  <string name="setting_page_telegram_proxy_username">代理用户名</string>
-  <string name="setting_page_telegram_proxy_password">代理密码</string>
   <string name="language_arabic">🇸🇦 العربية</string>
   <string name="language_persian">🇮🇷 فارسی</string>
   <string name="language_urdu">🇵🇰 اردو</string>
@@ -2672,7 +2627,7 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="perm_label_dnd">勿扰模式访问</string>
   <string name="perm_desc_dnd">允许代理更改铃响模式和各音量流。</string>
   <string name="perm_label_battery">忽略电池优化</string>
-  <string name="perm_desc_battery">保持 Telegram 机器人前台服务在息屏时仍可响应。</string>
+  <string name="perm_desc_battery">保持定时任务和工作流在息屏时仍可响应。</string>
   <string name="perm_label_post_notifications">发送通知</string>
   <string name="perm_desc_post_notifications">机器人前台服务和 TTS / 进度通知需要此权限才能显示。</string>
   <string name="perm_desc_custom">自定义权限，所属应用可能尚未安装。</string>
@@ -2680,7 +2635,7 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="perm_label_accessibility">屏幕自动化（无障碍服务）</string>
   <string name="perm_desc_accessibility">点击、滑动、click_node、截屏、read_window_tree、set_text 等 UI 操作工具所需。</string>
   <string name="perm_label_notification_listener">通知访问</string>
-  <string name="perm_desc_notification_listener">允许代理读取收到的通知，并将白名单应用的通知自动转发到 Telegram。</string>
+  <string name="perm_desc_notification_listener">允许代理读取收到的通知。</string>
   <string name="perm_label_camera">摄像头</string>
   <string name="perm_desc_camera">take_photo 工具用于拍摄静态图片。</string>
   <string name="perm_label_microphone">麦克风</string>
@@ -2723,7 +2678,6 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="tool_name_termux">Termux</string>
   <string name="tool_name_stt">语音转文字</string>
   <string name="tool_name_ssh">SSH</string>
-  <string name="tool_name_tg_bot">Telegram 机器人</string>
   <string name="tool_name_cron">定时任务</string>
   <string name="tool_name_workflows">工作流</string>
   <string name="tool_name_notification">通知</string>
@@ -3105,7 +3059,6 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="doctor_pill_info">信息</string>
   <string name="doctor_fix_open_permissions">打开应用权限</string>
   <string name="doctor_fix_open_settings">打开系统设置</string>
-  <string name="doctor_fix_open_telegram">打开 Telegram 设置</string>
   <string name="doctor_fix_open_assistants">打开助手</string>
   <string name="doctor_fix_open_subagents">打开子智能体</string>
   <string name="doctor_fix_open_shizuku">打开 Shizuku 设置</string>
@@ -3134,15 +3087,10 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="doctor_check_nearby_wifi">附近的 Wi-Fi 设备</string>
   <string name="doctor_check_bg_location">后台位置</string>
   <string name="doctor_check_nfc">NFC</string>
-  <string name="doctor_check_tg_token">Telegram 机器人令牌</string>
-  <string name="doctor_check_tg_fgs">Telegram 机器人前台服务</string>
-  <string name="doctor_check_tg_bot">Telegram 机器人</string>
-  <string name="doctor_check_tg_proxy">Telegram 机器人代理</string>
   <string name="doctor_check_accessibility_bound">无障碍服务已绑定</string>
   <string name="doctor_check_notif_listener_bound">通知监听已绑定</string>
   <string name="doctor_check_default_assistant">默认助手</string>
   <string name="doctor_check_assistant_count">助手数量</string>
-  <string name="doctor_check_tg_assistant_override">Telegram 机器人助手覆盖</string>
   <string name="doctor_check_subagent_profiles">子智能体配置</string>
   <string name="doctor_check_screen_automation">屏幕自动化</string>
   <string name="doctor_check_app_launcher">应用启动器</string>
@@ -3189,7 +3137,7 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="doctor_detail_perm_location_granted">已授权。</string>
   <string name="doctor_detail_perm_location_missing">地理围栏触发器和在 Android 10+ 上读取 Wi-Fi SSID 都需要它。</string>
   <string name="doctor_detail_perm_battery_granted">应用已在白名单中 — 后台服务可稳定运行。</string>
-  <string name="doctor_detail_perm_battery_missing">待机优化可能会杀掉 Telegram 机器人、定时任务和工作流。</string>
+  <string name="doctor_detail_perm_battery_missing">待机优化可能会中断定时任务和工作流。</string>
   <string name="doctor_detail_perm_accessibility_granted">已在系统设置中启用。</string>
   <string name="doctor_detail_perm_accessibility_missing">未启用。take_screenshot、swipe、scroll、click_at 以及手势类工具将无法使用。</string>
   <string name="doctor_detail_perm_files_granted">已授权 — file_read / file_write 工具可访问任意路径。</string>
@@ -3211,13 +3159,6 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="doctor_detail_nfc_off_not_required">系统设置中 NFC 已关闭。没有被任何已启用的工具使用。</string>
   <string name="doctor_detail_nfc_off_needed_by">系统设置中 NFC 已关闭。使用者：%1$s</string>
   <string name="doctor_detail_nfc_ok">NFC 硬件存在且已启用。</string>
-  <string name="doctor_detail_tg_token_ok">令牌已配置（%1$d 个字符，已隐藏）。</string>
-  <string name="doctor_detail_tg_token_missing">Telegram 机器人已启用但未设置令牌 — 服务启动时会失败。</string>
-  <string name="doctor_detail_tg_running">服务运行中。</string>
-  <string name="doctor_detail_tg_stopped">服务已停止。Telegram 消息无法送达助手。看门狗会在下一次 30 分钟健康检查时重试。</string>
-  <string name="doctor_detail_tg_disabled">已禁用 — 如果你不用 Telegram 就无需处理。</string>
-  <string name="doctor_detail_tg_proxy">%1$s 代理：%2$s:%3$s。</string>
-  <string name="doctor_detail_tg_no_proxy">未配置代理，直连 Telegram。</string>
   <string name="doctor_detail_probe_failed">探测失败：%1$s：%2$s</string>
   <string name="doctor_detail_acc_alive">服务对象存活 — %1$s 可以运行。</string>
   <string name="doctor_detail_acc_bound_no_window">服务已绑定但取窗口返回空。可能仍在用更新前的配置运行；请把无障碍服务关掉再打开。</string>
@@ -3227,10 +3168,8 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="doctor_detail_nl_granted_not_bound">已授权但当前未绑定。请在设置中关掉再打开。</string>
   <string name="doctor_detail_nl_not_granted">未授权。需要它的功能：%1$s。</string>
   <string name="doctor_detail_no_assistants">还没有配置助手 — 应用无法开始对话。</string>
-  <string name="doctor_detail_default_assistant">「%1$s」（id: %2$s…）。未设置覆盖时，用于新对话、定时任务和 Telegram。</string>
+  <string name="doctor_detail_default_assistant">「%1$s」（id: %2$s…）。未设置覆盖时，用于新对话和定时任务。</string>
   <string name="doctor_detail_assistant_count">已配置 %1$d 个助手。</string>
-  <string name="doctor_detail_tg_assistant_override">Telegram 收到的消息会路由到「%1$s」（id: %2$s…），覆盖全局默认。</string>
-  <string name="doctor_detail_tg_assistant_missing">已设置 Telegram 助手覆盖（id: %1$s…），但找不到对应助手。消息会退回全局默认。</string>
   <string name="doctor_detail_no_subagents">还没有配置子智能体。</string>
   <string name="doctor_detail_subagents_ok">已配置 %1$d 个配置，都能解析到现有的对话模型。</string>
   <string name="doctor_detail_subagents_broken">已配置 %1$d 个配置。其中 %2$d 个引用的模型已无法解析为已启用服务商的对话模型：%3$s。</string>
@@ -3299,7 +3238,6 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="doctor_relies_on_shizuku">已安装并运行 Shizuku（或 Sui），且已授予权限</string>
   <string name="doctor_relies_on_all_files">Android 11+ 上的所有文件访问权限，用于访问任意路径</string>
   <string name="doctor_relies_on_browser_profile">可写的配置目录，用于持久化 Cookie 和 localStorage</string>
-  <string name="doctor_detail_tg_assistant_missing_2">Telegram 助手覆盖已设置（id: %1$s…），但找不到对应助手。消息会退回全局默认。</string>
   <string name="doctor_detail_accel_cpu_2">打开它可在下次加载时重试本机 GPU。</string>
   <string name="doctor_detail_accel_cpu_full">CPU（设置 -> 本地 LiteRT 中「尝试 GPU」开关为关闭）。打开它可在下次加载时重试本机 GPU。</string>
   <string name="doctor_detail_accel_cpu_fallback_full">CPU（回退：本机 GPU 委托初始化失败，多半是 MLDrift 问题。在设置 -> 本地 LiteRT 点「重新检测」可重新探测。）</string>
@@ -3338,17 +3276,15 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="doctor_detail_cache_normal">处于正常范围。</string>
   <string name="doctor_fix_cache_freed">已释放 %1$s。</string>
   <string name="doctor_detail_heap">堆内存：%2$d MB 中空闲 %1$d MB（上限 %3$d MB）</string>
-  <string name="doctor_detail_tg_proxy_configured">%1$s 代理：%2$s:%3$s。</string>
   <string name="doctor_detail_perm_needed_by_2">%1$s 使用者：%2$s。</string>
   <string name="doctor_detail_nfc_off_needed_by_2">系统设置中 NFC 已关闭。使用者：%1$s</string>
-  <string name="doctor_detail_default_assistant_2">「%1$s」（id: %2$s…）。未设置覆盖时，用于新对话、定时任务和 Telegram。</string>
-  <string name="doctor_detail_tg_assistant_override_2">Telegram 收到的消息会路由到「%1$s」（id: %2$s…），覆盖全局默认。</string>
+  <string name="doctor_detail_default_assistant_2">「%1$s」（id: %2$s…）。未设置覆盖时，用于新对话和定时任务。</string>
   <string name="doctor_detail_subagents_broken_2">已配置 %1$d 个配置。其中 %2$d 个引用的模型已无法解析为已启用服务商的对话模型：%3$s。</string>
   <string name="doctor_detail_storage_grants_2">已授权 %1$d 个目录：%2$s。</string>
   <string name="doctor_detail_dns_ok">dns.google 在 2.5 秒内解析成功。</string>
   <string name="doctor_detail_termux_installed_2">本机已安装 com.termux。</string>
   <string name="doctor_detail_worker_stranded_2">有 %1$d 次运行开始于 30 分钟前且再未回报。可能是运行中进程被杀。</string>
-  <string name="doctor_detail_default_assistant_suffix">未设置覆盖时，用于新对话、定时任务和 Telegram。</string>
+  <string name="doctor_detail_default_assistant_suffix">未设置覆盖时，用于新对话和定时任务。</string>
   <string name="doctor_detail_nfc_off_needed_by_3">系统设置中 NFC 已关闭。需要它的功能：%1$s。</string>
   <string name="doctor_detail_model_rates_row">%1$s：预填充 %2$.1f tok/s，解码 %3$.1f tok/s%4$s</string>
   <string name="doctor_detail_mtp_on">，已开启 MTP</string>

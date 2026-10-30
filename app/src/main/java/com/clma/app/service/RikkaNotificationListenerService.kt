@@ -5,19 +5,10 @@ import android.content.pm.PackageManager
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
 import com.clma.app.BuildConfig
 import com.clma.app.data.notifications.NotificationEntry
-import com.clma.app.data.notifications.NotificationListenerPreferences
-import com.clma.app.data.telegram.TelegramBotClient
-import com.clma.app.data.telegram.TelegramBotPreferences
-import org.koin.android.ext.android.inject
 
 private const val TAG = "RikkaNListener"
 // Generous ring so a busy morning (school bus app + Slack + WhatsApp + Instagram +
@@ -35,8 +26,7 @@ private const val ACTIVE_LIST_CACHE_TTL_MS = 1_000L
 
 /**
  * Reads notifications from every app the user has granted us access to. Maintains an
- * in-memory ring buffer (100 entries) for LLM lookup AND auto-forwards whitelisted
- * packages' notifications to the default Telegram chat as a plain text summary.
+ * in-memory ring buffer for LLM lookup and dispatches workflow notification triggers.
  *
  * Bound by the OS once the user enables RikkaHub in Settings -> Notification access.
  * The companion singleton lets tool factories reach the live instance synchronously.
@@ -45,30 +35,11 @@ private const val ACTIVE_LIST_CACHE_TTL_MS = 1_000L
 // can extend it; the manifest declares the shim (see [LegacyComponentNames]).
 open class RikkaNotificationListenerService : NotificationListenerService() {
 
-    private val whitelistPrefs: NotificationListenerPreferences by inject()
-    private val telegramPrefs: TelegramBotPreferences by inject()
-    private val telegramClient: TelegramBotClient by inject()
-
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-
     private val _bound = MutableStateFlow(false)
     val bound = _bound.asStateFlow()
 
     private val _recent = MutableStateFlow<List<NotificationEntry>>(emptyList())
     val recent = _recent.asStateFlow()
-
-    // Tracks the last (key -> "title|text" hash) we forwarded so progressive updates of
-    // the same notification don't spam Telegram. Mutated from per-notification IO
-    // coroutines (one launched per onNotificationPosted), so it must be concurrent-safe;
-    // a plain HashMap here can ConcurrentModificationException on burst notifications.
-    private val lastForwarded = java.util.concurrent.ConcurrentHashMap<String, Int>()
-
-    // Tracks the very last (package + title + text) we forwarded across ALL keys. Persistent
-    // notifications (Termux, music players, etc.) sometimes flap between identical content
-    // under different StatusBarNotification keys; per-key dedup misses those, so this
-    // global dedup catches "exact same payload as the previous forward" regardless of key.
-    @Volatile private var lastForwardedGlobalSig: Int = 0
-    @Volatile private var lastForwardedGlobalAtMs: Long = 0L
 
     override fun onListenerConnected() {
         super.onListenerConnected()
@@ -80,7 +51,6 @@ open class RikkaNotificationListenerService : NotificationListenerService() {
     override fun onListenerDisconnected() {
         instance = null
         _bound.value = false
-        lastForwarded.clear()
         Log.i(TAG, "listener disconnected")
         super.onListenerDisconnected()
     }
@@ -88,7 +58,6 @@ open class RikkaNotificationListenerService : NotificationListenerService() {
     override fun onDestroy() {
         instance = null
         _bound.value = false
-        scope.cancel()
         super.onDestroy()
     }
 
@@ -102,9 +71,6 @@ open class RikkaNotificationListenerService : NotificationListenerService() {
 
         // Append / replace by key (dedup updates of the same notification).
         appendToRing(entry)
-
-        // Auto-route to Telegram if package is whitelisted and a default chat is set.
-        scope.launch { tryForwardToTelegram(entry) }
 
         // Phase 12 — fan out to the workflow notification trigger dispatcher. The dispatcher
         // checks the matching workflows itself; with zero matching, this is a no-op.
@@ -129,62 +95,6 @@ open class RikkaNotificationListenerService : NotificationListenerService() {
         val withoutOld = cur.filterNot { it.key == entry.key }
         val next = (withoutOld + entry).takeLast(RING_SIZE)
         _recent.value = next
-    }
-
-    private suspend fun tryForwardToTelegram(entry: NotificationEntry) {
-        val cfg = try { whitelistPrefs.current() } catch (t: Throwable) {
-            Log.w(TAG, "whitelist prefs read failed; skipping forward", t); return
-        }
-        if (entry.packageName !in cfg.whitelist) return
-
-        val tg = try { telegramPrefs.current() } catch (t: Throwable) {
-            Log.w(TAG, "telegram prefs read failed; skipping forward", t); return
-        }
-        val chatId = tg.defaultChatId ?: return
-        if (!tg.enabled) return
-
-        // Drop forwards for *ongoing* (foreground-service) notifications from packages the
-        // agent itself just kicked off — Termux's "X sessions" pill flaps every time we run
-        // a command, and the user does not need a Telegram ping for each. Non-ongoing
-        // notifications (e.g. a termux-notification the user explicitly asked the agent
-        // to send) still go through.
-        if (entry.ongoing &&
-            com.clma.app.data.ai.AgentTurnTracker.isFreshlyTouched(entry.packageName)) {
-            return
-        }
-
-        val signature = (entry.title + "|" + entry.text).hashCode()
-        if (lastForwarded[entry.key] == signature) return  // identical update; skip
-
-        // Global dedup: if the previous forward (any key) had the exact same package + title
-        // + text within the last 5 minutes, skip. Catches Termux's persistent notification
-        // re-posting identical content under shifting keys.
-        val globalSig = (entry.packageName + "|" + entry.title + "|" + entry.text).hashCode()
-        val now = System.currentTimeMillis()
-        if (globalSig == lastForwardedGlobalSig && (now - lastForwardedGlobalAtMs) < 5 * 60_000) {
-            return
-        }
-
-        val body = buildString {
-            append("🔔 [").append(entry.label).append("] ")
-            if (entry.title.isNotBlank()) append(entry.title)
-            if (entry.text.isNotBlank()) {
-                if (entry.title.isNotBlank()) append('\n')
-                append(entry.text)
-            }
-        }.take(3500)
-
-        try {
-            telegramClient.sendMessage(chatId, body)
-            // Record dedup state ONLY AFTER successful send. Previously these were set
-            // before sendMessage, so a transient network error meant the user never saw
-            // that notification re-forwarded — the dedup map said "already done" forever.
-            lastForwarded[entry.key] = signature
-            lastForwardedGlobalSig = globalSig
-            lastForwardedGlobalAtMs = now
-        } catch (e: Throwable) {
-            Log.w(TAG, "auto-route failed for ${entry.packageName}", e)
-        }
     }
 
     /**

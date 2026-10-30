@@ -103,10 +103,6 @@
   <string name="assistant_page_local_tools_section_network">الشبكة</string>
   <string name="assistant_page_local_tools_ssh_title">SSH</string>
   <string name="assistant_page_local_tools_ssh_desc">السماح للمساعد بتشغيل أوامر الواجهة الطرفية (Shell) ونقل الملفات على الأجهزة البعيدة عبر SSH/SFTP. مضيفون محفوظون، مصادقة بكلمة مرور أو مفتاح خاص، فحص مفتاح المضيف accept-new.</string>
-  <string name="assistant_page_local_tools_telegram_title">بوت Telegram</string>
-  <string name="assistant_page_local_tools_telegram_desc">تشغيل المساعد كبوت Telegram — إرسال/استقبال الرسائل والملفات وإدارة الأوامر /. يُكوَّن بالكامل عبر الأدوات (تعيين الرمز، القائمة البيضاء، الدردشة الافتراضية، ثم التمكين). تتولى خدمة المقدمة الاستطلاع الطويل.</string>
-  <string name="setting_page_telegram">بوت Telegram</string>
-  <string name="setting_page_telegram_desc">تشغيل النموذج اللغوي كبوت Telegram — دردِش معه عن بُعد من أي جهاز.</string>
   <string name="setting_page_workflows">سير العمل</string>
   <string name="setting_page_workflows_desc">أتمتة قائمة على المُحفِّزات: عندما يحدث شيء على الجهاز، تُشغَّل سلسلة من الأدوات.</string>
   <string name="setting_page_scheduled_jobs">المهام المجدوَلة</string>
@@ -123,23 +119,6 @@
   <string name="setting_page_tool_approvals_empty">لم تُمنح أي أداة «السماح دائمًا» بعد. سيسأل البوت قبل تشغيل أي أداة ذات أثر جانبي.</string>
   <string name="setting_page_tool_approvals_revoke">إلغاء</string>
   <string name="setting_page_tool_approvals_revoke_all">إلغاء الكل</string>
-  <string name="setting_page_telegram_token">رمز البوت</string>
-  <string name="setting_page_telegram_token_desc">من @BotFather. يجب إيقاف البوت للتعديل.</string>
-  <string name="setting_page_telegram_default_chat">الدردشة الافتراضية</string>
-  <string name="setting_page_telegram_default_chat_desc">وجهة الرسائل الصادرة عندما يُغفل النموذج اللغوي chat_id (مثل تنبيهات مهام cron). استخدم معرّف مستخدم Telegram الرقمي الخاص بك.</string>
-  <string name="setting_page_telegram_whitelist">معرّفات الدردشة المسموح بها</string>
-  <string name="setting_page_telegram_whitelist_desc">مفصولة بفواصل. فارغ = لا أحد. اعرف معرّفك عبر @userinfobot.</string>
-  <string name="setting_page_telegram_status_running">يعمل</string>
-  <string name="setting_page_telegram_status_starting">جارٍ البدء…</string>
-  <string name="setting_page_telegram_status_stopped">متوقف</string>
-  <string name="setting_page_telegram_start">بدء</string>
-  <string name="setting_page_telegram_stop">إيقاف</string>
-  <string name="setting_page_telegram_no_token_toast">عيّن رمز البوت أولًا.</string>
-  <string name="setting_page_telegram_boot_note">عند البدء، يبدأ البوت أيضًا تلقائيًا عند إقلاع الجهاز.</string>
-  <string name="setting_page_telegram_battery_ok">تحسين البطارية: في القائمة البيضاء</string>
-  <string name="setting_page_telegram_battery_needed">تحسين البطارية: ليس في القائمة البيضاء - انقر للإصلاح</string>
-  <string name="setting_page_telegram_battery_desc">عند إطفاء الشاشة، تقطع أنظمة OEM العدوانية (Xiaomi، OPPO، OnePlus، Vivo) الشبكة عن التطبيقات غير المدرجة في القائمة البيضاء. لن يتمكن البوت من التسليم إلا أثناء فترات الصيانة العرضية. انقر لإضافة RikkaHub إلى القائمة البيضاء.</string>
-  <string name="setting_page_telegram_battery_already_ok">مُضاف بالفعل إلى القائمة البيضاء لتحسين البطارية.</string>
   <string name="assistant_page_local_tools_media_player_desc">تشغيل وإيقاف الصوت من مسار ملف أو رابط.</string>
   <string name="assistant_page_local_tools_media_player_title">مشغّل الوسائط</string>
   <string name="assistant_page_local_tools_media_scanner_desc">إخطار ماسح الوسائط في Android بالملفات الجديدة لتظهر في تطبيقات المعرض/الموسيقى.</string>
@@ -338,7 +317,7 @@
   <string name="setting_page_tool_approvals_yolo_on">🚨 مُفعَّل. كل أداة تعمل دون مطالبة. حظر HARDLINE (rm -rf /، mkfs، shutdown …) لا يزال ساريًا.</string>
   <string name="setting_page_tool_approvals_yolo_off">مُعطَّل. الأدوات ذات الأثر الجانبي تطلب موافقة قبل التشغيل.</string>
   <string name="setting_page_tool_approvals_yolo_dialog_title">إيقاف جميع مطالبات الموافقة؟</string>
-  <string name="setting_page_tool_approvals_yolo_dialog_body">كل أداة — سطر الأوامر المحلي (Shell)، SSH، كتابة الملفات، أتمتة الشاشة، الإرسال عبر Telegram، MCP — ستعمل دون سؤالك. يمكن للوكيل إرسال رسائل وتشغيل أوامر على مضيفين بعيدين والتقاط صور وكتابة ملفات وجدولة مهام، كل ذلك دون تأكيد.\n\nحماية HARDLINE لا تزال سارية: rm -rf /، mkfs، shutdown / reboot، dd إلى أجهزة الكتل، قنبلة fork، أنابيب الحمولات المُرمَّزة — تبقى هذه محظورة.\n\nهذا خيار خطير. لا تُفعِّله إلا إذا كنت تثق بأن النموذج + تكوين المساعد + توجيهاتك الخاصة ستتصرف بمسؤولية.</string>
+  <string name="setting_page_tool_approvals_yolo_dialog_body">كل أداة — سطر الأوامر المحلي (Shell)، SSH، كتابة الملفات، أتمتة الشاشة، MCP — ستعمل دون سؤالك. يمكن للوكيل إرسال رسائل وتشغيل أوامر على مضيفين بعيدين والتقاط صور وكتابة ملفات وجدولة مهام، كل ذلك دون تأكيد.\n\nحماية HARDLINE لا تزال سارية: rm -rf /، mkfs، shutdown / reboot، dd إلى أجهزة الكتل، قنبلة fork، أنابيب الحمولات المُرمَّزة — تبقى هذه محظورة.\n\nهذا خيار خطير. لا تُفعِّله إلا إذا كنت تثق بأن النموذج + تكوين المساعد + توجيهاتك الخاصة ستتصرف بمسؤولية.</string>
   <string name="setting_page_tool_approvals_yolo_dialog_confirm">نعم، أنا غبي، فعّل</string>
   <string name="setting_page_tool_approvals_yolo_dialog_cancel">إبقاء الموافقات مُفعَّلة</string>
   <string name="chat_message_tool_edit_memory">تم تحديث ذاكرة</string>
@@ -1151,7 +1130,6 @@
   <string name="assistant_page_local_tools_app_launcher_title">مشغّل التطبيقات</string>
   <string name="assistant_page_local_tools_app_launcher_desc">فتح التطبيقات المثبتة باسم الحزمة (مثل Termux، الإعدادات) وسرد التطبيقات المتاحة. يقترن بأتمتة الشاشة للتحكم الكامل في الواجهة.</string>
   <string name="assistant_page_local_tools_notifications_title">إدراك الإشعارات</string>
-  <string name="assistant_page_local_tools_notifications_desc">السماح للنموذج اللغوي بقراءة الإشعارات الواردة من التطبيقات الأخرى. التطبيقات المدرجة في القائمة البيضاء تُحوَّل أيضًا تلقائيًا إلى دردشة Telegram الافتراضية. كوّن في الإعدادات -&gt; الإشعارات.</string>
   <string name="assistant_page_local_tools_termux_title">تكامل Termux</string>
   <string name="assistant_page_local_tools_termux_status_not_installed">Termux غير مثبت - ثبّته من github.com/termux/termux-app/releases</string>
   <string name="assistant_page_local_tools_termux_status_no_permission">فعّل لمنح إذن RUN_COMMAND</string>
@@ -1166,9 +1144,7 @@
   <string name="assistant_page_local_tools_termux_postgrant_command">mkdir -p ~/.termux &amp;&amp; echo \'allow-external-apps=true\' &gt;&gt; ~/.termux/termux.properties</string>
   <string name="assistant_page_local_tools_termux_postgrant_copy">نسخ الأمر</string>
   <string name="assistant_page_local_tools_termux_postgrant_copied">تم نسخ الأمر — الصقه في Termux.</string>
-  <string name="assistant_page_local_tools_telegram_notoken_title">بوت Telegram يحتاج إلى رمز</string>
-  <string name="assistant_page_local_tools_telegram_notoken_message">المفتاح مُفعَّل، لكن لم يُعيَّن رمز بوت بعد.\n\nالطريقة السهلة: اطلب من المساعد في الدردشة — "أعدّ بوت Telegram، رمزي هو …، معرّف المستخدم الخاص بي …، عيّنّي كدردشة افتراضية، فعّله."\n\nالطريقة اليدوية: راسل @BotFather على Telegram بـ /newbot للحصول على رمز، و@userinfobot بـ /start لمعرّف المستخدم الرقمي الخاص بك. ثم اطلب من المساعد أو الصقهما في الإعدادات → بوت Telegram.</string>
-  <string name="assistant_page_local_tools_cron_jobs_toast_hint">تنبيه: تستخدم المهام المجدوَلة الأدوات التي مكّنتها. إذا استدعت مهمة SSH أو Telegram أو أي أداة أخرى، فيجب أن تكون تلك المفاتيح مُفعَّلة أيضًا.</string>
+  <string name="assistant_page_local_tools_cron_jobs_toast_hint">تنبيه: تستخدم المهام المجدوَلة الأدوات التي مكّنتها. إذا استدعت مهمة SSH أو أي أداة أخرى، فيجب أن تكون تلك المفاتيح مُفعَّلة أيضًا.</string>
   <string name="assistant_page_local_tools_dialog_dismiss">فهمت</string>
   <string name="assistant_page_local_tools_termux_verify_no_permission">إذن RUN_COMMAND غير ممنوح. أوقف Termux ثم فعّله لإعادة محاولة مطالبة النظام.</string>
   <string name="assistant_page_local_tools_termux_verify_unexpected">رد Termux لكن بإخراج غير متوقع: %1$s</string>
@@ -1227,20 +1203,6 @@
   <string name="setting_page_notifications_status_not_connected">الخدمة: غير متصلة</string>
   <string name="setting_page_notifications_status_help">يحتاج RikkaHub إلى الوصول إلى الإشعارات لقراءة الإشعارات الواردة. افتح الإعدادات → الوصول إلى الإشعارات → الوصول إلى الإشعارات وفعّل RikkaHub.</string>
   <string name="setting_page_notifications_open_settings">فتح إعدادات الوصول إلى الإشعارات</string>
-  <string name="setting_page_notifications_default_chat_set">دردشة Telegram الافتراضية: %1$s</string>
-  <string name="setting_page_notifications_default_chat_unset">دردشة Telegram الافتراضية: غير مُعيَّنة (التوجيه التلقائي مُعطَّل)</string>
-  <string name="setting_page_notifications_whitelist_section">القائمة البيضاء للتوجيه التلقائي</string>
-  <string name="setting_page_notifications_whitelist_help">التطبيقات التي تُحوَّل إشعاراتها تلقائيًا إلى دردشة Telegram الافتراضية. فارغ = لا شيء يُحوَّل. فعّل كل تطبيق أو عطّله في المُحدِّد.</string>
-  <string name="setting_page_notifications_whitelist_label">التطبيقات في القائمة البيضاء</string>
-  <string name="setting_page_notifications_whitelist_summary_zero">لا توجد تطبيقات في القائمة البيضاء</string>
-  <string name="setting_page_notifications_whitelist_summary_n">%1$d تطبيق في القائمة البيضاء</string>
-  <string name="setting_page_notifications_whitelist_summary_n_plural">%1$d تطبيقات في القائمة البيضاء</string>
-  <string name="setting_page_notifications_whitelist_manage">إدارة التطبيقات في القائمة البيضاء</string>
-  <string name="setting_page_notifications_whitelist_picker_title">التطبيقات في القائمة البيضاء</string>
-  <string name="setting_page_notifications_whitelist_picker_search">البحث في التطبيقات</string>
-  <string name="setting_page_notifications_whitelist_picker_show_only_selected">عرض القائمة البيضاء فقط</string>
-  <string name="setting_page_notifications_whitelist_picker_done">تم</string>
-  <string name="setting_page_notifications_whitelist_picker_empty">لا توجد تطبيقات مثبتة تطابق عامل التصفية.</string>
   <string name="setting_page_notifications_recent_section">النشاط الأخير</string>
   <string name="setting_page_notifications_recent_empty">لم تُلتقط أي إشعارات بعد.</string>
   <string name="setting_page_notifications_action_ago_seconds">قبل %1$d ث</string>
@@ -1680,14 +1642,6 @@
   <string name="setting_model_page_prompt_compress">ضغط السياق</string>
   <string name="setting_display_page_bubble_opacity_title">شفافية فقاعة الرسائل</string>
   <string name="setting_provider_page_include_history_reasoning">تضمين تفكير السجل</string>
-  <string name="setting_page_telegram_proxy_enabled">الوكيل (Proxy)</string>
-  <string name="setting_page_telegram_proxy_enabled_desc">توجيه اتصالات شبكة البوت عبر خادم وكيل (Proxy). يجب إيقاف البوت للتعديل.</string>
-  <string name="setting_page_telegram_proxy_type">نوع الوكيل</string>
-  <string name="setting_page_telegram_proxy_type_desc">لا يدعم SOCKS5 المصادقة، لذلك ينطبق اسم المستخدم/كلمة المرور أدناه على HTTP فقط.</string>
-  <string name="setting_page_telegram_proxy_host">مضيف الوكيل</string>
-  <string name="setting_page_telegram_proxy_port">منفذ الوكيل</string>
-  <string name="setting_page_telegram_proxy_username">اسم مستخدم الوكيل</string>
-  <string name="setting_page_telegram_proxy_password">كلمة مرور الوكيل</string>
   <string name="language_arabic">🇸🇦 العربية</string>
   <string name="language_persian">🇮🇷 فارسی</string>
   <string name="language_urdu">🇵🇰 اردو</string>

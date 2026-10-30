@@ -394,7 +394,6 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
         altTitles = listOf(R.string.setting_page_notifications),
         items = listOf(
             row(R.string.setting_page_notifications_open_settings),
-            row(R.string.setting_page_notifications_whitelist_section, null, R.string.setting_page_notifications_whitelist_label),
             row(R.string.setting_page_notifications_recent_section),
         ),
     ),
@@ -461,18 +460,6 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
             row(R.string.setting_page_web_server_mdns_address),
             row(R.string.setting_page_web_server_local_address),
             row(R.string.setting_page_web_server_address_note),
-        ),
-    ),
-    SettingsSearchPageSpec(
-        route = Screen.SettingTelegram,
-        items = listOf(
-            row(R.string.setting_page_telegram_token),
-            row(R.string.setting_page_telegram_default_chat),
-            row(R.string.setting_page_telegram_whitelist),
-            row(R.string.setting_page_telegram_proxy_enabled, null,
-                R.string.setting_page_telegram_proxy_type, R.string.setting_page_telegram_proxy_host,
-                R.string.setting_page_telegram_proxy_port, R.string.setting_page_telegram_proxy_username,
-                R.string.setting_page_telegram_proxy_password),
         ),
     ),
     SettingsSearchPageSpec(

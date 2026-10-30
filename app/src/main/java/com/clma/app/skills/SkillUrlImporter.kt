@@ -416,12 +416,10 @@ object ToolNameTranscoder {
         "ListDir" to "list_files",
         "list_dir" to "list_files",
         "Task" to "subagent_dispatch",
-        "TodoWrite" to "telegram_send_message",
         "WebFetch" to "ssh_exec",          // closest analogue if user has an SSH proxy
         "Notify" to "post_notification",
         // Hermes-style → RikkaHub. These are snake_case identifiers that don't occur as
         // English words, so they're safe within code regions.
-        "send_message" to "telegram_send_message",
         "open_app" to "launch_app",
         "screenshot" to "take_screenshot",
         "vibrate_phone" to "vibrate",

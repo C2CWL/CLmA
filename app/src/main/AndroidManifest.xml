@@ -328,15 +328,6 @@
     </receiver>
 
     <service
-      android:name=".service.TelegramBotService"
-      android:exported="false"
-      android:foregroundServiceType="specialUse">
-      <property
-        android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-        android:value="long-running Telegram bot long-poll loop" />
-    </service>
-
-    <service
       android:name=".service.MediaPlaybackService"
       android:exported="false"
       android:foregroundServiceType="mediaPlayback">

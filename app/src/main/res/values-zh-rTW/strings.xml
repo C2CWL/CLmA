@@ -829,7 +829,7 @@
   <string name="setting_page_hub_chat_actions">聊天操作</string>
   <string name="setting_page_hub_app_alerts">應用提醒</string>
   <string name="setting_page_hub_notif_access">通知讀取</string>
-  <string name="setting_page_hub_notif_access_desc">讀取系統通知與 Telegram 自動轉發白名單</string>
+  <string name="setting_page_hub_notif_access_desc">讀取系統通知與近期活動</string>
   <string name="setting_page_hub_network_desc">代理、User-Agent、重試與串流逾時</string>
 
   <string name="setting_page_general_group_conversation">對話</string>
@@ -1249,7 +1249,7 @@
   <string name="assistant_page_local_tools_cost_guards_title">成本守護</string>
   <string name="assistant_page_local_tools_cron_jobs_desc">讓助理安排提示詞稍後在背景執行 — 一次性或按間隔重複。任務在應用程式關閉和重新開機後仍然有效。</string>
   <string name="assistant_page_local_tools_cron_jobs_title">排程任務</string>
-  <string name="assistant_page_local_tools_cron_jobs_toast_hint">注意：排程任務使用你已啟用的工具。如果某個任務呼叫 SSH、Telegram 或任何其他工具，那些開關也必須開啟。</string>
+  <string name="assistant_page_local_tools_cron_jobs_toast_hint">注意：排程任務使用你已啟用的工具。如果某個任務呼叫 SSH、任何其他工具，那些開關也必須開啟。</string>
   <string name="assistant_page_local_tools_dialog_dismiss">知道了</string>
   <string name="assistant_page_local_tools_download_desc">從網址下載檔案到公用下載資料夾，並將文字內容（筆記、轉錄、笑話、指令碼）儲存為檔案。</string>
   <string name="assistant_page_local_tools_download_title">下載</string>
@@ -1274,7 +1274,7 @@
   <string name="assistant_page_local_tools_mic_recorder_title">麥克風錄音</string>
   <string name="assistant_page_local_tools_notification_desc">代表使用者發佈 Android 通知。</string>
   <string name="assistant_page_local_tools_notification_title">通知</string>
-  <string name="assistant_page_local_tools_notifications_desc">讓大型語言模型讀取來自其他應用程式的傳入通知。白名單應用程式還會自動轉發到你的預設 Telegram 聊天。在 設定 -&gt; 通知 中設定。</string>
+  <string name="assistant_page_local_tools_notifications_desc">讓大型語言模型讀取來自其他應用程式的傳入通知。在 設定 -&gt; 通知 中設定。</string>
   <string name="assistant_page_local_tools_notifications_title">通知感知</string>
   <string name="assistant_page_local_tools_perm_denied_toast">%1$s 權限遭拒絕</string>
   <string name="assistant_page_local_tools_perm_needed">需要權限 — 點選授予</string>
@@ -1313,10 +1313,6 @@
   <string name="assistant_page_local_tools_sub_agents_title">子代理</string>
   <string name="assistant_page_local_tools_system_intents_desc">讓助理為你預先填寫系統應用程式，由你最終確認：日曆活動、新增聯絡人、電子郵件編輯器、簡訊編輯器、WiFi 設定、地圖。沒有你在目標應用程式中的點選，不會儲存或傳送任何內容。</string>
   <string name="assistant_page_local_tools_system_intents_title">系統 Intent</string>
-  <string name="assistant_page_local_tools_telegram_desc">將助理作為 Telegram 機器人執行 — 收發訊息、檔案，管理 /指令。完全透過工具設定（設定 token、白名單、預設聊天，然後啟用）。前景服務處理長輪詢。</string>
-  <string name="assistant_page_local_tools_telegram_notoken_message">開關已開啟，但尚未設定機器人 Token。\n\n簡單方法：在聊天中讓助理 — "設定 Telegram 機器人，我的 token 是 …，我的使用者 ID 是 …，把我設為預設聊天，並啟用它。"\n\n手動方法：在 Telegram 上向 @BotFather 傳送 /newbot 取得 token，向 @userinfobot 傳送 /start 取得你的數字使用者 ID。然後讓助理設定，或在 設定 → Telegram 機器人 中貼上。</string>
-  <string name="assistant_page_local_tools_telegram_notoken_title">Telegram 機器人需要 Token</string>
-  <string name="assistant_page_local_tools_telegram_title">Telegram 機器人</string>
   <string name="assistant_page_local_tools_telephony_desc">讀取 SIM 卡和網路資訊（電信業者、網路類型）。需要 READ_PHONE_STATE 權限。</string>
   <string name="assistant_page_local_tools_telephony_title">電話資訊</string>
   <string name="assistant_page_local_tools_termux_postgrant_command">mkdir -p ~/.termux &amp;&amp; echo \'allow-external-apps=true\' &gt;&gt; ~/.termux/termux.properties</string>
@@ -1518,8 +1514,6 @@
   <string name="setting_page_notifications_action_ago_hours">%1$d 小時前</string>
   <string name="setting_page_notifications_action_ago_minutes">%1$d 分鐘前</string>
   <string name="setting_page_notifications_action_ago_seconds">%1$d 秒前</string>
-  <string name="setting_page_notifications_default_chat_set">預設 Telegram 聊天：%1$s</string>
-  <string name="setting_page_notifications_default_chat_unset">預設 Telegram 聊天：未設定（自動路由已停用）</string>
   <string name="setting_page_notifications_open_settings">開啟通知存取權設定</string>
   <string name="setting_page_notifications_recent_empty">尚未擷取任何通知。</string>
   <string name="setting_page_notifications_recent_section">最近活動</string>
@@ -1527,18 +1521,6 @@
   <string name="setting_page_notifications_status_help">RikkaHub 需要通知存取權限來讀取傳入的通知。開啟 設定 → 通知存取權 → 通知存取權 並啟用 RikkaHub。</string>
   <string name="setting_page_notifications_status_not_connected">服務：未連接</string>
   <string name="setting_page_notifications_status_section">狀態</string>
-  <string name="setting_page_notifications_whitelist_help">其通知會自動轉發到你預設 Telegram 聊天的應用程式。留空 = 不轉發任何內容。在選擇器中逐個開關應用程式。</string>
-  <string name="setting_page_notifications_whitelist_label">白名單應用程式</string>
-  <string name="setting_page_notifications_whitelist_manage">管理白名單應用程式</string>
-  <string name="setting_page_notifications_whitelist_picker_done">完成</string>
-  <string name="setting_page_notifications_whitelist_picker_empty">沒有符合篩選條件的已安裝應用程式。</string>
-  <string name="setting_page_notifications_whitelist_picker_search">搜尋應用程式</string>
-  <string name="setting_page_notifications_whitelist_picker_show_only_selected">僅顯示白名單</string>
-  <string name="setting_page_notifications_whitelist_picker_title">白名單應用程式</string>
-  <string name="setting_page_notifications_whitelist_section">自動路由白名單</string>
-  <string name="setting_page_notifications_whitelist_summary_n">%1$d 個應用程式已加入白名單</string>
-  <string name="setting_page_notifications_whitelist_summary_n_plural">%1$d 個應用程式已加入白名單</string>
-  <string name="setting_page_notifications_whitelist_summary_zero">無白名單應用程式</string>
   <string name="setting_page_permissions">權限</string>
   <string name="setting_page_permissions_desc">自動探索的 RikkaHub 使用的所有權限清單，每項都有一鍵授予按鈕。</string>
   <string name="setting_page_permissions_group_auto">自動授予</string>
@@ -1588,32 +1570,13 @@
   <string name="setting_page_scheduled_jobs_subtitle_never_run">從未觸發</string>
   <string name="setting_page_scheduled_jobs_subtitle_ran">上次觸發 %1$s</string>
   <string name="setting_page_scheduled_jobs_subtitle_when">時間：%1$s</string>
-  <string name="setting_page_telegram">Telegram 機器人</string>
-  <string name="setting_page_telegram_battery_already_ok">已從電池最佳化中加入白名單。</string>
-  <string name="setting_page_telegram_battery_desc">螢幕關閉時，激進的 OEM 系統（小米、OPPO、一加、Vivo）會切斷非白名單應用程式的網路。機器人只能在偶爾的維護時段投遞訊息。點選將 RikkaHub 加入白名單。</string>
-  <string name="setting_page_telegram_battery_needed">電池最佳化：未加入白名單 - 點選修復</string>
-  <string name="setting_page_telegram_battery_ok">電池最佳化：已加入白名單</string>
-  <string name="setting_page_telegram_boot_note">啟動後，機器人也會在裝置開機時自動啟動。</string>
-  <string name="setting_page_telegram_default_chat">預設聊天</string>
-  <string name="setting_page_telegram_default_chat_desc">當大型語言模型省略 chat_id 時（例如排程任務提醒），外發訊息的去向。使用你的 Telegram 數字使用者 ID。</string>
-  <string name="setting_page_telegram_desc">將大型語言模型作為 Telegram 機器人執行 — 從任何裝置遠端與它聊天。</string>
-  <string name="setting_page_telegram_no_token_toast">請先設定機器人 Token。</string>
-  <string name="setting_page_telegram_start">啟動</string>
-  <string name="setting_page_telegram_status_running">執行中</string>
-  <string name="setting_page_telegram_status_starting">正在啟動…</string>
-  <string name="setting_page_telegram_status_stopped">已停止</string>
-  <string name="setting_page_telegram_stop">停止</string>
-  <string name="setting_page_telegram_token">機器人 Token</string>
-  <string name="setting_page_telegram_token_desc">來自 @BotFather。必須停止機器人才能編輯。</string>
-  <string name="setting_page_telegram_whitelist">允許的聊天 ID</string>
-  <string name="setting_page_telegram_whitelist_desc">以逗號分隔。留空 = 不允許任何人。用 @userinfobot 查詢你的 ID。</string>
   <string name="setting_page_tool_approvals">工具授權</string>
   <string name="setting_page_tool_approvals_desc">審批模式（自動/通用/手動）與執行前需詢問的工具。</string>
   <string name="setting_page_tool_approvals_empty">尚未授予任何工具「永遠允許」。機器人在執行任何有副作用的工具前都會詢問。</string>
   <string name="setting_page_tool_approvals_header">以下工具在本裝置上執行時永不詢問。如果你不再信任模型擁有此能力，請撤銷。</string>
   <string name="setting_page_tool_approvals_revoke">撤銷</string>
   <string name="setting_page_tool_approvals_revoke_all">全部撤銷</string>
-  <string name="setting_page_tool_approvals_yolo_dialog_body">每個工具 — 本地 shell、SSH、檔案寫入、螢幕自動化、Telegram 外發、MCP — 都將無需詢問你直接執行。智慧代理可能傳送訊息、在遠端主機上執行指令、拍照、寫入檔案、安排任務，全部無需確認。\n\nHARDLINE 保護仍然生效：rm -rf /、mkfs、shutdown / reboot、向區塊裝置 dd、fork 炸彈、編碼負載管道 — 這些仍會被攔截。\n\n這是個危險操作。僅在你信任模型 + 助理設定 + 你自己的提示詞會負責任地行事時才啟用。</string>
+  <string name="setting_page_tool_approvals_yolo_dialog_body">每個工具 — 本地 shell、SSH、檔案寫入、螢幕自動化、MCP — 都將無需詢問你直接執行。智慧代理可能傳送訊息、在遠端主機上執行指令、拍照、寫入檔案、安排任務，全部無需確認。\n\nHARDLINE 保護仍然生效：rm -rf /、mkfs、shutdown / reboot、向區塊裝置 dd、fork 炸彈、編碼負載管道 — 這些仍會被攔截。\n\n這是個危險操作。僅在你信任模型 + 助理設定 + 你自己的提示詞會負責任地行事時才啟用。</string>
   <string name="setting_page_tool_approvals_yolo_dialog_cancel">保持授權開啟</string>
   <string name="setting_page_tool_approvals_yolo_dialog_confirm">是的，我很笨，啟用</string>
   <string name="setting_page_tool_approvals_yolo_dialog_title">關閉所有授權提示？</string>
@@ -1637,7 +1600,7 @@
   <string name="setting_page_tool_approvals_waiver_risk_grant_directory">會取得整個目錄的長期讀寫權限</string>
   <string name="setting_page_tool_approvals_waiver_risk_mcp_relayed">第三方伺服器的工具行為不透明，可能讀寫、刪除或外傳資料</string>
   <string name="setting_page_tool_approvals_waiver_risk_generic">該工具屬於高權限操作，預設每次都需要你確認</string>
-  <string name="setting_page_tool_approvals_waiver_risk_remote">Telegram 等遠端會話同樣不再詢問，任何被允許的聊天對象都可能觸發</string>
+  <string name="setting_page_tool_approvals_waiver_risk_remote">背景任務同樣不再詢問，可能在沒有活動對話時觸發工具</string>
   <string name="setting_page_tool_approvals_waiver_risk_injection">模型可能被網頁、檔案或訊息中的惡意內容誘導（提示詞注入）</string>
   <string name="setting_page_tool_approvals_waiver_risk_unattended">無人值守任務（排程/子代理/工作流程）仍會拒絕此類工具；HARDLINE 攔截（rm -rf / 等）仍然生效</string>
   <string name="setting_page_tool_approvals_waiver_disclaimer">我已閱讀並理解上述風險，自願關閉審批，並對由此產生的一切後果（包括資料遺失、隱私外洩、帳號或財產損失）自行承擔全部責任，與本應用程式及其開發者無關。</string>
@@ -2008,14 +1971,6 @@
   <string name="setting_tts_page_fish_audio_speed_description">語速（0.5 - 2.0，1.0 為正常速度）</string>
   <string name="stats_page_cache_hit_rate">快取命中率</string>
   <string name="theme_name_claude">Claude 暖調</string>
-  <string name="setting_page_telegram_proxy_enabled">代理伺服器</string>
-  <string name="setting_page_telegram_proxy_enabled_desc">讓 Bot 自身的網路請求透過代理伺服器轉發。編輯前必須先停止 Bot。</string>
-  <string name="setting_page_telegram_proxy_type">代理伺服器類型</string>
-  <string name="setting_page_telegram_proxy_type_desc">SOCKS5 不支援身分驗證，因此下方的使用者名稱/密碼僅適用於 HTTP。</string>
-  <string name="setting_page_telegram_proxy_host">代理伺服器主機</string>
-  <string name="setting_page_telegram_proxy_port">代理伺服器連接埠</string>
-  <string name="setting_page_telegram_proxy_username">代理伺服器使用者名稱</string>
-  <string name="setting_page_telegram_proxy_password">代理伺服器密碼</string>
   <string name="language_arabic">🇸🇦 العربية</string>
   <string name="language_persian">🇮🇷 فارسی</string>
   <string name="language_urdu">🇵🇰 اردو</string>

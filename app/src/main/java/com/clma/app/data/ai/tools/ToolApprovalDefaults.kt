@@ -153,19 +153,6 @@ object ToolApprovalDefaults {
         "batch_move",
         "batch_delete",
 
-        // Telegram outbound — the bot can DM other chats / change its own config
-        "telegram_send_message",
-        "telegram_send_photo",
-        "telegram_send_document",
-        "telegram_set_token",
-        "telegram_enable",
-        "telegram_disable",
-        "telegram_add_whitelist",
-        "telegram_remove_whitelist",
-        "telegram_set_default_chat",
-        "telegram_set_assistant",
-        "telegram_set_commands",
-        "telegram_delete_commands",
 
         // MCP control — all side-effecting MCP tools require approval.
         // mcp_add and mcp_update are also flagged with "no always-allow" below because a

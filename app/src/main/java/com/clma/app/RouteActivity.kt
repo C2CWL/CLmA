@@ -143,7 +143,6 @@ import com.clma.app.ui.pages.setting.SettingSubAgentsPage
 // P2-32 ssh hosts page
 import com.clma.app.ui.pages.setting.SettingSshPage
 import com.clma.app.ui.pages.setting.SettingSecretsPage
-import com.clma.app.ui.pages.setting.SettingTelegramPage
 import com.clma.app.ui.pages.setting.SettingWebPage
 import com.clma.app.ui.pages.share.handler.ShareHandlerPage
 import com.clma.app.ui.pages.stats.StatsPage
@@ -601,10 +600,6 @@ class RouteActivity : FragmentActivity() {
                                 SettingWebPage()
                             }
 
-                            entry<Screen.SettingTelegram> {
-                                SettingTelegramPage()
-                            }
-
                             entry<Screen.SettingWorkflows> {
                                 com.clma.app.workflow.ui.WorkflowsScreen()
                             }
@@ -902,9 +897,6 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data object SettingWeb : Screen
-
-    @Serializable
-    data object SettingTelegram : Screen
 
     @Serializable
     data object SettingWorkflows : Screen

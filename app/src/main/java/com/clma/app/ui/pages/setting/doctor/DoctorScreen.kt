@@ -265,7 +265,6 @@ private fun severityColor(severity: Severity): Color = when (severity) {
 }
 
 private fun routeFor(key: AppRouteKey): Screen = when (key) {
-    AppRouteKey.SettingTelegram -> Screen.SettingTelegram
     AppRouteKey.SettingScheduledJobs -> Screen.SettingScheduledJobs
     AppRouteKey.SettingWorkflows -> Screen.SettingWorkflows
     AppRouteKey.SettingPermissions -> Screen.SettingPermissions

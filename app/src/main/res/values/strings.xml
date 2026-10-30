@@ -1081,7 +1081,7 @@
   <string name="setting_page_hub_chat_actions">Chat actions</string>
   <string name="setting_page_hub_app_alerts">App alerts</string>
   <string name="setting_page_hub_notif_access">Notification access</string>
-  <string name="setting_page_hub_notif_access_desc">Read system notifications and Telegram auto-forward whitelist</string>
+  <string name="setting_page_hub_notif_access_desc">Read system notifications and recent activity</string>
   <string name="setting_page_hub_network_desc">Proxy, User-Agent, retries and stream timeouts</string>
 
   <string name="setting_page_general_group_conversation">Conversation</string>
@@ -1555,10 +1555,6 @@
   <string name="assistant_page_local_tools_section_network">Network</string>
   <string name="assistant_page_local_tools_ssh_title">SSH</string>
   <string name="assistant_page_local_tools_ssh_desc">Let the assistant run shell commands and transfer files on remote machines via SSH/SFTP. Saved hosts, password or private-key auth, accept-new host-key checking.</string>
-  <string name="assistant_page_local_tools_telegram_title">Telegram bot</string>
-  <string name="assistant_page_local_tools_telegram_desc">Run the assistant as a Telegram bot — send/receive messages, files, manage /commands. Configured entirely via tools (set token, whitelist, default chat, then enable). Foreground service handles long-poll.</string>
-  <string name="setting_page_telegram">Telegram bot</string>
-  <string name="setting_page_telegram_desc">Run the LLM as a Telegram bot — chat with it remotely from any device.</string>
   <string name="setting_page_workflows">Workflows</string>
   <string name="setting_page_workflows_desc">Trigger-based automations: when something happens on the device, run a sequence of tools.</string>
   <string name="setting_page_scheduled_jobs">Scheduled jobs</string>
@@ -1583,31 +1579,6 @@
   <string name="setting_page_tool_approvals_add_recommended">Add common dangerous tools</string>
   <string name="setting_page_tool_approvals_no_match">No tools match.</string>
   <string name="setting_page_tool_approvals_load_failed">Couldn\'t load the tool list.</string>
-  <string name="setting_page_telegram_token">Bot token</string>
-  <string name="setting_page_telegram_token_desc">From @BotFather. The bot must be stopped to edit.</string>
-  <string name="setting_page_telegram_default_chat">Default chat</string>
-  <string name="setting_page_telegram_default_chat_desc">Where outbound messages go when the LLM omits chat_id (e.g. cron job alerts). Use your numeric Telegram user id.</string>
-  <string name="setting_page_telegram_whitelist">Allowed chat IDs</string>
-  <string name="setting_page_telegram_whitelist_desc">Comma-separated. Empty = nobody. Find your id with @userinfobot.</string>
-  <string name="setting_page_telegram_status_running">Running</string>
-  <string name="setting_page_telegram_status_starting">Starting…</string>
-  <string name="setting_page_telegram_status_stopped">Stopped</string>
-  <string name="setting_page_telegram_start">Start</string>
-  <string name="setting_page_telegram_stop">Stop</string>
-  <string name="setting_page_telegram_no_token_toast">Set the bot token first.</string>
-  <string name="setting_page_telegram_boot_note">When started, the bot also auto-starts on device boot.</string>
-  <string name="setting_page_telegram_battery_ok">Battery optimization: whitelisted</string>
-  <string name="setting_page_telegram_battery_needed">Battery optimization: not whitelisted - tap to fix</string>
-  <string name="setting_page_telegram_battery_desc">When the screen turns off, aggressive OEM ROMs (Xiaomi, OPPO, OnePlus, Vivo) cut network for non-whitelisted apps. The bot will only deliver during occasional maintenance windows. Tap to whitelist CLmA.</string>
-  <string name="setting_page_telegram_battery_already_ok">Already whitelisted from battery optimization.</string>
-  <string name="setting_page_telegram_proxy_enabled">Proxy</string>
-  <string name="setting_page_telegram_proxy_enabled_desc">Route the bot\'s own network calls through a proxy. The bot must be stopped to edit.</string>
-  <string name="setting_page_telegram_proxy_type">Proxy type</string>
-  <string name="setting_page_telegram_proxy_type_desc">SOCKS5 doesn\'t support authentication, so username/password below only apply to HTTP.</string>
-  <string name="setting_page_telegram_proxy_host">Proxy host</string>
-  <string name="setting_page_telegram_proxy_port">Proxy port</string>
-  <string name="setting_page_telegram_proxy_username">Proxy username</string>
-  <string name="setting_page_telegram_proxy_password">Proxy password</string>
   <string name="assistant_page_local_tools_media_player_desc">Play and stop audio from a file path or URL.</string>
   <string name="assistant_page_local_tools_media_player_title">Media player</string>
   <string name="assistant_page_local_tools_media_scanner_desc">Notify Android\'s media scanner about new files so they appear in gallery/music apps.</string>
@@ -1646,7 +1617,7 @@
   <string name="setting_page_tool_approvals_yolo_on">🚨 ON. Every tool — blacklist and safety floor included — runs without prompting. Hardline blocks (rm -rf /, mkfs, shutdown …) still apply.</string>
   <string name="setting_page_tool_approvals_yolo_off">Off. Only tools on your blacklist ask before running.</string>
   <string name="setting_page_tool_approvals_yolo_dialog_title">Turn off all approval prompts?</string>
-  <string name="setting_page_tool_approvals_yolo_dialog_body">Every tool — local shell, SSH, file writes, screen automation, Telegram outbound, MCP, and everything on your blacklist — will run without asking you. The agent could send messages, run commands on remote hosts, take photos, write files, schedule jobs, all without confirmation.\n\nHARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block devices, fork bomb, encoded payload pipes — those keep blocking.\n\nThis is a foot-gun. Only enable if you trust the model + assistant config + your own prompts to behave responsibly.</string>
+  <string name="setting_page_tool_approvals_yolo_dialog_body">Every tool — local shell, SSH, file writes, screen automation, MCP, and everything on your blacklist — will run without asking you. The agent could send messages, run commands on remote hosts, take photos, write files, schedule jobs, all without confirmation.\n\nHARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block devices, fork bomb, encoded payload pipes — those keep blocking.\n\nThis is a foot-gun. Only enable if you trust the model + assistant config + your own prompts to behave responsibly.</string>
   <string name="setting_page_tool_approvals_mode_title">Approval mode</string>
   <string name="setting_page_tool_approvals_mode_auto">Auto</string>
   <string name="setting_page_tool_approvals_mode_semi">General</string>
@@ -1657,7 +1628,7 @@
   <string name="setting_page_tool_approvals_blacklist_ignored">The blacklist is ignored in Auto mode — every tool runs without asking (except high-risk tools whose approval is still on).</string>
   <string name="setting_page_tool_approvals_blacklist_manual">Every tool asks in Manual mode. The blacklist below only takes effect in General mode.</string>
   <string name="setting_page_tool_approvals_auto_dialog_title">Switch to Auto mode?</string>
-  <string name="setting_page_tool_approvals_auto_dialog_body">Every tool — local shell, SSH, file writes, screen automation, Telegram outbound, MCP server tools, and everything on your blacklist — will run without asking you.
+  <string name="setting_page_tool_approvals_auto_dialog_body">Every tool — local shell, SSH, file writes, screen automation, MCP server tools, and everything on your blacklist — will run without asking you.
 
 Privilege-escalation surfaces (adding MCP servers, installing skills, eval_js, keystore operations, NFC writes, directory grants) still require confirmation every time, unless you turned their approval off yourself.
 
@@ -1681,7 +1652,7 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="setting_page_tool_approvals_waiver_risk_grant_directory">It gains long-lived read and write access to an entire folder tree</string>
   <string name="setting_page_tool_approvals_waiver_risk_mcp_relayed">Third-party server tools are opaque: they may read, write, delete or send out data</string>
   <string name="setting_page_tool_approvals_waiver_risk_generic">This is a privileged tool that asks for confirmation on every call by default</string>
-  <string name="setting_page_tool_approvals_waiver_risk_remote">Remote sessions such as Telegram stop asking too; anyone allowed to chat with the bot could trigger it</string>
+  <string name="setting_page_tool_approvals_waiver_risk_remote">Background tasks also stop asking and may trigger tools without an active chat</string>
   <string name="setting_page_tool_approvals_waiver_risk_injection">The model can be steered by malicious content in web pages, files or messages (prompt injection)</string>
   <string name="setting_page_tool_approvals_waiver_risk_unattended">Unattended runs (scheduled jobs / sub-agents / workflows) still refuse these tools; HARDLINE blocks (rm -rf / etc.) still apply</string>
   <string name="setting_page_tool_approvals_waiver_disclaimer">I have read and understood the risks above, I choose to turn off approval, and I accept full responsibility for any consequences (including data loss, privacy leaks, account or financial loss); the app and its developers are not liable.</string>
@@ -1766,7 +1737,7 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="assistant_page_local_tools_app_launcher_title">App launcher</string>
   <string name="assistant_page_local_tools_app_launcher_desc">Open installed apps by package name (e.g. Termux, Settings) and list available apps. Pairs with screen automation for full UI control.</string>
   <string name="assistant_page_local_tools_notifications_title">Notification awareness</string>
-  <string name="assistant_page_local_tools_notifications_desc">Let the LLM read incoming notifications from other apps. Whitelisted apps also auto-forward to your default Telegram chat. Configure in Settings -&gt; Notifications.</string>
+  <string name="assistant_page_local_tools_notifications_desc">Let the LLM read incoming notifications from other apps. Configure in Settings -&gt; Notifications.</string>
   <string name="assistant_page_local_tools_termux_title">Termux integration</string>
   <string name="assistant_page_local_tools_termux_status_not_installed">Termux not installed - install from github.com/termux/termux-app/releases</string>
   <string name="assistant_page_local_tools_termux_status_no_permission">Toggle on to grant the RUN_COMMAND permission</string>
@@ -1781,9 +1752,7 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="assistant_page_local_tools_termux_postgrant_command">mkdir -p ~/.termux &amp;&amp; echo \'allow-external-apps=true\' &gt;&gt; ~/.termux/termux.properties</string>
   <string name="assistant_page_local_tools_termux_postgrant_copy">Copy command</string>
   <string name="assistant_page_local_tools_termux_postgrant_copied">Command copied — paste it into Termux.</string>
-  <string name="assistant_page_local_tools_telegram_notoken_title">Telegram bot needs a token</string>
-  <string name="assistant_page_local_tools_telegram_notoken_message">The toggle is on, but no bot token is set yet.\n\nEasy way: ask the assistant in chat — "Set up the Telegram bot, my token is …, my user id is …, set me as default chat, enable it."\n\nManual way: message @BotFather on Telegram with /newbot for a token, and @userinfobot with /start for your numeric user id. Then ask the assistant or paste them in Settings → Telegram bot.</string>
-  <string name="assistant_page_local_tools_cron_jobs_toast_hint">Heads up: scheduled jobs use the tools you have enabled. If a job calls SSH, Telegram, or any other tool, those toggles must also be on.</string>
+  <string name="assistant_page_local_tools_cron_jobs_toast_hint">Heads up: scheduled jobs use the tools you have enabled. If a job calls SSH, or any other tool, those toggles must also be on.</string>
   <string name="assistant_page_local_tools_dialog_dismiss">Got it</string>
   <string name="assistant_page_local_tools_termux_verify_no_permission">RUN_COMMAND permission not granted. Toggle Termux off then on to retry the system prompt.</string>
   <string name="assistant_page_local_tools_termux_verify_unexpected">Termux replied but with unexpected output: %1$s</string>
@@ -1873,20 +1842,6 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="setting_page_notifications_status_not_connected">Service: Not connected</string>
   <string name="setting_page_notifications_status_help">CLmA needs notification access to read incoming notifications. Open Settings → Notification access → Notification access and enable CLmA.</string>
   <string name="setting_page_notifications_open_settings">Open Notification access settings</string>
-  <string name="setting_page_notifications_default_chat_set">Default Telegram chat: %1$s</string>
-  <string name="setting_page_notifications_default_chat_unset">Default Telegram chat: not set (auto-route disabled)</string>
-  <string name="setting_page_notifications_whitelist_section">Auto-route whitelist</string>
-  <string name="setting_page_notifications_whitelist_help">Apps whose notifications auto-forward to your default Telegram chat. Empty = nothing forwarded. Toggle each app on or off in the picker.</string>
-  <string name="setting_page_notifications_whitelist_label">Whitelisted apps</string>
-  <string name="setting_page_notifications_whitelist_summary_zero">No apps whitelisted</string>
-  <string name="setting_page_notifications_whitelist_summary_n">%1$d app whitelisted</string>
-  <string name="setting_page_notifications_whitelist_summary_n_plural">%1$d apps whitelisted</string>
-  <string name="setting_page_notifications_whitelist_manage">Manage whitelisted apps</string>
-  <string name="setting_page_notifications_whitelist_picker_title">Whitelisted apps</string>
-  <string name="setting_page_notifications_whitelist_picker_search">Search apps</string>
-  <string name="setting_page_notifications_whitelist_picker_show_only_selected">Show only whitelisted</string>
-  <string name="setting_page_notifications_whitelist_picker_done">Done</string>
-  <string name="setting_page_notifications_whitelist_picker_empty">No installed apps match your filter.</string>
   <string name="setting_page_notifications_recent_section">Recent activity</string>
   <string name="setting_page_notifications_recent_empty">No notifications captured yet.</string>
   <string name="setting_page_notifications_action_ago_seconds">%1$ds ago</string>
@@ -2735,7 +2690,7 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="perm_label_dnd">Do Not Disturb access</string>
   <string name="perm_desc_dnd">Lets the agent change ringer mode and per-stream volume.</string>
   <string name="perm_label_battery">Ignore battery optimizations</string>
-  <string name="perm_desc_battery">Keeps the Telegram bot foreground service responsive when the screen is off.</string>
+  <string name="perm_desc_battery">Keeps scheduled jobs and workflows responsive when the screen is off.</string>
   <string name="perm_label_post_notifications">Post notifications</string>
   <string name="perm_desc_post_notifications">Required so the bot foreground service and TTS / progress notifications can show.</string>
   <string name="perm_desc_custom">Custom permission. Owner app may not be installed yet.</string>
@@ -2743,7 +2698,7 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="perm_label_accessibility">Screen automation (Accessibility)</string>
   <string name="perm_desc_accessibility">Required for tap, swipe, click_node, screenshot, read_window_tree, set_text and other UI-driving tools.</string>
   <string name="perm_label_notification_listener">Notification access</string>
-  <string name="perm_desc_notification_listener">Lets the agent read incoming notifications and auto-forward whitelisted apps to Telegram.</string>
+  <string name="perm_desc_notification_listener">Lets the agent read incoming notifications.</string>
   <string name="perm_label_camera">Camera</string>
   <string name="perm_desc_camera">Used by take_photo to capture a still image.</string>
   <string name="perm_label_microphone">Microphone</string>
@@ -2801,7 +2756,6 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <!-- Doctor screen: fix button labels -->
   <string name="doctor_fix_open_permissions">Open app permissions</string>
   <string name="doctor_fix_open_settings">Open settings</string>
-  <string name="doctor_fix_open_telegram">Open Telegram settings</string>
   <string name="doctor_fix_open_assistants">Open Assistants</string>
   <string name="doctor_fix_open_subagents">Open Sub-agents</string>
   <string name="doctor_fix_open_shizuku">Open Shizuku settings</string>
@@ -2826,7 +2780,6 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="tool_name_termux">Termux</string>
   <string name="tool_name_stt">Speech-to-text</string>
   <string name="tool_name_ssh">SSH</string>
-  <string name="tool_name_tg_bot">Telegram bot</string>
   <string name="tool_name_cron">Cron jobs</string>
   <string name="tool_name_workflows">Workflows</string>
   <string name="tool_name_notification">Notification</string>
@@ -2856,15 +2809,10 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="doctor_check_nearby_wifi">Nearby WiFi devices</string>
   <string name="doctor_check_bg_location">Background location</string>
   <string name="doctor_check_nfc">NFC</string>
-  <string name="doctor_check_tg_token">Telegram bot token</string>
-  <string name="doctor_check_tg_fgs">Telegram bot foreground service</string>
-  <string name="doctor_check_tg_bot">Telegram bot</string>
-  <string name="doctor_check_tg_proxy">Telegram bot proxy</string>
   <string name="doctor_check_accessibility_bound">AccessibilityService bound</string>
   <string name="doctor_check_notif_listener_bound">NotificationListener bound</string>
   <string name="doctor_check_default_assistant">Default assistant</string>
   <string name="doctor_check_assistant_count">Assistant count</string>
-  <string name="doctor_check_tg_assistant_override">Telegram bot assistant override</string>
   <string name="doctor_check_subagent_profiles">Sub-agent profiles</string>
   <string name="doctor_check_screen_automation">Screen automation</string>
   <string name="doctor_check_app_launcher">App launcher</string>
@@ -2911,7 +2859,7 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="doctor_detail_perm_location_granted">Granted.</string>
   <string name="doctor_detail_perm_location_missing">Needed for geofence triggers and reading WiFi SSID on Android 10+.</string>
   <string name="doctor_detail_perm_battery_granted">App is whitelisted — background services run reliably.</string>
-  <string name="doctor_detail_perm_battery_missing">Doze can kill the Telegram bot, cron jobs, and workflows.</string>
+  <string name="doctor_detail_perm_battery_missing">Doze can interrupt cron jobs and workflows.</string>
   <string name="doctor_detail_perm_accessibility_granted">Enabled in system settings.</string>
   <string name="doctor_detail_perm_accessibility_missing">Not enabled. take_screenshot, swipe, scroll, click_at, and gesture tools won\'t work.</string>
   <string name="doctor_detail_perm_files_granted">Granted — file_read / file_write tools can reach any path.</string>
@@ -2933,13 +2881,6 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="doctor_detail_nfc_off_not_required">NFC is turned off in system settings. Not required by any enabled tool.</string>
   <string name="doctor_detail_nfc_off_needed_by">NFC is turned off in system settings. Needed by: %1$s</string>
   <string name="doctor_detail_nfc_ok">NFC hardware present and enabled.</string>
-  <string name="doctor_detail_tg_token_ok">Token configured (%1$d chars, hidden).</string>
-  <string name="doctor_detail_tg_token_missing">Telegram bot is enabled but no token is set — the service will fail at startup.</string>
-  <string name="doctor_detail_tg_running">Service is running.</string>
-  <string name="doctor_detail_tg_stopped">Service is stopped. Telegram messages won\'t reach the assistant. The watchdog will retry on the next 30-min health pass.</string>
-  <string name="doctor_detail_tg_disabled">Disabled — that\'s fine if you don\'t use Telegram.</string>
-  <string name="doctor_detail_tg_proxy">%1$s proxy at %2$s:%3$s.</string>
-  <string name="doctor_detail_tg_no_proxy">Not configured, connecting directly to Telegram.</string>
   <string name="doctor_detail_probe_failed">Probe failed: %1$s: %2$s</string>
   <string name="doctor_detail_acc_alive">Service object is alive — %1$s can run.</string>
   <string name="doctor_detail_acc_bound_no_window">Service is bound but window retrieval returns nothing. It is likely running with a pre-update configuration; toggle the accessibility service off and on.</string>
@@ -2949,10 +2890,8 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="doctor_detail_nl_granted_not_bound">Granted but not currently bound. Toggle it off and on in settings.</string>
   <string name="doctor_detail_nl_not_granted">Not granted. Required by: %1$s.</string>
   <string name="doctor_detail_no_assistants">No assistants configured — the app won\'t be able to start a conversation.</string>
-  <string name="doctor_detail_default_assistant">"%1$s" (id: %2$s…). Used for new chats, cron jobs, and Telegram when no override is set.</string>
+  <string name="doctor_detail_default_assistant">"%1$s" (id: %2$s…). Used for new chats and cron jobs when no override is set.</string>
   <string name="doctor_detail_assistant_count">%1$d assistant(s) configured.</string>
-  <string name="doctor_detail_tg_assistant_override">Telegram inbound messages route to "%1$s" (id: %2$s…) — overriding the global default.</string>
-  <string name="doctor_detail_tg_assistant_missing">Telegram assistant override is set (id: %1$s…) but no matching assistant was found. Messages will fall back to the global default.</string>
   <string name="doctor_detail_no_subagents">No sub-agent profiles configured.</string>
   <string name="doctor_detail_subagents_ok">%1$d profile(s) configured, all resolve to an existing chat model.</string>
   <string name="doctor_detail_subagents_broken">%1$d profile(s) configured. %2$d reference a model that no longer resolves to a chat model of an enabled provider: %3$s.</string>
@@ -3022,7 +2961,6 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="doctor_relies_on_shizuku">Shizuku (or Sui) installed, running, with permission granted</string>
   <string name="doctor_relies_on_all_files">all-files access on Android 11+ to reach arbitrary paths</string>
   <string name="doctor_relies_on_browser_profile">a writable profile directory to persist cookies and localStorage</string>
-  <string name="doctor_detail_tg_assistant_missing_2">Telegram assistant override is set (id: %1$s…) but no matching assistant was found. Messages will fall back to the global default.</string>
   <string name="doctor_detail_accel_cpu_2">Flip it on to retry the device\'s GPU on the next load.</string>
   <string name="doctor_detail_accel_cpu_full">CPU (Try-GPU toggle off in Settings -&gt; Local LiteRT). Flip it on to retry the device\'s GPU on the next load.</string>
   <string name="doctor_detail_accel_cpu_fallback_full">CPU (fallback: the GPU delegate failed to initialise on this device, likely an MLDrift issue. Tap \'Re-detect\' in Settings -&gt; Local LiteRT to retry with a fresh probe.)</string>
@@ -3062,17 +3000,15 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="doctor_detail_cache_normal">Within normal range.</string>
   <string name="doctor_fix_cache_freed">Freed %1$s.</string>
   <string name="doctor_detail_heap">Heap: %1$d MB free of %2$d MB (%3$d MB max)</string>
-  <string name="doctor_detail_tg_proxy_configured">%1$s proxy at %2$s:%3$s.</string>
   <string name="doctor_detail_perm_needed_by_2">%1$s Needed by: %2$s.</string>
   <string name="doctor_detail_nfc_off_needed_by_2">NFC is turned off in system settings. Needed by: %1$s</string>
-  <string name="doctor_detail_default_assistant_2">"%1$s" (id: %2$s…). Used for new chats, cron jobs, and Telegram when no override is set.</string>
-  <string name="doctor_detail_tg_assistant_override_2">Telegram inbound messages route to "%1$s" (id: %2$s…) — overriding the global default.</string>
+  <string name="doctor_detail_default_assistant_2">"%1$s" (id: %2$s…). Used for new chats and cron jobs when no override is set.</string>
   <string name="doctor_detail_subagents_broken_2">%1$d profile(s) configured. %2$d reference a model that no longer resolves to a chat model of an enabled provider: %3$s.</string>
   <string name="doctor_detail_storage_grants_2">%1$d directory(ies) granted: %2$s.</string>
   <string name="doctor_detail_dns_ok">dns.google resolved within 2.5 s.</string>
   <string name="doctor_detail_termux_installed_2">com.termux is installed on this device.</string>
   <string name="doctor_detail_worker_stranded_2">%1$d run(s) started &gt; 30 min ago and never reported back. Likely process kill mid-run.</string>
-  <string name="doctor_detail_default_assistant_suffix">Used for new chats, cron jobs, and Telegram when no override is set.</string>
+  <string name="doctor_detail_default_assistant_suffix">Used for new chats and cron jobs when no override is set.</string>
   <string name="doctor_detail_nfc_off_needed_by_3">NFC is turned off in system settings. Needed by: %1$s.</string>
   <string name="doctor_detail_model_rates_row">%1$s: prefill %2$.1f tok/s, decode %3$.1f tok/s%4$s</string>
   <string name="doctor_detail_mtp_on">, MTP on</string>
