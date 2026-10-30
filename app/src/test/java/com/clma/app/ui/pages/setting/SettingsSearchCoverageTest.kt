@@ -43,6 +43,7 @@ class SettingsSearchCoverageTest {
         "AssistantRequest" to "per-assistant sub-page; the assistant itself is a dynamic result",
         "AssistantMcp" to "per-assistant sub-page; the assistant itself is a dynamic result",
         "AssistantLocalTool" to "per-assistant sub-page; the assistant itself is a dynamic result",
+        "AssistantSsh" to "per-assistant sub-page; the assistant itself is a dynamic result",
         "AssistantInjections" to "per-assistant sub-page; the assistant itself is a dynamic result",
         "WorkflowDetail" to "per-workflow page; workflows live in their own store, not indexed",
         "ScheduledJobDetail" to "per-job page; scheduled jobs live in their own store, not indexed",
