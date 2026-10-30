@@ -49,6 +49,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -86,6 +87,7 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.glass.hazeGlass
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.debounce
 import com.clma.ai.core.ReasoningLevel
 import com.clma.ai.provider.Model
 import com.clma.ai.provider.ModelAbility
@@ -256,10 +258,13 @@ fun ChatInput(
 
     // Collapsed = a one-line pill. It opens into a taller multi-line box as soon as it is focused,
     // carries attachments, or holds a multi-line draft.
+    val multiLineDraft by remember(state) {
+        derivedStateOf { state.textContent.text.contains('\n') }
+    }
     val naturallyExpanded = chatInputExpanded(
         focused = isFocused,
         hasAttachments = state.messageContent.isNotEmpty(),
-        multiLineDraft = state.textContent.text.contains('\n'),
+        multiLineDraft = multiLineDraft,
     )
     // Every layout rests as the one-line pill and opens the same way. Once open, CLEAN / CLAUDE
     // put the full-width field on top and the tools underneath, with "+" on the right next to
@@ -279,6 +284,10 @@ fun ChatInput(
         ChatLayout.CLEAN -> settings.displaySetting.cleanLayoutGlass
         ChatLayout.CLAUDE -> false
         ChatLayout.GEMINI -> false
+    }
+    // Only boolean draft changes affect the surrounding composer.
+    val hasDraftContent by remember(state) {
+        derivedStateOf { !state.isEmpty() }
     }
     val expanded = naturallyExpanded
     // Animate the corner along with the layout change below, so the pill does not snap between
@@ -499,7 +508,7 @@ fun ChatInput(
                                 val voiceAvailable =
                                     !voiceState.isActive && (asrState.isAvailable || asrState.isRecording)
                                 // Stop must remain available even while a draft or recording is present.
-                                if (loading && (!state.isEmpty() || asrState.isRecording)) {
+                                if (loading && (!hasDraftContent || asrState.isRecording)) {
                                     SendButton(
                                         loading = true,
                                         empty = true,
@@ -511,14 +520,14 @@ fun ChatInput(
                                 when {
                                     asrState.isRecording -> AsrButton(state = asrState, onClick = onAsrClick)
 
-                                    loading && state.isEmpty() -> SendButton(
+                                    loading && !hasDraftContent -> SendButton(
                                         loading = true,
                                         empty = true,
                                         onClick = { sendMessage() },
                                         onLongClick = { sendMessageWithoutAnswer() },
                                     )
 
-                                    !state.isEmpty() -> SendButton(
+                                    hasDraftContent -> SendButton(
                                         loading = loading,
                                         empty = false,
                                         onClick = { sendMessage() },
@@ -863,7 +872,12 @@ private fun TextInputRow(
         var completionList by remember { mutableStateOf<ChatCompletionList?>(null) }
         // The draft only fades at the top/bottom edges once it actually wraps onto several lines —
         // a single line keeps full contrast.
-        val multilineDraft = state.textContent.text.contains('\n')
+        val multilineDraft by remember(state) {
+            derivedStateOf { state.textContent.text.contains('\n') }
+        }
+        val hasDraftContent by remember(state) {
+            derivedStateOf { !state.isEmpty() }
+        }
         val receiveContentListener = rememberPasteLongTextAsFileListener(state)
 
         LaunchedEffect(completionProviders, isFocused) {
@@ -877,7 +891,7 @@ private fun TextInputRow(
                     text = state.textContent.text.toString(),
                     selection = state.textContent.selection,
                 )
-            }.collectLatest { context ->
+            }.debounce(120).collectLatest { context ->
                 val lists = completionProviders.mapNotNull { provider ->
                     try {
                         provider.complete(context)
@@ -960,7 +974,7 @@ private fun TextInputRow(
                 capitalization = KeyboardCapitalization.Sentences,
                 // Only show the Send action when there is something to send; otherwise let the
                 // IME use its default (newline) so the user can start a new line.
-                imeAction = if (settings.displaySetting.sendOnEnter && !state.isEmpty()) ImeAction.Send else ImeAction.Default
+                imeAction = if (settings.displaySetting.sendOnEnter && hasDraftContent) ImeAction.Send else ImeAction.Default
             ),
             // null when sendOnEnter is off — a non-null handler (even an empty one) tells the IME
             // the Enter key is an IME action, which blocks newline insertion in multi-line mode.
