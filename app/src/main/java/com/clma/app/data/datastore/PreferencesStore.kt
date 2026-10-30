@@ -972,7 +972,7 @@ class SettingsStore(
         }
     }
 
-    /** Disk has not been read yet. Writing now would persist [Settings.dummy] and wipe the file. */ 
+    /** Disk has not been read yet. Writing now would persist [Settings.dummy] and wipe the file. */
     private suspend fun awaitLoadedSettings(): Settings? {
         settingsFlow.value.takeIf { !it.init }?.let { return it }
         Log.w(TAG, "settings update waiting for initial load")
