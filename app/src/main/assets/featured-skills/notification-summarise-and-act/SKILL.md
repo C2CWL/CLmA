@@ -31,7 +31,7 @@ allowed-tools: list_recent_notifications list_active_notifications dismiss_notif
    - 默认直接忽略普通资讯类通知，除非用户有专门阅读偏好。
    - 整体总长度控制在 6 句短句以内。
 6. **提出行动建议**：在末尾提供至多 3 项具体操作建议：
-   - “是否在 Telegram 中回复 <张三>？”
+   - “是否在聊天应用中回复 <张三>？”
    - “是否打开银行安全预警？”
    - “是否一键清理 14 条营销推广通知？”
    用户回复确认后即可直接代为执行。

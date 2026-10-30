@@ -30,7 +30,7 @@ description: 将来自 ClawHub（或 Markdown 原文）的 OpenClaw 技能转换
 |---|---|---|
 | `sessions_list` | 暂不支持 | 移除该章节或注明环境限制 |
 | `sessions_history` | 暂不支持 | 移除该章节或注明环境限制 |
-| `sessions_send` | `telegram_send_message` | 跨会话交互转换为跨设备消息通知 |
+| `sessions_send` | 暂不支持 | 移除该调用并说明跨会话通信不可用，不映射为消息通知 |
 | `sessions_spawn` | `subagent_dispatch` | 仅在用户启用了子智能体分发时可用 |
 | `clawdhub install <name>` | `skill_install_from_url` 或 `skill_install_from_text` | 替换安装说明指令 |
 | `openclaw hooks enable` | `schedule_job` 或 `workflow_create` | Hook 机制转换为定时任务或自动化工作流 |
@@ -51,7 +51,7 @@ description: 将来自 ClawHub（或 Markdown 原文）的 OpenClaw 技能转换
 ### 需要剔除或替换的章节
 
 - “OpenClaw Setup” / “OpenClaw Workspace Structure”：替换为 CLmA 的工作区路径说明。
-- “Inter-Session Communication”：移除 `sessions_*` 工具；若该设计至关重要，建议改用 `telegram_send_message` 作为跨端通知替代方案。
+- “Inter-Session Communication”：移除 `sessions_*` 工具；若该设计至关重要，明确说明当前不支持跨会话通信，不虚构替代工具。
 - “Hook Integration” / “Enable Hook”：替换为 CLmA 的工作流 (`workflow_create`) 或定时任务 (`schedule_job`)。
 - “Claude Code / Codex Setup”：直接删除（针对其他外部平台）。
 - 通过 `clawdhub` 或 `git clone` 安装：替换为“通过 `skill_install_from_url` 或 `skill_install_from_text` 安装”以及 CLmA 兼容路径。
