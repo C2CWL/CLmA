@@ -94,6 +94,7 @@ import com.clma.ai.core.ReasoningLevel
 import com.clma.ai.provider.Model
 import com.clma.ai.provider.ModelAbility
 import com.clma.ai.provider.ModelType
+import com.clma.ai.provider.ProviderSetting
 import com.clma.ai.ui.UIMessagePart
 import com.clma.asr.ASRStatus
 import me.rerere.hugeicons.HugeIcons
