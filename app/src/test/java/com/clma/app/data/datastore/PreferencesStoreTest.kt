@@ -12,6 +12,19 @@ import org.junit.Test
 
 class PreferencesStoreTest {
     @Test
+    fun `stale settings snapshot does not replace a newer write`() {
+        val current = Settings(settingsRevision = 4, autoCompactionThresholdPercent = 70)
+        val stale = Settings(settingsRevision = 3, autoCompactionThresholdPercent = 80)
+        val sameGeneration = current.copy(launchCount = current.launchCount + 1)
+        val newer = current.copy(settingsRevision = 5, autoCompactionThresholdPercent = 60)
+
+        assertEquals(false, shouldApplySettingsSnapshot(current, stale))
+        assertEquals(true, shouldApplySettingsSnapshot(current, sameGeneration))
+        assertEquals(true, shouldApplySettingsSnapshot(current, newer))
+        assertEquals(true, shouldApplySettingsSnapshot(Settings.dummy(), stale))
+    }
+
+    @Test
     fun `compression target defaults to one percent of the active context`() {
         val settings = Settings()
 
