@@ -23,6 +23,7 @@ class CodexProviderConfigureTest {
             type = ModelType.EMBEDDING,
             customHeaders = listOf(CustomHeader("X-Test", "value")),
             customBodies = listOf(CustomBody("test", JsonPrimitive(true))),
+            serviceTier = "fast",
             inputModalities = listOf(Modality.TEXT),
             abilities = emptyList(),
             tools = setOf(BuiltInTools.Search),
@@ -46,6 +47,7 @@ class CodexProviderConfigureTest {
         assertEquals(ModelType.EMBEDDING, merged[0].type)
         assertEquals(existing.customHeaders, merged[0].customHeaders)
         assertEquals(existing.customBodies, merged[0].customBodies)
+        assertEquals("fast", merged[0].serviceTier)
         assertEquals(existing.tools, merged[0].tools)
         assertEquals(refreshed.inputModalities, merged[0].inputModalities)
         assertEquals(refreshed.abilities, merged[0].abilities)

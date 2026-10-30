@@ -662,6 +662,9 @@ private fun ChatPageContent(
                         onUpdateModelReasoningLevel = { model, level ->
                             vm.setModelReasoningLevel(model, level)
                         },
+                        onUpdateModelServiceTier = { model, tier ->
+                            vm.setModelServiceTier(model, tier)
+                        },
                         onUpdateSearchMode = onUpdateSearchMode,
                         onUpdateSearchService = onUpdateSearchService,
                         onMoreClick = {

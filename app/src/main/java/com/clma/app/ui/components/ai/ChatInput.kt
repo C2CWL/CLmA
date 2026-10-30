@@ -106,6 +106,7 @@ import me.rerere.hugeicons.stroke.Zap
 import com.clma.app.R
 import com.clma.app.data.datastore.ChatLayout
 import com.clma.app.data.datastore.Settings
+import com.clma.app.data.datastore.findProvider
 import com.clma.app.data.datastore.effectiveChatLayout
 import com.clma.app.data.datastore.getCurrentAssistant
 import com.clma.app.data.datastore.resolveChatModel
@@ -154,6 +155,7 @@ fun ChatInput(
     conversationId: Uuid? = null,
     onUpdateChatModel: (Model) -> Unit,
     onUpdateModelReasoningLevel: (Model, ReasoningLevel) -> Unit,
+    onUpdateModelServiceTier: (Model, String?) -> Unit,
     onUpdateSearchMode: (SearchMode) -> Unit,
     onUpdateSearchService: (Int) -> Unit,
     onMoreClick: () -> Unit,
@@ -465,6 +467,7 @@ fun ChatInput(
                                     expanded = expanded,
                                     onUpdateChatModel = onUpdateChatModel,
                                     onUpdateModelReasoningLevel = onUpdateModelReasoningLevel,
+                                    onUpdateModelServiceTier = onUpdateModelServiceTier,
                                 )
 
                                 // Clean layout groups the tools on the left: model, then search.
@@ -591,6 +594,7 @@ private fun ModelReasoningChip(
     expanded: Boolean,
     onUpdateChatModel: (Model) -> Unit,
     onUpdateModelReasoningLevel: (Model, ReasoningLevel) -> Unit,
+    onUpdateModelServiceTier: (Model, String?) -> Unit,
 ) {
     val model = settings.resolveChatModel(conversationChatModelId, assistant.id)
     val effectiveModelId = model?.id
@@ -672,6 +676,11 @@ private fun ModelReasoningChip(
             AgentControlCard(
                 reasoningLevel = level,
                 showReasoning = showReasoning,
+                showCodexSpeed = model?.findProvider(settings.providers) is ProviderSetting.Codex,
+                codexServiceTier = model?.serviceTier,
+                onUpdateCodexServiceTier = { tier ->
+                    if (model != null) onUpdateModelServiceTier(model, tier)
+                },
                 onUpdateReasoningLevel = {
                     if (model != null) {
                         onUpdateModelReasoningLevel(model, it)

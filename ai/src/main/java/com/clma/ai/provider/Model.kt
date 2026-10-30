@@ -25,6 +25,9 @@ data class Model(
      */
     @EncodeDefault(EncodeDefault.Mode.NEVER)
     val reasoningLevel: ReasoningLevel? = null,
+    /** Codex service tier: null = model default, "fast" = opt into faster, higher-usage serving. */
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val serviceTier: String? = null,
     // Optional capability/pricing metadata, populated from OpenRouter's /models endpoint.
     val contextLength: Int? = null,
     val supportedParameters: List<String> = emptyList(),

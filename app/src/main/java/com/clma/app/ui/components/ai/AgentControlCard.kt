@@ -78,6 +78,9 @@ fun AgentControlCard(
     showReasoning: Boolean,
     onUpdateReasoningLevel: (ReasoningLevel) -> Unit,
     modifier: Modifier = Modifier,
+    showCodexSpeed: Boolean = false,
+    codexServiceTier: String? = null,
+    onUpdateCodexServiceTier: (String?) -> Unit = {},
     conversationId: Uuid? = null,
 ) {
     val approvalPrefs = koinInject<ToolApprovalPreferences>()
@@ -145,6 +148,13 @@ fun AgentControlCard(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
+            if (showCodexSpeed) {
+                CodexSpeedSelector(
+                    serviceTier = codexServiceTier,
+                    onUpdate = onUpdateCodexServiceTier,
+                    modifier = Modifier.padding(bottom = 8.dp),
+                )
+            }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),

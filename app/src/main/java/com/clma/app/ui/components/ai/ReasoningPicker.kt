@@ -1,6 +1,12 @@
 package com.clma.app.ui.components.ai
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -19,6 +25,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -108,6 +115,9 @@ fun ReasoningPicker(
     reasoningLevel: ReasoningLevel,
     onDismissRequest: () -> Unit = {},
     onUpdateReasoningLevel: (ReasoningLevel) -> Unit,
+    showCodexSpeed: Boolean = false,
+    codexServiceTier: String? = null,
+    onUpdateCodexServiceTier: (String?) -> Unit = {},
 ) {
     val currentIndex = levels.indexOf(reasoningLevel).coerceAtLeast(0)
     var sliderValue by remember { mutableFloatStateOf(currentIndex.toFloat()) }
@@ -128,6 +138,14 @@ fun ReasoningPicker(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            if (showCodexSpeed) {
+                CodexSpeedSelector(
+                    serviceTier = codexServiceTier,
+                    onUpdate = onUpdateCodexServiceTier,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+
             // 标题
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -292,21 +310,101 @@ internal fun ReasoningLevelWord(
     style: TextStyle,
     modifier: Modifier = Modifier,
 ) {
-    if (level == ReasoningLevel.MAX) {
+    AnimatedContent(
+        targetState = level,
+        modifier = modifier,
+        transitionSpec = {
+            val direction = if (targetState.ordinal > initialState.ordinal) 1 else -1
+            (slideInVertically(animationSpec = tween(180)) { direction * it / 2 } + fadeIn(tween(180))) togetherWith
+                (slideOutVertically(animationSpec = tween(180)) { -direction * it / 2 } + fadeOut(tween(120)))
+        },
+        label = "reasoningLevelWord",
+    ) { currentLevel ->
+        if (currentLevel == ReasoningLevel.MAX) {
+            Text(
+                text = currentLevel.label(),
+                style = style.copy(brush = reasoningSurgeRainbowBrush("reasoningWordRainbow")),
+                fontWeight = FontWeight.Bold,
+            )
+        } else {
+            val wordColor by animateColorAsState(reasoningLevelColor(currentLevel), label = "reasoningWord")
+            Text(
+                text = currentLevel.label(),
+                style = style,
+                color = wordColor,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+    }
+}
+
+
+@Composable
+internal fun CodexSpeedSelector(
+    serviceTier: String?,
+    onUpdate: (String?) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
-            text = level.label(),
-            modifier = modifier,
-            style = style.copy(brush = reasoningSurgeRainbowBrush("reasoningWordRainbow")),
-            fontWeight = FontWeight.Bold,
+            text = stringResource(R.string.codex_speed_title),
+            style = MaterialTheme.typography.titleMedium,
         )
-    } else {
-        val wordColor by animateColorAsState(reasoningLevelColor(level), label = "reasoningWord")
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                .padding(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            CodexSpeedOption(
+                label = stringResource(R.string.codex_speed_standard),
+                selected = serviceTier == null,
+                onClick = { onUpdate(null) },
+                modifier = Modifier.weight(1f),
+            )
+            CodexSpeedOption(
+                label = stringResource(R.string.codex_speed_fast),
+                selected = serviceTier == "fast",
+                onClick = { onUpdate("fast") },
+                modifier = Modifier.weight(1f),
+            )
+        }
         Text(
-            text = level.label(),
-            modifier = modifier,
-            style = style,
-            color = wordColor,
-            fontWeight = FontWeight.Bold,
+            text = stringResource(
+                if (serviceTier == "fast") R.string.codex_speed_fast_hint
+                else R.string.codex_speed_standard_hint,
+            ),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun CodexSpeedOption(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val contentColor by animateColorAsState(
+        if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+        label = "codexSpeedContent",
+    )
+    ToggleSurface(
+        checked = selected,
+        onClick = onClick,
+        modifier = modifier,
+        shape = RoundedCornerShape(9.dp),
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            color = contentColor,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
         )
     }
 }

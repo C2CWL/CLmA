@@ -308,6 +308,12 @@ class ChatVM(
         }
     }
 
+    fun setModelServiceTier(model: Model, serviceTier: String?) {
+        viewModelScope.launch {
+            settingsStore.updateModelServiceTier(model.id, serviceTier)
+        }
+    }
+
     /**
      * 处理消息发送
      *
