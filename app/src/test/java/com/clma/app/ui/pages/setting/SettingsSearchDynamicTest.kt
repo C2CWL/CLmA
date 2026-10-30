@@ -19,8 +19,8 @@ class SettingsSearchDynamicTest {
             assistants = one, ttsProviders = one, asrProviders = one,
         )
         val entries = settingsSearchDynamicEntries(content, index)
-        // One per kind: no kind silently dropped because its anchor went missing.
-        assertEquals(11, entries.size)
+        // One per kind, plus one result per assistant sub-page.
+        assertEquals(11 + assistantSearchSubPages.size, entries.size)
         entries.forEach { entry ->
             assertTrue("empty breadcrumb for ${entry.route}", entry.breadcrumbRes.isNotEmpty())
             assertTrue(entry.groupRes != 0)
@@ -48,6 +48,24 @@ class SettingsSearchDynamicTest {
         ).single()
         assertEquals(Screen.Prompts(initialTab = 1), entry.route)
         assertEquals(R.string.prompt_page_lorebook_tab, entry.breadcrumbRes.last())
+    }
+
+    @Test
+    fun `each assistant sub page opens that assistant`() {
+        val entries = settingsSearchDynamicEntries(
+            SettingsSearchUserContent(assistants = listOf(SettingsSearchUserItem("a1", "翻译助手"))),
+            index,
+        )
+        val byRoute = entries.associateBy { it.route }
+        assertEquals(1 + assistantSearchSubPages.size, entries.size)
+        assertEquals(Screen.AssistantDetail("a1"), entries.first().route)
+        for (page in assistantSearchSubPages) {
+            val entry = byRoute[page.route("a1")]
+            assertTrue("missing ${page.route("a1")}", entry != null)
+            assertEquals(page.titleRes, entry!!.titleRes)
+            assertEquals("翻译助手", entry.subtitle)
+            assertTrue(entry.breadcrumbRes.isNotEmpty())
+        }
     }
 
     @Test

@@ -139,4 +139,19 @@ class SettingsSearchQueryTest {
         assertEquals(Screen.Workspaces, results.first().route)
         assertTrue(results.any { it.route == Screen.WorkspaceDetail("ws-1") })
     }
+
+    @Test
+    fun `assistant sub pages are searchable and open that assistant`() {
+        val content = SettingsSearchUserContent(
+            assistants = listOf(SettingsSearchUserItem("a1", "翻译助手", null)),
+        )
+        assertTop("SSH 管理", Screen.AssistantSsh("a1"), search("SSH 管理", content = content))
+        assertTop("记忆", Screen.AssistantMemory("a1"), search("记忆", content = content))
+        assertTop("翻译助手 SSH", Screen.AssistantSsh("a1"), search("翻译助手 SSH", content = content))
+        // The saved-host page keeps the exact title "SSH hosts"; the assistant page is still listed.
+        val ssh = search("SSH hosts", content = content, text = english, fallback = null)
+        assertEquals(Screen.SettingSsh, ssh.first().route)
+        assertTrue(ssh.any { it.route == Screen.AssistantSsh("a1") })
+        assertTop("Basic Settings", Screen.AssistantBasic("a1"), search("Basic Settings", content = content))
+    }
 }

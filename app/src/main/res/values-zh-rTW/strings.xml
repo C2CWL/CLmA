@@ -17,6 +17,12 @@
   <string name="assistant_detail_memory_desc">管理助理記憶體與近期聊天參考</string>
   <string name="assistant_detail_prompt_desc">設定系統提示、訊息範本與正規表示式規則</string>
   <string name="assistant_detail_request_desc">設定自訂請求標頭與主體參數</string>
+  <string name="assistant_detail_ssh_desc">管理 SSH 主機並選擇此助理可用的主機</string>
+  <string name="assistant_detail_ssh_title">SSH 管理</string>
+  <string name="assistant_ssh_page_access">此助理允許使用的主機</string>
+  <string name="assistant_ssh_page_empty">尚無已儲存的 SSH 主機</string>
+  <string name="assistant_ssh_page_manage">開啟 SSH 主機管理</string>
+  <string name="assistant_ssh_page_title">SSH 管理</string>
   <string name="assistant_extensions_page_empty_lorebooks">尚無可用的 lorebook，請在 Prompts 中建立</string>
   <string name="assistant_extensions_page_empty_mode_injections">尚無可用的模式注入，請在 Prompts 中建立一個</string>
   <string name="assistant_extensions_page_empty_quick_messages">目前沒有可用的快速訊息，請在擴充功能中建立</string>

@@ -18,6 +18,12 @@
   <string name="assistant_detail_memory_desc">管理助手记忆和最近的聊天引用</string>
   <string name="assistant_detail_prompt_desc">设置系统提示、消息模板和正则规则</string>
   <string name="assistant_detail_request_desc">配置自定义请求头和正文参数</string>
+  <string name="assistant_detail_ssh_desc">管理 SSH 主机并选择此助手可用的主机</string>
+  <string name="assistant_detail_ssh_title">SSH 管理</string>
+  <string name="assistant_ssh_page_access">此助手允许使用的主机</string>
+  <string name="assistant_ssh_page_empty">暂无已保存的 SSH 主机</string>
+  <string name="assistant_ssh_page_manage">打开 SSH 主机管理</string>
+  <string name="assistant_ssh_page_title">SSH 管理</string>
   <string name="assistant_extensions_page_empty_lorebooks">没有世界书，前往提示词管理创建</string>
   <string name="assistant_extensions_page_empty_mode_injections">没有模式注入，前往提示词管理创建</string>
   <string name="assistant_extensions_page_empty_quick_messages">暂无快捷消息，请在扩展中创建</string>
