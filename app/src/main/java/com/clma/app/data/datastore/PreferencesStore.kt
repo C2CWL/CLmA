@@ -99,8 +99,12 @@ enum class ImageRecognitionMode {
 }
 
 
-/** Default automatic compaction summary target as a percentage of the active context. */
-const val DEFAULT_CONTEXT_COMPACTION_TARGET_PERCENT = 1
+/**
+ * Default automatic compaction summary target as a percentage of the active context.
+ * 1% plus the old 2k–8k clamp kept only a stub of a normal window. 20% is the blank-field
+ * default; the result is still clamped to 4k–64k.
+ */
+const val DEFAULT_CONTEXT_COMPACTION_TARGET_PERCENT = 20
 
 private const val TAG = "PreferencesStore"
 
@@ -1491,11 +1495,11 @@ fun Settings.resolveChatModel(conversationChatModelId: Uuid?, assistantId: Uuid?
         .firstNotNullOfOrNull { providers.findModelById(it) }
 }
 
-private const val FALLBACK_CONTEXT_COMPACTION_TARGET_TOKENS = 4_000
-private const val MIN_DEFAULT_COMPACTION_TARGET_TOKENS = 2_000
-private const val MAX_DEFAULT_COMPACTION_TARGET_TOKENS = 8_000
+private const val FALLBACK_CONTEXT_COMPACTION_TARGET_TOKENS = 16_000
+private const val MIN_DEFAULT_COMPACTION_TARGET_TOKENS = 4_000
+private const val MAX_DEFAULT_COMPACTION_TARGET_TOKENS = 64_000
 
-/** Returns the configured summary target, defaulting to 1% of the active context with safe bounds. */
+/** Returns the configured summary target, defaulting to 20% of the active context with safe bounds. */
 fun Settings.getContextCompactionTargetTokens(contextLength: Int?): Int {
     val configured = contextCompactionTargetTokensK
         ?.toLong()

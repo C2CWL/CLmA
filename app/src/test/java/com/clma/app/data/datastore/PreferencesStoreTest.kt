@@ -25,40 +25,41 @@ class PreferencesStoreTest {
     }
 
     @Test
-    fun `compression target defaults to one percent of the active context`() {
+    fun `compression target defaults to twenty percent of the active context`() {
         val settings = Settings()
 
-        assertEquals(3_720, settings.getContextCompactionTargetTokens(372_000))
+        // 128k * 20% = 25_600, inside 4k–64k
+        assertEquals(25_600, settings.getContextCompactionTargetTokens(128_000))
     }
 
     @Test
     fun `compression target uses a safe fallback without model metadata`() {
         val settings = Settings(contextCompactionTargetTokensK = null)
 
-        assertEquals(4_000, settings.getContextCompactionTargetTokens(null))
-        assertEquals(4_000, settings.getContextCompactionTargetTokens(0))
+        assertEquals(16_000, settings.getContextCompactionTargetTokens(null))
+        assertEquals(16_000, settings.getContextCompactionTargetTokens(0))
     }
 
     @Test
     fun `compression target respects lower and upper bounds`() {
         val settings = Settings()
 
-        // 100k context * 1% = 1,000, clamped to min 2,000
-        assertEquals(2_000, settings.getContextCompactionTargetTokens(100_000))
-        // 1,000k context * 1% = 10,000, clamped to max 8,000
-        assertEquals(8_000, settings.getContextCompactionTargetTokens(1_000_000))
+        // 8k context * 20% = 1_600, clamped to min 4_000
+        assertEquals(4_000, settings.getContextCompactionTargetTokens(8_000))
+        // 1,000k context * 20% = 200_000, clamped to max 64_000
+        assertEquals(64_000, settings.getContextCompactionTargetTokens(1_000_000))
     }
 
     @Test
-    fun `token threshold supplies context metadata for the one percent default`() {
+    fun `token threshold supplies context metadata for the default compaction target`() {
         val settings = Settings(
             contextCompactionTargetTokensK = null,
             autoCompactionThresholdMode = AutoCompactionThresholdMode.TOKENS,
-            autoCompactionThresholdTokensK = 372,
+            autoCompactionThresholdTokensK = 128,
         )
 
-        assertEquals(372_000, settings.getEffectiveContextLength(null))
-        assertEquals(3_720, settings.getContextCompactionTargetTokens(
+        assertEquals(128_000, settings.getEffectiveContextLength(null))
+        assertEquals(25_600, settings.getContextCompactionTargetTokens(
             settings.getEffectiveContextLength(null),
         ))
     }

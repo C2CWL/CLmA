@@ -2245,7 +2245,7 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="setting_model_page_auto_compaction_tokens">Token阈值</string>
   <string name="setting_model_page_auto_compaction_tokens_desc">输入以千Token为单位的阈值。例如，8k表示8000个Token。</string>
   <string name="setting_model_page_context_compaction_target">压缩目标</string>
-  <string name="setting_model_page_context_compaction_target_desc">以千 Token 为单位设置摘要目标大小。留空时使用当前上下文的 1%（例如上下文为 300k 时使用 3k）。</string>
+  <string name="setting_model_page_context_compaction_target_desc">以千 Token 为单位设置摘要目标大小。留空时使用当前上下文的 20%，并限制在 4k–64k（例如上下文为 128k 时约为 26k）。</string>
   <string name="setting_model_page_auto_compaction_keep_tool_calls">保留最近的工具调用</string>
   <string name="setting_model_page_auto_compaction_keep_tool_calls_desc">自动压缩会保留这些工具调用的原始输入和输出。设为0时压缩整个当前上下文。</string>
   <string name="setting_page_preferences_network_stream_retries">流式请求重试次数</string>
