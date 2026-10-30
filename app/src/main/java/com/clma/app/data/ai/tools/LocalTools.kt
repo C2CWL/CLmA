@@ -909,7 +909,7 @@ class LocalTools(
             tools.add(listSshHostsTool(sshHostRepository, enabledSshHosts))
             tools.add(sshExecSavedTool(context, sshHostRepository, agentSecretsStore, enabledSshHosts))
             tools.add(sshUploadTool(context, sshHostRepository, enabledSshHosts))
-             tools.add(sshDownloadTool(context, sshHostRepository, enabledSshHosts)
+            tools.add(sshDownloadTool(context, sshHostRepository, enabledSshHosts))
         }
         if (options.contains(LocalToolOption.Shizuku)) {
             tools.add(com.clma.app.data.ai.tools.local.shizukuExecTool(context))
