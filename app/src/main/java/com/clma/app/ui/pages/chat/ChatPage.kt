@@ -1,7 +1,6 @@
 package com.clma.app.ui.pages.chat
 
 import com.clma.app.diagnostics.FunctionalDiagnostics
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
@@ -842,18 +841,25 @@ private fun ChatPageContent(
                     ) {
                         if (geminiLayout) {
                             Row(
-                                modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 8.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = innerPadding.calculateTopPadding())
+                                    .padding(horizontal = 12.dp, vertical = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 if (!bigScreen) {
-                                    IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                                        Icon(HugeIcons.Menu03, stringResource(R.string.menu))
-                                    }
+                                    GeminiTopButton(
+                                        icon = HugeIcons.Menu03,
+                                        description = stringResource(R.string.menu),
+                                        onClick = { scope.launch { drawerState.open() } },
+                                    )
                                 }
                                 Spacer(Modifier.weight(1f))
-                                IconButton(onClick = openChatDrawer) {
-                                    Icon(HugeIcons.LeftToRightListBullet, stringResource(R.string.accessibility_chat_options))
-                                }
+                                GeminiTopButton(
+                                    icon = HugeIcons.LeftToRightListBullet,
+                                    description = stringResource(R.string.accessibility_chat_options),
+                                    onClick = openChatDrawer,
+                                )
                             }
                         } else if (chatLayout != ChatLayout.ORIGINAL) {
                             CleanTopBarPanel(settings = setting, hazeState = hazeState) {
@@ -903,6 +909,26 @@ private fun ChatPageContent(
                 onStartVoiceMode = onStartVoiceMode,
                 onDismiss = { showFilesSheet = false },
             )
+        }
+    }
+}
+
+@Composable
+private fun GeminiTopButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    description: String,
+    onClick: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier.size(44.dp),
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.88f),
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        tonalElevation = 2.dp,
+        shadowElevation = 2.dp,
+    ) {
+        IconButton(onClick = onClick) {
+            Icon(icon, contentDescription = description, modifier = Modifier.size(22.dp))
         }
     }
 }

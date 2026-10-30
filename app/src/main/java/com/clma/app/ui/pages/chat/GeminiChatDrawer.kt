@@ -2,6 +2,8 @@ package com.clma.app.ui.pages.chat
 
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
@@ -22,8 +24,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
@@ -63,6 +68,7 @@ internal fun GeminiChatDrawer(
     LaunchedEffect(conversation.id) { state.close() }
     BackHandler(enabled = state.isOpen) { scope.launch { state.close() } }
     val direction = LocalLayoutDirection.current
+    val swipeThreshold = with(LocalDensity.current) { 64.dp.toPx() }
     val activity = LocalContext.current as ComponentActivity
     val drawerVm: ChatDrawerVM = koinViewModel(viewModelStoreOwner = activity)
     val model = settings.resolveChatModel(conversation.chatModelId, conversation.assistantId)
@@ -81,6 +87,22 @@ internal fun GeminiChatDrawer(
         ModalNavigationDrawer(
             drawerState = state,
             gesturesEnabled = state.isOpen,
+            modifier = Modifier.pointerInput(state.isOpen, swipeThreshold) {
+                if (!state.isOpen) {
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        var drag = 0f
+                        do {
+                            val event = awaitPointerEvent()
+                            val change = event.changes.firstOrNull() ?: break
+                            drag += change.positionChange().x
+                        } while (change.pressed)
+                        if (down.position.x < size.width * 0.28f && drag > swipeThreshold) {
+                            scope.launch { state.open() }
+                        }
+                    }
+                }
+            },
             drawerContent = {
                 CompositionLocalProvider(LocalLayoutDirection provides direction) {
                     ModalDrawerSheet {
