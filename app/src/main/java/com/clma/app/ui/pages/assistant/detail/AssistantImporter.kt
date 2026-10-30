@@ -126,7 +126,7 @@ private fun SillyTavernImporter(
     ) {
         OutlinedButton(
             onClick = {
-                pngPickerLauncher.launch(arrayOf("image/png"))
+                pngPickerLauncher.launch(arrayOf("image/*"))
             },
             enabled = !isLoading
         ) {
@@ -136,7 +136,7 @@ private fun SillyTavernImporter(
 
         OutlinedButton(
             onClick = {
-                jsonPickerLauncher.launch(arrayOf("application/json"))
+                jsonPickerLauncher.launch(arrayOf("application/json", "application/octet-stream", "text/plain"))
             },
             enabled = !isLoading
         ) {
@@ -257,18 +257,22 @@ private suspend fun importAssistantFromUri(
 ) {
     try {
         val mime = withContext(Dispatchers.IO) { filesManager.getFileMimeType(uri) }
+        val fileName = withContext(Dispatchers.IO) { filesManager.getFileNameFromUri(uri) }
+        val isImage = mime?.startsWith("image/") == true
+        val isJson = mime == "application/json" || mime == "text/plain" ||
+            mime == "application/octet-stream" || fileName?.endsWith(".json", ignoreCase = true) == true
         val (jsonString, backgroundStr) = withContext(Dispatchers.IO) {
-            when (mime) {
-                "image/png" -> {
+            when {
+                isImage -> {
                     val result = ImageUtils.getTavernCharacterMeta(context, uri)
                     result.map { base64Data ->
-                        val json = String(Base64.decode(base64Data, Base64.DEFAULT))
+                        val json = String(Base64.decode(base64Data, Base64.DEFAULT), Charsets.UTF_8)
                         val bg = filesManager.createChatFilesByContents(listOf(uri)).first().toString()
                         json to bg
                     }.getOrElse { throw it }
                 }
 
-                "application/json" -> {
+                isJson -> {
                     val json = context.contentResolver.openInputStream(uri)?.bufferedReader()
                         .use { it?.readText() }
                         ?: error(context.getString(R.string.assistant_importer_read_json_failed))

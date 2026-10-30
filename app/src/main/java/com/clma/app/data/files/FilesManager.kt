@@ -103,37 +103,37 @@ class FilesManager(
     fun getFile(entity: ManagedFileEntity): File =
         File(context.filesDir, entity.relativePath)
 
-    fun createChatFilesByContents(uris: List<Uri>): List<Uri> {
+    suspend fun createChatFilesByContents(uris: List<Uri>): List<Uri> = withContext(Dispatchers.IO) {
         val newUris = mutableListOf<Uri>()
         val dir = context.filesDir.resolve(FileFolders.UPLOAD)
         if (!dir.exists()) {
             dir.mkdirs()
         }
         uris.forEach { uri ->
+            var file: File? = null
             runCatching {
                 val sourceName = getFileNameFromUri(uri) ?: uri.lastPathSegment ?: "file"
                 val sourceMime = getFileMimeType(uri)
                 val fileName = buildUuidFileName(displayName = sourceName, mimeType = sourceMime)
-                val file = dir.resolve(fileName)
-                if (!file.exists()) {
-                    file.createNewFile()
-                }
+                val copiedFile = dir.resolve(fileName)
+                file = copiedFile
                 val inputStream = context.contentResolver.openInputStream(uri)
                     ?: error("Failed to open input stream for $uri")
                 inputStream.use { input ->
-                    file.outputStream().use { output ->
+                    copiedFile.outputStream().use { output ->
                         input.copyTo(output)
                     }
                 }
-                val guessedMime = sourceMime ?: guessMimeType(file, sourceName)
+                val guessedMime = sourceMime ?: guessMimeType(copiedFile, sourceName)
                 trackManagedFile(
                     folder = FileFolders.UPLOAD,
-                    file = file,
+                    file = copiedFile,
                     displayName = sourceName,
                     mimeType = guessedMime
                 )
-                newUris.add(file.toUri())
+                newUris.add(copiedFile.toUri())
             }.onFailure {
+                file?.delete()
                 it.printStackTrace()
                 Log.e(TAG, "createChatFilesByContents: Failed to save file from $uri", it)
                 Logging.log(
@@ -142,7 +142,7 @@ class FilesManager(
                 )
             }
         }
-        return newUris
+        newUris
     }
 
     fun createChatFilesByByteArrays(byteArrays: List<ByteArray>): List<Uri> {
