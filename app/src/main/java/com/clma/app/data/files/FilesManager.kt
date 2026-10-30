@@ -100,6 +100,9 @@ class FilesManager(
 
     suspend fun getByRelativePath(relativePath: String): ManagedFileEntity? = repository.getByPath(relativePath)
 
+    fun getFile(entity: ManagedFileEntity): File =
+        File(context.filesDir, entity.relativePath)
+
     suspend fun createChatFilesByContents(uris: List<Uri>): List<Uri> = withContext(Dispatchers.IO) {
         val newUris = mutableListOf<Uri>()
         val dir = context.filesDir.resolve(FileFolders.UPLOAD)
@@ -411,7 +414,7 @@ class FilesManager(
         if (deleteFromDisk) {
             runCatching { getFile(entity).delete() }
         }
-        repository.deleteById(entity.id) > 0
+        repository.deleteById(id) > 0
     }
 
     /**
