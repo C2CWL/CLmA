@@ -866,6 +866,9 @@ private fun TextInputRow(
         val multilineDraft by remember(state) {
             derivedStateOf { state.textContent.text.contains('\n') }
         }
+        val hasDraftContent by remember(state) {
+            derivedStateOf { !state.isEmpty() }
+        }
         val receiveContentListener = rememberPasteLongTextAsFileListener(state)
 
         LaunchedEffect(completionProviders, isFocused) {
