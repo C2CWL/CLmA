@@ -174,9 +174,9 @@ internal object EdgeBarLook {
         val h6 = fract(h) * 6f
         val i = floor(h6).toInt().mod(6)
         val f = h6 - floor(h6)
-        val p = v * (1f - s * f)
-        val q = v * (1f - s * (1f - f))
-        val t = v * (1f - f)
+        val p = v * (1f - s)
+        val q = v * (1f - s * f)
+        val t = v * (1f - s * (1f - f))
         return when (i) {
             0 -> floatArrayOf(v, t, p)
             1 -> floatArrayOf(q, v, p)
@@ -211,7 +211,7 @@ internal object EdgeBarLook {
     fun isLightFill(argb: Int): Boolean {
         val r = (argb shr 16) and 0xFF
         val g = (argb shr 8) and 0xFF
-        val b = (argb and 0xFF)
+        val b = argb and 0xFF
         return (0.299f * r + 0.587f * g + 0.114f * b) / 255f > LIGHT_FILL_THRESHOLD
     }
 

@@ -248,7 +248,7 @@ class FloatingBallService : Service(), KoinComponent {
 
             ACTION_WORKING_OFF -> {
                 working = false
-                // The bar turns green until the user taps the bar, unless the chat box is open (the
+                // The bar turns green until the user taps it, unless the chat box is open (the
                 // finished reply is right there).
                 unseenDone = !chatBox.isShowing
                 if (barView == null) stopSelf() else syncBar()
@@ -715,7 +715,7 @@ class FloatingBallService : Service(), KoinComponent {
         val stopPendingIntent = PendingIntent.getService(
             this,
             1,
-            it,
+            stopIntent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
         return NotificationCompat.Builder(this, FLOATING_BALL_NOTIFICATION_CHANNEL_ID)
