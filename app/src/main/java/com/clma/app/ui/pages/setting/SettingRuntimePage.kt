@@ -150,10 +150,10 @@ private fun AutoCompactionSettingItem(
     ) { typed ->
         typed.toIntOrNull()?.let { parsed ->
             val normalized = parsed.coerceIn(1, Int.MAX_VALUE / 1_000)
-            if (normalized != settings.autoCompactionThresholdTokensK) {
-                vm.updateSettings { current ->
+            vm.updateSettings { current ->
+                if (normalized != current.autoCompactionThresholdTokensK) {
                     current.copy(autoCompactionThresholdTokensK = normalized)
-                }
+                } else current
             }
         }
     }
@@ -165,10 +165,10 @@ private fun AutoCompactionSettingItem(
         },
     ) { typed ->
         val normalized = typed.toIntOrNull()?.coerceIn(1, Int.MAX_VALUE / 1_000)
-        if (normalized != settings.contextCompactionTargetTokensK) {
-            vm.updateSettings { current ->
+        vm.updateSettings { current ->
+            if (normalized != current.contextCompactionTargetTokensK) {
                 current.copy(contextCompactionTargetTokensK = normalized)
-            }
+            } else current
         }
     }
     val keepRecentToolCallsField = rememberSyncedTextField(
@@ -178,10 +178,10 @@ private fun AutoCompactionSettingItem(
     ) { typed ->
         typed.toIntOrNull()?.let { parsed ->
             val normalized = parsed.coerceIn(0, 1_000)
-            if (normalized != settings.autoCompactionKeepRecentToolCalls) {
-                vm.updateSettings { current ->
+            vm.updateSettings { current ->
+                if (normalized != current.autoCompactionKeepRecentToolCalls) {
                     current.copy(autoCompactionKeepRecentToolCalls = normalized)
-                }
+                } else current
             }
         }
     }
@@ -314,16 +314,13 @@ private fun AutoCompactionSettingItem(
                                     .onFocusChanged { focusState ->
                                         if (!focusState.isFocused) {
                                             val parsed = tokenThresholdField.text.toIntOrNull()
-                                            if (parsed == null) {
-                                                tokenThresholdField.replaceText(settings.autoCompactionThresholdTokensK.toString())
-                                            } else {
-                                                val normalized = parsed.coerceIn(1, Int.MAX_VALUE / 1_000)
-                                                tokenThresholdField.replaceText(normalized.toString())
-                                                if (normalized != settings.autoCompactionThresholdTokensK) {
-                                                    vm.updateSettings { current ->
-                                                        current.copy(autoCompactionThresholdTokensK = normalized)
-                                                    }
-                                                }
+                                            val normalized = parsed?.coerceIn(1, Int.MAX_VALUE / 1_000)
+                                                ?: settings.autoCompactionThresholdTokensK
+                                            tokenThresholdField.replaceText(normalized.toString())
+                                            vm.updateSettings { current ->
+                                                if (normalized != current.autoCompactionThresholdTokensK) {
+                                                    current.copy(autoCompactionThresholdTokensK = normalized)
+                                                } else current
                                             }
                                         }
                                     },
@@ -359,10 +356,10 @@ private fun AutoCompactionSettingItem(
                                         ?.coerceIn(0, 1_000)
                                         ?: settings.autoCompactionKeepRecentToolCalls
                                     keepRecentToolCallsField.replaceText(normalized.toString())
-                                    if (normalized != settings.autoCompactionKeepRecentToolCalls) {
-                                        vm.updateSettings { current ->
+                                    vm.updateSettings { current ->
+                                        if (normalized != current.autoCompactionKeepRecentToolCalls) {
                                             current.copy(autoCompactionKeepRecentToolCalls = normalized)
-                                        }
+                                        } else current
                                     }
                                 }
                             },
@@ -394,10 +391,10 @@ private fun AutoCompactionSettingItem(
                                     ?.coerceIn(1, Int.MAX_VALUE / 1_000)
                                 val normalizedValue = normalized?.toString().orEmpty()
                                 compactionTargetTokensKField.replaceText(normalizedValue)
-                                if (normalized != settings.contextCompactionTargetTokensK) {
-                                    vm.updateSettings { current ->
+                                vm.updateSettings { current ->
+                                    if (normalized != current.contextCompactionTargetTokensK) {
                                         current.copy(contextCompactionTargetTokensK = normalized)
-                                    }
+                                    } else current
                                 }
                             }
                         },
