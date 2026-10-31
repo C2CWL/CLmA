@@ -76,7 +76,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.TileMode
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -87,15 +89,10 @@ import androidx.compose.ui.unit.dp
 import com.clma.ai.core.ReasoningLevel
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Atom02
-import me.rerere.hugeicons.stroke.SignalFull02
-import me.rerere.hugeicons.stroke.SignalHigh
-import me.rerere.hugeicons.stroke.SignalLow02
-import me.rerere.hugeicons.stroke.SignalLowMedium
-import me.rerere.hugeicons.stroke.SignalMedium02
-import me.rerere.hugeicons.stroke.SignalNo02
 import com.clma.app.R
 import com.clma.app.ui.components.ui.ToggleSurface
 import kotlin.math.PI
+import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
 
@@ -264,13 +261,68 @@ internal fun ReasoningIcon(level: ReasoningLevel, modifier: Modifier = Modifier)
         label = "reasoningIconTint"
     )
     when (level) {
-        ReasoningLevel.OFF -> Icon(HugeIcons.SignalNo02, contentDescription = null, modifier = modifier, tint = iconColor)
         ReasoningLevel.AUTO -> Icon(HugeIcons.Atom02, contentDescription = null, modifier = modifier, tint = iconColor)
-        ReasoningLevel.LOW -> Icon(HugeIcons.SignalLow02, contentDescription = null, modifier = modifier, tint = iconColor)
-        ReasoningLevel.MEDIUM -> Icon(HugeIcons.SignalLowMedium, contentDescription = null, modifier = modifier, tint = iconColor)
-        ReasoningLevel.HIGH -> Icon(HugeIcons.SignalMedium02, contentDescription = null, modifier = modifier, tint = iconColor)
-        ReasoningLevel.XHIGH -> Icon(HugeIcons.SignalHigh, contentDescription = null, modifier = modifier, tint = iconColor)
-        ReasoningLevel.MAX -> Icon(HugeIcons.SignalFull02, contentDescription = null, modifier = modifier, tint = iconColor)
+        else -> DepthMark(level = level, tint = iconColor, modifier = modifier)
+    }
+}
+
+/** Orbital mark in the launcher's language. More rings and satellites mean a deeper level. */
+@Composable
+private fun DepthMark(level: ReasoningLevel, tint: Color, modifier: Modifier = Modifier) {
+    val rings = when (level) {
+        ReasoningLevel.XHIGH, ReasoningLevel.MAX -> 2
+        else -> 1
+    }
+    val satellites = when (level) {
+        ReasoningLevel.OFF, ReasoningLevel.AUTO -> 0
+        ReasoningLevel.LOW -> 0
+        ReasoningLevel.MEDIUM -> 1
+        ReasoningLevel.HIGH -> 2
+        ReasoningLevel.XHIGH -> 2
+        ReasoningLevel.MAX -> 3
+    }
+    val core = level != ReasoningLevel.OFF
+    Canvas(modifier) {
+        val strokePx = 1.6.dp.toPx()
+        val c = Offset(size.width / 2f, size.height / 2f)
+        val radius = size.minDimension / 2f - strokePx
+        val arc = Stroke(width = strokePx, cap = StrokeCap.Round)
+        drawArc(
+            color = tint,
+            startAngle = 128f,
+            sweepAngle = 284f,
+            useCenter = false,
+            topLeft = Offset(c.x - radius, c.y - radius),
+            size = Size(radius * 2f, radius * 2f),
+            style = arc,
+        )
+        if (rings >= 2) {
+            val inner = radius * 0.62f
+            drawArc(
+                color = tint.copy(alpha = 0.8f),
+                startAngle = 210f,
+                sweepAngle = 250f,
+                useCenter = false,
+                topLeft = Offset(c.x - inner, c.y - inner),
+                size = Size(inner * 2f, inner * 2f),
+                style = arc,
+            )
+        }
+        if (core) {
+            drawCircle(color = tint, radius = strokePx * 0.85f, center = c)
+        }
+        repeat(satellites) { index ->
+            val angle = Math.toRadians(200.0 + index * 52.0)
+            val orbit = radius.toDouble()
+            drawCircle(
+                color = tint,
+                radius = strokePx * 0.72f,
+                center = Offset(
+                    c.x + (cos(angle) * orbit).toFloat(),
+                    c.y + (sin(angle) * orbit).toFloat(),
+                ),
+            )
+        }
     }
 }
 
@@ -604,7 +656,15 @@ internal fun ReasoningEnergyBar(
                 .fillMaxWidth()
                 .height(36.dp)
                 .clip(RoundedCornerShape(18.dp))
-                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                .background(
+                    Brush.verticalGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.surfaceContainerHigh,
+                            MaterialTheme.colorScheme.surfaceContainerLowest,
+                            MaterialTheme.colorScheme.surfaceContainerHigh,
+                        ),
+                    ),
+                )
                 .border(
                     width = 1.dp,
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
@@ -707,15 +767,35 @@ internal fun ReasoningEnergyBar(
                         level = activeLevel,
                         modifier = Modifier.fillMaxSize(),
                     )
-                    // Bright energy crest at the leading edge with breathing pulse
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .fillMaxWidth()
+                            .fillMaxHeight(0.42f)
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(
+                                        Color.White.copy(alpha = 0.34f),
+                                        Color.Transparent,
+                                    ),
+                                ),
+                            ),
+                    )
                     Box(
                         modifier = Modifier
                             .align(Alignment.CenterEnd)
-                            .padding(end = 2.dp)
-                            .width(3.5.dp)
-                            .fillMaxHeight(0.7f)
+                            .padding(end = 5.dp)
+                            .size(14.dp)
                             .clip(CircleShape)
-                            .background(Color.White.copy(alpha = crestPulse * 0.9f))
+                            .background(levelColor.copy(alpha = 0.35f * crestPulse)),
+                    )
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .padding(end = 8.dp)
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = 0.92f * crestPulse)),
                     )
                 }
             }
