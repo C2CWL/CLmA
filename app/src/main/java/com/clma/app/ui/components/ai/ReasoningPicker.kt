@@ -1,5 +1,23 @@
 package com.clma.app.ui.components.ai
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.unit.Dp
+
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.fadeIn
@@ -79,33 +97,68 @@ fun ReasoningButton(
     reasoningLevel: ReasoningLevel,
     onUpdateReasoningLevel: (ReasoningLevel) -> Unit,
 ) {
+    ReasoningPickerButton(
+        reasoningLevel = reasoningLevel,
+        onUpdateReasoningLevel = onUpdateReasoningLevel,
+        modifier = modifier,
+        onlyIcon = onlyIcon,
+    )
+}
+
+/**
+ * An action pill button placed on the chat input bar to quickly inspect and tune thinking depth.
+ */
+@Composable
+fun ReasoningPickerButton(
+    reasoningLevel: ReasoningLevel,
+    onUpdateReasoningLevel: (ReasoningLevel) -> Unit,
+    modifier: Modifier = Modifier,
+    onlyIcon: Boolean = true,
+    showCodexSpeed: Boolean = false,
+    codexServiceTier: String? = null,
+    onUpdateCodexServiceTier: (String?) -> Unit = {},
+) {
     var showPicker by remember { mutableStateOf(false) }
 
     if (showPicker) {
         ReasoningPicker(
             reasoningLevel = reasoningLevel,
             onDismissRequest = { showPicker = false },
-            onUpdateReasoningLevel = onUpdateReasoningLevel
+            onUpdateReasoningLevel = onUpdateReasoningLevel,
+            showCodexSpeed = showCodexSpeed,
+            codexServiceTier = codexServiceTier,
+            onUpdateCodexServiceTier = onUpdateCodexServiceTier,
         )
     }
 
+    val activeColor = reasoningLevelColor(reasoningLevel)
     ToggleSurface(
         checked = reasoningLevel.isEnabled,
         onClick = { showPicker = true },
-        modifier = modifier,
+        modifier = if (onlyIcon) modifier.size(30.dp) else modifier,
+        shape = if (onlyIcon) CircleShape else RoundedCornerShape(12.dp),
     ) {
-        Row(
-            modifier = Modifier.padding(vertical = 8.dp, horizontal = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Box(
-                modifier = Modifier.size(24.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                ReasoningIcon(reasoningLevel)
+        if (onlyIcon) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                ReasoningIcon(
+                    level = reasoningLevel,
+                    modifier = Modifier.size(18.dp),
+                )
             }
-            if (!onlyIcon) Text(stringResource(R.string.setting_provider_page_reasoning))
+        } else {
+            Row(
+                modifier = Modifier.padding(vertical = 8.dp, horizontal = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Box(
+                    modifier = Modifier.size(24.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    ReasoningIcon(reasoningLevel)
+                }
+                Text(stringResource(R.string.setting_provider_page_reasoning))
+            }
         }
     }
 }
@@ -192,36 +245,10 @@ fun ReasoningPicker(
                 )
             }
 
-            Slider(
-                value = sliderValue,
-                onValueChange = { sliderValue = it },
-                onValueChangeFinished = {
-                    val snappedIndex = sliderValue.roundToInt().coerceIn(0, levelCount - 1)
-                    sliderValue = snappedIndex.toFloat()
-                    onUpdateReasoningLevel(levels[snappedIndex])
-                },
-                valueRange = 0f..(levelCount - 1).toFloat(),
-                steps = levelCount - 2,
+            ReasoningSegmentedPicker(
+                currentLevel = reasoningLevel,
+                onSelectLevel = onUpdateReasoningLevel,
                 modifier = Modifier.fillMaxWidth(),
-                thumb = {
-                    Box(
-                        modifier = Modifier
-                            .size(24.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(10.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.onPrimary)
-                        )
-                    }
-                },
-                track = { sliderState ->
-                    ReasoningSurgeTrack(sliderState, reasoningLevel)
-                }
             )
         }
     }
@@ -240,64 +267,117 @@ internal fun ReasoningIcon(level: ReasoningLevel, modifier: Modifier = Modifier)
     }
 }
 
-// ── Thinking-depth surge visuals ─────────────────────────────────────────────
-// 拍板 2026-10-17 (reverses the 2026-10-16 "hue only on the word" call): the surge itself
-// carries the colour — a fixed cold→warm ramp that ignores the theme, ending in an animated
-// rainbow at MAX — plus sparks that multiply and quicken with depth. The level word follows
-// the bar: same fixed colour, or the same rainbow at MAX.
-
-private val SurgeOffColor = Color(0xFF8B96A3)         // 关闭 / Off — static grey
-private val SurgeAutoColor = Color(0xFF29B6F6)        // 自动 / Auto — ice blue
-private val SurgeFastColor = Color(0xFF26C6DA)        // 快速 / Fast — cyan
-private val SurgeBalancedColor = Color(0xFF66BB6A)    // 均衡 / Balanced — green
-private val SurgeDeepColor = Color(0xFFFFB300)        // 沉思 / Deep — amber
-private val SurgeResearchColor = Color(0xFFFB8C00)    // 研究 / Research — orange
-private val SurgeMaxFallbackColor = Color(0xFFE53935) // 极致 / Max — single-colour fallback
-
-/** Looped rainbow for MAX (first stop repeated at the end so TileMode.Repeated stays smooth). */
-private val SurgeRainbow = listOf(
-    Color(0xFFFF5252),
-    Color(0xFFFF9800),
-    Color(0xFFFFEB3B),
-    Color(0xFF4CAF50),
-    Color(0xFF2196F3),
-    Color(0xFF9C27B0),
-    Color(0xFFFF5252),
-)
+// ── Deep Cold / Nebula Glow Visuals (CodeX Style) ──────────────────────────
+// 采用极简克制的科技深空冷调：量子青蓝、深空紫蓝与纯净微光白，告别粗暴红橙黄绿与彩虹
+private val SurgeGlowBlue = Color(0xFF38BDF8)       // 量子青蓝 / Sky Cyan
+private val SurgeGlowIndigo = Color(0xFF6366F1)     // 深空紫蓝 / Deep Indigo
+private val SurgeGlowPurple = Color(0xFF8B5CF6)     // 极光星紫 / Aurora Violet
+private val SurgeGlowLight = Color(0xFFE0E7FF)      // 微光冷白 / Starlight White
+private val SurgeOffColor = Color(0xFF94A3B8)       // 关闭浅灰 / Slate Grey
 
 /**
- * The surge colour for [level]: a fixed cold→warm palette, theme-independent (拍板 2026-10-17).
- * MAX returns a hot red used only where a single [Color] is unavoidable — the bar and the
- * level word render the animated rainbow instead.
+ * The surge colour for [level]: a modern, coherent deep-space cool palette.
+ * Transitioning gracefully from subtle slate to cyan, deep indigo, and aurora violet.
  */
 internal fun reasoningLevelColor(level: ReasoningLevel): Color = when (level) {
     ReasoningLevel.OFF -> SurgeOffColor
-    ReasoningLevel.AUTO -> SurgeAutoColor
-    ReasoningLevel.LOW -> SurgeFastColor
-    ReasoningLevel.MEDIUM -> SurgeBalancedColor
-    ReasoningLevel.HIGH -> SurgeDeepColor
-    ReasoningLevel.XHIGH -> SurgeResearchColor
-    ReasoningLevel.MAX -> SurgeMaxFallbackColor
+    ReasoningLevel.AUTO -> Color(0xFF38BDF8)     // 柔和天青
+    ReasoningLevel.LOW -> Color(0xFF60A5FA)      // 纯净冰蓝
+    ReasoningLevel.MEDIUM -> Color(0xFF818CF8)   // 浅靛蓝
+    ReasoningLevel.HIGH -> Color(0xFF6366F1)     // 深空紫蓝
+    ReasoningLevel.XHIGH -> Color(0xFF8B5CF6)    // 极光星紫
+    ReasoningLevel.MAX -> Color(0xFFA855F7)      // 巅峰超新星紫
 }
 
-/** The bar's MAX rainbow, drifting slowly — shared by the level word so it follows the bar. */
+/** Looped smooth aurora nebula glow for MAX. */
+private val AuroraNebulaColors = listOf(
+    Color(0xFF38BDF8),
+    Color(0xFF6366F1),
+    Color(0xFF8B5CF6),
+    Color(0xFFA855F7),
+    Color(0xFF38BDF8),
+)
+
+/** The pill's MAX aurora nebula brush, drifting slowly and smoothly. */
 @Composable
-private fun reasoningSurgeRainbowBrush(label: String): Brush {
+private fun reasoningAuroraNebulaBrush(label: String): Brush {
     val transition = rememberInfiniteTransition(label = label)
     val phase by transition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(3200, easing = LinearEasing)),
-        label = "rainbow",
+        animationSpec = infiniteRepeatable(tween(4200, easing = LinearEasing)),
+        label = "auroraPhase",
     )
-    val period = with(LocalDensity.current) { 96.dp.toPx() }
+    val period = with(LocalDensity.current) { 140.dp.toPx() }
     val shift = phase * period
     return Brush.linearGradient(
-        colors = SurgeRainbow,
+        colors = AuroraNebulaColors,
         start = Offset(shift - period, 0f),
         end = Offset(shift, 0f),
         tileMode = TileMode.Repeated,
     )
+}
+
+/** Stardust particle in the active pill indicator. */
+private data class Stardust(
+    val xFraction: Float,
+    val yFraction: Float,
+    val sizeDp: Float,
+    val phaseOffset: Float,
+    val speed: Float,
+)
+
+@Composable
+private fun StardustGlowOverlay(
+    level: ReasoningLevel,
+    modifier: Modifier = Modifier,
+) {
+    if (level == ReasoningLevel.OFF) return
+    val ordinal = levels.indexOf(level).coerceAtLeast(0)
+    val count = (4 + ordinal * 2).coerceIn(4, 16)
+    val particles = remember(ordinal) {
+        val rnd = kotlin.random.Random(ordinal * 1013L + 73L)
+        List(count) {
+            Stardust(
+                xFraction = rnd.nextFloat(),
+                yFraction = 0.2f + 0.6f * rnd.nextFloat(),
+                sizeDp = 1.0f + 1.2f * rnd.nextFloat(),
+                phaseOffset = rnd.nextFloat() * 2f * PI.toFloat(),
+                speed = 0.8f + 0.6f * rnd.nextFloat(),
+            )
+        }
+    }
+
+    val transition = rememberInfiniteTransition(label = "stardust")
+    val clock by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 2f * PI.toFloat(),
+        animationSpec = infiniteRepeatable(tween(2800, easing = LinearEasing)),
+        label = "stardustClock",
+    )
+
+    val starlightColor = SurgeGlowLight
+    val levelColor = reasoningLevelColor(level)
+
+    Canvas(modifier = modifier.fillMaxSize()) {
+        particles.forEach { p ->
+            val angle = clock * p.speed + p.phaseOffset
+            val alpha = (0.25f + 0.55f * ((sin(angle.toDouble()).toFloat() + 1f) / 2f)).coerceIn(0f, 1f)
+            val swayX = sin((angle * 0.7).toDouble()).toFloat() * 4.dp.toPx()
+            val swayY = sin((angle * 0.5).toDouble()).toFloat() * 2.dp.toPx()
+
+            val cx = (size.width * p.xFraction + swayX).coerceIn(0f, size.width)
+            val cy = (size.height * p.yFraction + swayY).coerceIn(0f, size.height)
+            val radius = p.sizeDp.dp.toPx()
+
+            drawCircle(
+                color = if (level == ReasoningLevel.MAX) starlightColor.copy(alpha = alpha)
+                else levelColor.copy(alpha = alpha * 0.85f),
+                radius = radius,
+                center = Offset(cx, cy),
+            )
+        }
+    }
 }
 
 /**
@@ -323,7 +403,7 @@ internal fun ReasoningLevelWord(
         if (currentLevel == ReasoningLevel.MAX) {
             Text(
                 text = currentLevel.label(),
-                style = style.copy(brush = reasoningSurgeRainbowBrush("reasoningWordRainbow")),
+                style = style.copy(brush = reasoningAuroraNebulaBrush("reasoningWordAurora")),
                 fontWeight = FontWeight.Bold,
             )
         } else {
@@ -339,36 +419,125 @@ internal fun ReasoningLevelWord(
 }
 
 
+/**
+ * A segmented control with a smoothly animated sliding pill indicator.
+ */
+@Composable
+internal fun <T> SlidingSegmentedControl(
+    items: List<T>,
+    selectedIndex: Int,
+    onSelectIndex: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceContainerHighest,
+    indicatorColor: Color = MaterialTheme.colorScheme.surface,
+    indicatorBrush: Brush? = null,
+    shape: RoundedCornerShape = RoundedCornerShape(12.dp),
+    indicatorShape: RoundedCornerShape = RoundedCornerShape(9.dp),
+    contentPadding: Dp = 4.dp,
+    label: @Composable (item: T, isSelected: Boolean) -> Unit,
+) {
+    val count = items.size.coerceAtLeast(1)
+    val safeIndex = selectedIndex.coerceIn(0, count - 1)
+
+    BoxWithConstraints(
+        modifier = modifier
+            .clip(shape)
+            .background(containerColor)
+            .padding(contentPadding),
+    ) {
+        val availableWidth = maxWidth
+        val itemWidth = availableWidth / count
+        val targetOffset = itemWidth * safeIndex
+        val animatedOffset by animateDpAsState(
+            targetValue = targetOffset,
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioLowBouncy,
+                stiffness = Spring.StiffnessMediumLow,
+            ),
+            label = "slidingIndicatorOffset",
+        )
+
+        // The sliding pill indicator
+        Box(
+            modifier = Modifier
+                .offset(x = animatedOffset)
+                .width(itemWidth)
+                .fillMaxHeight()
+                .clip(indicatorShape)
+                .then(
+                    if (indicatorBrush != null) Modifier.background(indicatorBrush)
+                    else Modifier.background(indicatorColor)
+                )
+        )
+
+        // Clickable item labels
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            items.forEachIndexed { index, item ->
+                val isSelected = index == safeIndex
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                        ) {
+                            if (index != safeIndex) {
+                                onSelectIndex(index)
+                            }
+                        },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    label(item, isSelected)
+                }
+            }
+        }
+    }
+}
+
 @Composable
 internal fun CodexSpeedSelector(
     serviceTier: String?,
     onUpdate: (String?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val speedOptions = listOf(
+        stringResource(R.string.codex_speed_standard) to null,
+        stringResource(R.string.codex_speed_fast) to "fast",
+    )
+    val selectedIndex = if (serviceTier == "fast") 1 else 0
+
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             text = stringResource(R.string.codex_speed_title),
             style = MaterialTheme.typography.titleMedium,
         )
-        Row(
+        SlidingSegmentedControl(
+            items = speedOptions,
+            selectedIndex = selectedIndex,
+            onSelectIndex = { index -> onUpdate(speedOptions[index].second) },
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-                .padding(4.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            CodexSpeedOption(
-                label = stringResource(R.string.codex_speed_standard),
-                selected = serviceTier == null,
-                onClick = { onUpdate(null) },
-                modifier = Modifier.weight(1f),
+                .height(44.dp),
+            indicatorColor = MaterialTheme.colorScheme.surface,
+            shape = RoundedCornerShape(12.dp),
+            indicatorShape = RoundedCornerShape(9.dp),
+            contentPadding = 4.dp,
+        ) { item, isSelected ->
+            val contentColor by animateColorAsState(
+                targetValue = if (isSelected) MaterialTheme.colorScheme.onSurface
+                else MaterialTheme.colorScheme.onSurfaceVariant,
+                label = "codexSpeedTextColor",
             )
-            CodexSpeedOption(
-                label = stringResource(R.string.codex_speed_fast),
-                selected = serviceTier == "fast",
-                onClick = { onUpdate("fast") },
-                modifier = Modifier.weight(1f),
+            Text(
+                text = item.first,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                color = contentColor,
+                textAlign = TextAlign.Center,
             )
         }
         Text(
@@ -382,30 +551,141 @@ internal fun CodexSpeedSelector(
     }
 }
 
+/**
+ * A segmented reasoning-level selector with an animated sliding pill indicator.
+ * Supports both direct tap on any segment and continuous dragging across levels with spring snap.
+ */
 @Composable
-private fun CodexSpeedOption(
-    label: String,
-    selected: Boolean,
-    onClick: () -> Unit,
+internal fun ReasoningSegmentedPicker(
+    currentLevel: ReasoningLevel,
+    onSelectLevel: (ReasoningLevel) -> Unit,
     modifier: Modifier = Modifier,
+    height: Dp = 46.dp,
 ) {
-    val contentColor by animateColorAsState(
-        if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
-        label = "codexSpeedContent",
+    val haptic = LocalHapticFeedback.current
+    val currentIndex = levels.indexOf(currentLevel).coerceAtLeast(0)
+    var dragProgress by remember { mutableStateOf<Float?>(null) }
+    val displayIndex = dragProgress ?: currentIndex.toFloat()
+
+    val activeLevel = levels[displayIndex.roundToInt().coerceIn(0, levelCount - 1)]
+    val isMax = activeLevel == ReasoningLevel.MAX
+    val auroraBrush = reasoningAuroraNebulaBrush("reasoningSegmentAurora")
+    val levelColor by animateColorAsState(
+        targetValue = reasoningLevelColor(activeLevel),
+        label = "reasoningSegmentColor",
     )
-    ToggleSurface(
-        checked = selected,
-        onClick = onClick,
-        modifier = modifier,
-        shape = RoundedCornerShape(9.dp),
+
+    BoxWithConstraints(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(height)
+            .clip(RoundedCornerShape(14.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+            .pointerInput(Unit) {
+                detectHorizontalDragGestures(
+                    onDragStart = { offset ->
+                        val itemWidth = size.width / levelCount
+                        val index = (offset.x / itemWidth).coerceIn(0f, (levelCount - 1).toFloat())
+                        dragProgress = index
+                    },
+                    onHorizontalDrag = { change, _ ->
+                        change.consume()
+                        val itemWidth = size.width / levelCount
+                        val index = (change.position.x / itemWidth).coerceIn(0f, (levelCount - 1).toFloat())
+                        val oldRound = dragProgress?.roundToInt() ?: -1
+                        val newRound = index.roundToInt()
+                        if (oldRound != newRound && oldRound != -1) {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        }
+                        dragProgress = index
+                    },
+                    onDragEnd = {
+                        val targetIndex = (dragProgress ?: currentIndex.toFloat()).roundToInt().coerceIn(0, levelCount - 1)
+                        dragProgress = null
+                        if (levels[targetIndex] != currentLevel) {
+                            onSelectLevel(levels[targetIndex])
+                        }
+                    },
+                    onDragCancel = {
+                        dragProgress = null
+                    },
+                )
+            }
+            .padding(4.dp),
     ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelLarge,
-            color = contentColor,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        val availableWidth = maxWidth
+        val itemWidth = availableWidth / levelCount
+        val targetOffset = itemWidth * displayIndex
+        val animatedOffset by animateDpAsState(
+            targetValue = targetOffset,
+            animationSpec = if (dragProgress != null) tween(0)
+            else spring(
+                dampingRatio = Spring.DampingRatioLowBouncy,
+                stiffness = Spring.StiffnessMediumLow,
+            ),
+            label = "reasoningPillOffset",
         )
+
+        // The sliding pill indicator with stardust glow particles
+        Box(
+            modifier = Modifier
+                .offset(x = animatedOffset)
+                .width(itemWidth)
+                .fillMaxHeight()
+                .clip(RoundedCornerShape(10.dp))
+                .then(
+                    if (isMax) Modifier.background(auroraBrush)
+                    else Modifier.background(levelColor.copy(alpha = 0.18f))
+                )
+                .border(
+                    width = 1.dp,
+                    brush = if (isMax) auroraBrush else SolidColor(levelColor.copy(alpha = 0.65f)),
+                    shape = RoundedCornerShape(10.dp),
+                )
+        ) {
+            StardustGlowOverlay(
+                level = activeLevel,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+
+        // Segment labels
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            levels.forEachIndexed { index, level ->
+                val isSelected = index == displayIndex.roundToInt()
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                        ) {
+                            if (level != currentLevel) {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                onSelectLevel(level)
+                            }
+                        },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = level.label(),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                        color = if (isSelected) {
+                            if (isMax) Color.White else levelColor
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                        maxLines = 1,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -505,7 +785,7 @@ internal fun ReasoningSurgeTrack(sliderState: SliderState, level: ReasoningLevel
         val shift = phase * bandPeriod
         val bandBrush = if (isMax) {
             Brush.linearGradient(
-                colors = SurgeRainbow,
+                colors = AuroraNebulaColors,
                 start = Offset(shift - bandPeriod, 0f),
                 end = Offset(shift, 0f),
                 tileMode = TileMode.Repeated,
@@ -554,7 +834,7 @@ internal fun ReasoningSurgeTrack(sliderState: SliderState, level: ReasoningLevel
         // Sparks rising off the bar, fading in then out over their rise.
         val riseMax = trackHeight * 2f
         val barCenterY = y + trackHeight / 2f
-        val rainbowSwatches = SurgeRainbow.size - 1
+        val rainbowSwatches = AuroraNebulaColors.size - 1
         particles.forEachIndexed { i, p ->
             val t = (particleClock + p.offset) % 1f
             val px = activeWidth * p.xFrac +
@@ -562,7 +842,7 @@ internal fun ReasoningSurgeTrack(sliderState: SliderState, level: ReasoningLevel
             val py = barCenterY - t * riseMax * p.rise
             val alpha = sinf(t * PI.toFloat()) * (0.45f + 0.45f * intensity)
             drawCircle(
-                color = if (isMax) SurgeRainbow[i % rainbowSwatches] else base,
+                color = if (isMax) AuroraNebulaColors[i % rainbowSwatches] else base,
                 alpha = alpha,
                 radius = p.radiusDp.dp.toPx(),
                 center = Offset(px, py),

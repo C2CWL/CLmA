@@ -1,5 +1,8 @@
 package com.clma.app.ui.components.ai
 
+import com.clma.ai.provider.Model
+import com.clma.app.data.datastore.Settings
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
@@ -17,14 +20,11 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -82,6 +82,11 @@ fun AgentControlCard(
     codexServiceTier: String? = null,
     onUpdateCodexServiceTier: (String?) -> Unit = {},
     conversationId: Uuid? = null,
+    enableSearch: Boolean = false,
+    settings: Settings? = null,
+    model: Model? = null,
+    onUpdateSearchMode: ((SearchMode) -> Unit)? = null,
+    onUpdateSearchService: ((Int) -> Unit)? = null,
 ) {
     val approvalPrefs = koinInject<ToolApprovalPreferences>()
     val settingsStore = koinInject<SettingsStore>()
@@ -129,13 +134,7 @@ fun AgentControlCard(
         )
     }
 
-    // The depth word + surge track follow the thumb while dragging, not just after release.
     val currentIndex = levels.indexOf(reasoningLevel).coerceAtLeast(0)
-    var sliderValue by remember { mutableFloatStateOf(currentIndex.toFloat()) }
-    LaunchedEffect(currentIndex) {
-        sliderValue = currentIndex.toFloat()
-    }
-    val previewLevel = levels[sliderValue.roundToInt().coerceIn(0, levelCount - 1)]
 
     Surface(
         modifier = modifier
@@ -188,46 +187,30 @@ fun AgentControlCard(
                             onClick = { showPresetSheet = true },
                         )
                     }
+                    if (settings != null && onUpdateSearchMode != null && onUpdateSearchService != null) {
+                        SearchControlChip(
+                            enableSearch = enableSearch,
+                            settings = settings,
+                            model = model,
+                            onUpdateSearchMode = onUpdateSearchMode,
+                            onUpdateSearchService = onUpdateSearchService,
+                        )
+                    }
                 }
                 if (showReasoning) {
-                    ReasoningIcon(previewLevel, Modifier.size(18.dp))
+                    ReasoningIcon(reasoningLevel, Modifier.size(18.dp))
                     ReasoningLevelWord(
-                        level = previewLevel,
+                        level = reasoningLevel,
                         style = MaterialTheme.typography.titleLarge,
                     )
                 }
             }
             if (showReasoning) {
-                Slider(
-                    value = sliderValue,
-                    onValueChange = { sliderValue = it },
-                    onValueChangeFinished = {
-                        val snappedIndex = sliderValue.roundToInt().coerceIn(0, levelCount - 1)
-                        sliderValue = snappedIndex.toFloat()
-                        onUpdateReasoningLevel(levels[snappedIndex])
-                    },
-                    valueRange = 0f..(levelCount - 1).toFloat(),
-                    steps = levelCount - 2,
-                    modifier = Modifier.fillMaxWidth(),
-                    thumb = {
-                        Box(
-                            modifier = Modifier
-                                .size(20.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primary),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(8.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.onPrimary)
-                            )
-                        }
-                    },
-                    track = { sliderState ->
-                        ReasoningSurgeTrack(sliderState, previewLevel)
-                    },
+                ReasoningSegmentedPicker(
+                    currentLevel = reasoningLevel,
+                    onSelectLevel = onUpdateReasoningLevel,
+                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                    height = 40.dp,
                 )
             }
         }

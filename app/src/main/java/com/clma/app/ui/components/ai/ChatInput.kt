@@ -439,13 +439,18 @@ fun ChatInput(
                             )
                         }
                     }
-                    val searchButton: @Composable () -> Unit = {
-                        SearchPickerButton(
-                            enableSearch = enableSearch,
-                            settings = settings,
-                            model = effectiveChatModel,
-                            onUpdateSearchMode = onUpdateSearchMode,
-                            onUpdateSearchService = onUpdateSearchService,
+                    val currentReasoningLevel = effectiveChatModel?.reasoningLevel ?: assistant.reasoningLevel
+                    val reasoningButton: @Composable () -> Unit = {
+                        ReasoningPickerButton(
+                            reasoningLevel = currentReasoningLevel,
+                            onUpdateReasoningLevel = {
+                                if (effectiveChatModel != null) onUpdateModelReasoningLevel(effectiveChatModel, it)
+                            },
+                            showCodexSpeed = effectiveChatModel?.findProvider(settings.providers) is ProviderSetting.Codex,
+                            codexServiceTier = effectiveChatModel?.serviceTier,
+                            onUpdateCodexServiceTier = { tier ->
+                                if (effectiveChatModel != null) onUpdateModelServiceTier(effectiveChatModel, tier)
+                            },
                         )
                     }
                     ChatInputBar(
@@ -469,10 +474,13 @@ fun ChatInput(
                                     onUpdateChatModel = onUpdateChatModel,
                                     onUpdateModelReasoningLevel = onUpdateModelReasoningLevel,
                                     onUpdateModelServiceTier = onUpdateModelServiceTier,
+                                    enableSearch = enableSearch,
+                                    onUpdateSearchMode = onUpdateSearchMode,
+                                    onUpdateSearchService = onUpdateSearchService,
                                 )
 
                                 // Clean layout groups the tools on the left: model, then search.
-                                if (cleanLayout) searchButton()
+                                if (cleanLayout) reasoningButton()
                             }
                         },
                         center = {
@@ -503,7 +511,7 @@ fun ChatInput(
                                     }
                                 }
 
-                                if (!cleanLayout) searchButton()
+                                if (!cleanLayout) reasoningButton()
 
                                 if (cleanLayout) moreButton()
 
@@ -596,6 +604,9 @@ private fun ModelReasoningChip(
     onUpdateChatModel: (Model) -> Unit,
     onUpdateModelReasoningLevel: (Model, ReasoningLevel) -> Unit,
     onUpdateModelServiceTier: (Model, String?) -> Unit,
+    enableSearch: Boolean = false,
+    onUpdateSearchMode: ((SearchMode) -> Unit)? = null,
+    onUpdateSearchService: ((Int) -> Unit)? = null,
 ) {
     val model = settings.resolveChatModel(conversationChatModelId, assistant.id)
     val effectiveModelId = model?.id
@@ -688,6 +699,11 @@ private fun ModelReasoningChip(
                     }
                 },
                 conversationId = conversationId,
+                enableSearch = enableSearch,
+                settings = settings,
+                model = model,
+                onUpdateSearchMode = onUpdateSearchMode,
+                onUpdateSearchService = onUpdateSearchService,
             )
         },
     )

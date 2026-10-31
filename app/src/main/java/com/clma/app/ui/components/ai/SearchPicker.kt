@@ -81,6 +81,62 @@ enum class SearchMode {
 }
 
 @Composable
+fun SearchControlChip(
+    enableSearch: Boolean,
+    settings: Settings,
+    modifier: Modifier = Modifier,
+    onUpdateSearchMode: (SearchMode) -> Unit,
+    onUpdateSearchService: (Int) -> Unit,
+    model: Model?,
+) {
+    var showSearchPicker by remember { mutableStateOf(false) }
+    val currentService = settings.searchServices.getOrNull(settings.searchServiceSelected)
+    val builtIn = model?.tools?.contains(BuiltInTools.Search) == true
+    val serviceOn = builtIn || (enableSearch && currentService != null)
+
+    val label = when {
+        builtIn -> stringResource(R.string.use_web_search)
+        serviceOn && currentService != null -> stringResource(R.string.use_web_search) + " · " + currentService.displayName
+        else -> stringResource(R.string.use_web_search) + " · " + stringResource(R.string.reasoning_off)
+    }
+
+    Surface(
+        onClick = { showSearchPicker = true },
+        shape = CircleShape,
+        color = if (serviceOn) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHighest,
+        contentColor = if (serviceOn) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+        modifier = modifier,
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Icon(
+                imageVector = if (serviceOn) HugeIcons.AiSearch02 else HugeIcons.Search01,
+                contentDescription = null,
+                modifier = Modifier.size(14.dp),
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                maxLines = 1,
+            )
+        }
+    }
+
+    SearchPickerSheet(
+        visible = showSearchPicker,
+        onDismiss = { showSearchPicker = false },
+        enableSearch = enableSearch,
+        settings = settings,
+        onUpdateSearchMode = onUpdateSearchMode,
+        onUpdateSearchService = onUpdateSearchService,
+        model = model,
+    )
+}
+
+@Composable
 fun SearchPickerButton(
     enableSearch: Boolean,
     settings: Settings,
