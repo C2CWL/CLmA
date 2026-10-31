@@ -631,6 +631,97 @@ class ContextCompactionPlannerTest {
         assertTrue(deduplicated.contains("repeated 2 times"))
     }
 
+    @Test
+    fun `pre-dry mapSourceText bounds huge reasoning and text only when precision compaction is enabled`() {
+        val hugeReasoning = "REASON-HEAD-" + "r".repeat(5_000) + "-REASON-TAIL"
+        val hugeText = "TEXT-HEAD-" + "t".repeat(12_000) + "-TEXT-TAIL"
+        val hugeToolOutput = "TOOL-HEAD-" + "x".repeat(100_000) + "-TOOL-TAIL"
+        val message = UIMessage(
+            role = MessageRole.ASSISTANT,
+            parts = listOf(
+                UIMessagePart.Reasoning(reasoning = hugeReasoning),
+                UIMessagePart.Text(text = hugeText),
+                executedTool("workspace_read_file", "{\"path\":\"/workspace/a.kt\"}", hugeToolOutput),
+            ),
+        )
+
+        val defaultMap = ContextCompactionPlanner.mapSourceText(
+            message = message,
+            enablePrecisionCompaction = false,
+        )
+        // Flag off: tool output is previewed, but text and reasoning stay verbatim.
+        assertTrue(defaultMap.contains(hugeReasoning))
+        assertTrue(defaultMap.contains(hugeText))
+        assertTrue(defaultMap.contains("preview truncated for map request"))
+        assertFalse(defaultMap.contains("chars omitted"))
+
+        val preDryMap = ContextCompactionPlanner.mapSourceText(
+            message = message,
+            enablePrecisionCompaction = true,
+        )
+        // Flag on: 100k tool result, 5k reasoning, and 12k text are all bounded with head + tail.
+        assertTrue(preDryMap.contains("REASON-HEAD-"))
+        assertTrue(preDryMap.contains("-REASON-TAIL"))
+        assertTrue(preDryMap.contains("TEXT-HEAD-"))
+        assertTrue(preDryMap.contains("-TEXT-TAIL"))
+        assertTrue(preDryMap.contains("TOOL-HEAD-"))
+        assertTrue(preDryMap.contains("-TOOL-TAIL"))
+        assertTrue(preDryMap.contains("chars omitted"))
+        assertFalse(preDryMap.contains(hugeReasoning))
+        assertFalse(preDryMap.contains(hugeText))
+        assertFalse(preDryMap.contains(hugeToolOutput))
+        assertTrue(preDryMap.length < 8_000)
+
+        // Deterministic tool digest still sees original stored message parts.
+        val digest = ContextCompactionPlanner.mandatoryToolExecutionDigest(
+            messages = listOf(message),
+            maxTokens = 4_000,
+        )
+        assertTrue(digest.contains("workspace_read_file"))
+        assertTrue(digest.contains("TOOL-HEAD-"))
+    }
+
+    @Test
+    fun `pre-dry truncation preserves surrogate pairs at split boundaries`() {
+        // Construct text where the 3/4 head boundary and 1/4 tail boundary land on a surrogate pair (😀 = \uD83D\uDE00)
+        val headChars = ContextCompactionPlanner.PRE_DRY_REASONING_PREVIEW_CHARS * 3 / 4
+        val tailChars = ContextCompactionPlanner.PRE_DRY_REASONING_PREVIEW_CHARS - headChars
+        val prefix = "a".repeat(headChars - 1)
+        val middle = "m".repeat(500)
+        val suffix = "z".repeat(tailChars - 1)
+        val reasoningWithEmoji = prefix + "😀" + middle + "😀" + suffix
+
+        val mapText = ContextCompactionPlanner.mapSourceText(
+            message = UIMessage(
+                role = MessageRole.ASSISTANT,
+                parts = listOf(UIMessagePart.Reasoning(reasoning = reasoningWithEmoji)),
+            ),
+            enablePrecisionCompaction = true,
+        )
+
+        assertTrue(mapText.contains("chars omitted"))
+        for (i in mapText.indices) {
+            val c = mapText[i]
+            if (Character.isHighSurrogate(c)) {
+                assertTrue("Unpaired high surrogate at $i", i + 1 < mapText.length && Character.isLowSurrogate(mapText[i + 1]))
+            } else if (Character.isLowSurrogate(c)) {
+                assertTrue("Unpaired low surrogate at $i", i > 0 && Character.isHighSurrogate(mapText[i - 1]))
+            }
+        }
+    }
+
+    @Test
+    fun `precisionCompactionSlotContractInstructions contains all five fixed slot headings and anti-fabrication rule`() {
+        val contract = ContextCompactionPlanner.precisionCompactionSlotContractInstructions()
+
+        assertTrue(contract.contains("目标与约束"))
+        assertTrue(contract.contains("已改文件与 SHA"))
+        assertTrue(contract.contains("已验证结论与证据路径"))
+        assertTrue(contract.contains("失败与回滚"))
+        assertTrue(contract.contains("未完成阻塞"))
+        assertTrue(contract.contains("Do not invent facts"))
+    }
+
     private fun toolMessage(name: String) = UIMessage(
         role = MessageRole.ASSISTANT,
         parts = listOf(

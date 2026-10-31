@@ -3856,6 +3856,11 @@ class ChatService(
                         "locale" to Locale.getDefault().displayName
                     )
                 )
+                if (settings.enablePrecisionCompaction) {
+                    appendLine()
+                    appendLine()
+                    append(ContextCompactionPlanner.precisionCompactionSlotContractInstructions())
+                }
             }
 
             val result = try {
@@ -3926,7 +3931,20 @@ class ChatService(
         )
         var sourceGroups = fullSourceGroups
         var usingMapPreviews = false
-        if (fullSourceGroups.size > MAX_FULL_CONTEXT_MAP_GROUPS) {
+        if (settings.enablePrecisionCompaction) {
+            val preDrySources = messagesToCompress.map { message ->
+                val source = ContextCompactionPlanner.mapSourceText(
+                    message = message,
+                    enablePrecisionCompaction = true,
+                )
+                if (tomcLedgerEnabled) TomcSummaryLedger.sanitize(source) else source
+            }
+            sourceGroups = ContextCompactionPlanner.partitionSources(
+                sources = preDrySources,
+                maxInputTokens = mapInputBudgetTokens,
+            )
+            usingMapPreviews = true
+        } else if (fullSourceGroups.size > MAX_FULL_CONTEXT_MAP_GROUPS) {
             val previewSources = messagesToCompress.map(ContextCompactionPlanner::mapSourceText)
             val previewGroups = ContextCompactionPlanner.partitionSources(
                 sources = previewSources,
