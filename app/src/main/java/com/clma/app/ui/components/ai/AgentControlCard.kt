@@ -1,5 +1,7 @@
 package com.clma.app.ui.components.ai
+
 import com.clma.ai.provider.Model
+import com.clma.app.data.datastore.Settings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
