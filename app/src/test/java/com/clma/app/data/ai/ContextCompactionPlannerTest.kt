@@ -508,6 +508,129 @@ class ContextCompactionPlannerTest {
         assertEquals(null, nullResult)
     }
 
+    @Test
+    fun `deduplicateToolRecords folds repeated identical reads and keeps latest with count`() {
+        val records = listOf(
+            buildString {
+                appendLine("- Call ID: call-1")
+                appendLine("- Tool: workspace_read_file")
+                appendLine("  Result: content-v1")
+                appendLine("  Input: {\"path\": \"/workspace/file.txt\"}")
+            }.trim(),
+            buildString {
+                appendLine("- Call ID: call-2")
+                appendLine("- Tool: workspace_read_file")
+                appendLine("  Result: content-v2")
+                appendLine("  Input: {\"path\": \"/workspace/file.txt\"}")
+            }.trim(),
+            buildString {
+                appendLine("- Call ID: call-3")
+                appendLine("- Tool: workspace_read_file")
+                appendLine("  Result: content-v3")
+                appendLine("  Input: {\"path\": \"/workspace/file.txt\"}")
+            }.trim(),
+        )
+
+        val deduplicated = ContextCompactionPlanner.deduplicateToolRecords(records)
+        assertEquals(1, deduplicated.size)
+        assertTrue(deduplicated.single().contains("- Tool: workspace_read_file (repeated 3 times)"))
+        assertTrue(deduplicated.single().contains("Result: content-v3"))
+        assertTrue(deduplicated.single().contains("Call ID: call-3"))
+    }
+
+    @Test
+    fun `deduplicateToolRecords write creates fence for targeted read group`() {
+        val records = listOf(
+            buildString {
+                appendLine("- Call ID: call-1")
+                appendLine("- Tool: workspace_read_file")
+                appendLine("  Result: content-v1")
+                appendLine("  Input: {\"path\": \"/workspace/file.txt\"}")
+            }.trim(),
+            buildString {
+                appendLine("- Call ID: call-2")
+                appendLine("- Tool: workspace_edit_file")
+                appendLine("  Result: {\"ok\": true}")
+                appendLine("  Input: {\"path\": \"/workspace/file.txt\", \"new_text\": \"v2\"}")
+            }.trim(),
+            buildString {
+                appendLine("- Call ID: call-3")
+                appendLine("- Tool: workspace_read_file")
+                appendLine("  Result: content-v2")
+                appendLine("  Input: {\"path\": \"/workspace/file.txt\"}")
+            }.trim(),
+        )
+
+        val deduplicated = ContextCompactionPlanner.deduplicateToolRecords(records)
+        assertEquals(3, deduplicated.size)
+        assertEquals("call-1", Regex("""Call ID:\s*([^\n]+)""").find(deduplicated[0])?.groupValues?.get(1)?.trim())
+        assertEquals("call-2", Regex("""Call ID:\s*([^\n]+)""").find(deduplicated[1])?.groupValues?.get(1)?.trim())
+        assertEquals("call-3", Regex("""Call ID:\s*([^\n]+)""").find(deduplicated[2])?.groupValues?.get(1)?.trim())
+    }
+
+    @Test
+    fun `deduplicateToolRecords shell flushes all active reads and errors are preserved`() {
+        val records = listOf(
+            buildString {
+                appendLine("- Call ID: call-1")
+                appendLine("- Tool: workspace_read_file")
+                appendLine("  Result: {\"error\": \"file not found\"}")
+                appendLine("  Input: {\"path\": \"/workspace/a.txt\"}")
+            }.trim(),
+            buildString {
+                appendLine("- Call ID: call-2")
+                appendLine("- Tool: workspace_read_file")
+                appendLine("  Result: v1")
+                appendLine("  Input: {\"path\": \"/workspace/a.txt\"}")
+            }.trim(),
+            buildString {
+                appendLine("- Call ID: call-3")
+                appendLine("- Tool: workspace_shell")
+                appendLine("  Result: {\"exitCode\": 0, \"stdout\": \"done\"}")
+                appendLine("  Input: {\"command\": \"git status\"}")
+            }.trim(),
+            buildString {
+                appendLine("- Call ID: call-4")
+                appendLine("- Tool: workspace_read_file")
+                appendLine("  Result: v2")
+                appendLine("  Input: {\"path\": \"/workspace/a.txt\"}")
+            }.trim(),
+        )
+
+        val deduplicated = ContextCompactionPlanner.deduplicateToolRecords(records)
+        assertEquals(4, deduplicated.size)
+        assertTrue(deduplicated[0].contains("error"))
+        assertTrue(deduplicated[2].contains("workspace_shell"))
+    }
+
+    @Test
+    fun `mandatoryToolExecutionDigest with enablePrecisionCompaction applies deduplication`() {
+        val messages = listOf(
+            UIMessage(
+                role = MessageRole.ASSISTANT,
+                parts = listOf(
+                    executedTool("workspace_read_file", "{\"path\": \"/a.txt\"}", "res1"),
+                    executedTool("workspace_read_file", "{\"path\": \"/a.txt\"}", "res2"),
+                ),
+            ),
+        )
+
+        val legacy = ContextCompactionPlanner.mandatoryToolExecutionDigest(
+            messages = messages,
+            maxTokens = 2000,
+            enablePrecisionCompaction = false,
+        )
+        val deduplicated = ContextCompactionPlanner.mandatoryToolExecutionDigest(
+            messages = messages,
+            maxTokens = 2000,
+            enablePrecisionCompaction = true,
+        )
+
+        assertEquals(2, Regex(Regex.escape(ContextCompactionPlanner.TOOL_RECORD_HEADER)).findAll(legacy).count())
+        assertEquals(1, Regex(Regex.escape(ContextCompactionPlanner.TOOL_RECORD_HEADER)).findAll(deduplicated).count())
+        assertTrue(deduplicated.contains("repeated 2 times"))
+    }
+
     private fun toolMessage(name: String) = UIMessage(
         role = MessageRole.ASSISTANT,
         parts = listOf(

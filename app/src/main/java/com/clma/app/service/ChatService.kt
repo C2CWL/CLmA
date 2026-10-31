@@ -3771,6 +3771,7 @@ class ChatService(
         val toolDigest = ContextCompactionPlanner.mandatoryToolExecutionDigest(
             messages = messagesToCompress,
             maxTokens = toolLedgerBudgetTokens,
+            enablePrecisionCompaction = settings.enablePrecisionCompaction,
         )
         // Hybrid reserves part of the prose target for independently selected source evidence.
         val modelSummaryTargetTokens = (targetTokens -
@@ -4009,7 +4010,11 @@ class ChatService(
                 TomcTurn(index = index + 1, role = message.role.name.lowercase(), text = ContextCompactionPlanner.sourceText(message))
             }
             TomcSummaryLedger.render(
-                TomcSummaryLedger.merge(inherited, TomcSummaryLedger.extract(turns).entries),
+                TomcSummaryLedger.merge(
+                    inherited,
+                    TomcSummaryLedger.extract(turns).entries,
+                    enablePrecisionCompaction = settings.enablePrecisionCompaction,
+                ),
                 tomcLedgerMaxChars,
             )
         } else {

@@ -116,4 +116,40 @@ class TomcSummaryLedgerTest {
         assertEquals("普通摘要", result)
         assertFalse(TomcSummaryLedger.extract(turns("普通对话")).emitted)
     }
+
+    @Test
+    fun `merge with enablePrecisionCompaction prunes non-task planned when subsequent execution exists`() {
+        val entries = listOf(
+            TomcSummaryLedger.Entry(TomcSummaryLedger.Status.PLANNED, "修复压缩记忆的重复问题", 1, task = true),
+            TomcSummaryLedger.Entry(TomcSummaryLedger.Status.PLANNED, "计划：修改 ChatService.kt", 1),
+            TomcSummaryLedger.Entry(TomcSummaryLedger.Status.EXECUTED, "已修改 ChatService.kt", 2),
+        )
+
+        val legacy = TomcSummaryLedger.merge(emptyList(), entries, limit = 10, enablePrecisionCompaction = false)
+        assertEquals(3, legacy.size)
+
+        val precision = TomcSummaryLedger.merge(emptyList(), entries, limit = 10, enablePrecisionCompaction = true)
+        assertEquals(2, precision.size)
+        assertTrue(precision[0].task)
+        assertEquals("修复压缩记忆的重复问题", precision[0].detail)
+        assertEquals(TomcSummaryLedger.Status.EXECUTED, precision[1].status)
+    }
+
+    @Test
+    fun `merge with enablePrecisionCompaction protects critical failed entries during truncation`() {
+        val failure = TomcSummaryLedger.Entry(TomcSummaryLedger.Status.FAILED, "构建失败：内存溢出", 1)
+        val executedEntries = (1..15).map {
+            TomcSummaryLedger.Entry(TomcSummaryLedger.Status.EXECUTED, "已修改文件第${it}项", it + 1)
+        }
+        val allEntries = listOf(failure) + executedEntries
+
+        val legacy = TomcSummaryLedger.merge(emptyList(), allEntries, limit = 5, enablePrecisionCompaction = false)
+        assertEquals(5, legacy.size)
+        // Legacy takeLast(5) drops the failure
+        assertFalse(legacy.any { it.status == TomcSummaryLedger.Status.FAILED })
+
+        val precision = TomcSummaryLedger.merge(emptyList(), allEntries, limit = 5, enablePrecisionCompaction = true)
+        assertEquals(5, precision.size)
+        assertTrue(precision.any { it.status == TomcSummaryLedger.Status.FAILED })
+    }
 }
