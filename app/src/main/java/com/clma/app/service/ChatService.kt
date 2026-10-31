@@ -86,6 +86,7 @@ import com.clma.ai.util.RequestTooLargeException
 import com.clma.ai.util.isRequestTooLarge
 import com.clma.app.data.ai.ContextCompactionPlanner
 import com.clma.app.data.ai.ContextCompactionPresentation
+import com.clma.app.data.ai.compaction.PrecisionObservationMaskTransformer
 import com.clma.app.data.ai.compaction.tomc.TomcSummaryLedger
 import com.clma.app.data.ai.compaction.tomc.TomcTurn
 import com.clma.app.data.ai.compaction.tomc.TomcAgentCompiler
@@ -2323,6 +2324,9 @@ class ChatService(
                     addAll(inputTransformers)
                     add(templateTransformer)
                     add(workspaceReminderTransformer)
+                    // Before the budget reminder, so its estimate matches the masked request.
+                    // Off is a no-op and does not copy the message list.
+                    add(PrecisionObservationMaskTransformer)
                     // 放在最后: 估算的是已注入模板 / workspace 引导之后的最终请求上下文
                     add(ContextBudgetReminderTransformer)
                 },

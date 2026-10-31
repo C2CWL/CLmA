@@ -230,6 +230,24 @@ private fun AutoCompactionSettingItem(
         )
         item(
             headlineContent = {
+                Text(stringResource(R.string.setting_precision_compaction))
+            },
+            supportingContent = {
+                Text(stringResource(R.string.setting_precision_compaction_desc))
+            },
+            trailingContent = {
+                Switch(
+                    checked = settings.enablePrecisionCompaction,
+                    onCheckedChange = {
+                        vm.updateSettings { current ->
+                            current.copy(enablePrecisionCompaction = it)
+                        }
+                    },
+                )
+            },
+        )
+        item(
+            headlineContent = {
                 Text(stringResource(R.string.setting_tomc_compaction_ledger))
             },
             supportingContent = {

@@ -246,6 +246,7 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
             row(R.string.setting_model_page_enable_auto_compaction, R.string.setting_model_page_enable_auto_compaction_desc),
             row(R.string.setting_compaction_engine, R.string.setting_compaction_engine_desc,
                 R.string.setting_compaction_engine_model, R.string.setting_compaction_engine_hybrid),
+            row(R.string.setting_precision_compaction, R.string.setting_precision_compaction_desc),
             row(R.string.setting_tomc_compaction_ledger, R.string.setting_tomc_compaction_ledger_desc),
             row(R.string.setting_model_page_auto_compaction_threshold, R.string.setting_model_page_auto_compaction_threshold_desc),
             row(R.string.setting_model_page_auto_compaction_tokens, R.string.setting_model_page_auto_compaction_tokens_desc),

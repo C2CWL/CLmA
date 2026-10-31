@@ -2495,6 +2495,8 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="assistant_page_context_message_limit_hint">Enter 0 for unlimited; otherwise, larger values are better. Setting it to 0 or at least 20 is recommended.</string>
   <string name="assistant_page_context_message_limit_too_small">The context message limit cannot be less than %1$d. It has been reset to %1$d.</string>
   <string name="assistant_page_context_message_limit_warning">Limiting context invalidates the prompt cache each time the context is trimmed. A larger limit trims less often; unlimited never trims and keeps the cache fully intact.</string>
+  <string name="setting_precision_compaction">Precision compaction experiment</string>
+  <string name="setting_precision_compaction_desc">Off by default. When on, older long read-only tool outputs in the model request are replaced by a short index that names the call and its input. Writes and the latest two results stay verbatim. Stored messages are unchanged. Turn it off if replies get worse.</string>
   <string name="setting_tomc_compaction_ledger">TOMC state ledger</string>
   <string name="setting_tomc_compaction_ledger_desc">Preserve explicit tasks and planned, executed, verified, failed, or rolled-back states during compression</string>
   <string name="setting_model_page_enable_auto_compaction">Enable automatic context compaction</string>
