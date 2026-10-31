@@ -25,8 +25,8 @@ internal object ContextCompactionPlanner {
     private const val MIN_INPUT_BUDGET_TOKENS = 512
     private const val TOOL_HISTORY_HEADER = "[Tool execution history — authoritative retained context]"
     private const val TOOL_HISTORY_FOOTER = "[End tool execution history]"
-    private const val TOOL_RECORD_HEADER = "[Retained tool execution record]"
-    private const val TOOL_RECORD_FOOTER = "[End retained tool execution record]"
+    internal const val TOOL_RECORD_HEADER = "[Retained tool execution record]"
+    internal const val TOOL_RECORD_FOOTER = "[End retained tool execution record]"
     private const val RAW_CONTEXT_HEADER = "[Raw context retained verbatim after this summary]"
     private const val RAW_CONTEXT_FOOTER = "[End raw context retention report]"
     /**
