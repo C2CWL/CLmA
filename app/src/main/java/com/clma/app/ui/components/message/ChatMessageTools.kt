@@ -655,17 +655,25 @@ private fun AskUserToolCard(
                 .fillMaxWidth()
                 .padding(14.dp),
         ) {
+            // Top-aligned, not centred: a single question is this title, and centring
+            // parks the question-mark icon beside the second line. No line cap either -
+            // maxLines = 3 only moved the cut and still ended in an ellipsis.
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
+                verticalAlignment = Alignment.Top,
             ) {
                 if (loading && questions.isEmpty()) {
-                    DotLoading(size = 12.dp)
+                    DotLoading(
+                        modifier = Modifier.padding(top = 2.dp),
+                        size = 12.dp,
+                    )
                 } else {
                     Icon(
                         imageVector = HugeIcons.BubbleChatQuestion,
                         contentDescription = null,
-                        modifier = Modifier.size(16.dp),
+                        modifier = Modifier
+                            .padding(top = 2.dp)
+                            .size(16.dp),
                         tint = MaterialTheme.colorScheme.primary,
                     )
                 }
@@ -678,8 +686,6 @@ private fun AskUserToolCard(
                         .padding(start = 6.dp)
                         .weight(1f)
                         .shimmer(isLoading = loading && questions.isEmpty()),
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis,
                 )
             }
 
