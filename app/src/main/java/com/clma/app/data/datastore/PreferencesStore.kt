@@ -243,6 +243,7 @@ class SettingsStore(
         val COMPRESS_PROMPT = stringPreferencesKey("compress_prompt")
         val ENABLE_AUTO_COMPACTION = booleanPreferencesKey("enable_auto_compaction")
         val ENABLE_TOMC_COMPACTION_LEDGER = booleanPreferencesKey("enable_tomc_compaction_ledger")
+        val ENABLE_PRECISION_COMPACTION = booleanPreferencesKey("enable_precision_compaction")
         val AUTO_COMPACTION_THRESHOLD_MODE = stringPreferencesKey("auto_compaction_threshold_mode")
         val AUTO_COMPACTION_THRESHOLD_PERCENT = intPreferencesKey("auto_compaction_threshold_percent")
         val AUTO_COMPACTION_THRESHOLD_TOKENS_K = intPreferencesKey("auto_compaction_threshold_tokens_k")
@@ -386,6 +387,7 @@ class SettingsStore(
                 preferences[COMPRESS_PROMPT] = settings.compressPrompt
                 preferences[ENABLE_AUTO_COMPACTION] = settings.enableAutoCompaction
                 preferences[ENABLE_TOMC_COMPACTION_LEDGER] = settings.enableTomcCompactionLedger
+                preferences[ENABLE_PRECISION_COMPACTION] = settings.enablePrecisionCompaction
                 preferences[AUTO_COMPACTION_THRESHOLD_MODE] = settings.autoCompactionThresholdMode.name
                 preferences[AUTO_COMPACTION_THRESHOLD_PERCENT] =
                     settings.autoCompactionThresholdPercent.coerceIn(5, 95)
@@ -520,6 +522,7 @@ class SettingsStore(
                     ?: DEFAULT_ASSISTANT_ID,
                 enableAutoCompaction = preferences[ENABLE_AUTO_COMPACTION] == true,
                 enableTomcCompactionLedger = preferences[ENABLE_TOMC_COMPACTION_LEDGER] ?: true,
+                enablePrecisionCompaction = preferences[ENABLE_PRECISION_COMPACTION] == true,
                 autoCompactionThresholdMode = preferences[AUTO_COMPACTION_THRESHOLD_MODE]
                     ?.let { value -> runCatching { AutoCompactionThresholdMode.valueOf(value) }.getOrNull() }
                     ?: AutoCompactionThresholdMode.PERCENT,
@@ -989,6 +992,7 @@ class SettingsStore(
 
     private fun compactionTrace(settings: Settings): String =
         "engine=${settings.compactionEngine} ledger=${settings.enableTomcCompactionLedger} " +
+            "precision=${settings.enablePrecisionCompaction} " +
             "mode=${settings.autoCompactionThresholdMode} percent=${settings.autoCompactionThresholdPercent} " +
             "tokensK=${settings.autoCompactionThresholdTokensK} keep=${settings.autoCompactionKeepRecentToolCalls} " +
             "target=${settings.contextCompactionTargetTokensK}"
@@ -1151,6 +1155,8 @@ data class Settings(
     val compressPrompt: String = DEFAULT_COMPRESS_PROMPT,
     val enableAutoCompaction: Boolean = false,
     val enableTomcCompactionLedger: Boolean = true,
+    /** Request-only observation mask. Off keeps today's request bytes. */
+    val enablePrecisionCompaction: Boolean = false,
     val autoCompactionThresholdMode: AutoCompactionThresholdMode = AutoCompactionThresholdMode.PERCENT,
     val autoCompactionThresholdPercent: Int = 80,
     val autoCompactionThresholdTokensK: Int = 32,
