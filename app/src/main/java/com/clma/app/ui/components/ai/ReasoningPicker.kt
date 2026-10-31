@@ -87,8 +87,12 @@ import androidx.compose.ui.unit.dp
 import com.clma.ai.core.ReasoningLevel
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Atom02
-import me.rerere.hugeicons.stroke.Brain02
-import me.rerere.hugeicons.stroke.Sparkles
+import me.rerere.hugeicons.stroke.SignalFull02
+import me.rerere.hugeicons.stroke.SignalHigh
+import me.rerere.hugeicons.stroke.SignalLow02
+import me.rerere.hugeicons.stroke.SignalLowMedium
+import me.rerere.hugeicons.stroke.SignalMedium02
+import me.rerere.hugeicons.stroke.SignalNo02
 import com.clma.app.R
 import com.clma.app.ui.components.ui.ToggleSurface
 import kotlin.math.PI
@@ -260,13 +264,13 @@ internal fun ReasoningIcon(level: ReasoningLevel, modifier: Modifier = Modifier)
         label = "reasoningIconTint"
     )
     when (level) {
-        ReasoningLevel.OFF -> Icon(HugeIcons.Brain02, contentDescription = null, modifier = modifier, tint = iconColor)
+        ReasoningLevel.OFF -> Icon(HugeIcons.SignalNo02, contentDescription = null, modifier = modifier, tint = iconColor)
         ReasoningLevel.AUTO -> Icon(HugeIcons.Atom02, contentDescription = null, modifier = modifier, tint = iconColor)
-        ReasoningLevel.LOW,
-        ReasoningLevel.MEDIUM,
-        ReasoningLevel.HIGH,
-        ReasoningLevel.XHIGH -> Icon(HugeIcons.Brain02, contentDescription = null, modifier = modifier, tint = iconColor)
-        ReasoningLevel.MAX -> Icon(HugeIcons.Sparkles, contentDescription = null, modifier = modifier, tint = iconColor)
+        ReasoningLevel.LOW -> Icon(HugeIcons.SignalLow02, contentDescription = null, modifier = modifier, tint = iconColor)
+        ReasoningLevel.MEDIUM -> Icon(HugeIcons.SignalLowMedium, contentDescription = null, modifier = modifier, tint = iconColor)
+        ReasoningLevel.HIGH -> Icon(HugeIcons.SignalMedium02, contentDescription = null, modifier = modifier, tint = iconColor)
+        ReasoningLevel.XHIGH -> Icon(HugeIcons.SignalHigh, contentDescription = null, modifier = modifier, tint = iconColor)
+        ReasoningLevel.MAX -> Icon(HugeIcons.SignalFull02, contentDescription = null, modifier = modifier, tint = iconColor)
     }
 }
 
