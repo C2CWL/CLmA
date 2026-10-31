@@ -2,6 +2,14 @@ package com.clma.app.data.ai
 
 import com.clma.ai.ui.UIMessage
 import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.ai.tools.ToolExecutionRetryPolicy
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.intOrNull
 
 /**
  * Plans requests made to the compression model.
@@ -235,10 +243,16 @@ internal object ContextCompactionPlanner {
     fun mandatoryToolExecutionDigest(
         messages: List<UIMessage>,
         maxTokens: Int,
+        enablePrecisionCompaction: Boolean = false,
     ): String {
         if (maxTokens <= 0) return ""
-        val records = messages.flatMap { message ->
+        val rawRecords = messages.flatMap { message ->
             extractRetainedToolRecords(message) + message.parts.mapNotNull(::completedToolRecord)
+        }
+        val records = if (enablePrecisionCompaction) {
+            deduplicateToolRecords(rawRecords)
+        } else {
+            rawRecords
         }
         if (records.isEmpty()) return ""
 
@@ -582,4 +596,277 @@ internal object ContextCompactionPlanner {
 
     private fun stripRawContextRetentionReports(text: String): String =
         rawContextReportPattern.replace(text, "").trim()
+
+    // S3: Precision compaction tool deduplication & ledger management
+
+    private val callIdRegex = Regex("""- Call ID:\s*([^\n]+)""")
+    private val toolLineRegex = Regex("""- Tool:\s*([^\n]+)""")
+    private val repeatedParensRegex = Regex("""\(repeated\s+(\d+)\s+times?\)""", RegexOption.IGNORE_CASE)
+    private val repeatedNoParensRegex = Regex("""repeated\s+(\d+)\s+times?""", RegexOption.IGNORE_CASE)
+    private val jsonHelper = Json { ignoreUnknownKeys = true; isLenient = true }
+
+    private val READ_ONLY_MEMORY_TOOLS = setOf(
+        "memory_read",
+        "memory_index",
+        "memory_search",
+        "tool_browse",
+    )
+
+    private val TARGET_KEYS = listOf(
+        "path",
+        "file",
+        "filePath",
+        "url",
+        "uri",
+        "query",
+        "target",
+        "name",
+    )
+
+    private val EXIT_CODE_ERROR_REGEX = Regex("""exitcode[\s:=]+[1-9]""", RegexOption.IGNORE_CASE)
+    private val TEXT_ERROR_KEYWORDS = listOf(
+        "exception:",
+        "error:",
+        "failed:",
+        "failed with exit code",
+        "command not found",
+        "permission denied",
+        "no such file or directory",
+        "执行失败",
+        "调用失败",
+        "错误：",
+        "报错：",
+        "超时",
+    )
+
+    private data class ParsedToolRecord(
+        val callId: String,
+        val toolName: String,
+        val repeatCount: Int,
+        val input: String,
+        val result: String,
+        val argsJson: JsonElement?,
+        val target: String,
+        val isReadOnly: Boolean,
+        val isError: Boolean,
+        val raw: String,
+    )
+
+    private data class ActiveReadGroup(
+        val sortIndex: Int,
+        val toolName: String,
+        val target: String,
+        var repeatCount: Int,
+        var latestRaw: String,
+    )
+
+    internal fun deduplicateToolRecords(records: List<String>): List<String> {
+        if (records.size <= 1) return records
+
+        val committed = mutableListOf<Pair<Int, String>>()
+        val activeGroups = LinkedHashMap<Pair<String, String>, ActiveReadGroup>()
+        var seq = 0
+
+        fun commitGroup(group: ActiveReadGroup) {
+            val formatted = formatRecordWithRepeat(group.latestRaw, group.toolName, group.repeatCount)
+            committed += group.sortIndex to formatted
+        }
+
+        fun flushTarget(target: String) {
+            val iterator = activeGroups.entries.iterator()
+            while (iterator.hasNext()) {
+                val entry = iterator.next()
+                if (entry.value.target == target) {
+                    commitGroup(entry.value)
+                    iterator.remove()
+                }
+            }
+        }
+
+        fun flushAll() {
+            activeGroups.values.forEach(::commitGroup)
+            activeGroups.clear()
+        }
+
+        records.forEach { raw ->
+            val idx = seq++
+            val record = parseRecord(raw)
+            if (record.toolName.isBlank()) {
+                flushAll()
+                committed += idx to raw
+                return@forEach
+            }
+
+            if (record.isError) {
+                if (record.target.isBlank()) {
+                    flushAll()
+                } else {
+                    flushTarget(record.target)
+                }
+                committed += idx to raw
+                return@forEach
+            }
+
+            if (!record.isReadOnly) {
+                if (record.target.isBlank()) {
+                    flushAll()
+                } else {
+                    flushTarget(record.target)
+                }
+                committed += idx to raw
+                return@forEach
+            }
+
+            val key = record.toolName to record.target
+            val existing = activeGroups[key]
+            if (existing != null) {
+                existing.repeatCount += record.repeatCount
+                existing.latestRaw = record.raw
+            } else {
+                activeGroups[key] = ActiveReadGroup(
+                    sortIndex = idx,
+                    toolName = record.toolName,
+                    target = record.target,
+                    repeatCount = record.repeatCount,
+                    latestRaw = record.raw,
+                )
+            }
+        }
+
+        flushAll()
+        committed.sortBy { it.first }
+        return committed.map { it.second }
+    }
+
+    private fun parseRecord(raw: String): ParsedToolRecord {
+        val callId = callIdRegex.find(raw)?.groupValues?.get(1)?.trim().orEmpty()
+        val toolLine = toolLineRegex.find(raw)?.groupValues?.get(1)?.trim().orEmpty()
+        var repeatCount = 1
+        var cleanToolName = toolLine
+        repeatedParensRegex.find(toolLine)?.let { m ->
+            repeatCount = m.groupValues[1].toIntOrNull() ?: 1
+            cleanToolName = toolLine.replace(m.value, "").trim()
+        } ?: repeatedNoParensRegex.find(toolLine)?.let { m ->
+            repeatCount = m.groupValues[1].toIntOrNull() ?: 1
+            cleanToolName = toolLine.replace(m.value, "").trim()
+        }
+
+        var inputIdx = -1
+        var inputPrefixLen = 0
+        for (marker in listOf("\n  Input: ", "\n  Arguments: ", "\n  Input:", "\n  Arguments:")) {
+            val idx = raw.indexOf(marker)
+            if (idx >= 0) {
+                inputIdx = idx
+                inputPrefixLen = marker.length
+                break
+            }
+        }
+        var resultIdx = -1
+        var resultPrefixLen = 0
+        for (marker in listOf("\n  Result: ", "\n  Output: ", "\n  Result:", "\n  Output:")) {
+            val idx = raw.indexOf(marker)
+            if (idx >= 0) {
+                resultIdx = idx
+                resultPrefixLen = marker.length
+                break
+            }
+        }
+
+        var inputStr = ""
+        var resultStr = ""
+        if (resultIdx >= 0 && inputIdx >= 0) {
+            if (resultIdx < inputIdx) {
+                resultStr = raw.substring(resultIdx + resultPrefixLen, inputIdx).trim()
+                inputStr = raw.substring(inputIdx + inputPrefixLen).trim()
+            } else {
+                inputStr = raw.substring(inputIdx + inputPrefixLen, resultIdx).trim()
+                resultStr = raw.substring(resultIdx + resultPrefixLen).trim()
+            }
+        } else if (resultIdx >= 0) {
+            resultStr = raw.substring(resultIdx + resultPrefixLen).trim()
+        } else if (inputIdx >= 0) {
+            inputStr = raw.substring(inputIdx + inputPrefixLen).trim()
+        }
+
+        val argsJson = runCatching { jsonHelper.parseToJsonElement(inputStr) }.getOrNull()
+        val isReadOnly = isReadOnlyTool(cleanToolName, argsJson)
+        val target = extractTarget(cleanToolName, argsJson, inputStr, isReadOnly)
+        val isError = isErrorResult(resultStr, raw)
+
+        return ParsedToolRecord(
+            callId = callId,
+            toolName = cleanToolName,
+            repeatCount = repeatCount,
+            input = inputStr,
+            result = resultStr,
+            argsJson = argsJson,
+            target = target,
+            isReadOnly = isReadOnly,
+            isError = isError,
+            raw = raw,
+        )
+    }
+
+    private fun isReadOnlyTool(toolName: String, args: JsonElement?): Boolean {
+        val name = toolName.trim()
+        if (name.isEmpty()) return false
+        if (name in READ_ONLY_MEMORY_TOOLS) return true
+        return ToolExecutionRetryPolicy.isIdempotentReadOnly(name, args)
+    }
+
+    private fun extractTarget(
+        toolName: String,
+        args: JsonElement?,
+        rawInput: String,
+        isReadOnly: Boolean,
+    ): String {
+        if (args is JsonObject) {
+            for (key in TARGET_KEYS) {
+                val value = (args[key] as? JsonPrimitive)?.contentOrNull?.trim()
+                if (!value.isNullOrEmpty()) {
+                    return value
+                }
+            }
+        }
+        return if (isReadOnly) rawInput.trim() else ""
+    }
+
+    private fun isErrorResult(resultText: String, rawText: String): Boolean {
+        val parsedJson = runCatching { jsonHelper.parseToJsonElement(resultText) }.getOrNull()
+        if (parsedJson is JsonObject) {
+            val errorElement = parsedJson["error"]
+            if (errorElement != null && errorElement !is kotlinx.serialization.json.JsonNull) {
+                val errorStr = (errorElement as? JsonPrimitive)?.contentOrNull
+                if (errorStr == null || errorStr.isNotBlank()) return true
+            }
+            if ((parsedJson["ok"] as? JsonPrimitive)?.booleanOrNull == false) return true
+            if ((parsedJson["timedOut"] as? JsonPrimitive)?.booleanOrNull == true) return true
+            val exitCode = (parsedJson["exitCode"] as? JsonPrimitive)?.intOrNull
+            if (exitCode != null && exitCode != 0) return true
+            val status = (parsedJson["status"] as? JsonPrimitive)?.intOrNull
+            if (status != null && (status < 200 || status >= 400)) return true
+        }
+
+        val combined = "$resultText\n$rawText".lowercase()
+        if (combined.contains("timedout") || combined.contains("timed out")) return true
+        if (EXIT_CODE_ERROR_REGEX.containsMatchIn(combined)) return true
+        if (TEXT_ERROR_KEYWORDS.any { combined.contains(it) }) return true
+        return false
+    }
+
+    private fun formatRecordWithRepeat(raw: String, toolName: String, repeatCount: Int): String {
+        val targetToolLine = if (repeatCount <= 1) {
+            "- Tool: $toolName"
+        } else {
+            "- Tool: $toolName (repeated $repeatCount times)"
+        }
+        val lines = raw.lines().toMutableList()
+        val toolIndex = lines.indexOfFirst { it.trimStart().startsWith("- Tool:") }
+        return if (toolIndex >= 0) {
+            lines[toolIndex] = targetToolLine
+            lines.joinToString("\n")
+        } else {
+            raw
+        }
+    }
 }

@@ -98,6 +98,7 @@ internal object TomcSummaryLedger {
         previous: List<Entry>,
         current: List<Entry>,
         limit: Int = DEFAULT_LIMIT,
+        enablePrecisionCompaction: Boolean = false,
     ): List<Entry> {
         val result = ArrayList<Entry>(previous + current)
         val deduplicated = LinkedHashMap<String, Entry>()
@@ -108,7 +109,42 @@ internal object TomcSummaryLedger {
             deduplicated.remove(key)
             deduplicated[key] = clean
         }
-        return deduplicated.values.toList().takeLast(limit.coerceAtLeast(1))
+        val entries = deduplicated.values.toList()
+        if (!enablePrecisionCompaction) {
+            return entries.takeLast(limit.coerceAtLeast(1))
+        }
+
+        // S3 Precision compaction: prune redundant non-task PLANNED entries if later EXECUTED or VERIFIED exists
+        val pruned = ArrayList<Entry>(entries.size)
+        for (i in entries.indices) {
+            val entry = entries[i]
+            if (entry.status == Status.PLANNED && !entry.task) {
+                val hasSubsequentExecution = (i + 1 until entries.size).any { j ->
+                    val other = entries[j]
+                    (other.status == Status.EXECUTED || other.status == Status.VERIFIED) &&
+                        isSameLifecycleTopic(entry.detail, other.detail)
+                }
+                if (hasSubsequentExecution) continue
+            }
+            pruned.add(entry)
+        }
+
+        val effectiveLimit = limit.coerceAtLeast(1)
+        if (pruned.size <= effectiveLimit) {
+            return pruned
+        }
+
+        // Capacity protection: keep FAILED and ROLLED_BACK from truncation
+        val critical = pruned.filter { it.status == Status.FAILED || it.status == Status.ROLLED_BACK }
+        if (critical.size >= effectiveLimit) {
+            val criticalToKeep = critical.takeLast(effectiveLimit).toSet()
+            return pruned.filter { it in criticalToKeep }
+        }
+
+        val nonCritical = pruned.filterNot { it.status == Status.FAILED || it.status == Status.ROLLED_BACK }
+        val remainingCapacity = effectiveLimit - critical.size
+        val nonCriticalToKeep = nonCritical.takeLast(remainingCapacity).toSet()
+        return pruned.filter { it in critical || it in nonCriticalToKeep }
     }
 
     /** Read back only the exact client-owned v1 syntax; malformed lines are ignored. */
@@ -153,12 +189,48 @@ internal object TomcSummaryLedger {
     }
 
     /** Compose a summary and inherit earlier controlled blocks found in trusted summary turns. */
-    fun compose(modelSummary: String, turns: List<TomcTurn>, maxChars: Int): String {
+    fun compose(
+        modelSummary: String,
+        turns: List<TomcTurn>,
+        maxChars: Int,
+        enablePrecisionCompaction: Boolean = false,
+    ): String {
         val clean = sanitize(modelSummary)
         val previous = turns.filter { it.role == "summary" }.flatMap { parse(it.text) }
         val current = extract(turns).entries
-        val ledger = render(merge(previous, current), maxChars)
+        val ledger = render(merge(previous, current, enablePrecisionCompaction = enablePrecisionCompaction), maxChars)
         return listOfNotNull(clean.takeIf(String::isNotBlank), ledger).joinToString("\n\n")
+    }
+
+    private val DETAIL_PREFIXES = listOf(
+        "计划：", "计划:", "准备：", "准备:", "打算：", "打算:", "todo:", "todo：",
+        "已修改：", "已修改:", "已修改", "修改：", "修改:", "修改",
+        "已执行：", "已执行:", "已执行", "执行：", "执行:", "执行",
+        "已验证：", "已验证:", "已验证", "验证：", "验证:", "验证",
+        "测试：", "测试:", "测试通过", "测试",
+        "已完成：", "已完成:", "已完成", "完成：", "完成:", "完成",
+    )
+    private val WHITESPACE_REGEX = Regex("""\s+""")
+
+    internal fun normalizeLifecycleDetail(detail: String): String {
+        var d = detail.trim().lowercase()
+        for (prefix in DETAIL_PREFIXES) {
+            if (d.startsWith(prefix)) {
+                d = d.removePrefix(prefix).trim()
+            }
+        }
+        return WHITESPACE_REGEX.replace(d, " ")
+    }
+
+    internal fun isSameLifecycleTopic(detail1: String, detail2: String): Boolean {
+        val n1 = normalizeLifecycleDetail(detail1)
+        val n2 = normalizeLifecycleDetail(detail2)
+        if (n1.isBlank() || n2.isBlank()) return false
+        if (n1 == n2) return true
+        if (n1.length >= 4 && n2.length >= 4) {
+            if (n1.contains(n2) || n2.contains(n1)) return true
+        }
+        return false
     }
 
     private fun escape(value: String): String = value
