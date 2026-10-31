@@ -420,6 +420,9 @@ class ResponseAPI(
                 if (params.topP != null) put("top_p", params.topP)
             }
             if (params.maxTokens != null) put("max_output_tokens", params.maxTokens)
+            if (params.model.serviceTier != null && host != "ark.cn-beijing.volces.com") {
+                put("service_tier", params.model.serviceTier)
+            }
 
             // system instructions
             if (messages.any { it.role == MessageRole.SYSTEM }) {

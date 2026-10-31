@@ -74,9 +74,9 @@ private val levelCount = levels.size
  */
 @Composable
 fun AgentControlCard(
-    reasoningLevel: ReasoningLevel,
-    showReasoning: Boolean,
-    onUpdateReasoningLevel: (ReasoningLevel) -> Unit,
+    reasoningLevel: ReasoningLevel = ReasoningLevel.OFF,
+    showReasoning: Boolean = false,
+    onUpdateReasoningLevel: (ReasoningLevel) -> Unit = {},
     modifier: Modifier = Modifier,
     showCodexSpeed: Boolean = false,
     codexServiceTier: String? = null,
@@ -103,7 +103,6 @@ fun AgentControlCard(
         )
     }
 
-    // Same gate as Settings → Tool approvals: switching INTO Auto confirms first.
     var pendingAuto by remember { mutableStateOf(false) }
     if (pendingAuto) {
         AlertDialog(
@@ -134,8 +133,6 @@ fun AgentControlCard(
         )
     }
 
-    val currentIndex = levels.indexOf(reasoningLevel).coerceAtLeast(0)
-
     Surface(
         modifier = modifier
             .fillMaxWidth()
@@ -144,73 +141,48 @@ fun AgentControlCard(
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            if (showCodexSpeed) {
-                CodexSpeedSelector(
-                    serviceTier = codexServiceTier,
-                    onUpdate = onUpdateCodexServiceTier,
-                    modifier = Modifier.padding(bottom = 8.dp),
-                )
-            }
             Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Row(
-                    modifier = Modifier
-                        .weight(1f)
-                        .horizontalScroll(rememberScrollState()),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    ApprovalModeChip(
-                        mode = approvalMode,
-                        onSelect = { mode ->
-                            if (mode == ApprovalMode.AUTO && approvalMode != ApprovalMode.AUTO) {
-                                pendingAuto = true
-                            } else {
-                                scope.launch { approvalPrefs.setMode(mode) }
-                            }
-                        },
-                    )
-                    DispatchProfileChip(
-                        profile = dispatchProfile,
-                        onSelect = { profile ->
-                            scope.launch { settingsStore.update { it.copy(subAgentDispatchProfile = profile) } }
-                        },
-                    )
-                    if (conversationId != null) {
-                        ChatPresetChip(
-                            count = rememberChatGrantCount(conversationId),
-                            onClick = { showPresetSheet = true },
-                        )
-                    }
-                    if (settings != null && onUpdateSearchMode != null && onUpdateSearchService != null) {
-                        SearchControlChip(
-                            enableSearch = enableSearch,
-                            settings = settings,
-                            model = model,
-                            onUpdateSearchMode = onUpdateSearchMode,
-                            onUpdateSearchService = onUpdateSearchService,
-                        )
-                    }
-                }
-                if (showReasoning) {
-                    ReasoningIcon(reasoningLevel, Modifier.size(18.dp))
-                    ReasoningLevelWord(
-                        level = reasoningLevel,
-                        style = MaterialTheme.typography.titleLarge,
+                ApprovalModeChip(
+                    mode = approvalMode,
+                    onSelect = { mode ->
+                        if (mode == ApprovalMode.AUTO && approvalMode != ApprovalMode.AUTO) {
+                            pendingAuto = true
+                        } else {
+                            scope.launch { approvalPrefs.setMode(mode) }
+                        }
+                    },
+                )
+                DispatchProfileChip(
+                    profile = dispatchProfile,
+                    onSelect = { profile ->
+                        scope.launch { settingsStore.update { it.copy(subAgentDispatchProfile = profile) } }
+                    },
+                )
+                if (conversationId != null) {
+                    ChatPresetChip(
+                        count = rememberChatGrantCount(conversationId),
+                        onClick = { showPresetSheet = true },
                     )
                 }
             }
-            if (showReasoning) {
-                ReasoningSegmentedPicker(
-                    currentLevel = reasoningLevel,
-                    onSelectLevel = onUpdateReasoningLevel,
-                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                    height = 40.dp,
+
+            // Web Search control replaces reasoning inside the model selection card
+            if (settings != null && onUpdateSearchMode != null && onUpdateSearchService != null) {
+                SearchControlCard(
+                    enableSearch = enableSearch,
+                    settings = settings,
+                    model = model,
+                    onUpdateSearchMode = onUpdateSearchMode,
+                    onUpdateSearchService = onUpdateSearchService,
                 )
             }
         }

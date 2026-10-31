@@ -27,6 +27,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -78,6 +79,95 @@ enum class SearchMode {
     OFF,
     LOCAL,
     BUILT_IN,
+}
+
+@Composable
+fun SearchControlCard(
+    enableSearch: Boolean,
+    settings: Settings,
+    modifier: Modifier = Modifier,
+    onUpdateSearchMode: (SearchMode) -> Unit,
+    onUpdateSearchService: (Int) -> Unit,
+    model: Model?,
+) {
+    var showSearchPicker by remember { mutableStateOf(false) }
+    val currentService = settings.searchServices.getOrNull(settings.searchServiceSelected)
+    val builtIn = model?.tools?.contains(BuiltInTools.Search) == true
+    val serviceOn = builtIn || (enableSearch && currentService != null)
+
+    val serviceSubtitle = when {
+        builtIn -> stringResource(R.string.use_web_search) + " (内置)"
+        serviceOn && currentService != null -> currentService.displayName
+        else -> stringResource(R.string.reasoning_off)
+    }
+
+    Surface(
+        onClick = { showSearchPicker = true },
+        shape = RoundedCornerShape(14.dp),
+        color = if (serviceOn) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                else MaterialTheme.colorScheme.surfaceContainerHighest,
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(
+                            if (serviceOn) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.surfaceContainer
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = if (serviceOn) HugeIcons.AiSearch02 else HugeIcons.Search01,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = if (serviceOn) MaterialTheme.colorScheme.onPrimary
+                               else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(
+                        text = stringResource(R.string.use_web_search),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text = serviceSubtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            Icon(
+                imageVector = HugeIcons.ArrowRight01,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+
+    SearchPickerSheet(
+        visible = showSearchPicker,
+        onDismiss = { showSearchPicker = false },
+        enableSearch = enableSearch,
+        settings = settings,
+        onUpdateSearchMode = onUpdateSearchMode,
+        onUpdateSearchService = onUpdateSearchService,
+        model = model,
+    )
 }
 
 @Composable

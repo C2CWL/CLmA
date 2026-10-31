@@ -362,6 +362,11 @@ class ClaudeProvider(private val client: OkHttpClient, context: Context? = null)
             .post(requestBody.toJsonRequestBody())
             .addHeader("x-api-key", keyRoulette.next(providerSetting.apiKey, providerSetting.id.toString()))
             .addHeader("anthropic-version", ANTHROPIC_VERSION)
+            .apply {
+                if (params.model.serviceTier == "fast") {
+                    addHeader("anthropic-beta", "fast-mode-2026-02-01")
+                }
+            }
             .configureReferHeaders(providerSetting.baseUrl)
             .configureSessionHeaders(providerSetting.baseUrl, params.sessionId)
             .build()
@@ -414,6 +419,11 @@ class ClaudeProvider(private val client: OkHttpClient, context: Context? = null)
             .post(requestBody.toJsonRequestBody())
             .addHeader("x-api-key", keyRoulette.next(providerSetting.apiKey, providerSetting.id.toString()))
             .addHeader("anthropic-version", ANTHROPIC_VERSION)
+            .apply {
+                if (params.model.serviceTier == "fast") {
+                    addHeader("anthropic-beta", "fast-mode-2026-02-01")
+                }
+            }
             .addHeader("Content-Type", "application/json")
             .configureReferHeaders(providerSetting.baseUrl)
             .configureSessionHeaders(providerSetting.baseUrl, params.sessionId)
@@ -520,6 +530,9 @@ class ClaudeProvider(private val client: OkHttpClient, context: Context? = null)
             if (params.topP != null) put("top_p", params.topP)
 
             put("stream", stream)
+            if (params.model.serviceTier == "fast") {
+                put("speed", "fast")
+            }
 
             // system prompt
             val systemMessage = messages.firstOrNull { it.role == MessageRole.SYSTEM }
