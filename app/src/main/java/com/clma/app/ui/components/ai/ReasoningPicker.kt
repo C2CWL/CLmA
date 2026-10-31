@@ -2,7 +2,12 @@ package com.clma.app.ui.components.ai
 
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -642,7 +647,7 @@ internal fun ReasoningEnergyBar(
                 label = "crestPulse",
             )
 
-            if (activeWidth > 0.dp) {
+            if (activeWidth.value > 0f) {
                 val flowShift = flowPhase * 160.dp.value
                 val streamBrush = if (isMax) auroraBrush
                 else Brush.horizontalGradient(
