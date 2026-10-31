@@ -43,6 +43,33 @@ internal object ContextCompactionPlanner {
      */
     private const val MAX_MAP_INPUT_TOKENS = 100_000
 
+    const val DEFAULT_TAIL_BUDGET_PERCENT = 50
+    const val PRECISION_TAIL_BUDGET_PERCENT = 35
+    const val MIN_AUTOMATIC_TAIL_BUDGET_TOKENS = 512
+
+    /**
+     * Calculates the maximum token budget for the retained raw tail following an automatic compaction.
+     * When [enablePrecisionCompaction] is false, targets 50% of the trigger.
+     * When [enablePrecisionCompaction] is true (S2 cache hysteresis), targets 35% of the trigger,
+     * widening the gap between compaction low-water mark and high-water trigger to protect prompt cache.
+     */
+    fun maxTailTokens(
+        triggerTokens: Int?,
+        targetTokens: Int,
+        enablePrecisionCompaction: Boolean = false,
+    ): Int? {
+        if (triggerTokens == null) return null
+        val percent = if (enablePrecisionCompaction) {
+            PRECISION_TAIL_BUDGET_PERCENT
+        } else {
+            DEFAULT_TAIL_BUDGET_PERCENT
+        }
+        return (triggerTokens.toLong() * percent / 100L - targetTokens)
+            .coerceAtLeast(MIN_AUTOMATIC_TAIL_BUDGET_TOKENS.toLong())
+            .coerceAtMost(Int.MAX_VALUE.toLong())
+            .toInt()
+    }
+
     fun inputBudgetTokens(
         contextLength: Int?,
         targetTokens: Int,

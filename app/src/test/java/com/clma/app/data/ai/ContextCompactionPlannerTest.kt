@@ -463,6 +463,51 @@ class ContextCompactionPlannerTest {
         assertTrue(widened > rawTailStartIndex)
     }
 
+    @Test
+    fun `maxTailTokens targets 50 percent by default and 35 percent when precision compaction is enabled`() {
+        val trigger = 10_000
+        val target = 1_000
+
+        // Default: 10_000 * 50% - 1_000 = 4_000 tokens for tail
+        val defaultBudget = ContextCompactionPlanner.maxTailTokens(
+            triggerTokens = trigger,
+            targetTokens = target,
+            enablePrecisionCompaction = false,
+        )
+        assertEquals(4_000, defaultBudget)
+
+        // S2 precision hysteresis: 10_000 * 35% - 1_000 = 2_500 tokens for tail
+        // (total request target lands at 35% of trigger, leaving 65% buffer before next compaction)
+        val precisionBudget = ContextCompactionPlanner.maxTailTokens(
+            triggerTokens = trigger,
+            targetTokens = target,
+            enablePrecisionCompaction = true,
+        )
+        assertEquals(2_500, precisionBudget)
+    }
+
+    @Test
+    fun `maxTailTokens clamps to minimum automatic tail budget tokens`() {
+        val trigger = 1_000
+        val target = 800
+
+        // 1_000 * 35% - 800 = -450 -> clamped to 512
+        val clamped = ContextCompactionPlanner.maxTailTokens(
+            triggerTokens = trigger,
+            targetTokens = target,
+            enablePrecisionCompaction = true,
+        )
+        assertEquals(ContextCompactionPlanner.MIN_AUTOMATIC_TAIL_BUDGET_TOKENS, clamped)
+
+        // trigger == null -> null
+        val nullResult = ContextCompactionPlanner.maxTailTokens(
+            triggerTokens = null,
+            targetTokens = target,
+            enablePrecisionCompaction = true,
+        )
+        assertEquals(null, nullResult)
+    }
+
     private fun toolMessage(name: String) = UIMessage(
         role = MessageRole.ASSISTANT,
         parts = listOf(
