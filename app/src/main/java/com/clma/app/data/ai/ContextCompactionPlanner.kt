@@ -36,6 +36,8 @@ internal object ContextCompactionPlanner {
      * wasteful and capable of taking longer than the generation turn budget.
      */
     private const val MAP_TOOL_OUTPUT_PREVIEW_CHARS = 1_024
+    internal const val PRE_DRY_TEXT_PREVIEW_CHARS = 4_096
+    internal const val PRE_DRY_REASONING_PREVIEW_CHARS = 1_024
     private val retainedRawToolCountPattern = Regex("completed_tool_calls=(\\d+)")
     private val rawContextReportPattern = Regex(
         "${Regex.escape(RAW_CONTEXT_HEADER)}\\s*(.*?)\\s*${Regex.escape(RAW_CONTEXT_FOOTER)}",
@@ -166,15 +168,36 @@ internal object ContextCompactionPlanner {
     /**
      * Source representation used only for map requests. Tool names, inputs and every tool part
      * remain present, while each potentially unbounded result is represented by a head/tail
-     * preview. The persisted conversation and the deterministic tool digest still retain the
-     * original result, so this is a request-size bound rather than data loss.
+     * preview. When [enablePrecisionCompaction] is true (S4 pre-dry), oversized text and
+     * reasoning parts are also bounded with head/tail + omitted char count. The persisted
+     * conversation and the deterministic tool digest still retain the original result, so this
+     * is a request-size bound rather than data loss.
      */
-    fun mapSourceText(message: UIMessage): String = buildString {
+    fun mapSourceText(
+        message: UIMessage,
+        enablePrecisionCompaction: Boolean = false,
+    ): String = buildString {
         append('[')
         append(message.role.name)
         append("]:\n")
-        message.parts.forEach { appendPartForMap(it) }
+        message.parts.forEach { appendPartForMap(it, enablePrecisionCompaction) }
     }.trim()
+
+    /**
+     * Fixed slot contract appended to the compaction prompt when [enablePrecisionCompaction] is
+     * enabled (S4). Slots are generation instructions rather than a separate stored format, and
+     * forbid inventing facts not grounded in the source.
+     */
+    fun precisionCompactionSlotContractInstructions(): String = """
+        STRUCTURED SLOT CONTRACT (MANDATORY):
+        Organize the summary to explicitly cover the following fixed slot headings (keep normal prose under each heading):
+        - 目标与约束
+        - 已改文件与 SHA
+        - 已验证结论与证据路径
+        - 失败与回滚
+        - 未完成阻塞
+        Do not invent facts, file paths, SHAs, verification results, or tool outcomes that are not present in the source material. If a slot has no factual evidence in the source, state "无" under that heading. Keep planned, executed, verified, failed, and rolled-back states strictly distinct.
+    """.trimIndent()
 
     /**
      * This contract is appended by [ChatService] to every compression request, including when
@@ -533,7 +556,10 @@ internal object ContextCompactionPlanner {
     }
 
     @Suppress("DEPRECATION")
-    private fun StringBuilder.appendPartForMap(part: UIMessagePart) {
+    private fun StringBuilder.appendPartForMap(
+        part: UIMessagePart,
+        enablePrecisionCompaction: Boolean = false,
+    ) {
         if (ContextCompactionPresentation.isDisplayTool(part)) return
         when (part) {
             is UIMessagePart.Tool -> {
@@ -569,8 +595,25 @@ internal object ContextCompactionPlanner {
                 appendLine("[End completed tool execution record]")
             }
 
-            is UIMessagePart.Text -> appendLine(stripRawContextRetentionReports(part.text))
-            is UIMessagePart.Reasoning -> appendLine(part.reasoning)
+            is UIMessagePart.Text -> {
+                val stripped = stripRawContextRetentionReports(part.text)
+                appendLine(
+                    if (enablePrecisionCompaction) {
+                        previewTextForPreDry(stripped, PRE_DRY_TEXT_PREVIEW_CHARS)
+                    } else {
+                        stripped
+                    }
+                )
+            }
+            is UIMessagePart.Reasoning -> {
+                appendLine(
+                    if (enablePrecisionCompaction) {
+                        previewTextForPreDry(part.reasoning, PRE_DRY_REASONING_PREVIEW_CHARS)
+                    } else {
+                        part.reasoning
+                    }
+                )
+            }
             is UIMessagePart.ToolCall -> {
                 appendLine("[Tool call requested but no recorded result: ${part.toolName}]")
                 appendLine("Arguments: ${part.arguments}")
@@ -591,6 +634,37 @@ internal object ContextCompactionPlanner {
             append(text, 0, headChars)
             append("\n…[tool result preview truncated for map request]…\n")
             append(text, text.length - tailChars, text.length)
+        }
+    }
+
+    private fun previewTextForPreDry(text: String, maxChars: Int): String {
+        if (text.length <= maxChars) return text
+        val headBudget = (maxChars * 3 / 4).coerceAtLeast(1)
+        val tailBudget = (maxChars - headBudget).coerceAtLeast(1)
+        var headEnd = headBudget.coerceAtMost(text.length)
+        if (
+            headEnd in 1 until text.length &&
+            Character.isHighSurrogate(text[headEnd - 1]) &&
+            Character.isLowSurrogate(text[headEnd])
+        ) {
+            headEnd--
+        }
+        var tailStart = (text.length - tailBudget).coerceAtLeast(headEnd)
+        if (
+            tailStart in 1 until text.length &&
+            Character.isHighSurrogate(text[tailStart - 1]) &&
+            Character.isLowSurrogate(text[tailStart])
+        ) {
+            tailStart++
+        }
+        val omitted = (tailStart - headEnd).coerceAtLeast(0)
+        if (omitted == 0) return text
+        return buildString {
+            append(text, 0, headEnd)
+            append("\n… [")
+            append(omitted)
+            append(" chars omitted] …\n")
+            append(text, tailStart, text.length)
         }
     }
 
