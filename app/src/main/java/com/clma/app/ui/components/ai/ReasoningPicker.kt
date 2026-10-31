@@ -10,7 +10,8 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -19,6 +20,8 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.changedToUp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.Dp
@@ -63,6 +66,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -562,6 +566,9 @@ internal fun ReasoningEnergyBar(
     modifier: Modifier = Modifier,
 ) {
     val haptic = LocalHapticFeedback.current
+    val latestLevel by rememberUpdatedState(currentLevel)
+    val latestOnSelect by rememberUpdatedState(onSelectLevel)
+    val latestHaptic by rememberUpdatedState(haptic)
     val currentIndex = levels.indexOf(currentLevel).coerceAtLeast(0)
     var dragProgress by remember { mutableStateOf<Float?>(null) }
     val displayIndex = dragProgress ?: currentIndex.toFloat()
@@ -599,31 +606,54 @@ internal fun ReasoningEnergyBar(
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
                     shape = RoundedCornerShape(18.dp),
                 )
-                .pointerInput(Unit) {
-                    detectHorizontalDragGestures(
-                        onDragStart = { offset ->
-                            val idx = ((offset.x / size.width) * (levelCount - 1)).coerceIn(0f, (levelCount - 1).toFloat())
-                            dragProgress = idx
-                        },
-                        onHorizontalDrag = { change, _ ->
-                            change.consume()
-                            val idx = ((change.position.x / size.width) * (levelCount - 1)).coerceIn(0f, (levelCount - 1).toFloat())
-                            val oldRound = dragProgress?.roundToInt() ?: -1
-                            val newRound = idx.roundToInt()
-                            if (oldRound != newRound && oldRound != -1) {
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                .pointerInput(levelCount) {
+                    // Claim the pointer on the Initial pass so the bottom sheet's vertical
+                    // drag cannot cancel a slightly diagonal swipe, and a tap (no slop) seeks.
+                    awaitEachGesture {
+                        val down = awaitFirstDown(
+                            requireUnconsumed = false,
+                            pass = PointerEventPass.Initial,
+                        )
+                        down.consume()
+                        fun indexAt(x: Float): Float =
+                            (x / size.width.toFloat().coerceAtLeast(1f) * (levelCount - 1))
+                                .coerceIn(0f, (levelCount - 1).toFloat())
+                        var progress = indexAt(down.position.x)
+                        var lastRound = progress.roundToInt()
+                        dragProgress = progress
+                        val pointerId = down.id
+                        var committed = false
+                        try {
+                            while (true) {
+                                val event = awaitPointerEvent(PointerEventPass.Initial)
+                                val change = event.changes.firstOrNull { it.id == pointerId } ?: continue
+                                if (!change.pressed) {
+                                    change.consume()
+                                    if (change.changedToUp()) {
+                                        val target = progress.roundToInt().coerceIn(0, levelCount - 1)
+                                        val selected = levels[target]
+                                        committed = true
+                                        dragProgress = null
+                                        if (selected != latestLevel) {
+                                            latestHaptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                            latestOnSelect(selected)
+                                        }
+                                    }
+                                    break
+                                }
+                                change.consume()
+                                progress = indexAt(change.position.x)
+                                val newRound = progress.roundToInt()
+                                if (newRound != lastRound) {
+                                    latestHaptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    lastRound = newRound
+                                }
+                                dragProgress = progress
                             }
-                            dragProgress = idx
-                        },
-                        onDragEnd = {
-                            val target = (dragProgress ?: currentIndex.toFloat()).roundToInt().coerceIn(0, levelCount - 1)
-                            dragProgress = null
-                            if (levels[target] != currentLevel) {
-                                onSelectLevel(levels[target])
-                            }
-                        },
-                        onDragCancel = { dragProgress = null },
-                    )
+                        } finally {
+                            if (!committed) dragProgress = null
+                        }
+                    }
                 },
         ) {
             val totalWidth = maxWidth

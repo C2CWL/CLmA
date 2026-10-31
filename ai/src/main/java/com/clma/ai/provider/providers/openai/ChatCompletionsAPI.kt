@@ -324,23 +324,6 @@ class ChatCompletionsAPI(
                 if (params.topP != null) put("top_p", params.topP)
             }
             if (params.maxTokens != null) put("max_tokens", params.maxTokens)
-            if (params.model.serviceTier != null && host !in setOf(
-                    "dashscope.aliyuncs.com",
-                    "ark.cn-beijing.volces.com",
-                    "api.mistral.ai",
-                    "chat.intern-ai.org.cn",
-                    "api.siliconflow.cn",
-                    "aiping.cn",
-                    "open.bigmodel.cn",
-                    "api.xiaomimimo.com",
-                    "token-plan-cn.xiaomimimo.com",
-                    "api.moonshot.cn",
-                    "api.deepseek.com",
-                    "integrate.api.nvidia.com",
-                )
-            ) {
-                put("service_tier", params.model.serviceTier)
-            }
 
             put("stream", stream)
             if (stream) {
