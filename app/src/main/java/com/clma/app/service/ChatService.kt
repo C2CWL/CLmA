@@ -187,20 +187,10 @@ private const val COMPACTION_MAX_REQUEST_OUTPUT_TOKENS = 16_384
 private const val MAX_PARALLEL_COMPACTION_REQUESTS = 4
 private const val MAX_FULL_CONTEXT_MAP_GROUPS = 8
 /**
- * Cap the automatic-compaction raw tail at half of the trigger threshold (after reserving room
- * for the summary itself). Landing right at the trigger means the very next tool result crosses
- * it again, forcing a brand-new summary - a new request prefix and therefore a full cache miss -
- * on almost every turn. Leaving this much headroom lets several turns reuse the same cached
- * prefix before compaction has to fire again.
- */
-private const val COMPACTION_TAIL_BUDGET_PERCENT = 50
-
-/**
  * Raw messages a model-initiated `compact_context` call keeps verbatim. Matches the default of
  * the manual compress dialog (`CompressContextDialog`) so the two entry points behave the same.
  */
 private const val COMPACTION_TOOL_KEEP_RECENT_MESSAGES = 32
-private const val MIN_AUTOMATIC_TAIL_BUDGET_TOKENS = 512
 private const val COMPACTION_TOOL_LEDGER_MAX_TOKENS = 1_500
 private const val MAX_CONSECUTIVE_AUTO_COMPACTION_FAILURES = 3
 private const val COMPACTION_SUMMARY_HEADER = "[Summary of previous conversation]"
@@ -3169,11 +3159,13 @@ class ChatService(
                     val triggerTokens = automaticCompactionTriggerTokens(settings, model)
                     // Choose the tail boundary so the post-compaction request already lands
                     // comfortably below the trigger, instead of accepting a tail that sits right
-                    // at it and re-summarizing on the next turn (see COMPACTION_TAIL_BUDGET_PERCENT).
-                    val maxTailTokens = triggerTokens?.let {
-                        (it * COMPACTION_TAIL_BUDGET_PERCENT / 100 - targetTokens)
-                            .coerceAtLeast(MIN_AUTOMATIC_TAIL_BUDGET_TOKENS)
-                    }
+                    // at it and re-summarizing on the next turn. When enablePrecisionCompaction is
+                    // on, targets 35% (S2 cache hysteresis) instead of 50%.
+                    val maxTailTokens = ContextCompactionPlanner.maxTailTokens(
+                        triggerTokens = triggerTokens,
+                        targetTokens = targetTokens,
+                        enablePrecisionCompaction = settings.enablePrecisionCompaction,
+                    )
                     val firstCompaction = recordAutoCompactionIfCreated(
                         createAutomaticCompaction(
                             conversation = latestConversation,
