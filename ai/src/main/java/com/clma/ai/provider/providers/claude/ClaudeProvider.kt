@@ -286,11 +286,6 @@ class ClaudeProvider(private val client: OkHttpClient, context: Context? = null)
                 .headers(providerSetting.mergeCustomHeaders())
                 .addHeader("x-api-key", keyRoulette.next(providerSetting.apiKey, providerSetting.id.toString()))
                 .addHeader("anthropic-version", ANTHROPIC_VERSION)
-            .apply {
-                if (params.model.serviceTier == "fast") {
-                    addHeader("anthropic-beta", "fast-mode-2026-02-01")
-                }
-            }
                 .get()
                 .build()
 
