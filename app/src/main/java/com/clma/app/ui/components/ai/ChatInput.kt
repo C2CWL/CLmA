@@ -108,6 +108,7 @@ import com.clma.app.R
 import com.clma.app.data.datastore.ChatLayout
 import com.clma.app.data.datastore.Settings
 import com.clma.app.data.datastore.findProvider
+import com.clma.app.data.datastore.supportsSpeedTier
 import com.clma.app.data.datastore.effectiveChatLayout
 import com.clma.app.data.datastore.getCurrentAssistant
 import com.clma.app.data.datastore.resolveChatModel
@@ -446,7 +447,7 @@ fun ChatInput(
                             onUpdateReasoningLevel = {
                                 if (effectiveChatModel != null) onUpdateModelReasoningLevel(effectiveChatModel, it)
                             },
-                            showCodexSpeed = effectiveChatModel?.findProvider(settings.providers) is ProviderSetting.Codex,
+                            showCodexSpeed = effectiveChatModel?.supportsSpeedTier(settings.providers) == true,
                             codexServiceTier = effectiveChatModel?.serviceTier,
                             onUpdateCodexServiceTier = { tier ->
                                 if (effectiveChatModel != null) onUpdateModelServiceTier(effectiveChatModel, tier)
@@ -686,18 +687,6 @@ private fun ModelReasoningChip(
         onSelect = onUpdateChatModel,
         header = {
             AgentControlCard(
-                reasoningLevel = level,
-                showReasoning = showReasoning,
-                showCodexSpeed = model?.findProvider(settings.providers) is ProviderSetting.Codex,
-                codexServiceTier = model?.serviceTier,
-                onUpdateCodexServiceTier = { tier ->
-                    if (model != null) onUpdateModelServiceTier(model, tier)
-                },
-                onUpdateReasoningLevel = {
-                    if (model != null) {
-                        onUpdateModelReasoningLevel(model, it)
-                    }
-                },
                 conversationId = conversationId,
                 enableSearch = enableSearch,
                 settings = settings,

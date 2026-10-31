@@ -33,6 +33,7 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.Transient
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.decodeFromJsonElement
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import com.clma.ai.core.MessageRole
 import com.clma.ai.core.ReasoningLevel
 import com.clma.ai.provider.Model
@@ -1595,6 +1596,33 @@ fun Settings.getSelectedASRProvider(): ASRProviderSetting? {
     return selectedASRProviderId?.let { id ->
         asrProviders.find { it.id == id }
     } ?: asrProviders.firstOrNull()
+}
+
+
+fun Model.supportsSpeedTier(providers: List<ProviderSetting>): Boolean {
+    val provider = findProvider(providers) ?: return false
+    return when (provider) {
+        is ProviderSetting.Codex -> true
+        is ProviderSetting.Claude -> true
+        is ProviderSetting.OpenAI -> {
+            val host = provider.baseUrl.toHttpUrlOrNull()?.host?.lowercase().orEmpty()
+            host !in setOf(
+                "dashscope.aliyuncs.com",
+                "ark.cn-beijing.volces.com",
+                "api.mistral.ai",
+                "chat.intern-ai.org.cn",
+                "api.siliconflow.cn",
+                "aiping.cn",
+                "open.bigmodel.cn",
+                "api.xiaomimimo.com",
+                "token-plan-cn.xiaomimimo.com",
+                "api.moonshot.cn",
+                "api.deepseek.com",
+                "integrate.api.nvidia.com",
+            )
+        }
+        else -> false
+    }
 }
 
 fun Model.findProvider(providers: List<ProviderSetting>, checkOverwrite: Boolean = true): ProviderSetting? {

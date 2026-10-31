@@ -701,11 +701,11 @@
   <string name="reasoning_off">关闭</string>
   <string name="reasoning_off_desc">关闭推理功能，模型将直接回答问题。</string>
   <string name="reasoning_picker_hint">并非所有模型都支持深度调整。请参考模型和提供商文档。</string>
-  <string name="codex_speed_title">Codex 速度</string>
+  <string name="codex_speed_title">生成速度</string>
   <string name="codex_speed_standard">Standard</string>
   <string name="codex_speed_fast">Fast</string>
   <string name="codex_speed_standard_hint">标准速度与额度消耗。</string>
-  <string name="codex_speed_fast_hint">更快，通常约 2.5× 额度消耗。倍率可能随 Codex 政策调整，以官方说明为准。</string>
+  <string name="codex_speed_fast_hint">优先高速通道（Fast），通常约 2.5× 额度或费用消耗，以供应商官方说明为准。</string>
   <string name="reasoning_picker_title">调整模型思考深度</string>
   <string name="reasoning_xhigh">研究</string>
   <string name="regenerate">重新生成</string>

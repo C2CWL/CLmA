@@ -78,11 +78,10 @@ import androidx.compose.ui.unit.dp
 import com.clma.ai.core.ReasoningLevel
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Atom02
+import me.rerere.hugeicons.stroke.Brain02
+import me.rerere.hugeicons.stroke.Sparkles
 import com.clma.app.R
 import com.clma.app.ui.components.ui.ToggleSurface
-import com.clma.app.ui.components.ui.icons.ReasoningHigh
-import com.clma.app.ui.components.ui.icons.ReasoningLow
-import com.clma.app.ui.components.ui.icons.ReasoningMedium
 import kotlin.math.PI
 import kotlin.math.roundToInt
 import kotlin.math.sin
@@ -225,19 +224,9 @@ fun ReasoningPicker(
                     if (reasoningLevel.isEnabled) MaterialTheme.colorScheme.primary
                     else MaterialTheme.colorScheme.onSurface
                 )
-                Icon(
-                    imageVector = when (reasoningLevel) {
-                        ReasoningLevel.OFF -> HugeIcons.Atom02
-                        ReasoningLevel.AUTO -> HugeIcons.Atom02
-                        ReasoningLevel.LOW -> ReasoningLow
-                        ReasoningLevel.MEDIUM -> ReasoningMedium
-                        ReasoningLevel.HIGH -> ReasoningHigh
-                        ReasoningLevel.XHIGH -> ReasoningHigh
-                        ReasoningLevel.MAX -> ReasoningHigh
-                    },
-                    contentDescription = null,
+                ReasoningIcon(
+                    level = reasoningLevel,
                     modifier = Modifier.size(32.dp),
-                    tint = iconColor,
                 )
                 ReasoningLevelWord(
                     level = reasoningLevel,
@@ -245,10 +234,10 @@ fun ReasoningPicker(
                 )
             }
 
-            ReasoningSegmentedPicker(
+            ReasoningEnergyBar(
                 currentLevel = reasoningLevel,
                 onSelectLevel = onUpdateReasoningLevel,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
             )
         }
     }
@@ -256,14 +245,19 @@ fun ReasoningPicker(
 
 @Composable
 internal fun ReasoningIcon(level: ReasoningLevel, modifier: Modifier = Modifier) {
+    val iconColor by animateColorAsState(
+        if (level.isEnabled) reasoningLevelColor(level)
+        else MaterialTheme.colorScheme.onSurfaceVariant,
+        label = "reasoningIconTint"
+    )
     when (level) {
-        ReasoningLevel.OFF -> Icon(HugeIcons.Atom02, null, modifier = modifier)
-        ReasoningLevel.AUTO -> Icon(HugeIcons.Atom02, null, modifier = modifier)
-        ReasoningLevel.LOW -> Icon(ReasoningLow, null, modifier = modifier)
-        ReasoningLevel.MEDIUM -> Icon(ReasoningMedium, null, modifier = modifier)
-        ReasoningLevel.HIGH -> Icon(ReasoningHigh, null, modifier = modifier)
-        ReasoningLevel.XHIGH -> Icon(ReasoningHigh, null, modifier = modifier)
-        ReasoningLevel.MAX -> Icon(ReasoningHigh, null, modifier = modifier)
+        ReasoningLevel.OFF -> Icon(HugeIcons.Brain02, contentDescription = null, modifier = modifier, tint = iconColor)
+        ReasoningLevel.AUTO -> Icon(HugeIcons.Atom02, contentDescription = null, modifier = modifier, tint = iconColor)
+        ReasoningLevel.LOW,
+        ReasoningLevel.MEDIUM,
+        ReasoningLevel.HIGH,
+        ReasoningLevel.XHIGH -> Icon(HugeIcons.Brain02, contentDescription = null, modifier = modifier, tint = iconColor)
+        ReasoningLevel.MAX -> Icon(HugeIcons.Sparkles, contentDescription = null, modifier = modifier, tint = iconColor)
     }
 }
 
@@ -552,114 +546,187 @@ internal fun CodexSpeedSelector(
 }
 
 /**
- * A segmented reasoning-level selector with an animated sliding pill indicator.
- * Supports both direct tap on any segment and continuous dragging across levels with spring snap.
+ * A sci-fi energy bar for thinking depth (能量条).
+ * Features an animated glowing energy surge channel with deep-space aurora gradients,
+ * floating stardust particles, smooth spring-animated seeking, and horizontal drag / discrete tap.
  */
 @Composable
-internal fun ReasoningSegmentedPicker(
+internal fun ReasoningEnergyBar(
     currentLevel: ReasoningLevel,
     onSelectLevel: (ReasoningLevel) -> Unit,
     modifier: Modifier = Modifier,
-    height: Dp = 46.dp,
 ) {
     val haptic = LocalHapticFeedback.current
     val currentIndex = levels.indexOf(currentLevel).coerceAtLeast(0)
     var dragProgress by remember { mutableStateOf<Float?>(null) }
     val displayIndex = dragProgress ?: currentIndex.toFloat()
-
     val activeLevel = levels[displayIndex.roundToInt().coerceIn(0, levelCount - 1)]
-    val isMax = activeLevel == ReasoningLevel.MAX
-    val auroraBrush = reasoningAuroraNebulaBrush("reasoningSegmentAurora")
-    val levelColor by animateColorAsState(
-        targetValue = reasoningLevelColor(activeLevel),
-        label = "reasoningSegmentColor",
+
+    val targetFraction = (displayIndex / (levelCount - 1).toFloat()).coerceIn(0f, 1f)
+    val animatedFraction by animateFloatAsState(
+        targetValue = targetFraction,
+        animationSpec = if (dragProgress != null) tween(0)
+        else spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMediumLow),
+        label = "energyBarFraction",
     )
 
-    BoxWithConstraints(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(height)
-            .clip(RoundedCornerShape(14.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-            .pointerInput(Unit) {
-                detectHorizontalDragGestures(
-                    onDragStart = { offset ->
-                        val itemWidth = size.width / levelCount
-                        val index = (offset.x / itemWidth).coerceIn(0f, (levelCount - 1).toFloat())
-                        dragProgress = index
-                    },
-                    onHorizontalDrag = { change, _ ->
-                        change.consume()
-                        val itemWidth = size.width / levelCount
-                        val index = (change.position.x / itemWidth).coerceIn(0f, (levelCount - 1).toFloat())
-                        val oldRound = dragProgress?.roundToInt() ?: -1
-                        val newRound = index.roundToInt()
-                        if (oldRound != newRound && oldRound != -1) {
-                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        }
-                        dragProgress = index
-                    },
-                    onDragEnd = {
-                        val targetIndex = (dragProgress ?: currentIndex.toFloat()).roundToInt().coerceIn(0, levelCount - 1)
-                        dragProgress = null
-                        if (levels[targetIndex] != currentLevel) {
-                            onSelectLevel(levels[targetIndex])
-                        }
-                    },
-                    onDragCancel = {
-                        dragProgress = null
-                    },
-                )
-            }
-            .padding(4.dp),
-    ) {
-        val availableWidth = maxWidth
-        val itemWidth = availableWidth / levelCount
-        val targetOffset = itemWidth * displayIndex
-        val animatedOffset by animateDpAsState(
-            targetValue = targetOffset,
-            animationSpec = if (dragProgress != null) tween(0)
-            else spring(
-                dampingRatio = Spring.DampingRatioLowBouncy,
-                stiffness = Spring.StiffnessMediumLow,
-            ),
-            label = "reasoningPillOffset",
-        )
+    val levelColor by animateColorAsState(
+        targetValue = reasoningLevelColor(activeLevel),
+        label = "energyColor",
+    )
+    val isMax = activeLevel == ReasoningLevel.MAX
+    val auroraBrush = reasoningAuroraNebulaBrush("energyBarAurora")
 
-        // The sliding pill indicator with stardust glow particles
-        Box(
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        // The Energy Bar Capsule
+        BoxWithConstraints(
             modifier = Modifier
-                .offset(x = animatedOffset)
-                .width(itemWidth)
-                .fillMaxHeight()
-                .clip(RoundedCornerShape(10.dp))
-                .then(
-                    if (isMax) Modifier.background(auroraBrush)
-                    else Modifier.background(levelColor.copy(alpha = 0.18f))
-                )
+                .fillMaxWidth()
+                .height(36.dp)
+                .clip(RoundedCornerShape(18.dp))
+                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
                 .border(
                     width = 1.dp,
-                    brush = if (isMax) auroraBrush else SolidColor(levelColor.copy(alpha = 0.65f)),
-                    shape = RoundedCornerShape(10.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                    shape = RoundedCornerShape(18.dp),
                 )
+                .pointerInput(Unit) {
+                    detectHorizontalDragGestures(
+                        onDragStart = { offset ->
+                            val idx = ((offset.x / size.width) * (levelCount - 1)).coerceIn(0f, (levelCount - 1).toFloat())
+                            dragProgress = idx
+                        },
+                        onHorizontalDrag = { change, _ ->
+                            change.consume()
+                            val idx = ((change.position.x / size.width) * (levelCount - 1)).coerceIn(0f, (levelCount - 1).toFloat())
+                            val oldRound = dragProgress?.roundToInt() ?: -1
+                            val newRound = idx.roundToInt()
+                            if (oldRound != newRound && oldRound != -1) {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            }
+                            dragProgress = idx
+                        },
+                        onDragEnd = {
+                            val target = (dragProgress ?: currentIndex.toFloat()).roundToInt().coerceIn(0, levelCount - 1)
+                            dragProgress = null
+                            if (levels[target] != currentLevel) {
+                                onSelectLevel(levels[target])
+                            }
+                        },
+                        onDragCancel = { dragProgress = null },
+                    )
+                },
         ) {
-            StardustGlowOverlay(
-                level = activeLevel,
-                modifier = Modifier.fillMaxSize(),
+            val totalWidth = maxWidth
+            val activeWidth = totalWidth * animatedFraction
+
+            // Active glowing energy surge with flowing wave animation
+            val transition = rememberInfiniteTransition(label = "energySurgeFlow")
+            val flowPhase by transition.animateFloat(
+                initialValue = 0f,
+                targetValue = 1f,
+                animationSpec = infiniteRepeatable(tween(3000, easing = LinearEasing)),
+                label = "flowWave",
             )
+            val crestPulse by transition.animateFloat(
+                initialValue = 0.6f,
+                targetValue = 1f,
+                animationSpec = infiniteRepeatable(
+                    tween(1000, easing = FastOutSlowInEasing),
+                    RepeatMode.Reverse
+                ),
+                label = "crestPulse",
+            )
+
+            if (activeWidth > 0.dp) {
+                val flowShift = flowPhase * 160.dp.value
+                val streamBrush = if (isMax) auroraBrush
+                else Brush.horizontalGradient(
+                    colors = listOf(
+                        SurgeGlowBlue.copy(alpha = 0.45f),
+                        levelColor.copy(alpha = 0.75f),
+                        SurgeGlowIndigo.copy(alpha = 0.85f),
+                        levelColor,
+                    ),
+                    startX = flowShift - 160.dp.value,
+                    endX = flowShift + 160.dp.value,
+                    tileMode = TileMode.Repeated,
+                )
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(activeWidth)
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(streamBrush)
+                ) {
+                    StardustGlowOverlay(
+                        level = activeLevel,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                    // Bright energy crest at the leading edge with breathing pulse
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .padding(end = 2.dp)
+                            .width(3.5.dp)
+                            .fillMaxHeight(0.7f)
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = crestPulse * 0.9f))
+                    )
+                }
+            }
+
+            // Ticks across the track
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                levels.forEachIndexed { index, level ->
+                    val covered = index <= displayIndex.roundToInt() && animatedFraction > 0.05f
+                    Box(
+                        modifier = Modifier
+                            .size(if (index == displayIndex.roundToInt()) 7.dp else 4.dp)
+                            .clip(CircleShape)
+                            .background(
+                                when {
+                                    index == displayIndex.roundToInt() -> Color.White
+                                    covered -> Color.White.copy(alpha = 0.65f)
+                                    else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.25f)
+                                }
+                            )
+                    )
+                }
+            }
         }
 
-        // Segment labels
+        // Discrete labels below the energy bar
         Row(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             levels.forEachIndexed { index, level ->
                 val isSelected = index == displayIndex.roundToInt()
-                Box(
+                Text(
+                    text = level.label(),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                    color = if (isSelected) {
+                        if (isMax) SurgeGlowPurple else levelColor
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    },
                     modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,
@@ -668,185 +735,10 @@ internal fun ReasoningSegmentedPicker(
                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                 onSelectLevel(level)
                             }
-                        },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = level.label(),
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                        color = if (isSelected) {
-                            if (isMax) Color.White else levelColor
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        },
-                        maxLines = 1,
-                        textAlign = TextAlign.Center,
-                    )
-                }
+                        }
+                        .padding(vertical = 4.dp, horizontal = 2.dp),
+                )
             }
-        }
-    }
-}
-
-/** One spark rising off the active bar; fields are fixed, position derives from the clock. */
-private data class SurgeParticle(
-    val xFrac: Float,   // home position along the active bar, 0..1
-    val offset: Float,  // clock phase offset, 0..1
-    val rise: Float,    // rise-height multiplier, 0.55..1.2
-    val radiusDp: Float,
-    val sway: Float,    // horizontal wobble multiplier, -1..1
-)
-
-private fun sinf(x: Float): Float = sin(x.toDouble()).toFloat()
-
-/**
- * The depth slider's track: inactive side in surfaceContainerHighest; the active side carries
- * the level's colour as a scrolling light band (period 3.4s at AUTO → 0.7s at MAX) over a
- * breathing halo, with sparks rising off the bar — more of them, faster, the deeper the level.
- * MAX swaps the band for a flowing rainbow. OFF is fully static. [level] is the previewed
- * level so the motion reacts while the finger is still on the thumb.
- */
-@Composable
-internal fun ReasoningSurgeTrack(sliderState: SliderState, level: ReasoningLevel) {
-    val base = reasoningLevelColor(level)
-    val inactive = MaterialTheme.colorScheme.surfaceContainerHighest
-    val ordinal = levels.indexOf(level).coerceAtLeast(0)
-    val intensity = ordinal / (levelCount - 1).toFloat()
-    val animated = level != ReasoningLevel.OFF
-    val isMax = level == ReasoningLevel.MAX
-    val flowPeriodMs = (3400 - (2600 * intensity)).roundToInt().coerceAtLeast(700)
-    val transition = rememberInfiniteTransition(label = "reasoningSurge")
-    val phase by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(flowPeriodMs, easing = LinearEasing)),
-        label = "flow",
-    )
-    val pulse by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            tween((flowPeriodMs / 2).coerceAtLeast(350), easing = FastOutSlowInEasing),
-            RepeatMode.Reverse,
-        ),
-        label = "pulse",
-    )
-    // Sparks: count (3→18) and rise speed (~2.3s→0.7s) both scale with depth.
-    val particleCount = (intensity * 18f).roundToInt()
-    val particlePeriodMs = (2300 - 1600 * intensity).roundToInt().coerceAtLeast(700)
-    val particleClock by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(particlePeriodMs, easing = LinearEasing)),
-        label = "particles",
-    )
-    val particles = remember(ordinal) {
-        List(particleCount) { i ->
-            val rnd = kotlin.random.Random(i.toLong() * 31 + 17)
-            SurgeParticle(
-                xFrac = rnd.nextFloat(),
-                offset = rnd.nextFloat(),
-                rise = 0.55f + 0.65f * rnd.nextFloat(),
-                radiusDp = 1.2f + 1.4f * rnd.nextFloat(),
-                sway = rnd.nextFloat() * 2f - 1f,
-            )
-        }
-    }
-    val range = sliderState.valueRange.endInclusive - sliderState.valueRange.start
-    val fraction =
-        if (range > 0f) ((sliderState.value - sliderState.valueRange.start) / range).coerceIn(0f, 1f)
-        else 0f
-
-    Canvas(modifier = Modifier.fillMaxWidth().height(32.dp)) {
-        val trackHeight = 8.dp.toPx()
-        val y = (size.height - trackHeight) / 2f
-        val radius = CornerRadius(trackHeight / 2f, trackHeight / 2f)
-        drawRoundRect(
-            color = inactive,
-            topLeft = Offset(0f, y),
-            size = Size(size.width, trackHeight),
-            cornerRadius = radius,
-        )
-        val activeWidth = size.width * fraction
-        if (activeWidth <= 0f) return@Canvas
-        if (!animated) {
-            drawRoundRect(
-                color = base.copy(alpha = 0.6f),
-                topLeft = Offset(0f, y),
-                size = Size(activeWidth, trackHeight),
-                cornerRadius = radius,
-            )
-            return@Canvas
-        }
-        // Flowing band: a repeated colour→dim→colour wave sliding along the track; a flowing
-        // rainbow at MAX.
-        val bandPeriod = (if (isMax) 200.dp else 140.dp).toPx()
-        val shift = phase * bandPeriod
-        val bandBrush = if (isMax) {
-            Brush.linearGradient(
-                colors = AuroraNebulaColors,
-                start = Offset(shift - bandPeriod, 0f),
-                end = Offset(shift, 0f),
-                tileMode = TileMode.Repeated,
-            )
-        } else {
-            Brush.linearGradient(
-                colorStops = arrayOf(
-                    0.0f to base,
-                    0.45f to base.copy(alpha = 0.45f),
-                    0.55f to base.copy(alpha = 0.45f),
-                    1.0f to base,
-                ),
-                start = Offset(shift - bandPeriod, 0f),
-                end = Offset(shift, 0f),
-                tileMode = TileMode.Repeated,
-            )
-        }
-        // Breathing halo behind the active side.
-        val haloAlpha = 0.06f + 0.20f * intensity * pulse
-        val haloTopLeft = Offset(0f, y - trackHeight * 0.75f)
-        val haloSize = Size(activeWidth, trackHeight * 2.5f)
-        val haloRadius = CornerRadius(trackHeight * 1.25f, trackHeight * 1.25f)
-        if (isMax) {
-            drawRoundRect(
-                brush = bandBrush,
-                topLeft = haloTopLeft,
-                size = haloSize,
-                cornerRadius = haloRadius,
-                alpha = haloAlpha,
-            )
-        } else {
-            drawRoundRect(
-                color = base,
-                topLeft = haloTopLeft,
-                size = haloSize,
-                cornerRadius = haloRadius,
-                alpha = haloAlpha,
-            )
-        }
-        drawRoundRect(
-            brush = bandBrush,
-            topLeft = Offset(0f, y),
-            size = Size(activeWidth, trackHeight),
-            cornerRadius = radius,
-        )
-        // Sparks rising off the bar, fading in then out over their rise.
-        val riseMax = trackHeight * 2f
-        val barCenterY = y + trackHeight / 2f
-        val rainbowSwatches = AuroraNebulaColors.size - 1
-        particles.forEachIndexed { i, p ->
-            val t = (particleClock + p.offset) % 1f
-            val px = activeWidth * p.xFrac +
-                sinf(t * 2f * PI.toFloat() + i.toFloat()) * trackHeight * 0.5f * p.sway
-            val py = barCenterY - t * riseMax * p.rise
-            val alpha = sinf(t * PI.toFloat()) * (0.45f + 0.45f * intensity)
-            drawCircle(
-                color = if (isMax) AuroraNebulaColors[i % rainbowSwatches] else base,
-                alpha = alpha,
-                radius = p.radiusDp.dp.toPx(),
-                center = Offset(px, py),
-            )
         }
     }
 }
@@ -854,12 +746,12 @@ internal fun ReasoningSurgeTrack(sliderState: SliderState, level: ReasoningLevel
 @Composable
 internal fun ReasoningLevel.label(): String = when (this) {
     ReasoningLevel.OFF -> stringResource(R.string.reasoning_off)
-    ReasoningLevel.AUTO -> stringResource(R.string.reasoning_auto)
-    ReasoningLevel.LOW -> stringResource(R.string.reasoning_light)
-    ReasoningLevel.MEDIUM -> stringResource(R.string.reasoning_medium)
-    ReasoningLevel.HIGH -> stringResource(R.string.reasoning_heavy)
-    ReasoningLevel.XHIGH -> stringResource(R.string.reasoning_xhigh)
-    ReasoningLevel.MAX -> stringResource(R.string.reasoning_max)
+    ReasoningLevel.AUTO -> "自动"
+    ReasoningLevel.LOW -> "Low"
+    ReasoningLevel.MEDIUM -> "Med"
+    ReasoningLevel.HIGH -> "High"
+    ReasoningLevel.XHIGH -> "XHigh"
+    ReasoningLevel.MAX -> "Max"
 }
 
 @Composable
