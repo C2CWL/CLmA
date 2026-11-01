@@ -26,13 +26,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.Dp
 
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -71,6 +65,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -79,7 +75,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -357,26 +352,6 @@ private val AuroraNebulaColors = listOf(
     Color(0xFF38BDF8),
 )
 
-/** The pill's MAX aurora nebula brush, drifting slowly and smoothly. */
-@Composable
-private fun reasoningAuroraNebulaBrush(label: String): Brush {
-    val transition = rememberInfiniteTransition(label = label)
-    val phase by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(4200, easing = LinearEasing)),
-        label = "auroraPhase",
-    )
-    val period = with(LocalDensity.current) { 140.dp.toPx() }
-    val shift = phase * period
-    return Brush.linearGradient(
-        colors = AuroraNebulaColors,
-        start = Offset(shift - period, 0f),
-        end = Offset(shift, 0f),
-        tileMode = TileMode.Repeated,
-    )
-}
-
 /** Stardust particle in the active pill indicator. */
 private data class Stardust(
     val xFraction: Float,
@@ -408,7 +383,7 @@ private fun StardustGlowOverlay(
     }
 
     val transition = rememberInfiniteTransition(label = "stardust")
-    val clock by transition.animateFloat(
+    val clock = transition.animateFloat(
         initialValue = 0f,
         targetValue = 2f * PI.toFloat(),
         animationSpec = infiniteRepeatable(tween(2800, easing = LinearEasing)),
@@ -420,7 +395,7 @@ private fun StardustGlowOverlay(
 
     Canvas(modifier = modifier.fillMaxSize()) {
         particles.forEach { p ->
-            val angle = clock * p.speed + p.phaseOffset
+            val angle = clock.value * p.speed + p.phaseOffset
             val alpha = (0.25f + 0.55f * ((sin(angle.toDouble()).toFloat() + 1f) / 2f)).coerceIn(0f, 1f)
             val swayX = sin((angle * 0.7).toDouble()).toFloat() * 4.dp.toPx()
             val swayY = sin((angle * 0.5).toDouble()).toFloat() * 2.dp.toPx()
@@ -439,42 +414,20 @@ private fun StardustGlowOverlay(
     }
 }
 
-/**
- * The thinking-depth word, enlarged (拍板 2026-10-17) and coloured to follow the surge bar:
- * the fixed level colour, or the bar's animated rainbow at MAX.
- */
+/** Immediate label updates avoid stacking outgoing words during rapid level changes. */
 @Composable
 internal fun ReasoningLevelWord(
     level: ReasoningLevel,
     style: TextStyle,
     modifier: Modifier = Modifier,
 ) {
-    AnimatedContent(
-        targetState = level,
+    Text(
+        text = level.label(),
+        style = style,
         modifier = modifier,
-        transitionSpec = {
-            val direction = if (targetState.ordinal > initialState.ordinal) 1 else -1
-            (slideInVertically(animationSpec = tween(180)) { direction * it / 2 } + fadeIn(tween(180))) togetherWith
-                (slideOutVertically(animationSpec = tween(180)) { -direction * it / 2 } + fadeOut(tween(120)))
-        },
-        label = "reasoningLevelWord",
-    ) { currentLevel ->
-        if (currentLevel == ReasoningLevel.MAX) {
-            Text(
-                text = currentLevel.label(),
-                style = style.copy(brush = reasoningAuroraNebulaBrush("reasoningWordAurora")),
-                fontWeight = FontWeight.Bold,
-            )
-        } else {
-            val wordColor by animateColorAsState(reasoningLevelColor(currentLevel), label = "reasoningWord")
-            Text(
-                text = currentLevel.label(),
-                style = style,
-                color = wordColor,
-                fontWeight = FontWeight.Bold,
-            )
-        }
-    }
+        color = reasoningLevelColor(level),
+        fontWeight = FontWeight.Bold,
+    )
 }
 
 
@@ -631,19 +584,15 @@ internal fun ReasoningEnergyBar(
     val activeLevel = levels[displayIndex.roundToInt().coerceIn(0, levelCount - 1)]
 
     val targetFraction = (displayIndex / (levelCount - 1).toFloat()).coerceIn(0f, 1f)
-    val animatedFraction by animateFloatAsState(
+    val animatedFraction = animateFloatAsState(
         targetValue = targetFraction,
         animationSpec = if (dragProgress != null) tween(0)
         else spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMediumLow),
         label = "energyBarFraction",
     )
 
-    val levelColor by animateColorAsState(
-        targetValue = reasoningLevelColor(activeLevel),
-        label = "energyColor",
-    )
+    val levelColor = reasoningLevelColor(activeLevel)
     val isMax = activeLevel == ReasoningLevel.MAX
-    val auroraBrush = reasoningAuroraNebulaBrush("energyBarAurora")
 
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -651,7 +600,7 @@ internal fun ReasoningEnergyBar(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         // The Energy Bar Capsule
-        BoxWithConstraints(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(36.dp)
@@ -714,109 +663,71 @@ internal fun ReasoningEnergyBar(
                     }
                 },
         ) {
-            val totalWidth = maxWidth
-            val activeWidth = totalWidth * animatedFraction
-
-            // Active glowing energy surge with flowing wave animation
             val transition = rememberInfiniteTransition(label = "energySurgeFlow")
-            val flowPhase by transition.animateFloat(
+            val flowPhase = transition.animateFloat(
                 initialValue = 0f,
                 targetValue = 1f,
                 animationSpec = infiniteRepeatable(tween(3000, easing = LinearEasing)),
                 label = "flowWave",
             )
-            val crestPulse by transition.animateFloat(
+            val crestPulse = transition.animateFloat(
                 initialValue = 0.6f,
                 targetValue = 1f,
                 animationSpec = infiniteRepeatable(
                     tween(1000, easing = FastOutSlowInEasing),
-                    RepeatMode.Reverse
+                    RepeatMode.Reverse,
                 ),
                 label = "crestPulse",
             )
-
-            if (activeWidth.value > 0f) {
-                val flowShift = flowPhase * 160.dp.value
-                val streamBrush = if (isMax) auroraBrush
-                else Brush.horizontalGradient(
-                    colors = listOf(
-                        SurgeGlowBlue.copy(alpha = 0.45f),
-                        levelColor.copy(alpha = 0.75f),
-                        SurgeGlowIndigo.copy(alpha = 0.85f),
-                        levelColor,
-                    ),
-                    startX = flowShift - 160.dp.value,
-                    endX = flowShift + 160.dp.value,
-                    tileMode = TileMode.Repeated,
-                )
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .width(activeWidth)
-                        .clip(RoundedCornerShape(18.dp))
-                        .background(streamBrush)
-                ) {
-                    StardustGlowOverlay(
-                        level = activeLevel,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopCenter)
-                            .fillMaxWidth()
-                            .fillMaxHeight(0.42f)
-                            .background(
-                                Brush.verticalGradient(
-                                    listOf(
-                                        Color.White.copy(alpha = 0.34f),
-                                        Color.Transparent,
-                                    ),
-                                ),
+            val inactiveTick = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.25f)
+            // Read frame-varying state only while drawing: no per-frame layout or composition.
+            Box(
+                Modifier.fillMaxSize().drawWithContent {
+                    val fraction = animatedFraction.value.coerceIn(0f, 1f)
+                    val activeWidth = size.width * fraction
+                    val radius = CornerRadius(18.dp.toPx())
+                    val period = 160.dp.toPx()
+                    val shift = flowPhase.value * period
+                    if (activeWidth > 0f) {
+                        val brush = Brush.horizontalGradient(
+                            colors = if (isMax) AuroraNebulaColors else listOf(
+                                SurgeGlowBlue.copy(alpha = 0.45f),
+                                levelColor.copy(alpha = 0.75f),
+                                SurgeGlowIndigo.copy(alpha = 0.85f),
+                                levelColor,
                             ),
-                    )
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.CenterEnd)
-                            .padding(end = 5.dp)
-                            .size(14.dp)
-                            .clip(CircleShape)
-                            .background(levelColor.copy(alpha = 0.35f * crestPulse)),
-                    )
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.CenterEnd)
-                            .padding(end = 8.dp)
-                            .size(8.dp)
-                            .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.92f * crestPulse)),
-                    )
-                }
-            }
-
-            // Ticks across the track
-            Row(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
+                            startX = shift - period,
+                            endX = shift + period,
+                            tileMode = TileMode.Repeated,
+                        )
+                        drawRoundRect(brush, size = Size(activeWidth, size.height), cornerRadius = radius)
+                        clipRect(right = activeWidth) { this@drawWithContent.drawContent() }
+                        drawRoundRect(
+                            brush = Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.34f), Color.Transparent)),
+                            size = Size(activeWidth, size.height * 0.42f),
+                            cornerRadius = radius,
+                        )
+                        val crest = Offset((activeWidth - 12.dp.toPx()).coerceAtLeast(0f), size.height / 2f)
+                        drawCircle(levelColor.copy(alpha = 0.35f * crestPulse.value), 7.dp.toPx(), crest)
+                        drawCircle(Color.White.copy(alpha = 0.92f * crestPulse.value), 4.dp.toPx(), crest)
+                    }
+                    val inset = 14.dp.toPx()
+                    levels.forEachIndexed { index, _ ->
+                        val selected = index == displayIndex.roundToInt()
+                        val covered = index <= displayIndex.roundToInt() && fraction > 0.05f
+                        drawCircle(
+                            color = when {
+                                selected -> Color.White
+                                covered -> Color.White.copy(alpha = 0.65f)
+                                else -> inactiveTick
+                            },
+                            radius = (if (selected) 3.5.dp else 2.dp).toPx(),
+                            center = Offset(inset + (size.width - inset * 2f) * index / (levelCount - 1), size.height / 2f),
+                        )
+                    }
+                },
             ) {
-                levels.forEachIndexed { index, level ->
-                    val covered = index <= displayIndex.roundToInt() && animatedFraction > 0.05f
-                    Box(
-                        modifier = Modifier
-                            .size(if (index == displayIndex.roundToInt()) 7.dp else 4.dp)
-                            .clip(CircleShape)
-                            .background(
-                                when {
-                                    index == displayIndex.roundToInt() -> Color.White
-                                    covered -> Color.White.copy(alpha = 0.65f)
-                                    else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.25f)
-                                }
-                            )
-                    )
-                }
+                StardustGlowOverlay(activeLevel)
             }
         }
 
