@@ -15,6 +15,7 @@ import android.graphics.Typeface
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.RippleDrawable
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -39,7 +40,7 @@ import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.PopupMenu
+import android.widget.PopupWindow
 import android.widget.ProgressBar
 import android.widget.ScrollView
 import android.widget.TextView
@@ -157,7 +158,7 @@ internal class EdgeBarChatBoxView(
     private lateinit var scroll: ScrollView
     private lateinit var list: LinearLayout
     private lateinit var input: EditText
-    private var conversationMenu: PopupMenu? = null
+    private var conversationMenu: PopupWindow? = null
 
     private var windowBackground: Drawable? = null
 
@@ -253,6 +254,7 @@ internal class EdgeBarChatBoxView(
     fun update(newState: State) {
         if (dialog == null) return
         val stick = isNearBottom()
+        if (state?.conversations != newState.conversations) conversationMenu?.dismiss()
         state = newState
         render(newState)
         if (stick) scrollToBottom()
@@ -484,29 +486,82 @@ internal class EdgeBarChatBoxView(
     }
 
     private fun showConversationMenu(anchorView: View) {
-        val conversations = state?.conversations.orEmpty()
+        conversationMenu?.dismiss()
+        val conversations = state?.conversations.orEmpty().filter { it.working }
+        // A popup has no cross-window blur: use the chat box's opaque fallback palette.
+        val p = ChatBoxPalette.of(dark, glass = false)
+        val rows = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(8), dp(8), dp(8), dp(8))
+        }
+        val content = ScrollView(context).apply {
+            isFillViewport = false
+            isVerticalScrollBarEnabled = false
+            addView(rows)
+        }
+        val popup = PopupWindow(
+            content,
+            minOf(root.width, dp(320)),
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            true,
+        ).apply {
+            setBackgroundDrawable(rounded(p.surface, dp(24).toFloat()).apply {
+                setStroke(dp(1), p.rim)
+            })
+            elevation = dp(12).toFloat()
+            isOutsideTouchable = true
+        }
         if (conversations.isEmpty()) {
-            callbacks.onSelectConversation()
-            return
+            rows.addView(TextView(context).apply {
+                text = context.getString(R.string.chat_box_no_generating_conversations)
+                setTextColor(p.subtitle)
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+                setPadding(dp(16), dp(20), dp(16), dp(20))
+            })
         }
-        val popup = PopupMenu(context, anchorView)
-        conversations.forEachIndexed { index, conversation ->
-            val title = conversation.title + if (conversation.working) {
-                " · ${context.getString(R.string.chat_box_working_short)}"
-            } else {
-                ""
+        conversations.forEach { conversation ->
+            val row = LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                minimumHeight = dp(56)
+                setPadding(dp(14), dp(12), dp(14), dp(12))
+                isSelected = conversation.selected
+                isFocusable = true
+                background = RippleDrawable(
+                    ColorStateList.valueOf(p.control),
+                    rounded(if (conversation.selected) p.statusBg else android.graphics.Color.TRANSPARENT, dp(16).toFloat()),
+                    rounded(android.graphics.Color.WHITE, dp(16).toFloat()),
+                )
+                addView(TextView(context).apply {
+                    text = conversation.title.ifBlank { context.getString(R.string.chat_box_untitled) }
+                    setTextColor(if (conversation.selected) p.accent else p.title)
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+                    typeface = if (conversation.selected) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
+                    maxLines = 2
+                    ellipsize = TextUtils.TruncateAt.END
+                }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+                if (conversation.selected) {
+                    addView(IconView(context, IconView.Kind.CHECK, p.accent),
+                        LinearLayout.LayoutParams(dp(20), dp(20)).apply { leftMargin = dp(12) })
+                }
+                setOnClickListener {
+                    popup.dismiss()
+                    callbacks.onConversationSelected(conversation.id)
+                }
             }
-            popup.menu.add(0, index, index, "$title\n${conversation.assistantName}")
-                .isCheckable = conversation.selected
+            rows.addView(row, LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT,
+            ).apply { topMargin = if (rows.childCount > 0) dp(4) else 0 })
         }
-        popup.menu.setGroupCheckable(0, true, true)
-        popup.setOnMenuItemClickListener { item ->
-            conversations.getOrNull(item.itemId)?.let { callbacks.onConversationSelected(it.id) }
-            true
-        }
-        popup.setOnDismissListener { conversationMenu = null }
+        val maxHeight = (root.height * 0.65f).toInt().coerceAtLeast(dp(56))
+        content.measure(
+            View.MeasureSpec.makeMeasureSpec(popup.width, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(maxHeight, View.MeasureSpec.AT_MOST),
+        )
+        popup.height = content.measuredHeight
+        popup.setOnDismissListener { if (conversationMenu === popup) conversationMenu = null }
         conversationMenu = popup
-        popup.show()
+        popup.showAsDropDown(anchorView, 0, dp(8), Gravity.START)
     }
 
     private fun render(s: State) {
