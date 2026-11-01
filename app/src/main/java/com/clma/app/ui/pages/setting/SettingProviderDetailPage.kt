@@ -39,7 +39,6 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
@@ -96,6 +95,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dokar.sonner.ToastType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import com.clma.app.ui.components.ui.AppAlertDialog
+import com.clma.app.ui.components.ui.DialogPrimaryButton
+import com.clma.app.ui.components.ui.DialogSecondaryButton
 import com.clma.ai.provider.BuiltInTools
 import com.clma.ai.provider.Modality
 import com.clma.ai.provider.Model
@@ -365,7 +367,7 @@ fun SettingProviderDetailPage(id: Uuid, vm: SettingVM = koinViewModel()) {
     }
 
     if (showClearAllModelsDialog) {
-        AlertDialog(
+        AppAlertDialog(
             onDismissRequest = { showClearAllModelsDialog = false },
             title = { Text(stringResource(R.string.confirm_delete)) },
             text = {
@@ -377,12 +379,13 @@ fun SettingProviderDetailPage(id: Uuid, vm: SettingVM = koinViewModel()) {
                 )
             },
             dismissButton = {
-                TextButton(onClick = { showClearAllModelsDialog = false }) {
+                DialogSecondaryButton(onClick = { showClearAllModelsDialog = false }) {
                     Text(stringResource(R.string.cancel))
                 }
             },
             confirmButton = {
-                TextButton(
+                DialogPrimaryButton(
+                    destructive = true,
                     onClick = {
                         showClearAllModelsDialog = false
                         exitModelSelection()
@@ -396,7 +399,7 @@ fun SettingProviderDetailPage(id: Uuid, vm: SettingVM = koinViewModel()) {
     }
 
     if (showDeleteSelectedModelsDialog) {
-        AlertDialog(
+        AppAlertDialog(
             onDismissRequest = { showDeleteSelectedModelsDialog = false },
             title = { Text(stringResource(R.string.confirm_delete)) },
             text = {
@@ -408,12 +411,13 @@ fun SettingProviderDetailPage(id: Uuid, vm: SettingVM = koinViewModel()) {
                 )
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteSelectedModelsDialog = false }) {
+                DialogSecondaryButton(onClick = { showDeleteSelectedModelsDialog = false }) {
                     Text(stringResource(R.string.cancel))
                 }
             },
             confirmButton = {
-                TextButton(
+                DialogPrimaryButton(
+                    destructive = true,
                     onClick = {
                         val deleting = selectedModelIds
                         showDeleteSelectedModelsDialog = false
@@ -549,7 +553,7 @@ private fun SettingProviderConfigPage(
 
     // Delete confirmation dialog
     if (showDeleteDialog) {
-        AlertDialog(
+        AppAlertDialog(
             onDismissRequest = { showDeleteDialog = false },
             title = {
                 Text(stringResource(R.string.confirm_delete))
@@ -558,12 +562,13 @@ private fun SettingProviderConfigPage(
                 Text(stringResource(R.string.setting_provider_page_delete_dialog_text))
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
+                DialogSecondaryButton(onClick = { showDeleteDialog = false }) {
                     Text(stringResource(R.string.cancel))
                 }
             },
             confirmButton = {
-                TextButton(
+                DialogPrimaryButton(
+                    destructive = true,
                     onClick = {
                         showDeleteDialog = false
                         onDelete()

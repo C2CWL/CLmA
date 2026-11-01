@@ -12,7 +12,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -48,6 +47,8 @@ import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ArrowRight01
 import me.rerere.hugeicons.stroke.View
 import me.rerere.hugeicons.stroke.ViewOff
+import com.clma.app.ui.components.ui.AppAlertDialog
+import com.clma.app.ui.components.ui.DialogPrimaryButton
 import com.clma.app.BuildConfig
 import com.clma.app.R
 import com.clma.app.data.datastore.NetworkSetting
@@ -169,7 +170,7 @@ fun SettingPreferencesNetworkPage(vm: SettingVM = koinViewModel()) {
     }
 
     if (proxyDialogVisible) {
-        AlertDialog(
+        AppAlertDialog(
             onDismissRequest = { proxyDialogVisible = false },
             modifier = Modifier.imePadding(),
             title = {
@@ -249,7 +250,7 @@ fun SettingPreferencesNetworkPage(vm: SettingVM = koinViewModel()) {
                 }
             },
             confirmButton = {
-                TextButton(
+                DialogPrimaryButton(
                     onClick = {
                         saveProxy()
                         proxyDialogVisible = false

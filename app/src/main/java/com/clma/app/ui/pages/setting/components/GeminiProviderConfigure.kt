@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -33,6 +32,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dokar.sonner.ToastType
 import kotlinx.coroutines.launch
+import com.clma.app.ui.components.ui.AppAlertDialog
+import com.clma.app.ui.components.ui.DialogPrimaryButton
+import com.clma.app.ui.components.ui.DialogSecondaryButton
 import com.clma.ai.provider.ProviderManager
 import com.clma.ai.provider.ProviderSetting
 import com.clma.app.R
@@ -240,12 +242,13 @@ private fun GeminiAccountCard(
     var showDeleteConfirmation by remember { mutableStateOf(false) }
 
     if (showDeleteConfirmation) {
-        AlertDialog(
+        AppAlertDialog(
             onDismissRequest = { showDeleteConfirmation = false },
             title = { Text(stringResource(R.string.gemini_remove_account_title)) },
             text = { Text(stringResource(R.string.gemini_remove_account_message)) },
             confirmButton = {
-                TextButton(
+                DialogPrimaryButton(
+                    destructive = true,
                     onClick = {
                         showDeleteConfirmation = false
                         onDelete()
@@ -253,12 +256,11 @@ private fun GeminiAccountCard(
                 ) {
                     Text(
                         stringResource(R.string.gemini_remove),
-                        color = MaterialTheme.colorScheme.error,
                     )
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteConfirmation = false }) {
+                DialogSecondaryButton(onClick = { showDeleteConfirmation = false }) {
                     Text(stringResource(R.string.cancel))
                 }
             },

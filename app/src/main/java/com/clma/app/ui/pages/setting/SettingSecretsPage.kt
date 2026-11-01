@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -28,7 +27,6 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -49,6 +47,9 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.clma.app.ui.components.ui.AppAlertDialog
+import com.clma.app.ui.components.ui.DialogPrimaryButton
+import com.clma.app.ui.components.ui.DialogSecondaryButton
 import com.clma.app.R
 import com.clma.app.data.secrets.AgentSecretsStore
 import com.clma.app.data.secrets.SecretEntry
@@ -395,12 +396,13 @@ fun SettingSecretsPage() {
     }
 
     pendingDelete?.let { name ->
-        AlertDialog(
+        AppAlertDialog(
             onDismissRequest = { pendingDelete = null },
             title = { Text(stringResource(R.string.setting_secrets_page_delete_confirm_title, name)) },
             text = { Text(stringResource(R.string.setting_secrets_page_delete_confirm_body)) },
             confirmButton = {
-                TextButton(
+                DialogPrimaryButton(
+                    destructive = true,
                     onClick = {
                         secretsStore.remove(name)
                         reload()
@@ -411,12 +413,11 @@ fun SettingSecretsPage() {
                 ) {
                     Text(
                         text = stringResource(R.string.setting_secrets_page_delete),
-                        color = MaterialTheme.colorScheme.error,
                     )
                 }
             },
             dismissButton = {
-                TextButton(onClick = { pendingDelete = null }) {
+                DialogSecondaryButton(onClick = { pendingDelete = null }) {
                     Text(stringResource(R.string.setting_ssh_page_cancel))
                 }
             },
@@ -441,7 +442,7 @@ private fun SecretEditorDialog(
     val nameOk = isValidName(name)
     val canSave = (editing || nameOk) && value.isNotBlank()
 
-    AlertDialog(
+    AppAlertDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
@@ -485,12 +486,12 @@ private fun SecretEditorDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSave(name, value) }, enabled = canSave) {
+            DialogPrimaryButton(onClick = { onSave(name, value) }, enabled = canSave) {
                 Text(stringResource(R.string.setting_ssh_page_save))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            DialogSecondaryButton(onClick = onDismiss) {
                 Text(stringResource(R.string.setting_ssh_page_cancel))
             }
         },

@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -22,7 +21,6 @@ import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -36,6 +34,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.clma.app.ui.components.ui.AppAlertDialog
+import com.clma.app.ui.components.ui.DialogPrimaryButton
+import com.clma.app.ui.components.ui.DialogSecondaryButton
 import com.clma.app.R
 import com.clma.app.data.datastore.CompactionEngine
 import com.clma.app.data.datastore.AutoCompactionThresholdMode
@@ -484,7 +485,7 @@ private fun TimezoneSelectDialog(
     var customInput by remember { mutableStateOf("") }
     var error by remember { mutableStateOf(false) }
 
-    AlertDialog(
+    AppAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.setting_runtime_timezone_dialog_title)) },
         text = {
@@ -534,7 +535,7 @@ private fun TimezoneSelectDialog(
             }
         },
         confirmButton = {
-            TextButton(
+            DialogPrimaryButton(
                 onClick = {
                     val trimmed = customInput.trim()
                     if (trimmed.isEmpty()) {
@@ -553,7 +554,7 @@ private fun TimezoneSelectDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            DialogSecondaryButton(onClick = onDismiss) {
                 Text(stringResource(R.string.assistant_page_cancel))
             }
         },

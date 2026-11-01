@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.MaterialTheme
@@ -41,6 +40,9 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import com.clma.app.ui.components.ui.AppAlertDialog
+import com.clma.app.ui.components.ui.DialogPrimaryButton
+import com.clma.app.ui.components.ui.DialogSecondaryButton
 import com.clma.app.R
 import com.clma.app.Screen
 import com.clma.app.data.db.entity.ScheduledJobEntity
@@ -97,23 +99,22 @@ fun ScheduledJobDetailScreen(
     }
 
     if (showDeleteConfirm) {
-        AlertDialog(
+        AppAlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
             title = { Text(stringResource(R.string.setting_page_scheduled_jobs_delete_confirm_title)) },
             text = { Text(stringResource(R.string.setting_page_scheduled_jobs_delete_confirm_body)) },
             confirmButton = {
-                TextButton(onClick = {
+                DialogPrimaryButton(destructive = true, onClick = {
                     showDeleteConfirm = false
                     vm.delete(current.id) { nav.popBackStack() }
                 }) {
                     Text(
                         stringResource(R.string.setting_page_scheduled_jobs_delete_confirm_yes),
-                        color = MaterialTheme.colorScheme.error,
                     )
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteConfirm = false }) {
+                DialogSecondaryButton(onClick = { showDeleteConfirm = false }) {
                     Text(stringResource(R.string.setting_page_scheduled_jobs_delete_confirm_no))
                 }
             },
