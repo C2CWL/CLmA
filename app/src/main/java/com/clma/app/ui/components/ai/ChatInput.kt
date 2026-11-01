@@ -40,7 +40,6 @@ import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -48,7 +47,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -92,14 +90,13 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 import com.clma.ai.core.ReasoningLevel
 import com.clma.ai.provider.Model
-import com.clma.ai.provider.ModelAbility
 import com.clma.ai.provider.ModelType
 import com.clma.ai.provider.ProviderSetting
 import com.clma.ai.ui.UIMessagePart
 import com.clma.asr.ASRStatus
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Add01
-import me.rerere.hugeicons.stroke.Brain02
+import me.rerere.hugeicons.stroke.Cpu
 import me.rerere.hugeicons.stroke.ArrowUp02
 import me.rerere.hugeicons.stroke.Cancel01
 import me.rerere.hugeicons.stroke.Fullscreen
@@ -464,7 +461,7 @@ fun ChatInput(
                             ) {
                                 if (!cleanLayout) moreButton()
 
-                                // Model, with thinking depth on the same entry. The name is capped so a
+                                // Model selection. The name is capped so a
                                 // long id cannot push the field off the pill; the sheet shows the full one.
                                 ModelReasoningChip(
                                     settings = settings,
@@ -480,7 +477,7 @@ fun ChatInput(
                                     onUpdateSearchService = onUpdateSearchService,
                                 )
 
-                                // Clean layout groups the tools on the left: model, then search.
+                                // Clean layout groups the tools on the left: model, then reasoning.
                                 if (cleanLayout) reasoningButton()
                             }
                         },
@@ -590,10 +587,10 @@ internal fun compactModelLabel(name: String): String =
     name.replace(modelDateSuffix, "").ifBlank { name }
 
 /**
- * One entry for the chat model and, when the model can reason, its thinking depth.
+ * Model selection entry; thinking depth has its own button beside it.
  * Collapsed, only the icon: the name was what wrapped a five-character hint onto two lines.
  * The name comes back once the bar opens and the field has its own row. The sheet is the model
- * list with the depth slider on top.
+ * list with the search and agent controls on top.
  */
 @Composable
 private fun ModelReasoningChip(
@@ -611,8 +608,6 @@ private fun ModelReasoningChip(
 ) {
     val model = settings.resolveChatModel(conversationChatModelId, assistant.id)
     val effectiveModelId = model?.id
-    val showReasoning = model?.abilities?.contains(ModelAbility.REASONING) == true
-    val level = model?.reasoningLevel ?: assistant.reasoningLevel
     val modelListState = rememberModelListState(
         modelId = effectiveModelId,
         providers = settings.providers,
@@ -646,27 +641,11 @@ private fun ModelReasoningChip(
                     )
                 } else {
                     Icon(
-                        imageVector = HugeIcons.Brain02,
+                        imageVector = HugeIcons.Cpu,
                         contentDescription = null,
                         modifier = Modifier.size(18.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                }
-                if (showReasoning && level.isEnabled) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .size(12.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.surface),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        CompositionLocalProvider(
-                            LocalContentColor provides MaterialTheme.colorScheme.primary,
-                        ) {
-                            ReasoningIcon(level = level, modifier = Modifier.size(10.dp))
-                        }
-                    }
                 }
             }
             // Name only on the open bar. On the pill it stole the hint's line.
