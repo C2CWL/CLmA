@@ -1140,7 +1140,7 @@ class GenerationLoop(
                 val updatedTools = ArrayList<UIMessagePart.Tool>(toolCalls.size)
                 for (tool in toolCalls) {
                     val toolDef = toolsInternal.find { it.name == tool.toolName }
-                    // HARDLINE check: certain command patterns (rm -rf /, mkfs, shutdown,
+                    // HARDLINE check: destructive command patterns (rm -rf /, mkfs,
                     // fork bomb, …) are blocked unconditionally — even "Always Allow"
                     // can't override. We check BEFORE the auto-approval lookup so a
                     // permanently-allowed termux/ssh tool still can't smuggle one of
@@ -1148,7 +1148,7 @@ class GenerationLoop(
                     // reason, the regular Denied branch downstream emits an error
                     // envelope to the model without executing.
                     val hardlineReason = com.clma.app.data.ai.tools
-                        .HardlineCommandGuard.checkTool(tool.toolName, tool.input)
+                        .HardlineCommandGuard.checkTool(tool.toolName, tool.input, allowSshPower = true)
                     val transformed = when {
                         hardlineReason != null && tool.approvalState is ToolApprovalState.Auto -> {
                             Log.w(TAG, "hardline-blocked ${tool.toolName}: $hardlineReason")
@@ -1158,6 +1158,21 @@ class GenerationLoop(
                                     "circumstances. If the user genuinely needs it, they " +
                                     "should run it themselves in a terminal outside the agent."
                             ))
+                        }
+                        com.clma.app.data.ai.tools.HardlineCommandGuard
+                            .requiresSshPowerApproval(tool.toolName, tool.input) &&
+                            tool.approvalState is ToolApprovalState.Auto -> {
+                            val headless = conversationId?.let {
+                                com.clma.app.data.ai.tools.HeadlessConversations.shouldAutoApprove(it)
+                            } ?: false
+                            if (headless) {
+                                tool.copy(approvalState = ToolApprovalState.Denied(
+                                    "SSH power operation requires per-call approval; no approval channel is available."
+                                ))
+                            } else {
+                                hasPendingApproval = true
+                                tool.copy(approvalState = ToolApprovalState.Pending)
+                            }
                         }
                         // Tool needs approval and state is Auto:
                         toolDef?.needsApproval(tool.inputAsJson()) == true &&
@@ -1293,7 +1308,14 @@ class GenerationLoop(
                         // state from an old DB row (pre-hardline schema, direct DB edit) can
                         // never execute via the resume path.
                         val resumeHardlineReason = com.clma.app.data.ai.tools
-                            .HardlineCommandGuard.checkTool(tool.toolName, tool.input)
+                            .HardlineCommandGuard.checkTool(
+                                tool.toolName,
+                                tool.input,
+                                allowSshPower = tool.approvalState is ToolApprovalState.Approved &&
+                                    !(conversationId?.let {
+                                        com.clma.app.data.ai.tools.HeadlessConversations.shouldAutoApprove(it)
+                                    } ?: false),
+                            )
                         if (resumeHardlineReason != null) {
                             Log.w(TAG, "generateText: resume-path hardline re-check blocked ${tool.toolName}: $resumeHardlineReason")
                             executedTools += tool.copy(
