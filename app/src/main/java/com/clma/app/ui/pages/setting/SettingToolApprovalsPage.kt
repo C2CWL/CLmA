@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.FilterChip
@@ -48,6 +47,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
+import com.clma.app.ui.components.ui.AppAlertDialog
+import com.clma.app.ui.components.ui.DialogPrimaryButton
+import com.clma.app.ui.components.ui.DialogSecondaryButton
 import com.clma.app.ui.components.ai.ToolDisplayHeadline
 import com.clma.app.ui.components.ai.ToolDisplaySupporting
 import com.clma.app.ui.components.ai.rememberToolDisplaySearchText
@@ -114,7 +116,7 @@ fun SettingToolApprovalsPage() {
         )
     }
     if (pendingAuto) {
-        AlertDialog(
+        AppAlertDialog(
             onDismissRequest = { pendingAuto = false },
             title = {
                 Text(
@@ -126,18 +128,17 @@ fun SettingToolApprovalsPage() {
                 Text(stringResource(R.string.setting_page_tool_approvals_auto_dialog_body))
             },
             confirmButton = {
-                TextButton(onClick = {
+                DialogPrimaryButton(destructive = true, onClick = {
                     pendingAuto = false
                     scope.launch { prefs.setMode(ApprovalMode.AUTO) }
                 }) {
                     Text(
                         text = stringResource(R.string.setting_page_tool_approvals_auto_dialog_confirm),
-                        color = MaterialTheme.colorScheme.error,
                     )
                 }
             },
             dismissButton = {
-                TextButton(onClick = { pendingAuto = false }) {
+                DialogSecondaryButton(onClick = { pendingAuto = false }) {
                     Text(stringResource(R.string.setting_page_tool_approvals_auto_dialog_cancel))
                 }
             },
@@ -538,7 +539,7 @@ private fun FloorWaiverDialog(
         stringResource(R.string.setting_page_tool_approvals_waiver_risk_injection) to false,
         stringResource(R.string.setting_page_tool_approvals_waiver_risk_unattended) to false,
     )
-    AlertDialog(
+    AppAlertDialog(
         onDismissRequest = onDismiss,
         icon = { Text("⚠", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.error) },
         title = {
@@ -593,19 +594,14 @@ private fun FloorWaiverDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onConfirm, enabled = accepted) {
+            DialogPrimaryButton(destructive = true, onClick = onConfirm, enabled = accepted) {
                 Text(
                     text = stringResource(R.string.setting_page_tool_approvals_waiver_confirm),
-                    color = if (accepted) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                    },
                 )
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            DialogSecondaryButton(onClick = onDismiss) {
                 Text(stringResource(R.string.setting_page_tool_approvals_waiver_cancel))
             }
         },

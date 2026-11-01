@@ -30,7 +30,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -82,6 +81,9 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import com.clma.app.ui.components.ui.AppAlertDialog
+import com.clma.app.ui.components.ui.DialogPrimaryButton
+import com.clma.app.ui.components.ui.DialogSecondaryButton
 import com.clma.ai.core.InputSchema
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Add01
@@ -265,7 +267,7 @@ private fun McpServerItem(
     errorDetail?.let { error ->
         val context = LocalContext.current
         val fullText = error.detail ?: error.message
-        AlertDialog(
+        AppAlertDialog(
             onDismissRequest = { errorDetail = null },
             title = { Text(item.commonOptions.name.ifBlank { "MCP" }) },
             text = {
@@ -280,7 +282,7 @@ private fun McpServerItem(
                 }
             },
             confirmButton = {
-                TextButton(
+                DialogPrimaryButton(
                     onClick = {
                         context.writeClipboardText(fullText)
                         errorDetail = null
@@ -290,7 +292,7 @@ private fun McpServerItem(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { errorDetail = null }) {
+                DialogSecondaryButton(onClick = { errorDetail = null }) {
                     Text(stringResource(R.string.cancel))
                 }
             },

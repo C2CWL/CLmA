@@ -33,9 +33,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEachIndexed
 import com.clma.app.ui.theme.CustomColors
 
-private val CardGroupCorner = 20.dp
-private val CardGroupItemSpacing = 2.dp
-private val CardGroupInnerCorner = 4.dp
+private val CardGroupCorner = 24.dp
+private val CardGroupItemSpacing = 0.dp
+private val CardGroupInnerCorner = 0.dp
 
 private data class CardGroupItem(
     val onClick: (() -> Unit)?,

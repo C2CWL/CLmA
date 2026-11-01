@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.foundation.clickable
 import androidx.compose.material3.Card
@@ -51,6 +50,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.HorizontalDivider
+import com.clma.app.ui.components.ui.AppAlertDialog
+import com.clma.app.ui.components.ui.DialogPrimaryButton
+import com.clma.app.ui.components.ui.DialogSecondaryButton
 import com.clma.ai.provider.Model
 import com.clma.ai.provider.OpenRouterRouting
 import me.rerere.hugeicons.HugeIcons
@@ -1736,12 +1738,12 @@ private fun InstalledModelRow(
     }
 
     if (confirmDelete) {
-        AlertDialog(
+        AppAlertDialog(
             onDismissRequest = { confirmDelete = false },
             title = { Text(stringResource(R.string.local_llm_delete_confirm_title)) },
             text = { Text(stringResource(R.string.local_llm_delete_confirm_message, model.displayName)) },
             confirmButton = {
-                TextButton(onClick = {
+                DialogPrimaryButton(destructive = true, onClick = {
                     confirmDelete = false
                     onDelete()
                 }) {
@@ -1749,7 +1751,7 @@ private fun InstalledModelRow(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { confirmDelete = false }) {
+                DialogSecondaryButton(onClick = { confirmDelete = false }) {
                     Text(stringResource(R.string.cancel))
                 }
             },

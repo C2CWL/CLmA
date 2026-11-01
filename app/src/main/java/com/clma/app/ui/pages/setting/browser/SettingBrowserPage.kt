@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.LargeFlexibleTopAppBar
@@ -34,6 +33,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dokar.sonner.ToastType
+import com.clma.app.ui.components.ui.AppAlertDialog
+import com.clma.app.ui.components.ui.DialogPrimaryButton
+import com.clma.app.ui.components.ui.DialogSecondaryButton
 import com.clma.app.R
 import com.clma.app.browser.BrowserActivity
 import com.clma.app.browser.BrowserSearchEngines
@@ -78,12 +80,12 @@ fun SettingBrowserPage(
     val cleared = stringResource(R.string.setting_browser_clear_data_done)
 
     if (showClearConfirm) {
-        AlertDialog(
+        AppAlertDialog(
             onDismissRequest = { showClearConfirm = false },
             title = { Text(stringResource(R.string.setting_browser_clear_data_confirm_title)) },
             text = { Text(stringResource(R.string.setting_browser_clear_data_confirm_body)) },
             confirmButton = {
-                TextButton(onClick = {
+                DialogPrimaryButton(destructive = true, onClick = {
                     showClearConfirm = false
                     vm.clearBrowsingData(ctx) {
                         toaster.show(cleared, type = ToastType.Success)
@@ -93,7 +95,7 @@ fun SettingBrowserPage(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showClearConfirm = false }) {
+                DialogSecondaryButton(onClick = { showClearConfirm = false }) {
                     Text(stringResource(android.R.string.cancel))
                 }
             },

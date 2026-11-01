@@ -3322,4 +3322,6 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="subagent_notification_status_timed_out">timed out</string>
     <string name="chat_box_select_conversation">Select conversation</string>
     <string name="chat_box_working_short">Working</string>
+  <string name="setting_hub_expanded">Expanded</string>
+  <string name="setting_hub_collapsed">Collapsed</string>
 </resources>

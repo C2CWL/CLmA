@@ -10,14 +10,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
@@ -34,6 +32,9 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import com.clma.app.ui.components.ui.AppAlertDialog
+import com.clma.app.ui.components.ui.DialogPrimaryButton
+import com.clma.app.ui.components.ui.DialogSecondaryButton
 import com.clma.ai.core.Tool
 import com.clma.ai.provider.ModelType
 import com.clma.ai.provider.ProviderManager
@@ -79,7 +80,7 @@ fun ProviderConnectionTester(
             streamingText = ""
         }
 
-        AlertDialog(
+        AppAlertDialog(
             onDismissRequest = { showTestDialog = false },
             title = {
                 Text(stringResource(R.string.setting_provider_page_test_connection))
@@ -115,14 +116,14 @@ fun ProviderConnectionTester(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showTestDialog = false }) {
+                DialogSecondaryButton(onClick = { showTestDialog = false }) {
                     Text(stringResource(R.string.cancel))
                 }
             },
             confirmButton = {
-                TextButton(
+                DialogPrimaryButton(
                     onClick = {
-                        if (model == null) return@TextButton
+                        if (model == null) return@DialogPrimaryButton
                         val provider = providerManager.getProviderByType(internalProvider)
                         resetStates()
                         scope.launch {
