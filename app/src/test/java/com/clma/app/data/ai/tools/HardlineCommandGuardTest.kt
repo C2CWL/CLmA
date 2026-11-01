@@ -12,6 +12,29 @@ import org.junit.Test
  */
 class HardlineCommandGuardTest {
 
+    @Test fun `SSH power operations require explicit approval exception`() {
+        for (name in listOf("ssh_exec", "ssh_exec_saved")) {
+            for (command in listOf("sudo reboot", "shutdown -h now", "systemctl reboot", "init 6", "telinit 0")) {
+                val input = """{"command":"$command"}"""
+                org.junit.Assert.assertTrue(HardlineCommandGuard.requiresSshPowerApproval(name, input))
+                assertNotNull(HardlineCommandGuard.checkTool(name, input))
+                assertNull(HardlineCommandGuard.checkTool(name, input, allowSshPower = true))
+            }
+            val destructive = """{"command":"reboot; rm -rf /"}"""
+            org.junit.Assert.assertFalse(HardlineCommandGuard.requiresSshPowerApproval(name, destructive))
+            assertNotNull(HardlineCommandGuard.checkTool(name, destructive, allowSshPower = true))
+            org.junit.Assert.assertFalse(HardlineCommandGuard.requiresSshPowerApproval(name, """{"command":"uptime"}"""))
+        }
+    }
+
+    @Test fun `SSH exception never relaxes phone workspace or MCP tools`() {
+        for (name in listOf("shizuku_exec", "root_exec", "termux_run_command", "workspace_shell", "mcp__remote__exec")) {
+            val input = """{"command":"reboot"}"""
+            org.junit.Assert.assertFalse(HardlineCommandGuard.requiresSshPowerApproval(name, input))
+            assertNotNull(HardlineCommandGuard.checkTool(name, input, allowSshPower = true))
+        }
+    }
+
     // -----------------------------------------------------------------------
     // Positive: hardline patterns MUST block
     // -----------------------------------------------------------------------

@@ -14,11 +14,11 @@ import kotlinx.serialization.json.jsonPrimitive
  *
  * Patterns here are blocked BEFORE any approval prompt and BEFORE any allow-list check.
  * Even if the user has granted "Always Allow" for the parent tool (e.g. termux_run_command),
- * a hardline-matching command never runs. There is no way to override hardline through the
- * UI — that's the whole point. If the user genuinely needs to run something on this list,
- * they should run it themselves in a terminal, not through the agent.
+ * a hardline-matching command never runs, except direct SSH power operations approved
+ * for that specific call in GenerationLoop. All other callers retain the unconditional
+ * default; permanent tool grants never authorize power operations.
  *
- * The list is deliberately tiny: only commands with no recovery path.
+ * The list is deliberately tiny: destructive commands and system power operations.
  *   - filesystem destruction rooted at /, $HOME, /etc, /usr, /var, etc. (incl. descendants)
  *   - raw block device overwrites (dd of=/dev/sd*, > /dev/sd*)
  *   - kernel shutdown / reboot / halt
@@ -100,11 +100,6 @@ object HardlineCommandGuard {
         Regex(":\\(\\)\\s*\\{\\s*:\\s*\\|\\s*:\\s*&\\s*\\}\\s*;\\s*:") to "fork bomb",
         // Kill every process
         Regex("\\bkill\\s+(-[^\\s]+\\s+)*-1\\b", IGNORE_CASE) to "kill all processes",
-        // System shutdown / reboot — at command position OR inside a shell-eval `-c "…"`
-        Regex(CMD_POS + "(shutdown|reboot|halt|poweroff)\\b", IGNORE_CASE) to "system shutdown/reboot",
-        Regex(CMD_POS + "init\\s+[06]\\b", IGNORE_CASE) to "init 0/6 (shutdown/reboot)",
-        Regex(CMD_POS + "systemctl\\s+(poweroff|reboot|halt|kexec)\\b", IGNORE_CASE) to "systemctl poweroff/reboot",
-        Regex(CMD_POS + "telinit\\s+[06]\\b", IGNORE_CASE) to "telinit 0/6 (shutdown/reboot)",
         // Encoded-payload pipe-to-shell — `base64 -d` / `xxd -r` / hex `printf` whose output
         // is piped straight into a shell. This is how regex-floor circumvention is actually
         // attempted in practice ("echo cm0gLXJmIC8= | base64 -d | sh"). We can't decode the
@@ -119,15 +114,31 @@ object HardlineCommandGuard {
             "eval of subshell command substitution",
     )
 
+    private val POWER_PATTERNS: List<Pair<Regex, String>> = listOf(
+        // System shutdown / reboot — at command position OR inside a shell-eval `-c "…"`
+        Regex(CMD_POS + "(shutdown|reboot|halt|poweroff)\\b", IGNORE_CASE) to "system shutdown/reboot",
+        Regex(CMD_POS + "init\\s+[06]\\b", IGNORE_CASE) to "init 0/6 (shutdown/reboot)",
+        Regex(CMD_POS + "systemctl\\s+(poweroff|reboot|halt|kexec)\\b", IGNORE_CASE) to "systemctl poweroff/reboot",
+        Regex(CMD_POS + "telinit\\s+[06]\\b", IGNORE_CASE) to "telinit 0/6 (shutdown/reboot)",
+    )
+
+    /** Only direct SSH commands may request a per-call power-operation approval. */
+    fun requiresSshPowerApproval(toolName: String, inputJson: String): Boolean =
+        (toolName == "ssh_exec" || toolName == "ssh_exec_saved") &&
+            checkTool(toolName, inputJson) != null &&
+            checkTool(toolName, inputJson, allowSshPower = true) == null
+
     /**
      * Check whether a raw command string matches any hardline pattern.
      * Returns the human-readable reason if blocked, or null if safe.
      * Case-insensitive; the input is lowercased before matching.
      */
-    fun checkCommand(command: String?): String? {
+    fun checkCommand(command: String?): String? = checkCommand(command, allowPower = false)
+
+    private fun checkCommand(command: String?, allowPower: Boolean): String? {
         if (command.isNullOrEmpty()) return null
         val normalised = command.lowercase()
-        for ((pattern, reason) in PATTERNS) {
+        for ((pattern, reason) in if (allowPower) PATTERNS else PATTERNS + POWER_PATTERNS) {
             if (pattern.containsMatchIn(normalised)) return reason
         }
         return null
@@ -144,19 +155,19 @@ object HardlineCommandGuard {
      * the call is refused. This is the floor; a clueful MCP server should also gate
      * its own destructive tools with its own approval.
      */
-    fun checkTool(toolName: String, inputJson: String): String? {
+    fun checkTool(toolName: String, inputJson: String, allowSshPower: Boolean = false): String? {
         if (inputJson.isBlank()) return null
         val obj = runCatching {
             kotlinx.serialization.json.Json.parseToJsonElement(inputJson).jsonObject
         }.getOrNull() ?: return null
-        return checkToolParsed(toolName, obj)
+        return checkToolParsed(toolName, obj, allowSshPower)
     }
 
     /**
      * Convenience for callers that already have a parsed JsonObject (e.g. tool execution
      * paths). Mirrors [checkTool] but skips the parse step.
      */
-    fun checkToolParsed(toolName: String, input: JsonObject): String? {
+    fun checkToolParsed(toolName: String, input: JsonObject, allowSshPower: Boolean = false): String? {
         return when {
             toolName == "termux_run_command" -> {
                 val cmd = input["command"]?.jsonPrimitive?.contentOrNull
@@ -170,7 +181,7 @@ object HardlineCommandGuard {
                 } else null
             }
             toolName == "ssh_exec" || toolName == "ssh_exec_saved" ->
-                checkCommand(input["command"]?.jsonPrimitive?.contentOrNull)
+                checkCommand(input["command"]?.jsonPrimitive?.contentOrNull, allowPower = allowSshPower)
             toolName == "shizuku_exec" ->
                 checkCommand(input["command"]?.jsonPrimitive?.contentOrNull)
             // root_exec runs the command as UID 0 through `su -c`, and the workspace shell tools
