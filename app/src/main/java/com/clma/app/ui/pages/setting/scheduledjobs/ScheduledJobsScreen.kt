@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.ListItem
@@ -37,6 +36,8 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
+import com.clma.app.ui.components.ui.AppAlertDialog
+import com.clma.app.ui.components.ui.DialogPrimaryButton
 import com.clma.app.R
 import com.clma.app.Screen
 import com.clma.app.data.db.entity.ScheduledJobEntity
@@ -56,12 +57,12 @@ fun ScheduledJobsScreen(vm: ScheduledJobsViewModel = koinViewModel()) {
     var showHowItWorks by remember { mutableStateOf(false) }
 
     if (showHowItWorks) {
-        AlertDialog(
+        AppAlertDialog(
             onDismissRequest = { showHowItWorks = false },
             title = { Text(stringResource(R.string.setting_page_scheduled_jobs_how_it_works_title)) },
             text = { Text(stringResource(R.string.setting_page_scheduled_jobs_how_it_works_body)) },
             confirmButton = {
-                TextButton(onClick = { showHowItWorks = false }) {
+                DialogPrimaryButton(onClick = { showHowItWorks = false }) {
                     Text(stringResource(R.string.setting_page_scheduled_jobs_how_it_works_dismiss))
                 }
             },

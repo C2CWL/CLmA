@@ -24,7 +24,6 @@ import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -60,6 +59,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.launch
+import com.clma.app.ui.components.ui.AppAlertDialog
+import com.clma.app.ui.components.ui.DialogPrimaryButton
+import com.clma.app.ui.components.ui.DialogSecondaryButton
 import com.clma.app.data.datastore.SettingsStore
 import com.clma.app.data.db.entity.GenMediaEntity
 import com.clma.app.data.db.entity.ManagedFileEntity
@@ -140,12 +142,13 @@ fun SettingFilesPage(
             is PendingDelete.Managed -> target.file.displayName
             is PendingDelete.Generated -> File(target.media.path).name
         }
-        AlertDialog(
+        AppAlertDialog(
             onDismissRequest = { pendingDelete = null },
             title = { Text(title) },
             text = { Text(label) },
             confirmButton = {
-                TextButton(
+                DialogPrimaryButton(
+                    destructive = true,
                     onClick = {
                         pendingDelete = null
                         scope.launch {
@@ -166,7 +169,7 @@ fun SettingFilesPage(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { pendingDelete = null }) {
+                DialogSecondaryButton(onClick = { pendingDelete = null }) {
                     Text(stringResource(R.string.setting_files_page_cancel_action))
                 }
             }

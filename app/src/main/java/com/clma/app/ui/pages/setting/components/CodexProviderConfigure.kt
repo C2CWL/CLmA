@@ -10,7 +10,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -33,6 +32,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dokar.sonner.ToastType
 import kotlinx.coroutines.launch
+import com.clma.app.ui.components.ui.AppAlertDialog
+import com.clma.app.ui.components.ui.DialogPrimaryButton
+import com.clma.app.ui.components.ui.DialogSecondaryButton
 import com.clma.ai.provider.Model
 import com.clma.ai.provider.ProviderManager
 import com.clma.ai.provider.ProviderSetting
@@ -235,12 +237,13 @@ private fun CodexAccountCard(
     var showDeleteConfirmation by remember { mutableStateOf(false) }
 
     if (showDeleteConfirmation) {
-        AlertDialog(
+        AppAlertDialog(
             onDismissRequest = { showDeleteConfirmation = false },
             title = { Text(stringResource(R.string.codex_remove_account_title)) },
             text = { Text(stringResource(R.string.codex_remove_account_message)) },
             confirmButton = {
-                TextButton(
+                DialogPrimaryButton(
+                    destructive = true,
                     onClick = {
                         showDeleteConfirmation = false
                         onDelete()
@@ -248,12 +251,11 @@ private fun CodexAccountCard(
                 ) {
                     Text(
                         stringResource(R.string.codex_remove),
-                        color = MaterialTheme.colorScheme.error,
                     )
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteConfirmation = false }) {
+                DialogSecondaryButton(onClick = { showDeleteConfirmation = false }) {
                     Text(stringResource(R.string.cancel))
                 }
             },

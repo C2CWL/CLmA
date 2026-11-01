@@ -22,7 +22,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
@@ -71,6 +70,9 @@ import me.rerere.hugeicons.stroke.Edit02
 import me.rerere.hugeicons.stroke.FileImport
 import me.rerere.hugeicons.stroke.PlusSign
 import me.rerere.hugeicons.stroke.Tick01
+import com.clma.app.ui.components.ui.AppAlertDialog
+import com.clma.app.ui.components.ui.DialogPrimaryButton
+import com.clma.app.ui.components.ui.DialogSecondaryButton
 import com.clma.app.R
 import com.clma.app.ui.components.nav.BackButton
 import com.clma.app.ui.components.ui.RikkaConfirmDialog
@@ -497,7 +499,7 @@ private fun ImportThemeDialog(
     var jsonText by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    AlertDialog(
+    AppAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.setting_theme_page_import_theme)) },
         text = {
@@ -518,7 +520,7 @@ private fun ImportThemeDialog(
             }
         },
         confirmButton = {
-            Button(
+            DialogPrimaryButton(
                 onClick = {
                     try {
                         val theme = themeJson.decodeFromString<CustomTheme>(jsonText)
@@ -533,7 +535,7 @@ private fun ImportThemeDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            DialogSecondaryButton(onClick = onDismiss) {
                 Text(stringResource(android.R.string.cancel))
             }
         }

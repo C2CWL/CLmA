@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -31,7 +30,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -49,6 +47,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
+import com.clma.app.ui.components.ui.AppAlertDialog
+import com.clma.app.ui.components.ui.DialogPrimaryButton
+import com.clma.app.ui.components.ui.DialogSecondaryButton
 import com.clma.app.R
 import com.clma.app.Screen
 import com.clma.app.ui.components.nav.BackButton
@@ -206,7 +207,7 @@ private fun AddProviderDialog(
         mutableStateOf(SearchServiceOptions.TYPES.keys.first())
     }
 
-    AlertDialog(
+    AppAlertDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(stringResource(R.string.setting_page_search_add_provider))
@@ -254,7 +255,7 @@ private fun AddProviderDialog(
             }
         },
         confirmButton = {
-            TextButton(
+            DialogPrimaryButton(
                 onClick = {
                     val instance = SearchServiceOptions.create(selectedType)
                     onConfirm(instance)
@@ -264,7 +265,7 @@ private fun AddProviderDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            DialogSecondaryButton(onClick = onDismiss) {
                 Text(stringResource(R.string.cancel))
             }
         }
