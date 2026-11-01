@@ -2859,6 +2859,7 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="setting_secrets_page_name_invalid">只能使用字母、数字和 _ . -</string>
   <string name="setting_secrets_page_value_replace_hint">原值不会显示，保存后即覆盖。</string>
   <string name="setting_secrets_page_saved">已保存密钥</string>
+  <string name="setting_secrets_page_save_failed">未保存密钥：安全加密暂不可用，原有值未更改。请解锁设备后重试。</string>
   <string name="setting_secrets_page_auth_title">解锁密钥库</string>
   <string name="setting_secrets_page_auth_subtitle">请验证身份，以显示或复制已保存的密钥值</string>
   <string name="setting_secrets_page_auth_failed">验证失败</string>

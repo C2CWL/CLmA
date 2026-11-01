@@ -24,7 +24,8 @@ import javax.crypto.spec.GCMParameterSpec
  *
  * Mirrors [com.clma.app.workflow.secrets.WorkflowSecretsStore] / SkillSecretsStore
  * storage discipline: device-bound key, prefs excluded from cloud backup by the
- * sharedpref deny-by-default rules, fallback obfuscation if the keystore is unavailable.
+ * sharedpref deny-by-default rules. New writes require working Keystore encryption;
+ * legacy obfuscated entries remain readable for recovery.
  */
 /**
  * One vault entry: the name plus when it was first written and last overwritten.
@@ -47,7 +48,12 @@ class AgentSecretsStore(context: Context) {
 
     fun set(name: String, value: String): Boolean {
         if (!isValidName(name)) return false
-        val (encrypted, iv) = encrypt(value)
+        val (encrypted, iv) = try {
+            encrypt(value)
+        } catch (_: Exception) {
+            Log.w(TAG, "Keystore encryption unavailable; secret was not saved")
+            return false
+        }
         val now = System.currentTimeMillis()
         val isNew = !prefs.contains(secretKey(name))
         prefs.edit {
@@ -133,15 +139,12 @@ class AgentSecretsStore(context: Context) {
         }
     }
 
-    private fun encrypt(plain: String): Pair<String, String> = try {
+    private fun encrypt(plain: String): Pair<String, String> {
         val cipher = Cipher.getInstance(TRANSFORMATION)
         cipher.init(Cipher.ENCRYPT_MODE, getOrCreateKey())
         val iv = cipher.iv
         val encrypted = cipher.doFinal(plain.toByteArray(StandardCharsets.UTF_8))
-        encode(encrypted) to encode(iv)
-    } catch (t: Throwable) {
-        Log.w(TAG, "Keystore-backed encrypt failed; falling back to obfuscated plaintext", t)
-        encode(plain.toByteArray(StandardCharsets.UTF_8)) to FALLBACK_IV_MARKER
+        return encode(encrypted) to encode(iv)
     }
 
     private fun decrypt(encrypted: String, iv: String): String? = try {

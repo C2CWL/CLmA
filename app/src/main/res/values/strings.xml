@@ -3169,6 +3169,7 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="setting_secrets_page_name_invalid">Only letters, digits and _ . - are allowed</string>
   <string name="setting_secrets_page_value_replace_hint">The current value is never shown; saving overwrites it.</string>
   <string name="setting_secrets_page_saved">Secret saved</string>
+  <string name="setting_secrets_page_save_failed">Secret not saved. Secure encryption is unavailable; the existing value was kept. Try again when the device is unlocked.</string>
   <string name="setting_secrets_page_auth_title">Unlock secrets</string>
   <string name="setting_secrets_page_auth_subtitle">Confirm it is you to show or copy a stored value</string>
   <string name="setting_secrets_page_auth_failed">Authentication failed</string>

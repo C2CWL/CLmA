@@ -22,9 +22,9 @@ private const val TAG = "SkillSecretsStore"
  * persist locally encrypted. The `run_js` tool reads via [get] when the LLM passes
  * `secret_key` in args.
  *
- * Encryption: AES/GCM with an Android-Keystore-backed master key. Falls back to
- * obfuscated plaintext if the keystore is unavailable (very old / rooted devices) so the
- * user-flow doesn't break — we log loudly in that case.
+ * Encryption: AES/GCM with an Android-Keystore-backed master key. New writes fail
+ * when encryption is unavailable, leaving existing entries untouched. Legacy obfuscated
+ * entries remain readable for recovery.
  *
  * Key per (skillName, secretName) so different skills can't read each other's secrets.
  * Backup is excluded (keys aren't transferable; re-entry on new device is intentional).
@@ -120,15 +120,12 @@ class SkillSecretsStore(context: Context) {
 
     // -- crypto -------------------------------------------------------------
 
-    private fun encrypt(plain: String): Pair<String, String> = try {
+    private fun encrypt(plain: String): Pair<String, String> {
         val cipher = Cipher.getInstance(TRANSFORMATION)
         cipher.init(Cipher.ENCRYPT_MODE, getOrCreateKey())
         val iv = cipher.iv
         val encrypted = cipher.doFinal(plain.toByteArray(StandardCharsets.UTF_8))
-        encode(encrypted) to encode(iv)
-    } catch (t: Throwable) {
-        Log.w(TAG, "Keystore-backed encrypt failed; falling back to obfuscated plaintext", t)
-        encode(plain.toByteArray(StandardCharsets.UTF_8)) to FALLBACK_IV_MARKER
+        return encode(encrypted) to encode(iv)
     }
 
     private fun decrypt(encrypted: String, iv: String): String? = try {

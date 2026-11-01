@@ -25,7 +25,7 @@ private const val TAG = "WorkflowSecretsStore"
  * "where my token lives". Here the token lives in SharedPreferences, AES/GCM-encrypted under
  * an Android-Keystore master key, and the workflow only ever contains the *name*.
  *
- * Mirrors the storage discipline of `SkillSecretsStore` (same cipher, same fallback): the
+ * Mirrors the storage discipline of `SkillSecretsStore` (encryption required for new writes): the
  * master key is device-bound and non-exportable, and the prefs file is excluded from cloud
  * backup (see res/xml/backup_rules.xml) because a restored ciphertext is useless on a new
  * device — re-entering the token there is intentional.
@@ -43,12 +43,17 @@ class WorkflowSecretsStore(context: Context) {
     fun isValidName(name: String): Boolean = NAME_PATTERN.matches(name)
 
     /**
-     * Store or replace [name]. Returns false when the name is not storable — the caller
-     * surfaces that rather than writing an unaddressable entry.
+     * Store or replace [name]. Returns false for an invalid name or unavailable encryption;
+     * existing entries are left untouched in either case.
      */
     fun set(name: String, value: String): Boolean {
         if (!isValidName(name)) return false
-        val (encrypted, iv) = encrypt(value)
+        val (encrypted, iv) = try {
+            encrypt(value)
+        } catch (_: Exception) {
+            Log.w(TAG, "Keystore encryption unavailable; secret was not saved")
+            return false
+        }
         prefs.edit {
             putString(secretKey(name), encrypted)
             putString(ivKey(name), iv)
@@ -100,20 +105,12 @@ class WorkflowSecretsStore(context: Context) {
 
     // -- crypto -------------------------------------------------------------
 
-    private fun encrypt(plain: String): Pair<String, String> = try {
+    private fun encrypt(plain: String): Pair<String, String> {
         val cipher = Cipher.getInstance(TRANSFORMATION)
         cipher.init(Cipher.ENCRYPT_MODE, getOrCreateKey())
-        // Read the IV before doFinal, matching SkillSecretsStore: GCM fixes the IV at init,
-        // so either order works, but identical code is one less thing to misread.
         val iv = cipher.iv
         val encrypted = cipher.doFinal(plain.toByteArray(StandardCharsets.UTF_8))
-        encode(encrypted) to encode(iv)
-    } catch (t: Throwable) {
-        // Same escape hatch as SkillSecretsStore: on devices where the keystore is
-        // unavailable we still store the value (obfuscated) rather than breaking the user
-        // flow, and we log loudly so the weaker storage is visible in logcat.
-        Log.w(TAG, "Keystore-backed encrypt failed; falling back to obfuscated plaintext", t)
-        encode(plain.toByteArray(StandardCharsets.UTF_8)) to FALLBACK_IV_MARKER
+        return encode(encrypted) to encode(iv)
     }
 
     private fun decrypt(encrypted: String, iv: String): String? = try {
