@@ -120,10 +120,11 @@ private fun CardGroupListItem(
             .fillMaxWidth()
             .clip(
                 RoundedCornerShape(
-                    topStart = topCorner,
-                    topEnd = topCorner,
-                    bottomStart = bottomCorner,
-                    bottomEnd = bottomCorner,
+                    // Spatial springs can overshoot below zero when a pressed corner returns to flat.
+                    topStart = topCorner.coerceAtLeast(0.dp),
+                    topEnd = topCorner.coerceAtLeast(0.dp),
+                    bottomStart = bottomCorner.coerceAtLeast(0.dp),
+                    bottomEnd = bottomCorner.coerceAtLeast(0.dp),
                 )
             )
             .then(
