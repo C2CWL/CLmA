@@ -3,12 +3,8 @@ package com.clma.app.ui.pages.setting
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.widget.Toast
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -202,7 +198,7 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                     )
                     val chevronRotation by animateFloatAsState(
                         targetValue = if (expanded) 90f else 0f,
-                        animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+                        animationSpec = tween(durationMillis = 150),
                         label = "settingsGroupChevron",
                     )
                     HubGroupCard {
@@ -253,11 +249,8 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                                 modifier = Modifier.size(20.dp).rotate(chevronRotation),
                             )
                         }
-                        AnimatedVisibility(
-                            visible = expanded,
-                            enter = expandVertically(MaterialTheme.motionScheme.defaultSpatialSpec()) + fadeIn(),
-                            exit = shrinkVertically(MaterialTheme.motionScheme.fastSpatialSpec()) + fadeOut(),
-                        ) {
+                        // Avoid animating a whole lazy item's height on every frame.
+                        if (expanded) {
                             Column {
                                 section.items.forEach { itemId ->
                                     HubRowDivider()
