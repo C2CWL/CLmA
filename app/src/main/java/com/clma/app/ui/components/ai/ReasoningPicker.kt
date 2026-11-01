@@ -701,7 +701,7 @@ internal fun ReasoningEnergyBar(
                             tileMode = TileMode.Repeated,
                         )
                         drawRoundRect(brush, size = Size(activeWidth, size.height), cornerRadius = radius)
-                        clipRect(right = activeWidth) { drawContent() }
+                        clipRect(right = activeWidth) { this@drawWithContent.drawContent() }
                         drawRoundRect(
                             brush = Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.34f), Color.Transparent)),
                             size = Size(activeWidth, size.height * 0.42f),
