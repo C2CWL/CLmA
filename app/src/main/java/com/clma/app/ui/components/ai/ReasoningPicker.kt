@@ -683,39 +683,33 @@ internal fun ReasoningEnergyBar(
                             (x / size.width.toFloat().coerceAtLeast(1f) * (levelCount - 1))
                                 .coerceIn(0f, (levelCount - 1).toFloat())
                         var progress = indexAt(down.position.x)
-                        var lastRound = progress.roundToInt()
+                        // The sheet cancels a diagonal swipe before changedToUp(), so a
+                        // release-only commit never lands. Write the level as soon as the
+                        // finger arrives and again whenever it crosses a notch.
+                        var committedLevel = latestLevel
+                        fun commit(index: Int) {
+                            val selected = levels[index.coerceIn(0, levelCount - 1)]
+                            if (selected == committedLevel) return
+                            committedLevel = selected
+                            latestHaptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            latestOnSelect(selected)
+                        }
                         dragProgress = progress
+                        commit(progress.roundToInt())
                         val pointerId = down.id
-                        var committed = false
                         try {
                             while (true) {
                                 val event = awaitPointerEvent(PointerEventPass.Initial)
                                 val change = event.changes.firstOrNull { it.id == pointerId } ?: continue
-                                if (!change.pressed) {
-                                    change.consume()
-                                    if (change.changedToUp()) {
-                                        val target = progress.roundToInt().coerceIn(0, levelCount - 1)
-                                        val selected = levels[target]
-                                        committed = true
-                                        dragProgress = null
-                                        if (selected != latestLevel) {
-                                            latestHaptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                            latestOnSelect(selected)
-                                        }
-                                    }
-                                    break
-                                }
                                 change.consume()
+                                if (!change.pressed) break
                                 progress = indexAt(change.position.x)
-                                val newRound = progress.roundToInt()
-                                if (newRound != lastRound) {
-                                    latestHaptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    lastRound = newRound
-                                }
                                 dragProgress = progress
+                                commit(progress.roundToInt())
                             }
                         } finally {
-                            if (!committed) dragProgress = null
+                            commit(progress.roundToInt())
+                            dragProgress = null
                         }
                     }
                 },
