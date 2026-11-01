@@ -115,6 +115,7 @@ fun SettingSecretsPage() {
 
     val deletedMessage = stringResource(R.string.setting_secrets_page_deleted)
     val savedMessage = stringResource(R.string.setting_secrets_page_saved)
+    val saveFailedMessage = stringResource(R.string.setting_secrets_page_save_failed)
     val copiedMessage = stringResource(R.string.setting_secrets_page_copied)
     val authTitle = stringResource(R.string.setting_secrets_page_auth_title)
     val authSubtitle = stringResource(R.string.setting_secrets_page_auth_subtitle)
@@ -373,6 +374,8 @@ fun SettingSecretsPage() {
                     reload()
                     showCreate = false
                     toaster.show(savedMessage, ToastType.Success)
+                } else {
+                    toaster.show(saveFailedMessage, ToastType.Error)
                 }
             },
         )
@@ -389,6 +392,8 @@ fun SettingSecretsPage() {
                     editName = null
                     hideRevealed()
                     toaster.show(savedMessage, ToastType.Success)
+                } else {
+                    toaster.show(saveFailedMessage, ToastType.Error)
                 }
             },
         )

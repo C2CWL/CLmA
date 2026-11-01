@@ -68,7 +68,7 @@ class WorkflowsViewModel(
         viewModelScope.launch(Dispatchers.IO) { _secretNames.value = secretsStore.list() }
     }
 
-    /** Returns false when [name] is not storable (1..64 of [A-Za-z0-9_]). */
+    /** Returns false for an invalid name or unavailable secure encryption. */
     suspend fun setSecret(name: String, value: String): Boolean = withContext(Dispatchers.IO) {
         val stored = secretsStore.set(name.trim(), value)
         if (stored) _secretNames.value = secretsStore.list()

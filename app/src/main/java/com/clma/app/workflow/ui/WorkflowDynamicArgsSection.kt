@@ -27,6 +27,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import com.clma.app.R
+import com.clma.app.ui.context.LocalToaster
+import com.dokar.sonner.ToastType
 
 /**
  * T-07 — the two halves of the "make a workflow talk to a real API" story that have no
@@ -73,6 +75,8 @@ fun WorkflowSecretsCard(vm: WorkflowsViewModel) {
     val names by vm.secretNames.collectAsState()
     val scope = rememberCoroutineScope()
     var showAdd by remember { mutableStateOf(false) }
+    val toaster = LocalToaster.current
+    val saveFailedMessage = stringResource(R.string.setting_secrets_page_save_failed)
 
     LaunchedEffect(Unit) { vm.refreshSecretNames() }
 
@@ -118,10 +122,14 @@ fun WorkflowSecretsCard(vm: WorkflowsViewModel) {
     if (showAdd) {
         AddSecretDialog(
             onDismiss = { showAdd = false },
-            // Kept open on a rejected name so the user can fix it instead of retyping the value.
+            // Keep the entered value available when saving fails.
             onSave = { name, value ->
                 scope.launch {
-                    if (vm.setSecret(name, value)) showAdd = false
+                    if (vm.setSecret(name, value)) {
+                        showAdd = false
+                    } else {
+                        toaster.show(saveFailedMessage, ToastType.Error)
+                    }
                 }
             },
         )
