@@ -134,6 +134,8 @@ private fun PromptSettingItem(
 
     if (showEditor) {
         ModalBottomSheet(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            tonalElevation = 0.dp,
             onDismissRequest = { showEditor = false },
         ) {
             Column(

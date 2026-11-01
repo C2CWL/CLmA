@@ -1,5 +1,7 @@
 package com.clma.app.ui.components.ui
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
@@ -102,7 +104,7 @@ private fun ExpressiveMenu(
                 if (gi > 0) Spacer(Modifier.height(2.dp))
                 DropdownMenuGroup(
                     shapes = MenuDefaults.groupShape(gi, shown.size),
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
                 ) {
                     group.forEachIndexed { i, entry ->
                         DropdownMenuItem(
@@ -147,6 +149,10 @@ private fun ClassicMenu(
         expanded = expanded,
         onDismissRequest = onDismissRequest,
         modifier = modifier,
+        shape = RoundedCornerShape(24.dp),
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        tonalElevation = 0.dp,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
         groups.filter { it.isNotEmpty() }.forEach { group ->
             group.forEach { entry ->
