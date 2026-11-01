@@ -69,6 +69,26 @@ class CronJobWorkerReplayGuardTest {
         assertEquals(now, computeRunSlot(isManual = false, jobNextRunAtMs = null, nowMs = now))
     }
 
+    @Test
+    fun `natural fire keeps its enqueued slot after the job cursor advances`() {
+        assertEquals(1_000L, computeRunSlot(
+            isManual = false,
+            jobNextRunAtMs = 2_000L,
+            nowMs = 1_500L,
+            enqueuedSlotMs = 1_000L,
+        ))
+    }
+
+    @Test
+    fun `manual fire ignores an enqueued slot as well as the job cursor`() {
+        assertEquals(1_500L, computeRunSlot(
+            isManual = true,
+            jobNextRunAtMs = 2_000L,
+            nowMs = 1_500L,
+            enqueuedSlotMs = 1_000L,
+        ))
+    }
+
     // ---------- shouldSuppressAsReplay ----------
 
     @Test
@@ -119,6 +139,33 @@ class CronJobWorkerReplayGuardTest {
     fun `skipped_catchup prior row never suppresses`() {
         val prior = row(scheduledAtMs = 1_000L, startedAtMs = 1_000L, outcome = "skipped_catchup")
         assertFalse(shouldSuppressAsReplay(prior, slotMs = 1_000L, nowMs = 1_001L))
+    }
+
+    @Test
+    fun `explicit slot replay is suppressed even after the legacy time window expires`() {
+        val prior = row(scheduledAtMs = 1_000L, startedAtMs = 1_000L)
+        assertTrue(shouldSuppressAsReplay(
+            prior, slotMs = 1_000L, nowMs = 1_001L + REPLAY_WINDOW_MS,
+            slotIsExplicit = true,
+        ))
+    }
+
+    @Test
+    fun `explicit slot still permits the following scheduled tick`() {
+        val prior = row(scheduledAtMs = 1_000L, startedAtMs = 1_000L)
+        assertFalse(shouldSuppressAsReplay(
+            prior, slotMs = 2_000L, nowMs = 2_000L, slotIsExplicit = true,
+        ))
+    }
+
+    @Test
+    fun `explicit slot does not turn a skipped attempt into an executed fire`() {
+        for (outcome in listOf("concurrent_skip", "skipped_catchup")) {
+            val prior = row(scheduledAtMs = 1_000L, startedAtMs = 1_000L, outcome = outcome)
+            assertFalse(shouldSuppressAsReplay(
+                prior, slotMs = 1_000L, nowMs = 1_001L, slotIsExplicit = true,
+            ))
+        }
     }
 
     // ---------- composition: the actual bug end-to-end (pure-function form) ----------

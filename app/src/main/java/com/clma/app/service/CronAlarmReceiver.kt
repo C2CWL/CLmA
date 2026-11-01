@@ -37,12 +37,21 @@ class CronAlarmReceiver : BroadcastReceiver() {
 
         try {
             val req = OneTimeWorkRequestBuilder<CronJobWorker>()
-                .setInputData(Data.Builder().putString(CronJobWorker.KEY_JOB_ID, jobId).build())
+                .setInputData(Data.Builder().apply {
+                    putString(CronJobWorker.KEY_JOB_ID, jobId)
+                    if (intent.hasExtra(CronJobWorker.KEY_SCHEDULED_AT_MS)) {
+                        putLong(
+                            CronJobWorker.KEY_SCHEDULED_AT_MS,
+                            intent.getLongExtra(CronJobWorker.KEY_SCHEDULED_AT_MS, 0L),
+                        )
+                    }
+                }.build())
                 .build()
-            // Immediately replace the scheduled work so it runs right now under the wake lock
+            // Separate lane: wake promptly without cancelling a fallback already running.
+            // The frozen slot + worker replay guard deduplicate the two delivery paths.
             WorkManager.getInstance(context).enqueueUniqueWork(
-                "cron_job_$jobId",
-                ExistingWorkPolicy.REPLACE,
+                "cron_job_${jobId}_alarm",
+                ExistingWorkPolicy.KEEP,
                 req
             )
         } catch (e: Throwable) {

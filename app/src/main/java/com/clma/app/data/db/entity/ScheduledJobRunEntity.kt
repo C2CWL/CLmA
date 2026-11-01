@@ -12,7 +12,7 @@ import androidx.room.PrimaryKey
  * Bounded per jobId by ScheduledJobRunDao.trim(), which runs at the end of every fire and keeps
  * the newest N successes and the newest N of every other outcome separately (N is at least 100).
  */
-// getRecent / trim / getMostRecent all read "WHERE jobId = ? ORDER BY startedAtMs DESC", and
+// getRecent / trim / getForSlot read "WHERE jobId = ? ORDER BY startedAtMs DESC", and
 // countSuccessful reads "WHERE jobId = ? AND outcome = 'success'"; without these the history
 // table is a full scan per fire.
 @Entity(

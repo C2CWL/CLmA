@@ -129,7 +129,15 @@ class CronBootReceiver : BroadcastReceiver(), KoinComponent {
             for ((idx, delayMs) in plan.fireDelaysMs.withIndex()) {
                 val req = OneTimeWorkRequestBuilder<CronJobWorker>()
                     .setInitialDelay(delayMs, TimeUnit.MILLISECONDS)
-                    .setInputData(Data.Builder().putString(CronJobWorker.KEY_JOB_ID, job.id).build())
+                    .setInputData(Data.Builder()
+                        .putString(CronJobWorker.KEY_JOB_ID, job.id)
+                        // Once shares its original slot with the regular fallback; cron
+                        // catchups each own their planned recovery time, not the next tick.
+                        .putLong(
+                            CronJobWorker.KEY_SCHEDULED_AT_MS,
+                            if (job.scheduleType == "once") job.atUnixMs!! else nowMs + delayMs,
+                        )
+                        .build())
                     .build()
                 // Each catchup fire gets a distinct unique work name so they don't
                 // REPLACE-cancel each other.

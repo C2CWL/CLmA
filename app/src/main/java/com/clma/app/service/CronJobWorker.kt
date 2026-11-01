@@ -95,27 +95,34 @@ internal suspend fun finishRunLlm(
  * The slot to stamp into the run row. Manual fires (trigger_job_now) happen at nowMs and
  * are NOT bound to any scheduled slot — stamping them with [jobNextRunAtMs] would poison
  * the next regular fire's replay guard. Natural fires stamp the slot they were enqueued
- * for so a true WorkManager replay still matches.
+ * for so a true WorkManager replay still matches. Prefer the immutable work input:
+ * job.nextRunAtMs may already point at the following fire when this request is replayed.
  */
-internal fun computeRunSlot(isManual: Boolean, jobNextRunAtMs: Long?, nowMs: Long): Long =
-    if (isManual) nowMs else (jobNextRunAtMs ?: nowMs)
+internal fun computeRunSlot(
+    isManual: Boolean,
+    jobNextRunAtMs: Long?,
+    nowMs: Long,
+    enqueuedSlotMs: Long? = null,
+): Long = if (isManual) nowMs else (enqueuedSlotMs ?: jobNextRunAtMs ?: nowMs)
 
 /**
  * A WorkManager replay re-fires the SAME enqueued work request, so a true replay's
  * [slotMs] matches the prior row's exactly AND its [nowMs] is within minutes of the prior
- * row's [ScheduledJobRunEntity.startedAtMs]. Both checks are required: matching slot alone
- * lets stale rows (e.g. a manual fire from yesterday) suppress today's regular fire.
+ * row's [ScheduledJobRunEntity.startedAtMs] for legacy work without a frozen slot.
+ * An explicit slot remains the same even after a long process restart, so it must not
+ * expire after ten minutes. The time window only protects legacy, DB-derived slots.
  */
 internal fun shouldSuppressAsReplay(
     priorRow: ScheduledJobRunEntity?,
     slotMs: Long,
     nowMs: Long,
     windowMs: Long = REPLAY_WINDOW_MS,
+    slotIsExplicit: Boolean = false,
 ): Boolean {
     if (priorRow == null) return false
     if (priorRow.scheduledAtMs != slotMs) return false
     if (priorRow.outcome == "concurrent_skip" || priorRow.outcome == "skipped_catchup") return false
-    return priorRow.startedAtMs >= nowMs - windowMs
+    return slotIsExplicit || priorRow.startedAtMs >= nowMs - windowMs
 }
 
 /**
@@ -166,6 +173,7 @@ class CronJobWorker(
     override suspend fun doWork(): Result {
         val jobId = inputData.getString(KEY_JOB_ID) ?: return Result.failure()
         val isManual = inputData.getBoolean(KEY_MANUAL, false)
+        val enqueuedSlotMs = inputData.keyValueMap[KEY_SCHEDULED_AT_MS] as? Long
 
         if (!CronJobRunningTracker.start(jobId)) {
             recordRun(jobId, scheduledAtMs = System.currentTimeMillis(),
@@ -186,17 +194,24 @@ class CronJobWorker(
                 return Result.success()
             }
 
-            // Slot stamp: manual fires use nowMs (they aren't bound to a scheduled slot);
-            // natural fires use job.nextRunAtMs so a true WorkManager replay can be detected.
-            val scheduledAtMs = computeRunSlot(isManual, job.nextRunAtMs, nowMs)
+            val scheduledAtMs = computeRunSlot(isManual, job.nextRunAtMs, nowMs, enqueuedSlotMs)
 
             // Replay guard runs BEFORE the optimistic insert, else the insert self-matches.
             // Manual fires skip the guard so the user can always force a fresh fire.
             if (!isManual) {
-                val priorRow = runRepo.getMostRecent(jobId)
-                if (shouldSuppressAsReplay(priorRow, scheduledAtMs, nowMs)) {
+                val priorRow = runRepo.getForSlot(jobId, scheduledAtMs)
+                if (priorRow != null && shouldSuppressAsReplay(
+                        priorRow, scheduledAtMs, nowMs, slotIsExplicit = enqueuedSlotMs != null,
+                    )) {
                     Log.w(TAG, "doWork: suppressing likely WorkManager replay for $jobId " +
-                            "(prior row ${priorRow!!.id} same scheduledAtMs=$scheduledAtMs outcome=${priorRow.outcome})")
+                            "(prior row ${priorRow.id} same scheduledAtMs=$scheduledAtMs outcome=${priorRow.outcome})")
+                    if (priorRow.finishedAtMs == null) {
+                        runRepo.update(priorRow.copy(
+                            finishedAtMs = nowMs,
+                            outcome = "process_killed_replay",
+                            errorMessage = "worker terminated mid-execute",
+                        ))
+                    }
                     runRepo.insert(ScheduledJobRunEntity(
                         id = runRowId,
                         jobId = jobId,
@@ -208,6 +223,13 @@ class CronJobWorker(
                         conversationId = null,
                         errorMessage = "duplicate fire suppressed (prior run ${priorRow.id})",
                     ))
+                    // Recover a process death between executing the task and rearming it.
+                    // If the cursor already advanced, leave that successor alone.
+                    if (job.nextRunAtMs == scheduledAtMs) {
+                        val priorOutcome = if (priorRow.finishedAtMs == null) "process_killed_replay" else priorRow.outcome
+                        advanceSchedule(job, priorRow.startedAtMs, priorOutcome)
+                    }
+                    runRepo.trim(jobId, keep = historyRetentionFor(job.maxRuns))
                     return Result.success()
                 }
             }
@@ -276,19 +298,7 @@ class CronJobWorker(
             // don't bump runs_so_far or lastRunAtMs (per spec Decision 13). The regular
             // schedule continues unaffected.
             if (!isManual) {
-                // Derive runsSoFar from the authoritative success-count query (post-update,
-                // so the final outcome is already committed) rather than incrementing the
-                // cached field — this avoids runsSoFar drift after a replay.
-                val newRunsSoFar = if (outcome == "success") runRepo.countSuccessful(job.id)
-                                   else job.runsSoFar
-                val maxReached = job.maxRuns != null && newRunsSoFar >= job.maxRuns
-                val updated = job.copy(
-                    lastRunAtMs = nowMs,
-                    runsSoFar = newRunsSoFar,
-                    enabled = if (job.scheduleType == "once" || maxReached) false else job.enabled,
-                )
-                repo.update(updated)
-                if (updated.enabled) scheduler.schedule(updated)
+                advanceSchedule(job, nowMs, outcome)
             }
 
             // Trim history at the end so this row's insert/update is reflected in the cap.
@@ -300,15 +310,19 @@ class CronJobWorker(
         }
     }
 
-    /**
-     * Checks whether a job has expired before executing.
-     *
-     * For max_runs we count actual 'success' rows in the DB rather than trusting
-     * job.runsSoFar — this makes max_runs immune to the replay race where the process is
-     * killed after the run row is inserted (outcome='success') but before repo.update()
-     * persists runsSoFar+1. On replay, countSuccessful() sees the existing success row and
-     * correctly reports the job as exhausted.
-     */
+    private suspend fun advanceSchedule(job: ScheduledJobEntity, startedAtMs: Long, outcome: String) {
+        val runsSoFar = if (outcome == "success") runRepo.countSuccessful(job.id) else job.runsSoFar
+        val maxReached = job.maxRuns != null && runsSoFar >= job.maxRuns
+        val updated = job.copy(
+            lastRunAtMs = startedAtMs,
+            runsSoFar = runsSoFar,
+            enabled = job.enabled && job.scheduleType != "once" && !maxReached,
+        )
+        repo.update(updated)
+        if (updated.enabled) scheduler.schedule(updated, fromWorker = true)
+    }
+
+    /** Only completed successes consume max_runs; an optimistic in-flight row does not. */
     private suspend fun boundsExpired(job: ScheduledJobEntity, nowMs: Long): Boolean {
         if (job.endAtUnixMs != null && nowMs > job.endAtUnixMs) return true
         if (job.maxRuns != null) {
@@ -426,6 +440,7 @@ class CronJobWorker(
     companion object {
         const val KEY_JOB_ID = "cron_job_id"
         const val KEY_MANUAL = "cron_job_manual"
+        const val KEY_SCHEDULED_AT_MS = "cron_job_scheduled_at_ms"
         const val CHANNEL_ID = "rikkahub_cron_jobs"
     }
 }

@@ -43,15 +43,18 @@ interface ScheduledJobRunDao {
     @Query("DELETE FROM scheduled_job_runs WHERE jobId = :jobId")
     suspend fun deleteAllForJob(jobId: String)
 
-    /** Most-recent run row for a job, or null if none exists. Used for replay-idempotency check. */
-    @Query("SELECT * FROM scheduled_job_runs WHERE jobId = :jobId ORDER BY startedAtMs DESC LIMIT 1")
-    suspend fun getMostRecent(jobId: String): ScheduledJobRunEntity?
+    /** Find an attempted fire of this slot, even when newer manual/skip rows exist. */
+    @Query(
+        "SELECT * FROM scheduled_job_runs WHERE jobId = :jobId AND scheduledAtMs = :slotMs " +
+            "AND outcome NOT IN ('concurrent_skip', 'skipped_catchup') " +
+            "ORDER BY startedAtMs DESC LIMIT 1"
+    )
+    suspend fun getForSlot(jobId: String, slotMs: Long): ScheduledJobRunEntity?
 
     /**
-     * Count of rows with outcome='success' for a job.
-     * Used as the authoritative source of max_runs progress — immune to replay race because
-     * the row is inserted optimistically and updated to 'success' atomically before we read.
+     * Only terminal successes consume max_runs. A worker initially inserts outcome='success'
+     * with no finish time; counting that row would exhaust the job before it actually ran.
      */
-    @Query("SELECT COUNT(*) FROM scheduled_job_runs WHERE jobId = :jobId AND outcome = 'success'")
+    @Query("SELECT COUNT(*) FROM scheduled_job_runs WHERE jobId = :jobId AND outcome = 'success' AND finishedAtMs IS NOT NULL")
     suspend fun countSuccessful(jobId: String): Int
 }
