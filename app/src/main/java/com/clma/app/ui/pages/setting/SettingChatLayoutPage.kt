@@ -35,7 +35,7 @@ import kotlin.math.roundToInt
 import androidx.compose.material3.MaterialTheme
 
 
-/** 聊天布局: chat layout (原版 / 简洁 / 暖阳), its panel knobs and the drawer capsules. */
+/** 聊天布局: chat layout (Gemini / 简洁 / 暖阳), its panel knobs and the drawer capsules. */
 @Composable
 fun SettingChatLayoutPage(vm: SettingVM = koinViewModel()) {
     val settings by vm.settings.collectAsStateWithLifecycle()
@@ -57,7 +57,7 @@ fun SettingChatLayoutPage(vm: SettingVM = koinViewModel()) {
                     supportingContent = { Text(stringResource(R.string.setting_display_page_chat_layout_desc)) },
                     trailingContent = {
                         Select(
-                            options = ChatLayout.entries,
+                            options = ChatLayout.entries.filter { it != ChatLayout.ORIGINAL },
                             selectedOption = displaySetting.effectiveChatLayout,
                             onOptionSelected = {
                                 updateDisplaySetting(displaySetting.withChatLayout(it))
