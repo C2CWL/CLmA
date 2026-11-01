@@ -35,6 +35,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clma.app.R
 import com.clma.app.Screen
 import com.clma.app.data.model.Assistant
+import com.clma.app.data.model.Avatar
 import com.clma.app.ui.components.nav.BackButton
 import com.clma.app.ui.components.ui.CardGroup
 import com.clma.app.ui.components.ui.AssistantAvatar
@@ -85,6 +86,9 @@ fun AssistantDetailPage(id: String) {
             item {
                 AssistantHeader(
                     assistant = assistant,
+                    onAvatarUpdate = { avatar ->
+                        vm.updateAssistant { it.copy(avatar = avatar) }
+                    },
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 16.dp)
                 )
             }
@@ -158,6 +162,7 @@ fun AssistantDetailPage(id: String) {
 @Composable
 private fun AssistantHeader(
     assistant: Assistant,
+    onAvatarUpdate: (Avatar) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -167,6 +172,7 @@ private fun AssistantHeader(
     ) {
         AssistantAvatar(
             assistant = assistant,
+            onUpdate = onAvatarUpdate,
             name = assistant.name.ifBlank { stringResource(R.string.assistant_page_default_assistant) },
             modifier = Modifier
                 .size(100.dp)

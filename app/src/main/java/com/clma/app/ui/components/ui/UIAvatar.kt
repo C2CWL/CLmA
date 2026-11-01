@@ -120,18 +120,12 @@ fun UIAvatar(
     var urlInput by remember { mutableStateOf("") }
     var preCropTempFile by remember { mutableStateOf<File?>(null) }
 
-    fun saveAvatarImage(uri: Uri) {
-        scope.launch {
-            val localUris = filesManager.createChatFilesByContents(listOf(uri))
+    val (_, launchImageCrop) = useCropLauncher(
+        onCroppedImageReady = { croppedUri ->
+            val localUris = filesManager.createChatFilesByContents(listOf(croppedUri))
             localUris.firstOrNull()?.let { localUri ->
                 onUpdate?.invoke(Avatar.Image(localUri.toString()))
             }
-        }
-    }
-
-    val (_, launchImageCrop) = useCropLauncher(
-        onCroppedImageReady = { croppedUri ->
-            saveAvatarImage(croppedUri)
         },
         onCleanup = {
             preCropTempFile?.delete()
