@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
@@ -80,7 +79,7 @@ fun SettingSlider(
             parseInput(input)?.let { parsed -> onValueChange(snap(parsed)) }
             editing = false
         }
-        AlertDialog(
+        AppAlertDialog(
             onDismissRequest = { editing = false },
             title = { Text(title) },
             text = {
@@ -97,10 +96,10 @@ fun SettingSlider(
                 )
             },
             confirmButton = {
-                TextButton(onClick = { confirm() }) { Text(stringResource(R.string.confirm)) }
+                DialogPrimaryButton(onClick = { confirm() }) { Text(stringResource(R.string.confirm)) }
             },
             dismissButton = {
-                TextButton(onClick = { editing = false }) { Text(stringResource(R.string.cancel)) }
+                DialogSecondaryButton(onClick = { editing = false }) { Text(stringResource(R.string.cancel)) }
             },
         )
     }

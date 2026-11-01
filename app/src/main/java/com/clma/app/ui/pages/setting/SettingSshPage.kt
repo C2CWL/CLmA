@@ -13,7 +13,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -50,6 +49,9 @@ import me.rerere.hugeicons.stroke.Add01
 import me.rerere.hugeicons.stroke.Delete01
 import me.rerere.hugeicons.stroke.Edit01
 import me.rerere.hugeicons.stroke.Play
+import com.clma.app.ui.components.ui.AppAlertDialog
+import com.clma.app.ui.components.ui.DialogPrimaryButton
+import com.clma.app.ui.components.ui.DialogSecondaryButton
 import com.clma.app.R
 import com.clma.app.data.db.entity.SshHostEntity
 import com.clma.app.data.ssh.KnownHostEntry
@@ -253,12 +255,12 @@ fun SettingSshPage(vm: SettingSshViewModel = koinViewModel()) {
     }
 
     pendingDelete?.let { host ->
-        AlertDialog(
+        AppAlertDialog(
             onDismissRequest = { pendingDelete = null },
             title = { Text(stringResource(R.string.setting_ssh_page_delete_confirm_title)) },
             text = { Text(stringResource(R.string.setting_ssh_page_delete_confirm_message, host.name)) },
             confirmButton = {
-                TextButton(onClick = {
+                DialogPrimaryButton(destructive = true, onClick = {
                     vm.delete(host)
                     pendingDelete = null
                     scope.launch { toaster.show(deletedMessage, type = ToastType.Success) }
@@ -267,7 +269,7 @@ fun SettingSshPage(vm: SettingSshViewModel = koinViewModel()) {
                 }
             },
             dismissButton = {
-                TextButton(onClick = { pendingDelete = null }) {
+                DialogSecondaryButton(onClick = { pendingDelete = null }) {
                     Text(stringResource(R.string.setting_ssh_page_cancel))
                 }
             },
@@ -275,12 +277,12 @@ fun SettingSshPage(vm: SettingSshViewModel = koinViewModel()) {
     }
 
     pendingForget?.let { entry ->
-        AlertDialog(
+        AppAlertDialog(
             onDismissRequest = { pendingForget = null },
             title = { Text(stringResource(R.string.setting_ssh_page_forget_key_confirm_title)) },
             text = { Text(stringResource(R.string.setting_ssh_page_forget_key_confirm_message, entry.pattern)) },
             confirmButton = {
-                TextButton(onClick = {
+                DialogPrimaryButton(destructive = true, onClick = {
                     vm.forgetKey(entry)
                     pendingForget = null
                     scope.launch { toaster.show(forgottenMessage, type = ToastType.Success) }
@@ -289,7 +291,7 @@ fun SettingSshPage(vm: SettingSshViewModel = koinViewModel()) {
                 }
             },
             dismissButton = {
-                TextButton(onClick = { pendingForget = null }) {
+                DialogSecondaryButton(onClick = { pendingForget = null }) {
                     Text(stringResource(R.string.setting_ssh_page_cancel))
                 }
             },
