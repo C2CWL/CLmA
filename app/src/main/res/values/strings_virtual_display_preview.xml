@@ -6,4 +6,14 @@
   <string name="virtual_display_preview_shrink">Shrink preview</string>
   <string name="virtual_display_preview_enlarge">Enlarge preview</string>
   <string name="virtual_display_preview_scale_hint">Pinch to resize preview; virtual display resolution is unchanged</string>
+  <string name="virtual_display_manage_title">Virtual displays</string>
+  <string name="virtual_display_manage_description">Create a 720×1280 display at 320 DPI. Shizuku or root is needed to run apps reliably. Hiding the preview keeps the display running; closing the display interrupts tasks and may lose unsaved state. Recreate a closed display to start again.</string>
+  <string name="virtual_display_create_manual">Create virtual display</string>
+  <string name="virtual_display_none">No virtual displays are running</string>
+  <string name="virtual_display_display_info">Display #%1$d · %2$d×%3$d · %4$d DPI</string>
+  <string name="virtual_display_overlay_required">Grant the overlay permission in Settings → Permissions to show the preview.</string>
+  <string name="virtual_display_show_preview">Show preview</string>
+  <string name="virtual_display_hide_preview">Hide preview</string>
+  <string name="virtual_display_stop">Close virtual display</string>
+  <string name="virtual_display_stop_warning">Close display #%1$d? This releases its resources and may interrupt agent tasks or lose unsaved app state. A new display can be created, but the previous session cannot be restored.</string>
 </resources>

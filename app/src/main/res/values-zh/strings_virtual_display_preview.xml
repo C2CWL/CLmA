@@ -6,4 +6,14 @@
   <string name="virtual_display_preview_shrink">缩小预览</string>
   <string name="virtual_display_preview_enlarge">放大预览</string>
   <string name="virtual_display_preview_scale_hint">双指缩放预览，不改变虚拟屏分辨率</string>
+  <string name="virtual_display_manage_title">虚拟屏管理</string>
+  <string name="virtual_display_manage_description">创建 720×1280、320 DPI 的虚拟屏。运行应用通常需要 Shizuku 或 Root。隐藏预览不会停止虚拟屏；关闭虚拟屏会中断任务，可能丢失未保存状态。关闭后可重新创建，但不会恢复原会话。</string>
+  <string name="virtual_display_create_manual">创建虚拟屏</string>
+  <string name="virtual_display_none">当前没有运行中的虚拟屏</string>
+  <string name="virtual_display_display_info">虚拟屏 #%1$d · %2$d×%3$d · %4$d DPI</string>
+  <string name="virtual_display_overlay_required">请在设置 → 权限中授予悬浮窗权限，再显示预览。</string>
+  <string name="virtual_display_show_preview">显示预览</string>
+  <string name="virtual_display_hide_preview">隐藏预览</string>
+  <string name="virtual_display_stop">关闭虚拟屏</string>
+  <string name="virtual_display_stop_warning">关闭虚拟屏 #%1$d？这将释放资源，可能中断 AI 任务并丢失应用未保存的状态。之后可以重新创建，但无法恢复原会话。</string>
 </resources>

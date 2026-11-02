@@ -172,6 +172,7 @@ class SettingsSearchCoverageTest {
         "SettingNotifications" to listOf("ui/pages/setting/SettingNotificationsPage.kt"),
         "SettingPermissions" to listOf("ui/pages/setting/SettingPermissionsPage.kt"),
         "SettingShizuku" to listOf("ui/pages/setting/shizuku/SettingShizukuPage.kt"),
+        "VirtualDisplays" to listOf("ui/pages/setting/shizuku/VirtualDisplaySettings.kt"),
         "SettingTermux" to listOf("ui/pages/setting/termux/SettingTermuxPage.kt"),
         "SettingSsh" to listOf("ui/pages/setting/SettingSshPage.kt"),
         "SettingSecrets" to listOf("ui/pages/setting/SettingSecretsPage.kt"),
