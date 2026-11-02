@@ -93,7 +93,6 @@ import com.clma.ai.ui.UIMessagePart
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Cancel01
 import me.rerere.hugeicons.stroke.LeftToRightListBullet
-import me.rerere.hugeicons.stroke.Menu03
 import me.rerere.hugeicons.stroke.MessageAdd01
 import com.clma.app.R
 import com.clma.app.costguards.TokenBudgetTracker
@@ -850,7 +849,7 @@ private fun ChatPageContent(
                             ) {
                                 if (!bigScreen) {
                                     IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                                        Icon(HugeIcons.Menu03, stringResource(R.string.menu))
+                                        Icon(HugeIcons.LeftToRightListBullet, stringResource(R.string.menu))
                                     }
                                 }
                                 Spacer(Modifier.weight(1f))
@@ -1028,7 +1027,7 @@ private fun TopBar(
                     },
                     hazeState = hazeState,
                 ) {
-                    Icon(HugeIcons.Menu03, stringResource(R.string.menu))
+                    Icon(HugeIcons.LeftToRightListBullet, stringResource(R.string.menu))
                 }
             }
         },

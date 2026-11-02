@@ -54,7 +54,6 @@ import kotlinx.coroutines.launch
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Cancel01
 import me.rerere.hugeicons.stroke.LeftToRightListBullet
-import me.rerere.hugeicons.stroke.Menu03
 import me.rerere.hugeicons.stroke.MessageAdd01
 import com.clma.app.R
 import com.clma.app.data.datastore.ChatLayout
@@ -132,7 +131,7 @@ internal fun CleanTopBar(
                         modifier = Modifier.size(CLEAN_TOP_BAR_BUTTON_DP.dp),
                     ) {
                         Icon(
-                            HugeIcons.Menu03,
+                            HugeIcons.LeftToRightListBullet,
                             stringResource(R.string.menu),
                             modifier = Modifier.size(CLEAN_TOP_BAR_ICON_DP.dp),
                         )

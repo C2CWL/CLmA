@@ -8,7 +8,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Chat layout is a four-way selector that supersedes the old cleanLayout switch. GEMINI is the
+ * Chat layout is a three-way selector that supersedes the old cleanLayout switch. GEMINI is the
  * default look; an install that only knew the boolean keeps whatever it said (clean stays clean,
  * the old original chrome is gone and resolves to the new default).
  */
@@ -41,10 +41,10 @@ class DisplaySettingChatLayoutTest {
     }
 
     @Test
-    fun `picking original stays on original`() {
+    fun `legacy original resolves to gemini`() {
         val decoded = JsonInstant.decodeFromString<DisplaySetting>("""{"chatLayout":"original"}""")
-        assertEquals(ChatLayout.ORIGINAL, decoded.effectiveChatLayout)
-        assertFalse(decoded.usesGeminiChatUi)
+        assertEquals(ChatLayout.GEMINI, decoded.effectiveChatLayout)
+        assertTrue(decoded.usesGeminiChatUi)
     }
 
     @Test
@@ -60,8 +60,8 @@ class DisplaySettingChatLayoutTest {
     @Test
     fun `withChatLayout keeps the legacy switch in step`() {
         val original = DisplaySetting().withChatLayout(ChatLayout.ORIGINAL)
-        assertEquals(ChatLayout.ORIGINAL, original.chatLayout)
-        assertFalse(original.cleanLayout)
+        assertEquals(ChatLayout.GEMINI, original.chatLayout)
+        assertTrue(original.cleanLayout)
 
         val clean = DisplaySetting().withChatLayout(ChatLayout.CLEAN)
         assertEquals(ChatLayout.CLEAN, clean.chatLayout)

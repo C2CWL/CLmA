@@ -6,13 +6,14 @@ import kotlinx.serialization.Serializable
 /**
  * Chat page layout. [GEMINI] is the default: a flat header, no avatars on either side of the
  * conversation, the user's turn as a right-aligned capsule and the assistant's as a plain
- * centred reading column - the layout Gemini uses. [ORIGINAL] is the long-standing look that
- * [GEMINI] replaced as the default; [CLEAN] is the flat header + two-row input box (the old
+ * centred reading column - the layout Gemini uses. [ORIGINAL] is retained only to decode old
+ * settings and resolves to [GEMINI]; [CLEAN] is the flat header + two-row input box (the old
  * `cleanLayout` switch); [CLAUDE] follows Claude.ai: an even quieter header, no assistant bubble,
  * a narrow centred reading column, a 24dp composer card and a coral send button.
  */
 @Serializable
 enum class ChatLayout {
+    /** Legacy serialized value; not a selectable layout. */
     @SerialName("original")
     ORIGINAL,
 
@@ -32,17 +33,19 @@ enum class ChatLayout {
  * never touched either lands on [ChatLayout.GEMINI], which is the default look from here on.
  */
 fun resolveChatLayout(chatLayout: ChatLayout?, cleanLayout: Boolean): ChatLayout =
-    chatLayout ?: if (cleanLayout) ChatLayout.CLEAN else ChatLayout.GEMINI
+    when (chatLayout) {
+        ChatLayout.ORIGINAL -> ChatLayout.GEMINI
+        null -> if (cleanLayout) ChatLayout.CLEAN else ChatLayout.GEMINI
+        else -> chatLayout
+    }
 
 /**
- * Applies a selector pick. The legacy switch is kept in step for the two layouts it can express,
- * so an older build reading the same settings still shows the closest thing; GEMINI and CLAUDE
- * also map to the clean switch on, since the flat header/two-row box is the closer fallback than
- * the original chrome.
+ * Applies a selector pick, normalizing the retired original value to GEMINI. All supported
+ * layouts keep the legacy clean switch on for the closest fallback in older builds.
  */
 fun DisplaySetting.withChatLayout(layout: ChatLayout): DisplaySetting = copy(
-    chatLayout = layout,
-    cleanLayout = layout != ChatLayout.ORIGINAL,
+    chatLayout = resolveChatLayout(layout, cleanLayout),
+    cleanLayout = true,
 )
 
 val DisplaySetting.effectiveChatLayout: ChatLayout
