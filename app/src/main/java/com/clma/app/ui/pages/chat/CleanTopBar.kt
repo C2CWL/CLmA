@@ -4,13 +4,14 @@ import com.clma.app.diagnostics.FunctionalDiagnostics
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Badge
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.clma.app.ui.components.ui.AppDropdownMenu
 import com.clma.app.ui.components.ui.AppMenuEntry
-import me.rerere.hugeicons.stroke.ViewOff
+import me.rerere.hugeicons.stroke.Shield01
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -54,7 +55,7 @@ import kotlinx.coroutines.launch
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Cancel01
 import me.rerere.hugeicons.stroke.LeftToRightListBullet
-import me.rerere.hugeicons.stroke.MessageAdd01
+import me.rerere.hugeicons.stroke.PlusSign
 import com.clma.app.R
 import com.clma.app.data.datastore.ChatLayout
 import com.clma.app.data.datastore.Settings
@@ -167,7 +168,7 @@ internal fun CleanTopBar(
                     if (conversation.isTemporary) {
                         Spacer(Modifier.width(6.dp))
                         Icon(
-                            HugeIcons.ViewOff,
+                            HugeIcons.Shield01,
                             contentDescription = stringResource(R.string.chat_page_temporary_chat),
                             modifier = Modifier.size(16.dp),
                             tint = MaterialTheme.colorScheme.primary,
@@ -217,7 +218,7 @@ internal fun CleanTopBar(
                 Box {
                     IconButton(onClick = { showNewChatMenu = true }, modifier = Modifier.size(CLEAN_TOP_BAR_BUTTON_DP.dp)) {
                         Icon(
-                            HugeIcons.MessageAdd01,
+                            HugeIcons.PlusSign,
                             stringResource(R.string.chat_page_new_message),
                             modifier = Modifier.size(CLEAN_TOP_BAR_ICON_DP.dp),
                         )
@@ -225,10 +226,12 @@ internal fun CleanTopBar(
                     AppDropdownMenu(
                         expanded = showNewChatMenu,
                         onDismissRequest = { showNewChatMenu = false },
+                        // Keep the temporary-chat description from widening the popup.
+                        modifier = Modifier.widthIn(max = 240.dp),
                         items = listOf(
                             AppMenuEntry(
                                 text = stringResource(R.string.chat_page_new_chat),
-                                icon = HugeIcons.MessageAdd01,
+                                icon = HugeIcons.PlusSign,
                                 onClick = {
                                     showNewChatMenu = false
                                     onNewChat()
@@ -236,7 +239,7 @@ internal fun CleanTopBar(
                             ),
                             AppMenuEntry(
                                 text = stringResource(R.string.chat_page_temporary_chat),
-                                icon = HugeIcons.ViewOff,
+                                icon = HugeIcons.Shield01,
                                 supporting = stringResource(R.string.chat_page_temporary_chat_desc),
                                 onClick = {
                                     showNewChatMenu = false
