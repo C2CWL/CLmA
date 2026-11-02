@@ -36,6 +36,7 @@ class SettingsSearchCoverageTest {
      */
     private val settingsInternal = mapOf(
         "SettingsSearch" to "this search page",
+        "SettingsCategory" to "category navigation; its settings remain directly searchable",
         "Debug" to "hidden page (long-press on About › Version), hard-coded English, no string resources",
         "WorkflowDetail" to "per-workflow page; workflows live in their own store, not indexed",
         "ScheduledJobDetail" to "per-job page; scheduled jobs live in their own store, not indexed",

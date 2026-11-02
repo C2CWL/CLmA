@@ -16,6 +16,16 @@ class SettingsHubCatalogTest {
     }
 
     @Test
+    fun `every category has its own destination and description`() {
+        val routes = settingsHubSections.map { it.route }
+        assertEquals(settingsHubSections.size, routes.distinct().size)
+        settingsHubSections.forEach { section ->
+            assertEquals(section.id, section.route.sectionId)
+            assertTrue(section.descriptionRes != 0)
+        }
+    }
+
+    @Test
     fun `connectors are navigable and searchable exactly once`() {
         val connector = settingsHubItems.getValue(SettingsHubItemId.CONNECTORS)
         assertEquals(Screen.SettingConnectors, connector.route)

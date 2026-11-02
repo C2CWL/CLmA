@@ -3,8 +3,7 @@ package com.clma.app.ui.pages.setting
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.widget.Toast
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -21,42 +20,32 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeFlexibleTopAppBar
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -67,7 +56,6 @@ import me.rerere.hugeicons.stroke.Alert01
 import me.rerere.hugeicons.stroke.ArrowRight01
 import me.rerere.hugeicons.stroke.Book03
 import me.rerere.hugeicons.stroke.Bookshelf01
-import me.rerere.hugeicons.stroke.Brain02
 import me.rerere.hugeicons.stroke.Clapping01
 import me.rerere.hugeicons.stroke.Clock02
 import me.rerere.hugeicons.stroke.ComputerTerminal01
@@ -127,164 +115,184 @@ import com.clma.app.utils.plus
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 
-/**
- * The settings hub: a search box on top, then the groups from [settingsHubSections]. Each row is
- * icon + title + a short live status + chevron; descriptions are not shown (they stay in the
- * catalog for the search). All colours come from [MaterialTheme.colorScheme], so the Claude /
- * Gemini palettes (视觉风格) and dark mode apply without special cases.
- */
+/** Home and category destinations share the same frame, but own separate navigation entries. */
 @Composable
-fun SettingPage(vm: SettingVM = koinViewModel()) {
+fun SettingPage(
+    sectionId: SettingsHubSectionId? = null,
+    vm: SettingVM = koinViewModel(),
+) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val navController = LocalNavController.current
     val settings by vm.settings.collectAsStateWithLifecycle()
-    val context = LocalContext.current
-    val statusSource = rememberHubStatusSource()
+    val section = settingsHubSections.firstOrNull { it.id == sectionId }
 
     Scaffold(
         topBar = {
             LargeFlexibleTopAppBar(
-                title = {
-                    Text(text = stringResource(R.string.settings))
-                },
-                navigationIcon = {
-                    BackButton()
-                },
+                title = { Text(stringResource(section?.titleRes ?: R.string.settings)) },
+                navigationIcon = { BackButton() },
                 actions = {
+                    if (section != null) {
+                        IconButton(onClick = { navController.navigate(Screen.SettingsSearch) }) {
+                            Icon(HugeIcons.GlobalSearch, stringResource(R.string.setting_hub_search_hint))
+                        }
+                    }
                     if (settings.developerMode) {
-                        IconButton(
-                            onClick = {
-                                navController.navigate(Screen.Developer)
-                            }
-                        ) {
+                        IconButton(onClick = { navController.navigate(Screen.Developer) }) {
                             Icon(HugeIcons.Developer, stringResource(R.string.accessibility_developer_options))
                         }
                     }
                 },
                 scrollBehavior = scrollBehavior,
-                colors = CustomColors.topBarColors
+                colors = CustomColors.topBarColors,
             )
         },
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        containerColor = CustomColors.topBarColors.containerColor
+        containerColor = CustomColors.topBarColors.containerColor,
     ) { innerPadding ->
+        val context = LocalContext.current
+        val statusSource = if (section != null) rememberHubStatusSource() else null
         val shareText = stringResource(R.string.setting_page_share_text)
         val shareLabel = stringResource(R.string.setting_page_share)
         val noShareApp = stringResource(R.string.setting_page_no_share_app)
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = innerPadding + PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+            contentPadding = innerPadding + PaddingValues(horizontal = 20.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item("search") {
-                HubSearchBox(onClick = { navController.navigate(Screen.SettingsSearch) })
-            }
-
-            if (settings.isNotConfigured()) {
-                item("provider_warning") {
-                    ProviderConfigWarningCard(navController)
+            if (section == null) {
+                item("search") {
+                    HubSearchBox(onClick = { navController.navigate(Screen.SettingsSearch) })
                 }
-            }
-
-            settingsHubSections.forEach { section ->
-                item(section.id.name) {
-                    var expanded by rememberSaveable { mutableStateOf(false) }
-                    val expansionLabel = stringResource(
-                        if (expanded) R.string.chat_message_collapse else R.string.chat_message_expand
+                if (settings.isNotConfigured()) {
+                    item("provider_warning") { ProviderConfigWarningCard(navController) }
+                }
+                item("categories_title") {
+                    Text(
+                        text = stringResource(R.string.setting_hub_categories),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 4.dp, top = 12.dp, bottom = 4.dp),
                     )
-                    val expansionState = stringResource(
-                        if (expanded) R.string.setting_hub_expanded else R.string.setting_hub_collapsed
+                }
+                items(settingsHubSections, key = { it.id.name }) { category ->
+                    HubCategoryCard(
+                        section = category,
+                        onClick = { navController.navigate(category.route) },
                     )
-                    val chevronRotation by animateFloatAsState(
-                        targetValue = if (expanded) 90f else 0f,
-                        animationSpec = tween(durationMillis = 150),
-                        label = "settingsGroupChevron",
-                    )
-                    HubGroupCard {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .semantics { stateDescription = expansionState }
-                                .clickable(
-                                    role = Role.Button,
-                                    onClickLabel = expansionLabel,
-                                ) { expanded = !expanded }
-                                .heightIn(min = 88.dp)
-                                .padding(horizontal = 16.dp, vertical = 16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Surface(
-                                shape = RoundedCornerShape(16.dp),
-                                color = MaterialTheme.colorScheme.secondaryContainer,
-                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                            ) {
-                                Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
-                                    Icon(hubItemIcon(section.items.first()), null, Modifier.size(24.dp))
-                                }
-                            }
-                            Spacer(Modifier.width(14.dp))
-                            Column(
-                                modifier = Modifier.weight(1f),
-                                verticalArrangement = Arrangement.spacedBy(4.dp),
-                            ) {
-                                Text(
-                                    text = stringResource(section.titleRes),
-                                    style = MaterialTheme.typography.titleMedium,
-                                )
-                                Text(
-                                    text = section.items.take(3).joinToString(" · ") {
-                                        context.getString(settingsHubItems.getValue(it).titleRes)
-                                    },
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                            }
-                            Icon(
-                                HugeIcons.ArrowRight01,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(20.dp).rotate(chevronRotation),
-                            )
-                        }
-                        // Avoid animating a whole lazy item's height on every frame.
-                        if (expanded) {
-                            Column {
-                                section.items.forEach { itemId ->
-                                    HubRowDivider()
-                                    val def = settingsHubItems.getValue(itemId)
-                                    HubRow(
-                                        icon = hubItemIcon(itemId),
-                                        title = stringResource(def.titleRes),
-                                        summary = hubItemSummary(itemId, settings, statusSource),
-                                        onClick = {
-                                            when (itemId) {
-                                                SettingsHubItemId.SHARE -> {
-                                                    val intent = Intent(Intent.ACTION_SEND)
-                                                    intent.type = "text/plain"
-                                                    intent.putExtra(Intent.EXTRA_TEXT, shareText)
-                                                    try {
-                                                        context.startActivity(Intent.createChooser(intent, shareLabel))
-                                                    } catch (e: ActivityNotFoundException) {
-                                                        Toast.makeText(context, noShareApp, Toast.LENGTH_SHORT).show()
-                                                    }
-                                                }
-
-                                                else -> def.route?.let { navController.navigate(it) }
-                                            }
-                                        },
-                                    )
-                                }
-                            }
-                        }
+                }
+            } else {
+                item("category_intro") {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            text = stringResource(section.descriptionRes),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            text = stringResource(R.string.setting_hub_category_count, section.items.size),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
                     }
                 }
+                items(section.items, key = { it.name }) { itemId ->
+                    val def = settingsHubItems.getValue(itemId)
+                    HubRow(
+                        icon = hubItemIcon(itemId),
+                        title = stringResource(def.titleRes),
+                        summary = statusSource?.let { hubItemSummary(itemId, settings, it) },
+                        onClick = {
+                            when (itemId) {
+                                SettingsHubItemId.SHARE -> {
+                                    val intent = Intent(Intent.ACTION_SEND)
+                                    intent.type = "text/plain"
+                                    intent.putExtra(Intent.EXTRA_TEXT, shareText)
+                                    try {
+                                        context.startActivity(Intent.createChooser(intent, shareLabel))
+                                    } catch (e: ActivityNotFoundException) {
+                                        Toast.makeText(context, noShareApp, Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                                else -> def.route?.let { navController.navigate(it) }
+                            }
+                        },
+                    )
+                }
             }
+            item("bottom_spacer") { Spacer(Modifier.height(24.dp)) }
+        }
+    }
+}
 
-            item("bottom_spacer") {
-                Spacer(Modifier.height(24.dp))
+@Composable
+private fun HubCategoryCard(section: SettingsHubSectionDef, onClick: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    val (iconContainer, iconColor) = when (section.id) {
+        SettingsHubSectionId.MODELS, SettingsHubSectionId.APPEARANCE ->
+            colors.primaryContainer to colors.onPrimaryContainer
+        SettingsHubSectionId.CHAT, SettingsHubSectionId.DATA ->
+            colors.tertiaryContainer to colors.onTertiaryContainer
+        else -> colors.secondaryContainer to colors.onSecondaryContainer
+    }
+    val icon = when (section.id) {
+        SettingsHubSectionId.MODELS -> HugeIcons.ServerStack01
+        SettingsHubSectionId.CHAT -> HugeIcons.Message01
+        SettingsHubSectionId.CONNECTIONS -> HugeIcons.Puzzle
+        SettingsHubSectionId.APPEARANCE -> HugeIcons.Palette
+        SettingsHubSectionId.DATA -> HugeIcons.Shield01
+        SettingsHubSectionId.ABOUT -> HugeIcons.Wrench01
+        SettingsHubSectionId.AGENT -> HugeIcons.Robot01
+        SettingsHubSectionId.DEVICE -> HugeIcons.SmartPhone01
+        SettingsHubSectionId.AUTOMATION -> HugeIcons.Clock02
+    }
+    Surface(
+        onClick = onClick,
+        shape = HubCardShape,
+        color = colors.surfaceContainerLowest,
+        border = BorderStroke(1.dp, colors.outlineVariant.copy(alpha = 0.7f)),
+        shadowElevation = 1.dp,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier
+                .heightIn(min = 112.dp)
+                .padding(18.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Surface(
+                shape = RoundedCornerShape(18.dp),
+                color = iconContainer,
+                contentColor = iconColor,
+            ) {
+                Box(Modifier.size(52.dp), contentAlignment = Alignment.Center) {
+                    Icon(icon, null, Modifier.size(26.dp))
+                }
+            }
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Text(
+                    text = stringResource(section.titleRes),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = stringResource(section.descriptionRes),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.onSurfaceVariant,
+                )
+            }
+            Surface(shape = CircleShape, color = colors.surfaceContainerLow) {
+                Box(Modifier.size(28.dp), contentAlignment = Alignment.Center) {
+                    Icon(HugeIcons.ArrowRight01, null, Modifier.size(16.dp), tint = colors.onSurfaceVariant)
+                }
             }
         }
     }
@@ -301,7 +309,8 @@ private fun HubSearchBox(onClick: () -> Unit) {
     val hint = stringResource(R.string.setting_hub_search_hint)
     Surface(
         shape = RoundedCornerShape(24.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+        color = MaterialTheme.colorScheme.surfaceContainerLowest,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f)),
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 4.dp)
@@ -317,8 +326,8 @@ private fun HubSearchBox(onClick: () -> Unit) {
             Icon(
                 HugeIcons.GlobalSearch,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(20.dp),
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(22.dp),
             )
             Spacer(Modifier.width(10.dp))
             Text(
@@ -330,28 +339,6 @@ private fun HubSearchBox(onClick: () -> Unit) {
     }
 }
 
-/** Use the same card tone as the settings sub-pages. */
-@Composable
-private fun HubGroupCard(content: @Composable () -> Unit) {
-    Surface(
-        shape = HubCardShape,
-        color = CustomColors.listItemColors.containerColor,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column { content() }
-    }
-}
-
-/** Thin divider between rows, starting after the icon so the icons read as one column. */
-@Composable
-private fun HubRowDivider() {
-    HorizontalDivider(
-        thickness = Dp.Hairline,
-        color = MaterialTheme.colorScheme.outlineVariant,
-        modifier = Modifier.padding(start = HubRowStartPadding + HubIconSize + HubRowGap, end = 16.dp),
-    )
-}
-
 @Composable
 private fun HubRow(
     icon: ImageVector,
@@ -359,55 +346,59 @@ private fun HubRow(
     summary: String?,
     onClick: () -> Unit,
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(role = Role.Button, onClick = onClick)
-            .heightIn(min = 72.dp)
-            .padding(start = HubRowStartPadding, end = 16.dp, top = 12.dp, bottom = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
+    Surface(
+        onClick = onClick,
+        shape = HubCardShape,
+        color = MaterialTheme.colorScheme.surfaceContainerLowest,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f)),
+        modifier = Modifier.fillMaxWidth(),
     ) {
-        Box(
+        Row(
             modifier = Modifier
-                .size(HubIconSize)
-                .clip(RoundedCornerShape(14.dp))
-                .background(MaterialTheme.colorScheme.surfaceContainerLow),
-            contentAlignment = Alignment.Center,
+                .heightIn(min = 80.dp)
+                .padding(start = HubRowStartPadding, end = 16.dp, top = 12.dp, bottom = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(
-                icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(20.dp),
-            )
-        }
-        Spacer(Modifier.width(HubRowGap))
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            if (!summary.isNullOrBlank()) {
-                Text(
-                    text = summary,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
+            Box(
+                modifier = Modifier
+                    .size(HubIconSize)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.size(20.dp),
                 )
             }
+            Spacer(Modifier.width(HubRowGap))
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                if (!summary.isNullOrBlank()) {
+                    Text(
+                        text = summary,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            Spacer(Modifier.width(4.dp))
+            Icon(
+                HugeIcons.ArrowRight01,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.outline,
+                modifier = Modifier.size(18.dp),
+            )
         }
-        Spacer(Modifier.width(4.dp))
-        Icon(
-            HugeIcons.ArrowRight01,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.outline,
-            modifier = Modifier.size(18.dp),
-        )
     }
 }
 
@@ -568,7 +559,7 @@ private fun hubItemSummary(id: SettingsHubItemId, settings: Settings, status: Hu
 }
 
 private fun hubItemIcon(id: SettingsHubItemId): ImageVector = when (id) {
-    SettingsHubItemId.PROVIDERS -> HugeIcons.Brain02
+    SettingsHubItemId.PROVIDERS -> HugeIcons.ServerStack01
     SettingsHubItemId.MODELS -> HugeIcons.AiMagic
     SettingsHubItemId.ASSISTANT -> HugeIcons.LookTop
     SettingsHubItemId.PROMPTS -> HugeIcons.Book03
@@ -612,39 +603,34 @@ private fun hubItemIcon(id: SettingsHubItemId): ImageVector = when (id) {
 
 @Composable
 private fun ProviderConfigWarningCard(navController: Navigator) {
-    Card(
-        modifier = Modifier.padding(top = 12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer
-        )
+    Surface(
+        onClick = { navController.navigate(Screen.SettingProvider) },
+        shape = HubCardShape,
+        color = MaterialTheme.colorScheme.errorContainer,
+        contentColor = MaterialTheme.colorScheme.onErrorContainer,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.2f)),
+        modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp),
-            horizontalAlignment = Alignment.End
+        Row(
+            modifier = Modifier.padding(18.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            ListItem(
-                supportingContent = {
-                    Text(stringResource(R.string.setting_page_config_api_desc))
-                },
-                leadingContent = {
-                    Icon(HugeIcons.Alert01, null)
-                },
-                colors = ListItemDefaults.colors(
-                    containerColor = Color.Transparent
+            Icon(HugeIcons.Alert01, null, Modifier.size(24.dp))
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Text(
+                    stringResource(R.string.setting_page_config_api_title),
+                    style = MaterialTheme.typography.titleSmall,
                 )
-            ) {
-                Text(stringResource(R.string.setting_page_config_api_title))
+                Text(
+                    stringResource(R.string.setting_page_config_api_desc),
+                    style = MaterialTheme.typography.bodySmall,
+                )
             }
-
-            TextButton(
-                onClick = {
-                    navController.navigate(Screen.SettingProvider)
-                }
-            ) {
-                Text(stringResource(R.string.setting_page_config))
-            }
+            Icon(HugeIcons.ArrowRight01, stringResource(R.string.setting_page_config), Modifier.size(20.dp))
         }
     }
 }

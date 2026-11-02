@@ -57,4 +57,12 @@
   <string name="setting_hub_summary_files" formatted="true">%1$d · %2$.1f MB</string>
   <string name="setting_hub_summary_granted">Granted</string>
   <string name="setting_hub_summary_not_granted">Not granted</string>
+  <string name="setting_hub_categories">Browse by category</string>
+  <string name="setting_hub_category_count">%1$d settings</string>
+  <string name="setting_hub_category_models_desc">Providers, default models, search and speech</string>
+  <string name="setting_hub_category_chat_desc">Assistants, prompts and conversation context</string>
+  <string name="setting_hub_category_connections_desc">Skills, tools, permissions and automation</string>
+  <string name="setting_hub_category_appearance_desc">Themes, typography, layouts and interaction</string>
+  <string name="setting_hub_category_data_desc">Backups, files and stored credentials</string>
+  <string name="setting_hub_category_about_desc">Diagnostics, logs and app information</string>
 </resources>

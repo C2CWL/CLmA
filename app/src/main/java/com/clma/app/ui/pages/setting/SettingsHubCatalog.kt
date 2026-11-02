@@ -3,6 +3,7 @@ package com.clma.app.ui.pages.setting
 import androidx.annotation.StringRes
 import com.clma.app.R
 import com.clma.app.Screen
+import kotlinx.serialization.Serializable
 
 /**
  * Stable id for one hub row. Icons, status summaries and special actions (share) live in
@@ -69,6 +70,7 @@ enum class SettingsHubItemId {
     SHARE,
 }
 
+@Serializable
 enum class SettingsHubSectionId {
     MODELS,
     AGENT,
@@ -97,8 +99,11 @@ data class SettingsHubItemDef(
 data class SettingsHubSectionDef(
     val id: SettingsHubSectionId,
     @param:StringRes val titleRes: Int,
+    @param:StringRes val descriptionRes: Int,
     val items: List<SettingsHubItemId>,
-)
+) {
+    val route: Screen.SettingsCategory get() = Screen.SettingsCategory(id)
+}
 
 private fun hubItem(
     id: SettingsHubItemId,
@@ -164,6 +169,7 @@ val settingsHubSections: List<SettingsHubSectionDef> = listOf(
     SettingsHubSectionDef(
         id = SettingsHubSectionId.MODELS,
         titleRes = R.string.setting_hub_group_models,
+        descriptionRes = R.string.setting_hub_category_models_desc,
         items = listOf(
             SettingsHubItemId.PROVIDERS,
             SettingsHubItemId.MODELS,
@@ -174,6 +180,7 @@ val settingsHubSections: List<SettingsHubSectionDef> = listOf(
     SettingsHubSectionDef(
         id = SettingsHubSectionId.CHAT,
         titleRes = R.string.setting_hub_group_chat,
+        descriptionRes = R.string.setting_hub_category_chat_desc,
         items = listOf(
             SettingsHubItemId.ASSISTANT,
             SettingsHubItemId.PROMPTS,
@@ -184,6 +191,7 @@ val settingsHubSections: List<SettingsHubSectionDef> = listOf(
     SettingsHubSectionDef(
         id = SettingsHubSectionId.CONNECTIONS,
         titleRes = R.string.setting_hub_group_connections,
+        descriptionRes = R.string.setting_hub_category_connections_desc,
         items = listOf(
             SettingsHubItemId.WORKSPACES,
             SettingsHubItemId.SKILLS,
@@ -207,6 +215,7 @@ val settingsHubSections: List<SettingsHubSectionDef> = listOf(
     SettingsHubSectionDef(
         id = SettingsHubSectionId.APPEARANCE,
         titleRes = R.string.setting_hub_group_appearance,
+        descriptionRes = R.string.setting_hub_category_appearance_desc,
         items = listOf(
             SettingsHubItemId.VISUAL_STYLE,
             SettingsHubItemId.COLOR_MODE,
@@ -221,6 +230,7 @@ val settingsHubSections: List<SettingsHubSectionDef> = listOf(
     SettingsHubSectionDef(
         id = SettingsHubSectionId.DATA,
         titleRes = R.string.setting_hub_group_data,
+        descriptionRes = R.string.setting_hub_category_data_desc,
         items = listOf(
             SettingsHubItemId.BACKUP,
             SettingsHubItemId.FILES,
@@ -230,6 +240,7 @@ val settingsHubSections: List<SettingsHubSectionDef> = listOf(
     SettingsHubSectionDef(
         id = SettingsHubSectionId.ABOUT,
         titleRes = R.string.setting_hub_group_about,
+        descriptionRes = R.string.setting_hub_category_about_desc,
         items = listOf(
             SettingsHubItemId.DOCTOR,
             SettingsHubItemId.LOGS,
