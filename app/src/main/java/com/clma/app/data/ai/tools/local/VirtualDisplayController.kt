@@ -12,6 +12,8 @@ import android.os.HandlerThread
 import android.util.Log
 import android.view.Surface
 import com.clma.app.service.VirtualDisplayPreviewWindow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import com.clma.app.virtualdisplay.VirtualDisplayLauncher
 
 /**
@@ -42,6 +44,9 @@ object VirtualDisplayController {
 
     /** Managed display entries, keyed by display id. */
     private val displays = mutableMapOf<Int, DisplayEntry>()
+
+    private val _activeDisplays = MutableStateFlow<List<DisplayInfo>>(emptyList())
+    val activeDisplays = _activeDisplays.asStateFlow()
 
     /** Lock for [displays]. */
     private val lock = Any()
@@ -156,7 +161,10 @@ object VirtualDisplayController {
         showPreview: Boolean,
     ) {
         attachFrameListener(entry)
-        synchronized(lock) { displays[displayId] = entry }
+        synchronized(lock) {
+            displays[displayId] = entry
+            _activeDisplays.value = displays.values.map { it.info }
+        }
         if (showPreview) {
             VirtualDisplayPreviewWindow.show(context.applicationContext, entry.info)
         }
@@ -186,7 +194,11 @@ object VirtualDisplayController {
      * Destroy a virtual display by id. Returns true if found and destroyed.
      */
     fun destroy(displayId: Int): Boolean {
-        val entry = synchronized(lock) { displays.remove(displayId) } ?: return false
+        val entry = synchronized(lock) {
+            displays.remove(displayId).also {
+                _activeDisplays.value = displays.values.map { it.info }
+            }
+        } ?: return false
         // Close the preview first so it stops polling before the reader goes away.
         VirtualDisplayPreviewWindow.hideIfShowing(displayId)
         return when (entry) {

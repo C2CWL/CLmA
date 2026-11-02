@@ -418,6 +418,18 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
         ),
     ),
     SettingsSearchPageSpec(
+        route = Screen.VirtualDisplays,
+        parent = Screen.SettingShizuku,
+        titleRes = R.string.virtual_display_manage_title,
+        items = listOf(
+            row(R.string.virtual_display_manage_title, R.string.virtual_display_manage_description),
+            row(R.string.virtual_display_create_manual),
+            row(R.string.virtual_display_show_preview),
+            row(R.string.virtual_display_hide_preview),
+            row(R.string.virtual_display_stop),
+        ),
+    ),
+    SettingsSearchPageSpec(
         route = Screen.SettingTermux,
         items = listOf(
             row(R.string.setting_termux_status_app),

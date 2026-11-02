@@ -53,6 +53,7 @@ private const val SHIZUKU_RELEASES_URL = "https://github.com/RikkaApps/Shizuku/r
  */
 @Composable
 fun SettingShizukuPage() {
+    val navigator = com.clma.app.ui.context.LocalNavController.current
     val ctx = LocalContext.current
     val toaster = LocalToaster.current
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -182,6 +183,13 @@ fun SettingShizukuPage() {
                     leadingContent = {
                         StatusDot(color = if (permissionGranted) StatusColor.Green else StatusColor.Red)
                     },
+                )
+            }
+
+            CardGroup {
+                item(
+                    onClick = { navigator.navigate(com.clma.app.Screen.VirtualDisplays) },
+                    headlineContent = { Text(stringResource(R.string.virtual_display_manage_title)) },
                 )
             }
 

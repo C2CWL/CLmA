@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -72,6 +73,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import me.rerere.hugeicons.HugeIcons
+import me.rerere.hugeicons.stroke.ComputerTerminal01
 import me.rerere.hugeicons.stroke.ChartColumn
 import me.rerere.hugeicons.stroke.Delete01
 import me.rerere.hugeicons.stroke.Folder01
@@ -284,10 +286,7 @@ fun ChatDrawerContent(
     } else {
         null
     }
-    // 抽屉的功能区有两种做法，由 DisplaySetting.drawerCapsules 切换（默认开）：
-    //  - 开：没有底板。身份行、两个入口、文件夹、底部动作各自是小胶囊，直接落在磨砂抽屉上；
-    //    列表在控件所在的那一段渐隐（drawerFadeEdges），所以不需要卡片去遮挡滚过去的文字。
-    //  - 关：回到原来的上下两张浮岛卡片（阴影或磨砂），行为与之前完全一致。
+    // Keep the legacy card preference; the default path now embeds flat controls.
     val drawerCapsules = settings.displaySetting.drawerCapsules
     val topBarShape = RoundedCornerShape(20.dp)
 
@@ -314,8 +313,7 @@ fun ChatDrawerContent(
         )
     }
 
-    // 身份区（头像在上、昵称在下）与两个常用入口并排。两条路径共用这一块，区别只在于
-    // 外面包不包一张卡片，以及入口是圆还是胶囊。
+    // Identity, flat shortcuts, and folder tabs share the drawer surface.
     val drawerChrome: @Composable () -> Unit = {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(
@@ -374,12 +372,10 @@ fun ChatDrawerContent(
                     )
                 }
 
-                DrawerActions(
-                    navController = navController,
-                    capsule = drawerCapsules,
-                    modifier = Modifier.weight(1f),
-                )
+
             }
+
+            DrawerActions(navController = navController, modifier = Modifier.fillMaxWidth())
 
             FolderBar(
                 protectedFolderId = protectedFolderId,
@@ -545,8 +541,7 @@ fun ChatDrawerContent(
                 drawerTopArea()
             }
 
-            // 底部功能区：两种做法与顶部一致——开时是助手胶囊 + 五个动作胶囊，关时回到
-            // 原来的 M3 填充卡片浮岛。边距与顶部对称，并避让系统手势导航条。
+            // Flat action grid stays above the gesture navigation area.
             val bottomBarShape = RoundedCornerShape(20.dp)
             // 多选栏 / 助手行 + 五个动作：两条路径共用同一份内容，只是外壳不同。
             val drawerBottomContent: @Composable () -> Unit = {
@@ -602,49 +597,30 @@ fun ChatDrawerContent(
                                 navigateToChatPage(navigator = navController, chatId = id)
                             }
                         },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .then(
-                                // 胶囊路径：助手行自己就是一条胶囊，直接落在磨砂面板上；卡片路径由外面的
-                                // 卡片提供底板，这里不加任何底色。
-                                if (drawerCapsules) {
-                                    Modifier
-                                        .clip(DrawerCapsuleShape)
-                                        .background(drawerCapsuleColor())
-                                } else {
-                                    Modifier
-                                }
-                            ),
+                        modifier = Modifier.fillMaxWidth(),
                         onClickSetting = {
                             val currentAssistantId = settings.assistantId
                             navController.navigate(Screen.AssistantDetail(id = currentAssistantId.toString()))
                         }
                     )
 
-                    Row(
-                        horizontalArrangement = if (drawerCapsules) {
-                            Arrangement.spacedBy(6.dp)
-                        } else {
-                            Arrangement.SpaceAround
-                        },
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = if (drawerCapsules) 0.dp else 4.dp)
+                    FlowRow(
+                        maxItemsInEachRow = 3,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier.fillMaxWidth(),
                     ) {
                         DrawerAction(
-                            modifier = if (drawerCapsules) Modifier.weight(1f) else Modifier,
-                            capsule = drawerCapsules,
+                            modifier = Modifier.weight(1f),
                             icon = { Icon(HugeIcons.LookTop, null) },
                             label = { Text(stringResource(R.string.assistant_page_title)) },
                             contentDescription = stringResource(R.string.assistant_page_title),
                             onClick = { navController.navigate(Screen.Assistant) },
                         )
 
-                        Box(modifier = if (drawerCapsules) Modifier.weight(1f) else Modifier) {
+                        Box(modifier = Modifier.weight(1f)) {
                             DrawerAction(
-                                modifier = if (drawerCapsules) Modifier.fillMaxWidth() else Modifier,
-                                capsule = drawerCapsules,
+                                modifier = Modifier.fillMaxWidth(),
                                 icon = { Icon(HugeIcons.Sparkles, null) },
                                 label = { Text(stringResource(R.string.menu)) },
                                 contentDescription = stringResource(R.string.menu),
@@ -679,8 +655,7 @@ fun ChatDrawerContent(
                         }
 
                         DrawerAction(
-                            modifier = if (drawerCapsules) Modifier.weight(1f) else Modifier,
-                            capsule = drawerCapsules,
+                            modifier = Modifier.weight(1f),
                             icon = { Icon(HugeIcons.InLove, null) },
                             label = { Text(stringResource(R.string.favorite_page_title)) },
                             contentDescription = stringResource(R.string.favorite_page_title),
@@ -688,8 +663,15 @@ fun ChatDrawerContent(
                         )
 
                         DrawerAction(
-                            modifier = if (drawerCapsules) Modifier.weight(1f) else Modifier,
-                            capsule = drawerCapsules,
+                            modifier = Modifier.weight(1f),
+                            icon = { Icon(HugeIcons.Settings03, null) },
+                            label = { Text(stringResource(R.string.settings)) },
+                            contentDescription = stringResource(R.string.settings),
+                            onClick = { navController.navigate(Screen.Setting) },
+                        )
+
+                        DrawerAction(
+                            modifier = Modifier.weight(1f),
                             icon = { Icon(HugeIcons.ChartColumn, null) },
                             label = { Text(stringResource(R.string.chat_drawer_statistics)) },
                             contentDescription = stringResource(R.string.chat_drawer_statistics),
@@ -697,12 +679,11 @@ fun ChatDrawerContent(
                         )
 
                         DrawerAction(
-                            modifier = if (drawerCapsules) Modifier.weight(1f) else Modifier,
-                            capsule = drawerCapsules,
-                            icon = { Icon(HugeIcons.Settings03, null) },
-                            label = { Text(stringResource(R.string.settings)) },
-                            contentDescription = stringResource(R.string.settings),
-                            onClick = { navController.navigate(Screen.Setting) },
+                            modifier = Modifier.weight(1f),
+                            icon = { Icon(HugeIcons.ComputerTerminal01, null) },
+                            label = { Text(stringResource(R.string.virtual_display_manage_title)) },
+                            contentDescription = stringResource(R.string.virtual_display_manage_title),
+                            onClick = { navController.navigate(Screen.VirtualDisplays) },
                         )
                     }
                 }
@@ -1479,39 +1460,23 @@ private fun DrawerAction(
     label: @Composable () -> Unit,
     contentDescription: String? = null,
     onClick: () -> Unit,
-    capsule: Boolean = false,
 ) {
     Surface(
         onClick = onClick,
-        modifier = modifier
-            .then(if (capsule) Modifier.height(40.dp) else Modifier)
-            .semantics(mergeDescendants = true) {
-                if (contentDescription != null) {
-                    this.contentDescription = contentDescription
-                }
-            },
-        color = if (capsule) drawerCapsuleColor() else MaterialTheme.colorScheme.surfaceContainerHighest,
-        shape = if (capsule) DrawerCapsuleShape else CircleShape,
-        contentColor = MaterialTheme.colorScheme.onSurface,
+        modifier = modifier.semantics(mergeDescendants = true) {
+            if (contentDescription != null) this.contentDescription = contentDescription
+        },
+        color = Color.Transparent,
+        shape = MaterialTheme.shapes.small,
     ) {
-        Tooltip(
-            tooltip = {
-                label()
-            }
+        Column(
+            modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
         ) {
-            Box(
-                modifier = if (capsule) {
-                    Modifier
-                        .fillMaxWidth()
-                        .height(40.dp)
-                } else {
-                    Modifier
-                        .padding(9.dp)
-                        .size(20.dp)
-                },
-                contentAlignment = Alignment.Center,
-            ) {
-                icon()
+            Box(Modifier.size(20.dp), contentAlignment = Alignment.Center) { icon() }
+            androidx.compose.material3.ProvideTextStyle(MaterialTheme.typography.labelSmall) {
+                label()
             }
         }
     }
@@ -1600,14 +1565,14 @@ private fun FolderChip(
     icon: ImageVector? = null,
 ) {
     Surface(
-        shape = CircleShape,
+        shape = MaterialTheme.shapes.small,
         color = if (selected) {
             MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
         } else {
             Color.Transparent
         },
         modifier = Modifier
-            .clip(CircleShape)
+            .clip(MaterialTheme.shapes.small)
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongClick,

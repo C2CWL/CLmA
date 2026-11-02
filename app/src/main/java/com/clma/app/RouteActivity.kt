@@ -634,6 +634,10 @@ class RouteActivity : FragmentActivity() {
                                 com.clma.app.ui.pages.setting.termux.SettingTermuxPage()
                             }
 
+                            entry<Screen.VirtualDisplays> {
+                                com.clma.app.ui.pages.setting.shizuku.VirtualDisplaysPage()
+                            }
+
                             entry<Screen.SettingShizuku> {
                                 com.clma.app.ui.pages.setting.shizuku.SettingShizukuPage()
                             }
@@ -938,6 +942,9 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data object SettingShizuku : Screen
+
+    @Serializable
+    data object VirtualDisplays : Screen
 
     @Serializable
     data class ScheduledJobDetail(val id: String) : Screen
