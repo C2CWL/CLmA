@@ -162,7 +162,8 @@ object HeadlessToolApprovalPolicy {
     /**
      * Every tool this policy refuses in a headless run: the per-call-confirmation set
      * ([PER_CALL_CONFIRM_TOOL_NAMES]), [PRIVACY_SENSITIVE_TOOL_NAMES],
-     * [PRIVATE_DATA_TOOL_NAMES], [EXPERT_WRITE_TOOL_NAMES] and [MODEL_WRITE_TOOL_NAMES].
+     * [PRIVATE_DATA_TOOL_NAMES], [EXPERT_WRITE_TOOL_NAMES], [MODEL_WRITE_TOOL_NAMES]
+     * and [com.clma.app.connectors.ConnectorWriteApproval.WRITE_TOOL_NAMES].
      */
     val REFUSED_TOOL_NAMES: Set<String> =
         PER_CALL_CONFIRM_TOOL_NAMES + PRIVACY_SENSITIVE_TOOL_NAMES +

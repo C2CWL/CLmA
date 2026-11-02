@@ -18,7 +18,7 @@ import org.junit.Test
  *
  *  - every tool the user reserved for a per-call confirmation (`NO_ALWAYS_ALLOW`) is refused,
  *  - the microphone group is refused too (nobody present to consent),
- *  - an ordinary tool is never refused — the policy only ever subtracts five named groups,
+ *  - an ordinary tool is never refused — the policy only ever subtracts six named groups,
  *  - a conversation WITH an approval channel is untouched,
  *  - the refusal is a deterministic envelope, so it can never be retried.
  *
@@ -109,13 +109,14 @@ class HeadlessToolApprovalPolicyTest {
     }
 
     @Test
-    fun `the refused set is exactly the union of the five groups`() {
+    fun `the refused set is exactly the union of the six groups`() {
         assertEquals(
             HeadlessToolApprovalPolicy.PER_CALL_CONFIRM_TOOL_NAMES +
                 HeadlessToolApprovalPolicy.PRIVACY_SENSITIVE_TOOL_NAMES +
                 HeadlessToolApprovalPolicy.PRIVATE_DATA_TOOL_NAMES +
                 HeadlessToolApprovalPolicy.EXPERT_WRITE_TOOL_NAMES +
-                HeadlessToolApprovalPolicy.MODEL_WRITE_TOOL_NAMES,
+                HeadlessToolApprovalPolicy.MODEL_WRITE_TOOL_NAMES +
+                com.clma.app.connectors.ConnectorWriteApproval.WRITE_TOOL_NAMES,
             HeadlessToolApprovalPolicy.REFUSED_TOOL_NAMES,
         )
         HeadlessToolApprovalPolicy.REFUSED_TOOL_NAMES.forEach { name ->
@@ -124,13 +125,14 @@ class HeadlessToolApprovalPolicyTest {
     }
 
     @Test
-    fun `the five groups do not overlap`() {
+    fun `the six groups do not overlap`() {
         val upstream = ToolApprovalDefaults.NO_ALWAYS_ALLOW
         val mic = HeadlessToolApprovalPolicy.PRIVACY_SENSITIVE_TOOL_NAMES
         val private = HeadlessToolApprovalPolicy.PRIVATE_DATA_TOOL_NAMES
         val expertWrites = HeadlessToolApprovalPolicy.EXPERT_WRITE_TOOL_NAMES
         val modelWrites = HeadlessToolApprovalPolicy.MODEL_WRITE_TOOL_NAMES
-        val groups = listOf(upstream, mic, private, expertWrites, modelWrites)
+        val connectorWrites = com.clma.app.connectors.ConnectorWriteApproval.WRITE_TOOL_NAMES
+        val groups = listOf(upstream, mic, private, expertWrites, modelWrites, connectorWrites)
         groups.forEachIndexed { index, left ->
             groups.drop(index + 1).forEach { right ->
                 assertTrue("two headless-refusal groups overlap", (left intersect right).isEmpty())
