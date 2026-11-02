@@ -90,4 +90,20 @@ class DirectModeActionRunnerRunTest {
         }
         assertTrue("must be the real CancellationException, not a converted Failed step", caught != null)
     }
+
+    @Test
+    fun `connector writes are refused even when the tool is registered`() = runBlocking {
+        val runner = DirectModeActionRunner(kotlinx.serialization.json.Json)
+        com.clma.app.connectors.ConnectorWriteApproval.WRITE_TOOL_NAMES.forEach { name ->
+            var invoked = false
+            val tool = Tool(name = name, description = "Must not execute", execute = {
+                invoked = true
+                emptyList()
+            })
+            val result = runner.run(listOf(action(name)), listOf(tool))
+            assertEquals("failed", result.finalOutcome)
+            assertTrue(result.errorMessage.orEmpty().contains("connector_explicit_approval_required"))
+            assertTrue("the action must be refused before tool execution", !invoked)
+        }
+    }
 }

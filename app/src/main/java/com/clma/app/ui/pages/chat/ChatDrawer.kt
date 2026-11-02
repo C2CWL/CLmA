@@ -655,6 +655,11 @@ fun ChatDrawerContent(
                                 onDismissRequest = { showMenuPopup = false },
                                 items = listOf(
                                     AppMenuEntry(
+                                        text = stringResource(R.string.setting_connectors_title),
+                                        icon = HugeIcons.Settings03,
+                                        onClick = { navController.navigate(Screen.SettingConnectors) },
+                                    ),
+                                    AppMenuEntry(
                                         text = stringResource(R.string.chat_page_menu_ai_translator),
                                         icon = HugeIcons.LanguageCircle,
                                         onClick = { navController.navigate(Screen.Translator) },

@@ -29,10 +29,11 @@ internal object SettingsSearchTestStrings {
         }
     }
 
-    /** strings.xml plus any split-out strings_*.xml in the same folder (e.g. strings_visual_style.xml). */
+    /** strings.xml plus split-out string files in the same folder (strings_*.xml, connectors.xml). */
     private fun loadDir(dir: String): Map<String, String> {
-        val extra = File(dir).listFiles { f -> f.name.startsWith("strings_") && f.name.endsWith(".xml") }
-            .orEmpty().sortedBy { it.name }
+        val extra = File(dir).listFiles { f ->
+            f.name.endsWith(".xml") && (f.name.startsWith("strings_") || f.name == "connectors.xml")
+        }.orEmpty().sortedBy { it.name }
         return extra.fold(load("$dir/strings.xml")) { acc, f -> acc + load(f.path) }
     }
 

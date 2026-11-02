@@ -341,6 +341,8 @@ object LocalToolGroups {
         LocalToolOption.VirtualDisplay,
         LocalToolOption.KeyboardControl,
         LocalToolOption.ModelControl,
+        LocalToolOption.Gmail,
+        LocalToolOption.GitHub,
     )
 
     private val index: Map<LocalToolOption, Int> =

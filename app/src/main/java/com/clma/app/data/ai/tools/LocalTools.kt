@@ -212,6 +212,8 @@ sealed class LocalToolOption {
 
     // P2-37 model-roster tools (model_list / model_add / model_update / model_delete)
     @Serializable @SerialName("model_control")        data object ModelControl        : LocalToolOption()
+    @Serializable @SerialName("gmail")                data object Gmail               : LocalToolOption()
+    @Serializable @SerialName("github")               data object GitHub              : LocalToolOption()
 }
 
 /**
@@ -397,6 +399,8 @@ class LocalTools(
     private val providerManager: com.clma.ai.provider.ProviderManager,
     private val filesManager: com.clma.app.data.files.FilesManager,
     private val genMediaRepository: com.clma.app.data.repository.GenMediaRepository,
+    private val gmailConnector: com.clma.app.connectors.GmailConnector,
+    private val gitHubConnector: com.clma.app.connectors.GitHubConnector,
 ) {
     val javascriptTool by lazy {
         Tool(
@@ -1219,6 +1223,15 @@ class LocalTools(
             tools.add(com.clma.app.data.ai.model.modelAddTool(settingsStore, agentRunRepository))
             tools.add(com.clma.app.data.ai.model.modelUpdateTool(settingsStore, agentRunRepository))
             tools.add(com.clma.app.data.ai.model.modelDeleteTool(settingsStore, agentRunRepository))
+        }
+        if (options.contains(LocalToolOption.Gmail)) {
+            tools.addAll(com.clma.app.connectors.gmailTools(gmailConnector, invocationContext))
+        }
+        if (options.contains(LocalToolOption.GitHub)) {
+            tools.addAll(com.clma.app.connectors.gitHubTools(gitHubConnector, invocationContext))
+        }
+        if (options.contains(LocalToolOption.Gmail) || options.contains(LocalToolOption.GitHub)) {
+            tools.add(com.clma.app.connectors.connectorsListTool(gmailConnector, gitHubConnector, invocationContext))
         }
         // Blacklist era: every tool is routed through the runtime approval decision
         // (ChatService.isToolAutoApproved → ToolApprovalPolicy), so `needsApproval` is true

@@ -74,6 +74,7 @@ object ToolApprovalPolicy {
         floorWaived: Set<String> = emptySet(),
         mcpRequireApproval: Boolean = true,
     ): Boolean {
+        if (com.clma.app.connectors.ConnectorWriteApproval.requiresApproval(toolName)) return false
         if (toolName in HUMAN_INPUT_TOOLS) return headless
         if (headless) return true
         // An explicit "allow for this chat" grant (in-memory, this conversation only) covers

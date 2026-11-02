@@ -65,6 +65,7 @@ sqlite-android = "80cedc8888df2fe1d22d7f9bf8d9287f621624be"
 termux = "0.118.0"
 diffutils = "4.17"
 playServicesLocation = "21.3.0"
+playServicesAuth = "21.4.0"
 kotlinxCoroutinesPlayServices = "1.11.0"
 biometric = "1.2.0-alpha05"
 media = "1.7.0"
@@ -204,6 +205,7 @@ sqlite-android = { module = "com.github.rikkahub:sqlite-android", version.ref = 
 termux-terminal-view = { module = "com.termux.termux-app:terminal-view", version.ref = "termux" }
 guava-listenablefuture = { module = "com.google.guava:listenablefuture", version = "9999.0-empty-to-avoid-conflict-with-guava" }
 play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "playServicesLocation" }
+play-services-auth = { module = "com.google.android.gms:play-services-auth", version.ref = "playServicesAuth" }
 vico-compose-m3 = { group = "com.patrykandpatrick.vico", name = "compose-m3", version.ref = "vico" }
 kotlinx-coroutines-play-services = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-play-services", version.ref = "kotlinxCoroutinesPlayServices" }
 androidx-biometric = { group = "androidx.biometric", name = "biometric", version.ref = "biometric" }

@@ -311,6 +311,19 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
                         McpServerTag(it.serverName)
                     }
                     ToolDisplaySupporting(toolName = tool.toolName, mcpDescription = mcpDescription)
+                    if (com.clma.app.connectors.ConnectorWriteApproval.requiresApproval(tool.toolName)) {
+                        Text(
+                            text = stringResource(R.string.connector_write_approval_warning),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                        androidx.compose.foundation.text.selection.SelectionContainer {
+                            Text(
+                                text = tool.inputAsJson().toString(),
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                    }
                     // schedule_job is the one approval that AUTHORISES future autonomous
                     // execution, not just one tool. Surface the consequence here so the
                     // user knows what they're approving — every tool the cron prompt
@@ -414,21 +427,23 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
                                 }
                             },
                         )
-                        ApprovalButton(
-                            label = stringResource(R.string.chat_message_tool_allow_chat),
-                            emoji = "💬",
-                            enabled = !inFlight,
-                            onClick = {
-                                if (!inFlight) {
-                                    inFlight = true
-                                    onToolApproval(
-                                        tool.toolCallId, true, "",
-                                        com.clma.app.service.ChatService.ApprovalScope.ChatScope,
-                                        tool.toolName,
-                                    )
-                                }
-                            },
-                        )
+                        if (!com.clma.app.connectors.ConnectorWriteApproval.requiresApproval(tool.toolName)) {
+                            ApprovalButton(
+                                label = stringResource(R.string.chat_message_tool_allow_chat),
+                                emoji = "💬",
+                                enabled = !inFlight,
+                                onClick = {
+                                    if (!inFlight) {
+                                        inFlight = true
+                                        onToolApproval(
+                                            tool.toolCallId, true, "",
+                                            com.clma.app.service.ChatService.ApprovalScope.ChatScope,
+                                            tool.toolName,
+                                        )
+                                    }
+                                },
+                            )
+                        }
                         ApprovalButton(
                             label = stringResource(R.string.chat_message_tool_deny),
                             icon = HugeIcons.Cancel01,

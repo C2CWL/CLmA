@@ -555,6 +555,7 @@ private fun hubItemSummary(id: SettingsHubItemId, settings: Settings, status: Hu
         SettingsHubItemId.TERMUX,
         SettingsHubItemId.SSH,
         SettingsHubItemId.BROWSER,
+        SettingsHubItemId.CONNECTORS,
         SettingsHubItemId.PERMISSIONS,
         SettingsHubItemId.ACCESSIBILITY,
         SettingsHubItemId.SHIZUKU,
@@ -583,6 +584,7 @@ private fun hubItemIcon(id: SettingsHubItemId): ImageVector = when (id) {
     SettingsHubItemId.TERMUX -> HugeIcons.ComputerTerminal01
     SettingsHubItemId.SSH -> HugeIcons.Link01
     SettingsHubItemId.BROWSER -> HugeIcons.Earth
+    SettingsHubItemId.CONNECTORS -> HugeIcons.Link01
     SettingsHubItemId.SECRETS -> HugeIcons.Lock
     SettingsHubItemId.PERMISSIONS -> HugeIcons.Shield01
     SettingsHubItemId.ACCESSIBILITY -> HugeIcons.SmartPhone01

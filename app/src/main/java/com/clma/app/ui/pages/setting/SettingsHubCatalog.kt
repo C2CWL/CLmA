@@ -31,6 +31,7 @@ enum class SettingsHubItemId {
     TERMUX,
     SSH,
     BROWSER,
+    CONNECTORS,
     SECRETS,
 
     // 设备与权限
@@ -126,6 +127,7 @@ val settingsHubItems: Map<SettingsHubItemId, SettingsHubItemDef> = listOf(
     hubItem(SettingsHubItemId.TERMUX, Screen.SettingTermux, R.string.setting_page_termux, R.string.setting_page_termux_desc),
     hubItem(SettingsHubItemId.SSH, Screen.SettingSsh, R.string.setting_page_ssh, R.string.setting_page_ssh_desc),
     hubItem(SettingsHubItemId.BROWSER, Screen.SettingBrowser, R.string.setting_page_browser, R.string.setting_page_browser_desc),
+    hubItem(SettingsHubItemId.CONNECTORS, Screen.SettingConnectors, R.string.setting_connectors_title, R.string.setting_connectors_desc),
     hubItem(SettingsHubItemId.SECRETS, Screen.SettingSecrets, R.string.setting_page_secrets, R.string.setting_page_secrets_desc),
 
     hubItem(SettingsHubItemId.PERMISSIONS, Screen.SettingPermissions, R.string.setting_hub_permissions, R.string.setting_page_permissions_desc),
@@ -192,6 +194,7 @@ val settingsHubSections: List<SettingsHubSectionDef> = listOf(
             SettingsHubItemId.TERMUX,
             SettingsHubItemId.SSH,
             SettingsHubItemId.BROWSER,
+            SettingsHubItemId.CONNECTORS,
             SettingsHubItemId.PERMISSIONS,
             SettingsHubItemId.ACCESSIBILITY,
             SettingsHubItemId.SHIZUKU,
