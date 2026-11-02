@@ -2,8 +2,6 @@ package com.clma.app.ui.pages.extensions.skills
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,8 +23,6 @@ import com.clma.app.ui.components.ui.DialogSecondaryButton
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FloatingActionButton
@@ -66,6 +62,8 @@ import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.X
 import com.dokar.sonner.ToastType
 import com.clma.app.R
+import com.clma.app.ui.components.ui.AppDropdownMenu
+import com.clma.app.ui.components.ui.AppDropdownMenuItem
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Add01
 import me.rerere.hugeicons.stroke.Delete01
@@ -641,22 +639,15 @@ private fun SkillCard(
                         contentDescription = stringResource(R.string.skills_page_more_actions),
                     )
                 }
-                DropdownMenu(
+                AppDropdownMenu(
                     expanded = menuExpanded,
                     onDismissRequest = { menuExpanded = false },
-                    shape = RoundedCornerShape(24.dp),
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                    tonalElevation = 0.dp,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                 ) {
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error) },
+                    AppDropdownMenuItem(
+                        text = { Text(stringResource(R.string.delete)) },
+                        destructive = true,
                         leadingIcon = {
-                            Icon(
-                                imageVector = HugeIcons.Delete01,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.error,
-                            )
+                            Icon(HugeIcons.Delete01, contentDescription = null)
                         },
                         onClick = {
                             menuExpanded = false
@@ -888,15 +879,11 @@ private fun GroupHeader(
                     contentDescription = stringResource(R.string.skills_page_more_actions),
                 )
             }
-            DropdownMenu(
+            AppDropdownMenu(
                 expanded = menuExpanded,
                 onDismissRequest = { menuExpanded = false },
-                shape = RoundedCornerShape(24.dp),
-                containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                tonalElevation = 0.dp,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
             ) {
-                DropdownMenuItem(
+                AppDropdownMenuItem(
                     text = { Text(stringResource(R.string.skills_page_group_edit)) },
                     leadingIcon = {
                         Icon(HugeIcons.Puzzle, contentDescription = null)
@@ -906,8 +893,9 @@ private fun GroupHeader(
                         onEdit()
                     },
                 )
-                DropdownMenuItem(
+                AppDropdownMenuItem(
                     text = { Text(stringResource(R.string.skills_page_group_delete)) },
+                    destructive = true,
                     leadingIcon = {
                         Icon(HugeIcons.Delete01, contentDescription = null)
                     },
@@ -916,19 +904,11 @@ private fun GroupHeader(
                         onDelete(false)
                     },
                 )
-                DropdownMenuItem(
-                    text = {
-                        Text(
-                            stringResource(R.string.skills_page_group_delete_with_skills),
-                            color = MaterialTheme.colorScheme.error,
-                        )
-                    },
+                AppDropdownMenuItem(
+                    text = { Text(stringResource(R.string.skills_page_group_delete_with_skills)) },
+                    destructive = true,
                     leadingIcon = {
-                        Icon(
-                            HugeIcons.Delete01,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error,
-                        )
+                        Icon(HugeIcons.Delete01, contentDescription = null)
                     },
                     onClick = {
                         menuExpanded = false

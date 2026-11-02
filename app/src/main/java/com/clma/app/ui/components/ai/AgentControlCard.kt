@@ -16,8 +16,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -42,6 +40,8 @@ import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ArrowDown01
 import me.rerere.hugeicons.stroke.Tick02
 import com.clma.app.R
+import com.clma.app.ui.components.ui.AppDropdownMenu
+import com.clma.app.ui.components.ui.AppDropdownMenuItem
 import com.clma.app.data.ai.tools.ApprovalMode
 import com.clma.app.data.datastore.SettingsStore
 import com.clma.app.data.datastore.getCurrentAssistant
@@ -255,9 +255,9 @@ private fun ApprovalModeChip(
             contentDescription = stringResource(R.string.setting_page_tool_approvals_mode_title),
             onClick = { open = true },
         )
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+        AppDropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             ApprovalMode.entries.forEach { entry ->
-                DropdownMenuItem(
+                AppDropdownMenuItem(
                     text = { Text(approvalModeLabel(entry)) },
                     leadingIcon = {
                         if (entry == mode) {
@@ -286,9 +286,9 @@ private fun DispatchProfileChip(
             contentDescription = stringResource(R.string.setting_sub_agents_dispatch_profile_title),
             onClick = { open = true },
         )
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+        AppDropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             SubAgentDispatchProfile.entries.forEach { entry ->
-                DropdownMenuItem(
+                AppDropdownMenuItem(
                     text = { Text(dispatchProfileLabel(entry)) },
                     leadingIcon = {
                         if (entry == profile) {

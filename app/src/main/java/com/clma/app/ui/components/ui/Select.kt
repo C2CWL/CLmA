@@ -11,16 +11,11 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExposedDropdownMenu
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -34,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -43,10 +39,7 @@ import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ArrowDown01
 import me.rerere.hugeicons.stroke.ArrowUp01
 import com.clma.app.R
-import com.clma.app.data.datastore.PopupMenuStyle
-import com.clma.app.ui.context.LocalSettings
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun <T> Select(
     options: List<T>,
@@ -100,56 +93,20 @@ fun <T> Select(
                 )
             }
         }
-        // LocalSettings.current is @Composable — cannot wrap in runCatching.
-        val popupStyle = LocalSettings.current.displaySetting.popupMenuStyle
-        val expressive = popupStyle == PopupMenuStyle.EXPRESSIVE
-        ExposedDropdownMenu(
+        AppExposedDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            shape = if (expressive) {
-                MaterialTheme.shapes.large
-            } else {
-                MaterialTheme.shapes.extraSmall
-            },
-            containerColor = if (expressive) {
-                MaterialTheme.colorScheme.surfaceContainerHigh
-            } else {
-                MenuDefaults.containerColor
-            },
-            shadowElevation = if (expressive) 3.dp else MenuDefaults.ShadowElevation,
         ) {
-            val count = options.size
-            options.forEachIndexed { index, option ->
-                val itemShape = if (expressive) {
-                    when {
-                        count == 1 -> MenuDefaults.standaloneItemShape
-                        index == 0 -> MenuDefaults.leadingItemShape
-                        index == count - 1 -> MenuDefaults.trailingItemShape
-                        else -> MenuDefaults.middleItemShape
-                    }
-                } else {
-                    null
-                }
-                if (itemShape != null) {
-                    DropdownMenuItem(
-                        onClick = {
-                            onOptionSelected(option)
-                            expanded = false
-                        },
-                        text = { Text(text = optionToString(option), maxLines = 1) },
-                        shape = itemShape,
-                        leadingIcon = optionLeading?.let { { it(option) } },
-                    )
-                } else {
-                    DropdownMenuItem(
-                        text = { Text(text = optionToString(option), maxLines = 1) },
-                        onClick = {
-                            onOptionSelected(option)
-                            expanded = false
-                        },
-                        leadingIcon = optionLeading?.let { { it(option) } },
-                    )
-                }
+            options.forEach { option ->
+                AppDropdownMenuItem(
+                    text = { Text(text = optionToString(option)) },
+                    onClick = {
+                        onOptionSelected(option)
+                        expanded = false
+                    },
+                    leadingIcon = optionLeading?.let { { it(option) } },
+                    selected = option == selectedOption,
+                )
             }
         }
     }
@@ -211,7 +168,7 @@ fun <T> SelectTextField(
             )
         }
 
-        DropdownMenu(
+        AppDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
             modifier = Modifier
@@ -219,8 +176,10 @@ fun <T> SelectTextField(
                 .heightIn(max = 240.dp)
         ) {
             options.fastForEach { option ->
-                DropdownMenuItem(
-                    text = { Text(text = optionToString(option), maxLines = 1) },
+                val label = optionToString(option)
+                AppDropdownMenuItem(
+                    text = { Text(text = label, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                    selected = value == label,
                     onClick = {
                         expanded = false
                         onOptionSelected(option)

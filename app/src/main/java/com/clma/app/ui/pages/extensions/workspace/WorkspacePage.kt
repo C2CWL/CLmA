@@ -14,8 +14,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -48,6 +46,8 @@ import com.clma.app.Screen
 import com.clma.app.data.db.entity.WorkspaceEntity
 import androidx.compose.ui.res.stringResource
 import com.clma.app.R
+import com.clma.app.ui.components.ui.AppDropdownMenu
+import com.clma.app.ui.components.ui.AppDropdownMenuItem
 import com.clma.app.ui.components.nav.BackButton
 import com.clma.app.ui.components.ui.RikkaConfirmDialog
 import com.clma.app.ui.context.LocalNavController
@@ -226,11 +226,11 @@ private fun WorkspaceCard(
                     IconButton(onClick = { menuExpanded = true }) {
                         Icon(HugeIcons.MoreVertical, contentDescription = stringResource(R.string.accessibility_more_options))
                     }
-                    DropdownMenu(
+                    AppDropdownMenu(
                         expanded = menuExpanded,
                         onDismissRequest = { menuExpanded = false },
                     ) {
-                        DropdownMenuItem(
+                        AppDropdownMenuItem(
                             text = { Text(stringResource(R.string.common_rename)) },
                             leadingIcon = { Icon(HugeIcons.Edit01, contentDescription = null) },
                             onClick = {
@@ -238,14 +238,11 @@ private fun WorkspaceCard(
                                 onRename()
                             },
                         )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.common_delete), color = MaterialTheme.colorScheme.error) },
+                        AppDropdownMenuItem(
+                            text = { Text(stringResource(R.string.common_delete)) },
+                            destructive = true,
                             leadingIcon = {
-                                Icon(
-                                    imageVector = HugeIcons.Delete01,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.error,
-                                )
+                                Icon(HugeIcons.Delete01, contentDescription = null)
                             },
                             onClick = {
                                 menuExpanded = false

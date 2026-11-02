@@ -24,8 +24,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeFlexibleTopAppBar
@@ -52,6 +50,8 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import com.clma.app.R
+import com.clma.app.ui.components.ui.AppDropdownMenu
+import com.clma.app.ui.components.ui.AppDropdownMenuItem
 import com.clma.app.data.db.fts.MessageSearchResult
 import com.clma.app.data.db.fts.MessageSearchSort
 import com.clma.app.ui.components.nav.BackButton
@@ -262,12 +262,12 @@ private fun SortMenuButton(
                 contentDescription = stringResource(R.string.search_page_sort)
             )
         }
-        DropdownMenu(
+        AppDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
         ) {
             MessageSearchSort.entries.forEach { sort ->
-                DropdownMenuItem(
+                AppDropdownMenuItem(
                     text = {
                         Text(
                             stringResource(

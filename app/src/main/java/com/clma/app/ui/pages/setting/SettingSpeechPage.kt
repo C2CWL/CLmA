@@ -791,6 +791,7 @@ private fun TTSProviderItem(
                                 text = stringResource(R.string.delete),
                                 icon = HugeIcons.Delete01,
                                 enabled = provider.id != DEFAULT_SYSTEM_TTS_ID,
+                                destructive = true,
                                 onClick = { onDelete() },
                             ),
                         ),
@@ -902,6 +903,7 @@ private fun ASRProviderItem(
                             AppMenuEntry(
                                 text = stringResource(R.string.delete),
                                 icon = HugeIcons.Delete01,
+                                destructive = true,
                                 onClick = { onDelete() },
                             ),
                         ),

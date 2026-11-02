@@ -21,8 +21,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeFlexibleTopAppBar
@@ -51,6 +49,8 @@ import com.clma.app.ui.components.ui.AppAlertDialog
 import com.clma.app.ui.components.ui.DialogPrimaryButton
 import com.clma.app.ui.components.ui.DialogSecondaryButton
 import com.clma.app.R
+import com.clma.app.ui.components.ui.AppDropdownMenu
+import com.clma.app.ui.components.ui.AppDropdownMenuItem
 import com.clma.app.Screen
 import com.clma.app.ui.components.nav.BackButton
 import com.clma.app.ui.components.ui.AutoAIIcon
@@ -316,11 +316,11 @@ private fun SearchProviderCard(
                     imageVector = HugeIcons.MoreVertical,
                     contentDescription = stringResource(R.string.accessibility_more_options)
                 )
-                DropdownMenu(
+                AppDropdownMenu(
                     expanded = showMenu,
                     onDismissRequest = { showMenu = false }
                 ) {
-                    DropdownMenuItem(
+                    AppDropdownMenuItem(
                         text = { Text(stringResource(R.string.edit)) },
                         onClick = {
                             showMenu = false
@@ -330,7 +330,7 @@ private fun SearchProviderCard(
                             Icon(HugeIcons.PencilEdit01, contentDescription = null)
                         }
                     )
-                    DropdownMenuItem(
+                    AppDropdownMenuItem(
                         text = { Text(stringResource(R.string.delete)) },
                         onClick = {
                             showMenu = false
@@ -339,7 +339,8 @@ private fun SearchProviderCard(
                         leadingIcon = {
                             Icon(HugeIcons.Delete01, contentDescription = null)
                         },
-                        enabled = canDelete
+                        enabled = canDelete,
+                        destructive = true,
                     )
                 }
             }

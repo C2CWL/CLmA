@@ -13,8 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -38,6 +36,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import me.rerere.hugeicons.stroke.MoreVertical
 import com.clma.app.R
+import com.clma.app.ui.components.ui.AppDropdownMenu
+import com.clma.app.ui.components.ui.AppDropdownMenuItem
 import com.clma.app.ui.components.nav.BackButton
 import com.clma.app.ui.components.webview.WEB_VIEW_BASE_URL
 import com.clma.app.ui.components.webview.WebView
@@ -115,11 +115,11 @@ fun WebViewPage(url: String, contentId: String) {
                     ) {
                         Icon(HugeIcons.MoreVertical, contentDescription = stringResource(R.string.accessibility_more_options))
 
-                        DropdownMenu(
+                        AppDropdownMenu(
                             expanded = showDropdown,
                             onDismissRequest = { showDropdown = false }
                         ) {
-                            DropdownMenuItem(
+                            AppDropdownMenuItem(
                                 text = { Text("Open in Browser") },
                                 leadingIcon = { Icon(HugeIcons.Earth, contentDescription = null) },
                                 onClick = {
@@ -131,7 +131,7 @@ fun WebViewPage(url: String, contentId: String) {
                                     }
                                 }
                             )
-                            DropdownMenuItem(
+                            AppDropdownMenuItem(
                                 text = { Text("Console Logs") },
                                 leadingIcon = { Icon(HugeIcons.Bug01, contentDescription = null) },
                                 onClick = {

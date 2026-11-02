@@ -37,7 +37,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.material3.BasicAlertDialog
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -102,6 +101,7 @@ import me.rerere.hugeicons.stroke.Cancel01
 import me.rerere.hugeicons.stroke.Fullscreen
 import me.rerere.hugeicons.stroke.Zap
 import com.clma.app.R
+import com.clma.app.ui.components.ui.AppDropdownMenu
 import com.clma.app.data.datastore.ChatLayout
 import com.clma.app.data.datastore.Settings
 import com.clma.app.data.datastore.findProvider
@@ -1137,7 +1137,7 @@ private fun QuickMessageButton(
             expanded = !expanded
         }) {
         Icon(HugeIcons.Zap, null)
-        DropdownMenu(
+        AppDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
             modifier = Modifier

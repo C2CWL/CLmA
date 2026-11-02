@@ -6,10 +6,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -39,11 +36,14 @@ import androidx.compose.ui.unit.dp
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ArrowLeft01
 import me.rerere.hugeicons.stroke.Cancel01
-import me.rerere.hugeicons.stroke.CheckmarkCircle01
 import me.rerere.hugeicons.stroke.Lock
 import me.rerere.hugeicons.stroke.MoreVertical
 import me.rerere.hugeicons.stroke.Refresh01
 import com.clma.app.R
+import com.clma.app.ui.components.ui.AppDropdownMenu
+import com.clma.app.ui.components.ui.AppDropdownMenuItem
+import com.clma.app.ui.components.ui.AppMenuDivider
+import com.clma.app.data.datastore.PopupMenuStyle
 
 /**
  * Top app bar for [BrowserActivity]. Editable URL/search bar + back + refresh + kebab.
@@ -191,13 +191,15 @@ fun BrowserAddressBar(
                         contentDescription = stringResource(R.string.browser_address_bar_more),
                     )
                 }
-                DropdownMenu(
+                AppDropdownMenu(
                     expanded = menuExpanded,
                     onDismissRequest = { menuExpanded = false },
+                    // This activity has no LocalSettings provider.
+                    style = PopupMenuStyle.CLASSIC,
                 ) {
                     // Forward is low-frequency on a phone (system back covers the common
                     // case) — it lives here instead of costing the bar 48dp.
-                    DropdownMenuItem(
+                    AppDropdownMenuItem(
                         text = { Text(stringResource(R.string.browser_address_bar_forward)) },
                         enabled = canGoForward,
                         onClick = {
@@ -205,49 +207,38 @@ fun BrowserAddressBar(
                             onForward()
                         },
                     )
-                    DropdownMenuItem(
+                    AppDropdownMenuItem(
                         text = { Text(stringResource(R.string.browser_menu_desktop)) },
-                        trailingIcon = if (desktopMode) {
-                            {
-                                Icon(
-                                    imageVector = HugeIcons.CheckmarkCircle01,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(18.dp),
-                                )
-                            }
-                        } else {
-                            null
-                        },
+                        selected = desktopMode,
                         onClick = {
                             menuExpanded = false
                             onDesktopModeChange(!desktopMode)
                         },
                     )
-                    HorizontalDivider()
-                    DropdownMenuItem(
+                    AppMenuDivider()
+                    AppDropdownMenuItem(
                         text = { Text(stringResource(R.string.browser_menu_copy_link)) },
                         onClick = {
                             menuExpanded = false
                             onCopyLink()
                         },
                     )
-                    DropdownMenuItem(
+                    AppDropdownMenuItem(
                         text = { Text(stringResource(R.string.browser_menu_share)) },
                         onClick = {
                             menuExpanded = false
                             onShare()
                         },
                     )
-                    DropdownMenuItem(
+                    AppDropdownMenuItem(
                         text = { Text(stringResource(R.string.browser_menu_open_external)) },
                         onClick = {
                             menuExpanded = false
                             onOpenExternal()
                         },
                     )
-                    HorizontalDivider()
-                    DropdownMenuItem(
+                    AppMenuDivider()
+                    AppDropdownMenuItem(
                         text = { Text(stringResource(R.string.browser_address_bar_stop_ai)) },
                         onClick = {
                             menuExpanded = false

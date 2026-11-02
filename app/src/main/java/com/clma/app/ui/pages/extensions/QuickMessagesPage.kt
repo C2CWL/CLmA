@@ -13,8 +13,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -45,6 +43,8 @@ import me.rerere.hugeicons.stroke.Edit01
 import me.rerere.hugeicons.stroke.MoreVertical
 import me.rerere.hugeicons.stroke.Zap
 import com.clma.app.R
+import com.clma.app.ui.components.ui.AppDropdownMenu
+import com.clma.app.ui.components.ui.AppDropdownMenuItem
 import com.clma.app.data.model.QuickMessage
 import com.clma.app.ui.components.nav.BackButton
 import com.clma.app.ui.components.ui.RikkaConfirmDialog
@@ -216,11 +216,11 @@ private fun QuickMessageCard(
                         contentDescription = stringResource(R.string.skills_page_more_actions),
                     )
                 }
-                DropdownMenu(
+                AppDropdownMenu(
                     expanded = menuExpanded,
                     onDismissRequest = { menuExpanded = false },
                 ) {
-                    DropdownMenuItem(
+                    AppDropdownMenuItem(
                         text = { Text(stringResource(R.string.edit)) },
                         leadingIcon = {
                             Icon(
@@ -233,14 +233,11 @@ private fun QuickMessageCard(
                             onEdit()
                         },
                     )
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error) },
+                    AppDropdownMenuItem(
+                        text = { Text(stringResource(R.string.delete)) },
+                        destructive = true,
                         leadingIcon = {
-                            Icon(
-                                imageVector = HugeIcons.Delete01,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.error,
-                            )
+                            Icon(HugeIcons.Delete01, contentDescription = null)
                         },
                         onClick = {
                             menuExpanded = false

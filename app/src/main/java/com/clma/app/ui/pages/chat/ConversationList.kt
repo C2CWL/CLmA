@@ -435,6 +435,7 @@ private fun ConversationItem(
                         AppMenuEntry(
                             text = stringResource(R.string.chat_page_delete),
                             icon = HugeIcons.Delete01,
+                            destructive = true,
                             onClick = { onDelete(conversation) },
                         ),
                     ),
