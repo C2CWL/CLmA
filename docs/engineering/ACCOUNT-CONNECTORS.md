@@ -9,6 +9,10 @@ connection status but never returns tokens.
 
 ### Gmail
 
+See the [Chinese step-by-step setup guide](GMAIL-SETUP.zh-CN.md). The app also
+provides a guide with official Cloud links and the installed package/certificate
+identity. Cloud setup belongs to app maintainers, not every ordinary user.
+
 - Requires Google Play services. Configure a Google Cloud project, enable Gmail
   API, and create an Android OAuth client for the actual application ID and the
   signing certificate SHA-1. Different build/signing identities need their own

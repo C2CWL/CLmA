@@ -174,7 +174,10 @@ class SettingsSearchCoverageTest {
         "SettingTermux" to listOf("ui/pages/setting/termux/SettingTermuxPage.kt"),
         "SettingSsh" to listOf("ui/pages/setting/SettingSshPage.kt"),
         "SettingSecrets" to listOf("ui/pages/setting/SettingSecretsPage.kt"),
-        "SettingConnectors" to listOf("ui/pages/setting/SettingConnectorsPage.kt"),
+        "SettingConnectors" to listOf(
+            "ui/pages/setting/SettingConnectorsPage.kt",
+            "ui/pages/setting/GmailSetupGuideSheet.kt",
+        ),
         "SettingWeb" to listOf("ui/pages/setting/SettingWebPage.kt"),
         "SettingBrowser" to listOf("ui/pages/setting/browser/SettingBrowserPage.kt"),
         "Backup" to listOf(

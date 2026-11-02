@@ -48,10 +48,10 @@ import com.clma.app.connectors.GitHubDeviceCode
 import com.clma.app.connectors.GmailConnector
 import com.clma.app.connectors.MailDraft
 import com.clma.app.connectors.gmailAuthorizationErrorCode
-import com.google.android.gms.common.api.ApiException
 import com.clma.app.ui.components.ui.AppAlertDialog
 import com.clma.app.ui.components.ui.DialogPrimaryButton
 import com.clma.app.ui.components.ui.DialogSecondaryButton
+import com.google.android.gms.common.api.ApiException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -72,6 +72,7 @@ fun SettingConnectorsPage() {
     var busy by remember { mutableStateOf(false) }
     var operation by remember { mutableStateOf<Job?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
+    var showGmailSetup by rememberSaveable { mutableStateOf(false) }
     var pendingAccess by rememberSaveable { mutableStateOf(GmailConnector.Access.READ.name) }
     var awaitingGoogle by rememberSaveable { mutableStateOf(false) }
     var githubClientId by remember { mutableStateOf(github.clientId()) }
@@ -146,6 +147,11 @@ fun SettingConnectorsPage() {
                         else -> stringResource(R.string.connector_operation_error, code)
                     }
                     Text(message, color = MaterialTheme.colorScheme.error)
+                    if (code.startsWith("gmail_")) {
+                        TextButton(onClick = { showGmailSetup = true }) {
+                            Text(stringResource(R.string.connector_gmail_setup_guide))
+                        }
+                    }
                 }
             }
         }
@@ -153,6 +159,9 @@ fun SettingConnectorsPage() {
             ConnectorCard("Gmail") {
                 Text(account?.email ?: stringResource(R.string.connector_not_connected))
                 Text(stringResource(R.string.connector_google_setup), style = MaterialTheme.typography.bodySmall)
+                OutlinedButton(onClick = { showGmailSetup = true }) {
+                    Text(stringResource(R.string.connector_gmail_setup_guide))
+                }
                 if (account == null) {
                     Button(onClick = { authorizeGmail(GmailConnector.Access.READ) }, enabled = !locked) {
                         Text(stringResource(R.string.connector_connect_readonly))
@@ -288,6 +297,9 @@ fun SettingConnectorsPage() {
                 DialogSecondaryButton(onClick = { disconnect = null }) { Text(stringResource(R.string.connector_cancel)) }
             },
         )
+    }
+    if (showGmailSetup) {
+        GmailSetupGuideSheet(onDismiss = { showGmailSetup = false })
     }
     if (confirmGithubWrites) {
         AppAlertDialog(
