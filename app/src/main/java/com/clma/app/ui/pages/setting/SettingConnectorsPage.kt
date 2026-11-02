@@ -1,6 +1,5 @@
 package com.clma.app.ui.pages.setting
 
-import android.app.Activity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -48,9 +47,11 @@ import com.clma.app.connectors.GitHubConnector
 import com.clma.app.connectors.GitHubDeviceCode
 import com.clma.app.connectors.GmailConnector
 import com.clma.app.connectors.MailDraft
+import com.clma.app.connectors.gmailAuthorizationErrorCode
 import com.clma.app.ui.components.ui.AppAlertDialog
 import com.clma.app.ui.components.ui.DialogPrimaryButton
 import com.clma.app.ui.components.ui.DialogSecondaryButton
+import com.google.android.gms.common.api.ApiException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -71,6 +72,7 @@ fun SettingConnectorsPage() {
     var busy by remember { mutableStateOf(false) }
     var operation by remember { mutableStateOf<Job?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
+    var showGmailSetup by rememberSaveable { mutableStateOf(false) }
     var pendingAccess by rememberSaveable { mutableStateOf(GmailConnector.Access.READ.name) }
     var awaitingGoogle by rememberSaveable { mutableStateOf(false) }
     var githubClientId by remember { mutableStateOf(github.clientId()) }
@@ -93,6 +95,9 @@ fun SettingConnectorsPage() {
                 throw e
             } catch (e: ConnectorException) {
                 error = e.code
+            } catch (e: ApiException) {
+                // Status codes are safe diagnostics; SDK messages can contain credentials.
+                error = gmailAuthorizationErrorCode(e.statusCode)
             } catch (_: Exception) {
                 // SDK exceptions may contain credentials; only show a stable local code.
                 error = "connector_operation_failed"
@@ -104,16 +109,13 @@ fun SettingConnectorsPage() {
 
     val googleLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
         awaitingGoogle = false
-        val data = result.data
-        if (result.resultCode != Activity.RESULT_OK || data == null) {
-            error = "gmail_authorization_cancelled"
-        } else {
-            runOperation {
-                gmail.finishAuthorization(
-                    gmail.authorizationClient.getAuthorizationResultFromIntent(data),
-                    GmailConnector.Access.valueOf(pendingAccess),
-                )
-            }
+        runOperation {
+            val data = result.data ?: throw ConnectorException("gmail_authorization_result_missing")
+            // A non-OK result can contain the SDK's failure status. Parse it before classifying.
+            gmail.finishAuthorization(
+                gmail.authorizationClient.getAuthorizationResultFromIntent(data),
+                GmailConnector.Access.valueOf(pendingAccess),
+            )
         }
     }
 
@@ -136,13 +138,30 @@ fun SettingConnectorsPage() {
             ConnectorCard(stringResource(R.string.connector_privacy_title)) {
                 Text(stringResource(R.string.connector_privacy_body), style = MaterialTheme.typography.bodySmall)
                 if (locked) CircularProgressIndicator()
-                error?.let { Text(stringResource(R.string.connector_operation_error, it), color = MaterialTheme.colorScheme.error) }
+                error?.let { code ->
+                    val message = when (code) {
+                        "gmail_authorization_cancelled" -> stringResource(R.string.connector_gmail_auth_cancelled)
+                        "gmail_oauth_configuration_error" -> stringResource(R.string.connector_gmail_auth_configuration_error)
+                        "gmail_authorization_network_error" -> stringResource(R.string.connector_gmail_auth_network_error)
+                        "gmail_authorization_result_missing" -> stringResource(R.string.connector_gmail_auth_result_missing)
+                        else -> stringResource(R.string.connector_operation_error, code)
+                    }
+                    Text(message, color = MaterialTheme.colorScheme.error)
+                    if (code.startsWith("gmail_")) {
+                        TextButton(onClick = { showGmailSetup = true }) {
+                            Text(stringResource(R.string.connector_gmail_setup_guide))
+                        }
+                    }
+                }
             }
         }
         item {
             ConnectorCard("Gmail") {
                 Text(account?.email ?: stringResource(R.string.connector_not_connected))
                 Text(stringResource(R.string.connector_google_setup), style = MaterialTheme.typography.bodySmall)
+                OutlinedButton(onClick = { showGmailSetup = true }) {
+                    Text(stringResource(R.string.connector_gmail_setup_guide))
+                }
                 if (account == null) {
                     Button(onClick = { authorizeGmail(GmailConnector.Access.READ) }, enabled = !locked) {
                         Text(stringResource(R.string.connector_connect_readonly))
@@ -278,6 +297,9 @@ fun SettingConnectorsPage() {
                 DialogSecondaryButton(onClick = { disconnect = null }) { Text(stringResource(R.string.connector_cancel)) }
             },
         )
+    }
+    if (showGmailSetup) {
+        GmailSetupGuideSheet(onDismiss = { showGmailSetup = false })
     }
     if (confirmGithubWrites) {
         AppAlertDialog(

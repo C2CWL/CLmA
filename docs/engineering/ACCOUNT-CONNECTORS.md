@@ -9,6 +9,10 @@ connection status but never returns tokens.
 
 ### Gmail
 
+See the [Chinese step-by-step setup guide](GMAIL-SETUP.zh-CN.md). The app also
+provides a guide with official Cloud links and the installed package/certificate
+identity. Cloud setup belongs to app maintainers, not every ordinary user.
+
 - Requires Google Play services. Configure a Google Cloud project, enable Gmail
   API, and create an Android OAuth client for the actual application ID and the
   signing certificate SHA-1. Different build/signing identities need their own
@@ -24,6 +28,37 @@ connection status but never returns tokens.
   Play services cannot satisfy the previously approved scope silently.
 - Disconnect removes this device's account metadata and local drafts. The UI
   offers Google access revocation. Mail already uploaded/sent remains in Gmail.
+
+#### Authorization troubleshooting
+
+Google account sign-in and Gmail authorization are separate steps. A signed-in
+account alone does not grant `gmail.readonly` to CLmA. Configure the following in
+the same Google Cloud project before testing a distributed APK:
+
+1. Enable Gmail API and configure the OAuth consent screen / Google Auth Platform
+   audience. While the project is in testing, add the exact Google account used
+   on the device as a test user, and configure the requested Gmail scopes.
+2. Register an **Android** OAuth client with the release application ID
+   `com.clma.app` and release certificate SHA-1
+   `F2:B9:5E:30:7D:C8:61:58:CB:B5:07:96:5F:DE:63:10:8E:BB:5B:08`.
+   This is the public fingerprint of the GitHub release signing certificate,
+   not a credential. Debug or re-signed APKs need their own matching registration.
+3. Retry the connection and grant Gmail read access. The Android client is
+   identified by the package/certificate pair; there is no client-secret field
+   to fill in the app. A public production rollout with restricted Gmail scopes
+   may require verification beyond adding test users.
+
+The activity result is parsed by `getAuthorizationResultFromIntent` even when
+its activity result code is not OK, so a provider error is not mistaken for
+cancellation. SDK status 10 identifies a developer configuration error, status 7
+identifies a network error, and status 16 identifies cancellation. Other statuses
+retain their numeric code; SDK exception messages and tokens are not displayed.
+A missing result is reported separately and is not proof of user cancellation.
+The app's connector HTTP proxy does not configure Google Play services traffic.
+
+References:
+- https://developers.google.com/identity/authorization/android
+- https://developers.google.com/android/reference/com/google/android/gms/auth/api/identity/AuthorizationClient
 
 ### GitHub
 
