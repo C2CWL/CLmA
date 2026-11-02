@@ -35,22 +35,29 @@ class CronJobScheduler(
 ) {
     private val wm get() = WorkManager.getInstance(context)
 
-    suspend fun schedule(job: ScheduledJobEntity) {
+    suspend fun schedule(job: ScheduledJobEntity, fromWorker: Boolean = false) {
         val nowMs = System.currentTimeMillis()
         val defaultZone = resolveDefaultZone()
         val nextRun = nextRunMs(job, nowMs, defaultZone)
         if (nextRun == null) {
             repo.update(terminalJobUpdate(job))
-            cancel(job.id)
+            if (fromWorker) cancelExactAlarm(job.id) else cancel(job.id)
             return
         }
         repo.update(job.copy(nextRunAtMs = nextRun))
         val delayMs = max(0L, nextRun - nowMs)
         val req = OneTimeWorkRequestBuilder<CronJobWorker>()
             .setInitialDelay(delayMs, TimeUnit.MILLISECONDS)
-            .setInputData(Data.Builder().putString(CronJobWorker.KEY_JOB_ID, job.id).build())
+            .setInputData(Data.Builder()
+                .putString(CronJobWorker.KEY_JOB_ID, job.id)
+                .putLong(CronJobWorker.KEY_SCHEDULED_AT_MS, nextRun)
+                .build())
             .build()
-        wm.enqueueUniqueWork(workNameFor(job.id), ExistingWorkPolicy.REPLACE, req)
+        // A worker must not REPLACE (cancel) itself while scheduling its successor.
+        // An external edit still cancels both old delivery paths.
+        if (!fromWorker) wm.cancelUniqueWork("cron_job_${job.id}_alarm")
+        val policy = if (fromWorker) ExistingWorkPolicy.APPEND_OR_REPLACE else ExistingWorkPolicy.REPLACE
+        wm.enqueueUniqueWork(workNameFor(job.id), policy, req)
         setExactAlarm(job.id, nextRun)
     }
 
@@ -72,6 +79,7 @@ class CronJobScheduler(
 
     fun cancel(jobId: String) {
         wm.cancelUniqueWork(workNameFor(jobId))
+        wm.cancelUniqueWork("cron_job_${jobId}_alarm")
         cancelExactAlarm(jobId)
     }
 
@@ -84,10 +92,11 @@ class CronJobScheduler(
         return customTz?.let { runCatching { ZoneId.of(it) }.getOrNull() } ?: ZoneId.systemDefault()
     }
 
-    private fun getAlarmPendingIntent(jobId: String): PendingIntent {
+    private fun getAlarmPendingIntent(jobId: String, scheduledAtMs: Long? = null): PendingIntent {
         val intent = Intent(context, CronAlarmReceiver::class.java).apply {
             action = CronAlarmReceiver.ACTION_CRON_ALARM
             putExtra(CronAlarmReceiver.KEY_JOB_ID, jobId)
+            scheduledAtMs?.let { putExtra(CronJobWorker.KEY_SCHEDULED_AT_MS, it) }
         }
         val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         return PendingIntent.getBroadcast(context, jobId.hashCode(), intent, flags)
@@ -95,7 +104,7 @@ class CronJobScheduler(
 
     private fun setExactAlarm(jobId: String, triggerAtMs: Long) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
-        val pendingIntent = getAlarmPendingIntent(jobId)
+        val pendingIntent = getAlarmPendingIntent(jobId, triggerAtMs)
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 if (alarmManager.canScheduleExactAlarms()) {

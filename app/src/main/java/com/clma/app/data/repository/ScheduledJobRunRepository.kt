@@ -10,6 +10,6 @@ class ScheduledJobRunRepository(private val dao: ScheduledJobRunDao) {
     suspend fun update(row: ScheduledJobRunEntity) = dao.update(row)
     suspend fun trim(jobId: String, keep: Int) = dao.trim(jobId, keep)
     suspend fun deleteAllForJob(jobId: String) = dao.deleteAllForJob(jobId)
-    suspend fun getMostRecent(jobId: String) = dao.getMostRecent(jobId)
+    suspend fun getForSlot(jobId: String, slotMs: Long) = dao.getForSlot(jobId, slotMs)
     suspend fun countSuccessful(jobId: String) = dao.countSuccessful(jobId)
 }
