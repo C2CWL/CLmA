@@ -5,9 +5,10 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import com.clma.app.ui.components.ui.AppDropdownMenu
 import com.clma.app.ui.components.ui.AppMenuEntry
-import me.rerere.hugeicons.stroke.ViewOff
+import me.rerere.hugeicons.stroke.Shield01
 import android.net.Uri
 import android.os.Build
 import androidx.activity.ComponentActivity
@@ -93,7 +94,7 @@ import com.clma.ai.ui.UIMessagePart
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Cancel01
 import me.rerere.hugeicons.stroke.LeftToRightListBullet
-import me.rerere.hugeicons.stroke.MessageAdd01
+import me.rerere.hugeicons.stroke.PlusSign
 import com.clma.app.R
 import com.clma.app.costguards.TokenBudgetTracker
 import com.clma.app.data.usage.TurnFooter
@@ -1094,7 +1095,7 @@ private fun TopBar(
                         if (conversation.isTemporary) {
                             Spacer(Modifier.width(6.dp))
                             Icon(
-                                HugeIcons.ViewOff,
+                                HugeIcons.Shield01,
                                 contentDescription = stringResource(R.string.chat_page_temporary_chat),
                                 modifier = Modifier.size(16.dp),
                                 tint = MaterialTheme.colorScheme.primary,
@@ -1142,15 +1143,17 @@ private fun TopBar(
                     },
                     hazeState = hazeState,
                 ) {
-                    Icon(HugeIcons.MessageAdd01, stringResource(R.string.chat_page_new_message))
+                    Icon(HugeIcons.PlusSign, stringResource(R.string.chat_page_new_message))
                 }
                 AppDropdownMenu(
                     expanded = showNewChatMenu,
                     onDismissRequest = { showNewChatMenu = false },
+                    // Keep the temporary-chat description from widening the popup.
+                    modifier = Modifier.widthIn(max = 240.dp),
                     items = listOf(
                         AppMenuEntry(
                             text = stringResource(R.string.chat_page_new_chat),
-                            icon = HugeIcons.MessageAdd01,
+                            icon = HugeIcons.PlusSign,
                             onClick = {
                                 showNewChatMenu = false
                                 onNewChat()
@@ -1158,7 +1161,7 @@ private fun TopBar(
                         ),
                         AppMenuEntry(
                             text = stringResource(R.string.chat_page_temporary_chat),
-                            icon = HugeIcons.ViewOff,
+                            icon = HugeIcons.Shield01,
                             supporting = stringResource(R.string.chat_page_temporary_chat_desc),
                             onClick = {
                                 showNewChatMenu = false

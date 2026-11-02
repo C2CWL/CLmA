@@ -56,6 +56,22 @@ class PopupMenuContractTest {
         }
     }
 
+    @Test
+    fun `new chat menus stay compact and use consistent action icons in both top bars`() {
+        listOf("ChatPage.kt", "CleanTopBar.kt").forEach { file ->
+            val source = File("src/main/java/com/clma/app/ui/pages/chat/$file").readText()
+            val menu = blockAfter(source, "AppDropdownMenu(")
+            assertTrue(file, menu.contains("modifier = Modifier.widthIn(max = 240.dp)"))
+            assertTrue(file, menu.contains("icon = HugeIcons.PlusSign"))
+            assertTrue(file, menu.contains("icon = HugeIcons.Shield01"))
+            assertTrue(file, menu.contains("supporting = stringResource(R.string.chat_page_temporary_chat_desc)"))
+            assertTrue(file, menu.contains("onNewChat()"))
+            assertTrue(file, menu.contains("onNewTemporaryChat()"))
+            assertFalse(file, source.contains("HugeIcons.MessageAdd01"))
+            assertFalse(file, source.contains("HugeIcons.ViewOff"))
+        }
+    }
+
     private fun menuSource(): String =
         File("src/main/java/com/clma/app/ui/components/ui/ExpressiveMenu.kt").readText()
 
