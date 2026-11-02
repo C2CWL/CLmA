@@ -153,7 +153,8 @@ fun SkillsPage() {
                 start = 16.dp,
                 end = 16.dp,
                 top = 16.dp,
-                bottom = 16.dp + 72.dp,
+                // Clear both stacked action buttons, including their bottom margin.
+                bottom = 156.dp,
             ),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -552,7 +553,6 @@ private fun CatalogRow(
                 text = entry.description,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 2,
             )
             FilledTonalButton(
                 onClick = onInstall,
@@ -616,7 +616,6 @@ private fun SkillCard(
                     text = skill.description,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
                 )
                 if (!skill.compatibility.isNullOrBlank() || !skill.license.isNullOrBlank()) {
                     Text(
