@@ -39,4 +39,8 @@
     <string name="connector_save_local">保存到本地</string>
     <string name="connector_close">关闭</string>
     <string name="connector_operation_error">操作失败：%1$s。请检查授权、账号配置及网络访问。</string>
+    <string name="connector_gmail_auth_cancelled">Google 授权已取消（状态码 16）。仅登录 Google 账号并不代表已授予 Gmail 访问权限。</string>
+    <string name="connector_gmail_auth_configuration_error">Google OAuth 配置错误（状态码 10）。开发者需为当前包名及签名证书注册 Android OAuth 客户端，启用 Gmail API，并配置同意屏幕和测试账号。</string>
+    <string name="connector_gmail_auth_network_error">Google 授权无法访问 Google 服务（状态码 7）。请检查 Google Play 服务自身的联网情况；应用内代理不会配置 Play 服务的网络。</string>
+    <string name="connector_gmail_auth_result_missing">Google 授权未返回结果，不能据此判断为你主动取消。请检查 Google Play 服务和 Android OAuth 配置。</string>
 </resources>

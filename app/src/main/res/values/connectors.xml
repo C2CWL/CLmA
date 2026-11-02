@@ -39,4 +39,8 @@
     <string name="connector_save_local">Save locally</string>
     <string name="connector_close">Close</string>
     <string name="connector_operation_error">Operation failed: %1$s. Check authorization, account configuration and network access.</string>
+    <string name="connector_gmail_auth_cancelled">Google authorization was cancelled (status 16). Signing in to Google alone does not grant Gmail access.</string>
+    <string name="connector_gmail_auth_configuration_error">Google OAuth configuration error (status 10). The developer must register an Android OAuth client for this package and signing certificate, enable Gmail API, and configure the consent screen and test users.</string>
+    <string name="connector_gmail_auth_network_error">Google authorization could not reach Google services (status 7). Check the connectivity available to Google Play services; the in-app proxy does not configure Play services.</string>
+    <string name="connector_gmail_auth_result_missing">Google authorization returned no result. This does not establish that you cancelled. Check Google Play services and the Android OAuth configuration.</string>
 </resources>
