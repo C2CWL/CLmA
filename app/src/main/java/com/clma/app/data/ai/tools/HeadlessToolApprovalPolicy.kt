@@ -166,7 +166,8 @@ object HeadlessToolApprovalPolicy {
      */
     val REFUSED_TOOL_NAMES: Set<String> =
         PER_CALL_CONFIRM_TOOL_NAMES + PRIVACY_SENSITIVE_TOOL_NAMES +
-            PRIVATE_DATA_TOOL_NAMES + EXPERT_WRITE_TOOL_NAMES + MODEL_WRITE_TOOL_NAMES
+            PRIVATE_DATA_TOOL_NAMES + EXPERT_WRITE_TOOL_NAMES + MODEL_WRITE_TOOL_NAMES +
+            com.clma.app.connectors.ConnectorWriteApproval.WRITE_TOOL_NAMES
 
     /**
      * Why [toolName] must not run in a headless conversation, or null when it may.
@@ -180,6 +181,8 @@ object HeadlessToolApprovalPolicy {
         val name = toolName.trim()
         return when {
             name.isEmpty() -> null
+            com.clma.app.connectors.ConnectorWriteApproval.requiresApproval(name) ->
+                "$name requires a fresh per-call human approval and cannot run unattended."
             // D5 - install tools are allowed; what they install lands disabled.
             name in INSTALL_TOOL_NAMES -> null
             name in PER_CALL_CONFIRM_TOOL_NAMES ->

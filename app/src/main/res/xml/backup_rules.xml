@@ -20,6 +20,10 @@
   <exclude
     domain="sharedpref"
     path="." />
+  <!-- Device-bound connector credentials and local mail drafts must never migrate. -->
+  <exclude
+    domain="sharedpref"
+    path="connectors_private.xml" />
   <exclude
     domain="file"
     path="datastore/" />

@@ -597,6 +597,10 @@ class RouteActivity : FragmentActivity() {
                                 SettingSecretsPage()
                             }
 
+                            entry<Screen.SettingConnectors> {
+                                com.clma.app.ui.pages.setting.SettingConnectorsPage()
+                            }
+
                             entry<Screen.SettingFiles> {
                                 SettingFilesPage()
                             }
@@ -899,6 +903,9 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data object SettingSecrets : Screen
+
+    @Serializable
+    data object SettingConnectors : Screen
 
     @Serializable
     data object SettingFiles : Screen

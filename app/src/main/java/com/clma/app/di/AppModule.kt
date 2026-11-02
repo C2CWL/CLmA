@@ -29,6 +29,11 @@ val appModule = module {
         AppEventBus()
     }
 
+    single { com.clma.app.connectors.ConnectorStore(get()) }
+    single { com.clma.app.connectors.ConnectorHttp(get()) }
+    single { com.clma.app.connectors.GmailConnector(get(), get(), get()) }
+    single { com.clma.app.connectors.GitHubConnector(get(), get()) }
+
     single { CameraResultBuffer() }
     single { BiometricResultBuffer() }
     // Phase 25 — NFC reader-mode + SAF directory-picker Activity bridges, and the SAF
@@ -192,6 +197,8 @@ val appModule = module {
             providerManager = get(),
             filesManager = get(),
             genMediaRepository = get(),
+            gmailConnector = get(),
+            gitHubConnector = get(),
         )
     }
 

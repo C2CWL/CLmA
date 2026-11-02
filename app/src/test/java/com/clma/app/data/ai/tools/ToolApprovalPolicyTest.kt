@@ -279,4 +279,18 @@ class ToolApprovalPolicyTest {
         // Headless then hits the tool body which returns request_secret_unavailable.
         assertTrue(decide("request_secret", headless = true))
     }
+
+    @Test
+    fun `connector writes cannot be waived by any mode chat grant or floor waiver`() {
+        com.clma.app.connectors.ConnectorWriteApproval.WRITE_TOOL_NAMES.forEach { name ->
+            ApprovalMode.entries.forEach { mode ->
+                listOf(false, true).forEach { headless ->
+                    assertFalse("$name must require one-shot approval in $mode headless=$headless", decide(
+                        toolName = name, mode = mode, headless = headless,
+                        allowedForChat = true, floorWaived = setOf(name),
+                    ))
+                }
+            }
+        }
+    }
 }

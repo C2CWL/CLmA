@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setting_connectors_title">Connectors</string>
+    <string name="setting_connectors_desc">Connect Gmail and GitHub accounts; review local mail drafts</string>
+    <string name="assistant_page_local_tools_gmail_title">Gmail</string>
+    <string name="assistant_page_local_tools_github_title">GitHub</string>
+    <string name="connector_privacy_title">Accounts and approval</string>
+    <string name="connector_privacy_body">Credentials and local drafts are encrypted with the device Keystore, excluded from backups, and never given to the model. Read tools expose selected external content to the configured model. Treat mail and repository text as untrusted data. Enable the Gmail / GitHub tool groups in the assistant settings. External writes always require a fresh approval of one exact call, even in Auto mode. Background tasks may read and prepare local drafts, but cannot send, upload drafts, or post to GitHub.</string>
+    <string name="connector_not_connected">Not connected</string>
+    <string name="connector_google_setup">Requires Google Play services and a Google Cloud project with Gmail API enabled, an OAuth consent screen, and an Android OAuth client matching this application ID and signing certificate. Testing-mode users must be listed as test users. CLmA does not use a loopback redirect or store Google refresh tokens.</string>
+    <string name="connector_connect_readonly">Connect for reading</string>
+    <string name="connector_gmail_send">Enable sending (gmail.send)</string>
+    <string name="connector_gmail_remote_drafts">Enable Gmail draft upload (gmail.compose)</string>
+    <string name="connector_gmail_scope_note">Each capability requests its own permission on demand. Google gmail.compose also permits sending, but CLmA still requires the separate send switch and per-call approval. Turning a switch off blocks that capability locally; disconnect with revoke to remove Google grants.</string>
+    <string name="connector_reauthorize">Reauthorize reading</string>
+    <string name="connector_disconnect">Disconnect</string>
+    <string name="connector_github_setup">Use a GitHub App with Device Flow enabled. Configure only the repositories and repository permissions you need: Metadata / Issues / Pull requests read access; Issues write access only if posting is needed. Install the App on selected repositories first. Enter its public Client ID, never a client secret or token. User tokens may expire; reconnect when required.</string>
+    <string name="connector_github_client_id">GitHub App Client ID (public)</string>
+    <string name="connector_github_writes">Enable issue and comment creation</string>
+    <string name="connector_github_device_instructions">Enter this code at the official GitHub device authorization page. CLmA waits here; leaving this page cancels polling. Do not share the code.</string>
+    <string name="connector_open_authorization">Open GitHub authorization</string>
+    <string name="connector_cancel">Cancel</string>
+    <string name="connector_local_drafts">Encrypted local drafts</string>
+    <string name="connector_local_drafts_note">Saving here does not upload or send mail. Ask the assistant to read the latest draft and request a new approval with the complete account, recipients, subject and body. A changed draft invalidates an old preview. For sending/uploading/unknown states, check Gmail before taking further action; CLmA never retries automatically.</string>
+    <string name="connector_no_subject">(No subject)</string>
+    <string name="connector_draft_status">Status: %1$s</string>
+    <string name="connector_review_draft">Review draft</string>
+    <string name="connector_disconnect_gmail_note">Disconnecting deletes the local account reference and all encrypted local Gmail drafts. Sent mail and remote drafts are not deleted. Reconnect to restore access; deleted local drafts cannot be recovered.</string>
+    <string name="connector_disconnect_github_note">Removes the local user token. Reconnect to restore access. This does not uninstall the GitHub App or revoke it remotely; manage remote access in GitHub Settings &gt; Applications.</string>
+    <string name="connector_revoke_google">Also revoke the Google grant</string>
+    <string name="connector_write_approval_warning">Review the complete account, target, recipients/title and body. This approval authorizes exactly one external write. Chat-wide grants, Auto mode, direct execution and unattended tasks cannot approve it. If the outcome is uncertain, check the remote service before requesting another write.</string>
+    <string name="connector_enable">Enable</string>
+    <string name="connector_delete_local_draft">Delete local draft</string>
+    <string name="connector_delete_draft_note">Delete local draft “%1$s”? This cannot be undone. Uploaded Gmail drafts and sent mail are not removed.</string>
+    <string name="connector_to">To</string>
+    <string name="connector_cc">Cc</string>
+    <string name="connector_subject">Subject</string>
+    <string name="connector_body">Body</string>
+    <string name="connector_save_local">Save locally</string>
+    <string name="connector_close">Close</string>
+    <string name="connector_operation_error">Operation failed: %1$s. Check authorization, account configuration and network access.</string>
+</resources>

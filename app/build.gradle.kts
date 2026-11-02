@@ -353,6 +353,8 @@ dependencies {
 
     // Google Play Services Location (FusedLocationProvider)
     implementation(libs.play.services.location)
+    implementation(libs.play.services.auth)
+    implementation(libs.jsoup)
     // kotlinx.coroutines.tasks.await for Task<*> (was previously transitive via Firebase)
     implementation(libs.kotlinx.coroutines.play.services)
 

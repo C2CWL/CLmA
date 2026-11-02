@@ -76,6 +76,9 @@ class DirectModeActionRunner(
         action: Action,
         availableTools: List<Tool>,
     ): StepResult {
+        if (com.clma.app.connectors.ConnectorWriteApproval.requiresApproval(action.tool)) {
+            return StepResult.Failed("connector_explicit_approval_required: use an interactive chat")
+        }
         val hardlineReason = HardlineCommandGuard.checkTool(action.tool, action.args.toString())
         if (hardlineReason != null) {
             Log.w(TAG, "direct-mode hardline-blocked action $idx tool=${action.tool}: $hardlineReason")

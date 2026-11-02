@@ -1174,6 +1174,19 @@ class GenerationLoop(
                                 tool.copy(approvalState = ToolApprovalState.Pending)
                             }
                         }
+                        com.clma.app.connectors.ConnectorWriteApproval.requiresApproval(tool.toolName) &&
+                            tool.approvalState is ToolApprovalState.Auto -> {
+                            if (conversationId == null || com.clma.app.data.ai.tools.HeadlessConversations
+                                    .isHeadless(conversationId)
+                            ) {
+                                tool.copy(approvalState = ToolApprovalState.Denied(
+                                    "Connector writes require a fresh per-call human approval; unavailable headless."
+                                ))
+                            } else {
+                                hasPendingApproval = true
+                                tool.copy(approvalState = ToolApprovalState.Pending)
+                            }
+                        }
                         // Tool needs approval and state is Auto:
                         toolDef?.needsApproval(tool.inputAsJson()) == true &&
                             tool.approvalState is ToolApprovalState.Auto -> {
@@ -1580,7 +1593,17 @@ class GenerationLoop(
                                     firstAttemptRemainingMs = remainingMs,
                                 )
                             } else {
-                                withTimeoutOrNull(remainingMs) { toolDef.execute(args) }
+                                withTimeoutOrNull(remainingMs) {
+                                    com.clma.app.connectors.ConnectorWriteApproval.execute(
+                                        tool = toolDef,
+                                        args = args,
+                                        conversationId = conversationId?.toString(),
+                                        toolCallId = tool.toolCallId,
+                                        approved = tool.approvalState is ToolApprovalState.Approved,
+                                        headless = conversationId == null ||
+                                            com.clma.app.data.ai.tools.HeadlessConversations.isHeadless(conversationId),
+                                    )
+                                }
                                     ?: run {
                                         Log.w(TAG, "generateText: ${toolDef.name} cancelled — wall-clock budget exhausted mid-execution")
                                         listOf(UIMessagePart.Text(json.encodeToString(buildJsonObject {

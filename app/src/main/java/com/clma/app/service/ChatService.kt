@@ -1305,6 +1305,8 @@ class ChatService(
             return false
         }
 
+        if (com.clma.app.connectors.ConnectorWriteApproval.requiresApproval(tool.name)) return false
+
         // Defence-in-depth — even though v1's intent set is read-only, run HARDLINE here so
         // that adding a side-effecting intent later (e.g. "set brightness 50%") can't bypass
         // the floor by routing around the LLM-tool-call path that normally enforces it.
@@ -1491,7 +1493,9 @@ class ChatService(
         // Commit the "allow for this chat" grant on a NonCancellable scope BEFORE the
         // cancellable mutation block: a rapid second tap would otherwise cancel the first job
         // and silently drop the in-memory grant while the user believes they granted it.
-        if (approved && toolName != null && scope == ApprovalScope.ChatScope) {
+        if (approved && toolName != null && scope == ApprovalScope.ChatScope &&
+            !com.clma.app.connectors.ConnectorWriteApproval.requiresApproval(toolName)
+        ) {
             appScope.launch(NonCancellable) {
                 runCatching {
                     // A chat grant now also covers the default-ask floor and mcp__* tools, so
@@ -1530,6 +1534,19 @@ class ChatService(
                         if (conversation.currentMessages.none { message ->
                                 message.getTools().any { it.toolCallId == toolCallId && it.isPending }
                             }) return@afterPreviousGeneration
+                        val pendingCall = conversation.currentMessages.asSequence()
+                            .flatMap { it.getTools().asSequence() }
+                            .first { it.toolCallId == toolCallId && it.isPending }
+                        if (com.clma.app.connectors.ConnectorWriteApproval.requiresApproval(pendingCall.toolName)) {
+                            if (answer != null || (approved && scope != ApprovalScope.Once) ||
+                                com.clma.app.data.ai.tools.HeadlessConversations.isHeadless(conversationId)
+                            ) return@afterPreviousGeneration
+                            if (approved) {
+                                com.clma.app.connectors.ConnectorWriteApproval.approveOnce(
+                                    conversationId.toString(), toolCallId, pendingCall.toolName, pendingCall.inputAsJson(),
+                                )
+                            }
+                        }
                         val newApprovalState = when {
                             answer != null -> ToolApprovalState.Answered(answer)
                             approved -> ToolApprovalState.Approved
@@ -1645,6 +1662,9 @@ class ChatService(
                 val conversation = liveSession.state.value
                 val toolPart = findToolCallPart(conversation, toolCallId)
                     ?: return RerunToolResult.Failure("tool call not found")
+                if (com.clma.app.connectors.ConnectorWriteApproval.requiresApproval(toolPart.toolName)) {
+                    return RerunToolResult.Failure("connector_explicit_approval_required: request and approve a new call")
+                }
                 if (!toolPart.isExecuted) {
                     return RerunToolResult.Failure("tool has not completed its first run yet")
                 }

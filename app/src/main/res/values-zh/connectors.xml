@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setting_connectors_title">连接器</string>
+    <string name="setting_connectors_desc">连接 Gmail 与 GitHub 账号，审阅本地邮件草稿</string>
+    <string name="assistant_page_local_tools_gmail_title">Gmail 邮件</string>
+    <string name="assistant_page_local_tools_github_title">GitHub 仓库</string>
+    <string name="connector_privacy_title">账号与审批</string>
+    <string name="connector_privacy_body">凭据与本地草稿由设备 Keystore 加密，不纳入备份，也不会交给模型。读取工具会将选定的外部内容提供给当前模型；邮件和仓库文字始终是不可信数据。请在助手设置中启用 Gmail / GitHub 工具组。即使在 Auto 模式，外部写操作也必须逐次确认完整调用。后台任务可读取和准备本地草稿，但不能发信、上传草稿或向 GitHub 发帖。</string>
+    <string name="connector_not_connected">未连接</string>
+    <string name="connector_google_setup">需要 Google Play 服务；开发者须在 Google Cloud 启用 Gmail API、配置 OAuth 同意屏幕，并创建与本应用包名和签名证书匹配的 Android OAuth 客户端。测试模式还需添加测试账号。CLmA 不使用回环重定向，也不保存 Google 刷新令牌。</string>
+    <string name="connector_connect_readonly">连接并授权读取</string>
+    <string name="connector_gmail_send">启用发信（gmail.send）</string>
+    <string name="connector_gmail_remote_drafts">启用 Gmail 草稿上传（gmail.compose）</string>
+    <string name="connector_gmail_scope_note">各能力按需单独申请权限。Google 的 gmail.compose 权限本身也允许发信，但 CLmA 仍强制要求独立发信开关与逐次确认。关闭开关会在本应用中禁用能力；需移除 Google 授权时，请断开连接并撤销授权。</string>
+    <string name="connector_reauthorize">重新授权读取</string>
+    <string name="connector_disconnect">断开连接</string>
+    <string name="connector_github_setup">使用已启用 Device Flow 的 GitHub App。仅配置所需仓库和权限：Metadata / Issues / Pull requests 读取；需要发帖时才授予 Issues 写权限。先将 App 安装到选定仓库。这里只填写公开 Client ID，不要填写客户端密钥或 Token。用户令牌可能过期，届时请重新连接。</string>
+    <string name="connector_github_client_id">GitHub App Client ID（公开）</string>
+    <string name="connector_github_writes">启用创建 Issue 与评论</string>
+    <string name="connector_github_device_instructions">请在 GitHub 官方设备授权页输入下方代码。CLmA 在此等待，离开此页将取消轮询；请勿分享代码。</string>
+    <string name="connector_open_authorization">打开 GitHub 授权页</string>
+    <string name="connector_cancel">取消</string>
+    <string name="connector_local_drafts">加密本地草稿</string>
+    <string name="connector_local_drafts_note">在此保存不会上传或发信。请让助手读取最新草稿，并以完整账号、收件人、主题、正文发起新的单次审批。草稿修改后旧预览失效。遇到 sending / uploading / unknown 状态时，请先到 Gmail 核实结果，CLmA 不会自动重试。</string>
+    <string name="connector_no_subject">（无主题）</string>
+    <string name="connector_draft_status">状态：%1$s</string>
+    <string name="connector_review_draft">审阅草稿</string>
+    <string name="connector_disconnect_gmail_note">断开后会移除本地账号记录及全部加密本地 Gmail 草稿，不会删除已发送邮件或远端草稿。可重新连接恢复访问，但已删除的本地草稿无法恢复。</string>
+    <string name="connector_disconnect_github_note">移除本地用户令牌；可重新连接恢复访问。此操作不会卸载 GitHub App 或远程撤销授权，请在 GitHub Settings &gt; Applications 管理远端访问。</string>
+    <string name="connector_revoke_google">同时撤销 Google 授权</string>
+    <string name="connector_write_approval_warning">请核对完整账号、目标、收件人／标题及正文。本次批准仅允许一次外部写操作；整聊放行、Auto 模式、直接执行及无人值守任务均不能代为批准。结果不确定时，先核实远端服务，再考虑发起新写操作。</string>
+    <string name="connector_enable">启用</string>
+    <string name="connector_delete_local_draft">删除本地草稿</string>
+    <string name="connector_delete_draft_note">删除本地草稿“%1$s”？此操作无法撤销，不会移除已上传的 Gmail 草稿或已发送邮件。</string>
+    <string name="connector_to">收件人</string>
+    <string name="connector_cc">抄送</string>
+    <string name="connector_subject">主题</string>
+    <string name="connector_body">正文</string>
+    <string name="connector_save_local">保存到本地</string>
+    <string name="connector_close">关闭</string>
+    <string name="connector_operation_error">操作失败：%1$s。请检查授权、账号配置及网络访问。</string>
+</resources>
