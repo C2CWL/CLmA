@@ -9,8 +9,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -37,6 +35,8 @@ import com.clma.app.ui.components.ui.AppAlertDialog
 import com.clma.app.ui.components.ui.DialogPrimaryButton
 import com.clma.app.ui.components.ui.DialogSecondaryButton
 import com.clma.app.R
+import com.clma.app.ui.components.ui.AppDropdownMenu
+import com.clma.app.ui.components.ui.AppDropdownMenuItem
 import com.clma.app.browser.BrowserActivity
 import com.clma.app.browser.BrowserSearchEngines
 import com.clma.app.browser.BrowserToolDefaults
@@ -163,18 +163,18 @@ fun SettingBrowserPage(
                                     }
                                 )
                             }
-                            DropdownMenu(
+                            AppDropdownMenu(
                                 expanded = modeMenu,
                                 onDismissRequest = { modeMenu = false },
                             ) {
-                                DropdownMenuItem(
+                                AppDropdownMenuItem(
                                     text = { Text(stringResource(R.string.setting_browser_network_proxy_mode_follow_app)) },
                                     onClick = {
                                         modeMenu = false
                                         vm.setNetworkProxyMode("follow_app")
                                     },
                                 )
-                                DropdownMenuItem(
+                                AppDropdownMenuItem(
                                     text = { Text(stringResource(R.string.setting_browser_network_proxy_mode_direct)) },
                                     onClick = {
                                         modeMenu = false
@@ -234,12 +234,12 @@ fun SettingBrowserPage(
                             TextButton(onClick = { engineMenu = true }) {
                                 Text(BrowserSearchEngines.fromId(searchEngineId).label)
                             }
-                            DropdownMenu(
+                            AppDropdownMenu(
                                 expanded = engineMenu,
                                 onDismissRequest = { engineMenu = false },
                             ) {
                                 BrowserSearchEngines.ALL.forEach { engine ->
-                                    DropdownMenuItem(
+                                    AppDropdownMenuItem(
                                         text = { Text(engine.label) },
                                         onClick = {
                                             engineMenu = false

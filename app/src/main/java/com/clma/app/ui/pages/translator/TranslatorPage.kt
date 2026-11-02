@@ -19,8 +19,6 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.BottomAppBarDefaults
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExposedDropdownMenu
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
@@ -57,6 +55,8 @@ import kotlinx.coroutines.launch
 import com.clma.ai.provider.ModelType
 import com.clma.app.ui.hooks.rememberSyncedTextField
 import com.clma.app.R
+import com.clma.app.ui.components.ui.AppDropdownMenuItem
+import com.clma.app.ui.components.ui.AppExposedDropdownMenu
 import com.clma.app.ui.components.ai.ModelSelector
 import com.clma.app.ui.components.nav.BackButton
 import com.clma.app.ui.context.LocalToaster
@@ -277,12 +277,12 @@ private fun LanguageSelector(
                 )
             )
 
-            ExposedDropdownMenu(
+            AppExposedDropdownMenu(
                 expanded = expanded,
                 onDismissRequest = { expanded = false }
             ) {
                 Locales.forEach { language ->
-                    DropdownMenuItem(
+                    AppDropdownMenuItem(
                         text = { Text(getLanguageDisplayName(language)) },
                         onClick = {
                             onLanguageSelected(language)

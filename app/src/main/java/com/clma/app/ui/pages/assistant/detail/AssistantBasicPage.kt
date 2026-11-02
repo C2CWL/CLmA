@@ -15,8 +15,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.LargeFlexibleTopAppBar
@@ -47,6 +45,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clma.ai.provider.ModelType
 import com.clma.app.R
+import com.clma.app.ui.components.ui.AppDropdownMenu
+import com.clma.app.ui.components.ui.AppDropdownMenuItem
 import com.clma.app.data.db.entity.WorkspaceEntity
 import com.clma.app.data.model.Assistant
 import com.clma.app.data.datastore.AutoCompactionThresholdMode
@@ -628,11 +628,11 @@ internal fun AssistantBasicContent(
                                     ?: stringResource(R.string.assistant_page_sub_agent_archive_none)
                             )
                         }
-                        DropdownMenu(
+                        AppDropdownMenu(
                             expanded = folderMenuExpanded,
                             onDismissRequest = { folderMenuExpanded = false },
                         ) {
-                            DropdownMenuItem(
+                            AppDropdownMenuItem(
                                 text = { Text(stringResource(R.string.assistant_page_sub_agent_archive_none)) },
                                 onClick = {
                                     vm.setSubAgentArchiveFolder(null)
@@ -640,7 +640,7 @@ internal fun AssistantBasicContent(
                                 },
                             )
                             folders.forEach { folder ->
-                                DropdownMenuItem(
+                                AppDropdownMenuItem(
                                     text = { Text(folder.name) },
                                     onClick = {
                                         vm.setSubAgentArchiveFolder(folder.id)
