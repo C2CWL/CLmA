@@ -131,7 +131,8 @@ private fun connectorTool(
     description = description,
     systemPrompt = { _, _ -> UNTRUSTED_PROMPT.trimIndent() },
     parameters = {
-        InputSchema.Obj(buildJsonObject {
+        // Keep the schema builder separate: Kotlin otherwise binds this lambda to InputSchema.Obj.
+        val properties = buildJsonObject {
             fields.forEach { (field, help) ->
                 put(field, buildJsonObject {
                     put("type", when (field) { in integerFields -> "integer"; in objectFields -> "object"; else -> "string" })
@@ -147,7 +148,8 @@ private fun connectorTool(
                     }
                 })
             }
-        }, required),
+        }
+        InputSchema.Obj(properties = properties, required = required)
     },
     needsApproval = { ConnectorWriteApproval.requiresApproval(name) },
     execute = { args ->
