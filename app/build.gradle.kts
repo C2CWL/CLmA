@@ -29,8 +29,8 @@ android {
         applicationId = "com.clma.app"
         minSdk = 26
         targetSdk = 37
-        versionCode = 36
-        versionName = "1.0.2"
+        versionCode = 37
+        versionName = "1.0.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
