@@ -36,7 +36,7 @@ import com.clma.ai.provider.Model
 import com.clma.ai.provider.ModelType
 import com.clma.ai.provider.ProviderSetting
 import me.rerere.hugeicons.HugeIcons
-import me.rerere.hugeicons.stroke.AiBrain01
+import me.rerere.hugeicons.stroke.AiMagic
 import me.rerere.hugeicons.stroke.AiEditing
 import me.rerere.hugeicons.stroke.ArrowRight01
 import com.clma.app.R
@@ -80,7 +80,7 @@ fun SettingModelPage(initialTab: Int = 0, vm: SettingVM = koinViewModel()) {
                 NavigationBarItem(
                     selected = pagerState.currentPage == 0,
                     onClick = { scope.launch { pagerState.animateScrollToPage(0) } },
-                    icon = { Icon(HugeIcons.AiBrain01, null) },
+                    icon = { Icon(HugeIcons.AiMagic, null) },
                     label = { Text(stringResource(R.string.setting_model_page_tab_model)) }
                 )
                 NavigationBarItem(

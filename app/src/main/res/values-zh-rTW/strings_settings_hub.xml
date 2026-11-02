@@ -57,4 +57,12 @@
   <string name="setting_hub_summary_files" formatted="true">%1$d 個 · %2$.1f MB</string>
   <string name="setting_hub_summary_granted">已授權</string>
   <string name="setting_hub_summary_not_granted">未授權</string>
+  <string name="setting_hub_categories">設定分類</string>
+  <string name="setting_hub_category_count">%1$d 項設定</string>
+  <string name="setting_hub_category_models_desc">供應商、預設模型、搜尋與語音</string>
+  <string name="setting_hub_category_chat_desc">助理、提示詞與對話上下文</string>
+  <string name="setting_hub_category_connections_desc">技能、工具、權限與自動化</string>
+  <string name="setting_hub_category_appearance_desc">主題、字型、版面與操作體驗</string>
+  <string name="setting_hub_category_data_desc">備份同步、檔案與憑證管理</string>
+  <string name="setting_hub_category_about_desc">狀態診斷、日誌與應用程式資訊</string>
 </resources>

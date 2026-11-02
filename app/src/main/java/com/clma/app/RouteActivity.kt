@@ -134,6 +134,7 @@ import com.clma.app.ui.pages.setting.SettingFilesPage
 import com.clma.app.ui.pages.setting.SettingMcpPage
 import com.clma.app.ui.pages.setting.SettingModelPage
 import com.clma.app.ui.pages.setting.SettingPage
+import com.clma.app.ui.pages.setting.SettingsHubSectionId
 import com.clma.app.ui.pages.setting.SettingProviderDetailPage
 import com.clma.app.ui.pages.setting.SettingProviderPage
 import com.clma.app.ui.pages.setting.SettingSearchDetailPage
@@ -491,6 +492,10 @@ class RouteActivity : FragmentActivity() {
                                 SettingPage()
                             }
 
+                            entry<Screen.SettingsCategory> { key ->
+                                SettingPage(sectionId = key.sectionId)
+                            }
+
                             entry<Screen.SettingsSearch> {
                                 SettingsSearchPage()
                             }
@@ -828,6 +833,9 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data object SettingsSearch : Screen
+
+    @Serializable
+    data class SettingsCategory(val sectionId: SettingsHubSectionId) : Screen
 
     @Serializable
     data class Backup(val initialTab: Int = 0) : Screen

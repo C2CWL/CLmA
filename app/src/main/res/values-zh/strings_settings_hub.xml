@@ -57,4 +57,12 @@
   <string name="setting_hub_summary_files" formatted="true">%1$d 个 · %2$.1f MB</string>
   <string name="setting_hub_summary_granted">已授权</string>
   <string name="setting_hub_summary_not_granted">未授权</string>
+  <string name="setting_hub_categories">设置分类</string>
+  <string name="setting_hub_category_count">%1$d 项设置</string>
+  <string name="setting_hub_category_models_desc">提供商、默认模型、搜索与语音</string>
+  <string name="setting_hub_category_chat_desc">助手、提示词与对话上下文</string>
+  <string name="setting_hub_category_connections_desc">技能、工具、权限与自动化</string>
+  <string name="setting_hub_category_appearance_desc">主题、字体、布局与操作体验</string>
+  <string name="setting_hub_category_data_desc">备份同步、文件与凭据管理</string>
+  <string name="setting_hub_category_about_desc">状态诊断、日志与应用信息</string>
 </resources>

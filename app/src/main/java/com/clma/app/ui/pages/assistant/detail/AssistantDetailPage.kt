@@ -2,7 +2,6 @@ package com.clma.app.ui.pages.assistant.detail
 
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.BookOpen01
-import me.rerere.hugeicons.stroke.Brain02
 import me.rerere.hugeicons.stroke.ArrowRight01
 import me.rerere.hugeicons.stroke.Code
 import me.rerere.hugeicons.stroke.Message02
@@ -120,7 +119,7 @@ fun AssistantDetailPage(id: String) {
                     )
                     item(
                         onClick = { navController.navigate(Screen.AssistantMemory(id)) },
-                        leadingContent = { Icon(HugeIcons.Brain02, null) },
+                        leadingContent = { Icon(HugeIcons.BookOpen01, null) },
                         supportingContent = { Text(stringResource(R.string.assistant_detail_memory_desc)) },
                         headlineContent = { Text(stringResource(R.string.assistant_page_tab_memory)) },
                         trailingContent = { Icon(HugeIcons.ArrowRight01, null) },
