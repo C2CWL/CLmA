@@ -4,6 +4,12 @@ import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Image02
 import me.rerere.hugeicons.stroke.Clean
 import me.rerere.hugeicons.stroke.Delete01
+import androidx.compose.foundation.background
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -182,6 +188,8 @@ fun SettingFilesPage(
             enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
         )
         ModalBottomSheet(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            tonalElevation = 0.dp,
             onDismissRequest = { showCleanSheet = false },
             sheetState = sheetState,
         ) {
@@ -374,6 +382,7 @@ private fun CleanFilesSheet(
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
             .navigationBarsPadding()
             .padding(horizontal = 24.dp)
             .padding(bottom = 16.dp),
@@ -401,13 +410,23 @@ private fun CleanFilesSheet(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { onRangeSelected(range) }
-                    .padding(vertical = 8.dp),
+                    .padding(vertical = 4.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(
+                        if (selectedRange == range) MaterialTheme.colorScheme.secondaryContainer
+                        else MaterialTheme.colorScheme.surfaceContainer,
+                    )
+                    .selectable(
+                        selected = selectedRange == range,
+                        role = Role.RadioButton,
+                        onClick = { onRangeSelected(range) },
+                    )
+                    .padding(horizontal = 12.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 RadioButton(
                     selected = selectedRange == range,
-                    onClick = { onRangeSelected(range) },
+                    onClick = null,
                 )
                 Text(
                     text = range.days?.let {
@@ -419,7 +438,7 @@ private fun CleanFilesSheet(
             }
         }
 
-        TextButton(
+        DialogPrimaryButton(
             onClick = onClean,
             modifier = Modifier
                 .fillMaxWidth()

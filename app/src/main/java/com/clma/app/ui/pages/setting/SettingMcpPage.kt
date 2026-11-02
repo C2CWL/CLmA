@@ -452,6 +452,8 @@ private fun McpServerConfigModal(state: EditState<McpServerConfig>) {
         val pagerState = rememberPagerState { 2 }
         val scope = rememberCoroutineScope()
         ModalBottomSheet(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            tonalElevation = 0.dp,
             onDismissRequest = {
                 state.dismiss()
             },
@@ -1050,6 +1052,8 @@ private fun McpImportModal(
     val parseErrorMsg = stringResource(R.string.setting_mcp_page_import_parse_error)
 
     ModalBottomSheet(
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        tonalElevation = 0.dp,
         onDismissRequest = onDismiss,
         sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded))
     ) {

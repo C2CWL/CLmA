@@ -1043,6 +1043,8 @@ private fun AddModelButton(
         dialogState.currentState?.let { modelState ->
             val sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded))
             ModalBottomSheet(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                tonalElevation = 0.dp,
                 onDismissRequest = {
                     dialogState.dismiss()
                 },
@@ -1126,6 +1128,8 @@ private fun ModelPicker(
     var showModal by remember { mutableStateOf(false) }
     if (showModal) {
         ModalBottomSheet(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            tonalElevation = 0.dp,
             onDismissRequest = { showModal = false },
             sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)),
         ) {
@@ -1494,6 +1498,8 @@ private fun ModelCard(
         dialogState.currentState?.let { editingModel ->
             val sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded))
             ModalBottomSheet(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                tonalElevation = 0.dp,
                 onDismissRequest = {
                     dialogState.dismiss()
                 },
@@ -1843,6 +1849,8 @@ private fun ProviderOverrideSettings(
         val currentEditingProvider = editingProvider
         if (showProviderConfig && currentEditingProvider != null) {
             ModalBottomSheet(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                tonalElevation = 0.dp,
                 onDismissRequest = {
                     showProviderConfig = false
                     editingProvider = null

@@ -2,6 +2,8 @@ package com.clma.app.ui.pages.extensions.skills
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,7 +19,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.material3.AlertDialog
+import com.clma.app.ui.components.ui.AppAlertDialog as AlertDialog
+import com.clma.app.ui.components.ui.DialogPrimaryButton
+import com.clma.app.ui.components.ui.DialogSecondaryButton
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
@@ -473,6 +477,8 @@ private fun FeaturedCatalogSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var installing by remember { mutableStateOf<Set<String>>(emptySet()) }
     ModalBottomSheet(
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        tonalElevation = 0.dp,
         onDismissRequest = onDismiss,
         sheetState = sheetState,
     ) {
@@ -638,6 +644,10 @@ private fun SkillCard(
                 DropdownMenu(
                     expanded = menuExpanded,
                     onDismissRequest = { menuExpanded = false },
+                    shape = RoundedCornerShape(24.dp),
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    tonalElevation = 0.dp,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                 ) {
                     DropdownMenuItem(
                         text = { Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error) },
@@ -701,7 +711,7 @@ private fun AddSkillDialog(
             )
         },
         confirmButton = {
-            TextButton(
+            DialogPrimaryButton(
                 onClick = { onConfirm(name, content) },
                 enabled = name.isNotBlank() && !nameError,
             ) {
@@ -709,7 +719,7 @@ private fun AddSkillDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+            DialogSecondaryButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
         },
     )
 }
@@ -779,7 +789,7 @@ private fun ImportSkillDialog(
             }
         },
         confirmButton = {
-            TextButton(
+            DialogPrimaryButton(
                 onClick = {
                     loading = true
                     onConfirm(url)
@@ -790,7 +800,7 @@ private fun ImportSkillDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss, enabled = !loading) { Text(stringResource(R.string.cancel)) }
+            DialogSecondaryButton(onClick = onDismiss, enabled = !loading) { Text(stringResource(R.string.cancel)) }
         },
     )
 }
@@ -881,6 +891,10 @@ private fun GroupHeader(
             DropdownMenu(
                 expanded = menuExpanded,
                 onDismissRequest = { menuExpanded = false },
+                shape = RoundedCornerShape(24.dp),
+                containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                tonalElevation = 0.dp,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
             ) {
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.skills_page_group_edit)) },
@@ -1016,7 +1030,7 @@ private fun SkillGroupEditorDialog(
             }
         },
         confirmButton = {
-            TextButton(
+            DialogPrimaryButton(
                 onClick = { onConfirm(name, selected) },
                 enabled = name.isNotBlank(),
             ) {
@@ -1024,7 +1038,7 @@ private fun SkillGroupEditorDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+            DialogSecondaryButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
         },
     )
 }
