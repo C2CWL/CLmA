@@ -1285,7 +1285,7 @@ class GenerationLoop(
                                         buildJsonObject {
                                             put(
                                                 "error",
-                                                JsonPrimitive("Tool execution denied by user. Reason: ${reason.ifBlank { "No reason provided" }}")
+                                                JsonPrimitive("Tool execution denied. Reason: ${reason.ifBlank { "No reason provided" }}")
                                             )
                                         }
                                     )
