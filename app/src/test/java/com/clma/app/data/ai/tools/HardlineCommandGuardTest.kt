@@ -35,6 +35,37 @@ class HardlineCommandGuardTest {
         }
     }
 
+    @Test fun `quoted inspection patterns are not commands across shell tools`() {
+        val commands = listOf(
+            """getent passwd | awk -F: '${'$'}7 !~ /(nologin|false|sync|shutdown|halt)${'$'}/ {print ${'$'}1,${'$'}6,${'$'}7}'""",
+            """ps aux | grep -E '(worker|reboot|shutdown|halt)'""",
+            """echo "ok; reboot"; uptime""",
+            """grep -E 'start|mkfs.ext4' /tmp/log""",
+        )
+        for (command in commands) {
+            assertAllowed(command)
+            val input = kotlinx.serialization.json.buildJsonObject {
+                put("command", kotlinx.serialization.json.JsonPrimitive(command))
+            }.toString()
+            for (name in listOf("ssh_exec", "ssh_exec_saved", "termux_run_command",
+                    "shizuku_exec", "root_exec", "workspace_shell", "workspace_run_background",
+                    "mcp__remote__exec")) {
+                assertNull("$name must allow inspection: $command",
+                    HardlineCommandGuard.checkTool(name, input))
+                org.junit.Assert.assertFalse(HardlineCommandGuard.requiresSshPowerApproval(name, input))
+            }
+        }
+    }
+
+    @Test fun `real commands after quoted patterns still require approval`() {
+        assertBlocked("""grep -E 'sync|shutdown|halt' /etc/passwd; reboot""")
+        assertBlocked("""sh -c 'echo ok; reboot'""")
+        assertBlocked("bash -c \"echo ok; shutdown -h now\"")
+        assertBlocked("echo \"${'$'}(reboot)\"")
+        assertBlocked("echo \"${'$'}(echo ok; reboot)\"")
+        assertAllowed("""echo '${'$'}(reboot)'""")
+    }
+
     // -----------------------------------------------------------------------
     // Positive: hardline patterns MUST block
     // -----------------------------------------------------------------------
