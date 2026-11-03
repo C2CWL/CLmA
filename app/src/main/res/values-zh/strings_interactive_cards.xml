@@ -6,4 +6,6 @@
   <string name="chat_interactive_card_answered_plain">已回答</string>
   <string name="chat_interactive_card_ask_title">需要你回答</string>
   <string name="chat_interactive_card_waiting">等待输入</string>
+  <string name="chat_interaction_approval">等待审批</string>
+  <string name="chat_interaction_later">稍后处理</string>
 </resources>

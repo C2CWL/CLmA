@@ -11,6 +11,8 @@ import com.clma.app.data.datastore.SettingsStore
 import com.clma.app.data.datastore.getAssistantById
 import com.clma.app.data.model.Conversation
 import com.clma.app.data.repository.ConversationRepository
+import com.clma.app.service.PendingToolInteractions
+import com.clma.app.service.AgentOverlay
 import com.clma.app.service.ChatService
 import com.clma.app.service.taskcard.TaskCardPhase
 import com.clma.app.service.taskcard.TaskCardStatus
@@ -120,6 +122,7 @@ internal class EdgeBarChatBoxController(
     // ---- Conversation choice / binding ----
 
     private suspend fun pickConversation(preferFinished: Boolean): Uuid {
+        AgentOverlay.waitingConversation?.let { return it }
         newestGenerating()?.let { return it }
         if (preferFinished) lastFinished?.let { return it }
         context.readStringPreference(LAST_CONVERSATION_KEY)
@@ -205,7 +208,7 @@ internal class EdgeBarChatBoxController(
         val typeface = settingsStore.settingsFlow.value.displaySetting.resolveChatTypeface(context)
         val v = view ?: EdgeBarChatBoxView(themedContext, this).also { view = it }
         v.show(currentState(), a, isDark(), typeface)
-        if (!v.isShowing) unbind()
+        if (!v.isShowing) unbind() else render()
     }
 
     private fun observeConversations() {
@@ -233,6 +236,12 @@ internal class EdgeBarChatBoxController(
     private fun render() {
         val v = view ?: return
         if (!v.isShowing) return
+        if (PendingToolInteractions.pendingTools(conversation?.currentMessages.orEmpty()).isNotEmpty()) {
+            val id = boundId ?: return
+            close()
+            openConversationInApp(id)
+            return
+        }
         v.update(currentState())
     }
 

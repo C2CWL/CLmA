@@ -87,9 +87,18 @@ internal object EdgeBarLook {
      * What the bar shows. [WORKING]: a rainbow streak runs clockwise around the pill's outline; [DONE]: the pill turns
      * green with a white check until the user taps the bar (opening the app); [IDLE]: plain pill.
      */
-    enum class Signal { IDLE, WORKING, DONE }
+    enum class Signal { IDLE, WORKING, DONE, APPROVAL, INPUT }
 
-    fun signal(working: Boolean, unseenDone: Boolean): Signal = when {
+    const val WAITING_AMBER = 0xFFF0A128.toInt()
+
+    fun signal(
+        working: Boolean,
+        unseenDone: Boolean,
+        waiting: Boolean = false,
+        waitingForInput: Boolean = false,
+    ): Signal = when {
+        waiting && waitingForInput -> Signal.INPUT
+        waiting -> Signal.APPROVAL
         working -> Signal.WORKING
         unseenDone -> Signal.DONE
         else -> Signal.IDLE

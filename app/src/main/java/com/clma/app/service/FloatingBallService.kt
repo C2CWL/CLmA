@@ -82,6 +82,15 @@ class FloatingBallService : Service(), KoinComponent {
         const val ACTION_STOP = "me.rerere.rikkahub.action.FLOATING_BALL_STOP"
 
         /** A generation turn started / finished: the bar becomes the "agent is working" light. */
+        private const val ACTION_INTERACTION_CHANGED = "com.clma.app.action.INTERACTION_CHANGED"
+
+        fun refreshInteraction(context: Context) {
+            if (!isShowing) return
+            runCatching { context.startService(Intent(context, FloatingBallService::class.java).apply {
+                action = ACTION_INTERACTION_CHANGED
+            }) }.onFailure { Log.w(TAG, "refreshInteraction failed", it) }
+        }
+
         const val ACTION_WORKING_ON = "me.rerere.rikkahub.action.FLOATING_BALL_WORKING_ON"
         const val ACTION_WORKING_OFF = "me.rerere.rikkahub.action.FLOATING_BALL_WORKING_OFF"
         const val NOTIFICATION_ID = 2003
@@ -239,6 +248,12 @@ class FloatingBallService : Service(), KoinComponent {
                 return START_NOT_STICKY
             }
 
+            ACTION_INTERACTION_CHANGED -> {
+                if (AgentOverlay.waitingConversation != null) unseenDone = false
+                if (barView == null) stopSelf() else syncBar()
+                return START_NOT_STICKY
+            }
+
             ACTION_WORKING_ON -> {
                 working = true
                 unseenDone = false
@@ -250,7 +265,7 @@ class FloatingBallService : Service(), KoinComponent {
                 working = false
                 // The bar turns green until the user taps it, unless the chat box is open (the
                 // finished reply is right there).
-                unseenDone = !chatBox.isShowing
+                unseenDone = AgentOverlay.waitingConversation == null && !chatBox.isShowing
                 if (barView == null) stopSelf() else syncBar()
                 return START_NOT_STICKY
             }
@@ -389,7 +404,16 @@ class FloatingBallService : Service(), KoinComponent {
     /** Pushes the current status onto the bar. */
     private fun syncBar() {
         val view = barView ?: return
-        view.signal = EdgeBarLook.signal(working = working, unseenDone = unseenDone)
+        val waiting = AgentOverlay.waitingConversation != null
+        view.signal = EdgeBarLook.signal(
+            working = working, unseenDone = unseenDone,
+            waiting = waiting, waitingForInput = AgentOverlay.waitingForInput,
+        )
+        view.contentDescription = getString(when {
+            waiting && AgentOverlay.waitingForInput -> R.string.chat_interactive_card_waiting
+            waiting -> R.string.chat_interaction_approval
+            else -> R.string.setting_floating_ball_bar_a11y
+        })
         updateGestureExclusion(view)
     }
 
@@ -531,6 +555,11 @@ class FloatingBallService : Service(), KoinComponent {
      * chat box if "点细条打开聊天框" is on, else the app.
      */
     private fun onBarTap() {
+        AgentOverlay.waitingConversation?.let { id ->
+            chatBox.close()
+            openConversation(id)
+            return
+        }
         val wasGreen = unseenDone
         if (unseenDone) {
             unseenDone = false

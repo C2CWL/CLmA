@@ -95,6 +95,7 @@ import com.clma.app.data.model.Conversation
 import com.clma.app.data.model.MessageNode
 import com.clma.app.service.ChatError
 import com.clma.app.ui.components.message.ChatMessage
+import com.clma.app.ui.components.message.ToolInteractionDialogHost
 import com.clma.app.ui.components.ui.bounceOverscroll
 import com.clma.app.ui.components.ui.ErrorCardsDisplay
 import com.clma.app.ui.components.ui.ListSelectableItem
@@ -140,50 +141,52 @@ fun ChatList(
     onConversationSystemPromptChange: ((String?) -> Unit)? = null,
     turnFooters: Map<String, TurnFooter> = emptyMap(),
 ) {
-    AnimatedContent(
-        targetState = previewMode,
-        label = "ChatListMode",
-        transitionSpec = {
-            (fadeIn() + scaleIn(initialScale = 0.8f) togetherWith fadeOut() + scaleOut(targetScale = 0.8f))
-        }
-    ) { target ->
-        if (target) {
-            ChatListPreview(
-                innerPadding = innerPadding,
-                conversation = conversation,
-                settings = settings,
-                hazeState = hazeState,
-                onJumpToMessage = onJumpToMessage,
-                animatedVisibilityScope = this@AnimatedContent,
-            )
-        } else {
-            ChatListNormal(
-                innerPadding = innerPadding,
-                conversation = conversation,
-                state = state,
-                loading = loading,
-                processingStatus = processingStatus,
-                settings = settings,
-                hazeState = hazeState,
-                errors = errors,
-                onDismissError = onDismissError,
-                onClearAllErrors = onClearAllErrors,
-                onRegenerate = onRegenerate,
-                onEdit = onEdit,
-                onForkMessage = onForkMessage,
-                onDelete = onDelete,
-                onUpdateMessage = onUpdateMessage,
-                onClickSuggestion = onClickSuggestion,
-                onTranslate = onTranslate,
-                onClearTranslation = onClearTranslation,
-                turnFooters = turnFooters,
-                animatedVisibilityScope = this@AnimatedContent,
-                onToolApproval = onToolApproval,
-                onToolAnswer = onToolAnswer,
-                onRerunTool = onRerunTool,
-                onToggleFavorite = onToggleFavorite,
-                onConversationSystemPromptChange = onConversationSystemPromptChange,
-            )
+    ToolInteractionDialogHost(conversation, onToolApproval, onToolAnswer) {
+        AnimatedContent(
+            targetState = previewMode,
+            label = "ChatListMode",
+            transitionSpec = {
+                (fadeIn() + scaleIn(initialScale = 0.8f) togetherWith fadeOut() + scaleOut(targetScale = 0.8f))
+            }
+        ) { target ->
+            if (target) {
+                ChatListPreview(
+                    innerPadding = innerPadding,
+                    conversation = conversation,
+                    settings = settings,
+                    hazeState = hazeState,
+                    onJumpToMessage = onJumpToMessage,
+                    animatedVisibilityScope = this@AnimatedContent,
+                )
+            } else {
+                ChatListNormal(
+                    innerPadding = innerPadding,
+                    conversation = conversation,
+                    state = state,
+                    loading = loading,
+                    processingStatus = processingStatus,
+                    settings = settings,
+                    hazeState = hazeState,
+                    errors = errors,
+                    onDismissError = onDismissError,
+                    onClearAllErrors = onClearAllErrors,
+                    onRegenerate = onRegenerate,
+                    onEdit = onEdit,
+                    onForkMessage = onForkMessage,
+                    onDelete = onDelete,
+                    onUpdateMessage = onUpdateMessage,
+                    onClickSuggestion = onClickSuggestion,
+                    onTranslate = onTranslate,
+                    onClearTranslation = onClearTranslation,
+                    turnFooters = turnFooters,
+                    animatedVisibilityScope = this@AnimatedContent,
+                    onToolApproval = onToolApproval,
+                    onToolAnswer = onToolAnswer,
+                    onRerunTool = onRerunTool,
+                    onToggleFavorite = onToggleFavorite,
+                    onConversationSystemPromptChange = onConversationSystemPromptChange,
+                )
+            }
         }
     }
 }

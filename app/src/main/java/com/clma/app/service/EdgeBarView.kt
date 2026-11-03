@@ -124,7 +124,11 @@ internal class EdgeBarView(context: Context) : View(context) {
         pill.set(left, top, left + barW, top + barH)
 
         val signal = signal
-        fillPaint.color = if (signal == Signal.DONE) EdgeBarLook.DONE_GREEN else barColor.argb(darkMode)
+        fillPaint.color = when (signal) {
+            Signal.DONE -> EdgeBarLook.DONE_GREEN
+            Signal.APPROVAL, Signal.INPUT -> EdgeBarLook.WAITING_AMBER
+            else -> barColor.argb(darkMode)
+        }
         canvas.drawRoundRect(pill, radius, radius, fillPaint)
         if (signal != Signal.DONE) {
             barColor.outlineArgb(darkMode)?.let { outline ->
@@ -144,6 +148,17 @@ internal class EdgeBarView(context: Context) : View(context) {
                 if (animate) postInvalidateOnAnimation()
             }
             Signal.DONE -> drawCheck(canvas)
+            Signal.APPROVAL, Signal.INPUT -> {
+                val x = pill.centerX()
+                val y = pill.centerY()
+                if (signal == Signal.INPUT) {
+                    canvas.drawLine(x - dp(3f), y - dp(4f), x - dp(3f), y + dp(4f), checkPaint)
+                    canvas.drawLine(x + dp(3f), y - dp(4f), x + dp(3f), y + dp(4f), checkPaint)
+                } else {
+                    canvas.drawLine(x, y - dp(4f), x, y + dp(1f), checkPaint)
+                    canvas.drawPoint(x, y + dp(5f), checkPaint)
+                }
+            }
         }
     }
 
