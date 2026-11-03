@@ -139,9 +139,41 @@ object HardlineCommandGuard {
         if (command.isNullOrEmpty()) return null
         val normalised = command.lowercase()
         for ((pattern, reason) in if (allowPower) PATTERNS else PATTERNS + POWER_PATTERNS) {
-            if (pattern.containsMatchIn(normalised)) return reason
+            if (pattern.findAll(normalised).any { match ->
+                    !pattern.pattern.startsWith(CMD_POS) ||
+                        isExecutablePosition(normalised, match.range.first)
+                }) return reason
         }
         return null
+    }
+
+    private fun isExecutablePosition(command: String, position: Int): Boolean {
+        var quote: Char? = null
+        var shellBody = false
+        var index = 0
+        while (index < position) {
+            val char = command[index]
+            if (char == '\\' && quote != '\'') {
+                index += 2
+                continue
+            }
+            if (quote == null && (char == '\'' || char == '"')) {
+                quote = char
+                // A shell -c argument is code, unlike an awk program or grep pattern.
+                shellBody = Regex(SHELL_EVAL_OPEN).findAll(command.take(index + 1))
+                    .any { it.range.last == index }
+            } else if (char == quote) {
+                quote = null
+                shellBody = false
+            }
+            index++
+        }
+        if (quote == null || shellBody) return true
+        // Keep substitutions inside double quotes conservative, including later commands.
+        return quote == '"' && (
+            command.startsWith("\$(", position) ||
+                command.substring(0, position + 1).let { it.contains("\$(") || it.contains('`') }
+            )
     }
 
     /**
