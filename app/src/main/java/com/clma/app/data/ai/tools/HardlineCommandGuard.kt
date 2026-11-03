@@ -170,9 +170,10 @@ object HardlineCommandGuard {
         }
         if (quote == null || shellBody) return true
         // Keep substitutions inside double quotes conservative, including later commands.
-        return quote == '"' && command.substring(0, position + 1).let {
-            it.contains("\$(") || it.contains('`')
-        }
+        return quote == '"' && (
+            command.startsWith("\$(", position) ||
+                command.substring(0, position + 1).let { it.contains("\$(") || it.contains('`') }
+            )
     }
 
     /**
