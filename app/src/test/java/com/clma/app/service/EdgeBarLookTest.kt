@@ -145,4 +145,18 @@ class EdgeBarLookTest {
         assertEquals(0, EdgeBarLook.topBarLeft(10, 80, 1080))
         assertEquals(1000, EdgeBarLook.topBarLeft(1075, 80, 1080))
     }
+    @Test
+    fun `pending interaction takes priority over working and done`() {
+        assertEquals(EdgeBarLook.Signal.APPROVAL,
+            EdgeBarLook.signal(working = false, unseenDone = true, waiting = true))
+        assertEquals(EdgeBarLook.Signal.INPUT,
+            EdgeBarLook.signal(working = true, unseenDone = true, waiting = true, waitingForInput = true))
+        assertEquals(EdgeBarLook.Signal.WORKING,
+            EdgeBarLook.signal(working = true, unseenDone = true))
+        assertEquals(EdgeBarLook.Signal.DONE,
+            EdgeBarLook.signal(working = false, unseenDone = true))
+        assertEquals(EdgeBarLook.Signal.IDLE,
+            EdgeBarLook.signal(working = false, unseenDone = false, waitingForInput = true))
+    }
+
 }

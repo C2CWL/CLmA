@@ -680,7 +680,7 @@ class ChatService(
         if (session.state.value.messageNodes.isEmpty()) {
             val fromDb = conversationRepo.getConversationById(conversationId) ?: return
             if (fromDb.messageNodes.isNotEmpty()) {
-                session.state.value = fromDb
+                updateConversation(conversationId, fromDb)
             }
         }
     }
@@ -765,6 +765,7 @@ class ChatService(
     fun cleanup() = runCatching {
         ProcessLifecycleOwner.get().lifecycle.removeObserver(lifecycleObserver)
         messageDeleteBarriers.clear()
+        sessions.keys.forEach { AgentOverlay.clearPending(context, it) }
         sessions.values.forEach { it.cleanup() }
         sessions.clear()
         sessionMutexes.clear()
@@ -847,6 +848,7 @@ class ChatService(
      */
     fun dropSession(conversationId: Uuid) {
         clearAutoCompactionFailure(conversationId)
+        AgentOverlay.clearPending(context, conversationId)
         val session = sessions.remove(conversationId) ?: return
         session.cleanup()
         sessionMutexes.remove(conversationId)
@@ -4277,6 +4279,7 @@ class ChatService(
         // 用户编辑、删除、收藏走 updateConversationState，那里的扫描原样保留。
         if (checkFiles) checkFilesDelete(conversation, session.state.value)
         session.state.value = conversation
+        AgentOverlay.updatePending(context, conversationId, conversation.currentMessages)
     }
 
     fun updateConversationState(conversationId: Uuid, update: (Conversation) -> Conversation) {
@@ -4293,6 +4296,7 @@ class ChatService(
                 next
             }
         }
+        AgentOverlay.updatePending(context, conversationId, session.state.value.currentMessages)
     }
 
     /**

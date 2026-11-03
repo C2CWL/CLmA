@@ -10,4 +10,6 @@
   <string name="chat_interactive_card_answered_plain">Answered</string>
   <string name="chat_interactive_card_ask_title">Question</string>
   <string name="chat_interactive_card_waiting">Waiting for your input</string>
+  <string name="chat_interaction_approval">Waiting for approval</string>
+  <string name="chat_interaction_later">Later</string>
 </resources>

@@ -1,5 +1,15 @@
 package com.clma.app.ui.components.message
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.runtime.key
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.SecureFlagPolicy
+import com.clma.app.service.PendingToolInteractions
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -100,6 +110,10 @@ fun InteractiveToolCard(
     onToolApproval: ((toolCallId: String, approved: Boolean, reason: String, scope: com.clma.app.service.ChatService.ApprovalScope, toolName: String) -> Unit)? = null,
     onToolAnswer: ((toolCallId: String, answer: String) -> Unit)? = null,
 ) {
+    if (tool.isPending && LocalPendingToolDialog.current != null) {
+        PendingToolButton(tool)
+        return
+    }
     when (tool.toolName) {
         ToolApprovalPolicy.ASK_USER_TOOL_NAME -> AskUserToolCard(
             tool = tool,
@@ -214,7 +228,6 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
     }
 
     var showResult by remember { mutableStateOf(false) }
-    var showDenyDialog by remember { mutableStateOf(false) }
     // 用户点过展开/收起之后以用户的为准；否则 shell 跟着 collapseInlineOutput 走，
     // 其它工具保持旧行为（默认展开）。历史消息第一次组合时后面已经有正文，直接以收起开始，
     // 不会先闪开再合上。正在生成时这一步先以展开进入组合，等后面的 part 出现才收，
@@ -285,173 +298,7 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
         },
         extra = if (isPending && onToolApproval != null) {
             {
-                // Per-row in-flight flag to debounce double-taps. Without this, two rapid
-                // clicks on Approve fire handleToolApproval twice — the second cancel()s
-                // the first's resume coroutine mid-flight, wastes the in-flight gen step,
-                // and can race the persisted state mutation. Keyed on toolCallId so a
-                // recomposition for a different tool doesn't carry the flag.
-                var inFlight by remember(tool.toolCallId) { mutableStateOf(false) }
-                // Relayed MCP tools: the server's own description (untranslated), looked up
-                // from the live tool list; display-only.
-                val mcpDescription: String? = if (tool.toolName.startsWith("mcp__")) {
-                    val mcpManager = koinInject<com.clma.app.data.ai.mcp.McpManager>()
-                    remember(tool.toolName) {
-                        runCatching {
-                            mcpManager.getAllAvailableTools().firstOrNull { (serverId, serverName, mcpTool) ->
-                                com.clma.app.data.ai.mcp.buildMcpToolName(serverId, serverName, mcpTool.name) == tool.toolName
-                            }?.third?.description
-                        }.getOrNull()
-                    }
-                } else {
-                    null
-                }
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    // What is being approved: MCP server tag, description, raw id.
-                    com.clma.app.data.ai.tools.ToolDisplayNames.mcpParts(tool.toolName)?.let {
-                        McpServerTag(it.serverName)
-                    }
-                    ToolDisplaySupporting(toolName = tool.toolName, mcpDescription = mcpDescription)
-                    if (com.clma.app.connectors.ConnectorWriteApproval.requiresApproval(tool.toolName)) {
-                        Text(
-                            text = stringResource(R.string.connector_write_approval_warning),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.error,
-                        )
-                        androidx.compose.foundation.text.selection.SelectionContainer {
-                            Text(
-                                text = tool.inputAsJson().toString(),
-                                style = MaterialTheme.typography.bodySmall,
-                            )
-                        }
-                    }
-                    // schedule_job is the one approval that AUTHORISES future autonomous
-                    // execution, not just one tool. Surface the consequence here so the
-                    // user knows what they're approving — every tool the cron prompt
-                    // invokes will run without prompts. (HARDLINE blocks still apply.)
-                    if (tool.toolName == "schedule_job") {
-                        Text(
-                            text = stringResource(R.string.chat_message_tool_schedule_job_warning),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.error,
-                        )
-                        // Surface mode-specific detail so the user sees WHAT will run.
-                        val jobInput = tool.inputAsJson()
-                        val mode = jobInput.getStringContent("mode")
-                        if (mode == "direct") {
-                            val actions = runCatching {
-                                (jobInput as? JsonObject)?.get("actions")
-                                    ?.jsonArray
-                            }.getOrNull()
-                            if (actions != null) {
-                                Column {
-                                    actions.forEachIndexed { i, el ->
-                                        val obj = el as? JsonObject
-                                        val toolName = obj?.get("tool")?.jsonPrimitive?.contentOrNull ?: "?"
-                                        val args = obj?.get("args")?.toString().orEmpty()
-                                        val truncatedArgs = if (args.length > 120) args.take(120) + "…" else args
-                                        Text(
-                                            text = "  ${i + 1}. $toolName $truncatedArgs",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        )
-                                    }
-                                }
-                            }
-                        } else if (mode == "llm") {
-                            val prompt = jobInput.getStringContent("prompt").orEmpty()
-                            if (prompt.isNotEmpty()) {
-                                val truncatedPrompt = if (prompt.length > 200) prompt.take(200) + "…" else prompt
-                                Text(
-                                    text = truncatedPrompt,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
-                    }
-                    // MCP control tools: render args via the redacting helper so headers
-                    // like Authorization / X-Api-Key never appear plainly in the approval
-                    // card. Generic args display would leak them (audit finding).
-                    if (tool.toolName.startsWith("mcp_")) {
-                        val mcpRendered = runCatching {
-                            (tool.inputAsJson() as? JsonObject)?.let {
-                                com.clma.app.data.ai.mcp.control.McpApprovalRenderer
-                                    .render(tool.toolName, it)
-                            }
-                        }.getOrNull()
-                        if (!mcpRendered.isNullOrBlank()) {
-                            Text(
-                                text = mcpRendered,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                    // Workflow_* mutators: human-readable approval body ("Create workflow X /
-                    // When: WiFi connects to HomeWiFi / Do: 1. ssh_exec_saved(host=home) / …").
-                    // Action arg values whose key is in the secret-redaction list are masked.
-                    if (com.clma.app.workflow.tools.WorkflowApprovalRenderer.isWorkflowTool(tool.toolName)
-                        && tool.toolName !in setOf("workflow_list", "workflow_get")) {
-                        val workflowRendered = runCatching {
-                            com.clma.app.workflow.tools.WorkflowApprovalRenderer
-                                .renderPlain(tool.toolName, tool.input.ifBlank { "{}" })
-                        }.getOrNull()
-                        if (!workflowRendered.isNullOrBlank()) {
-                            Text(
-                                text = workflowRendered,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                    // Three-button row: Allow (once) / Allow for this chat / Deny. Order
-                    // matches the Telegram inline-keyboard layout so the user sees the same
-                    // mental model on both surfaces. There is no persistent "always" button:
-                    // the blacklist (Settings → Tool approvals) is where a tool stops asking.
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        ApprovalButton(
-                            label = stringResource(R.string.chat_message_tool_approve_once),
-                            icon = HugeIcons.Tick01,
-                            enabled = !inFlight,
-                            onClick = {
-                                if (!inFlight) {
-                                    inFlight = true
-                                    onToolApproval(
-                                        tool.toolCallId, true, "",
-                                        com.clma.app.service.ChatService.ApprovalScope.Once,
-                                        tool.toolName,
-                                    )
-                                }
-                            },
-                        )
-                        if (!com.clma.app.connectors.ConnectorWriteApproval.requiresApproval(tool.toolName)) {
-                            ApprovalButton(
-                                label = stringResource(R.string.chat_message_tool_allow_chat),
-                                emoji = "💬",
-                                enabled = !inFlight,
-                                onClick = {
-                                    if (!inFlight) {
-                                        inFlight = true
-                                        onToolApproval(
-                                            tool.toolCallId, true, "",
-                                            com.clma.app.service.ChatService.ApprovalScope.ChatScope,
-                                            tool.toolName,
-                                        )
-                                    }
-                                },
-                            )
-                        }
-                        ApprovalButton(
-                            label = stringResource(R.string.chat_message_tool_deny),
-                            icon = HugeIcons.Cancel01,
-                            enabled = !inFlight,
-                            onClick = { if (!inFlight) showDenyDialog = true },
-                        )
-                    }
-                }
+                PendingToolButton(tool)
             }
         } else {
             null
@@ -499,19 +346,6 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
         },
     )
 
-    if (showDenyDialog && onToolApproval != null) {
-        ToolDenyReasonDialog(
-            onDismiss = { showDenyDialog = false },
-            onConfirm = { reason ->
-                showDenyDialog = false
-                onToolApproval(
-                    tool.toolCallId, false, reason,
-                    com.clma.app.service.ChatService.ApprovalScope.Once,
-                    tool.toolName,
-                )
-            }
-        )
-    }
 
     if (showResult) {
         ModalBottomSheet(
@@ -1235,5 +1069,269 @@ private fun ApprovalButton(
         }
         androidx.compose.foundation.layout.Spacer(Modifier.size(4.dp))
         Text(text = label, style = MaterialTheme.typography.labelMedium, maxLines = 1)
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ToolApprovalForm(
+    tool: UIMessagePart.Tool,
+    onToolApproval: (String, Boolean, String, com.clma.app.service.ChatService.ApprovalScope, String) -> Unit,
+) {
+    var showDenyDialog by remember(tool.toolCallId) { mutableStateOf(false) }
+    // Per-form in-flight flag to debounce double-taps. Without this, two rapid
+    // clicks on Approve fire handleToolApproval twice — the second cancel()s
+    // the first's resume coroutine mid-flight, wastes the in-flight gen step,
+    // and can race the persisted state mutation. Keyed on toolCallId so a
+    // recomposition for a different tool doesn't carry the flag.
+    var inFlight by remember(tool.toolCallId) { mutableStateOf(false) }
+    // Relayed MCP tools: the server's own description (untranslated), looked up
+    // from the live tool list; display-only.
+    val mcpDescription: String? = if (tool.toolName.startsWith("mcp__")) {
+        val mcpManager = koinInject<com.clma.app.data.ai.mcp.McpManager>()
+        remember(tool.toolName) {
+            runCatching {
+                mcpManager.getAllAvailableTools().firstOrNull { (serverId, serverName, mcpTool) ->
+                    com.clma.app.data.ai.mcp.buildMcpToolName(serverId, serverName, mcpTool.name) == tool.toolName
+                }?.third?.description
+            }.getOrNull()
+        }
+    } else {
+        null
+    }
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        // What is being approved: MCP server tag, description, raw id.
+        com.clma.app.data.ai.tools.ToolDisplayNames.mcpParts(tool.toolName)?.let {
+            McpServerTag(it.serverName)
+        }
+        ToolDisplaySupporting(toolName = tool.toolName, mcpDescription = mcpDescription)
+        if (com.clma.app.connectors.ConnectorWriteApproval.requiresApproval(tool.toolName)) {
+            Text(
+                text = stringResource(R.string.connector_write_approval_warning),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.error,
+            )
+            androidx.compose.foundation.text.selection.SelectionContainer {
+                Text(
+                    text = tool.inputAsJson().toString(),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+        }
+        // schedule_job is the one approval that AUTHORISES future autonomous
+        // execution, not just one tool. Surface the consequence here so the
+        // user knows what they're approving — every tool the cron prompt
+        // invokes will run without prompts. (HARDLINE blocks still apply.)
+        if (tool.toolName == "schedule_job") {
+            Text(
+                text = stringResource(R.string.chat_message_tool_schedule_job_warning),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.error,
+            )
+            // Surface mode-specific detail so the user sees WHAT will run.
+            val jobInput = tool.inputAsJson()
+            val mode = jobInput.getStringContent("mode")
+            if (mode == "direct") {
+                val actions = runCatching {
+                    (jobInput as? JsonObject)?.get("actions")
+                        ?.jsonArray
+                }.getOrNull()
+                if (actions != null) {
+                    Column {
+                        actions.forEachIndexed { i, el ->
+                            val obj = el as? JsonObject
+                            val toolName = obj?.get("tool")?.jsonPrimitive?.contentOrNull ?: "?"
+                            val args = obj?.get("args")?.toString().orEmpty()
+                            val truncatedArgs = if (args.length > 120) args.take(120) + "…" else args
+                            Text(
+                                text = "  ${i + 1}. $toolName $truncatedArgs",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+            } else if (mode == "llm") {
+                val prompt = jobInput.getStringContent("prompt").orEmpty()
+                if (prompt.isNotEmpty()) {
+                    val truncatedPrompt = if (prompt.length > 200) prompt.take(200) + "…" else prompt
+                    Text(
+                        text = truncatedPrompt,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+        // MCP control tools: render args via the redacting helper so headers
+        // like Authorization / X-Api-Key never appear plainly in the approval
+        // card. Generic args display would leak them (audit finding).
+        if (tool.toolName.startsWith("mcp_")) {
+            val mcpRendered = runCatching {
+                (tool.inputAsJson() as? JsonObject)?.let {
+                    com.clma.app.data.ai.mcp.control.McpApprovalRenderer
+                        .render(tool.toolName, it)
+                }
+            }.getOrNull()
+            if (!mcpRendered.isNullOrBlank()) {
+                Text(
+                    text = mcpRendered,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        // Workflow_* mutators: human-readable approval body ("Create workflow X /
+        // When: WiFi connects to HomeWiFi / Do: 1. ssh_exec_saved(host=home) / …").
+        // Action arg values whose key is in the secret-redaction list are masked.
+        if (com.clma.app.workflow.tools.WorkflowApprovalRenderer.isWorkflowTool(tool.toolName)
+            && tool.toolName !in setOf("workflow_list", "workflow_get")) {
+            val workflowRendered = runCatching {
+                com.clma.app.workflow.tools.WorkflowApprovalRenderer
+                    .renderPlain(tool.toolName, tool.input.ifBlank { "{}" })
+            }.getOrNull()
+            if (!workflowRendered.isNullOrBlank()) {
+                Text(
+                    text = workflowRendered,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        // Three-button row: Allow (once) / Allow for this chat / Deny. Order
+        // matches the Telegram inline-keyboard layout so the user sees the same
+        // mental model on both surfaces. There is no persistent "always" button:
+        // the blacklist (Settings → Tool approvals) is where a tool stops asking.
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            ApprovalButton(
+                label = stringResource(R.string.chat_message_tool_approve_once),
+                icon = HugeIcons.Tick01,
+                enabled = !inFlight,
+                onClick = {
+                    if (!inFlight) {
+                        inFlight = true
+                        onToolApproval(
+                            tool.toolCallId, true, "",
+                            com.clma.app.service.ChatService.ApprovalScope.Once,
+                            tool.toolName,
+                        )
+                    }
+                },
+            )
+            if (!com.clma.app.connectors.ConnectorWriteApproval.requiresApproval(tool.toolName)) {
+                ApprovalButton(
+                    label = stringResource(R.string.chat_message_tool_allow_chat),
+                    emoji = "💬",
+                    enabled = !inFlight,
+                    onClick = {
+                        if (!inFlight) {
+                            inFlight = true
+                            onToolApproval(
+                                tool.toolCallId, true, "",
+                                com.clma.app.service.ChatService.ApprovalScope.ChatScope,
+                                tool.toolName,
+                            )
+                        }
+                    },
+                )
+            }
+            ApprovalButton(
+                label = stringResource(R.string.chat_message_tool_deny),
+                icon = HugeIcons.Cancel01,
+                enabled = !inFlight,
+                onClick = { if (!inFlight) showDenyDialog = true },
+            )
+        }
+    }
+    if (showDenyDialog) {
+        ToolDenyReasonDialog(
+            onDismiss = { showDenyDialog = false },
+            onConfirm = { reason ->
+                showDenyDialog = false
+                inFlight = true
+                onToolApproval(
+                    tool.toolCallId, false, reason,
+                    com.clma.app.service.ChatService.ApprovalScope.Once,
+                    tool.toolName,
+                )
+            }
+        )
+    }
+}
+
+private val LocalPendingToolDialog = staticCompositionLocalOf<((String) -> Unit)?> { null }
+
+@Composable
+private fun PendingToolButton(tool: UIMessagePart.Tool) {
+    val open = LocalPendingToolDialog.current
+    TextButton(onClick = { open?.invoke(tool.toolCallId) }, enabled = open != null) {
+        Text(stringResource(
+            if (tool.isInteractiveInputTool()) R.string.chat_interactive_card_waiting
+            else R.string.chat_interaction_approval,
+        ))
+    }
+}
+
+/** Outside the lazy list: an offscreen approval must still be presented. */
+@Composable
+fun ToolInteractionDialogHost(
+    conversation: com.clma.app.data.model.Conversation,
+    onToolApproval: ((String, Boolean, String, com.clma.app.service.ChatService.ApprovalScope, String) -> Unit)?,
+    onToolAnswer: ((String, String) -> Unit)?,
+    content: @Composable () -> Unit,
+) {
+    val pending = PendingToolInteractions.pendingTools(conversation.currentMessages).filter {
+        if (it.isInteractiveInputTool()) onToolAnswer != null else onToolApproval != null
+    }
+    // Closing is not denying: leave the turn paused and a compact reopen action in the chat.
+    val dismissed = remember(conversation.id) { mutableStateMapOf<String, Boolean>() }
+    var requested by remember(conversation.id) { mutableStateOf<String?>(null) }
+    val active = pending.firstOrNull { it.toolCallId == requested }
+        ?: pending.firstOrNull { dismissed[it.toolCallId] != true }
+    CompositionLocalProvider(LocalPendingToolDialog provides { id ->
+        dismissed.remove(id)
+        requested = id
+    }) { content() }
+    if (active != null) key(conversation.id, active.toolCallId) {
+        val close = {
+            dismissed[active.toolCallId] = true
+            requested = null
+        }
+        Dialog(
+            onDismissRequest = close,
+            properties = DialogProperties(
+                securePolicy = if (active.toolName == ToolApprovalPolicy.REQUEST_SECRET_TOOL_NAME) {
+                    SecureFlagPolicy.SecureOn
+                } else SecureFlagPolicy.Inherit,
+            ),
+        ) {
+            Surface(shape = RoundedCornerShape(24.dp), tonalElevation = 6.dp) {
+                Column(Modifier.fillMaxWidth().heightIn(max = 560.dp)
+                    .verticalScroll(rememberScrollState()).padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Text(
+                        stringResource(if (active.isInteractiveInputTool()) {
+                            R.string.chat_interactive_card_waiting
+                        } else R.string.chat_interaction_approval),
+                        style = MaterialTheme.typography.titleLarge,
+                    )
+                    if (active.isInteractiveInputTool()) {
+                        // Do not let the compact-row provider replace the actual form.
+                        CompositionLocalProvider(LocalPendingToolDialog provides null) {
+                            InteractiveToolCard(active, onToolApproval = onToolApproval, onToolAnswer = onToolAnswer)
+                        }
+                    } else if (onToolApproval != null) {
+                        ToolApprovalForm(active, onToolApproval)
+                    }
+                    TextButton(onClick = close, modifier = Modifier.align(Alignment.End)) {
+                        Text(stringResource(R.string.chat_interaction_later))
+                    }
+                }
+            }
+        }
     }
 }
