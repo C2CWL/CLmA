@@ -17,7 +17,6 @@ import com.clma.app.data.ai.GenerationLoop
 import com.clma.app.data.ai.TranslationHandler
 import com.clma.app.data.ai.transformers.TemplateTransformer
 import com.clma.app.data.api.HuggingFaceAPI
-import com.clma.app.data.api.RikkaHubAPI
 import com.clma.app.data.codex.CodexAccountRepository
 import com.clma.app.data.codex.CodexCredentialStore
 import com.clma.app.data.codex.CodexOAuthManager
@@ -45,13 +44,10 @@ import com.clma.app.data.network.SettingsSocks5Authenticator
 import com.clma.app.data.sync.webdav.WebDavSync
 import com.clma.search.SearchService
 import com.clma.app.data.sync.S3Sync
-import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import org.koin.dsl.module
 import org.koin.core.qualifier.named
-import retrofit2.Retrofit
-import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
@@ -453,16 +449,5 @@ val dataSourceModule = module {
             context = get(),
             httpClient = get()
         )
-    }
-
-    single<Retrofit> {
-        Retrofit.Builder()
-            .baseUrl("https://api.rikka-ai.com")
-            .addConverterFactory(get<Json>().asConverterFactory("application/json; charset=UTF8".toMediaType()))
-            .build()
-    }
-
-    single<RikkaHubAPI> {
-        get<Retrofit>().create(RikkaHubAPI::class.java)
     }
 }
