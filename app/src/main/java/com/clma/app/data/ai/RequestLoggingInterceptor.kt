@@ -79,17 +79,8 @@ class RequestLoggingInterceptor : Interceptor {
     }
 
     private fun okhttp3.Headers.toMap(): Map<String, String> {
-        return names().associateWith { name ->
-            if (name.equals("Proxy-Authorization", ignoreCase = true) ||
-                name.equals("Authorization", ignoreCase = true) ||
-                name.equals("x-api-key", ignoreCase = true) ||
-                name.equals("api-key", ignoreCase = true)
-            ) {
-                "██"
-            } else {
-                get(name) ?: ""
-            }
-        }
+        // Redaction is centralized at Logging.logRequest before storage or presentation.
+        return names().associateWith { get(it).orEmpty() }
     }
 
     companion object {

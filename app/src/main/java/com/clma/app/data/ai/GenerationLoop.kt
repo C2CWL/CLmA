@@ -1798,6 +1798,28 @@ class GenerationLoop(
         }
     }
 
+    private fun recordContextInspection(
+        params: TextGenerationParams,
+        requestMessages: List<UIMessage>,
+        stream: Boolean,
+        memoryPrompt: String,
+    ) {
+        if (aiLoggingManager.getLogLevel().value == com.clma.app.data.datastore.AiLogLevel.OFF) return
+        // Diagnostics must not prevent generation if a provider-defined tool schema fails.
+        val inspection = runCatching {
+            ContextInspection.capture(
+                requestMessages, params.tools, memoryPrompt,
+                includePreviews = aiLoggingManager.getLogLevel().value == com.clma.app.data.datastore.AiLogLevel.DEBUG,
+            )
+        }.getOrNull()
+        aiLoggingManager.addLog(AILogging.Generation(
+            modelId = params.model.modelId,
+            messages = requestMessages,
+            stream = stream,
+            context = inspection,
+        ))
+    }
+
     private suspend fun generateInternal(
         assistant: Assistant,
         settings: Settings,
@@ -1833,6 +1855,7 @@ class GenerationLoop(
     ): Boolean {
         // 本 step 是否被用户插话打断（SteerInterrupt）。调用方据此决定是否继续下一 step。
         var steered = false
+        var inspectionMemoryPrompt = ""
         val internalMessages = buildList {
             // Conversation-level system prompt override (upstream): when the assistant
             // allows it and the conversation supplies one, it replaces the assistant prompt.
@@ -1845,6 +1868,7 @@ class GenerationLoop(
             val memoryPrompt = if (assistant.enableMemory) {
                 buildMemoryPrompt(memories = memories)
             } else ""
+            inspectionMemoryPrompt = memoryPrompt
             val recentChatsPrompt = if (assistant.enableRecentChatsReference) {
                 buildRecentChatsPrompt(assistant, conversationRepo)
             } else ""
@@ -1940,14 +1964,6 @@ class GenerationLoop(
         )
         try {
             if (stream) {
-                aiLoggingManager.addLog(
-                    AILogging.Generation(
-                        params = params,
-                        messages = messages,
-                        providerSetting = provider,
-                        stream = true
-                    )
-                )
                 var receivedMeaningfulOutput = false
                 var receivedAnyChunk = false
                 // U3 — a transport failure AFTER the model started writing used to end the turn
@@ -1967,6 +1983,7 @@ class GenerationLoop(
                     } else {
                         continuationRequestMessages(internalMessages, messages)
                     }
+                    recordContextInspection(params, attemptMessages, stream = true, memoryPrompt = inspectionMemoryPrompt)
                     val attemptStartMessages = messages
                     try {
                     var streamChunkHandler = StreamChunkHandler(model)
@@ -2200,14 +2217,7 @@ class GenerationLoop(
                     }
                 }
             } else {
-                aiLoggingManager.addLog(
-                    AILogging.Generation(
-                        params = params,
-                        messages = messages,
-                        providerSetting = provider,
-                        stream = false
-                    )
-                )
+                recordContextInspection(params, internalMessages, stream = false, memoryPrompt = inspectionMemoryPrompt)
                 val result = retryGenerationTransportRequest(
                     maxRetries = params.maxStreamRetries,
                     onRetry = { retryNumber, failure ->
