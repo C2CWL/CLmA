@@ -331,6 +331,7 @@ class SettingsStore(
 
         // AI logging
         val AI_LOG_LEVEL = stringPreferencesKey("ai_log_level")
+        val CONTEXT_INSPECTION_ENABLED = booleanPreferencesKey("context_inspection_enabled")
 
         // 自定义时区 (解决代理/跨时区场景下系统时区漂移)
         val CUSTOM_TIMEZONE = stringPreferencesKey("custom_timezone")
@@ -463,6 +464,7 @@ class SettingsStore(
                 LEGACY_FLOATING_BALL_INT_KEYS.forEach { preferences.remove(it) }
                 LEGACY_FLOATING_BALL_STRING_KEYS.forEach { preferences.remove(it) }
                 preferences[AI_LOG_LEVEL] = settings.aiLogLevel.preferenceName
+                preferences[CONTEXT_INSPECTION_ENABLED] = settings.contextInspectionEnabled
                 preferences[BACKUP_REMINDER_CONFIG] = JsonInstant.encodeToString(settings.backupReminderConfig)
                 preferences[LAUNCH_COUNT] = settings.launchCount
             }
@@ -696,6 +698,7 @@ class SettingsStore(
                 floatingBallBarColor = EdgeBarColor.fromId(preferences[FLOATING_BALL_BAR_COLOR]),
                 customTimezone = preferences[CUSTOM_TIMEZONE],
                 aiLogLevel = AiLogLevel.fromPreference(preferences[AI_LOG_LEVEL]),
+                contextInspectionEnabled = preferences[CONTEXT_INSPECTION_ENABLED] ?: false,
                 backupReminderConfig = preferences[BACKUP_REMINDER_CONFIG]?.let { raw ->
                     runCatching { JsonInstant.decodeFromString<BackupReminderConfig>(raw) }.getOrElse {
                         Log.w(TAG, "Failed to decode backupReminderConfig, using default", it)
@@ -1278,6 +1281,8 @@ data class Settings(
     val recordRequests: Boolean = true,
     val backupReminderConfig: BackupReminderConfig = BackupReminderConfig(),
     val launchCount: Int = 0,
+    /** Opt-in app-side context inspection; independent of HTTP request logging. */
+    val contextInspectionEnabled: Boolean = false,
     /**
      * Monotonic generation of the last settings write. A DataStore emission with an older
      * generation is dropped, so a snapshot that was already in flight cannot snap the UI

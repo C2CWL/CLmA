@@ -1835,28 +1835,6 @@ class GenerationLoop(
         }
     }
 
-    private fun recordContextInspection(
-        params: TextGenerationParams,
-        requestMessages: List<UIMessage>,
-        stream: Boolean,
-        memoryPrompt: String,
-    ) {
-        if (aiLoggingManager.getLogLevel().value == com.clma.app.data.datastore.AiLogLevel.OFF) return
-        // Diagnostics must not prevent generation if a provider-defined tool schema fails.
-        val inspection = runCatching {
-            ContextInspection.capture(
-                requestMessages, params.tools, memoryPrompt,
-                includePreviews = aiLoggingManager.getLogLevel().value == com.clma.app.data.datastore.AiLogLevel.DEBUG,
-            )
-        }.getOrNull()
-        aiLoggingManager.addLog(AILogging.Generation(
-            modelId = params.model.modelId,
-            messages = requestMessages,
-            stream = stream,
-            context = inspection,
-        ))
-    }
-
     private suspend fun generateInternal(
         assistant: Assistant,
         settings: Settings,
@@ -2020,7 +1998,7 @@ class GenerationLoop(
                     } else {
                         continuationRequestMessages(internalMessages, messages)
                     }
-                    recordContextInspection(params, attemptMessages, stream = true, memoryPrompt = inspectionMemoryPrompt)
+                    aiLoggingManager.recordGeneration(params, attemptMessages, stream = true, memoryPrompt = inspectionMemoryPrompt)
                     val attemptStartMessages = messages
                     try {
                     var streamChunkHandler = StreamChunkHandler(model)
@@ -2254,7 +2232,7 @@ class GenerationLoop(
                     }
                 }
             } else {
-                recordContextInspection(params, internalMessages, stream = false, memoryPrompt = inspectionMemoryPrompt)
+                aiLoggingManager.recordGeneration(params, internalMessages, stream = false, memoryPrompt = inspectionMemoryPrompt)
                 val result = retryGenerationTransportRequest(
                     maxRetries = params.maxStreamRetries,
                     onRetry = { retryNumber, failure ->

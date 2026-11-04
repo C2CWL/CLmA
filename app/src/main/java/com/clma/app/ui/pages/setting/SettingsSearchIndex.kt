@@ -530,6 +530,7 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
         route = Screen.Log,
         items = listOf(
             row(R.string.log_page_record_requests, R.string.log_page_record_requests_desc),
+            row(R.string.context_inspector_title, R.string.context_inspector_toggle_desc),
         ),
     ),
     SettingsSearchPageSpec(

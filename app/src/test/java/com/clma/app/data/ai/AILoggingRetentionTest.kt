@@ -30,7 +30,7 @@ class AILoggingRetentionTest {
 
     @Test
     fun `info keeps only the summary, not the request messages`() {
-        val kept = log.retainedFor(AiLogLevel.INFO) as AILogging.Generation
+        val kept = log.retainedFor(AiLogLevel.INFO, contextInspectionEnabled = true) as AILogging.Generation
         assertTrue(kept.messages.isEmpty())
         assertTrue(kept.context!!.sections.all { it.preview == null })
         assertEquals(
@@ -48,7 +48,7 @@ class AILoggingRetentionTest {
 
     @Test
     fun `debug keeps bounded previews but never raw messages`() {
-        val kept = log.retainedFor(AiLogLevel.DEBUG) as AILogging.Generation
+        val kept = log.retainedFor(AiLogLevel.DEBUG, contextInspectionEnabled = true) as AILogging.Generation
         assertTrue(kept.messages.isEmpty())
         assertTrue(kept.context!!.sections.any { it.preview != null })
         assertEquals(2, kept.summary?.messageCount)
