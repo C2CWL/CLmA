@@ -66,8 +66,10 @@ object SubAgentDefaults {
      */
     const val DEFAULT_TIMEOUT_SECONDS = 180
     const val MAX_TIMEOUT_SECONDS = 1800
-    const val DEFAULT_MAX_TRIPS = 12
-    const val MAX_MAX_TRIPS = 30
+    const val DEFAULT_MAX_TRIPS = 20
+    /** Validator hard cap. Must be >= every DispatchCaps.maxTripsCeiling, or that profile's
+     *  ceiling is unreachable and requests are rejected instead of clamped. */
+    const val MAX_MAX_TRIPS = 60
     const val MAX_LABEL_LENGTH = 60
     /** Compiled-in default; the live ceiling is `Settings.subAgentGlobalConcurrencyCap`. */
     const val GLOBAL_CONCURRENCY_CAP = 30
@@ -146,7 +148,13 @@ data class SubAgentRequest(
     val runInBackground: Boolean = false,
     val noResult: Boolean = false,
     val timeoutSeconds: Int = SubAgentDefaults.DEFAULT_TIMEOUT_SECONDS,
-    val maxTrips: Int = SubAgentDefaults.DEFAULT_MAX_TRIPS,
+    /**
+     * Tool-loop step cap for this run. Null = inherit the parent assistant's own limit
+     * (`Assistant.subAgentMaxTrips`), falling back to [SubAgentDefaults.DEFAULT_MAX_TRIPS] when
+     * that assistant cannot be resolved. The engine resolves and clamps it before the run row is
+     * created, so `SubAgentRun.maxTrips` is always concrete.
+     */
+    val maxTrips: Int? = null,
     /**
      * Per-run thinking depth: one of [SubAgentDefaults.VALID_REASONING_LEVELS], validated by
      * [SubAgentRequestValidator]. Null = inherit the assistant's own reasoning level (the
@@ -229,17 +237,21 @@ object SubAgentRequestValidator {
                 "timeout_seconds exceeds max ${SubAgentDefaults.MAX_TIMEOUT_SECONDS}; got ${request.timeoutSeconds}"
             )
         }
-        if (request.maxTrips < 1) {
-            return Result.Reject(
-                "invalid_max_trips",
-                "max_trips must be at least 1; got ${request.maxTrips}"
-            )
-        }
-        if (request.maxTrips > SubAgentDefaults.MAX_MAX_TRIPS) {
-            return Result.Reject(
-                "invalid_max_trips",
-                "max_trips exceeds max ${SubAgentDefaults.MAX_MAX_TRIPS}; got ${request.maxTrips}"
-            )
+        // Null means "inherit from the parent assistant": the engine resolves it against
+        // Assistant.subAgentMaxTrips, so there is nothing to range-check here.
+        request.maxTrips?.let { trips ->
+            if (trips < 1) {
+                return Result.Reject(
+                    "invalid_max_trips",
+                    "max_trips must be at least 1; got $trips"
+                )
+            }
+            if (trips > SubAgentDefaults.MAX_MAX_TRIPS) {
+                return Result.Reject(
+                    "invalid_max_trips",
+                    "max_trips exceeds max ${SubAgentDefaults.MAX_MAX_TRIPS}; got $trips"
+                )
+            }
         }
         request.label?.let {
             if (it.length > SubAgentDefaults.MAX_LABEL_LENGTH) {

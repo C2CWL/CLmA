@@ -2768,6 +2768,9 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="assistant_page_max_concurrent_subagents">并发子 agent 数</string>
   <string name="assistant_page_max_concurrent_subagents_desc">本助手同一时刻最多在跑的子 agent 数量。</string>
   <string name="assistant_page_max_concurrent_subagents_hint">取值 %1$d 到 %2$d。</string>
+  <string name="assistant_page_subagent_max_trips">子 agent 步数上限</string>
+  <string name="assistant_page_subagent_max_trips_desc">本助手派发的子 agent 默认工具步数上限，超出即强制结束。派发时显式指定 max_trips 则以调用参数为准。</string>
+  <string name="assistant_page_subagent_max_trips_hint">取值 %1$d 到 %2$d。</string>
   <string name="assistant_page_sub_agent_model">子 agent 模型</string>
   <string name="assistant_page_sub_agent_model_desc">派发未指定模型时子 agent 使用的模型。指向更便宜的模型可降低编排成本；留空则继承当前会话模型。</string>
   <string name="assistant_page_sub_agent_system_prompt">子 agent 系统提示词</string>

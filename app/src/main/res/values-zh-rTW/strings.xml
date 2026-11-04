@@ -2355,6 +2355,9 @@
   <string name="assistant_page_max_concurrent_subagents">並行子 agent 數</string>
   <string name="assistant_page_max_concurrent_subagents_desc">本助手同一時刻最多在跑的子 agent 數量。</string>
   <string name="assistant_page_max_concurrent_subagents_hint">取值 %1$d 到 %2$d。</string>
+  <string name="assistant_page_subagent_max_trips">子 agent 步驟上限</string>
+  <string name="assistant_page_subagent_max_trips_desc">本助手派發的子 agent 預設工具步驟上限，超出即強制結束。派發時若明確指定 max_trips 則以呼叫參數為準。</string>
+  <string name="assistant_page_subagent_max_trips_hint">取值 %1$d 到 %2$d。</string>
   <string name="setting_sub_agents_page_token_budget">編排 token 上限</string>
   <string name="setting_sub_agents_page_token_budget_hint">該專家編排樹的 token 上限。留空則繼承父助手的預算；兩者都為空表示不限。</string>
   <string name="chat_message_turn_calls">%1$d 次呼叫</string>

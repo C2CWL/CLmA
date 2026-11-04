@@ -67,8 +67,8 @@ object SubAgentDispatchProfileRules {
     fun caps(profile: SubAgentDispatchProfile): DispatchCaps = when (profile) {
         SubAgentDispatchProfile.NEVER -> DispatchCaps(0, 0, 0, 0, 0, DescriptionTone.NEVER)
         SubAgentDispatchProfile.ASSIST -> DispatchCaps(4, 1, 10_000L, 8, 300, DescriptionTone.ASSIST)
-        SubAgentDispatchProfile.NORMAL -> DispatchCaps(30, 8, 30_000L, 30, 1800, DescriptionTone.NORMAL)
-        SubAgentDispatchProfile.BURST -> DispatchCaps(48, 8, 60_000L, 30, 1800, DescriptionTone.BURST)
+        SubAgentDispatchProfile.NORMAL -> DispatchCaps(30, 8, 30_000L, 60, 1800, DescriptionTone.NORMAL)
+        SubAgentDispatchProfile.BURST -> DispatchCaps(48, 8, 60_000L, 60, 1800, DescriptionTone.BURST)
         SubAgentDispatchProfile.UNLEASHED -> DispatchCaps(64, 16, 120_000L, 60, 3600, DescriptionTone.UNLEASHED)
     }
 

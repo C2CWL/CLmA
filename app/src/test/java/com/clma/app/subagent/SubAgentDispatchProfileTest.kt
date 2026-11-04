@@ -33,7 +33,7 @@ class SubAgentDispatchProfileTest {
         assertEquals(30, c.globalCap)
         assertEquals(8, c.perAssistantCap)
         assertEquals(30_000L, c.slotWaitMs)
-        assertEquals(30, c.maxTripsCeiling)
+        assertEquals(60, c.maxTripsCeiling)
         assertEquals(1800, c.timeoutCeilingSec)
     }
 
