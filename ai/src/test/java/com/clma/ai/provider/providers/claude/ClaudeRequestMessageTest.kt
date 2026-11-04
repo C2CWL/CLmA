@@ -199,6 +199,25 @@ class ClaudeRequestMessageTest {
     }
 
     @Test
+    fun `thinking without a signature should be omitted from replay`() {
+        val message = UIMessage(
+            role = MessageRole.ASSISTANT,
+            parts = listOf(
+                UIMessagePart.Reasoning(
+                    reasoning = "Unsigned thinking",
+                    metadata = ClaudeReasoningMetadata(signature = " ").toMetadata(),
+                ),
+                UIMessagePart.Text("Visible answer"),
+            ),
+        )
+
+        val content = invokeBuildMessages(listOf(message)).single().jsonObject["content"]?.jsonArray
+
+        assertEquals(listOf("text"), content?.map { it.jsonObject["type"]?.jsonPrimitive?.content })
+        assertEquals("Visible answer", content?.single()?.jsonObject?.get("text")?.jsonPrimitive?.content)
+    }
+
+    @Test
     fun `thinking and server tool history should be preserved before client tool result`() {
         val serverToolCall = buildJsonObject {
             put("type", "server_tool_use")
