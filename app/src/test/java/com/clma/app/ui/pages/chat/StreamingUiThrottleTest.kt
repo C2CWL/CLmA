@@ -11,6 +11,13 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class StreamingUiThrottleTest {
+    @Test fun `zero window bypasses batching and preserves all updates`() = runBlocking {
+        val source = flow { emit("a"); emit("ab"); emit("abc"); emit("new") }
+        val fast = source.throttleStreamingUpdates(0) { a, b -> b.startsWith(a) }
+        assertSame(source, fast)
+        assertEquals(listOf("a", "ab", "abc", "new"), fast.toList())
+    }
+
     private fun gate() = StreamingUiGate<String>(80) { a, b -> b.startsWith(a) }
 
     @Test fun `short render window publishes latest text after 32 milliseconds`() {
