@@ -126,7 +126,7 @@ class MessageFtsManager(private val database: AppDatabase) {
         } else {
             ""
         }
-        val args = buildList {
+        val args = buildList<Any> {
             add(keyword)
             if (assistantId != null) add(assistantId)
             if (conversationId != null) add(conversationId)
