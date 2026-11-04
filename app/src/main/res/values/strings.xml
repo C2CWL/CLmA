@@ -3325,4 +3325,21 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="chat_box_no_generating_conversations">No conversations are generating</string>
   <string name="setting_hub_expanded">Expanded</string>
   <string name="setting_hub_collapsed">Collapsed</string>
+  <string name="local_snapshot_title">Local snapshots</string>
+  <string name="local_snapshot_description">Disabled by default. After 15 seconds in the foreground, a due snapshot saves settings, conversations, skills and assistant memory. No background worker or cloud upload. Large attachments, workspaces, extra configuration stores and secret vaults are excluded from automatic snapshots.</string>
+  <string name="local_snapshot_privacy">Settings and conversations can contain API keys or private data. Archives are stored unencrypted in app-private, system-backup-excluded storage. Only secret-vault payloads in restore safety copies are encrypted with a device-bound key. Uninstalling or clearing app data removes snapshots; these are not off-device backups.</string>
+  <string name="local_snapshot_enable">Automatic local snapshots</string>
+  <string name="local_snapshot_interval">Interval (hours)</string>
+  <string name="local_snapshot_keep">Maximum automatic snapshots</string>
+  <string name="local_snapshot_limit">Automatic storage budget (MiB)</string>
+  <string name="local_snapshot_last_success">Last automatic snapshot: %1$s</string>
+  <string name="local_snapshot_retry">The last attempt did not finish. Foreground retries back off from 1 to 24 hours without notifications.</string>
+  <string name="local_snapshot_storage">Automatic snapshots share the count and size budget. One separate pre-restore safety copy is retained, at most the same size budget (total up to twice the budget, plus temporary archives). Retention changes apply after the next verified snapshot. If a safety copy fails or exceeds the limit, restore is stopped. This also applies when automatic snapshots are disabled.</string>
+  <string name="local_snapshot_error">Operation failed. Original data was not replaced by this operation. Check available storage and the snapshot limit; damaged snapshots cannot be restored.</string>
+  <string name="local_snapshot_refresh">Refresh list</string>
+  <string name="local_snapshot_empty">No local snapshots yet.</string>
+  <string name="local_snapshot_rollback">Pre-restore safety copy · %1$s</string>
+  <string name="local_snapshot_automatic">Automatic snapshot · %1$s</string>
+  <string name="local_snapshot_restore_confirm">Restore this snapshot after restarting? Settings and included data will be overwritten. Current data for the same categories will first be saved as the pre-restore safety copy, available here to restore after restart. Missing attachments are not recovered, and secret imports merge rather than remove newly added secrets. A safety-copy failure stops the restore.</string>
+  <string name="local_snapshot_restore_notice">Before restoring, the current selected data is saved as a local safety copy. If it cannot be saved within the configured snapshot limit, restore stops. After restart, use Local snapshots to restore the safety copy. Secret imports merge; they do not remove newly added secrets.</string>
 </resources>

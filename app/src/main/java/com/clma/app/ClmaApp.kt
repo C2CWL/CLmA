@@ -108,6 +108,7 @@ class ClmaApp : Application() {
             androidContext(this@ClmaApp)
             modules(appModule, viewModelModule, dataSourceModule, repositoryModule)
         }
+        observeLocalSnapshots()
         initWorkManager()
         // Retire the periodic probe persisted by older builds.
         WorkManager.getInstance(this).cancelUniqueWork("telegram_bot_health")
@@ -228,6 +229,26 @@ class ClmaApp : Application() {
         invalidateLocalLlmDecisionsOnSdkUpgrade()
 
         // Composer.setDiagnosticStackTraceMode(ComposeStackTraceMode.Auto)
+    }
+
+    private fun observeLocalSnapshots() {
+        androidx.lifecycle.ProcessLifecycleOwner.get().lifecycle.addObserver(
+            object : androidx.lifecycle.DefaultLifecycleObserver {
+                private var check: kotlinx.coroutines.Job? = null
+
+                override fun onStart(owner: androidx.lifecycle.LifecycleOwner) {
+                    check = get<AppScope>().launch {
+                        delay(15_000)
+                        get<com.clma.app.data.sync.LocalSnapshotManager>().checkDue()
+                    }
+                }
+
+                override fun onStop(owner: androidx.lifecycle.LifecycleOwner) {
+                    check?.cancel()
+                    check = null
+                }
+            }
+        )
     }
 
     private fun restoreRequestLoggingSetting() {

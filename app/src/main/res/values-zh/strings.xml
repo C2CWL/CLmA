@@ -3311,4 +3311,21 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="chat_box_no_generating_conversations">暂无正在生成的对话</string>
   <string name="setting_hub_expanded">已展开</string>
   <string name="setting_hub_collapsed">已收起</string>
+  <string name="local_snapshot_title">本地快照</string>
+  <string name="local_snapshot_description">默认关闭。启动或回到前台 15 秒后按需保存设置、会话、技能与助手记忆，不运行常驻任务、不上传云端。自动快照不含大型附件、工作区、额外配置存储与密钥库。</string>
+  <string name="local_snapshot_privacy">设置和会话可能含 API 密钥或隐私数据。快照以未加密归档存于应用私有、排除系统备份的目录；仅恢复保护副本中的密钥库载荷使用设备绑定密钥加密。卸载或清除数据会丢失快照，不能替代异地备份。</string>
+  <string name="local_snapshot_enable">自动本地快照</string>
+  <string name="local_snapshot_interval">快照间隔（小时）</string>
+  <string name="local_snapshot_keep">自动快照保留上限（份）</string>
+  <string name="local_snapshot_limit">自动快照总容量上限（MiB）</string>
+  <string name="local_snapshot_last_success">上次自动快照：%1$s</string>
+  <string name="local_snapshot_retry">上次尝试未完成，后续前台检查将按 1～24 小时退避重试，不反复弹出通知。</string>
+  <string name="local_snapshot_storage">自动快照共用份数和容量预算；另保留一份恢复前保护副本，大小不超过同一容量上限（总计最多两倍预算，创建时另需临时归档空间）。保留策略变更在下次快照验证成功后生效。保护副本失败或超出上限会中止恢复，自动快照关闭时也一样。</string>
+  <string name="local_snapshot_error">操作失败，本次操作未覆盖原数据。请检查剩余空间与容量上限；损坏的快照无法恢复。</string>
+  <string name="local_snapshot_refresh">刷新列表</string>
+  <string name="local_snapshot_empty">暂无本地快照。</string>
+  <string name="local_snapshot_rollback">恢复前保护副本 · %1$s</string>
+  <string name="local_snapshot_automatic">自动快照 · %1$s</string>
+  <string name="local_snapshot_restore_confirm">重启后恢复此快照？设置及包含的数据将被覆盖。会先保存当前同类数据为恢复前保护副本，重启后可在此选择该副本回退。不补回未包含的附件；密钥导入为合并，不会移除后来新增的密钥。保护副本失败将中止恢复。</string>
+  <string name="local_snapshot_restore_notice">恢复前会保存当前所选数据为本地保护副本；无法在配置的快照容量上限内保存时会中止恢复。重启后可在“本地快照”中选择保护副本回退。密钥导入为合并，不会移除后来新增的密钥。</string>
 </resources>

@@ -419,6 +419,7 @@ val dataSourceModule = module {
     }
 
     single { BackupManager(context = get(), database = get(), settingsStore = get(), json = get()) }
+    single { get<BackupManager>().localSnapshots }
 
     single {
         WebDavSync(
