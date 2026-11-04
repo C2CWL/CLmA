@@ -1,27 +1,25 @@
 package com.clma.app.data.ai
 
+import com.clma.ai.ui.UIMessage
+import com.clma.ai.ui.UIMessagePart
+import com.clma.app.AppScope
+import com.clma.app.data.datastore.AiLogLevel
+import com.clma.app.data.datastore.SettingsStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import com.clma.app.AppScope
-import com.clma.app.data.datastore.AiLogLevel
-import com.clma.app.data.datastore.SettingsStore
-import com.clma.ai.provider.ProviderSetting
-import com.clma.ai.provider.TextGenerationParams
-import com.clma.ai.ui.UIMessage
-import com.clma.ai.ui.UIMessagePart
 
 sealed class AILogging {
     data class Generation(
-        val params: TextGenerationParams,
-        /** The full request messages; kept only at [AiLogLevel.DEBUG] (empty otherwise). */
+        val modelId: String,
+        /** Used to compute size at ingestion, never retained by the manager. */
         val messages: List<UIMessage>,
-        val providerSetting: ProviderSetting,
         val stream: Boolean,
         /** Counts and sizes of the request; always set once stored. */
         val summary: GenerationSummary? = null,
+        val context: ContextInspection? = null,
     ) : AILogging()
 }
 
@@ -60,14 +58,18 @@ data class GenerationSummary(
 }
 
 /**
- * What a log entry keeps at [level]. Below DEBUG only the summary is stored: the manager keeps
- * the last [MAX_LOGS] requests, and each used to pin its whole transformed message list
- * (inlined documents included) in memory for as long as it stayed in the list.
+ * Raw request messages are released at every level. DEBUG may retain only a bounded, redacted
+ * inspection for the latest request; INFO retains measurements without content previews.
  */
 internal fun AILogging.retainedFor(level: AiLogLevel): AILogging = when (this) {
     is AILogging.Generation -> {
         val withSummary = if (summary == null) copy(summary = GenerationSummary.of(messages)) else this
-        if (level == AiLogLevel.DEBUG) withSummary else withSummary.copy(messages = emptyList())
+        // The inspection already contains a bounded, redacted view. Never retain raw messages,
+        // provider credentials, tool execution closures or custom request headers in diagnostics.
+        withSummary.copy(
+            messages = emptyList(),
+            context = if (level == AiLogLevel.DEBUG) context else context?.withoutPreviews(),
+        )
     }
 }
 
@@ -77,6 +79,7 @@ class AILoggingManager(
     private val settingsStore: SettingsStore,
     appScope: AppScope,
 ) {
+    private val retentionLock = Any()
     private val logs = MutableStateFlow<List<AILogging>>(emptyList())
     private val logLevel = MutableStateFlow(settingsStore.settingsFlow.value.aiLogLevel)
 
@@ -84,7 +87,16 @@ class AILoggingManager(
         appScope.launch {
             settingsStore.settingsFlow
                 .map { it.aiLogLevel }
-                .collectLatest { logLevel.value = it }
+                .collectLatest { level ->
+                    synchronized(retentionLock) {
+                        logLevel.value = level
+                        logs.value = if (level == AiLogLevel.OFF) {
+                            emptyList()
+                        } else {
+                            logs.value.map { it.retainedFor(level) }
+                        }
+                    }
+                }
         }
     }
 
@@ -97,15 +109,21 @@ class AILoggingManager(
     }
 
     fun addLog(log: AILogging) {
-        val level = logLevel.value
-        if (level == AiLogLevel.OFF) return
-        logs.value = logs.value + log.retainedFor(level)
-        if (logs.value.size > MAX_LOGS) {
-            logs.value = logs.value.drop(1)
+        synchronized(retentionLock) {
+            val level = logLevel.value
+            if (level == AiLogLevel.OFF) return
+            val older = logs.value.map { entry ->
+                when (entry) {
+                    is AILogging.Generation -> entry.copy(context = entry.context?.withoutPreviews())
+                }
+            }
+            logs.value = (older + log.retainedFor(level)).takeLast(MAX_LOGS)
         }
     }
 
     fun clearLogs() {
-        logs.value = emptyList()
+        synchronized(retentionLock) {
+            logs.value = emptyList()
+        }
     }
 }
