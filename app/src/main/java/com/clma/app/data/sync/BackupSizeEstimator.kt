@@ -1,6 +1,8 @@
 package com.clma.app.data.sync
 
 import java.io.File
+import java.nio.file.Files
+import java.nio.file.LinkOption.NOFOLLOW_LINKS
 
 /**
  * Rough, pre-compression size of each [BackupItem], read from the same places
@@ -11,9 +13,12 @@ internal object BackupSizeEstimator {
     /** Total bytes of all regular files below [dir]; 0 when it does not exist. */
     fun directorySize(dir: File): Long {
         if (!dir.exists()) return 0L
-        return dir.walkTopDown()
-            .filter { it.isFile }
-            .sumOf { it.length() }
+        // Workspace files may link to a runtime or shared storage; never traverse those targets.
+        return Files.walk(dir.toPath()).use { paths ->
+            paths.filter { Files.isRegularFile(it, NOFOLLOW_LINKS) }
+                .mapToLong { Files.size(it) }
+                .sum()
+        }
     }
 
     /**
@@ -61,4 +66,13 @@ internal object BackupSizeEstimator {
         )
         return secretFiles.filter { it.isFile }.sumOf { it.length() }
     }
+}
+
+internal data class StorageUsage(
+    val items: Map<BackupItem, Long>,
+    val settingsBytes: Long,
+    val cacheBytes: Long,
+    val snapshotBytes: Long,
+) {
+    val total: Long get() = items.values.sum() + settingsBytes + cacheBytes + snapshotBytes
 }

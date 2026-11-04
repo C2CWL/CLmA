@@ -138,7 +138,7 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.uuid.Uuid
 
 @Composable
-fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null, isTemporary: Boolean = false) {
+fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null, isTemporary: Boolean = false, messageId: Uuid? = null) {
     val vm: ChatVM = koinViewModel(
         parameters = {
             parametersOf(id.toString(), isTemporary)
@@ -264,13 +264,18 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null, is
     }
 
     val chatListState = rememberLazyListState()
-    LaunchedEffect(nodeId, conversation.messageNodes.size) {
+    LaunchedEffect(nodeId, messageId, conversation.messageNodes.size) {
         if (!vm.chatListInitialized && conversation.messageNodes.isNotEmpty()) {
             if (nodeId != null) {
-                val index = conversation.messageNodes.indexOfFirst { it.id == nodeId }
-                if (index >= 0) {
-                    chatListState.scrollToItem(index)
+                val node = conversation.messageNodes.find { it.id == nodeId }
+                // Group index does not depend on the selected branch, so pick the branch and
+                // scroll in the same pass instead of waiting for the conversation to re-emit.
+                val branch = node?.messages?.indexOfFirst { it.id == messageId } ?: -1
+                if (node != null && branch >= 0 && node.selectIndex != branch) {
+                    vm.selectMessageBranch(nodeId, branch)
                 }
+                conversation.messageNodes.groupAutomaticCompactionMessages()
+                    .displayIndexForNode(nodeId)?.let { chatListState.scrollToItem(it) }
             } else {
                 chatListState.requestScrollToItem(conversation.currentMessages.size + 5)
             }
@@ -742,11 +747,12 @@ private fun ChatPageContent(
                         onClearTranslation = { message ->
                             vm.clearTranslationField(message.id)
                         },
-                        onJumpToMessage = { index ->
+                        onJumpToMessage = { targetNodeId ->
                             previewMode = false
-                            scope.launch {
-                                chatListState.requestScrollToItem(index)
-                            }
+                            conversation.messageNodes.groupAutomaticCompactionMessages()
+                                .displayIndexForNode(targetNodeId)?.let { index ->
+                                    scope.launch { chatListState.requestScrollToItem(index) }
+                                }
                         },
                         onToolApproval = { toolCallId, approved, reason, scope, toolName ->
                             vm.handleToolApproval(toolCallId, approved, reason, scope, toolName)

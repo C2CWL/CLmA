@@ -12,6 +12,7 @@ import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 import java.time.Instant
 import kotlin.time.Clock
@@ -165,6 +166,29 @@ class AutoCompactionMessageGroupTest {
 
         assertEquals(1, groups.size)
         assertEquals(5, groups.single().nodes.size)
+    }
+
+    @Test
+    fun `outline maps a node to its display group index`() {
+        val nodes = listOf(
+            MessageNode(messages = listOf(UIMessage.user("q"))),
+            MessageNode(messages = listOf(UIMessage.assistant("a"))),
+            MessageNode(messages = listOf(UIMessage.user("q2"))),
+        )
+
+        val groups = nodes.groupAutomaticCompactionMessages()
+
+        assertEquals(3, groups.size)
+        assertEquals(0, groups.displayIndexForNode(nodes[0].id))
+        assertEquals(2, groups.displayIndexForNode(nodes[2].id))
+        assertNull(groups.displayIndexForNode(Uuid.random()))
+    }
+
+    @Test
+    fun `outline preview keeps text only and caps its length`() {
+        assertEquals("hello", UIMessage.user("hello").navigationPreview())
+        assertEquals(120, UIMessage.assistant("x".repeat(400)).navigationPreview().length)
+        assertEquals("[…]", UIMessage.assistant("").navigationPreview())
     }
 
     private fun presentationTool() = ContextCompactionPresentation.createTool(

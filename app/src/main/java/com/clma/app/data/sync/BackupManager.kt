@@ -48,6 +48,16 @@ class BackupManager(
         )
     }
 
+    /** Read-only, scoped disk usage; intentionally excludes workspace runtimes and SDKs. */
+    internal suspend fun estimateStorageUsage(): StorageUsage = withContext(Dispatchers.IO) {
+        StorageUsage(
+            items = estimateItemSizes(),
+            settingsBytes = File(context.filesDir, "datastore/settings.preferences_pb").length(),
+            cacheBytes = BackupSizeEstimator.directorySize(context.cacheDir),
+            snapshotBytes = BackupSizeEstimator.directorySize(File(context.noBackupFilesDir, "local-snapshots")),
+        )
+    }
+
     suspend fun createBackup(items: Collection<BackupItem>, encryptionPassword: String = ""): File = withContext(Dispatchers.IO) {
         val selected = BackupItem.normalize(items).toSet()
         val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))

@@ -146,13 +146,20 @@ fun ChatExportSheet(
 
                 val markdownSuccessMessage =
                     stringResource(id = R.string.chat_page_export_success, "Markdown")
+                val plainTextSuccessMessage =
+                    stringResource(id = R.string.chat_page_export_success, "TXT")
+                val exportFailedMessage = stringResource(id = R.string.chat_page_export_failed)
                 OutlinedCard(
                     onClick = {
-                        exportToMarkdown(context, conversation, selectedMessages)
-                        toaster.show(
-                            markdownSuccessMessage,
-                            type = ToastType.Success
-                        )
+                        scope.launch {
+                            val ok = withContext(Dispatchers.IO) {
+                                exportToMarkdown(context, conversation, selectedMessages)
+                            }
+                            toaster.show(
+                                if (ok) markdownSuccessMessage else exportFailedMessage,
+                                type = if (ok) ToastType.Success else ToastType.Error
+                            )
+                        }
                         onDismissRequest()
                     },
                     modifier = Modifier.fillMaxWidth()
@@ -163,6 +170,34 @@ fun ChatExportSheet(
                         },
                         supportingContent = {
                             Text(stringResource(id = R.string.chat_page_export_markdown_desc))
+                        },
+                        leadingContent = {
+                            Icon(HugeIcons.File02, contentDescription = null)
+                        }
+                    )
+                }
+
+                OutlinedCard(
+                    onClick = {
+                        scope.launch {
+                            val ok = withContext(Dispatchers.IO) {
+                                exportToPlainText(context, conversation, selectedMessages)
+                            }
+                            toaster.show(
+                                if (ok) plainTextSuccessMessage else exportFailedMessage,
+                                type = if (ok) ToastType.Success else ToastType.Error
+                            )
+                        }
+                        onDismissRequest()
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    ListItem(
+                        headlineContent = {
+                            Text(stringResource(id = R.string.chat_page_export_plain_text))
+                        },
+                        supportingContent = {
+                            Text(stringResource(id = R.string.chat_page_export_plain_text_desc))
                         },
                         leadingContent = {
                             Icon(HugeIcons.File02, contentDescription = null)
@@ -250,7 +285,7 @@ private fun exportToMarkdown(
     context: Context,
     conversation: Conversation,
     messages: List<UIMessage>
-) {
+): Boolean {
     val filename = "chat-export-${LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"))}.md"
 
     val sb = buildAnnotatedString {
@@ -359,30 +394,54 @@ private fun exportToMarkdown(
         }
     }
 
-    try {
-        val dir = context.appTempFolder
-        val file = dir.resolve(filename)
-        if (!file.exists()) {
-            file.createNewFile()
-        } else {
-            file.delete()
-            file.createNewFile()
-        }
-        FileOutputStream(file).use {
-            it.write(sb.toString().toByteArray())
-        }
+    return exportToFile(context, filename, sb.toString(), "text/markdown")
+}
 
-        // Share the file
-        val uri = FileProvider.getUriForFile(
-            context,
-            "${context.packageName}.fileprovider",
-            file
-        )
-        shareFile(context, uri, "text/markdown")
-
-    } catch (e: Exception) {
-        e.printStackTrace()
+/**
+ * Plain text export: text parts only, one block per message. Tool calls, reasoning and
+ * attachments are intentionally dropped so the result stays readable in any editor.
+ * Runs from Dispatchers.IO callers; returns false when the file could not be written.
+ */
+private fun exportToPlainText(
+    context: Context,
+    conversation: Conversation,
+    messages: List<UIMessage>
+): Boolean {
+    val filename = "chat-export-${
+        LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"))
+    }.txt"
+    val sb = StringBuilder()
+    sb.append(conversation.title).append("\n\n")
+    sb.append("Exported on ").append(LocalDateTime.now().toLocalString()).append("\n\n")
+    messages.forEach { message ->
+        val role = if (message.role == MessageRole.USER) "User" else "Assistant"
+        sb.append(role).append(":\n\n")
+        sb.append(message.toText().trimEnd()).append("\n\n---\n\n")
     }
+    return exportToFile(context, filename, sb.toString(), "text/plain")
+}
+
+/** Writes the export into the temp folder and hands it to the share sheet. */
+private fun exportToFile(
+    context: Context,
+    filename: String,
+    content: String,
+    mimeType: String
+): Boolean = try {
+    val file = context.appTempFolder.resolve(filename).apply {
+        if (exists()) delete()
+        createNewFile()
+    }
+    FileOutputStream(file).use { it.write(content.toByteArray()) }
+    shareFile(
+        context,
+        FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file),
+        mimeType
+    )
+    true
+} catch (e: Exception) {
+    e.printStackTrace()
+    false
 }
 
 private suspend fun exportToImage(

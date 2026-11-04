@@ -4,4 +4,6 @@
     <string name="memory_history_empty">暂无操作记录。仅保留元数据，不保存记忆正文。</string>
     <string name="memory_history_failed">历史记录未能保存；记忆操作本身可能已成功。</string>
     <string name="chat_outline_title">会话大纲</string>
+    <string name="chat_outline_position">第 %1$d / %2$d 条</string>
+    <string name="chat_outline_return">回到原位置</string>
 </resources>

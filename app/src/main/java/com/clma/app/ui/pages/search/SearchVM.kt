@@ -6,6 +6,7 @@ import androidx.compose.runtime.setValue
 import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
@@ -22,6 +23,8 @@ import com.clma.app.ui.hooks.readStringPreference
 import com.clma.app.ui.hooks.writeStringPreference
 import kotlin.uuid.Uuid
 
+private const val SearchPageSize = 50
+
 private const val SORT_ORDER_PREF_KEY = "search_page_sort_order"
 
 enum class MessageSearchScope {
@@ -35,6 +38,7 @@ private data class SearchRequest(
     val scope: MessageSearchScope,
     val assistantId: Uuid?,
     val debounce: Boolean,
+    val offset: Int = 0,
 )
 
 class SearchVM(
@@ -44,6 +48,13 @@ class SearchVM(
 ) : ViewModel() {
     private val searchRequests = Channel<SearchRequest>(Channel.CONFLATED)
     private var currentAssistantId: Uuid? = null
+    private var currentRequest: SearchRequest? = null
+    private var nextOffset = 0
+
+    var hasMore by mutableStateOf(false)
+        private set
+    var searchFailed by mutableStateOf(false)
+        private set
 
     var searchQuery by mutableStateOf("")
         private set
@@ -110,15 +121,27 @@ class SearchVM(
             MessageSearchScope.CURRENT_ASSISTANT -> currentAssistantId
             MessageSearchScope.ALL_ASSISTANTS -> null
         }
-        searchRequests.trySend(
-            SearchRequest(
-                query = searchQuery,
-                sort = sortOrder,
-                scope = searchScope,
-                assistantId = assistantId,
-                debounce = debounce,
-            )
+        results = emptyList()
+        hasMore = false
+        searchFailed = false
+        nextOffset = 0
+        val request = SearchRequest(
+            query = searchQuery,
+            sort = sortOrder,
+            scope = searchScope,
+            assistantId = assistantId,
+            debounce = debounce,
         )
+        currentRequest = request
+        isLoading = true
+        searchRequests.trySend(request)
+    }
+
+    fun loadMore() {
+        val request = currentRequest ?: return
+        if (isLoading || (!hasMore && !searchFailed)) return
+        isLoading = true
+        searchRequests.trySend(request.copy(offset = nextOffset, debounce = false))
     }
 
     fun rebuildIndex() {
@@ -131,21 +154,35 @@ class SearchVM(
                 }
             } finally {
                 isRebuilding = false
+                search()
             }
         }
     }
 
     private suspend fun performSearch(request: SearchRequest) {
-        results = emptyList()
         if (request.query.isBlank() ||
             (request.scope == MessageSearchScope.CURRENT_ASSISTANT && request.assistantId == null)
         ) {
+            isLoading = false
             return
         }
         isLoading = true
+        searchFailed = false
         try {
             if (request.debounce) delay(300L)
-            results = conversationRepo.searchMessages(request.query, request.sort, request.assistantId)
+            val page = conversationRepo.searchMessages(
+                request.query, request.sort, request.assistantId,
+                limit = SearchPageSize + 1, offset = request.offset,
+            )
+            val loaded = page.take(SearchPageSize)
+            results = if (request.offset == 0) loaded else
+                (results + loaded).distinctBy { it.messageId }
+            nextOffset = request.offset + loaded.size
+            hasMore = page.size > SearchPageSize
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            searchFailed = true
         } finally {
             isLoading = false
         }
