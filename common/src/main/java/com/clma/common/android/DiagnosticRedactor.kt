@@ -43,8 +43,11 @@ object DiagnosticRedactor {
     /** Fail closed on non-JSON/malformed bodies; regex replacement alone cannot safely parse them. */
     fun body(value: String): String {
         if (value.startsWith("<omitted ") && value.endsWith(" bytes>")) return value
-        return runCatching { json(Json.parseToJsonElement(value)).toString() }
-            .getOrDefault("[Non-JSON body omitted]")
+        val element = runCatching { Json.parseToJsonElement(value) }.getOrNull()
+        // Partial or malformed bodies are dropped. A bare string or assignment is redacted as text.
+        if (element == null) return "[Non-JSON body omitted]"
+        if (element !is JsonObject && element !is JsonArray) return text(value)
+        return json(element).toString()
     }
 
     fun json(value: JsonElement): JsonElement = when (value) {

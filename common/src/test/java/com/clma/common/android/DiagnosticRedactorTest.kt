@@ -38,7 +38,7 @@ class DiagnosticRedactorTest {
         listOf("hidden", "private", "pii@example.com", "Bearer abc", "session=abc").forEach { assertFalse(value.contains(it)) }
         assertTrue(value.contains(""""ok": 2""") || value.contains(""""ok":2"""))
         assertEquals("[Non-JSON body omitted]", DiagnosticRedactor.body("{\"api_key\":\"truncated"))
-        assertEquals("[Non-JSON body omitted]", DiagnosticRedactor.body("password=plaintext"))
+        assertEquals("password=[REDACTED]", DiagnosticRedactor.body("password=plaintext"))
     }
 
     @Test
