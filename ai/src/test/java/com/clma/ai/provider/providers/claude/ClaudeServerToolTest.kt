@@ -163,6 +163,7 @@ class ClaudeServerToolTest {
             parts = listOf(UIMessagePart.ServerTool(
                 toolCallId = "srvtoolu_1",
                 toolName = "web_search",
+                status = ServerToolStatus.COMPLETED,
                 input = null,
                 metadata = ServerToolMetadata(
                     protocol = ServerToolProtocol.ANTHROPIC_MESSAGES,
