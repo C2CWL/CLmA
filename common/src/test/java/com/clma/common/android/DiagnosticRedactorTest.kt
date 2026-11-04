@@ -34,10 +34,10 @@ class DiagnosticRedactorTest {
 
     @Test
     fun `nested JSON credentials and private fields are removed before previews`() {
-        val value = DiagnosticRedactor.body("""{"api_key":"hidden","nested":[{"Password":"private","email":"pii@example.com","ok":2}],"text":"Bearer abc"}""")
-        listOf("hidden", "private", "pii@example.com", "Bearer abc").forEach { assertFalse(value.contains(it)) }
-        assertTrue(value.contains("\"ok\",2"))
-        assertEquals("[Non-JSON body omitted]", DiagnosticRedactor.body("{\"api_key\",\"truncated"))
+        val value = DiagnosticRedactor.body("""{"api_key":"hidden","nested":[{"Password":"private","set-cookie":"session=abc","email":"pii@example.com","ok":2}],"text":"Bearer abc"}""")
+        listOf("hidden", "private", "pii@example.com", "Bearer abc", "session=abc").forEach { assertFalse(value.contains(it)) }
+        assertTrue(value.contains(""""ok": 2""") || value.contains(""""ok":2"""))
+        assertEquals("[Non-JSON body omitted]", DiagnosticRedactor.body("{\"api_key\":\"truncated"))
         assertEquals("[Non-JSON body omitted]", DiagnosticRedactor.body("password=plaintext"))
     }
 
