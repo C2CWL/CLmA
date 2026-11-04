@@ -67,6 +67,8 @@ fun AssistantMemoryPage(id: String) {
     )
     val assistant by vm.assistant.collectAsStateWithLifecycle()
     val memories by vm.memories.collectAsStateWithLifecycle()
+    val history by vm.memoryHistory.collectAsStateWithLifecycle()
+    val historyFailed by vm.memoryHistoryPersistenceFailed.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     Scaffold(
@@ -89,6 +91,8 @@ fun AssistantMemoryPage(id: String) {
             innerPadding = innerPadding,
             assistant = assistant,
             memories = memories,
+            history = history,
+            historyFailed = historyFailed,
             onUpdateAssistant = { vm.update(it) },
             onDeleteMemory = { vm.deleteMemory(it) },
             onAddMemory = { vm.addMemory(it) },
@@ -102,6 +106,8 @@ private fun AssistantMemoryContent(
     innerPadding: PaddingValues,
     assistant: Assistant,
     memories: List<AssistantMemory>,
+    history: List<com.clma.app.data.memory.MemoryOperation>,
+    historyFailed: Boolean,
     onUpdateAssistant: (Assistant) -> Unit,
     onAddMemory: (AssistantMemory) -> Unit,
     onUpdateMemory: (AssistantMemory) -> Unit,
@@ -114,6 +120,7 @@ private fun AssistantMemoryContent(
             onUpdateMemory(it)
         }
     }
+    var showHistory by remember { mutableStateOf(false) }
     var pendingDeleteMemory by remember { mutableStateOf<AssistantMemory?>(null) }
 
     var showTimeReminderIntervalDialog by remember(assistant.id) { mutableStateOf(false) }
@@ -152,6 +159,30 @@ private fun AssistantMemoryContent(
                 TextButton(onClick = { showTimeReminderIntervalDialog = false }) {
                     Text(stringResource(R.string.assistant_page_cancel))
                 }
+            },
+        )
+    }
+
+    if (showHistory) {
+        AlertDialog(
+            onDismissRequest = { showHistory = false },
+            title = { Text(stringResource(R.string.memory_history_title)) },
+            text = {
+                androidx.compose.foundation.lazy.LazyColumn {
+                    if (historyFailed) item { Text(stringResource(R.string.memory_history_failed)) }
+                    if (history.isEmpty()) item { Text(stringResource(R.string.memory_history_empty)) }
+                    items(history.size) { index ->
+                        val entry = history[index]
+                        Column(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+                            Text(java.text.DateFormat.getDateTimeInstance().format(java.util.Date(entry.timestamp)))
+                            Text("${entry.category} · ${entry.action} · ${entry.source}")
+                            Text("${entry.recordId?.let { "#$it · " }.orEmpty()}${entry.beforeChars} → ${entry.afterChars}")
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showHistory = false }) { Text(stringResource(R.string.assistant_page_cancel)) }
             },
         )
     }
@@ -208,6 +239,9 @@ private fun AssistantMemoryContent(
             .imePadding(),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        TextButton(onClick = { showHistory = true }) {
+            Text(stringResource(R.string.memory_history_title))
+        }
         CardGroup {
             item(
                 headlineContent = { Text(stringResource(R.string.assistant_page_memory)) },

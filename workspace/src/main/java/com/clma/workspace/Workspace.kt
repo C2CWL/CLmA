@@ -79,3 +79,20 @@ data class WorkspaceCommandResult(
     val timedOut: Boolean = false,
     val truncated: Boolean = false,
 )
+
+/** Live, bounded output while a foreground command is still running. */
+class ForegroundCommandProgress {
+    @Volatile var stdout: String = ""
+        internal set
+    @Volatile var stderr: String = ""
+        internal set
+
+    internal fun update(nextStdout: String, nextStderr: String) {
+        stdout = nextStdout.takeLast(LIMIT)
+        stderr = nextStderr.takeLast(LIMIT)
+    }
+
+    companion object {
+        const val LIMIT = 8 * 1024
+    }
+}

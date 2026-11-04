@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="memory_history_title">Memory operation history</string>
+    <string name="memory_history_empty">No operations recorded yet. Metadata only; memory text is not retained.</string>
+    <string name="memory_history_failed">History could not be saved. The memory operation itself may have succeeded.</string>
+    <string name="chat_outline_title">Conversation outline</string>
+</resources>

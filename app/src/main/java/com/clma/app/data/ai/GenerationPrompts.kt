@@ -10,23 +10,7 @@ import com.clma.app.utils.JsonInstantPretty
 import com.clma.app.utils.toLocalDate
 
 internal fun buildMemoryPrompt(memories: List<AssistantMemory>) =
-    buildString {
-        appendLine()
-        append("**Memories**")
-        appendLine()
-        append("These are memories stored via the memory_tool that you can reference in future conversations.")
-        appendLine()
-        val json = buildJsonArray {
-            memories.forEach { memory ->
-                add(buildJsonObject {
-                    put("id", memory.id)
-                    put("content", memory.content)
-                })
-            }
-        }
-        append(JsonInstantPretty.encodeToString(json))
-        appendLine()
-    }
+    com.clma.app.data.memory.MemoryPromptRenderer.hot(memories.map { it.id to it.content })
 
 internal suspend fun buildRecentChatsPrompt(
     assistant: Assistant,
