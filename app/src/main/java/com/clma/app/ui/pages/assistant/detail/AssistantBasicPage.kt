@@ -1121,7 +1121,7 @@ internal fun AssistantBasicContent(
                     subAgentMaxTripsInput = assistant.subAgentMaxTrips.toString()
                     return
                 }
-                val clamped = value.coerceIn(1, SubAgentDefaults.MAX_MAX_TRIPS)
+                val clamped = value.coerceIn(0, SubAgentDefaults.MAX_MAX_TRIPS)
                 subAgentMaxTripsInput = clamped.toString()
                 if (clamped != assistant.subAgentMaxTrips) {
                     onUpdate(assistant.copy(subAgentMaxTrips = clamped))
@@ -1166,7 +1166,7 @@ internal fun AssistantBasicContent(
                         Text(
                             stringResource(
                                 R.string.assistant_page_subagent_max_trips_hint,
-                                1,
+                                0,
                                 SubAgentDefaults.MAX_MAX_TRIPS,
                             )
                         )

@@ -211,7 +211,8 @@ class SubAgentEngine(
             )
         }
         // A dispatch that omits `max_trips` inherits the parent assistant's own step limit, so
-        // the assistant-level setting — not a compiled-in constant — is what governs it.
+        // the assistant-level setting — not a compiled-in constant — is what governs it. An
+        // inherited 0 means unlimited and stays 0 through the clamp.
         val resolvedMaxTrips = request.maxTrips ?: currentMaxTrips(parentAssistantId)
         val cleaned = (validation as SubAgentRequestValidator.Result.Ok).request.let {
             it.copy(
@@ -368,7 +369,9 @@ class SubAgentEngine(
             ?: return SubAgentDefaults.DEFAULT_MAX_TRIPS
         val asst = runCatching { AssistantResolver.byId(settingsStore.settingsFlow.first(), asstUuid) }
             .getOrNull() ?: return SubAgentDefaults.DEFAULT_MAX_TRIPS
-        return asst.subAgentMaxTrips.coerceIn(1, SubAgentDefaults.MAX_MAX_TRIPS)
+        // 0 = unlimited: ConversationToolStepLimits treats < 1 as "no override", so the run
+        // inherits the global tool-step budget instead — the same ceiling the parent runs under.
+        return asst.subAgentMaxTrips.coerceIn(0, SubAgentDefaults.MAX_MAX_TRIPS)
     }
 
     private suspend fun currentAssistantCap(parentAssistantId: String): Int {

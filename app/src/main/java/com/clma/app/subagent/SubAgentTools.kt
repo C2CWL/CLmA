@@ -208,8 +208,8 @@ fun subagentDispatchTool(
                             "description",
                             "Hard cap on the sub-agent's tool-loop steps (model round trips " +
                                 "with tool calls). Omit to inherit the parent assistant's own " +
-                                "sub-agent step limit; an explicit value wins, max " +
-                                "${SubAgentDefaults.MAX_MAX_TRIPS}. The turn force-ends when the " +
+                                "sub-agent step limit (0 there = unlimited); an explicit value " +
+                                "wins, max ${SubAgentDefaults.MAX_MAX_TRIPS}. The turn force-ends when the " +
                                 "cap is hit, so size it to the task: a lookup needs 2-3, " +
                                 "multi-step work needs more.",
                         )
