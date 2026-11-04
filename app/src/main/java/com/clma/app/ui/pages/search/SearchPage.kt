@@ -57,13 +57,12 @@ import com.clma.app.data.db.fts.MessageSearchSort
 import com.clma.app.ui.components.nav.BackButton
 import com.clma.app.ui.context.LocalNavController
 import com.clma.app.ui.theme.CustomColors
-import com.clma.app.utils.navigateToChatPage
+import com.clma.app.Screen
 import com.clma.app.utils.plus
 import com.clma.app.utils.toLocalDateTime
 import org.koin.androidx.compose.koinViewModel
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import kotlin.uuid.Uuid
 
 @Composable
 fun SearchPage(vm: SearchVM = koinViewModel()) {
@@ -210,7 +209,7 @@ fun SearchPage(vm: SearchVM = koinViewModel()) {
                         }
                     }
 
-                    vm.results.isEmpty() && !vm.isLoading -> {
+                    vm.results.isEmpty() && !vm.isLoading && !vm.searchFailed -> {
                         Box(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
@@ -229,17 +228,32 @@ fun SearchPage(vm: SearchVM = koinViewModel()) {
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                             modifier = Modifier.fillMaxSize(),
                         ) {
-                            items(vm.results) { result ->
+                            items(vm.results, key = { it.messageId }) { result ->
                                 SearchResultItem(
                                     result = result,
                                     onClick = {
-                                        navigateToChatPage(
-                                            navController,
-                                            chatId = Uuid.parse(result.conversationId),
-                                            nodeId = Uuid.parse(result.nodeId),
+                                        navController.navigate(
+                                            Screen.Chat(
+                                                id = result.conversationId,
+                                                nodeId = result.nodeId,
+                                                messageId = result.messageId,
+                                            )
                                         )
                                     }
                                 )
+                            }
+                            item {
+                                if (vm.searchFailed) {
+                                    Text(stringResource(R.string.search_page_failed))
+                                }
+                                if (vm.hasMore || vm.searchFailed) {
+                                    TextButton(onClick = vm::loadMore, enabled = !vm.isLoading) {
+                                        Text(stringResource(
+                                            if (vm.searchFailed) R.string.browser_error_retry
+                                            else R.string.search_page_load_more
+                                        ))
+                                    }
+                                }
                             }
                         }
                     }

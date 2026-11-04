@@ -27,6 +27,7 @@ import kotlinx.coroutines.launch
 import com.clma.app.R
 import com.clma.app.ui.components.nav.BackButton
 import com.clma.app.ui.pages.backup.components.BackupDialog
+import com.clma.app.ui.pages.backup.tabs.StorageUsageTab
 import com.clma.app.ui.pages.backup.tabs.LocalSnapshotsTab
 import com.clma.app.ui.pages.backup.tabs.ImportExportTab
 import com.clma.app.ui.pages.backup.tabs.ReminderTab
@@ -37,7 +38,7 @@ import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun BackupPage(initialTab: Int = 0, vm: BackupVM = koinViewModel()) {
-    val pagerState = rememberPagerState(initialPage = initialTab.coerceIn(0, 4)) { 5 }
+    val pagerState = rememberPagerState(initialPage = initialTab.coerceIn(0, 5)) { 6 }
     val scope = rememberCoroutineScope()
     var showRestartDialog by remember { mutableStateOf(false) }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -93,6 +94,11 @@ fun BackupPage(initialTab: Int = 0, vm: BackupVM = koinViewModel()) {
                     onClick = { scope.launch { pagerState.animateScrollToPage(4) } },
                     text = { Text(stringResource(R.string.local_snapshot_title)) }
                 )
+                Tab(
+                    selected = pagerState.currentPage == 5,
+                    onClick = { scope.launch { pagerState.animateScrollToPage(5) } },
+                    text = { Text(stringResource(R.string.storage_usage_title)) }
+                )
             }
 
             Text(
@@ -133,6 +139,7 @@ fun BackupPage(initialTab: Int = 0, vm: BackupVM = koinViewModel()) {
                     }
 
                     4 -> LocalSnapshotsTab(onShowRestartDialog = { showRestartDialog = true })
+                    5 -> StorageUsageTab()
                 }
             }
         }

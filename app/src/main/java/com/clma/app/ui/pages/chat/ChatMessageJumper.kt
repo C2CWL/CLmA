@@ -24,6 +24,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.semantics.selected
+import kotlin.uuid.Uuid
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -113,12 +121,14 @@ internal fun BoxScope.MessageJumper(
     enabled: Boolean,
     onLeft: Boolean,
     state: LazyListState,
-    messageCount: Int,
-    outline: List<String>,
+    conversationId: Uuid,
+    groups: List<AutoCompactionMessageGroup>,
 ) {
+    val messageCount = groups.size
     val scope = rememberCoroutineScope()
     val thresholdPx = with(LocalDensity.current) { PreviousSnapThreshold.roundToPx() }
-    var showOutline by remember { mutableStateOf(false) }
+    var showOutline by remember(conversationId) { mutableStateOf(false) }
+    var returnPosition by remember(conversationId) { mutableStateOf<Pair<Uuid, Int>?>(null) }
     var expanded by remember { mutableStateOf(false) }
     var recentlyScrolled by remember { mutableStateOf(false) }
     val scrolling = state.isScrollInProgress
@@ -134,7 +144,10 @@ internal fun BoxScope.MessageJumper(
         }
     }
     LaunchedEffect(available) {
-        if (!available) expanded = false
+        if (!available) {
+            expanded = false
+            showOutline = false
+        }
     }
     BackHandler(enabled = expanded) { expanded = false }
 
@@ -162,37 +175,44 @@ internal fun BoxScope.MessageJumper(
     }
 
     if (showOutline && available) {
-        androidx.compose.material3.AlertDialog(
+        val currentIndex = state.firstVisibleItemIndex.coerceIn(groups.indices)
+        val outlineState = rememberLazyListState(initialFirstVisibleItemIndex = currentIndex)
+        AlertDialog(
             onDismissRequest = { showOutline = false },
-            title = { Text(stringResource(R.string.chat_outline_title)) },
+            title = { Text(stringResource(R.string.chat_outline_position, currentIndex + 1, messageCount)) },
             text = {
-                androidx.compose.foundation.lazy.LazyColumn {
-                    items(outline.size) { index ->
+                LazyColumn(state = outlineState, modifier = Modifier.heightIn(max = 420.dp)) {
+                    itemsIndexed(groups, key = { _, group -> group.id }) { index, group ->
                         Text(
-                            text = "${index + 1}. ${outline[index]}",
+                            text = "${index + 1}. ${group.displayMessage.role}: ${group.displayMessage.navigationPreview()}",
                             maxLines = 2,
-                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                            overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.fillMaxWidth()
-                                .clickable {
+                                .semantics { selected = index == currentIndex }
+                                .clickable(role = Role.Button) {
+                                    val from = groups.getOrNull(state.firstVisibleItemIndex)
+                                    returnPosition = from?.let { it.id to state.firstVisibleItemScrollOffset }
                                     showOutline = false
-                                    scope.launch { state.scrollToItem(index) }
+                                    scope.launch {
+                                        groups.displayIndexForNode(group.id)?.let { state.scrollToItem(it) }
+                                    }
                                 }
                                 .padding(vertical = 10.dp),
-                            style = if (index == state.firstVisibleItemIndex) MaterialTheme.typography.titleSmall
+                            style = if (index == currentIndex) MaterialTheme.typography.titleSmall
                                 else MaterialTheme.typography.bodyMedium,
                         )
                     }
                 }
             },
             confirmButton = {
-                androidx.compose.material3.TextButton(onClick = { showOutline = false }) {
+                TextButton(onClick = { showOutline = false }) {
                     Text(stringResource(R.string.assistant_page_cancel))
                 }
             },
         )
     }
 
-    val visible = available && (expanded || (recentlyScrolled && !scrolling))
+    val visible = available && (expanded || returnPosition != null || (recentlyScrolled && !scrolling))
 
     // 菜单展开时，点菜单外任意处（列表区域）先收起菜单。
     if (visible && expanded) {
@@ -242,6 +262,15 @@ internal fun BoxScope.MessageJumper(
                             .width(IntrinsicSize.Max)
                             .padding(vertical = 4.dp)
                     ) {
+                        returnPosition?.let { (nodeId, offset) ->
+                            JumperMenuItem(HugeIcons.ArrowUp01, stringResource(R.string.chat_outline_return)) {
+                                returnPosition = null
+                                expanded = false
+                                scope.launch {
+                                    groups.displayIndexForNode(nodeId)?.let { state.scrollToItem(it, offset) }
+                                }
+                            }
+                        }
                         JumperMenuItem(HugeIcons.ArrowUp01, stringResource(R.string.chat_outline_title)) {
                             expanded = false
                             showOutline = true

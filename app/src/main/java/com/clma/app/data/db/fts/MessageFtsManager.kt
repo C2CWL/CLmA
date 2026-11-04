@@ -1,6 +1,5 @@
 package com.clma.app.data.db.fts
 
-import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.clma.ai.ui.UIMessage
@@ -23,8 +22,6 @@ enum class MessageSearchSort(val orderBy: String) {
     NEWEST_FIRST("update_at DESC, rank"),
     OLDEST_FIRST("update_at ASC, rank"),
 }
-
-private const val TAG = "MessageFtsManager"
 
 /**
  * Schema for the message_fts FTS5 virtual table. Defined here so the table-init path in
@@ -108,7 +105,10 @@ class MessageFtsManager(private val database: AppDatabase) {
         sort: MessageSearchSort = MessageSearchSort.RELEVANCE,
         assistantId: String? = null,
         conversationId: String? = null,
+        limit: Int = 50,
+        offset: Int = 0,
     ): List<MessageSearchResult> = withContext(Dispatchers.IO) {
+        require(limit in 1..201 && offset >= 0)
         val results = mutableListOf<MessageSearchResult>()
         val assistantFilter = if (assistantId != null) {
             """
@@ -130,6 +130,8 @@ class MessageFtsManager(private val database: AppDatabase) {
             add(keyword)
             if (assistantId != null) add(assistantId)
             if (conversationId != null) add(conversationId)
+            add(limit)
+            add(offset)
         }.toTypedArray()
         val cursor = db.query(
             """
@@ -139,12 +141,11 @@ class MessageFtsManager(private val database: AppDatabase) {
             WHERE text MATCH jieba_query(?)
             $assistantFilter
             $conversationFilter
-            ORDER BY ${sort.orderBy}
-            LIMIT 50
+            ORDER BY ${sort.orderBy}, rowid
+            LIMIT ? OFFSET ?
             """.trimIndent(),
             args
         )
-        Log.i(TAG, "search: $keyword")
         cursor.use {
             while (it.moveToNext()) {
                 results.add(

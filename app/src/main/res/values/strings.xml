@@ -390,6 +390,9 @@
   <string name="chat_page_export_markdown_desc">Export conversation as a markdown file</string>
   <string name="chat_page_export_share_via">Share via</string>
   <string name="chat_page_export_success">Exported to %1$s</string>
+  <string name="chat_page_export_plain_text">Plain text</string>
+  <string name="chat_page_export_plain_text_desc">Export only the message text as a .txt file</string>
+  <string name="chat_page_export_failed">Export failed</string>
   <string name="chat_page_history">Chat History</string>
   <string name="chat_page_menu_ai_translator">AI Translator</string>
   <string name="chat_page_menu_image_generation">Image Generation</string>
@@ -805,6 +808,8 @@
   <string name="search_page_sort_relevance">Relevance</string>
   <string name="search_page_title">Search Messages</string>
   <string name="search_page_untitled">Untitled</string>
+  <string name="search_page_failed">Search failed. Check the index and try again.</string>
+  <string name="search_page_load_more">Load more</string>
   <string name="search_picker_title">Search Settings</string>
   <string name="search_picker_local_title">Local Search</string>
   <string name="search_picker_local_description">Connect to various third-party search providers</string>
@@ -3327,6 +3332,13 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="setting_hub_expanded">Expanded</string>
   <string name="setting_hub_collapsed">Collapsed</string>
   <string name="local_snapshot_title">Local snapshots</string>
+  <string name="storage_usage_title">Storage usage</string>
+  <string name="storage_usage_scope">Read-only estimate of what CLmA keeps on this device. Nothing is deleted, cleaned or uploaded.</string>
+  <string name="storage_usage_refresh">Recalculate</string>
+  <string name="storage_usage_failed">Could not calculate usage. Try again.</string>
+  <string name="storage_usage_total">Total</string>
+  <string name="storage_usage_settings">Preferences and settings</string>
+  <string name="storage_usage_cache">Cache</string>
   <string name="local_snapshot_description">Disabled by default. After 15 seconds in the foreground, a due snapshot saves settings, conversations, skills and assistant memory. No background worker or cloud upload. Large attachments, workspaces, extra configuration stores and secret vaults are excluded from automatic snapshots.</string>
   <string name="local_snapshot_privacy">Settings and conversations can contain API keys or private data. Archives are stored unencrypted in app-private, system-backup-excluded storage. Only secret-vault payloads in restore safety copies are encrypted with a device-bound key. Uninstalling or clearing app data removes snapshots; these are not off-device backups.</string>
   <string name="local_snapshot_enable">Automatic local snapshots</string>

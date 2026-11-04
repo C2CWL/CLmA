@@ -358,6 +358,9 @@
   <string name="chat_page_export_markdown_desc">将对话导出为markdown文件</string>
   <string name="chat_page_export_share_via">分享方式</string>
   <string name="chat_page_export_success">已导出为%1$s</string>
+  <string name="chat_page_export_plain_text">纯文本</string>
+  <string name="chat_page_export_plain_text_desc">只导出消息文字为 .txt 文件</string>
+  <string name="chat_page_export_failed">导出失败</string>
   <string name="chat_page_history">聊天历史</string>
   <string name="chat_page_menu_ai_translator">AI翻译</string>
   <string name="chat_page_menu_image_generation">图像生成</string>
@@ -765,6 +768,8 @@
   <string name="search_page_sort_relevance">相关性</string>
   <string name="search_page_title">搜索消息</string>
   <string name="search_page_untitled">无标题</string>
+  <string name="search_page_failed">搜索失败，请检查索引后重试。</string>
+  <string name="search_page_load_more">加载更多</string>
   <string name="search_picker_title">搜索设置</string>
   <string name="search_picker_local_title">本地搜索</string>
   <string name="search_picker_local_description">接入各种三方搜索提供商</string>
@@ -3313,6 +3318,13 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="setting_hub_expanded">已展开</string>
   <string name="setting_hub_collapsed">已收起</string>
   <string name="local_snapshot_title">本地快照</string>
+  <string name="storage_usage_title">存储占用</string>
+  <string name="storage_usage_scope">只读统计 CLmA 在本机占用的空间。不会删除、清理或上传任何内容。</string>
+  <string name="storage_usage_refresh">重新统计</string>
+  <string name="storage_usage_failed">统计失败，请重试。</string>
+  <string name="storage_usage_total">合计</string>
+  <string name="storage_usage_settings">偏好与设置</string>
+  <string name="storage_usage_cache">缓存</string>
   <string name="local_snapshot_description">默认关闭。启动或回到前台 15 秒后按需保存设置、会话、技能与助手记忆，不运行常驻任务、不上传云端。自动快照不含大型附件、工作区、额外配置存储与密钥库。</string>
   <string name="local_snapshot_privacy">设置和会话可能含 API 密钥或隐私数据。快照以未加密归档存于应用私有、排除系统备份的目录；仅恢复保护副本中的密钥库载荷使用设备绑定密钥加密。卸载或清除数据会丢失快照，不能替代异地备份。</string>
   <string name="local_snapshot_enable">自动本地快照</string>

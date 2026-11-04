@@ -133,7 +133,7 @@ fun ChatList(
     onClickSuggestion: (String) -> Unit = {},
     onTranslate: ((UIMessage, java.util.Locale) -> Unit)? = null,
     onClearTranslation: (UIMessage) -> Unit = {},
-    onJumpToMessage: (Int) -> Unit = {},
+    onJumpToMessage: (Uuid) -> Unit = {},
     onToolApproval: ((toolCallId: String, approved: Boolean, reason: String, scope: com.clma.app.service.ChatService.ApprovalScope, toolName: String) -> Unit)? = null,
     onToolAnswer: ((toolCallId: String, answer: String) -> Unit)? = null,
     onRerunTool: (suspend (toolCallId: String) -> com.clma.app.service.ChatService.RerunToolResult)? = null,
@@ -600,13 +600,8 @@ private fun ChatListNormal(
                 enabled = settings.displaySetting.showMessageJumper && !captureProgress,
                 onLeft = settings.displaySetting.messageJumperOnLeft,
                 state = state,
-                // 消息分组是列表的前 N 项，上一条/下一条按它们跳。
-                messageCount = displayGroups.size,
-                outline = remember(displayGroups) {
-                    displayGroups.map { group ->
-                        "${group.displayMessage.role}: ${group.displayMessage.toText().trim().take(120).ifBlank { "[…]" }}"
-                    }
-                },
+                conversationId = conversation.id,
+                groups = displayGroups,
             )
 
             // Suggestion
@@ -693,20 +688,17 @@ private fun ChatListPreview(
     settings: Settings,
     hazeState: HazeState,
     animatedVisibilityScope: AnimatedVisibilityScope,
-    onJumpToMessage: (Int) -> Unit
+    onJumpToMessage: (Uuid) -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
 
-    // 过滤消息，同时保留原始 index 避免后续 O(n) indexOf 查找
-    // Key by node-count + last-node id to avoid list-reference comparison on every recomp.
-    val nodesKey = conversation.messageNodes.size.toString() +
-        (conversation.messageNodes.lastOrNull()?.id?.toString() ?: "")
-    val filteredMessages = remember(nodesKey, searchQuery) {
+    val filteredMessages = remember(conversation.messageNodes, searchQuery) {
         if (searchQuery.isBlank()) {
-            conversation.messageNodes.mapIndexed { index, node -> index to node }
+            conversation.messageNodes
         } else {
-            conversation.messageNodes.mapIndexed { index, node -> index to node }
-                .filter { (_, node) -> node.currentMessage.toText().contains(searchQuery, ignoreCase = true) }
+            conversation.messageNodes.filter { node ->
+                node.currentMessage.toText().contains(searchQuery, ignoreCase = true)
+            }
         }
     }
 
@@ -755,10 +747,10 @@ private fun ChatListPreview(
                 .fillMaxWidth()
                 .weight(1f),
         ) {
-            itemsIndexed(
+            items(
                 items = filteredMessages,
-                key = { index, item -> item.second.id },
-            ) { _, (originalIndex, node) ->
+                key = { node -> node.id },
+            ) { node ->
                 val message = node.currentMessage
                 val isUser = message.role == com.clma.ai.core.MessageRole.USER
                 Column(
@@ -776,7 +768,7 @@ private fun ChatListPreview(
                         Row(
                             modifier = Modifier
                                 .clickable {
-                                    onJumpToMessage(originalIndex)
+                                    onJumpToMessage(node.id)
                                 }
                                 .padding(horizontal = 8.dp, vertical = 6.dp),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),

@@ -96,3 +96,17 @@ internal fun List<MessageNode>.groupAutomaticCompactionMessages(): List<AutoComp
     }
     return groups
 }
+
+/** The lazy chat list has one item per display group, not per database node. */
+internal fun List<AutoCompactionMessageGroup>.displayIndexForNode(nodeId: Uuid): Int? =
+    indexOfFirst { group -> group.nodes.any { it.id == nodeId } }.takeIf { it >= 0 }
+
+/** Only visible outline rows call this; never flatten tool output or the whole conversation. */
+internal fun UIMessage.navigationPreview(): String = buildString {
+    for (part in parts) {
+        if (part !is UIMessagePart.Text) continue
+        if (isNotEmpty()) append(' ')
+        append(part.text.take(120 - length))
+        if (length >= 120) break
+    }
+}.trim().ifBlank { "[…]" }

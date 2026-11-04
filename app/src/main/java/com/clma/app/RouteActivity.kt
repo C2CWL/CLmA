@@ -425,6 +425,7 @@ class RouteActivity : FragmentActivity() {
                                     text = key.text,
                                     files = key.files.map { it.toUri() },
                                     nodeId = key.nodeId?.let { Uuid.parse(it) },
+                                    messageId = key.messageId?.let { Uuid.parse(it) },
                                     isTemporary = key.isTemporary,
                                 )
                             }
@@ -788,6 +789,7 @@ sealed interface Screen : NavKey {
         val files: List<String> = emptyList(),
         val nodeId: String? = null,
         val isTemporary: Boolean = false,
+        val messageId: String? = null,
     ) : Screen
 
     @Serializable

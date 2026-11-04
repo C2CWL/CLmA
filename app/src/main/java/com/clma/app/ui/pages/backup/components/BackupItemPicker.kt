@@ -59,7 +59,7 @@ fun BackupItemPicker(
     }
 }
 
-private fun backupItemLabelRes(item: BackupItem): Int = when (item) {
+internal fun backupItemLabelRes(item: BackupItem): Int = when (item) {
     BackupItem.DATABASE -> R.string.backup_page_chat_records
     BackupItem.FILES -> R.string.backup_page_files
     BackupItem.SKILLS -> R.string.backup_item_skills
