@@ -3314,6 +3314,8 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="doctor_detail_images_orphan">%2$d 条生成图片记录中有 %1$d 条指向的文件已不在磁盘上。</string>
   <string name="doctor_could_not_open">无法打开：%1$s</string>
   <string name="doctor_clipboard_label">CLmA 诊断报告</string>
+  <string name="chat_box_select_conversation">选择会话</string>
+  <string name="chat_box_working_short">处理中</string>
   <string name="chat_box_no_generating_conversations">暂无正在生成的对话</string>
   <string name="setting_hub_expanded">已展开</string>
   <string name="setting_hub_collapsed">已收起</string>
