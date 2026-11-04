@@ -3325,4 +3325,20 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="chat_box_no_generating_conversations">No conversations are generating</string>
   <string name="setting_hub_expanded">Expanded</string>
   <string name="setting_hub_collapsed">Collapsed</string>
+  <string name="context_inspector_title">Context inspector</string>
+  <string name="context_inspector_scope">Latest app-side request after input transforms. Provider wire formatting, media token costs and protocol overhead are not measured. Synthetic messages include compression summaries and request-only notices; their source cannot be distinguished reliably. Memory is a source reference already included in System and excluded from the total.</string>
+  <string name="context_inspector_privacy">DEBUG previews stay in memory for the latest request only and are cleared on restart or when logging is turned off. Known credential patterns are masked, but arbitrary personal information may remain. Do not share previews without reviewing them.</string>
+  <string name="context_inspector_debug">Enable DEBUG, then send a new request to inspect bounded, redacted previews. INFO retains sizes only.</string>
+  <string name="context_inspector_empty">No inspected request yet.</string>
+  <string name="context_inspector_size">Measured app-side JSON: %1$d UTF-8 bytes</string>
+  <string name="context_inspector_unknown_tokens">Tokens: unknown (no model-specific tokenizer; byte counts are not token estimates).</string>
+  <string name="context_inspector_system">System prompt (includes memory)</string>
+  <string name="context_inspector_memory">Memory source reference (not added twice)</string>
+  <string name="context_inspector_synthetic">Synthetic messages / compression summaries</string>
+  <string name="context_inspector_history">History</string>
+  <string name="context_inspector_tools">Tool schemas (app representation)</string>
+  <string name="context_inspector_section_size">%1$d characters · %2$d UTF-8 bytes</string>
+  <string name="context_inspector_show">Show redacted preview</string>
+  <string name="context_inspector_hide">Hide preview</string>
+  <string name="context_inspector_truncated">Preview limited to 12,000 characters; sizes refer to the unredacted app representation.</string>
 </resources>

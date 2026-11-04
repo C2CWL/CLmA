@@ -3311,4 +3311,20 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="chat_box_no_generating_conversations">暂无正在生成的对话</string>
   <string name="setting_hub_expanded">已展开</string>
   <string name="setting_hub_collapsed">已收起</string>
+  <string name="context_inspector_title">上下文检查器</string>
+  <string name="context_inspector_scope">最近一次输入转换后的应用侧请求；不代表服务商最终 HTTP 正文，不计媒体 Token 及协议开销。合成消息含压缩摘要和临时通知，无法可靠区分其来源。记忆为源引用，已包含在系统提示中，不重复计入合计。</string>
+  <string name="context_inspector_privacy">DEBUG 预览仅保存在内存中，只保留最近一次请求；重启或关闭日志后清除。已遮蔽已知凭据模式，但仍可能包含未识别的个人信息，分享前请自行审查。</string>
+  <string name="context_inspector_debug">开启 DEBUG 后发送新请求即可查看限长脱敏预览；INFO 仅保留大小。</string>
+  <string name="context_inspector_empty">暂无已检查的请求。</string>
+  <string name="context_inspector_size">应用侧 JSON 实测合计：%1$d UTF-8 字节</string>
+  <string name="context_inspector_unknown_tokens">Token：未知（未接入模型专用分词器；字节数不作为 Token 估算）。</string>
+  <string name="context_inspector_system">系统提示（包含记忆）</string>
+  <string name="context_inspector_memory">记忆源引用（不重复计入）</string>
+  <string name="context_inspector_synthetic">合成消息 / 压缩摘要</string>
+  <string name="context_inspector_history">历史消息</string>
+  <string name="context_inspector_tools">工具定义（应用侧表示）</string>
+  <string name="context_inspector_section_size">%1$d 字符 · %2$d UTF-8 字节</string>
+  <string name="context_inspector_show">展开脱敏预览</string>
+  <string name="context_inspector_hide">收起预览</string>
+  <string name="context_inspector_truncated">预览最多 12,000 字符；大小按脱敏前的应用侧表示统计。</string>
 </resources>

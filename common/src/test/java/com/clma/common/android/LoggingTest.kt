@@ -168,7 +168,7 @@ class LoggingTest {
             val bodySize = 600_000
             repeat(10) { i ->
                 Logging.logRequest(
-                    request("https://example.com/$i").copy(requestBody = "x".repeat(bodySize))
+                    request("https://example.com/$i").copy(requestBody = "\"" + "x".repeat(bodySize - 2) + "\"")
                 )
             }
             val logs = Logging.getRequestLogs()
