@@ -175,7 +175,10 @@ private fun AssistantMemoryContent(
                         val entry = history[index]
                         Column(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
                             Text(java.text.DateFormat.getDateTimeInstance().format(java.util.Date(entry.timestamp)))
-                            Text("${entry.category} · ${entry.action} · ${entry.source}")
+                            Text(
+                                listOfNotNull(entry.name, entry.category, entry.action, entry.source)
+                                    .joinToString(" · ")
+                            )
                             Text("${entry.recordId?.let { "#$it · " }.orEmpty()}${entry.beforeChars} → ${entry.afterChars}")
                         }
                     }

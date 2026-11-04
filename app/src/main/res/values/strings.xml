@@ -2961,6 +2961,8 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="doctor_detail_vision_unavailable">Vision encoder unavailable on this device for: %1$s. These multimodal models run in text-only mode — chat works, image inputs don\'t. Often fixed by a future LiteRT-LM SDK update.</string>
   <string name="doctor_detail_skills_count">%1$d installed (%2$d bundled, %3$d user-added).</string>
   <string name="doctor_detail_cache_size">Cache is using %1$s. Tap "Clear cache" to reclaim space.</string>
+  <string name="doctor_check_storage_breakdown">Storage usage by category</string>
+  <string name="doctor_detail_storage_breakdown">%1$s databases · %2$s images · %3$s videos · %4$s uploads · %5$s workspace · %6$s memory history · %7$s cache · %8$s total. App-private directories only; files on shared storage are not counted.</string>
   <string name="doctor_detail_app_build">CLmA %1$s (%2$s) — debug=%3$s</string>
   <string name="doctor_detail_android">API %1$d (%2$s) on %3$s %4$s</string>
   <string name="doctor_unnamed">Unnamed</string>

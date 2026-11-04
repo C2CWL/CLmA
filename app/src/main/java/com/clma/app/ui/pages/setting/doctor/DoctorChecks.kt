@@ -1625,6 +1625,22 @@ class DoctorChecks(
     // ----- Maintenance -----------------------------------------------------------------
 
     private fun maintenanceChecks(): List<DoctorCheck> = buildList {
+        // Space by category. Sizes are app-private directory walks; a missing directory is 0.
+        val breakdown = storageUsageBreakdown()
+        add(
+            DoctorCheck(
+                id = "maint.storage_breakdown",
+                category = DoctorCategory.Maintenance,
+                label = context.getString(R.string.doctor_check_storage_breakdown),
+                detail = context.getString(
+                    R.string.doctor_detail_storage_breakdown,
+                    *(breakdown.map { humanBytes(it) }.toTypedArray()),
+                    humanBytes(breakdown.sum()),
+                ),
+                severity = Severity.INFO,
+            )
+        )
+
         // Cache size on disk
         val cacheBytes = directorySize(context.cacheDir)
         add(
@@ -1645,6 +1661,23 @@ class DoctorChecks(
             )
         )
     }
+
+    /**
+     * App-private space by category. The cache row alone cannot tell a user whether the space
+     * goes to chat history, generated media or the agent workspace, so measure the disjoint
+     * private directories instead of guessing. Read-only: this only walks directories.
+     * Shared storage (`/sdcard/...`) is deliberately out of scope — it is not in our sandbox
+     * accounting and enumerating it needs storage permissions.
+     */
+    private fun storageUsageBreakdown(): List<Long> = listOf(
+        directorySize(File(context.applicationInfo.dataDir, "databases")),
+        directorySize(File(context.filesDir, "images")),
+        directorySize(File(context.filesDir, "videos")),
+        directorySize(File(context.filesDir, "upload")),
+        directorySize(File(context.filesDir, "workspace")),
+        directorySize(File(context.filesDir, "memory_history")),
+        directorySize(context.cacheDir),
+    )
 
     // ----- Diagnostics summary ---------------------------------------------------------
 

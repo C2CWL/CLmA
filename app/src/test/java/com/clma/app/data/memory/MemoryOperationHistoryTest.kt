@@ -6,6 +6,18 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class MemoryOperationHistoryTest {
+    @Test fun `journals written before cold file names existed still decode`() {
+        val root = Files.createTempDirectory("memory-history-test").toFile()
+        try {
+            val file = File(root, "operations.json")
+            file.writeText("""[{"timestamp":1,"scope":"assistant","category":"cold","action":"create","source":"tool","beforeChars":0,"afterChars":9}]""")
+            val history = MemoryOperationHistory(file)
+            assertEquals(1, history.entries.value.size)
+            assertNull(history.entries.value.single().name)
+            assertFalse(history.persistenceFailed.value)
+        } finally { root.deleteRecursively() }
+    }
+
     @Test fun `history is bounded and survives reopening without storing memory content`() {
         val root = Files.createTempDirectory("memory-history-test").toFile()
         try {
@@ -36,7 +48,8 @@ class MemoryOperationHistoryTest {
             assertEquals(listOf("create", "no_op", "edit", "delete", "no_op"), history.entries.value.map { it.action })
             assertEquals(13, history.entries.value[1].beforeChars)
             assertFalse(file.readText().contains("private prose"))
-            assertFalse(file.readText().contains("note.md"))
+            // Cold records identify the Markdown file; the prose itself is never journalled.
+            assertEquals(listOf("note.md", "note.md", "note.md", "note.md", "note.md"), history.entries.value.map { it.name })
         } finally { root.deleteRecursively() }
     }
 

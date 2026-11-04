@@ -7,7 +7,8 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
-/** Local metadata only: never retain memory prose, filenames, prompts or model reasoning. */
+/** Local metadata only: never retain memory prose, prompts or model reasoning. Cold writes keep the
+ * Markdown file name so an individual record can be identified; hot records keep the row id. */
 @Serializable
 data class MemoryOperation(
     val timestamp: Long,
@@ -18,6 +19,8 @@ data class MemoryOperation(
     val recordId: Int? = null,
     val beforeChars: Int = 0,
     val afterChars: Int = 0,
+    /** Cold memory Markdown file name; null for hot records and for journals written before it existed. */
+    val name: String? = null,
 )
 
 class MemoryOperationHistory(private val file: File) {

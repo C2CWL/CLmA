@@ -43,3 +43,14 @@ Implementation and verification results are appended with each delivery. An audi
 Public-entry conflict points: AssistantMemoryPage, AssistantDetailVM, ChatList, ChatMessageJumper, ChatService and RepositoryModule. Review those hunks when integrating sibling worktrees. No context-inspector/redaction or backup/restore-specific files changed. The local metadata journal is app-private, globally bounded (not 200 entries per assistant), and is not wired into backup/restore by this patch.
 
 This is a partial delivery of the audited A–D group. The unimplemented shell streaming and storage analysis are explicitly deferred rather than reported complete. Local commits are the rollback boundary; nothing has been published.
+
+## Delivery 2 (2026-11-05): remaining audit gaps, batch 1
+
+| Item | Delivered source change | Not claimed |
+|---|---|---|
+| Cold memory identification | `MemoryOperation.name` carries the Markdown file name for cold records; `AssistantColdMemoryStore` records it on create/edit/no_op/delete; assistant memory history dialog shows it. Journals from before the field decode with `name == null`. | No prose, prompts or reasons are retained. Hot records still identify by row id only. |
+| Storage usage analysis | Doctor maintenance adds one read-only `maint.storage_breakdown` row (databases, images, videos, uploads, workspace, memory history, cache, total), reusing the existing `directorySize` walk. | Only app-private directories; shared storage needs permissions and is not measured. No per-assistant attribution. |
+
+Verification: `git diff --check`, tree-sitter Kotlin parse of the changed files, XML parse plus duplicate-name check of both `strings.xml`. No local Gradle build or test run — CI is the compiler. Not device-tested.
+
+Still open from the audit: semantic memory consolidation, foreground `workspace_shell` live output, whole-turn conversation minimap, structured JSON export.
