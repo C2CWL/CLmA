@@ -31,6 +31,17 @@ class SettingsSearchQueryTest {
     }
 
     @Test
+    fun `context inspector is reachable from request logs without developer mode`() {
+        assertTop("上下文检查器", Screen.Log)
+        assertTop("Context inspector", Screen.Log, search("Context inspector", text = english, fallback = null))
+        val entry = settingsSearchIndex(developerMode = false).single {
+            it.titleRes == R.string.context_inspector_title
+        }
+        assertEquals(Screen.Log, entry.route)
+        assertEquals(R.string.setting_page_request_logs, entry.parentTitleRes)
+    }
+
+    @Test
     fun `workspace in chinese opens the workspaces page`() {
         assertTop("工作区", Screen.Workspaces)
     }

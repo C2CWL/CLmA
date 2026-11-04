@@ -60,6 +60,7 @@ import com.clma.app.R
 import com.clma.app.data.datastore.SettingsStore
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.koinInject
+import com.clma.app.ui.pages.developer.ContextInspectorPanel
 import com.clma.app.ui.components.nav.BackButton
 import com.clma.app.ui.components.ui.JsonTree
 import com.clma.app.ui.theme.CustomColors
@@ -191,6 +192,8 @@ private fun UnifiedLogList(
                 onEnabledChange = onRequestLoggingChange
             )
         }
+
+        item { ContextInspectorPanel() }
 
         item {
             Row(

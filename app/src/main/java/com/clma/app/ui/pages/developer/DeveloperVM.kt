@@ -11,6 +11,13 @@ class DeveloperVM(
 ) : ViewModel() {
     val logs = aiLoggingManager.getLogs()
     val logLevel = aiLoggingManager.getLogLevel()
+    val contextInspectionEnabled = aiLoggingManager.getContextInspectionEnabled()
+
+    fun setContextInspectionEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            aiLoggingManager.setContextInspectionEnabled(enabled)
+        }
+    }
 
     fun setLogLevel(level: AiLogLevel) {
         viewModelScope.launch {

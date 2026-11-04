@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -17,6 +16,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -86,37 +86,44 @@ fun DeveloperPage(vm: DeveloperVM = koinViewModel()) {
 
 @Composable
 fun LoggingPaging(vm: DeveloperVM) {
-    val logs by vm.logs.collectAsStateWithLifecycle()
-    val level by vm.logLevel.collectAsStateWithLifecycle()
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        items(1) {
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(text = "AI Log Level")
+        item { ContextInspectorPanel(vm) }
+    }
+}
+
+@Composable
+fun ContextInspectorPanel(vm: DeveloperVM = koinViewModel()) {
+    val logs by vm.logs.collectAsStateWithLifecycle()
+    val level by vm.logLevel.collectAsStateWithLifecycle()
+    val enabled by vm.contextInspectionEnabled.collectAsStateWithLifecycle()
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.context_inspector_title), modifier = Modifier.weight(1f))
+                    Switch(checked = enabled, onCheckedChange = vm::setContextInspectionEnabled)
+                }
+                Text(stringResource(R.string.context_inspector_toggle_desc))
+                Text(stringResource(R.string.context_inspector_privacy))
+                if (enabled) {
+                    Text(stringResource(R.string.context_inspector_log_level))
                     AiLogLevel.entries.forEach { item ->
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 2.dp),
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            RadioButton(
-                                selected = level == item,
-                                onClick = { vm.setLogLevel(item) },
-                            )
+                            RadioButton(selected = level == item, onClick = { vm.setLogLevel(item) })
                             Text(text = item.name.lowercase().replaceFirstChar { it.uppercase() })
                         }
                     }
                 }
             }
         }
-        item {
-            ContextInspector(logs.filterIsInstance<AILogging.Generation>().lastOrNull(), level)
-        }
+        if (enabled) ContextInspector(logs.filterIsInstance<AILogging.Generation>().lastOrNull(), level)
     }
 }
 
@@ -126,7 +133,6 @@ private fun ContextInspector(log: AILogging.Generation?, level: AiLogLevel) {
         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(R.string.context_inspector_title))
             Text(stringResource(R.string.context_inspector_scope))
-            Text(stringResource(R.string.context_inspector_privacy))
             if (level != AiLogLevel.DEBUG) Text(stringResource(R.string.context_inspector_debug))
             val inspection = log?.context
             if (inspection == null) {

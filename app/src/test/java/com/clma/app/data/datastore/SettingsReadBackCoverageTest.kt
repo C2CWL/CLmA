@@ -35,6 +35,13 @@ class SettingsReadBackCoverageTest {
     }
 
     @Test
+    fun `context inspection is persisted separately and defaults to off`() {
+        assertEquals(false, Settings().contextInspectionEnabled)
+        assertEquals(true, source.contains("preferences[CONTEXT_INSPECTION_ENABLED] = settings.contextInspectionEnabled"))
+        assertEquals(true, source.contains("contextInspectionEnabled = preferences[CONTEXT_INSPECTION_ENABLED] ?: false"))
+    }
+
+    @Test
     fun `dynamic color is read back from its key`() {
         assertEquals(true, source.contains("dynamicColor = preferences[DYNAMIC_COLOR] != false"))
     }
