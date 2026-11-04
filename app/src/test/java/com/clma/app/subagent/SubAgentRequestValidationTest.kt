@@ -1,6 +1,7 @@
 package com.clma.app.subagent
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -39,11 +40,24 @@ class SubAgentRequestValidationTest {
         assertEquals("invalid_max_trips", (r as SubAgentRequestValidator.Result.Reject).error)
     }
 
-    @Test fun `max trips above 30 rejected`() {
+    @Test fun `max trips above the hard cap rejected`() {
         val r = SubAgentRequestValidator.validate(
             SubAgentRequest(task = "x", maxTrips = SubAgentDefaults.MAX_MAX_TRIPS + 1)
         )
         assertEquals("invalid_max_trips", (r as SubAgentRequestValidator.Result.Reject).error)
+    }
+
+    @Test fun `omitted max trips is accepted so the parent assistant supplies it`() {
+        val r = SubAgentRequestValidator.validate(SubAgentRequest(task = "x"))
+        val ok = r as SubAgentRequestValidator.Result.Ok
+        assertNull(ok.request.maxTrips)
+    }
+
+    @Test fun `explicit max trips at the hard cap is accepted`() {
+        val r = SubAgentRequestValidator.validate(
+            SubAgentRequest(task = "x", maxTrips = SubAgentDefaults.MAX_MAX_TRIPS)
+        )
+        assertTrue(r is SubAgentRequestValidator.Result.Ok)
     }
 
     @Test fun `oversize label rejected`() {

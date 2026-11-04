@@ -33,7 +33,7 @@ class SubAgentDispatchProfileTest {
         assertEquals(30, c.globalCap)
         assertEquals(8, c.perAssistantCap)
         assertEquals(30_000L, c.slotWaitMs)
-        assertEquals(30, c.maxTripsCeiling)
+        assertEquals(60, c.maxTripsCeiling)
         assertEquals(1800, c.timeoutCeilingSec)
     }
 
@@ -91,9 +91,12 @@ class SubAgentDispatchProfileTest {
     @Test
     fun `clampMaxTrips respects ceiling`() {
         assertEquals(8, SubAgentDispatchProfileRules.clampMaxTrips(SubAgentDispatchProfile.ASSIST, 100))
-        assertEquals(30, SubAgentDispatchProfileRules.clampMaxTrips(SubAgentDispatchProfile.NORMAL, 100))
+        assertEquals(60, SubAgentDispatchProfileRules.clampMaxTrips(SubAgentDispatchProfile.NORMAL, 100))
         assertEquals(60, SubAgentDispatchProfileRules.clampMaxTrips(SubAgentDispatchProfile.UNLEASHED, 100))
         assertEquals(5, SubAgentDispatchProfileRules.clampMaxTrips(SubAgentDispatchProfile.NORMAL, 5))
+        // 0 = unlimited (inherited from the parent assistant) and must survive the clamp, so
+        // ConversationToolStepLimits.clear() applies and the global budget governs the run.
+        assertEquals(0, SubAgentDispatchProfileRules.clampMaxTrips(SubAgentDispatchProfile.NORMAL, 0))
     }
 
     @Test

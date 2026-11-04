@@ -1109,6 +1109,71 @@ internal fun AssistantBasicContent(
                 )
             }
 
+            var subAgentMaxTripsInput by remember(assistant.id, assistant.subAgentMaxTrips) {
+                mutableStateOf(assistant.subAgentMaxTrips.toString())
+            }
+            var subAgentMaxTripsFocused by remember(assistant.id) { mutableStateOf(false) }
+            val subAgentMaxTripsFocusManager = LocalFocusManager.current
+
+            fun commitSubAgentMaxTrips() {
+                val value = subAgentMaxTripsInput.toIntOrNull()
+                if (value == null) {
+                    subAgentMaxTripsInput = assistant.subAgentMaxTrips.toString()
+                    return
+                }
+                val clamped = value.coerceIn(0, SubAgentDefaults.MAX_MAX_TRIPS)
+                subAgentMaxTripsInput = clamped.toString()
+                if (clamped != assistant.subAgentMaxTrips) {
+                    onUpdate(assistant.copy(subAgentMaxTrips = clamped))
+                }
+            }
+
+            FormItem(
+                modifier = Modifier.padding(8.dp),
+                label = {
+                    Text(stringResource(R.string.assistant_page_subagent_max_trips))
+                },
+                description = {
+                    Text(stringResource(R.string.assistant_page_subagent_max_trips_desc))
+                }
+            ) {
+                OutlinedTextField(
+                    value = subAgentMaxTripsInput,
+                    onValueChange = { input ->
+                        if (input.all(Char::isDigit) &&
+                            (input.isEmpty() || input.toIntOrNull() != null)
+                        ) {
+                            subAgentMaxTripsInput = input
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onFocusChanged { focusState ->
+                            if (subAgentMaxTripsFocused && !focusState.isFocused) {
+                                commitSubAgentMaxTrips()
+                            }
+                            subAgentMaxTripsFocused = focusState.isFocused
+                        },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Done
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = { subAgentMaxTripsFocusManager.clearFocus() }
+                    ),
+                    singleLine = true,
+                    supportingText = {
+                        Text(
+                            stringResource(
+                                R.string.assistant_page_subagent_max_trips_hint,
+                                0,
+                                SubAgentDefaults.MAX_MAX_TRIPS,
+                            )
+                        )
+                    }
+                )
+            }
+
             HorizontalDivider()
 
             // The assistant-level sub-agent defaults. Both fields existed in the Assistant model

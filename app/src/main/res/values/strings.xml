@@ -3099,6 +3099,9 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="assistant_page_max_concurrent_subagents">Concurrent sub-agents</string>
   <string name="assistant_page_max_concurrent_subagents_desc">How many sub-agent runs this assistant may have in flight at once.</string>
   <string name="assistant_page_max_concurrent_subagents_hint">Between %1$d and %2$d.</string>
+  <string name="assistant_page_subagent_max_trips">Sub-agent step limit</string>
+  <string name="assistant_page_subagent_max_trips_desc">Default cap on the sub-agents this assistant dispatches: how many tool steps each run may take before it is force-ended. 0 means unlimited — the run then uses the global tool-step budget, like the parent. A dispatch that sets max_trips itself overrides this.</string>
+  <string name="assistant_page_subagent_max_trips_hint">0 = unlimited, or %2$d at most.</string>
   <string name="assistant_page_sub_agent_model">Sub-agent model</string>
   <string name="assistant_page_sub_agent_model_desc">Model sub-agents run on when a dispatch names none. Point it at a cheaper model to cut orchestration cost; unset inherits the conversation\'s model.</string>
   <string name="assistant_page_sub_agent_system_prompt">Sub-agent system prompt</string>

@@ -210,9 +210,13 @@ class SubAgentEngine(
                 "sub-agent dispatch is disabled (profile = $profile). Do all work inline.",
             )
         }
+        // A dispatch that omits `max_trips` inherits the parent assistant's own step limit, so
+        // the assistant-level setting — not a compiled-in constant — is what governs it. An
+        // inherited 0 means unlimited and stays 0 through the clamp.
+        val resolvedMaxTrips = request.maxTrips ?: currentMaxTrips(parentAssistantId)
         val cleaned = (validation as SubAgentRequestValidator.Result.Ok).request.let {
             it.copy(
-                maxTrips = SubAgentDispatchProfileRules.clampMaxTrips(profile, it.maxTrips),
+                maxTrips = SubAgentDispatchProfileRules.clampMaxTrips(profile, resolvedMaxTrips),
                 timeoutSeconds = SubAgentDispatchProfileRules.clampTimeout(profile, it.timeoutSeconds),
             )
         }
@@ -244,7 +248,7 @@ class SubAgentEngine(
             runInBackground = cleaned.runInBackground,
             noResult = cleaned.noResult,
             timeoutSeconds = cleaned.timeoutSeconds,
-            maxTrips = cleaned.maxTrips,
+            maxTrips = cleaned.maxTrips ?: resolvedMaxTrips,
             reasoningLevel = cleaned.reasoningLevel,
             status = SubAgentStatus.PENDING,
             startedAtMs = now,
@@ -352,6 +356,22 @@ class SubAgentEngine(
             }
             DispatchResult.Ok(registry.get(runId) ?: initialRun, gate.remaining)
         }
+    }
+
+    /**
+     * The parent assistant's own sub-agent step limit, used when a dispatch omits `max_trips`.
+     * Best-effort like every other settings read on the dispatch path: a settings hiccup or an
+     * unknown assistant id degrades to the compiled default instead of blocking the dispatch,
+     * and the value is clamped so a hand-edited preference cannot park it outside the range.
+     */
+    private suspend fun currentMaxTrips(parentAssistantId: String): Int {
+        val asstUuid = runCatching { Uuid.parse(parentAssistantId) }.getOrNull()
+            ?: return SubAgentDefaults.DEFAULT_MAX_TRIPS
+        val asst = runCatching { AssistantResolver.byId(settingsStore.settingsFlow.first(), asstUuid) }
+            .getOrNull() ?: return SubAgentDefaults.DEFAULT_MAX_TRIPS
+        // 0 = unlimited: ConversationToolStepLimits treats < 1 as "no override", so the run
+        // inherits the global tool-step budget instead — the same ceiling the parent runs under.
+        return asst.subAgentMaxTrips.coerceIn(0, SubAgentDefaults.MAX_MAX_TRIPS)
     }
 
     private suspend fun currentAssistantCap(parentAssistantId: String): Int {
@@ -672,7 +692,12 @@ class SubAgentEngine(
             //    building each model request. The validator already guaranteed the value is one
             //    of VALID_REASONING_LEVELS, so the enum lookup here cannot miss.
             ConversationSystemAddendum.set(conv.id, systemPromptAddendum)
-            ConversationToolStepLimits.set(conv.id, request.maxTrips)
+            // The run row carries the concrete cap: `request.maxTrips` is null when the dispatch
+            // inherited it from the parent assistant, and this is the value ChatService enforces.
+            ConversationToolStepLimits.set(
+                conv.id,
+                registry.get(runId)?.maxTrips ?: SubAgentDefaults.DEFAULT_MAX_TRIPS,
+            )
             request.reasoningLevel?.let { raw ->
                 ReasoningLevel.entries.firstOrNull { it.name.equals(raw, ignoreCase = true) }
                     ?.let { ConversationReasoningOverrides.set(conv.id, it) }
