@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setting_display_page_fast_streaming_title">快速流式输出</string>
+    <string name="setting_display_page_fast_streaming_desc">收到文字后立即刷新，不再按 32 毫秒合并更新。可能增加耗电，不改变模型生成速度；关闭恢复原来的省资源模式。</string>
+</resources>

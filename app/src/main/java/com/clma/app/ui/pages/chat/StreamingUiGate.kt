@@ -42,37 +42,40 @@ internal class StreamingUiGate<T : Any>(
 internal fun <T : Any> Flow<T>.throttleStreamingUpdates(
     windowMs: Long,
     appendOnly: (T, T) -> Boolean,
-): Flow<T> = flow {
-    require(windowMs > 0)
-    coroutineScope {
-        // 不使用 CONFLATED：结构变更不能在进入门控之前被后续 token 覆盖。
-        val input = Channel<T>(Channel.RENDEZVOUS)
-        val upstream = launch {
-            try {
-                collect { input.send(it) }
-            } finally {
-                input.close()
-            }
-        }
-        val gate = StreamingUiGate(windowMs, appendOnly)
-        fun now() = System.nanoTime() / 1_000_000
-        try {
-            while (true) {
-                val wait = gate.millisUntilFlush(now())
-                val next = if (wait == null) input.receiveCatching()
-                else withTimeoutOrNull(wait) { input.receiveCatching() }
-                if (next == null) {
-                    gate.flush(now())?.let { emit(it) }
-                } else if (next.isClosed) {
-                    gate.flush(now())?.let { emit(it) }
-                    break
-                } else {
-                    gate.onNext(next.getOrThrow(), now())?.let { emit(it) }
+): Flow<T> {
+    require(windowMs >= 0)
+    if (windowMs == 0L) return this
+    return flow {
+        coroutineScope {
+            // 不使用 CONFLATED：结构变更不能在进入门控之前被后续 token 覆盖。
+            val input = Channel<T>(Channel.RENDEZVOUS)
+            val upstream = launch {
+                try {
+                    collect { input.send(it) }
+                } finally {
+                    input.close()
                 }
             }
-        } finally {
-            upstream.cancel()
-            input.cancel()
+            val gate = StreamingUiGate(windowMs, appendOnly)
+            fun now() = System.nanoTime() / 1_000_000
+            try {
+                while (true) {
+                    val wait = gate.millisUntilFlush(now())
+                    val next = if (wait == null) input.receiveCatching()
+                    else withTimeoutOrNull(wait) { input.receiveCatching() }
+                    if (next == null) {
+                        gate.flush(now())?.let { emit(it) }
+                    } else if (next.isClosed) {
+                        gate.flush(now())?.let { emit(it) }
+                        break
+                    } else {
+                        gate.onNext(next.getOrThrow(), now())?.let { emit(it) }
+                    }
+                }
+            } finally {
+                upstream.cancel()
+                input.cancel()
+            }
         }
     }
 }

@@ -165,6 +165,7 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
         route = Screen.SettingPreferencesUI,
         altTitles = listOf(R.string.setting_page_preferences_ui, R.string.setting_page_hub_chat_display),
         items = listOf(
+            row(R.string.setting_display_page_fast_streaming_title, R.string.setting_display_page_fast_streaming_desc),
             row(R.string.setting_display_page_show_user_avatar_title, R.string.setting_display_page_show_user_avatar_desc),
             row(R.string.setting_display_page_show_assistant_bubble_title, R.string.setting_display_page_show_assistant_bubble_desc),
             row(R.string.setting_display_page_bubble_opacity_title),
