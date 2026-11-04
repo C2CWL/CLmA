@@ -259,6 +259,18 @@
           android:path="/oauth"
           android:scheme="rikkahub" />
       </intent-filter>
+      <!-- CLmA 自己的深链。rikkahub:// 保留只是为了兼容仍停在旧回调页的浏览器标签。 -->
+      <intent-filter>
+        <action android:name="android.intent.action.VIEW" />
+
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.BROWSABLE" />
+
+        <data
+          android:host="codex"
+          android:path="/oauth"
+          android:scheme="clma" />
+      </intent-filter>
     </activity>
     <activity
       android:name=".ui.activity.GeminiOAuthRedirectActivity"
@@ -274,6 +286,18 @@
           android:host="gemini"
           android:path="/oauth"
           android:scheme="rikkahub" />
+      </intent-filter>
+      <!-- CLmA 自己的深链。rikkahub:// 保留只是为了兼容仍停在旧回调页的浏览器标签。 -->
+      <intent-filter>
+        <action android:name="android.intent.action.VIEW" />
+
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.BROWSABLE" />
+
+        <data
+          android:host="gemini"
+          android:path="/oauth"
+          android:scheme="clma" />
       </intent-filter>
     </activity>
     <activity

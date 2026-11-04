@@ -28,7 +28,6 @@ fun computeAIIconByName(name: String): String? {
         PATTERN_ALIYUN.containsMatchIn(lowerName) -> "alibabacloud-color.svg"
         PATTERN_BYTEDANCE.containsMatchIn(lowerName) -> "bytedance-color.svg"
         PATTERN_SILLICON_CLOUD.containsMatchIn(lowerName) -> "siliconflow.svg"
-        PATTERN_AIHUBMIX.containsMatchIn(lowerName) -> "aihubmix-color.svg"
         PATTERN_OLLAMA.containsMatchIn(lowerName) -> "ollama.svg"
         PATTERN_GITHUB.containsMatchIn(lowerName) -> "github.svg"
         PATTERN_CLOUDFLARE.containsMatchIn(lowerName) -> "cloudflare-color.svg"
@@ -37,7 +36,6 @@ fun computeAIIconByName(name: String): String? {
         PATTERN_JUHENEXT.containsMatchIn(lowerName) -> "juhenext.png"
         PATTERN_KIMI.containsMatchIn(lowerName) -> "kimi-color.svg"
         PATTERN_MOONSHOT.containsMatchIn(lowerName) -> "moonshot.svg"
-        PATTERN_302.containsMatchIn(lowerName) -> "302ai.svg"
         PATTERN_STEP.containsMatchIn(lowerName) -> "stepfun-color.svg"
         PATTERN_INTERN.containsMatchIn(lowerName) -> "internlm-color.svg"
         PATTERN_COHERE.containsMatchIn(lowerName) -> "cohere-color.svg"
@@ -47,13 +45,11 @@ fun computeAIIconByName(name: String): String? {
         PATTERN_PPIO.containsMatchIn(lowerName) -> "ppio-color.svg"
         PATTERN_VERCEL.containsMatchIn(lowerName) -> "vercel.svg"
         PATTERN_GROQ.containsMatchIn(lowerName) -> "groq.svg"
-        PATTERN_TOKENPONY.containsMatchIn(lowerName) -> "tokenpony.svg"
         PATTERN_LING.containsMatchIn(lowerName) -> "ling.png"
         PATTERN_MIMO.containsMatchIn(lowerName) -> "xiaomimimo.svg"
         PATTERN_LONGCAT.containsMatchIn(lowerName) -> "longcat-color.svg"
         PATTERN_ELEVENLABS.containsMatchIn(lowerName) -> "elevenlabs.svg"
         PATTERN_FISH_AUDIO.containsMatchIn(lowerName) -> "fish-audio.svg"
-        PATTERN_RIKKAHUB.containsMatchIn(lowerName) -> "rikkahub.svg"
         PATTERN_SEARCH_LINKUP.containsMatchIn(lowerName) -> "linkup.png"
         PATTERN_SEARCH_BING.containsMatchIn(lowerName) -> "bing.png"
         PATTERN_SEARCH_TAVILY.containsMatchIn(lowerName) -> "tavily.png"
@@ -70,7 +66,6 @@ fun computeAIIconByName(name: String): String? {
     return result
 }
 
-private val PATTERN_RIKKAHUB = Regex("rikka|auto")
 private val PATTERN_CODEX = Regex("codex")
 private val PATTERN_OPENAI = Regex("(gpt|openai|o\\d)")
 private val PATTERN_GEMINI = Regex("(gemini|nano-banana)")
@@ -91,7 +86,6 @@ private val PATTERN_PERPLEXITY = Regex("perplexity")
 private val PATTERN_BYTEDANCE = Regex("bytedance|火山")
 private val PATTERN_ALIYUN = Regex("aliyun|阿里云|百炼")
 private val PATTERN_SILLICON_CLOUD = Regex("silicon|硅基")
-private val PATTERN_AIHUBMIX = Regex("aihubmix")
 private val PATTERN_OLLAMA = Regex("ollama")
 private val PATTERN_GITHUB = Regex("github")
 private val PATTERN_CLOUDFLARE = Regex("cloudflare")
@@ -100,7 +94,6 @@ private val PATTERN_XAI = Regex("xai")
 private val PATTERN_JUHENEXT = Regex("juhenext")
 private val PATTERN_KIMI = Regex("kimi|k3")
 private val PATTERN_MOONSHOT = Regex("moonshot|月之暗面")
-private val PATTERN_302 = Regex("302")
 private val PATTERN_STEP = Regex("step|阶跃")
 private val PATTERN_INTERN = Regex("intern|书生")
 private val PATTERN_COHERE = Regex("cohere|command-.+")
@@ -110,7 +103,6 @@ private val PATTERN_NVIDIA = Regex("nvidia")
 private val PATTERN_PPIO = Regex("ppio|派欧")
 private val PATTERN_VERCEL = Regex("vercel")
 private val PATTERN_GROQ = Regex("groq")
-private val PATTERN_TOKENPONY = Regex("tokenpony|小马算力")
 private val PATTERN_LING = Regex("ling|ring|百灵")
 private val PATTERN_MIMO = Regex("mimo|xiaomi|小米")
 private val PATTERN_LONGCAT = Regex("longcat")

@@ -716,10 +716,11 @@ class SettingsStore(
             // longer shipped in DEFAULT_PROVIDERS — CLmA is not the official service and takes
             // no sponsorship. Fresh installs never seed them; existing installs already have
             // them, so drop only the rows the user never touched (still disabled, no API key,
-            // no models) and leave a configured one be.
+            // no models) and leave a configured one be. Matched by id, not by `builtIn`: rows
+            // imported from an upstream backup keep their id but not the built-in flag, and
+            // those are exactly the rows the user sees sitting in the list.
             providers.removeAll { provider ->
-                provider.builtIn &&
-                    provider.id in REMOVED_SPONSORED_PROVIDER_IDS &&
+                provider.id in REMOVED_SPONSORED_PROVIDER_IDS &&
                     !provider.enabled &&
                     provider.models.isEmpty() &&
                     when (provider) {
@@ -805,6 +806,12 @@ class SettingsStore(
             }
             val newAutoEnabled = it.autoEnabledDefaultSkills + DEFAULT_AUTO_ENABLED_SKILLS
             val ttsProviders = it.ttsProviders.ifEmpty { DEFAULT_TTS_PROVIDERS }.toMutableList()
+            // 与上面同一轮清理：AiHubMix 语音预设不再预置，老用户里没配过 Key 的那条直接删掉。
+            ttsProviders.removeAll { provider ->
+                provider is TTSProviderSetting.OpenAI &&
+                    provider.id == REMOVED_SPONSORED_TTS_ID &&
+                    provider.apiKey.isBlank()
+            }
             DEFAULT_TTS_PROVIDERS.forEach { defaultTTSProvider ->
                 if (ttsProviders.none { provider -> provider.id == defaultTTSProvider.id }) {
                     ttsProviders.add(defaultTTSProvider.copyProvider())
@@ -1688,14 +1695,10 @@ private val DEFAULT_TTS_PROVIDERS = listOf(
         id = DEFAULT_SYSTEM_TTS_ID,
         name = "",
     ),
-    TTSProviderSetting.OpenAI(
-        id = Uuid.parse("e36b22ef-ca82-40ab-9e70-60cad861911c"),
-        name = "AiHubMix",
-        baseUrl = "https://aihubmix.com/v1",
-        model = "gpt-4o-mini-tts",
-        voice = "alloy",
-    )
 )
+
+/** AiHubMix（返利中转）的语音预设 id，老版本装过它；残留行由一次性清理删掉。 */
+private val REMOVED_SPONSORED_TTS_ID = Uuid.parse("e36b22ef-ca82-40ab-9e70-60cad861911c")
 
 internal val DEFAULT_ASSISTANTS_IDS = DEFAULT_ASSISTANTS.map { it.id }
 
