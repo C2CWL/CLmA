@@ -3295,6 +3295,8 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="doctor_fix_browser_not_writable_2">目录已创建但仍不可写 — 请检查存储权限。</string>
   <string name="doctor_fix_browser_mkdirs_failed_2">mkdirs() 返回 false；底层存储可能是只读的。</string>
   <string name="doctor_detail_cache_using">缓存占用 %1$s。</string>
+  <string name="doctor_check_storage_breakdown">分类存储占用</string>
+  <string name="doctor_detail_storage_breakdown">数据库 %1$s · 图片 %2$s · 视频 %3$s · 上传 %4$s · 工作区 %5$s · 记忆历史 %6$s · 缓存 %7$s · 合计 %8$s。仅统计应用私有目录，公共存储中的文件不计入。</string>
   <string name="doctor_detail_cache_clear_hint">建议清理 — 已超过 200 MB。</string>
   <string name="doctor_detail_cache_normal">处于正常范围。</string>
   <string name="doctor_fix_cache_freed">已释放 %1$s。</string>

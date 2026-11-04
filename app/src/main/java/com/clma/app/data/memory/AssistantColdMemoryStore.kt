@@ -32,19 +32,24 @@ internal class AssistantColdMemoryStore(
         val file = child(name)
         val before = file.takeIf { it.isFile }?.readText()
         if (before != content) file.writeText(content)
-        record(if (before == content) "no_op" else if (before == null) "create" else "edit", before?.length ?: 0, content.length)
+        record(name, if (before == content) "no_op" else if (before == null) "create" else "edit", before?.length ?: 0, content.length)
     }
 
     fun delete(name: String): Boolean {
         val file = child(name)
         val before = file.takeIf { it.isFile }?.readText()?.length ?: 0
         val deleted = file.delete()
-        record(if (deleted) "delete" else "no_op", before, if (deleted) 0 else before)
+        record(name, if (deleted) "delete" else "no_op", before, if (deleted) 0 else before)
         return deleted
     }
 
-    private fun record(action: String, before: Int, after: Int) {
-        history?.record(MemoryOperation(System.currentTimeMillis(), scope, "cold", action, "tool", beforeChars = before, afterChars = after))
+    private fun record(name: String, action: String, before: Int, after: Int) {
+        history?.record(
+            MemoryOperation(
+                System.currentTimeMillis(), scope, "cold", action, "tool",
+                beforeChars = before, afterChars = after, name = name,
+            )
+        )
     }
 
     private fun child(name: String): File {
