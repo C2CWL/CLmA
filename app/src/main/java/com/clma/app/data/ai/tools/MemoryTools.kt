@@ -3,6 +3,7 @@ package com.clma.app.data.ai.tools
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.add
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
@@ -13,12 +14,15 @@ import kotlinx.serialization.json.put
 import com.clma.ai.core.InputSchema
 import com.clma.ai.core.Tool
 import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.memory.findMemoryDuplicate
 import com.clma.app.data.model.AssistantMemory
 import com.clma.app.utils.toLocalString
 import java.time.LocalDate
+import kotlin.math.round
 
 fun buildMemoryTools(
     json: Json,
+    existing: suspend () -> List<AssistantMemory>,
     onCreation: suspend (String) -> AssistantMemory,
     onUpdate: suspend (Int, String) -> AssistantMemory,
     onDelete: suspend (Int) -> Unit
@@ -37,6 +41,10 @@ fun buildMemoryTools(
             Do not show memory content directly in the conversation unless the user explicitly asks.
             Today is ${LocalDate.now().toLocalString(true)}.
             Similar memories should be merged; prefer updating existing records.
+            A `create` whose text is close to an existing record is not stored: it returns
+            {"result":"merge_required","candidates":[{"id":3,"similarity":0.9,"content":"…"}]}.
+            In that case call `edit` with the merged text on the returned id. Pass `force: true` only
+            when the two facts must stay separate records.
 
             Examples:
             {"action":"create","content":"User prefers brief replies and is more active on weekends."}
@@ -66,6 +74,10 @@ fun buildMemoryTools(
                         put("type", "string")
                         put("description", "The content of the memory record (required for create/edit)")
                     })
+                    put("force", buildJsonObject {
+                        put("type", "boolean")
+                        put("description", "create only: store even when a near-duplicate record exists")
+                    })
                 },
                 required = listOf("action")
             )
@@ -76,7 +88,28 @@ fun buildMemoryTools(
             val payload = when (action) {
                 "create" -> {
                     val content = params["content"]?.jsonPrimitive?.contentOrNull ?: error("content is required")
-                    json.encodeToJsonElement(AssistantMemory.serializer(), onCreation(content))
+                    val force = params["force"]?.jsonPrimitive?.booleanOrNull ?: false
+                    // 近重复先拦下：命中时什么都不写，只把候选回给模型去合并。
+                    val duplicate = if (force) null else findMemoryDuplicate(content, existing())
+                    if (duplicate != null) {
+                        buildJsonObject {
+                            put("result", "merge_required")
+                            put("candidates", buildJsonArray {
+                                add(buildJsonObject {
+                                    put("id", duplicate.memory.id)
+                                    put("similarity", round(duplicate.similarity * 100) / 100)
+                                    put("content", duplicate.memory.content)
+                                })
+                            })
+                            put(
+                                "hint",
+                                "Nothing was stored. Call memory_tool action=edit with the returned id and the " +
+                                    "merged text, or pass force=true to keep this as a separate record."
+                            )
+                        }
+                    } else {
+                        json.encodeToJsonElement(AssistantMemory.serializer(), onCreation(content))
+                    }
                 }
 
                 "edit" -> {

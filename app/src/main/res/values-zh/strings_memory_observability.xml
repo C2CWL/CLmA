@@ -6,4 +6,5 @@
     <string name="chat_outline_title">会话大纲</string>
     <string name="chat_outline_position">第 %1$d / %2$d 条</string>
     <string name="chat_outline_return">回到原位置</string>
+    <string name="chat_outline_turn">第 %1$d 轮</string>
 </resources>

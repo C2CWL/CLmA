@@ -6,4 +6,5 @@
     <string name="chat_outline_title">Conversation outline</string>
     <string name="chat_outline_position">Message %1$d of %2$d</string>
     <string name="chat_outline_return">Back to previous position</string>
+    <string name="chat_outline_turn">Turn %1$d</string>
 </resources>

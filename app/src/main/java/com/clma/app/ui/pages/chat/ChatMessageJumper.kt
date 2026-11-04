@@ -125,6 +125,17 @@ internal fun BoxScope.MessageJumper(
     groups: List<AutoCompactionMessageGroup>,
 ) {
     val messageCount = groups.size
+    // 大纲按整轮分组：每条 user 消息开一轮，assistant/tool 条目归入该轮。
+    val outline = remember(groups) {
+        buildChatOutline(
+            groups.map { group ->
+                ChatOutlineItem(
+                    role = group.displayMessage.role,
+                    text = group.displayMessage.navigationPreview(),
+                )
+            }
+        )
+    }
     val scope = rememberCoroutineScope()
     val thresholdPx = with(LocalDensity.current) { PreviousSnapThreshold.roundToPx() }
     var showOutline by remember(conversationId) { mutableStateOf(false) }
@@ -183,10 +194,8 @@ internal fun BoxScope.MessageJumper(
             text = {
                 LazyColumn(state = outlineState, modifier = Modifier.heightIn(max = 420.dp)) {
                     itemsIndexed(groups, key = { _, group -> group.id }) { index, group ->
-                        Text(
-                            text = "${index + 1}. ${group.displayMessage.role}: ${group.displayMessage.navigationPreview()}",
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
+                        val entry = outline.getOrNull(index)
+                        Column(
                             modifier = Modifier.fillMaxWidth()
                                 .semantics { selected = index == currentIndex }
                                 .clickable(role = Role.Button) {
@@ -198,9 +207,24 @@ internal fun BoxScope.MessageJumper(
                                     }
                                 }
                                 .padding(vertical = 10.dp),
-                            style = if (index == currentIndex) MaterialTheme.typography.titleSmall
-                                else MaterialTheme.typography.bodyMedium,
-                        )
+                        ) {
+                            // 每轮的第一条前面加轮次标题，后续条目缩进，读起来是一棵树。
+                            if (entry?.isTurnStart == true) {
+                                Text(
+                                    text = stringResource(R.string.chat_outline_turn, entry.turn),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            Text(
+                                text = "${index + 1}. ${group.displayMessage.role}: ${group.displayMessage.navigationPreview()}",
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = if (entry?.isTurnStart == true) Modifier else Modifier.padding(start = 16.dp),
+                                style = if (index == currentIndex) MaterialTheme.typography.titleSmall
+                                    else MaterialTheme.typography.bodyMedium,
+                            )
+                        }
                     }
                 }
             },

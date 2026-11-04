@@ -52,6 +52,7 @@ class ChatToolFactory(
             addAll(
                 buildMemoryTools(
                     json = json,
+                    existing = { memoryRepository.getMemoriesOfAssistant(memoryAssistantId) },
                     onCreation = { content -> memoryRepository.addMemory(memoryAssistantId, content) },
                     onUpdate = { id, content -> memoryRepository.updateContent(id, content) },
                     onDelete = { id -> memoryRepository.deleteMemory(id) },
