@@ -1,0 +1,26 @@
+# One person, one name. Only the maintainer's own identities are folded
+# here; upstream authors (RikkaHub and earlier contributors) are deliberately
+# left as they are.
+#
+# The two noreply addresses below were attributed by GitHub to accounts the
+# maintainer does not control (208205914 -> CryptoHaven254, and the bare
+# "luchen" address), even though every commit using them was authored under
+# the name C2CWL from the maintainer's own machine. Mapping them here fixes
+# how git itself reports authorship; it does not change the GitHub account
+# GitHub attached to those commits.
+
+C2CWL <288448820+C2CWL@users.noreply.github.com> <LuChen.687@proton.me>
+C2CWL <288448820+C2CWL@users.noreply.github.com> <c2cwl@users.noreply.github.com>
+C2CWL <288448820+C2CWL@users.noreply.github.com> <C2CWL@users.noreply.github.com>
+C2CWL <288448820+C2CWL@users.noreply.github.com> <clma@users.noreply.github.com>
+C2CWL <288448820+C2CWL@users.noreply.github.com> <contact@c2cwl.com>
+C2CWL <288448820+C2CWL@users.noreply.github.com> <208205914+C2CWL@users.noreply.github.com>
+C2CWL <288448820+C2CWL@users.noreply.github.com> <luchen@users.noreply.github.com>
+
+C2CWL <288448820+C2CWL@users.noreply.github.com> CLmA Bot <bot@clma.app>
+C2CWL <288448820+C2CWL@users.noreply.github.com> CLmA Bot <bot@clma.local>
+C2CWL <288448820+C2CWL@users.noreply.github.com> CLmA Agent <agent@clma.local>
+C2CWL <288448820+C2CWL@users.noreply.github.com> CLmA Agent <agent@clma.dev>
+C2CWL <288448820+C2CWL@users.noreply.github.com> clma-bot <clma-bot@users.noreply.github.com>
+C2CWL <288448820+C2CWL@users.noreply.github.com> clma-dev <dev@clma.local>
+C2CWL <288448820+C2CWL@users.noreply.github.com> CLmA Assistant <clma-assistant@users.noreply.github.com>
