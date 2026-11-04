@@ -84,6 +84,7 @@ import kotlin.time.Clock
 private const val TAG = "ClaudeProvider"
 private const val ANTHROPIC_VERSION = "2023-06-01"
 private const val CLAUDE_PAUSE_TURN = "pause_turn"
+private val EMPTY_TOOL_INPUT = JsonObject(emptyMap())
 private const val MAX_PAUSE_TURN_CONTINUATIONS = 5
 
 internal suspend fun generateClaudeWithPauseTurn(
@@ -774,12 +775,12 @@ class ClaudeProvider(private val client: OkHttpClient, context: Context? = null)
         return buildList {
             val rawCall = metadata?.call.takeIf { protocol == ServerToolProtocol.ANTHROPIC_MESSAGES }
             add(rawCall?.let {
-                if (input == null) it else JsonObject(it + mapOf("input" to input))
+                JsonObject(it + mapOf("input" to (input ?: EMPTY_TOOL_INPUT)))
             } ?: buildJsonObject {
                     put("type", "server_tool_use")
                     put("id", toolCallId)
                     put("name", toolName)
-                    input?.let { put("input", it) }
+                    put("input", input ?: EMPTY_TOOL_INPUT)
                 })
             val rawResult = metadata?.result.takeIf { protocol == ServerToolProtocol.ANTHROPIC_MESSAGES }
             if (isFinished && (output != null || rawResult != null)) {
@@ -813,13 +814,19 @@ class ClaudeProvider(private val client: OkHttpClient, context: Context? = null)
             }
         }
 
-        is UIMessagePart.Reasoning -> buildJsonObject {
-            put("type", "thinking")
-            put("thinking", reasoning)
-            metadataAs<ClaudeReasoningMetadata>()?.signature?.let { put("signature", it) }
-        }
+        is UIMessagePart.Reasoning -> toThinkingBlock()
 
         else -> null
+    }
+
+    private fun UIMessagePart.Reasoning.toThinkingBlock(): JsonObject? {
+        val signature = metadataAs<ClaudeReasoningMetadata>()?.signature?.takeIf { it.isNotBlank() }
+            ?: return null
+        return buildJsonObject {
+            put("type", "thinking")
+            put("thinking", reasoning)
+            put("signature", signature)
+        }
     }
 
     private fun UIMessagePart.Tool.toToolUseBlock() = buildJsonObject {
