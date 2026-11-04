@@ -146,7 +146,13 @@ object Logging {
      */
     fun logRequest(entry: LogEntry.RequestLog, force: Boolean = false) {
         if (!force && !requestLoggingEnabled) return
-        addLog(entry)
+        addLog(entry.copy(
+            url = DiagnosticRedactor.url(entry.url),
+            requestHeaders = DiagnosticRedactor.headers(entry.requestHeaders),
+            responseHeaders = DiagnosticRedactor.headers(entry.responseHeaders),
+            requestBody = entry.requestBody?.let(DiagnosticRedactor::body),
+            error = entry.error?.let(DiagnosticRedactor::text),
+        ))
     }
 
     fun isRequestLoggingEnabled(): Boolean = requestLoggingEnabled
@@ -162,16 +168,20 @@ object Logging {
     }
 
     private fun addLog(entry: LogEntry) {
+        val safeEntry = when (entry) {
+            is LogEntry.TextLog -> entry.copy(message = DiagnosticRedactor.text(entry.message))
+            is LogEntry.RequestLog -> entry
+        }
         synchronized(recentLogs) {
-            recentLogs.add(0, entry)
+            recentLogs.add(0, safeEntry)
             if (recentLogs.size > MAX_RECENT_LOGS) {
                 recentLogs.removeLastOrNull()
             }
             enforceBodyBudget()
         }
         _version.update { it + 1 }
-        if (entry.level >= fileLogLevel) {
-            appendToFile(entry)
+        if (safeEntry.level >= fileLogLevel) {
+            appendToFile(safeEntry)
         }
     }
 
@@ -235,7 +245,7 @@ object Logging {
         val file = logDir?.let { File(it, LOG_FILE_NAME) }
         if (file != null && file.exists()) {
             builder.appendLine("# On-disk log (oldest first)")
-            runCatching { builder.append(file.readText()) }
+            runCatching { builder.append(DiagnosticRedactor.text(file.readText())) }
         }
         builder.appendLine()
         builder.appendLine("# In-memory log (newest first)")
@@ -246,7 +256,7 @@ object Logging {
     /**
      * On-disk lines written by earlier app sessions (before the last [init]), newest first.
      * Lines from the current session are left out: they are already in [getRecentLogs].
-     * Lines on disk were redacted when written, so nothing extra is needed here.
+     * Apply current redaction rules when reading too, including logs from older versions.
      *
      * Does file I/O (up to a few MB): call it off the main thread.
      */
@@ -263,7 +273,7 @@ object Logging {
                 runCatching { text.append(readPrefix(file, limit)) }
             }
         }
-        return text.lineSequence().filter { it.isNotBlank() }.toList().asReversed()
+        return DiagnosticRedactor.text(text.toString()).lineSequence().filter { it.isNotBlank() }.toList().asReversed()
     }
 
     fun clear() {
@@ -312,10 +322,10 @@ object Logging {
         return when (entry) {
             is LogEntry.TextLog -> "$time ${entry.level} [${entry.tag}] ${entry.message}"
             is LogEntry.RequestLog -> buildString {
-                append("$time ${entry.level} [${entry.tag}] ${entry.method} ${redact(entry.url)}")
+                append("$time ${entry.level} [${entry.tag}] ${entry.method} ${DiagnosticRedactor.url(entry.url)}")
                 entry.responseCode?.let { append(" -> $it") }
                 entry.durationMs?.let { append(" (${it}ms)") }
-                entry.error?.let { append(" error=${redact(it)}") }
+                entry.error?.let { append(" error=${DiagnosticRedactor.text(it)}") }
             }
         }
     }
@@ -349,14 +359,4 @@ object Logging {
         file.renameTo(File(dir, "$LOG_FILE_NAME.1"))
         rotationsThisSession++
     }
-
-    /**
-     * Strip credentials before anything hits disk. Logs get copied into bug reports and shared
-     * with strangers; an API key leaking through `Authorization: Bearer ...` is the classic way
-     * that happens.
-     */
-    private fun redact(text: String): String = text
-        .replace(Regex("""(?i)(bearer\s+)[A-Za-z0-9\-._~+/]{8,}=*"""), "$1***")
-        .replace(Regex("""(?i)(sk-[A-Za-z0-9\-_]{8,})"""), "sk-***")
-        .replace(Regex("""(?i)((?:api[_-]?key|token|secret|password)\s*[=:]\s*)[^\s&,"']+"""), "$1***")
 }

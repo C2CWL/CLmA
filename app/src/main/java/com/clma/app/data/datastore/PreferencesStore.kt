@@ -1352,6 +1352,8 @@ const val DEFAULT_CLEAN_LAYOUT_OPACITY = 0.4f
 
 @Serializable
 data class DisplaySetting(
+    /** Bypass UI token batching; Markdown parsing stays off the main thread. */
+    val fastStreamingOutput: Boolean = false,
     val userAvatar: Avatar = Avatar.Dummy,
     val userNickname: String = "",
     val useAppIconStyleLoadingIndicator: Boolean = true,

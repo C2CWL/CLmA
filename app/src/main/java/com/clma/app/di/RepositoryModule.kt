@@ -29,7 +29,10 @@ val repositoryModule = module {
     }
 
     single {
-        MemoryRepository(get())
+        val context: Context = get()
+        MemoryRepository(get(), com.clma.app.data.memory.MemoryOperationHistory(
+            File(context.filesDir, "memory_history/operations.json"),
+        ))
     }
 
     single {

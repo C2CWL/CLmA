@@ -158,11 +158,14 @@ class ClaudeRequestMessageTest {
     }
 
     @Test
-    fun `thinking blocks should be included in assistant content`() {
+    fun `signed thinking blocks should be included in assistant content`() {
         val assistantMessage = UIMessage(
             role = MessageRole.ASSISTANT,
             parts = listOf(
-                UIMessagePart.Reasoning(reasoning = "Let me think about this..."),
+                UIMessagePart.Reasoning(
+                    reasoning = "Let me think about this...",
+                    metadata = ClaudeReasoningMetadata(signature = "signature_1").toMetadata(),
+                ),
                 UIMessagePart.Text("Here is my response")
             )
         )
@@ -196,6 +199,26 @@ class ClaudeRequestMessageTest {
         }?.jsonObject
         assertEquals("Let me think about this...",
             thinkingBlock?.get("thinking")?.jsonPrimitive?.content)
+        assertEquals("signature_1", thinkingBlock?.get("signature")?.jsonPrimitive?.content)
+    }
+
+    @Test
+    fun `thinking without a signature should be omitted from replay`() {
+        val message = UIMessage(
+            role = MessageRole.ASSISTANT,
+            parts = listOf(
+                UIMessagePart.Reasoning(
+                    reasoning = "Unsigned thinking",
+                    metadata = ClaudeReasoningMetadata(signature = " ").toMetadata(),
+                ),
+                UIMessagePart.Text("Visible answer"),
+            ),
+        )
+
+        val content = invokeBuildMessages(listOf(message)).single().jsonObject["content"]?.jsonArray
+
+        assertEquals(listOf("text"), content?.map { it.jsonObject["type"]?.jsonPrimitive?.content })
+        assertEquals("Visible answer", content?.single()?.jsonObject?.get("text")?.jsonPrimitive?.content)
     }
 
     @Test

@@ -602,6 +602,11 @@ private fun ChatListNormal(
                 state = state,
                 // 消息分组是列表的前 N 项，上一条/下一条按它们跳。
                 messageCount = displayGroups.size,
+                outline = remember(displayGroups) {
+                    displayGroups.map { group ->
+                        "${group.displayMessage.role}: ${group.displayMessage.toText().trim().take(120).ifBlank { "[…]" }}"
+                    }
+                },
             )
 
             // Suggestion

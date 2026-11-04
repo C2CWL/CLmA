@@ -262,8 +262,11 @@ val dataSourceModule = module {
                 // HEADERS-level logging prints Authorization: Bearer <api-key> to logcat.
                 // Debug-only so release builds never leak provider keys to logcat.
                 if (BuildConfig.DEBUG) {
-                    addInterceptor(HttpLoggingInterceptor().apply {
-                        level = HttpLoggingInterceptor.Level.HEADERS
+                    addInterceptor(HttpLoggingInterceptor { line ->
+                        android.util.Log.d("HTTP", com.clma.common.android.DiagnosticRedactor.text(line))
+                    }.apply {
+                        // Header names are provider-defined; do not log their values at all.
+                        level = HttpLoggingInterceptor.Level.BASIC
                     })
                 }
             }

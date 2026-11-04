@@ -152,6 +152,34 @@ class ClaudeServerToolTest {
     }
 
     @Test
+    fun `server tool history without input should replay an empty object`() {
+        val call = buildJsonObject {
+            put("type", "server_tool_use")
+            put("id", "srvtoolu_1")
+            put("name", "web_search")
+        }
+        val message = UIMessage(
+            role = MessageRole.ASSISTANT,
+            parts = listOf(UIMessagePart.ServerTool(
+                toolCallId = "srvtoolu_1",
+                toolName = "web_search",
+                status = ServerToolStatus.COMPLETED,
+                input = null,
+                metadata = ServerToolMetadata(
+                    protocol = ServerToolProtocol.ANTHROPIC_MESSAGES,
+                    call = call,
+                ).toMetadata(),
+            )),
+        )
+
+        val messages = buildMessages(listOf(UIMessage.user("search"), message))
+        val replayedCall = messages.last().jsonObject["content"]?.jsonArray?.single()?.jsonObject
+
+        assertEquals("server_tool_use", replayedCall?.get("type")?.jsonPrimitive?.content)
+        assertEquals(buildJsonObject {}, replayedCall?.get("input"))
+    }
+
+    @Test
     fun `parallel server tool history should replay all calls before results`() {
         val content = buildJsonArray {
             add(serverToolUse(id = "srvtoolu_1"))

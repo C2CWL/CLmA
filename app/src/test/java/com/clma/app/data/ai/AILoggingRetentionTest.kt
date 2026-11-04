@@ -1,9 +1,6 @@
 package com.clma.app.data.ai
 
 import com.clma.ai.core.MessageRole
-import com.clma.ai.provider.Model
-import com.clma.ai.provider.ProviderSetting
-import com.clma.ai.provider.TextGenerationParams
 import com.clma.ai.ui.UIMessage
 import com.clma.ai.ui.UIMessagePart
 import com.clma.app.data.datastore.AiLogLevel
@@ -25,16 +22,17 @@ class AILoggingRetentionTest {
     )
 
     private val log = AILogging.Generation(
-        params = TextGenerationParams(model = Model(modelId = "m")),
+        modelId = "m",
         messages = messages,
-        providerSetting = ProviderSetting.OpenAI(),
         stream = true,
+        context = ContextInspection.capture(messages, emptyList(), ""),
     )
 
     @Test
     fun `info keeps only the summary, not the request messages`() {
         val kept = log.retainedFor(AiLogLevel.INFO) as AILogging.Generation
         assertTrue(kept.messages.isEmpty())
+        assertTrue(kept.context!!.sections.all { it.preview == null })
         assertEquals(
             GenerationSummary(
                 messageCount = 2,
@@ -49,9 +47,10 @@ class AILoggingRetentionTest {
     }
 
     @Test
-    fun `debug keeps the full messages as well`() {
+    fun `debug keeps bounded previews but never raw messages`() {
         val kept = log.retainedFor(AiLogLevel.DEBUG) as AILogging.Generation
-        assertEquals(messages, kept.messages)
+        assertTrue(kept.messages.isEmpty())
+        assertTrue(kept.context!!.sections.any { it.preview != null })
         assertEquals(2, kept.summary?.messageCount)
     }
 }
