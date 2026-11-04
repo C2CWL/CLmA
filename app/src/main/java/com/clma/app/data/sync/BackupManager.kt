@@ -37,6 +37,7 @@ class BackupManager(
     private val json: Json,
 ) {
     private val restoreMutex = Mutex()
+    val localSnapshots by lazy { LocalSnapshotManager(context, this, settingsStore) }
 
     /** Estimated (pre-compression) size of each selectable [BackupItem]. Runs on the IO dispatcher. */
     suspend fun estimateItemSizes(): Map<BackupItem, Long> = withContext(Dispatchers.IO) {
@@ -235,6 +236,8 @@ class BackupManager(
                         // Persist the migrated value once, including generated IDs, for restart/retry consistency.
                         PendingRestore.writeDurably(settingsFile, json.encodeToString(settings))
                     }
+                    currentCoroutineContext().ensureActive()
+                    localSnapshots.beforeRestore(selected)
                     currentCoroutineContext().ensureActive()
                     restore.publish(staging)
                 } finally {

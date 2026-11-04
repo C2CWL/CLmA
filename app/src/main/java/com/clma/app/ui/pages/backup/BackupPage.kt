@@ -27,6 +27,7 @@ import kotlinx.coroutines.launch
 import com.clma.app.R
 import com.clma.app.ui.components.nav.BackButton
 import com.clma.app.ui.pages.backup.components.BackupDialog
+import com.clma.app.ui.pages.backup.tabs.LocalSnapshotsTab
 import com.clma.app.ui.pages.backup.tabs.ImportExportTab
 import com.clma.app.ui.pages.backup.tabs.ReminderTab
 import com.clma.app.ui.pages.backup.tabs.S3Tab
@@ -36,7 +37,7 @@ import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun BackupPage(initialTab: Int = 0, vm: BackupVM = koinViewModel()) {
-    val pagerState = rememberPagerState(initialPage = initialTab.coerceIn(0, 3)) { 4 }
+    val pagerState = rememberPagerState(initialPage = initialTab.coerceIn(0, 4)) { 5 }
     val scope = rememberCoroutineScope()
     var showRestartDialog by remember { mutableStateOf(false) }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -87,8 +88,18 @@ fun BackupPage(initialTab: Int = 0, vm: BackupVM = koinViewModel()) {
                     onClick = { scope.launch { pagerState.animateScrollToPage(3) } },
                     text = { Text(stringResource(R.string.backup_page_reminder)) }
                 )
+                Tab(
+                    selected = pagerState.currentPage == 4,
+                    onClick = { scope.launch { pagerState.animateScrollToPage(4) } },
+                    text = { Text(stringResource(R.string.local_snapshot_title)) }
+                )
             }
 
+            Text(
+                text = stringResource(R.string.local_snapshot_restore_notice),
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+            )
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier
@@ -120,6 +131,8 @@ fun BackupPage(initialTab: Int = 0, vm: BackupVM = koinViewModel()) {
                     3 -> {
                         ReminderTab(vm = vm)
                     }
+
+                    4 -> LocalSnapshotsTab(onShowRestartDialog = { showRestartDialog = true })
                 }
             }
         }
