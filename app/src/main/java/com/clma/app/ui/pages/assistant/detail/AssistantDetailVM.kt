@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -82,6 +83,17 @@ class AssistantDetailVM(
         .stateIn(
             scope = viewModelScope, started = SharingStarted.Eagerly, initialValue = emptyList()
         )
+
+    val memoryHistory = combine(assistant, memoryRepository.history.entries) { current, entries ->
+        val hotScope = if (current.useGlobalMemory) MemoryRepository.GLOBAL_MEMORY_ID else assistantId.toString()
+        val coldDir = com.clma.app.data.ai.tools.ColdMemoryRules.normalizeDir(current.coldMemoryDir ?: "memory")
+        entries.filter {
+            (it.category == "hot" && it.scope == hotScope) ||
+                (it.category == "cold" && coldDir != null && it.scope == "$assistantId/$coldDir")
+        }.asReversed()
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val memoryHistoryPersistenceFailed = memoryRepository.history.persistenceFailed
 
     val providers = settingsStore
         .settingsFlow
@@ -248,7 +260,8 @@ class AssistantDetailVM(
             }
             memoryRepository.addMemory(
                 assistantId = memoryAssistantId,
-                content = memory.content
+                content = memory.content,
+                source = "manual",
             )
         }
     }
@@ -256,7 +269,7 @@ class AssistantDetailVM(
     fun updateMemory(memory: AssistantMemory) {
         viewModelScope.launch {
             runCatching {
-                memoryRepository.updateContent(id = memory.id, content = memory.content)
+                memoryRepository.updateContent(id = memory.id, content = memory.content, source = "manual")
             }.onFailure {
                 // The record may have been deleted (e.g. by the memory tool) between opening
                 // the editor and saving; don't crash the VM scope, the update is moot.
@@ -267,7 +280,7 @@ class AssistantDetailVM(
 
     fun deleteMemory(memory: AssistantMemory) {
         viewModelScope.launch {
-            memoryRepository.deleteMemory(id = memory.id)
+            memoryRepository.deleteMemory(id = memory.id, source = "manual")
         }
     }
 

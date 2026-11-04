@@ -45,7 +45,7 @@ class ProotShellRunner(
         patcher.patch(context.linuxDir)
         val process = newProcessBuilder(context, proot, loader).start()
 
-        return process.readResult(context.timeoutMillis, context.stdin)
+        return process.readResult(context.timeoutMillis, context.stdin, context.progress)
     }
 
     override fun start(context: WorkspaceShellContext): Process {

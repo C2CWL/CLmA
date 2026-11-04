@@ -1577,43 +1577,79 @@ class GenerationLoop(
                             // wall-clock envelope instead of even attempting.
                             val remainingMs = ToolRuntimeLimits.turnBudgetMs -
                                 (android.os.SystemClock.elapsedRealtime() - turnStartMs)
-                            val result = if (remainingMs <= 0L) {
-                                Log.w(TAG, "generateText: ${toolDef.name} skipped — wall-clock budget already exceeded")
-                                listOf(UIMessagePart.Text(json.encodeToString(buildJsonObject {
-                                    put("error", JsonPrimitive("tool_cancelled_wall_clock"))
-                                    put("detail", JsonPrimitive("turn budget exceeded before tool started"))
-                                })))
-                            } else if (assistant.enableToolExecutionRetry &&
-                                ToolExecutionRetryPolicy.isIdempotentReadOnly(toolDef.name, args)
-                            ) {
-                                executeReadOnlyToolWithRetry(
-                                    toolDef = toolDef,
-                                    args = args,
-                                    turnStartMs = turnStartMs,
-                                    firstAttemptRemainingMs = remainingMs,
-                                )
-                            } else {
-                                withTimeoutOrNull(remainingMs) {
-                                    com.clma.app.connectors.ConnectorWriteApproval.execute(
-                                        tool = toolDef,
-                                        args = args,
-                                        conversationId = conversationId?.toString(),
-                                        toolCallId = tool.toolCallId,
-                                        approved = tool.approvalState is ToolApprovalState.Approved,
-                                        headless = conversationId == null ||
-                                            com.clma.app.data.ai.tools.HeadlessConversations.isHeadless(conversationId),
-                                    )
-                                }
-                                    ?: run {
-                                        Log.w(TAG, "generateText: ${toolDef.name} cancelled — wall-clock budget exhausted mid-execution")
-                                        listOf(UIMessagePart.Text(json.encodeToString(buildJsonObject {
-                                            put("error", JsonPrimitive("tool_cancelled_wall_clock"))
-                                            put(
-                                                "detail",
-                                                JsonPrimitive("tool execution exceeded the ${ToolRuntimeLimits.turnBudgetMs / 1000}s turn budget")
+                            val result = kotlinx.coroutines.withContext(com.clma.app.data.ai.tools.ToolCallId(tool.toolCallId)) {
+                                val running = kotlinx.coroutines.CompletableDeferred<List<UIMessagePart>>()
+                                val worker = launch {
+                                    try {
+                                        val output = if (remainingMs <= 0L) {
+                                            Log.w(TAG, "generateText: ${toolDef.name} skipped — wall-clock budget already exceeded")
+                                            listOf(UIMessagePart.Text(json.encodeToString(buildJsonObject {
+                                                put("error", JsonPrimitive("tool_cancelled_wall_clock"))
+                                                put("detail", JsonPrimitive("turn budget exceeded before tool started"))
+                                            })))
+                                        } else if (assistant.enableToolExecutionRetry &&
+                                            ToolExecutionRetryPolicy.isIdempotentReadOnly(toolDef.name, args)
+                                        ) {
+                                            executeReadOnlyToolWithRetry(
+                                                toolDef = toolDef,
+                                                args = args,
+                                                turnStartMs = turnStartMs,
+                                                firstAttemptRemainingMs = remainingMs,
                                             )
-                                        })))
+                                        } else {
+                                            withTimeoutOrNull(remainingMs) {
+                                                com.clma.app.connectors.ConnectorWriteApproval.execute(
+                                                    tool = toolDef,
+                                                    args = args,
+                                                    conversationId = conversationId?.toString(),
+                                                    toolCallId = tool.toolCallId,
+                                                    approved = tool.approvalState is ToolApprovalState.Approved,
+                                                    headless = conversationId == null ||
+                                                        com.clma.app.data.ai.tools.HeadlessConversations.isHeadless(conversationId),
+                                                )
+                                            } ?: run {
+                                                Log.w(TAG, "generateText: ${toolDef.name} cancelled — wall-clock budget exhausted mid-execution")
+                                                listOf(UIMessagePart.Text(json.encodeToString(buildJsonObject {
+                                                    put("error", JsonPrimitive("tool_cancelled_wall_clock"))
+                                                    put(
+                                                        "detail",
+                                                        JsonPrimitive("tool execution exceeded the ${ToolRuntimeLimits.turnBudgetMs / 1000}s turn budget")
+                                                    )
+                                                })))
+                                            }
+                                        }
+                                        running.complete(output)
+                                    } catch (failure: Throwable) {
+                                        running.completeExceptionally(failure)
                                     }
+                                }
+                                try {
+                                    var published: String? = null
+                                    while (isActive && !running.isCompleted) {
+                                        val snapshot = toolDef.progress?.let { runCatching { it() }.getOrNull() }
+                                        val lastMsg = messages.lastOrNull()
+                                        if (snapshot != null && snapshot != published && lastMsg != null) {
+                                            published = snapshot
+                                            val meta = kotlinx.serialization.json.Json.parseToJsonElement(snapshot) as? kotlinx.serialization.json.JsonObject
+                                            val updated = lastMsg.parts.map { part ->
+                                                if (part is UIMessagePart.Tool &&
+                                                    part.toolCallId == tool.toolCallId &&
+                                                    part.output.isEmpty()
+                                                ) part.copy(metadata = meta) else part
+                                            }
+                                            if (updated != lastMsg.parts) {
+                                                messages = messages.dropLast(1) + lastMsg.copy(parts = updated)
+                                                send(GenerationChunk.Messages(messages))
+                                            }
+                                        }
+                                        if (running.isCompleted) break
+                                        delay(1_000)
+                                    }
+                                    worker.join()
+                                    running.await()
+                                } finally {
+                                    worker.cancel()
+                                }
                             }
                             val adjustedResult = if (loopDecision.softNudge != null) {
                                 result + UIMessagePart.Text(
@@ -1637,6 +1673,7 @@ class GenerationLoop(
                             // stay in conversation history (and thus never re-enter the next
                             // provider request even if a code path forgets to redact on encode).
                             executedTools += markedTool.copy(
+                                metadata = null,
                                 input = redactSecrets(markedTool.inputAsJson()).toString(),
                                 output = maybeTruncateToolOutput(
                                     toolCallId = tool.toolCallId,
