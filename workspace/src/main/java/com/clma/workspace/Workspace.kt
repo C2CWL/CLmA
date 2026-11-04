@@ -95,4 +95,4 @@ class ForegroundCommandProgress {
     companion object {
         const val LIMIT = 8 * 1024
     }
-}\n
+}
