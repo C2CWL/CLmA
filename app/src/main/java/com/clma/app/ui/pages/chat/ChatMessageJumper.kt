@@ -114,9 +114,11 @@ internal fun BoxScope.MessageJumper(
     onLeft: Boolean,
     state: LazyListState,
     messageCount: Int,
+    outline: List<String>,
 ) {
     val scope = rememberCoroutineScope()
     val thresholdPx = with(LocalDensity.current) { PreviousSnapThreshold.roundToPx() }
+    var showOutline by remember { mutableStateOf(false) }
     var expanded by remember { mutableStateOf(false) }
     var recentlyScrolled by remember { mutableStateOf(false) }
     val scrolling = state.isScrollInProgress
@@ -157,6 +159,37 @@ internal fun BoxScope.MessageJumper(
                 JumpAction.BOTTOM -> state.scrollToItem(lastIndex)
             }
         }
+    }
+
+    if (showOutline && available) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showOutline = false },
+            title = { Text(stringResource(R.string.chat_outline_title)) },
+            text = {
+                androidx.compose.foundation.lazy.LazyColumn {
+                    items(outline.size) { index ->
+                        Text(
+                            text = "${index + 1}. ${outline[index]}",
+                            maxLines = 2,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                            modifier = Modifier.fillMaxWidth()
+                                .clickable {
+                                    showOutline = false
+                                    scope.launch { state.scrollToItem(index) }
+                                }
+                                .padding(vertical = 10.dp),
+                            style = if (index == state.firstVisibleItemIndex) MaterialTheme.typography.titleSmall
+                                else MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = { showOutline = false }) {
+                    Text(stringResource(R.string.assistant_page_cancel))
+                }
+            },
+        )
     }
 
     val visible = available && (expanded || (recentlyScrolled && !scrolling))
@@ -209,6 +242,10 @@ internal fun BoxScope.MessageJumper(
                             .width(IntrinsicSize.Max)
                             .padding(vertical = 4.dp)
                     ) {
+                        JumperMenuItem(HugeIcons.ArrowUp01, stringResource(R.string.chat_outline_title)) {
+                            expanded = false
+                            showOutline = true
+                        }
                         JumperMenuItem(HugeIcons.ArrowUpDouble, stringResource(R.string.chat_page_jump_to_top)) {
                             jump(JumpAction.TOP)
                         }

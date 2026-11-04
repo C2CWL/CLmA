@@ -1,12 +1,19 @@
 package com.clma.app.data.repository
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import com.clma.app.data.memory.MemoryOperation
+import com.clma.app.data.memory.MemoryOperationHistory
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import com.clma.app.data.db.dao.MemoryDAO
 import com.clma.app.data.db.entity.MemoryEntity
 import com.clma.app.data.model.AssistantMemory
 
-class MemoryRepository(private val memoryDAO: MemoryDAO) {
+class MemoryRepository(
+    private val memoryDAO: MemoryDAO,
+    val history: MemoryOperationHistory,
+) {
     companion object {
         const val GLOBAL_MEMORY_ID = "__global__"
     }
@@ -37,19 +44,20 @@ class MemoryRepository(private val memoryDAO: MemoryDAO) {
         memoryDAO.deleteMemoriesOfAssistant(assistantId)
     }
 
-    suspend fun updateContent(id: Int, content: String): AssistantMemory {
+    suspend fun updateContent(id: Int, content: String, source: String = "tool"): AssistantMemory {
         val old = memoryDAO.getMemoryById(id) ?: error("Memory record #$id not found")
         val newMemory = old.copy(
             content = content
         )
-        memoryDAO.updateMemory(newMemory)
+        if (old.content != content) memoryDAO.updateMemory(newMemory)
+        record(old.assistantId, if (old.content == content) "no_op" else "edit", source, id, old.content.length, content.length)
         return AssistantMemory(
             id = newMemory.id,
             content = newMemory.content,
         )
     }
 
-    suspend fun addMemory(assistantId: String, content: String): AssistantMemory {
+    suspend fun addMemory(assistantId: String, content: String, source: String = "tool"): AssistantMemory {
         val memory = AssistantMemory(
             id = 0,
             content = content,
@@ -62,10 +70,19 @@ class MemoryRepository(private val memoryDAO: MemoryDAO) {
                 )
             ).toInt()
         )
+        record(assistantId, "create", source, newMemory.id, 0, content.length)
         return newMemory
     }
 
-    suspend fun deleteMemory(id: Int) {
+    suspend fun deleteMemory(id: Int, source: String = "tool") {
+        val old = memoryDAO.getMemoryById(id) ?: return
         memoryDAO.deleteMemory(id)
+        record(old.assistantId, "delete", source, id, old.content.length, 0)
+    }
+
+    private suspend fun record(scope: String, action: String, source: String, id: Int, before: Int, after: Int) {
+        withContext(Dispatchers.IO) {
+            history.record(MemoryOperation(System.currentTimeMillis(), scope, "hot", action, source, id, before, after))
+        }
     }
 }

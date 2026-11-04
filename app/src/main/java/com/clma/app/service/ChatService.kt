@@ -2658,7 +2658,7 @@ class ChatService(
             val directory = File(root, relative).canonicalFile
             require(directory.toPath().startsWith(root.canonicalFile.toPath()))
             if (File(directory, ".migrated").isFile) {
-                return@withContext AssistantColdMemoryStore(directory, null)
+                return@withContext AssistantColdMemoryStore(directory, null, memoryRepository.history, "${assistant.id}/$relative")
             }
             // Resolve the old workspace only for the non-destructive, one-time copy.
             val workspace = assistant.workspaceId?.toString()?.let { workspaceRepository.getById(it) }
@@ -2669,7 +2669,7 @@ class ChatService(
                     candidate.toPath().startsWith(files.toPath())
                 }
             }
-            AssistantColdMemoryStore(directory, legacy)
+            AssistantColdMemoryStore(directory, legacy, memoryRepository.history, "${assistant.id}/$relative")
         }
 
     /** Cold memory is independent of workspace binding and rootfs readiness. */
@@ -2843,18 +2843,9 @@ class ChatService(
         } ?: return null
         if (indexContent.isEmpty()) return null
 
-        val cappedIndex = indexContent.take(ColdMemoryRules.PROMPT_INDEX_MAX_CHARS)
-        val truncatedNotice = if (indexContent.length > ColdMemoryRules.PROMPT_INDEX_MAX_CHARS) {
-            "\n[Index truncated to ${ColdMemoryRules.PROMPT_INDEX_MAX_CHARS} characters. Use memory_index to read the full listing.]"
-        } else ""
-
-        return """
-            **Cold Memory Index (${ColdMemoryRules.INDEX_FILE_NAME})**
-            Below is the current index of the cold-memory knowledge base. Use `memory_read` to retrieve documents when needed. You do not need to call `memory_index` unless you suspect the index on disk has changed.
-            ```markdown
-            $cappedIndex$truncatedNotice
-            ```
-        """.trimIndent()
+        return com.clma.app.data.memory.MemoryPromptRenderer.coldIndex(
+            indexContent, ColdMemoryRules.PROMPT_INDEX_MAX_CHARS,
+        )
     }
 
     // ---- 检查无效消息 ----

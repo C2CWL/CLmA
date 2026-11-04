@@ -178,8 +178,13 @@ private fun createWriteFileTool(
         val path = params.absolutePath("path")
         val text = params.string("text") ?: error("text is required")
         val overwrite = params["overwrite"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: true
+        val original = workspaceRepository.readBeforeWrite(workspaceId, path)
         val entry = workspaceRepository.writeTextInRootfs(workspaceId, path, text, overwrite)
-        listOf(UIMessagePart.Text(entry.toJson().toString()))
+        val diff = original?.let { generateUnifiedDiff(it, text, entry.path) }
+        listOf(UIMessagePart.Text(
+            entry.toJson().toString(),
+            metadata = diff?.let { DiffMetadata(diff = it).toMetadata() },
+        ))
     },
 )
 
@@ -519,6 +524,20 @@ private fun BackgroundStatus.toJson() = buildJsonObject {
 
 private fun kotlinx.serialization.json.JsonObject.string(name: String): String? =
     this[name]?.jsonPrimitive?.contentOrNull
+
+/** Missing files have an empty baseline; unreadable/oversized baselines have no diff. */
+private suspend fun WorkspaceRepository.readBeforeWrite(workspaceId: String, path: String): String? = try {
+    val probe = runRootfsCommand(
+        workspaceId,
+        "Inspect write target",
+        "if [ -e ${path.shellQuote()} ]; then printf existing; else printf missing; fi",
+    )
+    if (probe.stdout == "missing") "" else readTextInRootfs(workspaceId, path)
+} catch (e: kotlinx.coroutines.CancellationException) {
+    throw e
+} catch (_: Exception) {
+    null
+}
 
 private suspend fun WorkspaceRepository.readTextInRootfs(
     workspaceId: String,

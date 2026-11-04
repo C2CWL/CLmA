@@ -209,10 +209,14 @@ object WriteFileToolUI : ToolUIRenderer {
     private fun textOf(context: ToolUIContext): String? =
         context.arguments.getStringContent("text")
 
-    override fun hasSummary(context: ToolUIContext): Boolean = textOf(context) != null
+    override fun hasSummary(context: ToolUIContext): Boolean = EditFileToolUI.hasSummary(context) || textOf(context) != null
 
     @Composable
     override fun Summary(context: ToolUIContext) {
+        if (context.tool.isExecuted && EditFileToolUI.hasSummary(context)) {
+            EditFileToolUI.Summary(context)
+            return
+        }
         val text = remember(context) { textOf(context) } ?: return
         FileContentSummary(
             text = text,
@@ -223,6 +227,10 @@ object WriteFileToolUI : ToolUIRenderer {
 
     @Composable
     override fun Preview(context: ToolUIContext, onDismissRequest: () -> Unit) {
+        if (context.tool.isExecuted && EditFileToolUI.hasSummary(context)) {
+            EditFileToolUI.Preview(context, onDismissRequest)
+            return
+        }
         val text = remember(context) { textOf(context) }
         if (text == null) {
             DefaultToolPreview(context = context)
