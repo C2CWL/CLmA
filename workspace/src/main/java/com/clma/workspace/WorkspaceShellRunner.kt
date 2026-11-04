@@ -29,12 +29,13 @@ data class WorkspaceShellContext(
     val stdin: ByteArray? = null,
     val bindMounts: List<WorkspaceBindMount> = emptyList(),
     val shellCompatibilityMode: Boolean = false,
+    val progress: ForegroundCommandProgress? = null,
 )
 
 class HostShellRunner : WorkspaceShellRunner {
     override fun execute(context: WorkspaceShellContext): WorkspaceCommandResult {
         val process = newProcessBuilder(context).start()
-        return process.readResult(context.timeoutMillis, context.stdin)
+        return process.readResult(context.timeoutMillis, context.stdin, context.progress)
     }
 
     override fun start(context: WorkspaceShellContext): Process =
@@ -52,7 +53,11 @@ class HostShellRunner : WorkspaceShellRunner {
 // 单个流保留的最大字符数, 防止命令疯狂输出导致 OOM 或撑爆 LLM 上下文
 const val MAX_OUTPUT_CHARS = 128 * 1024
 
-fun Process.readResult(timeoutMillis: Long, stdin: ByteArray? = null): WorkspaceCommandResult {
+fun Process.readResult(
+    timeoutMillis: Long,
+    stdin: ByteArray? = null,
+    progress: ForegroundCommandProgress? = null,
+): WorkspaceCommandResult {
     val stdout = StreamCollector(inputStream)
     val stderr = StreamCollector(errorStream)
     val stdinWriter = stdin?.let { bytes -> StreamWriter(outputStream, bytes) }
@@ -66,7 +71,16 @@ fun Process.readResult(timeoutMillis: Long, stdin: ByteArray? = null): Workspace
         }
     }
     try {
-        val finished = waitFor(timeoutMillis, TimeUnit.MILLISECONDS)
+        val deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMillis)
+        var finished = false
+        while (true) {
+            val remaining = deadline - System.nanoTime()
+            if (remaining <= 0L) break
+            val slice = minOf(remaining, TimeUnit.MILLISECONDS.toNanos(1_000))
+            finished = waitFor(slice, TimeUnit.NANOSECONDS)
+            progress?.update(stdout.text(), stderr.text())
+            if (finished) break
+        }
         if (!finished) {
             destroyForcibly()
         }
@@ -154,4 +168,6 @@ private class StreamCollector(
     fun join(millis: Long) = thread.join(millis)
 
     fun text(): String = synchronized(builder) { builder.toString() }
+
+    val truncatedNow: Boolean get() = truncated
 }

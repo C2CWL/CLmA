@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.longOrNull
 import com.clma.ai.ui.DiffMetadata
@@ -310,11 +311,18 @@ object ShellToolUI : ToolUIRenderer {
         return stringResource(R.string.tool_ui_shell, truncated)
     }
 
-    override fun hasSummary(context: ToolUIContext): Boolean = context.content != null
+    override fun hasSummary(context: ToolUIContext): Boolean =
+        context.content != null || liveSnapshot(context) != null
+
+    /** Metadata snapshot while output is still empty. A finished call uses its real output. */
+    private fun liveSnapshot(context: ToolUIContext): JsonElement? =
+        if (context.tool.isExecuted) null else context.tool.metadata?.takeIf {
+            it["running"]?.jsonPrimitive?.booleanOrNull == true
+        }
 
     @Composable
     override fun Summary(context: ToolUIContext) {
-        val content = context.content ?: return
+        val content = context.content ?: liveSnapshot(context) ?: return
         val combined = remember(content) {
             listOf(content.getStringContent("stdout"), content.getStringContent("stderr"))
                 .filterNot { it.isNullOrBlank() }
@@ -347,7 +355,7 @@ object ShellToolUI : ToolUIRenderer {
 
     @Composable
     override fun Preview(context: ToolUIContext, onDismissRequest: () -> Unit) {
-        val content = context.content
+        val content = context.content ?: liveSnapshot(context)
         if (content == null) {
             DefaultToolPreview(context = context)
             return
@@ -407,11 +415,13 @@ object ShellToolUI : ToolUIRenderer {
 /** Shell 退出状态文本: exit code 为 0 显示绿色, 超时或非零显示错误色 */
 @Composable
 private fun ShellExitStatus(content: JsonElement, style: androidx.compose.ui.text.TextStyle) {
+    val running = content.boolean("running") == true && content.int("exitCode") == null
     val exitCode = content.int("exitCode")
     val timedOut = content.boolean("timedOut") ?: false
-    val ok = !timedOut && exitCode == 0
+    val ok = !running && !timedOut && exitCode == 0
     Text(
         text = when {
+            running -> stringResource(R.string.tool_ui_shell_running)
             timedOut -> stringResource(R.string.tool_ui_shell_timeout)
             else -> stringResource(R.string.tool_ui_shell_exit, exitCode?.toString() ?: "?")
         },

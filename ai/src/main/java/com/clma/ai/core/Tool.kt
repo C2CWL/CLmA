@@ -15,7 +15,13 @@ data class Tool(
     val parameters: () -> InputSchema? = { null },
     val systemPrompt: (model: Model, messages: List<UIMessage>) -> String = { _, _ -> "" },
     val needsApproval: (JsonElement) -> Boolean = { false },
-    val execute: suspend (JsonElement) -> List<UIMessagePart>
+    val execute: suspend (JsonElement) -> List<UIMessagePart>,
+    /**
+     * Optional bounded progress while [execute] is still running. The returned text is UI-only:
+     * it is not tool output, is not sent back to the model, and must not mark the call complete.
+     * Null means the tool has no live snapshot.
+     */
+    val progress: (suspend () -> String?)? = null,
 )
 
 @Serializable

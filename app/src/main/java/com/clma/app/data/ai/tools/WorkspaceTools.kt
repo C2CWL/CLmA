@@ -313,7 +313,9 @@ private fun createShellTool(
     needsApproval: (String) -> Boolean,
     workspaceRepository: WorkspaceRepository,
     defaultCwd: String? = null,
-) = Tool(
+): Tool {
+    val lives = java.util.concurrent.ConcurrentHashMap<String, com.clma.workspace.ForegroundCommandProgress>()
+    return Tool(
     name = "workspace_shell",
     description = buildString {
         append("Run a shell command in the assistant's bound workspace Rootfs. The workspace files area is mounted at /workspace. ")
@@ -362,7 +364,13 @@ private fun createShellTool(
             ?.coerceIn(1L, SHELL_TIMEOUT_MAX_SECONDS)
             ?.times(1_000L)
             ?: WorkspaceManager.DEFAULT_COMMAND_TIMEOUT_MS
-        val result = workspaceRepository.executeCommand(workspaceId, command, cwd, timeoutMillis)
+        val callId = kotlinx.coroutines.currentCoroutineContext()[com.clma.app.data.ai.tools.ToolCallId]?.value
+            ?: "foreground"
+        val live = com.clma.workspace.ForegroundCommandProgress().also { lives[callId] = it }
+        try {
+            val result = workspaceRepository.executeCommand(
+                workspaceId, command, cwd, timeoutMillis, progress = live,
+            )
         listOf(
             UIMessagePart.Text(
                 buildJsonObject {
@@ -374,8 +382,13 @@ private fun createShellTool(
                 }.toString()
             )
         )
+        } finally {
+            lives.remove(callId)
+        }
     },
-)
+    progress = { lives[kotlinx.coroutines.currentCoroutineContext()[ToolCallId]?.value]?.snapshotJson() },
+    )
+}
 
 private fun createRunBackgroundTool(
     workspaceId: String,
@@ -520,6 +533,22 @@ private fun BackgroundStatus.toJson() = buildJsonObject {
     put("stderr", stderr)
     if (droppedStdout > 0) put("droppedStdout", droppedStdout)
     if (droppedStderr > 0) put("droppedStderr", droppedStderr)
+}
+
+/** Per-call identity so a reused tool instance cannot mix two live snapshots. */
+internal class ToolCallId(val value: String) : kotlin.coroutines.AbstractCoroutineContextElement(Key) {
+    companion object Key : kotlin.coroutines.CoroutineContext.Key<ToolCallId>
+}
+
+/** UI-only snapshot. Running stays true so a card never treats this as the final result. */
+private fun com.clma.workspace.ForegroundCommandProgress.snapshotJson(): String? {
+    val out = stdout
+    val err = stderr
+    return buildJsonObject {
+        put("running", true)
+        put("stdout", out)
+        put("stderr", err)
+    }.toString()
 }
 
 private fun kotlinx.serialization.json.JsonObject.string(name: String): String? =
