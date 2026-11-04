@@ -68,6 +68,11 @@ data class Assistant(
     val subAgentModelId: Uuid? = null,
     val subAgentSystemPrompt: String = "",
     val maxConcurrentSubAgents: Int = 8,
+    // Default tool-step cap for the sub-agents this assistant dispatches. A `subagent_dispatch`
+    // that omits `max_trips` inherits this value instead of a compiled-in constant, so the
+    // budget is a per-assistant setting. An explicit call parameter still wins; both are
+    // clamped by the active dispatch profile and by SubAgentDefaults.MAX_MAX_TRIPS.
+    val subAgentMaxTrips: Int = 20,
     // Phase 15 — Per-task token budget. Both null = no budget enforcement. The LLM
     // checks via `check_token_usage`; auto-stop integration into GenerationHandler is
     // Phase 15.5 follow-up.

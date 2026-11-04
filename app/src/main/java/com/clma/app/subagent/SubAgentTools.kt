@@ -207,9 +207,10 @@ fun subagentDispatchTool(
                         put(
                             "description",
                             "Hard cap on the sub-agent's tool-loop steps (model round trips " +
-                                "with tool calls), default ${SubAgentDefaults.DEFAULT_MAX_TRIPS}, " +
-                                "max ${SubAgentDefaults.MAX_MAX_TRIPS}. The turn force-ends when " +
-                                "the cap is hit, so size it to the task: a lookup needs 2-3, " +
+                                "with tool calls). Omit to inherit the parent assistant's own " +
+                                "sub-agent step limit; an explicit value wins, max " +
+                                "${SubAgentDefaults.MAX_MAX_TRIPS}. The turn force-ends when the " +
+                                "cap is hit, so size it to the task: a lookup needs 2-3, " +
                                 "multi-step work needs more.",
                         )
                     })
@@ -311,8 +312,8 @@ fun subagentDispatchTool(
                 attachParentMedia = params["attach_media"]?.jsonPrimitive?.booleanOrNull ?: false,
                 timeoutSeconds = params["timeout_seconds"]?.jsonPrimitive?.intOrNull
                     ?: SubAgentDefaults.DEFAULT_TIMEOUT_SECONDS,
-                maxTrips = params["max_trips"]?.jsonPrimitive?.intOrNull
-                    ?: SubAgentDefaults.DEFAULT_MAX_TRIPS,
+                // Null = inherit the parent assistant's own step limit (see the schema text).
+                maxTrips = params["max_trips"]?.jsonPrimitive?.intOrNull,
                 retryOnFailure = params["retry_on_failure"]?.jsonPrimitive?.intOrNull
                     ?: SubAgentDefaults.DEFAULT_RETRY_ON_FAILURE,
                 label = params["label"]?.jsonPrimitive?.contentOrNull,
