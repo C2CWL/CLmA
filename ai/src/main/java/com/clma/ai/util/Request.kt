@@ -37,14 +37,10 @@ fun ProviderSetting.mergeCustomHeaders(headers: List<CustomHeader> = emptyList()
 fun Request.Builder.configureReferHeaders(url: String): Request.Builder {
     val httpUrl = url.toHttpUrl()
     return when (httpUrl.host) {
-        "aihubmix.com" -> {
-            addHeader("APP-Code", "DKHA9468")
-        }
-
         "openrouter.ai" -> {
             this
                 .addHeader("X-Title", "CLmA")
-                .addHeader("HTTP-Referer", "https://rikka-ai.com")
+                .addHeader("HTTP-Referer", "https://github.com/C2CWL/CLmA")
         }
 
         else -> this

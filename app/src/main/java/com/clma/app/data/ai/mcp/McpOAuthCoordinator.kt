@@ -26,7 +26,7 @@ internal const val MCP_OAUTH_CALLBACK_PATH = "/oauth/callback"
 internal const val MCP_OAUTH_REDIRECT_URI =
     "http://localhost:$MCP_OAUTH_CALLBACK_PORT$MCP_OAUTH_CALLBACK_PATH"
 // 托管在 GitHub Pages 上的 Client ID Metadata Document，其 redirect_uris 必须与 MCP_OAUTH_REDIRECT_URI 一致
-internal const val MCP_OAUTH_CLIENT_METADATA_URL = "https://rikkahub.github.io/oauth/client.json"
+internal const val MCP_OAUTH_CLIENT_METADATA_URL = "https://c2cwl.github.io/clma-oauth/oauth/client.json"
 private val OAUTH_CALLBACK_TIMEOUT = 5.minutes
 
 /**
