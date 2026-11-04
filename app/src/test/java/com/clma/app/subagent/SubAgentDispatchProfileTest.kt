@@ -91,7 +91,7 @@ class SubAgentDispatchProfileTest {
     @Test
     fun `clampMaxTrips respects ceiling`() {
         assertEquals(8, SubAgentDispatchProfileRules.clampMaxTrips(SubAgentDispatchProfile.ASSIST, 100))
-        assertEquals(30, SubAgentDispatchProfileRules.clampMaxTrips(SubAgentDispatchProfile.NORMAL, 100))
+        assertEquals(60, SubAgentDispatchProfileRules.clampMaxTrips(SubAgentDispatchProfile.NORMAL, 100))
         assertEquals(60, SubAgentDispatchProfileRules.clampMaxTrips(SubAgentDispatchProfile.UNLEASHED, 100))
         assertEquals(5, SubAgentDispatchProfileRules.clampMaxTrips(SubAgentDispatchProfile.NORMAL, 5))
     }
