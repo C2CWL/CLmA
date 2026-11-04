@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="setting_display_page_fast_streaming_title">快速串流輸出</string>
-    <string name="setting_display_page_fast_streaming_desc">收到文字後立即更新，不再按 32 毫秒合併更新。可能增加耗電，不改變模型生成速度；關閉恢復原來的省資源模式。</string>
-</resources>
