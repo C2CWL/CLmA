@@ -787,6 +787,13 @@ class GenerationLoop(
         // (every existing caller); a fresh list is requested per step, so the provider must be
         // cheap — ChatToolSurface only re-reads the activation set.
         toolsProvider: (suspend () -> List<Tool>)? = null,
+        /**
+         * When non-null, the combined tool list (including the separately-injected
+         * `memory_tool`) is filtered to these names before schemas / tool system prompts
+         * are sent. Used by chat mode ([com.clma.app.data.ai.tools.ChatModeTools]); null
+         * keeps Agent / legacy behaviour.
+         */
+        allowedToolNames: Set<String>? = null,
         // P2-05 — answers "this name exists in the catalog but is not loaded": given a tool name,
         // returns its real schema JSON (name/description/parameters) or null. Used only to
         // explain a call to a tool the model never opened, so it can retry correctly in the same
@@ -911,6 +918,9 @@ class GenerationLoop(
                     ).let(this::addAll)
                 }
                 addAll(toolsProvider?.invoke() ?: tools)
+            }.let { built ->
+                val allow = allowedToolNames
+                if (allow == null) built else built.filter { it.name in allow }
             }
 
             // Check if we have tool calls ready to continue after user interaction.

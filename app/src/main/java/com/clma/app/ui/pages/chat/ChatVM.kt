@@ -306,6 +306,25 @@ class ChatVM(
         }
     }
 
+    /**
+     * 当前会话是否为 Agent 模式（带工具）。侧边栏切换入口请读 [conversation].agentModeEnabled，
+     * 并通过本方法 / [toggleAgentMode] 写入；默认 `true`。
+     *
+     * 聊天模式（`false`）下 [com.clma.app.service.ChatService] 不组装任何工具，也不发送
+     * 模型内置工具（Search / UrlContext 等）。
+     */
+    fun setAgentModeEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            chatService.setAgentModeEnabled(_conversationId, enabled)
+        }
+    }
+
+    /** 在 Agent / 聊天模式之间切换；见 [setAgentModeEnabled]。 */
+    fun toggleAgentMode() {
+        val next = !conversation.value.agentModeEnabled
+        setAgentModeEnabled(next)
+    }
+
     fun setModelReasoningLevel(model: Model, reasoningLevel: ReasoningLevel) {
         viewModelScope.launch {
             settingsStore.updateModelReasoningLevel(model.id, reasoningLevel)

@@ -85,7 +85,14 @@ class ImportedDatabaseReconcilerTest {
         }
         val declaredVersion = Regex("""version\s*=\s*(\d+)""").find(file.readText())
             ?.groupValues?.get(1)?.toInt()
-        assertEquals(declaredVersion, ImportedDatabaseReconciler.EXPECTED_VERSION + 1)
+        // Staging stays at the latest *exported* schema (31.json). AppDatabase may be more
+        // than one version ahead when later bumps are hand-written migrations without a
+        // committed schema export (v32 parent_conversation_id, v33 agent_mode_enabled).
+        assertTrue(
+            "AppDatabase.version ($declaredVersion) must be ahead of staging " +
+                "(${ImportedDatabaseReconciler.EXPECTED_VERSION})",
+            declaredVersion != null && declaredVersion > ImportedDatabaseReconciler.EXPECTED_VERSION,
+        )
     }
 
     @Test
