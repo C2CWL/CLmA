@@ -345,7 +345,7 @@ fun ChatMessage(
             assistant = assistant,
         )
 
-        // 现代布局下用量小块已经挪到操作栏右端；操作栏还没出来（生成中）时才单独显示。
+        // 现代布局下用量小方块在操作栏右端（点开弹出明细）；操作栏还没出来（生成中）时才单独显示。
         if (!(modern && showActions && message.role == MessageRole.ASSISTANT)) {
             ProvideTextStyle(textStyle) {
                 ChatMessageNerdLine(

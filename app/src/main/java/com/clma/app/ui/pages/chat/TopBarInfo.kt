@@ -61,6 +61,14 @@ internal fun cleanTopBarTokenText(usedTokens: Long, chinese: Boolean, traditiona
     return " / $count ${tokenUnit(usedTokens)}"
 }
 
+/**
+ * Compact conversation token count for the modern top-bar chip (and the modern reply-usage chip):
+ * Chinese locales use 万 / 亿 ([formatTokensChinese]); others use K / M ([formatCompactTokens]).
+ * No unit word — the chip is tight.
+ */
+internal fun compactTokenCountText(usedTokens: Long, chinese: Boolean, traditional: Boolean = false): String =
+    if (chinese) formatTokensChinese(usedTokens, traditional) else formatCompactTokens(usedTokens)
+
 /** Whether [locale] reads Chinese, and whether in traditional characters (zh-TW, zh-HK, zh-Hant). */
 internal fun isChineseLocale(locale: Locale): Boolean = locale.language == "zh"
 
