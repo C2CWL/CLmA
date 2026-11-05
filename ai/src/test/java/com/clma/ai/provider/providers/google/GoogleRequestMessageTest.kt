@@ -16,10 +16,13 @@ import com.clma.ai.provider.BuiltInTools
 import com.clma.ai.provider.Model
 import com.clma.ai.provider.ModelAbility
 import com.clma.ai.provider.TextGenerationParams
+import com.clma.ai.ui.GoogleThoughtMetadata
+import com.clma.ai.ui.toMetadata
 import com.clma.ai.ui.UIMessage
 import com.clma.ai.ui.UIMessagePart
 import okhttp3.OkHttpClient
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -189,7 +192,10 @@ class GoogleRequestMessageTest {
         val assistantMessage = UIMessage(
             role = MessageRole.ASSISTANT,
             parts = listOf(
-                UIMessagePart.Reasoning(reasoning = "Let me think about this..."),
+                UIMessagePart.Reasoning(
+                    reasoning = "Let me think about this...",
+                    metadata = GoogleThoughtMetadata(thoughtSignature = "sig-thought").toMetadata(),
+                ),
                 UIMessagePart.Text("Here is my response")
             )
         )
@@ -211,17 +217,54 @@ class GoogleRequestMessageTest {
         val parts = modelMsg!!["parts"]?.jsonArray
         assertTrue("Parts should not be null", parts != null)
 
-        // Find text part with thought:true (reasoning is converted to text with thought flag)
-        // Note: The implementation may vary - check for thought flag in text parts
-        val textParts = parts!!.filter { it.jsonObject.containsKey("text") }
-        assertTrue("Should have text parts", textParts.isNotEmpty())
+        val thoughtPart = parts!!.single {
+            it.jsonObject["thought"]?.jsonPrimitive?.content == "true"
+        }.jsonObject
+        assertEquals("Let me think about this...", thoughtPart["text"]!!.jsonPrimitive.content)
+        assertEquals("sig-thought", thoughtPart["thoughtSignature"]!!.jsonPrimitive.content)
+    }
 
-        // Verify we have both regular text and thought text
-        val hasThoughtPart = textParts.any {
-            it.jsonObject["thought"]?.jsonPrimitive?.content == "true" ||
-            it.jsonObject["thought"]?.toString() == "true"
+    @Test
+    fun `a thought part without a signature is never replayed`() {
+        val assistant = UIMessage(
+            role = MessageRole.ASSISTANT,
+            parts = listOf(
+                UIMessagePart.Reasoning(reasoning = "unsigned thinking"),
+                UIMessagePart.Text("Here is my response"),
+            ),
+        )
+        val result = invokeBuildContents(listOf(UIMessage.user("Question"), assistant))
+        val parts = result.single {
+            it.jsonObject["role"]?.jsonPrimitive?.content == "model"
+        }.jsonObject["parts"]!!.jsonArray
+
+        assertFalse(parts.any { it.jsonObject.containsKey("thought") })
+        assertEquals(
+            listOf("Here is my response"),
+            parts.map { it.jsonObject["text"]!!.jsonPrimitive.content },
+        )
+    }
+
+    @Test
+    fun `an assistant message holding only unsigned reasoning is dropped instead of sent as an empty turn`() {
+        val assistant = UIMessage(
+            role = MessageRole.ASSISTANT,
+            parts = listOf(UIMessagePart.Reasoning(reasoning = "unsigned thinking only")),
+        )
+        val result = invokeBuildContents(listOf(
+            UIMessage.user("Question"), assistant, UIMessage.user("Follow-up"),
+        ))
+
+        result.forEach {
+            assertTrue(it.jsonObject["parts"]!!.jsonArray.isNotEmpty())
+            assertFalse(it.jsonObject["parts"]!!.jsonArray.any { part ->
+                part.jsonObject.containsKey("thought")
+            })
         }
-        // Note: If reasoning is handled differently, adjust this assertion
+        assertEquals(
+            listOf("user", "user"),
+            result.map { it.jsonObject["role"]!!.jsonPrimitive.content },
+        )
     }
 
     @Test

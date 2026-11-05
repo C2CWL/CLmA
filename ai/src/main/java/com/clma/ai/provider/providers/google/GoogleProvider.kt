@@ -489,8 +489,10 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
             "contents",
             buildContents(
                 messages,
-                // 只有 Gemini 3 系列强制校验 thought signature；老模型不认这个字段，别乱塞。
-                requireThoughtSignatures = ModelRegistry.GEMINI_3_SERIES.match(modelId = params.model.modelId),
+                // Cloud Code Assist fronts Anthropic models too (gemini-claude-*-thinking) and
+                // validates their replayed history with the same rule, so they need the sentinel
+                // as well; 老 Gemini 模型不认这个字段，别乱塞。
+                requireThoughtSignatures = requiresThoughtSignatures(params.model.modelId),
             )
         )
 
@@ -738,6 +740,22 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
         }
     }
 
+    /**
+     * Whether a replayed `functionCall` has to carry a `thoughtSignature`.
+     *
+     * Gemini 3 enforces this. Cloud Code Assist also fronts Anthropic models
+     * (`gemini-claude-*-thinking`) and runs the replayed history through the same Gemini-shaped
+     * validator, so an unsigned call fails the whole turn with 400 "Function call is missing a
+     * thought_signature in functionCall parts" - even though Claude has no signatures of its own,
+     * which is exactly why those calls take [SKIP_THOUGHT_SIGNATURE]. The `contains` fallback keeps
+     * Code Assist ids that [ModelRegistry.CLAUDE_SERIES] does not know yet on the safe side; older
+     * Gemini models must never see the field, so this stays a positive test rather than a default.
+     */
+    private fun requiresThoughtSignatures(modelId: String): Boolean =
+        ModelRegistry.GEMINI_3_SERIES.match(modelId = modelId) ||
+            ModelRegistry.CLAUDE_SERIES.match(modelId = modelId) ||
+            modelId.contains("claude", ignoreCase = true)
+
     private fun buildContents(
         messages: List<UIMessage>,
         requireThoughtSignatures: Boolean,
@@ -858,11 +876,23 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
         }
 
         is UIMessagePart.Reasoning -> {
+            // A replayed thought part must carry its signature or not be sent at all. Cloud Code
+            // Assist fronts Anthropic models (gemini-claude-*-thinking) and translates this wire
+            // format into an Anthropic Messages request, where every replayed `thinking` block is
+            // signature-checked: an unsigned one fails the whole turn with
+            // 400 "messages.N.content.0.thinking.signature: Field required". Gemini 3 wants the
+            // signature beside the thought for the same reason (see carriedSig below), so an
+            // unsigned thought part is never useful on either side - and the thought text alone is
+            // not context the model needs. Same rule ClaudeProvider applies to its own thinking
+            // blocks: drop what cannot be replayed verbatim (#194).
             val thoughtSignature = metadataAs<GoogleThoughtMetadata>()?.thoughtSignature
-            buildJsonObject {
-                put("text", reasoning)
-                put("thought", true)
-                thoughtSignature?.let { put("thoughtSignature", it) }
+                ?.takeIf { it.isNotBlank() }
+            thoughtSignature?.let {
+                buildJsonObject {
+                    put("text", reasoning)
+                    put("thought", true)
+                    put("thoughtSignature", it)
+                }
             }
         }
 
