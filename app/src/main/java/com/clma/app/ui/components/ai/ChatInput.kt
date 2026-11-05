@@ -58,6 +58,9 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.foundation.layout.width
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
@@ -130,6 +133,15 @@ import com.clma.app.ui.components.ui.permission.PermissionManager
 import com.clma.app.ui.components.ui.permission.PermissionRecordAudio
 import com.clma.app.ui.components.ui.permission.rememberPermissionState
 import com.clma.app.ui.components.ui.rikkaGlassStyle
+import com.clma.app.ui.components.ui.LocalModernChatLayout
+import com.clma.app.ui.components.ui.ModernCardCorner
+import com.clma.app.ui.components.ui.ModernSmallCorner
+import com.clma.app.ui.components.ui.modernAccentSoft
+import com.clma.app.ui.components.ui.modernDivider
+import com.clma.app.ui.components.ui.modernPanelBase
+import com.clma.app.ui.components.ui.modernPanelAlpha
+import com.clma.app.ui.components.ui.modernPillRim
+import com.clma.app.ui.components.ui.modernShadowColor
 import com.clma.app.ui.context.LocalASRState
 import com.clma.app.ui.context.LocalSettings
 import com.clma.app.ui.context.LocalToaster
@@ -278,6 +290,8 @@ fun ChatInput(
     val claudeLayout = chatLayout == ChatLayout.CLAUDE
     // Gemini：同样走扁平顶栏/扁平输入条，但收起为胶囊、展开为圆角容器，不做玻璃。
     val geminiLayout = chatLayout == ChatLayout.GEMINI
+    // 现代（存储值仍是 CLEAN）：20dp 悬浮卡片、无描边、柔和阴影；底部工具栏方形按钮 + 圆形模型胶囊。
+    val modernLayout = chatLayout == ChatLayout.CLEAN
     // Claude layout prefers a solid card (no glass) so the 24dp composer reads like paper.
     // 「模糊效果」(DisplaySetting.enableBlurEffect) 只负责这一条输入条（见设置页文案）。
     // 之前这里无视该开关、永远走玻璃，开关等于摆设；现在关掉即退回实心卡片，
@@ -299,6 +313,7 @@ fun ChatInput(
         targetValue = when {
             geminiLayout -> if (expanded) 24.dp else 28.dp
             claudeLayout -> 24.dp
+            modernLayout -> ModernCardCorner
             cleanLayout -> 14.dp
             expanded -> 16.dp
             else -> 28.dp
@@ -315,11 +330,13 @@ fun ChatInput(
     val cleanOpacity = if (cleanLayout) settings.displaySetting.cleanLayoutBottomOpacity else 1f
     // Gemini：输入条是一块安静的实色胶囊（surfaceContainerHigh），不跟随简洁布局的面板浓度
     // 滑块，也没有描边——那是 CLEAN / CLAUDE 的卡片语言。
-    val cleanCardColor = if (geminiLayout) {
-        MaterialTheme.colorScheme.surfaceContainerHigh
-    } else {
-        cleanPanelFill(cleanOpacity)
+    val modernBase = modernPanelBase()
+    val cleanCardColor = when {
+        geminiLayout -> MaterialTheme.colorScheme.surfaceContainerHigh
+        modernLayout -> modernBase.copy(alpha = modernPanelAlpha(cleanOpacity))
+        else -> cleanPanelFill(cleanOpacity)
     }
+    val modernShadow = modernShadowColor()
     val cleanCardOutline = cleanPanelOutline(darkTheme)
 
     Surface(
@@ -355,6 +372,21 @@ fun ChatInput(
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .then(
+                        // 现代：卡片悬浮在内容之上，靠一层很淡的阴影而不是描边与背景分开。
+                        // 半透明/玻璃时阴影会透出卡片内部变成灰雾，所以只给不透明卡片加。
+                        if (modernLayout && !useGlass && modernPanelAlpha(cleanOpacity) >= 0.9f) {
+                            Modifier.shadow(
+                                elevation = 10.dp,
+                                shape = containerShape,
+                                clip = false,
+                                ambientColor = modernShadow,
+                                spotColor = modernShadow,
+                            )
+                        } else {
+                            Modifier
+                        }
+                    )
                     .clip(containerShape)
                     .then(
                         if (useGlass) {
@@ -383,12 +415,14 @@ fun ChatInput(
                 // Glass in the clean layout also gets the panel fill over the backdrop, so the
                 // opacity slider is visible (see CleanGlassFillFactor). ORIGINAL keeps clear glass.
                 color = when {
+                    useGlass && modernLayout -> modernBase.copy(alpha = modernPanelAlpha(cleanOpacity) * 0.9f)
                     useGlass && cleanLayout -> cleanGlassFill(cleanOpacity)
                     useGlass -> Color.Transparent
                     else -> cleanCardColor
                 },
-                border = if (useGlass || geminiLayout) null else BorderStroke(1.dp, cleanCardOutline),
+                border = if (useGlass || geminiLayout || modernLayout) null else BorderStroke(1.dp, cleanCardOutline),
             ) {
+              CompositionLocalProvider(LocalModernChatLayout provides modernLayout) {
                 Column(
                     // Extra inset so the round buttons stay clear of the capsule's edge; the
                     // middle (text) column gives up that space instead.
@@ -511,6 +545,17 @@ fun ChatInput(
 
                                 if (!cleanLayout) reasoningButton()
 
+                                // 现代：+ 与发送键前面一条短竖线，把它们和左边的工具分成两组。
+                                if (modernLayout) {
+                                    Box(
+                                        modifier = Modifier
+                                            .padding(horizontal = 4.dp)
+                                            .width(1.dp)
+                                            .height(20.dp)
+                                            .background(modernDivider()),
+                                    )
+                                }
+
                                 if (cleanLayout) moreButton()
 
                                 // One slot, two faces: the send arrow while there is something to send, the
@@ -561,6 +606,7 @@ fun ChatInput(
                         },
                     )
                 }
+              }
             }
         }
     }
@@ -619,15 +665,22 @@ private fun ModelReasoningChip(
         ?: stringResource(R.string.model_list_select_model)
 
     // height() is the outer constraint, so Material's 48dp minimum touch target cannot grow the pill.
+    val modern = LocalModernChatLayout.current
     Surface(
         onClick = { modelListState.open() },
-        modifier = Modifier.height(30.dp),
+        modifier = Modifier.height(if (modern) 32.dp else 30.dp),
         shape = CircleShape,
-        color = Color.Transparent,
+        // 现代：模型选择是一颗圆形胶囊，浅主题色底 + 一圈很淡的主题色边。
+        color = if (modern) modernAccentSoft() else Color.Transparent,
+        border = if (modern) BorderStroke(1.dp, modernPillRim()) else null,
         tonalElevation = 0.dp,
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 2.dp),
+            modifier = if (modern) {
+                Modifier.padding(start = 5.dp, end = if (expanded) 10.dp else 5.dp)
+            } else {
+                Modifier.padding(horizontal = 2.dp)
+            },
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
@@ -780,7 +833,7 @@ private fun SendButton(
             )
     ) {
         Surface(
-            modifier = Modifier.size(26.dp),
+            modifier = Modifier.size(if (LocalModernChatLayout.current) 32.dp else 26.dp),
             shape = CircleShape,
             color = containerColor,
             content = {},
@@ -799,10 +852,12 @@ private fun ActionIconButton(
     onClick: () -> Unit,
     content: @Composable () -> Unit,
 ) {
+    // 现代：工具按钮是 8dp 小圆角方块，不是圆。
+    val modern = LocalModernChatLayout.current
     Surface(
         onClick = onClick,
-        modifier = Modifier.size(30.dp),
-        shape = CircleShape,
+        modifier = Modifier.size(if (modern) 32.dp else 30.dp),
+        shape = if (modern) RoundedCornerShape(ModernSmallCorner) else CircleShape,
         tonalElevation = 0.dp,
         color = Color.Transparent,
     ) {

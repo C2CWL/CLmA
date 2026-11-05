@@ -19,13 +19,15 @@ fun ToggleSurface(
     modifier: Modifier = Modifier,
     shape: Shape = RoundedCornerShape(50),
     onClick: () -> Unit = {},
+    // Background while checked; transparent by default so existing callers look the same.
+    checkedColor: Color = Color.Transparent,
     content: @Composable () -> Unit
 ) {
     val contentColor =
         if (checked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
     Surface(
         onClick = onClick,
-        color = Color.Transparent,
+        color = if (checked) checkedColor else Color.Transparent,
         contentColor = contentColor,
         modifier = modifier.semantics {
             toggleableState = ToggleableState(checked)

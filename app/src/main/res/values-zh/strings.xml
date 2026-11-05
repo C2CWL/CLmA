@@ -410,6 +410,7 @@
   <string name="db_migrating">正在迁移数据库…</string>
   <string name="deep_thinking">深度思考</string>
   <string name="deep_thinking_seconds">思考了 %1$.1f 秒</string>
+  <string name="deep_thinking_seconds_modern">深度思考 · 用时 %1$.1f 秒</string>
   <string name="delete">删除</string>
   <string name="edit">编辑</string>
   <string name="editing">编辑中</string>
@@ -926,16 +927,17 @@
   <string name="setting_display_page_show_updates_desc">是否显示应用更新通知</string>
   <string name="setting_display_page_show_updates_title">显示更新</string>
   <string name="setting_display_page_show_user_avatar_desc">是否在聊天消息和侧边抽屉中显示用户头像</string>
-  <string name="setting_display_page_clean_layout_title">简洁布局</string>
-  <string name="setting_display_page_clean_layout_desc">扁平顶栏，标题下方显示模型名；输入框平时一行，点开后分两行，工具按钮在输入框下方</string>
+  <string name="setting_display_page_clean_layout_title">现代布局</string>
+  <string name="setting_display_page_clean_layout_desc">悬浮圆角顶栏，标题下方显示「模型 · 供应商」；输入框是悬浮圆角卡片，平时一行，点开后分两行，工具按钮在输入框下方</string>
   <string name="setting_display_page_chat_layout_title">聊天布局</string>
   <string name="setting_display_page_chat_layout_desc">聊天页整体样式：顶栏、输入框与消息呈现</string>
   <string name="setting_display_page_chat_layout_gemini">Gemini</string>
   <string name="setting_display_page_chat_layout_original">原版</string>
-  <string name="setting_display_page_chat_layout_clean">简洁</string>
+  <string name="setting_display_page_chat_layout_clean">现代</string>
+  <string name="setting_display_page_chat_layout_modern_desc">现代：顶栏和输入框是悬浮的圆角卡片，用户消息是淡色气泡，没有描边</string>
   <string name="setting_display_page_chat_layout_claude">暖阳</string>
   <string name="setting_display_page_clean_layout_glass_title">液态玻璃</string>
-  <string name="setting_display_page_clean_layout_glass_desc">在简洁布局下为输入框和顶栏启用液态玻璃质感；关闭后两者均为扁平单色卡片</string>
+  <string name="setting_display_page_clean_layout_glass_desc">在现代布局下为输入框和顶栏启用液态玻璃质感；关闭后两者均为扁平单色卡片</string>
   <string name="setting_display_page_clean_layout_opacity_desc" formatted="false">0% 完全透明，100% 接近实心卡片；默认 40%</string>
   <string name="setting_display_page_clean_layout_top_opacity_title">顶栏不透明度</string>
   <string name="setting_display_page_clean_layout_bottom_opacity_title">输入框不透明度</string>

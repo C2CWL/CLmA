@@ -51,6 +51,12 @@ import com.clma.app.data.model.replaceRegexes
 import com.clma.app.ui.components.richtext.MarkdownBlock
 import com.clma.app.ui.components.ui.ChainOfThoughtScope
 import com.clma.app.ui.context.LocalSettings
+import com.clma.app.data.datastore.usesModernChatUi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import com.clma.app.ui.modifier.shimmer
 import com.clma.app.utils.extractThinkingTitle
 import kotlin.time.Clock
@@ -209,17 +215,30 @@ fun ChainOfThoughtScope.ChatMessageReasoningStep(
     val thinkingTitle = reasoning.reasoning.extractThinkingTitle()
     val showThinkingTitle = loading && thinkingTitle != null
     val chatFontFamily = LocalTextStyle.current.fontFamily
+    // 现代布局：思考条前面是一个主题色小圆点，文案写成「深度思考 · 用时 N 秒」。
+    val modern = LocalSettings.current.displaySetting.usesModernChatUi
 
     ControlledChainOfThoughtStep(
         expanded = state.expandState == ReasoningCardState.Expanded,
         onExpandedChange = { state.onExpandedChange(it, loading) },
         icon = {
-            Icon(
-                imageVector = HugeIcons.Atom02,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.secondary,
-            )
+            if (modern) {
+                Box(modifier = Modifier.size(16.dp), contentAlignment = Alignment.Center) {
+                    Box(
+                        modifier = Modifier
+                            .size(7.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary),
+                    )
+                }
+            } else {
+                Icon(
+                    imageVector = HugeIcons.Atom02,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.secondary,
+                )
+            }
         },
         label = {
             if (showThinkingTitle) {
@@ -227,7 +246,7 @@ fun ChainOfThoughtScope.ChatMessageReasoningStep(
             } else {
                 Text(
                     text = stringResource(
-                        R.string.deep_thinking_seconds,
+                        if (modern) R.string.deep_thinking_seconds_modern else R.string.deep_thinking_seconds,
                         state.duration.toDouble(DurationUnit.SECONDS).toFloat()
                     ),
                     style = MaterialTheme.typography.titleSmall.copy(fontFamily = chatFontFamily),

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -87,6 +88,9 @@ fun ColumnScope.ChatMessageActionButtons(
     onClearTranslation: (UIMessage) -> Unit = {},
     photoShown: Boolean = false,
     hazeState: HazeState? = null,
+    // 现代布局：时间已经在消息头里，这里不再重复；右端改放 token 用量小块。
+    showTime: Boolean = true,
+    trailing: (@Composable RowScope.() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val settings = LocalSettings.current
@@ -246,8 +250,10 @@ fun ColumnScope.ChatMessageActionButtons(
 
     if (!userMessage) Spacer(Modifier.weight(1f))
 
+    trailing?.invoke(this)
+
     // 时间戳贴在操作栏右端，与操作栏共用同一层胶囊底板
-    if (settings.displaySetting.showDateTimeInMessage && !message.parts.isEmptyUIMessage()) {
+    if (showTime && settings.displaySetting.showDateTimeInMessage && !message.parts.isEmptyUIMessage()) {
         val timePlateModifier = when {
             frost != null && hazeState != null -> Modifier.frostedPlate(
                 hazeState = hazeState,
@@ -306,6 +312,16 @@ fun ColumnScope.ChatMessageActionButtons(
         onDismiss = { showRegenerateConfirm = false },
         text = { Text(stringResource(R.string.regenerate_confirm_message)) }
     )
+}
+
+/** The message's display time as text, or null when 「显示消息时间」 is off. */
+@Composable
+fun chatMessageTimeText(message: UIMessage): String? {
+    val settings = LocalSettings.current
+    if (!settings.displaySetting.showDateTimeInMessage) return null
+    return message.displayTimestamp(preferEndTime = settings.displaySetting.showMessageEndTime)
+        .toJavaLocalDateTime()
+        .toMessageTimeString()
 }
 
 /**

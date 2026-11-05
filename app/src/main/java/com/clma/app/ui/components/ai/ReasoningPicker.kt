@@ -86,6 +86,9 @@ import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Atom02
 import com.clma.app.R
 import com.clma.app.ui.components.ui.ToggleSurface
+import com.clma.app.ui.components.ui.LocalModernChatLayout
+import com.clma.app.ui.components.ui.ModernSmallCorner
+import com.clma.app.ui.components.ui.modernAccentSoft
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.roundToInt
@@ -136,11 +139,18 @@ fun ReasoningPickerButton(
     }
 
     val activeColor = reasoningLevelColor(reasoningLevel)
+    // 现代布局：输入框工具栏里的按钮是 8dp 小方块，开启时铺一层浅主题色。
+    val modern = LocalModernChatLayout.current
     ToggleSurface(
         checked = reasoningLevel.isEnabled,
         onClick = { showPicker = true },
-        modifier = if (onlyIcon) modifier.size(30.dp) else modifier,
-        shape = if (onlyIcon) CircleShape else RoundedCornerShape(12.dp),
+        modifier = if (onlyIcon) modifier.size(if (modern) 32.dp else 30.dp) else modifier,
+        shape = when {
+            onlyIcon && modern -> RoundedCornerShape(ModernSmallCorner)
+            onlyIcon -> CircleShape
+            else -> RoundedCornerShape(12.dp)
+        },
+        checkedColor = if (modern) modernAccentSoft() else Color.Transparent,
     ) {
         if (onlyIcon) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

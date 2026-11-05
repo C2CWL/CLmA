@@ -91,6 +91,11 @@ import com.clma.app.data.datastore.ChatLayout
 import com.clma.app.data.datastore.ToolCallStyle
 import com.clma.app.data.datastore.effectiveChatLayout
 import com.clma.app.data.datastore.usesGeminiChatUi
+import com.clma.app.data.datastore.usesModernChatUi
+import com.clma.app.ui.components.ui.ModernSurfaceCorner
+import com.clma.app.ui.components.ui.ModernUserBubbleShape
+import com.clma.app.ui.components.ui.modernAccentSoft
+import com.clma.app.ui.components.ui.modernThinkFill
 import com.clma.app.data.model.Assistant
 import com.clma.app.data.model.AssistantAffectScope
 import com.clma.app.data.model.AssistantBackgroundMode
@@ -182,6 +187,34 @@ fun ChatMessage(
         horizontalAlignment = if (message.role == MessageRole.USER) Alignment.End else Alignment.Start,
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
+        val modern = settings.usesModernChatUi
+        // 现代布局：头像行里带上时间（助手：圆形图标 + 名字 + 时间；用户：我 + 时间 + 小圆头像）。
+        if (!message.parts.isEmptyUIMessage() && modern) {
+            val timeText = chatMessageTimeText(actionMessage)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+            ) {
+                ChatMessageAssistantAvatar(
+                    message = message,
+                    model = model,
+                    assistant = assistant,
+                    loading = loading,
+                    modifier = Modifier.weight(1f),
+                    time = timeText,
+                    avatarSize = 26.dp,
+                )
+                ChatMessageUserAvatar(
+                    message = message,
+                    avatar = settings.userAvatar,
+                    nickname = settings.userNickname,
+                    modifier = Modifier.weight(1f),
+                    time = timeText,
+                    avatarSize = 22.dp,
+                )
+            }
+        } else
         // Gemini 布局：两侧都不再有头像行，用户消息只靠右对齐的胶囊区分。
         if (!message.parts.isEmptyUIMessage() && !settings.usesGeminiChatUi) {
             Row(
@@ -258,7 +291,7 @@ fun ChatMessage(
         // 时间戳默认跟着操作栏走（同一行右端，见 ChatMessageActionButtons）；
         // 操作栏不显示时（流式中、插话打断的前半）才在这里单独显示。
         // 空消息（首 token 之前）不显示。
-        if (message.parts.isEmptyUIMessage().not() && !showActions) {
+        if (message.parts.isEmptyUIMessage().not() && !showActions && !modern) {
             ChatMessageTimestamp(
                 message = actionMessage,
                 photoShown = photoShown,
@@ -287,6 +320,22 @@ fun ChatMessage(
                     onClearTranslation = onClearTranslation,
                     photoShown = photoShown,
                     hazeState = hazeState,
+                    showTime = !modern,
+                    trailing = if (modern && message.role == MessageRole.ASSISTANT) {
+                        {
+                            ProvideTextStyle(textStyle) {
+                                ChatMessageNerdLine(
+                                    message = message,
+                                    turnFooter = turnFooter,
+                                    photoShown = photoShown,
+                                    hazeState = hazeState,
+                                    chip = true,
+                                )
+                            }
+                        }
+                    } else {
+                        null
+                    },
                 )
             }
         }
@@ -296,13 +345,17 @@ fun ChatMessage(
             assistant = assistant,
         )
 
-        ProvideTextStyle(textStyle) {
-            ChatMessageNerdLine(
-                message = message,
-                turnFooter = turnFooter,
-                photoShown = photoShown,
-                hazeState = hazeState,
-            )
+        // 现代布局下用量小块已经挪到操作栏右端；操作栏还没出来（生成中）时才单独显示。
+        if (!(modern && showActions && message.role == MessageRole.ASSISTANT)) {
+            ProvideTextStyle(textStyle) {
+                ChatMessageNerdLine(
+                    message = message,
+                    turnFooter = turnFooter,
+                    photoShown = photoShown,
+                    hazeState = hazeState,
+                    chip = modern,
+                )
+            }
         }
 
     }
@@ -372,11 +425,13 @@ private fun MessagePartsBlock(
     // 消息输出HapticFeedback
     val hapticFeedback = LocalHapticFeedback.current
     val settings = LocalSettings.current
-    // 暖阳 / Gemini 布局：助手消息不带气泡，贴近安静的阅读栏（强制的，不跟开关走）。
+    // 暖阳 / Gemini / 现代布局：助手消息不带气泡，贴近安静的阅读栏（强制的，不跟开关走）。
+    val modern = settings.displaySetting.usesModernChatUi
     val showAssistantBubble =
         settings.displaySetting.showAssistantBubble &&
             settings.displaySetting.effectiveChatLayout != ChatLayout.CLAUDE &&
-            settings.displaySetting.effectiveChatLayout != ChatLayout.GEMINI
+            settings.displaySetting.effectiveChatLayout != ChatLayout.GEMINI &&
+            !modern
     val partsState by rememberUpdatedState(parts)
 
     val handleClickCitation: (String) -> Unit = remember {
@@ -460,14 +515,27 @@ private fun MessagePartsBlock(
                         forceExpanded = hasPendingApproval,
                         showTimeline = !capsule,
                         maskIcons = !capsule,
-                        shape = RoundedCornerShape(if (capsule) 20.dp else 16.dp),
+                        // 现代：12dp 方角；纯思考是一条很淡的主题色底，带工具的是中性浅灰底。
+                        shape = RoundedCornerShape(
+                            when {
+                                modern -> ModernSurfaceCorner
+                                capsule -> 20.dp
+                                else -> 16.dp
+                            }
+                        ),
                         toolCallStyle = toolCallStyle,
                         cardColors = CardDefaults.cardColors(
-                            containerColor = if (capsule) {
+                            containerColor = if (modern && isReasoningOnlyBlock) {
+                                modernThinkFill().let {
+                                    it.copy(alpha = it.alpha * settings.displaySetting.bubbleOpacity)
+                                }
+                            } else if (modern || capsule) {
                                 MaterialTheme.colorScheme.surfaceContainer
+                                    .copy(alpha = settings.displaySetting.bubbleOpacity)
                             } else {
                                 MaterialTheme.colorScheme.surfaceContainerHigh
-                            }.copy(alpha = settings.displaySetting.bubbleOpacity),
+                                    .copy(alpha = settings.displaySetting.bubbleOpacity)
+                            },
                         ),
                     ) { step ->
                         when (step) {
@@ -551,7 +619,13 @@ private fun MessagePartsBlock(
                                         visual = true,
                                     ),
                                     // Gemini 的用户气泡是一块安静的灰面，不是主题色块。
-                                    bubbleColor = (
+                                    // 现代：很淡的主题色底，不加描边。
+                                    bubbleColor = if (modern) {
+                                        // 主题色本身已经很淡，透明度滑块在它的基础上再按比例减。
+                                        modernAccentSoft().let {
+                                            it.copy(alpha = it.alpha * settings.displaySetting.bubbleOpacity)
+                                        }
+                                    } else (
                                         if (settings.displaySetting.usesGeminiChatUi) {
                                             MaterialTheme.colorScheme.surfaceContainerHighest
                                         } else {
@@ -559,6 +633,7 @@ private fun MessagePartsBlock(
                                         }
                                     ).copy(alpha = settings.displaySetting.bubbleOpacity),
                                     capsule = settings.displaySetting.usesGeminiChatUi,
+                                    modern = modern,
                                     onClick = { onUserMessageClick?.invoke() },
                                     onClickCitation = handleClickCitation,
                                 )
@@ -846,6 +921,8 @@ private fun UserMessageBubble(
     onClickCitation: (String) -> Unit,
     // Gemini 风格：更大的圆角胶囊，右下角收一点，读起来像一语气泡而不是卡片。
     capsule: Boolean = false,
+    // 现代：右上角收一个小尖角，四周留白多一点。
+    modern: Boolean = false,
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
     var showToggle by remember(text) { mutableStateOf(UserMessageCollapse.likelyOverflows(text)) }
@@ -855,13 +932,21 @@ private fun UserMessageBubble(
         modifier = Modifier.animateContentSize(),
         shape = if (capsule) {
             RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp, bottomEnd = 6.dp, bottomStart = 22.dp)
+        } else if (modern) {
+            ModernUserBubbleShape
         } else {
             RoundedCornerShape(16.dp)
         },
         color = bubbleColor,
         onClick = onClick,
     ) {
-        Column(modifier = Modifier.padding(if (capsule) 12.dp else 8.dp)) {
+        Column(
+            modifier = if (modern) {
+                Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
+            } else {
+                Modifier.padding(if (capsule) 12.dp else 8.dp)
+            }
+        ) {
             Box(
                 modifier = Modifier
                     .clipToBounds()

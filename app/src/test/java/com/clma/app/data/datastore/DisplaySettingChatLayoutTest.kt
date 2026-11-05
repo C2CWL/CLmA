@@ -99,4 +99,15 @@ class DisplaySettingChatLayoutTest {
         assertEquals(LoadingIndicatorStyle.TWIN_ORBIT, setting.effectiveLoadingIndicatorStyle)
         assertEquals(ChatLayout.CLAUDE, setting.effectiveChatLayout)
     }
+
+    @Test
+    fun `modern chrome applies only to the stored clean value`() {
+        val decoded = JsonInstant.decodeFromString<DisplaySetting>("""{"chatLayout":"clean"}""")
+        assertEquals(ChatLayout.CLEAN, decoded.effectiveChatLayout)
+        assertTrue(decoded.usesModernChatUi)
+        assertTrue(DisplaySetting(cleanLayout = true).usesModernChatUi)
+        assertFalse(DisplaySetting().usesModernChatUi)
+        assertFalse(DisplaySetting(chatLayout = ChatLayout.CLAUDE).usesModernChatUi)
+        assertFalse(DisplaySetting(chatLayout = ChatLayout.GEMINI).usesModernChatUi)
+    }
 }
