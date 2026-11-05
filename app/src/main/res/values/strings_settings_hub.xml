@@ -1,16 +1,16 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!-- 设置首页重组：分组标题、首页行名、右侧状态摘要和拆出的新页面。 -->
 <resources>
-  <string name="setting_hub_group_models">Models &amp; services</string>
+  <string name="setting_hub_group_models">Models</string>
   <string name="setting_hub_group_agent">Agent &amp; tools</string>
   <string name="setting_hub_group_connections">Tools &amp; connections</string>
-  <string name="setting_hub_group_device">Device &amp; permissions</string>
+  <string name="setting_hub_group_device">Environment &amp; device</string>
   <string name="setting_hub_group_automation">Automation &amp; remote</string>
-  <string name="setting_hub_group_appearance">Appearance &amp; interaction</string>
-  <string name="setting_hub_group_chat">Assistants &amp; conversations</string>
-  <string name="setting_hub_group_data">Data &amp; privacy</string>
+  <string name="setting_hub_group_appearance">Appearance</string>
+  <string name="setting_hub_group_chat">Chat</string>
+  <string name="setting_hub_group_data">Data &amp; about</string>
   <string name="setting_hub_group_about">About &amp; diagnostics</string>
-  <string name="setting_hub_search_hint">Search settings…</string>
+  <string name="setting_hub_search_hint">Search settings</string>
   <string name="setting_hub_providers">Providers &amp; keys</string>
   <string name="setting_hub_default_model">Default models</string>
   <string name="setting_hub_assistant">Assistants &amp; system prompts</string>
@@ -63,6 +63,10 @@
   <string name="setting_hub_category_chat_desc">Assistants, prompts and conversation context</string>
   <string name="setting_hub_category_connections_desc">Skills, tools, permissions and automation</string>
   <string name="setting_hub_category_appearance_desc">Themes, typography, layouts and interaction</string>
-  <string name="setting_hub_category_data_desc">Backups, files and stored credentials</string>
+  <string name="setting_hub_category_data_desc">Backups, files, credentials, diagnostics and about</string>
   <string name="setting_hub_category_about_desc">Diagnostics, logs and app information</string>
+  <string name="setting_hub_subsection_data">Data</string>
+  <string name="setting_hub_subsection_about">About</string>
+  <string name="setting_hub_category_agent_desc">Workspaces, skills, MCP, connectors and automation</string>
+  <string name="setting_hub_category_device_desc">Network, Termux, browser, permissions and remote access</string>
 </resources>

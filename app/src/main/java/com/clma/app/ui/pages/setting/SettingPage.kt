@@ -4,10 +4,8 @@ import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -20,8 +18,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -47,46 +43,48 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.rerere.hugeicons.HugeIcons
-import me.rerere.hugeicons.stroke.AiMagic
+import me.rerere.hugeicons.stroke.AiSparkles
 import me.rerere.hugeicons.stroke.Alert01
 import me.rerere.hugeicons.stroke.ArrowRight01
+import me.rerere.hugeicons.stroke.Bell
 import me.rerere.hugeicons.stroke.Book03
 import me.rerere.hugeicons.stroke.Bookshelf01
-import me.rerere.hugeicons.stroke.Clapping01
+import me.rerere.hugeicons.stroke.Browser
 import me.rerere.hugeicons.stroke.Clock02
 import me.rerere.hugeicons.stroke.ComputerTerminal01
-import me.rerere.hugeicons.stroke.Connect
-import me.rerere.hugeicons.stroke.Console
 import me.rerere.hugeicons.stroke.Database02
 import me.rerere.hugeicons.stroke.Developer
 import me.rerere.hugeicons.stroke.Earth
+import me.rerere.hugeicons.stroke.Flow
 import me.rerere.hugeicons.stroke.Folder01
 import me.rerere.hugeicons.stroke.GlobalSearch
+import me.rerere.hugeicons.stroke.IdCard
 import me.rerere.hugeicons.stroke.ImageUpload
+import me.rerere.hugeicons.stroke.InformationCircle
 import me.rerere.hugeicons.stroke.Internet
 import me.rerere.hugeicons.stroke.Keyboard
 import me.rerere.hugeicons.stroke.LayoutTop
 import me.rerere.hugeicons.stroke.Link01
 import me.rerere.hugeicons.stroke.Lock
 import me.rerere.hugeicons.stroke.LookTop
-import me.rerere.hugeicons.stroke.McpServer
-import me.rerere.hugeicons.stroke.Megaphone01
 import me.rerere.hugeicons.stroke.Message01
+import me.rerere.hugeicons.stroke.Mic01
 import me.rerere.hugeicons.stroke.Moon02
 import me.rerere.hugeicons.stroke.Notification01
 import me.rerere.hugeicons.stroke.Palette
-import me.rerere.hugeicons.stroke.Puzzle
+import me.rerere.hugeicons.stroke.Plug
 import me.rerere.hugeicons.stroke.Robot01
 import me.rerere.hugeicons.stroke.ServerStack01
 import me.rerere.hugeicons.stroke.Share04
 import me.rerere.hugeicons.stroke.Shield01
 import me.rerere.hugeicons.stroke.SmartPhone01
+import me.rerere.hugeicons.stroke.Star
 import me.rerere.hugeicons.stroke.TextFont
-import me.rerere.hugeicons.stroke.Tick01
 import me.rerere.hugeicons.stroke.Timer01
 import me.rerere.hugeicons.stroke.View
 import me.rerere.hugeicons.stroke.Wrench01
@@ -105,6 +103,7 @@ import com.clma.app.data.files.FilesManager
 import com.clma.app.data.preferences.ToolApprovalPreferences
 import com.clma.app.data.secrets.AgentSecretsStore
 import com.clma.app.ui.components.nav.BackButton
+import com.clma.app.ui.components.ui.CardGroup
 import com.clma.app.ui.context.LocalNavController
 import com.clma.app.ui.context.Navigator
 import com.clma.app.ui.hooks.rememberColorMode
@@ -151,77 +150,93 @@ fun SettingPage(
         containerColor = CustomColors.topBarColors.containerColor,
     ) { innerPadding ->
         val context = LocalContext.current
-        val statusSource = if (section != null) rememberHubStatusSource() else null
+        val statusSource = rememberHubStatusSource()
         val shareText = stringResource(R.string.setting_page_share_text)
         val shareLabel = stringResource(R.string.setting_page_share)
         val noShareApp = stringResource(R.string.setting_page_no_share_app)
 
+        fun openItem(itemId: SettingsHubItemId) {
+            when (itemId) {
+                SettingsHubItemId.SHARE -> {
+                    val intent = Intent(Intent.ACTION_SEND)
+                    intent.type = "text/plain"
+                    intent.putExtra(Intent.EXTRA_TEXT, shareText)
+                    try {
+                        context.startActivity(Intent.createChooser(intent, shareLabel))
+                    } catch (_: ActivityNotFoundException) {
+                        Toast.makeText(context, noShareApp, Toast.LENGTH_SHORT).show()
+                    }
+                }
+                else -> settingsHubItems.getValue(itemId).route?.let { navController.navigate(it) }
+            }
+        }
+
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = innerPadding + PaddingValues(horizontal = 20.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = innerPadding + PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             if (section == null) {
                 item("search") {
                     HubSearchBox(onClick = { navController.navigate(Screen.SettingsSearch) })
                 }
                 if (settings.isNotConfigured()) {
-                    item("provider_warning") { ProviderConfigWarningCard(navController) }
-                }
-                item("categories_title") {
-                    Text(
-                        text = stringResource(R.string.setting_hub_categories),
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(start = 4.dp, top = 12.dp, bottom = 4.dp),
-                    )
-                }
-                items(settingsHubSections, key = { it.id.name }) { category ->
-                    HubCategoryCard(
-                        section = category,
-                        onClick = { navController.navigate(category.route) },
-                    )
-                }
-            } else {
-                item("category_intro") {
-                    Column(
-                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Text(
-                            text = stringResource(section.descriptionRes),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Text(
-                            text = stringResource(R.string.setting_hub_category_count, section.items.size),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
+                    item("provider_warning") {
+                        Spacer(Modifier.height(8.dp))
+                        ProviderConfigWarningCard(navController)
                     }
                 }
-                items(section.items, key = { it.name }) { itemId ->
-                    val def = settingsHubItems.getValue(itemId)
-                    HubRow(
-                        icon = hubItemIcon(itemId),
-                        title = stringResource(def.titleRes),
-                        summary = statusSource?.let { hubItemSummary(itemId, settings, it) },
-                        onClick = {
-                            when (itemId) {
-                                SettingsHubItemId.SHARE -> {
-                                    val intent = Intent(Intent.ACTION_SEND)
-                                    intent.type = "text/plain"
-                                    intent.putExtra(Intent.EXTRA_TEXT, shareText)
-                                    try {
-                                        context.startActivity(Intent.createChooser(intent, shareLabel))
-                                    } catch (e: ActivityNotFoundException) {
-                                        Toast.makeText(context, noShareApp, Toast.LENGTH_SHORT).show()
-                                    }
-                                }
-                                else -> def.route?.let { navController.navigate(it) }
+                settingsHubSections.forEach { category ->
+                    item("section_label_${category.id.name}") {
+                        Text(
+                            text = stringResource(category.titleRes),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.padding(start = 8.dp, top = 14.dp, bottom = 6.dp),
+                        )
+                    }
+                    category.itemGroups().forEachIndexed { groupIndex, (subLabel, itemIds) ->
+                        if (subLabel != null) {
+                            item("sub_${category.id.name}_$groupIndex") {
+                                Text(
+                                    text = stringResource(subLabel),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(start = 8.dp, top = 4.dp, bottom = 4.dp),
+                                )
                             }
-                        },
-                    )
+                        }
+                        item("group_${category.id.name}_$groupIndex") {
+                            HubLeafGroup(
+                                itemIds = itemIds,
+                                settings = settings,
+                                status = statusSource,
+                                onOpen = ::openItem,
+                            )
+                        }
+                    }
+                }
+            } else {
+                section.itemGroups().forEachIndexed { groupIndex, (subLabel, itemIds) ->
+                    if (subLabel != null) {
+                        item("sub_$groupIndex") {
+                            Text(
+                                text = stringResource(subLabel),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(start = 8.dp, top = 8.dp, bottom = 4.dp),
+                            )
+                        }
+                    }
+                    item("group_$groupIndex") {
+                        HubLeafGroup(
+                            itemIds = itemIds,
+                            settings = settings,
+                            status = statusSource,
+                            onOpen = ::openItem,
+                        )
+                    }
                 }
             }
             item("bottom_spacer") { Spacer(Modifier.height(24.dp)) }
@@ -230,173 +245,93 @@ fun SettingPage(
 }
 
 @Composable
-private fun HubCategoryCard(section: SettingsHubSectionDef, onClick: () -> Unit) {
-    val colors = MaterialTheme.colorScheme
-    val (iconContainer, iconColor) = when (section.id) {
-        SettingsHubSectionId.MODELS, SettingsHubSectionId.APPEARANCE ->
-            colors.primaryContainer to colors.onPrimaryContainer
-        SettingsHubSectionId.CHAT, SettingsHubSectionId.DATA ->
-            colors.tertiaryContainer to colors.onTertiaryContainer
-        else -> colors.secondaryContainer to colors.onSecondaryContainer
-    }
-    val icon = when (section.id) {
-        SettingsHubSectionId.MODELS -> HugeIcons.ServerStack01
-        SettingsHubSectionId.CHAT -> HugeIcons.Message01
-        SettingsHubSectionId.CONNECTIONS -> HugeIcons.Puzzle
-        SettingsHubSectionId.APPEARANCE -> HugeIcons.Palette
-        SettingsHubSectionId.DATA -> HugeIcons.Shield01
-        SettingsHubSectionId.ABOUT -> HugeIcons.Wrench01
-        SettingsHubSectionId.AGENT -> HugeIcons.Robot01
-        SettingsHubSectionId.DEVICE -> HugeIcons.SmartPhone01
-        SettingsHubSectionId.AUTOMATION -> HugeIcons.Clock02
-    }
-    Surface(
-        onClick = onClick,
-        shape = HubCardShape,
-        color = colors.surfaceContainerLowest,
-        border = BorderStroke(1.dp, colors.outlineVariant.copy(alpha = 0.7f)),
-        shadowElevation = 1.dp,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Row(
-            modifier = Modifier
-                .heightIn(min = 112.dp)
-                .padding(18.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
-            Surface(
-                shape = RoundedCornerShape(18.dp),
-                color = iconContainer,
-                contentColor = iconColor,
-            ) {
-                Box(Modifier.size(52.dp), contentAlignment = Alignment.Center) {
-                    Icon(icon, null, Modifier.size(26.dp))
-                }
-            }
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                Text(
-                    text = stringResource(section.titleRes),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    text = stringResource(section.descriptionRes),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = colors.onSurfaceVariant,
-                )
-            }
-            Surface(shape = CircleShape, color = colors.surfaceContainerLow) {
-                Box(Modifier.size(28.dp), contentAlignment = Alignment.Center) {
-                    Icon(HugeIcons.ArrowRight01, null, Modifier.size(16.dp), tint = colors.onSurfaceVariant)
-                }
-            }
+private fun HubLeafGroup(
+    itemIds: List<SettingsHubItemId>,
+    settings: Settings,
+    status: HubStatusSource,
+    onOpen: (SettingsHubItemId) -> Unit,
+) {
+    CardGroup {
+        itemIds.forEach { itemId ->
+            val def = settingsHubItems.getValue(itemId)
+            val summary = hubItemSummary(itemId, settings, status)
+            item(
+                onClick = { onOpen(itemId) },
+                leadingContent = {
+                    Icon(
+                        hubItemIcon(itemId),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.88f),
+                        modifier = Modifier.size(20.dp),
+                    )
+                },
+                headlineContent = {
+                    Text(
+                        text = stringResource(def.titleRes),
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            fontSize = 15.5.sp,
+                            lineHeight = 20.sp,
+                            fontWeight = FontWeight.Normal,
+                        ),
+                    )
+                },
+                supportingContent = if (!summary.isNullOrBlank()) {
+                    {
+                        Text(
+                            text = summary,
+                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                        )
+                    }
+                } else {
+                    null
+                },
+                trailingContent = {
+                    Icon(
+                        HugeIcons.ArrowRight01,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
+                        modifier = Modifier.size(16.dp),
+                    )
+                },
+            )
         }
     }
 }
 
-private val HubCardShape = RoundedCornerShape(28.dp)
-private val HubIconSize = 40.dp
-private val HubRowStartPadding = 16.dp
-private val HubRowGap = 14.dp
+private val HubSearchShape = RoundedCornerShape(13.dp)
 
 /** Entry into the existing settings search page. */
 @Composable
 private fun HubSearchBox(onClick: () -> Unit) {
     val hint = stringResource(R.string.setting_hub_search_hint)
     Surface(
-        shape = RoundedCornerShape(24.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerLowest,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f)),
+        shape = HubSearchShape,
+        color = MaterialTheme.colorScheme.surfaceContainer,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 4.dp)
-            .clip(RoundedCornerShape(24.dp))
+            .padding(top = 2.dp, bottom = 2.dp)
+            .clip(HubSearchShape)
             .clickable(role = Role.Button, onClickLabel = hint, onClick = onClick),
     ) {
         Row(
             modifier = Modifier
-                .heightIn(min = 56.dp)
-                .padding(horizontal = 16.dp),
+                .heightIn(min = 36.dp, max = 40.dp)
+                .padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
                 HugeIcons.GlobalSearch,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(22.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                modifier = Modifier.size(17.dp),
             )
-            Spacer(Modifier.width(10.dp))
+            Spacer(Modifier.width(8.dp))
             Text(
                 text = hint,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
-
-@Composable
-private fun HubRow(
-    icon: ImageVector,
-    title: String,
-    summary: String?,
-    onClick: () -> Unit,
-) {
-    Surface(
-        onClick = onClick,
-        shape = HubCardShape,
-        color = MaterialTheme.colorScheme.surfaceContainerLowest,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f)),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Row(
-            modifier = Modifier
-                .heightIn(min = 80.dp)
-                .padding(start = HubRowStartPadding, end = 16.dp, top = 12.dp, bottom = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(HubIconSize)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.size(20.dp),
-                )
-            }
-            Spacer(Modifier.width(HubRowGap))
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                if (!summary.isNullOrBlank()) {
-                    Text(
-                        text = summary,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-            Spacer(Modifier.width(4.dp))
-            Icon(
-                HugeIcons.ArrowRight01,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.outline,
-                modifier = Modifier.size(18.dp),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
             )
         }
     }
@@ -419,8 +354,6 @@ private fun rememberHubStatusSource(): HubStatusSource {
     val filesManager: FilesManager = koinInject()
     val approvalPrefs: ToolApprovalPreferences = koinInject()
     val secretsStore: AgentSecretsStore = koinInject()
-    // Turn budget and tool steps are stored in TermuxPreferences; read them the same way the
-    // 运行与上下文 page does.
     val termuxVm: SettingTermuxViewModel = koinViewModel()
     val termuxConfig by termuxVm.config.collectAsStateWithLifecycle()
     val approvalMode by approvalPrefs.modeFlow.collectAsStateWithLifecycle(initialValue = ApprovalMode.MANUAL)
@@ -428,11 +361,9 @@ private fun rememberHubStatusSource(): HubStatusSource {
     val colorMode by rememberColorMode()
     var notificationAccess by remember { mutableStateOf(false) }
     var secretCount by remember { mutableStateOf(0) }
-    // Re-checked each time the hub comes back to the front (the user may have just granted it).
     LifecycleResumeEffect(context) {
         notificationAccess = NotificationManagerCompat.getEnabledListenerPackages(context)
             .contains(context.packageName)
-        // Names and timestamps only — entries() never decrypts a value, so this stays cheap.
         secretCount = secretsStore.entries().size
         onPauseOrDispose { }
     }
@@ -539,8 +470,6 @@ private fun hubItemSummary(id: SettingsHubItemId, settings: Settings, status: Hu
         )
         SettingsHubItemId.SECRETS -> count(status.secretCount)
         SettingsHubItemId.ABOUT -> "v${BuildConfig.VERSION_NAME}"
-        // No cheap, reliable status for these (they need a database read, a service probe or an
-        // external app check), so the row shows only its chevron.
         SettingsHubItemId.WORKSPACES,
         SettingsHubItemId.SKILLS,
         SettingsHubItemId.TERMUX,
@@ -559,30 +488,30 @@ private fun hubItemSummary(id: SettingsHubItemId, settings: Settings, status: Hu
 }
 
 private fun hubItemIcon(id: SettingsHubItemId): ImageVector = when (id) {
-    SettingsHubItemId.PROVIDERS -> HugeIcons.ServerStack01
-    SettingsHubItemId.MODELS -> HugeIcons.AiMagic
-    SettingsHubItemId.ASSISTANT -> HugeIcons.LookTop
+    SettingsHubItemId.PROVIDERS -> HugeIcons.IdCard
+    SettingsHubItemId.MODELS -> HugeIcons.Star
+    SettingsHubItemId.ASSISTANT -> HugeIcons.Robot01
     SettingsHubItemId.PROMPTS -> HugeIcons.Book03
-    SettingsHubItemId.SEARCH -> HugeIcons.GlobalSearch
-    SettingsHubItemId.SPEECH -> HugeIcons.Megaphone01
+    SettingsHubItemId.SEARCH -> HugeIcons.Earth
+    SettingsHubItemId.SPEECH -> HugeIcons.Mic01
     SettingsHubItemId.WORKSPACES -> HugeIcons.Folder01
-    SettingsHubItemId.SKILLS -> HugeIcons.Puzzle
-    SettingsHubItemId.MCP -> HugeIcons.McpServer
-    SettingsHubItemId.SUB_AGENTS -> HugeIcons.Robot01
-    SettingsHubItemId.TOOL_APPROVALS -> HugeIcons.Tick01
+    SettingsHubItemId.SKILLS -> HugeIcons.AiSparkles
+    SettingsHubItemId.MCP -> HugeIcons.Plug
+    SettingsHubItemId.SUB_AGENTS -> HugeIcons.LookTop
+    SettingsHubItemId.TOOL_APPROVALS -> HugeIcons.Shield01
     SettingsHubItemId.RUNTIME -> HugeIcons.Timer01
     SettingsHubItemId.NETWORK -> HugeIcons.Internet
     SettingsHubItemId.TERMUX -> HugeIcons.ComputerTerminal01
     SettingsHubItemId.SSH -> HugeIcons.Link01
-    SettingsHubItemId.BROWSER -> HugeIcons.Earth
+    SettingsHubItemId.BROWSER -> HugeIcons.Browser
     SettingsHubItemId.CONNECTORS -> HugeIcons.Link01
     SettingsHubItemId.SECRETS -> HugeIcons.Lock
     SettingsHubItemId.PERMISSIONS -> HugeIcons.Shield01
     SettingsHubItemId.ACCESSIBILITY -> HugeIcons.SmartPhone01
-    SettingsHubItemId.SHIZUKU -> HugeIcons.Console
-    SettingsHubItemId.NOTIF_ACCESS -> HugeIcons.Notification01
+    SettingsHubItemId.SHIZUKU -> HugeIcons.Zap
+    SettingsHubItemId.NOTIF_ACCESS -> HugeIcons.Bell
     SettingsHubItemId.FLOATING_BALL -> HugeIcons.Message01
-    SettingsHubItemId.WORKFLOWS -> HugeIcons.Connect
+    SettingsHubItemId.WORKFLOWS -> HugeIcons.Flow
     SettingsHubItemId.SCHEDULED -> HugeIcons.Clock02
     SettingsHubItemId.WEB -> HugeIcons.ServerStack01
     SettingsHubItemId.VISUAL_STYLE -> HugeIcons.Palette
@@ -597,7 +526,7 @@ private fun hubItemIcon(id: SettingsHubItemId): ImageVector = when (id) {
     SettingsHubItemId.FILES -> HugeIcons.ImageUpload
     SettingsHubItemId.LOGS -> HugeIcons.Bookshelf01
     SettingsHubItemId.DOCTOR -> HugeIcons.Wrench01
-    SettingsHubItemId.ABOUT -> HugeIcons.Clapping01
+    SettingsHubItemId.ABOUT -> HugeIcons.InformationCircle
     SettingsHubItemId.SHARE -> HugeIcons.Share04
 }
 
@@ -605,21 +534,21 @@ private fun hubItemIcon(id: SettingsHubItemId): ImageVector = when (id) {
 private fun ProviderConfigWarningCard(navController: Navigator) {
     Surface(
         onClick = { navController.navigate(Screen.SettingProvider) },
-        shape = HubCardShape,
+        shape = RoundedCornerShape(20.dp),
         color = MaterialTheme.colorScheme.errorContainer,
         contentColor = MaterialTheme.colorScheme.onErrorContainer,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.2f)),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
-            modifier = Modifier.padding(18.dp),
+            modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Icon(HugeIcons.Alert01, null, Modifier.size(24.dp))
+            Icon(HugeIcons.Alert01, null, Modifier.size(22.dp))
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Text(
                     stringResource(R.string.setting_page_config_api_title),
@@ -630,7 +559,7 @@ private fun ProviderConfigWarningCard(navController: Navigator) {
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
-            Icon(HugeIcons.ArrowRight01, stringResource(R.string.setting_page_config), Modifier.size(20.dp))
+            Icon(HugeIcons.ArrowRight01, stringResource(R.string.setting_page_config), Modifier.size(18.dp))
         }
     }
 }

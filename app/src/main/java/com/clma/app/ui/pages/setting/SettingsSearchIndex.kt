@@ -227,14 +227,12 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
             row(R.string.setting_model_page_translate_model, R.string.setting_model_page_translate_model_desc, tab = modelsModelTab),
             row(R.string.setting_model_page_image_recognition_mode, R.string.setting_model_page_image_recognition_mode_desc, tab = modelsModelTab),
             row(R.string.setting_model_page_ocr_model, R.string.setting_model_page_ocr_model_desc, tab = modelsModelTab),
-            row(R.string.setting_model_page_compress_model, R.string.setting_model_page_compress_model_desc, tab = modelsModelTab),
             row(R.string.assistant_page_thinking_budget, tab = modelsModelTab),
             row(R.string.setting_model_page_enable_suggestion, tab = modelsModelTab),
             row(R.string.setting_model_page_prompt_title, null, R.string.setting_model_page_prompt, tab = modelsPromptTab),
             row(R.string.setting_model_page_prompt_suggestion, null, R.string.setting_model_page_prompt, tab = modelsPromptTab),
             row(R.string.setting_model_page_prompt_translation, null, R.string.setting_model_page_prompt, tab = modelsPromptTab),
             row(R.string.setting_model_page_prompt_ocr, null, R.string.setting_model_page_prompt, tab = modelsPromptTab),
-            row(R.string.setting_model_page_prompt_compress, null, R.string.setting_model_page_prompt, tab = modelsPromptTab),
         ),
     ),
     SettingsSearchPageSpec(
@@ -247,6 +245,7 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
             row(R.string.setting_display_page_parse_text_tool_calls_title, R.string.setting_display_page_parse_text_tool_calls_desc),
             row(R.string.setting_runtime_section_compaction),
             row(R.string.setting_model_page_enable_auto_compaction, R.string.setting_model_page_enable_auto_compaction_desc),
+            row(R.string.setting_model_page_compress_model, R.string.setting_model_page_compress_model_desc),
             row(R.string.setting_compaction_engine, R.string.setting_compaction_engine_desc,
                 R.string.setting_compaction_engine_model, R.string.setting_compaction_engine_hybrid),
             row(R.string.setting_precision_compaction, R.string.setting_precision_compaction_desc),
@@ -255,6 +254,7 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
             row(R.string.setting_model_page_auto_compaction_tokens, R.string.setting_model_page_auto_compaction_tokens_desc),
             row(R.string.setting_model_page_auto_compaction_keep_tool_calls),
             row(R.string.setting_model_page_context_compaction_target, R.string.setting_model_page_context_compaction_target_desc),
+            row(R.string.setting_model_page_prompt_compress, null, R.string.setting_model_page_compress_prompt_vars),
         ),
     ),
     SettingsSearchPageSpec(
@@ -465,7 +465,16 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
             row(R.string.setting_secrets_page_about_title),
         ),
     ),
-    SettingsSearchPageSpec(
+        SettingsSearchPageSpec(
+        route = Screen.SettingConnectors,
+        items = listOf(
+            row(R.string.connector_privacy_title, R.string.connector_privacy_body),
+            row(R.string.connector_gmail_send),
+            row(R.string.connector_github_writes),
+            row(R.string.connector_local_drafts, R.string.connector_local_drafts_note),
+        ),
+    ),
+SettingsSearchPageSpec(
         route = Screen.SettingWeb,
         items = listOf(
             row(R.string.setting_page_web_server_port, R.string.setting_page_web_server_port_desc),

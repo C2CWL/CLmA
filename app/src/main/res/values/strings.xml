@@ -1126,7 +1126,7 @@
   <string name="setting_page_hub_chat_display">Chat display</string>
   <string name="setting_page_hub_chat_actions">Chat actions</string>
   <string name="setting_page_hub_app_alerts">App alerts</string>
-  <string name="setting_page_hub_notif_access">Notification access</string>
+  <string name="setting_page_hub_notif_access">Notification access permission</string>
   <string name="setting_page_hub_notif_access_desc">Read system notifications and recent activity</string>
   <string name="setting_page_hub_network_desc">Proxy, User-Agent, retries and stream timeouts</string>
 

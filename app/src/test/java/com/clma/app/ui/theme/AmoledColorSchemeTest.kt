@@ -32,11 +32,20 @@ class AmoledColorSchemeTest {
     @Test
     fun `cards and dialogs retain neutral dark elevation levels`() {
         val scheme = darkColorScheme().withAmoledDarkMode(enabled = true)
-        assertEquals(Color(0xFF101010), scheme.surfaceContainer)
+        assertEquals(Color(0xFF0A0A0A), scheme.surfaceContainer)
         assertEquals(Color(0xFF181818), scheme.surfaceContainerHigh)
         assertEquals(Color(0xFF222222), scheme.surfaceContainerHighest)
         assertEquals(Color(0xFF222222), scheme.surfaceBright)
         assertEquals(Color(0xFF222222), scheme.surfaceVariant)
+    }
+
+
+    @Test
+    fun `list items use near-black instead of grey slabs`() {
+        val scheme = darkColorScheme().withAmoledDarkMode(enabled = true)
+        assertEquals(Color(0xFF0A0A0A), scheme.surfaceContainer)
+        assertEquals(Color.Black, scheme.surfaceContainerLowest)
+        assertEquals(Color.Black, scheme.surfaceContainerLow)
     }
 
     @Test

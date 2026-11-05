@@ -13,7 +13,7 @@ internal fun ColorScheme.withAmoledDarkMode(enabled: Boolean): ColorScheme {
         surfaceContainerLowest = Color.Black,
         // Settings scaffolds and top bars use this role as their page background.
         surfaceContainerLow = Color.Black,
-        surfaceContainer = Color(0xFF101010),
+        surfaceContainer = Color(0xFF0A0A0A),
         surfaceContainerHigh = Color(0xFF181818),
         surfaceContainerHighest = Color(0xFF222222),
         surfaceBright = Color(0xFF222222),

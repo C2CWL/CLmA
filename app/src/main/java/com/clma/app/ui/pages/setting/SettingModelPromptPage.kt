@@ -27,7 +27,6 @@ import com.clma.ai.core.ReasoningLevel
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ArrowRight01
 import com.clma.app.R
-import com.clma.app.data.ai.prompts.DEFAULT_COMPRESS_PROMPT
 import com.clma.app.data.ai.prompts.DEFAULT_OCR_PROMPT
 import com.clma.app.data.ai.prompts.DEFAULT_SUGGESTION_PROMPT
 import com.clma.app.data.ai.prompts.DEFAULT_TITLE_PROMPT
@@ -81,15 +80,6 @@ internal fun PromptSettingsPage(settings: Settings, vm: SettingVM, contentPaddin
                 promptValue = settings.ocrPrompt,
                 onPromptChange = { text -> vm.updateSettings { it.copy(ocrPrompt = text) } },
                 onResetPrompt = { vm.updateSettings(settings.copy(ocrPrompt = DEFAULT_OCR_PROMPT)) },
-            )
-        }
-        item {
-            PromptSettingItem(
-                title = stringResource(R.string.setting_model_page_prompt_compress),
-                promptDescription = stringResource(R.string.setting_model_page_compress_prompt_vars),
-                promptValue = settings.compressPrompt,
-                onPromptChange = { text -> vm.updateSettings { it.copy(compressPrompt = text) } },
-                onResetPrompt = { vm.updateSettings(settings.copy(compressPrompt = DEFAULT_COMPRESS_PROMPT)) },
             )
         }
     }

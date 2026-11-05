@@ -130,19 +130,35 @@ class SettingsSearchIndexTest {
     }
 
     @Test
-    fun `assistant and context live together while secrets belong to privacy`() {
+    fun `assistant and context live together while secrets and logs belong to data`() {
         fun groupOf(id: SettingsHubItemId) = settingsHubSections.single { id in it.items }.id
         assertEquals(SettingsHubSectionId.CHAT, groupOf(SettingsHubItemId.ASSISTANT))
         assertEquals(SettingsHubSectionId.CHAT, groupOf(SettingsHubItemId.RUNTIME))
         assertEquals(SettingsHubSectionId.DATA, groupOf(SettingsHubItemId.SECRETS))
-        assertEquals(SettingsHubSectionId.ABOUT, groupOf(SettingsHubItemId.LOGS))
+        assertEquals(SettingsHubSectionId.DATA, groupOf(SettingsHubItemId.LOGS))
+        assertEquals(SettingsHubSectionId.AGENT, groupOf(SettingsHubItemId.WORKFLOWS))
+        assertEquals(SettingsHubSectionId.DEVICE, groupOf(SettingsHubItemId.WEB))
     }
 
     @Test
-    fun `network sits in the connections group`() {
+    fun `network sits in the environment group`() {
         val entry = settingsSearchIndex(developerMode = false)
             .single { it.route == Screen.SettingPreferencesNetwork && it.parentTitleRes == null }
-        assertEquals(R.string.setting_hub_group_connections, entry.groupRes)
+        assertEquals(R.string.setting_hub_group_device, entry.groupRes)
+    }
+
+    @Test
+    fun `compress model and prompt resolve to runtime`() {
+        assertEquals(
+            Screen.SettingRuntime,
+            settingsSearchIndex(developerMode = false)
+                .single { it.titleRes == R.string.setting_model_page_compress_model }.route,
+        )
+        assertEquals(
+            Screen.SettingRuntime,
+            settingsSearchIndex(developerMode = false)
+                .single { it.titleRes == R.string.setting_model_page_prompt_compress }.route,
+        )
     }
 
     @Test
