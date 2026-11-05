@@ -6,6 +6,7 @@ import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -18,6 +19,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -108,7 +111,6 @@ import com.clma.app.ui.context.LocalNavController
 import com.clma.app.ui.context.Navigator
 import com.clma.app.ui.hooks.rememberColorMode
 import com.clma.app.ui.pages.setting.termux.SettingTermuxViewModel
-import com.clma.app.ui.theme.CustomColors
 import com.clma.app.ui.theme.VisualStyle
 import com.clma.app.utils.plus
 import org.koin.androidx.compose.koinViewModel
@@ -124,6 +126,8 @@ fun SettingPage(
     val navController = LocalNavController.current
     val settings by vm.settings.collectAsStateWithLifecycle()
     val section = settingsHubSections.firstOrNull { it.id == sectionId }
+    val pageColor = settingsPageContainerColor()
+    val topBarColors = settingsTopBarColors()
 
     Scaffold(
         topBar = {
@@ -143,14 +147,14 @@ fun SettingPage(
                     }
                 },
                 scrollBehavior = scrollBehavior,
-                colors = CustomColors.topBarColors,
+                colors = topBarColors,
             )
         },
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        containerColor = CustomColors.topBarColors.containerColor,
+        containerColor = pageColor,
     ) { innerPadding ->
         val context = LocalContext.current
-        val statusSource = rememberHubStatusSource()
+        val statusSource = if (section != null) rememberHubStatusSource() else null
         val shareText = stringResource(R.string.setting_page_share_text)
         val shareLabel = stringResource(R.string.setting_page_share)
         val noShareApp = stringResource(R.string.setting_page_no_share_app)
@@ -174,7 +178,7 @@ fun SettingPage(
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = innerPadding + PaddingValues(horizontal = 14.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
+            verticalArrangement = Arrangement.spacedBy(if (section == null) 10.dp else 2.dp),
         ) {
             if (section == null) {
                 item("search") {
@@ -182,40 +186,23 @@ fun SettingPage(
                 }
                 if (settings.isNotConfigured()) {
                     item("provider_warning") {
-                        Spacer(Modifier.height(8.dp))
                         ProviderConfigWarningCard(navController)
                     }
                 }
-                settingsHubSections.forEach { category ->
-                    item("section_label_${category.id.name}") {
-                        Text(
-                            text = stringResource(category.titleRes),
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontWeight = FontWeight.Medium,
-                            modifier = Modifier.padding(start = 8.dp, top = 14.dp, bottom = 6.dp),
-                        )
-                    }
-                    category.itemGroups().forEachIndexed { groupIndex, (subLabel, itemIds) ->
-                        if (subLabel != null) {
-                            item("sub_${category.id.name}_$groupIndex") {
-                                Text(
-                                    text = stringResource(subLabel),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(start = 8.dp, top = 4.dp, bottom = 4.dp),
-                                )
-                            }
-                        }
-                        item("group_${category.id.name}_$groupIndex") {
-                            HubLeafGroup(
-                                itemIds = itemIds,
-                                settings = settings,
-                                status = statusSource,
-                                onOpen = ::openItem,
-                            )
-                        }
-                    }
+                item("categories_title") {
+                    Text(
+                        text = stringResource(R.string.setting_hub_categories),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(start = 4.dp, top = 8.dp, bottom = 2.dp),
+                    )
+                }
+                items(settingsHubSections, key = { it.id.name }) { category ->
+                    HubCategoryCard(
+                        section = category,
+                        onClick = { navController.navigate(category.route) },
+                    )
                 }
             } else {
                 section.itemGroups().forEachIndexed { groupIndex, (subLabel, itemIds) ->
@@ -233,13 +220,87 @@ fun SettingPage(
                         HubLeafGroup(
                             itemIds = itemIds,
                             settings = settings,
-                            status = statusSource,
+                            status = statusSource!!,
                             onOpen = ::openItem,
                         )
                     }
                 }
             }
             item("bottom_spacer") { Spacer(Modifier.height(24.dp)) }
+        }
+    }
+}
+
+private val HubCategoryShape = RoundedCornerShape(22.dp)
+
+/** Six category entry cards on the hub home — drill into the section's leaf list. */
+@Composable
+private fun HubCategoryCard(section: SettingsHubSectionDef, onClick: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    val (iconContainer, iconColor) = when (section.id) {
+        SettingsHubSectionId.MODELS, SettingsHubSectionId.APPEARANCE ->
+            colors.primaryContainer.copy(alpha = 0.72f) to colors.onPrimaryContainer
+        SettingsHubSectionId.CHAT, SettingsHubSectionId.DATA ->
+            colors.tertiaryContainer.copy(alpha = 0.72f) to colors.onTertiaryContainer
+        SettingsHubSectionId.AGENT, SettingsHubSectionId.DEVICE ->
+            colors.secondaryContainer.copy(alpha = 0.72f) to colors.onSecondaryContainer
+    }
+    val icon = when (section.id) {
+        SettingsHubSectionId.MODELS -> HugeIcons.ServerStack01
+        SettingsHubSectionId.CHAT -> HugeIcons.Message01
+        SettingsHubSectionId.AGENT -> HugeIcons.Robot01
+        SettingsHubSectionId.DEVICE -> HugeIcons.SmartPhone01
+        SettingsHubSectionId.APPEARANCE -> HugeIcons.Palette
+        SettingsHubSectionId.DATA -> HugeIcons.Database02
+    }
+    Surface(
+        onClick = onClick,
+        shape = HubCategoryShape,
+        color = colors.surfaceContainerLowest,
+        border = BorderStroke(1.dp, colors.outlineVariant.copy(alpha = 0.55f)),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier
+                .heightIn(min = 88.dp)
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = iconContainer,
+                contentColor = iconColor,
+            ) {
+                Box(Modifier.size(44.dp), contentAlignment = Alignment.Center) {
+                    Icon(icon, null, Modifier.size(22.dp))
+                }
+            }
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Text(
+                    text = stringResource(section.titleRes),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = stringResource(section.descriptionRes),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.onSurfaceVariant,
+                )
+            }
+            Surface(shape = CircleShape, color = colors.surfaceContainerLow.copy(alpha = 0.85f)) {
+                Box(Modifier.size(28.dp), contentAlignment = Alignment.Center) {
+                    Icon(
+                        HugeIcons.ArrowRight01,
+                        null,
+                        Modifier.size(16.dp),
+                        tint = colors.onSurfaceVariant,
+                    )
+                }
+            }
         }
     }
 }
@@ -273,7 +334,7 @@ private fun HubLeafGroup(
                         style = MaterialTheme.typography.bodyLarge.copy(
                             fontSize = 15.5.sp,
                             lineHeight = 20.sp,
-                            fontWeight = FontWeight.Normal,
+                            fontWeight = FontWeight.Medium,
                         ),
                     )
                 },
@@ -310,7 +371,7 @@ private fun HubSearchBox(onClick: () -> Unit) {
     val hint = stringResource(R.string.setting_hub_search_hint)
     Surface(
         shape = HubSearchShape,
-        color = MaterialTheme.colorScheme.surfaceContainer,
+        color = MaterialTheme.colorScheme.surfaceContainerLowest,
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 2.dp, bottom = 2.dp)

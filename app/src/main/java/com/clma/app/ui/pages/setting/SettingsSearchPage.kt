@@ -42,7 +42,6 @@ import com.clma.app.data.repository.WorkspaceRepository
 import com.clma.app.ui.components.nav.BackButton
 import com.clma.app.ui.components.ui.CardGroup
 import com.clma.app.ui.context.LocalNavController
-import com.clma.app.ui.theme.CustomColors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.koin.androidx.compose.koinViewModel
@@ -103,11 +102,11 @@ fun SettingsSearchPage(vm: SettingVM = koinViewModel()) {
                 navigationIcon = { BackButton() },
                 title = { Text(stringResource(R.string.settings_search_page_title)) },
                 scrollBehavior = scrollBehavior,
-                colors = CustomColors.topBarColors,
+                colors = settingsTopBarColors(),
             )
         },
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        containerColor = CustomColors.topBarColors.containerColor,
+        containerColor = settingsPageContainerColor(),
     ) { contentPadding ->
         Column(
             modifier = Modifier

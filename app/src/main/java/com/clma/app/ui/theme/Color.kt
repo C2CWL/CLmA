@@ -187,5 +187,14 @@ object CustomColors {
         @Composable get() = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainer)
 
     val listItemColors: ListItemColors
-        @Composable get() = ListItemDefaults.colors(containerColor = colorScheme.surfaceContainer)
+        @Composable get() {
+            // Light: white cards over the settings gray wash. Dark/OLED: keep surfaceContainer
+            // (#0A0A0A on AMOLED) so list rows stay slightly elevated over pure black.
+            val container = if (LocalDarkMode.current) {
+                colorScheme.surfaceContainer
+            } else {
+                colorScheme.surfaceContainerLowest
+            }
+            return ListItemDefaults.colors(containerColor = container)
+        }
 }

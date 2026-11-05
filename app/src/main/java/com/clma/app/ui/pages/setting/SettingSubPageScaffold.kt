@@ -6,16 +6,41 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material3.LargeFlexibleTopAppBar
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarColors
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 import com.clma.app.ui.components.nav.BackButton
-import com.clma.app.ui.theme.CustomColors
+import com.clma.app.ui.theme.LocalDarkMode
 import com.clma.app.utils.plus
+
+/** Light settings page wash — aligns with mock `#F2F3F5`, not a global theme preset. */
+internal val SettingsPageBackgroundLight = Color(0xFFF2F3F5)
+
+/** Settings hub / sub-page scaffold fill. Dark & OLED keep theme `surfaceContainerLow`. */
+@Composable
+internal fun settingsPageContainerColor(): Color {
+    return if (LocalDarkMode.current) {
+        MaterialTheme.colorScheme.surfaceContainerLow
+    } else {
+        SettingsPageBackgroundLight
+    }
+}
+
+@Composable
+internal fun settingsTopBarColors(): TopAppBarColors {
+    val bg = settingsPageContainerColor()
+    return TopAppBarDefaults.topAppBarColors(
+        containerColor = bg,
+        scrolledContainerColor = bg,
+    )
+}
 
 /**
  * The frame every simple settings sub-page shares: large collapsing title, back button and a
@@ -28,17 +53,19 @@ internal fun SettingSubPageScaffold(
     content: LazyListScope.() -> Unit,
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val pageColor = settingsPageContainerColor()
+    val topBarColors = settingsTopBarColors()
     Scaffold(
         topBar = {
             LargeFlexibleTopAppBar(
                 title = { Text(title) },
                 navigationIcon = { BackButton() },
                 scrollBehavior = scrollBehavior,
-                colors = CustomColors.topBarColors,
+                colors = topBarColors,
             )
         },
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        containerColor = CustomColors.topBarColors.containerColor,
+        containerColor = pageColor,
     ) { contentPadding ->
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
