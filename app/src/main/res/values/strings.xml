@@ -3374,6 +3374,13 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="provider_balance_stale">%1$s (refresh failed; previous value)</string>
   <string name="provider_balance_refresh">Refresh balance / quota</string>
   <string name="provider_balance_test">Test current balance / quota settings</string>
+  <string name="provider_balance_card_title">Account balance</string>
+  <string name="provider_balance_label_pool_type">Pool type</string>
+  <string name="provider_balance_label_subscription_remaining">Subscription left</string>
+  <string name="provider_balance_label_refreshed_at">Refreshed at</string>
+  <string name="provider_balance_label_today_total">Today total</string>
+  <string name="provider_balance_chip_today">Today</string>
+  <string name="provider_balance_stale_hint">Refresh failed; showing previous value</string>
   <string name="subagent_notification_channel">Sub-agent completion</string>
   <string name="subagent_notification_title">Sub-agent finished</string>
   <string name="subagent_notification_text">%1$s · %2$s</string>

@@ -113,6 +113,7 @@ import com.clma.app.ui.components.ai.ModelAbilityTag
 import com.clma.app.ui.components.ai.ModelModalityTag
 import com.clma.app.ui.components.ai.ModelSelector
 import com.clma.app.ui.components.ai.ModelTypeTag
+import com.clma.app.ui.components.ai.ProviderBalanceDisplayMode
 import com.clma.app.ui.components.ai.ProviderBalanceText
 import com.clma.app.ui.components.nav.BackButton
 import com.clma.app.ui.components.ui.AutoAIIcon
@@ -495,6 +496,7 @@ private fun SettingProviderConfigPage(
                 providerSetting = balancePreview ?: provider,
                 style = MaterialTheme.typography.labelSmall,
                 allowRefresh = true,
+                displayMode = ProviderBalanceDisplayMode.Card,
             )
         }
 

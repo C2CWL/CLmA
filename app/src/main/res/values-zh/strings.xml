@@ -3106,6 +3106,13 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="provider_balance_stale">%1$s（刷新失败，上次结果）</string>
   <string name="provider_balance_refresh">刷新余额 / 额度</string>
   <string name="provider_balance_test">测试当前余额 / 额度配置</string>
+  <string name="provider_balance_card_title">账户额度</string>
+  <string name="provider_balance_label_pool_type">池类型</string>
+  <string name="provider_balance_label_subscription_remaining">订阅剩余</string>
+  <string name="provider_balance_label_refreshed_at">刷新于</string>
+  <string name="provider_balance_label_today_total">今日合计</string>
+  <string name="provider_balance_chip_today">今日</string>
+  <string name="provider_balance_stale_hint">刷新失败，显示上次结果</string>
   <string name="subagent_notification_channel">子智能体完成通知</string>
   <string name="subagent_notification_title">子智能体已完成</string>
   <string name="subagent_notification_text">%1$s · %2$s</string>
