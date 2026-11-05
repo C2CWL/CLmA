@@ -74,6 +74,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
@@ -336,7 +337,7 @@ internal fun buildJsonExport(
             put("createdAt", conversation.createAt.toString())
             put("updatedAt", conversation.updateAt.toString())
         })
-        put("messages", JsonInstantPretty.encodeToJsonElement(messages))
+        put("messages", JsonInstantPretty.encodeToJsonElement(ListSerializer(UIMessage.serializer()), messages))
     }
     return JsonInstantPretty.encodeToString(JsonElement.serializer(), payload)
 }
