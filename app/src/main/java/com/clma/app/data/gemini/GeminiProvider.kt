@@ -114,33 +114,82 @@ class GeminiProvider(
         messages: List<UIMessage>,
         params: TextGenerationParams,
     ): Flow<StreamChunk> = callbackFlow {
-        val account = repository.acquireAccount()
-        val requestBody = buildJsonObject {
-            put("project", account.projectId)
-            put("model", params.model.modelId)
-            put(
-                "request",
-                raiseMaxTokensAboveThinkingBudget(
-                    raiseThinkingBudgetToClaudeFloor(
-                        stripThinkingConfigForGptOss(
-                            params.model.modelId,
-                            wire.buildCompletionRequestBody(messages, params, CODE_ASSIST_SAFETY_CATEGORIES)
-                        )
-                    )
+        // Only the account-specific envelope (`project`) varies per account, so the message
+        // conversion is done once here and reused for every account this request fails over to.
+        val requestJson = raiseMaxTokensAboveThinkingBudget(
+            raiseThinkingBudgetToClaudeFloor(
+                stripThinkingConfigForGptOss(
+                    params.model.modelId,
+                    wire.buildCompletionRequestBody(messages, params, CODE_ASSIST_SAFETY_CATEGORIES)
                 )
             )
-        }
-        // Streamed per attempt instead of held as one big String (see JsonRequestBody).
-        val streamedRequestBody = JsonRequestBody(requestBody, json)
-        val adapter = GeminiStreamChunkAdapter()
+        )
+        val triedAccountIds = mutableSetOf<String>()
         var lastFailure: Throwable? = null
+
+        // A spent quota window is the one failure a *different* signed-in account can still answer,
+        // so walk the accounts in rotation instead of surfacing the first one that is out.
+        accountLoop@ while (true) {
+            val account = repository.acquireAccountOrNull(excluding = triedAccountIds)
+            if (account == null) {
+                // Nothing was tried at all: no account is signed in, or every one is disabled.
+                if (triedAccountIds.isEmpty()) error("No available Google account")
+                close(allAccountsFailed(lastFailure, triedAccountIds.size))
+                break@accountLoop
+            }
+            triedAccountIds += account.id
+
+            when (val outcome = runAccount(account, requestJson, params)) {
+                is GeminiAccountOutcome.Delivered -> {
+                    trySend(outcome.final)
+                    close()
+                    break@accountLoop
+                }
+
+                is GeminiAccountOutcome.Failed -> {
+                    lastFailure = outcome.cause
+                    if (!outcome.retryOnAnotherAccount) {
+                        close(outcome.cause)
+                        break@accountLoop
+                    }
+                    // Refresh the spent account's snapshot before moving on, so the *next* request
+                    // already starts from an account with quota instead of spending another round
+                    // trip learning the same thing.
+                    Log.i(TAG, "streamText: account is out of quota, failing over to the next one")
+                    repository.refreshUsage(account.id)
+                }
+            }
+        }
+        // trySend silently drops a delta when the buffer is full, dropping characters mid-reply
+        // (#1295), so the buffer must be unbounded - same as the other providers' streamText.
+        awaitClose { }
+    }.buffer(Channel.UNLIMITED)
+
+    /**
+     * Runs [account] through the endpoint fallback chain, streaming any reply straight to the
+     * caller, and reports whether the request should stop or hand over to another account.
+     */
+    private suspend fun ProducerScope<StreamChunk>.runAccount(
+        account: GeminiAccount,
+        requestJson: JsonObject,
+        params: TextGenerationParams,
+    ): GeminiAccountOutcome {
+        val streamedRequestBody = JsonRequestBody(
+            buildJsonObject {
+                put("project", account.projectId)
+                put("model", params.model.modelId)
+                put("request", requestJson)
+            },
+            json,
+        )
+        val adapter = GeminiStreamChunkAdapter()
 
         // Mirrors GEMINI_GENERATE_ENDPOINTS' fallback rule (see its doc comment): every endpoint
         // but the last gets one attempt and hands off to the next on a transient failure; the
         // last endpoint gets GEMINI_MAX_RETRIES extra attempts with backoff. A retry - whether the
         // next endpoint or another attempt on this one - only ever happens before any chunk has
         // been sent downstream, so a partial reply is never duplicated.
-        endpointLoop@ for (index in GEMINI_GENERATE_ENDPOINTS.indices) {
+        for (index in GEMINI_GENERATE_ENDPOINTS.indices) {
             val endpoint = GEMINI_GENERATE_ENDPOINTS[index]
             val isLastEndpoint = index == GEMINI_GENERATE_ENDPOINTS.lastIndex
             val maxAttempts = if (isLastEndpoint) GEMINI_MAX_RETRIES + 1 else 1
@@ -155,17 +204,18 @@ class GeminiProvider(
                     .build()
 
                 when (val outcome = runStreamAttempt(request, adapter, account, params)) {
-                    is GeminiStreamAttemptOutcome.Success -> {
-                        trySend(adapter.finish())
-                        close()
-                        break@endpointLoop
-                    }
+                    is GeminiStreamAttemptOutcome.Success ->
+                        return GeminiAccountOutcome.Delivered(adapter.finish())
 
                     is GeminiStreamAttemptOutcome.Failure -> {
-                        lastFailure = outcome.cause
+                        // Anything already streamed ends the request here - a retry would duplicate
+                        // a partial reply - and so does any failure another account cannot answer.
                         if (outcome.emitted || !outcome.classification.retryable) {
-                            close(outcome.cause)
-                            break@endpointLoop
+                            return GeminiAccountOutcome.Failed(
+                                cause = outcome.cause,
+                                retryOnAnotherAccount = !outcome.emitted &&
+                                    outcome.classification.quotaExhausted,
+                            )
                         }
                         if (attempt < maxAttempts - 1) {
                             delay(resolveGeminiRetryDelayMs(outcome.classification, attempt))
@@ -175,14 +225,27 @@ class GeminiProvider(
                 }
             }
         }
-        // Every branch above already closed the channel except the one where every endpoint and
-        // every retry was exhausted without a single chunk ever going out; close() is idempotent,
-        // so this is a no-op on every other path.
-        close(lastFailure ?: IllegalStateException("Cloud Code Assist request failed"))
-        // trySend silently drops a delta when the buffer is full, dropping characters mid-reply
-        // (#1295), so the buffer must be unbounded - same as the other providers' streamText.
-        awaitClose { }
-    }.buffer(Channel.UNLIMITED)
+        // Unreachable in practice: the last endpoint's last attempt always returns above.
+        return GeminiAccountOutcome.Failed(
+            cause = IllegalStateException("Cloud Code Assist request failed"),
+            retryOnAnotherAccount = false,
+        )
+    }
+
+    /**
+     * Builds the cause for a request that ran out of accounts. With more than one account tried,
+     * the last account's own message alone would read like a single-account failure, so it is kept
+     * as the cause and named in the message.
+     */
+    private fun allAccountsFailed(lastFailure: Throwable?, triedAccounts: Int): Throwable = when {
+        lastFailure == null -> IllegalStateException("Cloud Code Assist request failed")
+        triedAccounts <= 1 -> lastFailure
+        else -> IllegalStateException(
+            "All $triedAccounts signed-in Google accounts are out of quota or unavailable: " +
+                lastFailure.message,
+            lastFailure,
+        )
+    }
 
     /**
      * Runs one `streamGenerateContent` attempt and reports how it ended. Whether to retry - a
@@ -302,6 +365,18 @@ private sealed interface GeminiStreamAttemptOutcome {
         val emitted: Boolean,
         val classification: GeminiErrorClassification,
     ) : GeminiStreamAttemptOutcome
+}
+
+/** How one signed-in account's run through the whole endpoint chain ended. */
+private sealed interface GeminiAccountOutcome {
+    /** A reply streamed to completion; [final] is the chunk that closes it. */
+    data class Delivered(val final: StreamChunk) : GeminiAccountOutcome
+
+    /**
+     * The request failed before anything reached the caller. [retryOnAnotherAccount] is true only
+     * for a spent quota window, which another signed-in account may still answer.
+     */
+    data class Failed(val cause: Throwable, val retryOnAnotherAccount: Boolean) : GeminiAccountOutcome
 }
 
 /**
