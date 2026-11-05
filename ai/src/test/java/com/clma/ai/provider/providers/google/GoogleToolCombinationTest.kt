@@ -202,6 +202,52 @@ class GoogleToolCombinationTest {
     }
 
     @Test
+    fun `unsigned function call gets the skip signature on code assist claude models`() {
+        val messages = listOf(
+            UIMessage.user("save the weather"),
+            UIMessage(
+                role = MessageRole.ASSISTANT,
+                parts = listOf(
+                    UIMessagePart.Tool(
+                        toolCallId = "call-1",
+                        toolName = "save_weather",
+                        input = """{"city":"Shanghai"}""",
+                        output = listOf(UIMessagePart.Text("saved")),
+                    )
+                ),
+            ),
+        )
+
+        // Cloud Code Assist fronts Anthropic models and validates their replayed functionCall with
+        // the same rule as Gemini 3, so the reported 400 ("Function call is missing a
+        // thought_signature in functionCall parts", position 27) needs the same sentinel.
+        val claude = provider.buildCompletionRequestBody(
+            messages,
+            TextGenerationParams(
+                model = toolModel(modelId = "gemini-claude-opus-4-6-thinking"),
+                tools = listOf(testTool()),
+            ),
+        )
+        assertEquals(
+            "skip_thought_signature_validator",
+            firstFunctionCall(claude)["thoughtSignature"]!!.jsonPrimitive.content,
+        )
+
+        // A Code Assist Claude id the registry does not know yet must not fall back to "unsigned".
+        val unknownClaude = provider.buildCompletionRequestBody(
+            messages,
+            TextGenerationParams(
+                model = toolModel(modelId = "gemini-claude-haiku-9-thinking"),
+                tools = listOf(testTool()),
+            ),
+        )
+        assertEquals(
+            "skip_thought_signature_validator",
+            firstFunctionCall(unknownClaude)["thoughtSignature"]!!.jsonPrimitive.content,
+        )
+    }
+
+    @Test
     fun `a real thought signature wins over the skip sentinel`() {
         val messages = listOf(
             UIMessage.user("save the weather"),
