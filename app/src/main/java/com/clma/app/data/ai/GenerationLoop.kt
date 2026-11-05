@@ -898,6 +898,7 @@ class GenerationLoop(
                     }
                     buildMemoryTools(
                         json = json,
+                        existing = { memoryRepo.getMemoriesOfAssistant(memoryAssistantId) },
                         onCreation = { content ->
                             memoryRepo.addMemory(memoryAssistantId, content)
                         },

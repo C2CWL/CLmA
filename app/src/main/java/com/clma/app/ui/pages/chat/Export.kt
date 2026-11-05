@@ -7,6 +7,7 @@ import android.widget.Toast
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Book02
 import me.rerere.hugeicons.stroke.Book04
+import me.rerere.hugeicons.stroke.Code
 import me.rerere.hugeicons.stroke.File02
 import me.rerere.hugeicons.stroke.GlobalSearch
 import me.rerere.hugeicons.stroke.Image02
@@ -73,8 +74,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.put
 import com.clma.ai.core.MessageRole
 import com.clma.ai.ui.UIMessage
 import com.clma.ai.ui.UIMessagePart
@@ -205,6 +210,36 @@ fun ChatExportSheet(
                     )
                 }
 
+                val jsonSuccessMessage =
+                    stringResource(id = R.string.chat_page_export_success, "JSON")
+                OutlinedCard(
+                    onClick = {
+                        scope.launch {
+                            val ok = withContext(Dispatchers.IO) {
+                                exportToJson(context, conversation, selectedMessages)
+                            }
+                            toaster.show(
+                                if (ok) jsonSuccessMessage else exportFailedMessage,
+                                type = if (ok) ToastType.Success else ToastType.Error
+                            )
+                        }
+                        onDismissRequest()
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    ListItem(
+                        headlineContent = {
+                            Text(stringResource(id = R.string.chat_page_export_json))
+                        },
+                        supportingContent = {
+                            Text(stringResource(id = R.string.chat_page_export_json_desc))
+                        },
+                        leadingContent = {
+                            Icon(HugeIcons.Code, contentDescription = null)
+                        }
+                    )
+                }
+
                 val imageSuccessMessage =
                     stringResource(id = R.string.chat_page_export_success, "Image")
                 OutlinedCard(
@@ -279,6 +314,58 @@ fun ChatExportSheet(
             }
         }
     }
+}
+
+/**
+ * 结构化导出的正文：会话元数据 + 选中的消息（含工具调用与结果、推理、附件 url）。
+ *
+ * 直接复用消息自身的序列化，所以 JSON 里的 `parts` 与本地持久化结构一致；附件只保留已有
+ * `url`，data: URL 本身已内联内容，不做额外打包。纯函数，便于单元测试。
+ */
+internal fun buildJsonExport(
+    conversation: Conversation,
+    messages: List<UIMessage>,
+    exportedAt: String,
+): String {
+    val payload = buildJsonObject {
+        put("schemaVersion", 1)
+        put("exportedAt", exportedAt)
+        put("conversation", buildJsonObject {
+            put("id", conversation.id.toString())
+            put("title", conversation.title)
+            put("assistantId", conversation.assistantId.toString())
+            put("createdAt", conversation.createAt.toString())
+            put("updatedAt", conversation.updateAt.toString())
+        })
+        put("messages", JsonInstantPretty.encodeToJsonElement(ListSerializer(UIMessage.serializer()), messages))
+    }
+    return JsonInstantPretty.encodeToString(JsonElement.serializer(), payload)
+}
+
+private fun exportToJson(
+    context: Context,
+    conversation: Conversation,
+    messages: List<UIMessage>
+): Boolean {
+    val filename = "chat-export-${LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"))}.json"
+    val body = buildJsonExport(conversation, messages, LocalDateTime.now().toLocalString())
+
+    try {
+        val file = context.appTempFolder.resolve(filename)
+        FileOutputStream(file).use {
+            it.write(body.toByteArray())
+        }
+        val uri = FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            file
+        )
+        shareFile(context, uri, "application/json")
+        return true
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
+    return false
 }
 
 private fun exportToMarkdown(

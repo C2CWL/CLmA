@@ -386,6 +386,8 @@
   <string name="chat_page_export_image">Export as Image</string>
   <string name="chat_page_export_image_desc">Export conversation as PNG image</string>
   <string name="chat_page_export_image_expand_reasoning">Expand Reasoning</string>
+  <string name="chat_page_export_json">JSON</string>
+  <string name="chat_page_export_json_desc">Export conversation as a JSON file</string>
   <string name="chat_page_export_markdown">Markdown</string>
   <string name="chat_page_export_markdown_desc">Export conversation as a markdown file</string>
   <string name="chat_page_export_share_via">Share via</string>

@@ -54,3 +54,19 @@ This is a partial delivery of the audited A–D group. The unimplemented shell s
 Verification: `git diff --check`, tree-sitter Kotlin parse of the changed files, XML parse plus duplicate-name check of both `strings.xml`. No local Gradle build or test run — CI is the compiler. Not device-tested.
 
 Still open from the audit: semantic memory consolidation, foreground `workspace_shell` live output, whole-turn conversation minimap, structured JSON export.
+
+## Delivery 3 (2026-11-05): remaining audit gaps, batch 2
+
+| Item | Delivered source change | Not claimed |
+|---|---|---|
+| Memory near-duplicate guard | `MemoryDuplicates` normalises text and scores character-bigram Jaccard; `memory_tool` `create` now answers `{"result":"merge_required","candidates":[…],"hint":…}` instead of inserting, and `force: true` bypasses the guard. `buildMemoryTools` takes an `existing` reader; both call sites (GenerationLoop, ChatToolFactory) read the active scope. | No automatic extraction of memories from a conversation and no model-side merge inference: the model still decides the merged text and calls `edit`. The threshold is heuristic, so a near-duplicate create costs one extra model step. Nothing is auto-merged or auto-deleted. |
+| Whole-turn conversation outline | `ChatOutline.buildChatOutline` groups the existing display groups into turns (every user message opens a turn; assistant/tool items join it). The `MessageJumper` outline dialog renders a per-turn header plus indented entries and still jumps by the same `LazyListState` index. | No compact minimap graphic, no collapse/expand per turn, no extra virtualisation beyond the existing LazyColumn. |
+| Structured JSON export | `Export.buildJsonExport` produces `{schemaVersion, exportedAt, conversation{…}, messages[]}` from the app's own `UIMessage` serialisation; `exportToJson` shares it as `application/json` and the export sheet gained a JSON card. | Exports the selected messages only (same scope as the markdown export); attachments keep their existing `url` instead of being bundled. |
+
+Tests added (JVM only): `MemoryDuplicatesTest`, `MemoryToolDedupeTest`, `ChatOutlineTest`, `JsonExportTest`.
+
+Verification: `git diff --check`; structural (bracket/string) check of every changed Kotlin file; XML parse plus duplicate-name check of both string resource sets. No local Gradle build or test execution — CI is the compiler. Not device-tested.
+
+Still open after this batch: model-driven memory extraction/consolidation beyond the near-duplicate guard, and any per-turn UI state (collapse) in the outline.
+
+Batch 2 was rebased onto `main` after #206/#207 landed, so the outline work now extends the existing display-group outline dialog (turn headers on the existing rows) instead of adding a second list, and the JSON card sits next to the plain-text card.
