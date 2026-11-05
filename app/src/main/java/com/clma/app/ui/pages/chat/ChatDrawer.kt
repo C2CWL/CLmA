@@ -493,11 +493,6 @@ fun ChatDrawerContent(
                     toolsMenu = toolsMenu,
                     moreMenu = moreMenu,
                     onSettings = openSettings,
-                    nickname = userNickname,
-                    avatar = settings.displaySetting.userAvatar,
-                    showAvatar = settings.displaySetting.showUserAvatar,
-                    onAvatarUpdate = updateUserAvatar,
-                    onEditNickname = openNicknameEdit,
                     agentMode = currentConversation.agentModeEnabled,
                     onAgentModeChange = { vm.setAgentModeEnabled(it) },
                 )
@@ -620,7 +615,6 @@ fun ChatDrawerContent(
                                 DrawerMeCard(
                                     nickname = userNickname,
                                     avatar = settings.displaySetting.userAvatar,
-                                    showAvatar = settings.displaySetting.showUserAvatar,
                                     onAvatarUpdate = updateUserAvatar,
                                     onEditNickname = openNicknameEdit,
                                     onSettings = openSettings,
@@ -630,6 +624,8 @@ fun ChatDrawerContent(
                             DrawerStyle.RAIL -> {
                                 DrawerProfileRow(
                                     nickname = userNickname,
+                                    avatar = settings.displaySetting.userAvatar,
+                                    onAvatarUpdate = updateUserAvatar,
                                     onEditNickname = openNicknameEdit,
                                 )
                             }

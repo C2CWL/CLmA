@@ -62,7 +62,6 @@ import com.composables.icons.lucide.Languages
 import com.composables.icons.lucide.LayoutGrid
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.MonitorCog
-import com.composables.icons.lucide.Pencil
 import com.composables.icons.lucide.Plug
 import com.composables.icons.lucide.Plus
 import com.composables.icons.lucide.Search
@@ -70,7 +69,6 @@ import com.composables.icons.lucide.SlidersHorizontal
 import com.composables.icons.lucide.Sparkles
 import com.composables.icons.lucide.SquarePen
 import com.composables.icons.lucide.Star
-import com.composables.icons.lucide.UserRoundPen
 import com.composables.icons.lucide.Video
 import com.composables.icons.lucide.Image as LucideImage
 import com.composables.icons.lucide.Settings as LucideSettings
@@ -82,7 +80,8 @@ import com.composables.icons.lucide.Settings as LucideSettings
  *   下面一排可横向滑动的其他助手头像；再下面是「新聊天」主按钮 + 搜索、分段文件夹、会话列表；
  *   底部是 收藏 / 工具 / 更多 三个小块，以及放用户头像、昵称和设置按钮的「我」卡片。
  * - 助手导轨（DrawerStyle.RAIL）：左边 64dp 竖向可滚动的助手导轨，底部挂 收藏 / 工具 / 更多 / 设置
- *   和用户头像；右边面板是当前助手标题、带「新聊天」按钮的搜索框、分段文件夹、会话列表和昵称行。
+ *   （设置在最左下角）；右边面板是当前助手标题、带「新聊天」按钮的搜索框、分段文件夹、会话列表，
+ *   以及底部的用户头像 + 昵称行。
  *
  * 这里只放外观；会话列表、文件夹、多选、切换助手等逻辑都还在 ChatDrawerContent 里，两种样式共用。
  */
@@ -465,7 +464,6 @@ internal fun DrawerQuickChips(
 internal fun DrawerMeCard(
     nickname: String,
     avatar: Avatar,
-    showAvatar: Boolean,
     onAvatarUpdate: (Avatar) -> Unit,
     onEditNickname: () -> Unit,
     onSettings: () -> Unit,
@@ -482,14 +480,13 @@ internal fun DrawerMeCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            if (showAvatar) {
-                UIAvatar(
-                    name = nickname,
-                    value = avatar,
-                    onUpdate = onAvatarUpdate,
-                    modifier = Modifier.size(36.dp),
-                )
-            }
+            // 侧栏「我」卡片始终显示头像，与聊天气泡里的 showUserAvatar 开关无关。
+            UIAvatar(
+                name = nickname,
+                value = avatar,
+                onUpdate = onAvatarUpdate,
+                modifier = Modifier.size(36.dp),
+            )
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -508,9 +505,7 @@ internal fun DrawerMeCard(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = stringResource(
-                        if (showAvatar) R.string.drawer_me_hint_avatar else R.string.drawer_me_hint
-                    ),
+                    text = stringResource(R.string.drawer_me_hint_avatar),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -535,7 +530,7 @@ internal fun DrawerMeCard(
 // 方案 B · 助手导轨
 // ---------------------------------------------------------------------------------------------
 
-/** 左侧竖向导轨：所有助手（可滚动）+「+」，底部 收藏 / 工具 / 更多 / 设置 和用户头像。 */
+/** 左侧竖向导轨：所有助手（可滚动）+「+」，底部 收藏 / 工具 / 更多 / 设置（设置在最左下角）。 */
 @Composable
 internal fun DrawerAssistantRail(
     assistants: List<Assistant>,
@@ -547,11 +542,6 @@ internal fun DrawerAssistantRail(
     toolsMenu: List<AppMenuEntry>,
     moreMenu: List<AppMenuEntry>,
     onSettings: () -> Unit,
-    nickname: String,
-    avatar: Avatar,
-    showAvatar: Boolean,
-    onAvatarUpdate: (Avatar) -> Unit,
-    onEditNickname: () -> Unit,
     agentMode: Boolean,
     onAgentModeChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
@@ -679,6 +669,7 @@ internal fun DrawerAssistantRail(
                     items = moreMenu,
                 )
             }
+            // 设置固定在导轨最左下角（该列最后一个图标）。
             DrawerSquareButton(
                 icon = Lucide.LucideSettings,
                 contentDescription = stringResource(R.string.settings),
@@ -688,27 +679,6 @@ internal fun DrawerAssistantRail(
                 container = drawerAccentSoftColor(),
                 tint = MaterialTheme.colorScheme.primary,
             )
-            if (showAvatar) {
-                UIAvatar(
-                    name = nickname,
-                    value = avatar,
-                    onUpdate = onAvatarUpdate,
-                    modifier = Modifier
-                        .padding(top = 4.dp)
-                        .size(36.dp),
-                )
-            } else {
-                DrawerSquareButton(
-                    icon = Lucide.UserRoundPen,
-                    contentDescription = stringResource(R.string.accessibility_edit_nickname),
-                    onClick = onEditNickname,
-                    size = 36.dp,
-                    shape = CircleShape,
-                    container = drawerTonalColor(),
-                    modifier = Modifier.padding(top = 4.dp),
-                    iconSize = 17.dp,
-                )
-            }
         }
     }
 }
@@ -829,45 +799,42 @@ internal fun DrawerSearchField(
     }
 }
 
-/** 导轨面板底部的昵称行，点一下改昵称。 */
+/** 导轨面板底部：头像 + 昵称。点头像换头像，点昵称改名；不再显示「编辑资料」。 */
 @Composable
 internal fun DrawerProfileRow(
     nickname: String,
+    avatar: Avatar,
+    onAvatarUpdate: (Avatar) -> Unit,
     onEditNickname: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clip(ButtonShape)
-            .clickable(
-                onClickLabel = stringResource(R.string.accessibility_edit_nickname),
-                onClick = onEditNickname,
-            )
             .padding(horizontal = 8.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
+        UIAvatar(
+            name = nickname,
+            value = avatar,
+            onUpdate = onAvatarUpdate,
+            modifier = Modifier.size(36.dp),
+        )
         Text(
             text = nickname,
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f, fill = false),
-        )
-        Text(
-            text = stringResource(R.string.drawer_edit_profile),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-        )
-        Spacer(modifier = Modifier.weight(1f))
-        Icon(
-            imageVector = Lucide.Pencil,
-            contentDescription = null,
-            modifier = Modifier.size(15.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier
+                .weight(1f)
+                .clip(SmallShape)
+                .clickable(
+                    onClickLabel = stringResource(R.string.accessibility_edit_nickname),
+                    onClick = onEditNickname,
+                )
+                .padding(horizontal = 4.dp, vertical = 2.dp),
         )
     }
 }
