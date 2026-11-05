@@ -46,7 +46,7 @@ data class ConversationEntity(
     val parentConversationId: String = "",
     @ColumnInfo("chat_model_id", defaultValue = "")
     val chatModelId: String = "",
-    // 1 = Agent 模式（默认，与历史行为一致）；0 = 聊天模式（无工具）
+    // 1 = Agent 模式（默认，与历史行为一致）；0 = 聊天模式（仅白名单工具）
     @ColumnInfo("agent_mode_enabled", defaultValue = "1")
     val agentModeEnabled: Boolean = true,
 )
