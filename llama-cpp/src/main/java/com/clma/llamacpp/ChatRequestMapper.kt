@@ -149,7 +149,7 @@ object ChatRequestMapper {
                                 .put("name", part.toolName)
                                 // Normalized the same way ChatCompletionsAPI does, so a
                                 // stream cut mid-argument never sends broken JSON.
-                                .put("arguments", part.inputAsJson().toString()),
+                                .put("arguments", part.inputAsJsonObject().toString()),
                         )
                 )
             }

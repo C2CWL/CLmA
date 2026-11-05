@@ -225,6 +225,13 @@ sealed class UIMessagePart {
             json.parseToJsonElement(input.ifBlank { "{}" })
         }.getOrElse { JsonObject(emptyMap()) }
 
+        /**
+         * 回放请求时使用的工具入参。Anthropic 要求 tool_use.input 必须是对象，OpenAI 系要求
+         * arguments 是对象字符串；历史里若是 "null"、数组或标量（导入的会话、模型直出的怪参数），
+         * 原样发送会让整个会话被上游拒收，因此这里统一退化成空对象。
+         */
+        fun inputAsJsonObject(): JsonObject = inputAsJson() as? JsonObject ?: JsonObject(emptyMap())
+
         fun merge(other: Tool): Tool {
             return Tool(
                 toolCallId = toolCallId,

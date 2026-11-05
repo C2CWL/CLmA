@@ -908,7 +908,7 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
             }
             put("name", toolName)
             // redactSecrets: password / private_key / token 等不得回灌给云端模型。
-            put("args", com.clma.ai.util.redactSecrets(inputAsJson()))
+            put("args", com.clma.ai.util.redactSecrets(inputAsJsonObject()))
             put("id", toolCallId)
         })
         metadataAs<GoogleThoughtMetadata>()?.thoughtSignature?.let {
