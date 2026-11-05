@@ -858,11 +858,23 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
         }
 
         is UIMessagePart.Reasoning -> {
+            // A replayed thought part must carry its signature or not be sent at all. Cloud Code
+            // Assist fronts Anthropic models (gemini-claude-*-thinking) and translates this wire
+            // format into an Anthropic Messages request, where every replayed `thinking` block is
+            // signature-checked: an unsigned one fails the whole turn with
+            // 400 "messages.N.content.0.thinking.signature: Field required". Gemini 3 wants the
+            // signature beside the thought for the same reason (see carriedSig below), so an
+            // unsigned thought part is never useful on either side - and the thought text alone is
+            // not context the model needs. Same rule ClaudeProvider applies to its own thinking
+            // blocks: drop what cannot be replayed verbatim (#194).
             val thoughtSignature = metadataAs<GoogleThoughtMetadata>()?.thoughtSignature
-            buildJsonObject {
-                put("text", reasoning)
-                put("thought", true)
-                thoughtSignature?.let { put("thoughtSignature", it) }
+                ?.takeIf { it.isNotBlank() }
+            thoughtSignature?.let {
+                buildJsonObject {
+                    put("text", reasoning)
+                    put("thought", true)
+                    put("thoughtSignature", it)
+                }
             }
         }
 
