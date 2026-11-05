@@ -1622,9 +1622,12 @@ fun Settings.getSelectedASRProvider(): ASRProviderSetting? {
 }
 
 
-/** Standard / Fast is a CodeX account option. Other providers do not honor service_tier. */
+/**
+ * Standard / Fast control: always on for Codex; for other providers only when the model
+ * opts in via [Model.supportsSpeedTiers] (relays that forward `service_tier`).
+ */
 fun Model.supportsSpeedTier(providers: List<ProviderSetting>): Boolean =
-    findProvider(providers) is ProviderSetting.Codex
+    supportsSpeedTiers || findProvider(providers) is ProviderSetting.Codex
 
 fun Model.findProvider(providers: List<ProviderSetting>, checkOverwrite: Boolean = true): ProviderSetting? {
     val provider = findModelProviderFromList(providers) ?: return null

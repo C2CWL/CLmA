@@ -756,6 +756,8 @@
   <string name="codex_speed_fast">Fast</string>
   <string name="codex_speed_standard_hint">Standard speed and usage.</string>
   <string name="codex_speed_fast_hint">Priority fast serving, usually about 2.5× usage or cost; refer to your provider documentation.</string>
+  <string name="setting_provider_page_supports_speed_tiers">Supports speed tiers</string>
+  <string name="setting_provider_page_supports_speed_tiers_desc">Show Standard / Fast in the thinking-intensity picker and send service_tier on requests. Use for relays that forward OpenAI service_tier.</string>
   <string name="reasoning_picker_title">Adjust Model Thinking Depth</string>
   <string name="reasoning_picker_level_off">Off</string>
   <string name="reasoning_picker_level_auto">Auto</string>

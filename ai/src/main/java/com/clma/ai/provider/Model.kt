@@ -28,6 +28,13 @@ data class Model(
     /** Codex service tier: null = model default, "fast" = opt into faster, higher-usage serving. */
     @EncodeDefault(EncodeDefault.Mode.NEVER)
     val serviceTier: String? = null,
+    /**
+     * When true, this model accepts OpenAI-style `service_tier` (Standard / Fast) even if its
+     * provider is not Codex — e.g. a relay that forwards the field. Codex providers ignore this
+     * flag and always expose the speed control. Omitted from saved JSON when false.
+     */
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val supportsSpeedTiers: Boolean = false,
     // Optional capability/pricing metadata, populated from OpenRouter's /models endpoint.
     val contextLength: Int? = null,
     val supportedParameters: List<String> = emptyList(),

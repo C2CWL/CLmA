@@ -1030,6 +1030,20 @@ private fun ModelSettingsForm(
                                     onModelChange(model.copy(abilities = it))
                                 }
                             )
+                            // Codex always exposes Standard/Fast; relays opt in with this switch.
+                            if (parentProvider !is ProviderSetting.Codex) {
+                                SpeedTiersOptInRow(
+                                    checked = model.supportsSpeedTiers,
+                                    onCheckedChange = { enabled ->
+                                        onModelChange(
+                                            model.copy(
+                                                supportsSpeedTiers = enabled,
+                                                serviceTier = if (enabled) model.serviceTier else null,
+                                            )
+                                        )
+                                    },
+                                )
+                            }
                         }
                     }
                 }
@@ -1526,6 +1540,37 @@ private fun ModelModalitySelector(
 }
 
 @Composable
+@Composable
+private fun SpeedTiersOptInRow(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.setting_provider_page_supports_speed_tiers),
+                style = MaterialTheme.typography.titleSmall,
+            )
+            Text(
+                text = stringResource(R.string.setting_provider_page_supports_speed_tiers_desc),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+        )
+    }
+}
+
 fun ModalAbilitySelector(
     modelId: String,
     abilities: List<ModelAbility>,
