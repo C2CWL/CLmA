@@ -47,10 +47,11 @@ class GoogleRequestMessageTest {
     private fun invokeBuildContents(messages: List<UIMessage>): JsonArray {
         val method = GoogleProvider::class.java.getDeclaredMethod(
             "buildContents",
-            List::class.java
+            List::class.java,
+            Boolean::class.javaPrimitiveType
         )
         method.isAccessible = true
-        return method.invoke(provider, messages) as JsonArray
+        return method.invoke(provider, messages, false) as JsonArray
     }
 
     private fun invokeBuildCompletionRequestBody(
