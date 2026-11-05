@@ -471,6 +471,7 @@ class ConversationRepository(
             folderId = conversation.folderId?.toString() ?: "",
             chatModelId = encodeChatModelId(conversation.chatModelId),
             parentConversationId = conversation.parentConversationId?.toString() ?: "",
+            agentModeEnabled = conversation.agentModeEnabled,
         )
     }
 
@@ -494,6 +495,7 @@ class ConversationRepository(
             folderId = conversationEntity.folderId.ifEmpty { null }?.let { Uuid.parse(it) },
             chatModelId = decodeChatModelId(conversationEntity.chatModelId),
             parentConversationId = conversationEntity.parentConversationId.ifEmpty { null }?.let { runCatching { Uuid.parse(it) }.getOrNull() },
+            agentModeEnabled = conversationEntity.agentModeEnabled,
         )
     }
 

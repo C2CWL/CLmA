@@ -64,9 +64,13 @@ import com.clma.app.workflow.db.WorkflowRunEntity
         WorkspaceEntity::class,
         FolderEntity::class,
     ],
-    version = 32,
+    version = 33,
     autoMigrations = [
         AutoMigration(from = 31, to = 32),
+        // v33: per-conversation Agent/聊天 mode (agent_mode_enabled). Hand-written as
+        // Migration_32_33 (registered in AppDatabaseFactory) rather than AutoMigration:
+        // schema 32.json was never committed after parent_conversation_id landed, so Room
+        // cannot generate 32→33 from exported schemas.
         AutoMigration(from = 1, to = 2),
         AutoMigration(from = 2, to = 3),
         AutoMigration(from = 3, to = 4),

@@ -1279,6 +1279,8 @@ class ChatService(
         // Headless paths (cron / sub-agent / external-automation / workflow) must always go
         // through the LLM — the fast-path is a per-user-turn optimisation, not a system-flow.
         if (com.clma.app.data.ai.tools.HeadlessConversations.isHeadless(conversationId)) return false
+        // 聊天模式不走工具快路径：没有工具表面可供执行。
+        if (!afterUserSave.agentModeEnabled) return false
 
         // assistant is resolved from the conversation's own assistantId by the caller — do NOT
         // re-read the global getCurrentAssistant() here or a mid-turn assistant switch makes the
@@ -1835,6 +1837,12 @@ class ChatService(
         abortOnInvalidMcpNames: Boolean,
         lastUserText: String = "",
     ): ChatToolSurface? {
+        // 聊天模式：不组装任何工具（本地 / MCP / 搜索 / 记忆 / skills / 压缩……），
+        // 也不带工具相关 system prompt（GenerationLoop 在 tools 为空时跳过 tool prompts）。
+        // 默认 Agent 模式（agentModeEnabled=true）保持历史行为。
+        if (!conversation.agentModeEnabled) {
+            return ChatToolSurface(fixed = emptyList())
+        }
         // Synchronise the live dispatch profile before tool resolution so subagent_dispatch is
         // registered when the profile != NEVER. generateText used to be the missing third call
         // site (fast-path and buildToolsForRerun already do this).
@@ -2219,9 +2227,16 @@ class ChatService(
                 lastUserText = lastUserText,
             ) ?: return
 
+            // 聊天模式同时清掉模型侧内置工具（如 Search / UrlContext），避免仍走 provider 原生工具通道。
+            val generationModel = if (conversation.agentModeEnabled) {
+                model
+            } else {
+                model.copy(tools = emptySet())
+            }
+
             generationLoop.generateText(
                 settings = settings,
-                model = model,
+                model = generationModel,
                 processingStatus = session.processingStatus,
                 // Per-conversation tool-step cap: a sub-agent run registers its `max_trips`
                 // here for exactly its own lifetime (see ConversationToolStepLimits); every
@@ -4394,6 +4409,28 @@ class ChatService(
             if (sessions[conversationId]?.state?.value?.isTemporary == true) return
         }
         conversationRepo.renameConversation(conversationId, title)
+    }
+
+    /**
+     * 设置当前会话的 Agent / 聊天模式。
+     *
+     * `true` = Agent（默认，带工具）；`false` = 聊天（不向模型发送任何工具定义）。
+     * 与 [renameConversation] 相同：先同步活跃 session 内存态，再落库，避免后续整对象保存覆盖。
+     * 临时会话只改内存，不写库。
+     */
+    suspend fun setAgentModeEnabled(conversationId: Uuid, enabled: Boolean) {
+        if (sessions.containsKey(conversationId)) {
+            updateConversationState(conversationId) { it.copy(agentModeEnabled = enabled) }
+            if (sessions[conversationId]?.state?.value?.isTemporary == true) return
+        }
+        // 无活跃 session 时也要能改（侧边栏对非当前会话预留）；有 session 时用整对象保存保证字段齐全。
+        val session = sessions[conversationId]
+        if (session != null) {
+            saveConversation(conversationId, session.state.value)
+        } else {
+            val existing = conversationRepo.getConversationById(conversationId) ?: return
+            conversationRepo.updateConversation(existing.copy(agentModeEnabled = enabled))
+        }
     }
 
     /**

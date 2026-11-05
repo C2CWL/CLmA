@@ -3382,4 +3382,12 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="context_inspector_show">Show redacted preview</string>
   <string name="context_inspector_hide">Hide preview</string>
   <string name="context_inspector_truncated">Preview limited to 12,000 characters; sizes refer to the unredacted app representation.</string>
+
+  <!-- Chat vs Agent mode (per-conversation; toggled from the chat drawer) -->
+  <string name="chat_agent_mode">Agent</string>
+  <string name="chat_chat_mode">Chat</string>
+  <string name="chat_agent_mode_toggle">Agent / Chat mode</string>
+  <string name="chat_agent_mode_desc">Agent mode can use tools (MCP, search, skills, memory, and so on). Chat mode sends no tool definitions, which saves tokens.</string>
+  <string name="chat_agent_mode_on">Agent mode on</string>
+  <string name="chat_agent_mode_off">Chat mode on</string>
 </resources>

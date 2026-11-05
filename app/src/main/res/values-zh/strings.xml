@@ -3370,4 +3370,12 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="context_inspector_show">展开脱敏预览</string>
   <string name="context_inspector_hide">收起预览</string>
   <string name="context_inspector_truncated">预览最多 12,000 字符；大小按脱敏前的应用侧表示统计。</string>
+
+  <!-- 每会话 Agent / 聊天模式（由侧边栏切换） -->
+  <string name="chat_agent_mode">Agent</string>
+  <string name="chat_chat_mode">聊天</string>
+  <string name="chat_agent_mode_toggle">Agent / 聊天模式</string>
+  <string name="chat_agent_mode_desc">Agent 模式可使用工具（MCP、搜索、skills、记忆等）。聊天模式不向模型发送任何工具定义，更省 token。</string>
+  <string name="chat_agent_mode_on">已开启 Agent 模式</string>
+  <string name="chat_agent_mode_off">已开启聊天模式</string>
 </resources>
