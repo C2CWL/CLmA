@@ -6,15 +6,14 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -23,12 +22,10 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
@@ -56,14 +53,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -73,37 +69,27 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import me.rerere.hugeicons.HugeIcons
-import me.rerere.hugeicons.stroke.ComputerTerminal01
-import me.rerere.hugeicons.stroke.ChartColumn
 import me.rerere.hugeicons.stroke.Delete01
 import me.rerere.hugeicons.stroke.Folder01
 import me.rerere.hugeicons.stroke.FolderAdd
-import me.rerere.hugeicons.stroke.Image02
-import me.rerere.hugeicons.stroke.InLove
-import me.rerere.hugeicons.stroke.LanguageCircle
 import me.rerere.hugeicons.stroke.LookTop
 import me.rerere.hugeicons.stroke.PencilEdit01
-import me.rerere.hugeicons.stroke.Search01
-import me.rerere.hugeicons.stroke.Video01
-import me.rerere.hugeicons.stroke.Settings03
-import me.rerere.hugeicons.stroke.Sparkles
-import me.rerere.hugeicons.stroke.TransactionHistory
 import com.clma.app.R
 import com.clma.app.ui.components.ui.AppDropdownMenu
 import com.clma.app.ui.components.ui.AppMenuEntry
 import com.clma.app.Screen
+import com.clma.app.data.datastore.DrawerStyle
 import com.clma.app.data.datastore.Settings
 import com.clma.app.data.datastore.getCurrentAssistant
 import com.clma.app.ui.theme.LocalDarkMode
 import com.clma.app.data.model.Assistant
+import com.clma.app.data.model.Avatar
 import com.clma.app.data.model.Conversation
 import com.clma.app.data.model.Folder
 import com.clma.app.data.repository.ConversationRepository
-import com.clma.app.ui.components.ai.AssistantPicker
+import com.clma.app.ui.components.ai.AssistantPickerSheet
 import com.clma.app.ui.components.ui.BackupReminderCard
-import com.clma.app.ui.components.ui.Tooltip
 import com.clma.app.ui.components.ui.AssistantAvatar
-import com.clma.app.ui.components.ui.UIAvatar
 import com.clma.app.ui.components.ui.frostedPlate
 import com.clma.app.ui.components.message.WallpaperOnlySelection
 import androidx.compose.ui.draw.clip
@@ -130,6 +116,8 @@ import com.clma.app.utils.navigateToChatPage
 import com.clma.app.utils.toDp
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
+import com.composables.icons.lucide.FolderPlus
+import com.composables.icons.lucide.Lucide
 import kotlin.uuid.Uuid
 
 @Composable
@@ -249,9 +237,6 @@ fun ChatDrawerContent(
     // 与顶部标题点击共享，见 ChatDrawerVM.conversationToRename
     val conversationToRename by drawerVm.conversationToRename.collectAsStateWithLifecycle()
 
-    // Menu popup 状态
-    var showMenuPopup by remember { mutableStateOf(false) }
-
     var bottomBarHeightPx by remember { mutableStateOf(0) }
     val bottomBarHeight = with(LocalDensity.current) { bottomBarHeightPx.toDp() }
     // 上方功能区固定悬浮在顶部，对话列表从其下方滚过；用实测高度给列表留出顶部空间。
@@ -313,69 +298,86 @@ fun ChatDrawerContent(
         )
     }
 
-    // Identity, flat shortcuts, and folder tabs share the drawer surface.
-    val drawerChrome: @Composable () -> Unit = {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        horizontal = if (drawerCapsules) 0.dp else 16.dp,
-                        vertical = if (drawerCapsules) 0.dp else 8.dp,
-                    ),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(if (drawerCapsules) 8.dp else 12.dp),
-            ) {
-                // 昵称本身就是编辑入口（原先那个铅笔图标已去掉，点一下名字即可改名），
-                // 所以这里不再额外留一个点击热区，只把无障碍标签挂在昵称上。
-                Column(
-                    modifier = Modifier.widthIn(max = if (drawerCapsules) 84.dp else 96.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    // 「显示用户头像」是一个全 App 的开关：关掉后这里也不画头像，
-                    // 只留昵称（点昵称仍可改名），抽屉的身份行因此更接近 Gemini 的极简样式。
-                    if (settings.displaySetting.showUserAvatar) {
-                        UIAvatar(
-                            name = settings.displaySetting.userNickname.ifBlank { stringResource(R.string.user_default_name) },
-                            value = settings.displaySetting.userAvatar,
-                            onUpdate = { newAvatar ->
-                                vm.updateSettings(
-                                    settings.copy(
-                                        displaySetting = settings.displaySetting.copy(
-                                            userAvatar = newAvatar
-                                        )
-                                    )
-                                )
-                            },
-                            modifier = Modifier.size(if (drawerCapsules) 44.dp else 50.dp),
-                        )
-                    }
+    // 侧边栏样式：助手卡片（默认）/ 助手导轨，见 DrawerStyles.kt。两种样式共用下面这些状态和动作。
+    val drawerStyle = settings.displaySetting.drawerStyle
+    val userNickname = settings.displaySetting.userNickname.ifBlank { stringResource(R.string.user_default_name) }
+    val drawerModelName = settings.drawerModelName(drawerAssistant)
+    val toolsMenu = drawerToolsMenu(navController)
+    val moreMenu = drawerMoreMenu(navController)
+    var showAssistantSheet by remember { mutableStateOf(false) }
+    val openNicknameEdit: () -> Unit = { nicknameEditState.open(settings.displaySetting.userNickname) }
+    val updateUserAvatar: (Avatar) -> Unit = { newAvatar ->
+        vm.updateSettings(
+            settings.copy(
+                displaySetting = settings.displaySetting.copy(
+                    userAvatar = newAvatar
+                )
+            )
+        )
+    }
+    val openAssistantDetail: () -> Unit = {
+        navController.navigate(Screen.AssistantDetail(id = settings.assistantId.toString()))
+    }
+    val openAssistantManage: () -> Unit = { navController.navigate(Screen.Assistant) }
+    val openFavorite: () -> Unit = { navController.navigate(Screen.Favorite) }
+    val openSettings: () -> Unit = { navController.navigate(Screen.Setting) }
+    val openSearch: () -> Unit = { navController.navigate(Screen.MessageSearch) }
+    // 和聊天页顶栏的「新聊天」是同一个动作。
+    val startNewChat: () -> Unit = { navigateToChatPage(navController) }
 
-                    Text(
-                        text = settings.displaySetting.userNickname.ifBlank { stringResource(R.string.user_default_name) },
-                        style = if (drawerCapsules) {
-                            MaterialTheme.typography.labelLarge
-                        } else {
-                            MaterialTheme.typography.titleSmall
-                        },
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier
-                            .clip(MaterialTheme.shapes.small)
-                            .clickable(
-                                onClickLabel = stringResource(R.string.accessibility_edit_nickname),
-                            ) {
-                                nicknameEditState.open(settings.displaySetting.userNickname)
-                            }
-                            .padding(horizontal = 6.dp, vertical = 2.dp),
+    // 切换助手：先写设置，写完后按「启动时新建对话」偏好进新对话或该助手最近的对话。
+    fun switchAssistant(assistant: Assistant) {
+        FunctionalDiagnostics.event("assistant.switch.request")
+        val newSettings = settings.copy(assistantId = assistant.id)
+        val updateJob = vm.updateSettings(newSettings)
+        scope.launch {
+            updateJob.join()
+            FunctionalDiagnostics.event("assistant.switch.settingsApplied")
+            val id = if (context.readBooleanPreference("create_new_conversation_on_start", true)) {
+                Uuid.random()
+            } else {
+                repo.getConversationsOfAssistant(newSettings.assistantId)
+                    .first()
+                    .firstOrNull()
+                    ?.id ?: Uuid.random()
+            }
+            navigateToChatPage(navigator = navController, chatId = id)
+        }
+    }
+
+    // 顶部功能区：助手（卡片或导轨标题）、新聊天 + 搜索、分段文件夹。
+    val drawerChrome: @Composable () -> Unit = {
+        Column(
+            modifier = Modifier.padding(
+                horizontal = if (drawerCapsules) 0.dp else 12.dp,
+                vertical = if (drawerCapsules) 0.dp else 8.dp,
+            ),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            when (drawerStyle) {
+                DrawerStyle.CARD -> {
+                    DrawerAssistantHero(
+                        assistants = settings.assistants,
+                        current = drawerAssistant,
+                        modelName = drawerModelName,
+                        onOpenPicker = { showAssistantSheet = true },
+                        onOpenDetail = openAssistantDetail,
+                        onSelect = { switchAssistant(it) },
+                        onManage = openAssistantManage,
                     )
+                    DrawerNewChatRow(onNewChat = startNewChat, onSearch = openSearch)
                 }
 
-
+                DrawerStyle.RAIL -> {
+                    DrawerRailHeader(
+                        current = drawerAssistant,
+                        modelName = drawerModelName,
+                        onOpenPicker = { showAssistantSheet = true },
+                        onOpenDetail = openAssistantDetail,
+                    )
+                    DrawerSearchField(onSearch = openSearch, onNewChat = startNewChat)
+                }
             }
-
-            DrawerActions(navController = navController, modifier = Modifier.fillMaxWidth())
 
             FolderBar(
                 protectedFolderId = protectedFolderId,
@@ -389,7 +391,6 @@ fun ChatDrawerContent(
                 },
                 onRename = { folderToRename = it },
                 onDelete = { folderToDelete = it },
-                modifier = Modifier.padding(horizontal = if (drawerCapsules) 0.dp else 12.dp),
             )
         }
     }
@@ -448,7 +449,7 @@ fun ChatDrawerContent(
 
     ModalDrawerSheet(
         modifier = Modifier
-            .width(300.dp)
+            .width(if (drawerStyle == DrawerStyle.RAIL) 320.dp else 300.dp)
             .onSizeChanged {
                 FunctionalDiagnostics.event("drawer.width", diagnosticInstance, value = it.width.toLong())
                 FunctionalDiagnostics.event("drawer.height", diagnosticInstance, value = it.height.toLong())
@@ -473,263 +474,216 @@ fun ChatDrawerContent(
         drawerContentColor = MaterialTheme.colorScheme.onSurface,
         drawerTonalElevation = 0.dp,
     ) {
-        // 列表铺满整块，从上下玻璃卡片下方滚过；上方功能区固定悬浮，底部功能区浮在列表之上。
-        Box(modifier = Modifier.fillMaxSize()) {
-            ConversationList(
-                current = current,
-                conversations = conversations,
-                subAgentConversations = subAgentConversations,
-                conversationJobs = conversationJobs.keys,
-                listState = conversationListState,
-                contentPadding = PaddingValues(top = topAreaHeight + 12.dp, bottom = bottomBarHeight + 12.dp),
-                modifier = Modifier
-                    .fillMaxSize()
-                    .then(
-                        // 胶囊路径没有底板挡在列表前面，所以让列表自己在控件所在的那一段淡出；
-                        // 卡片路径由卡片遮挡，保持原来的硬边界。
-                        if (drawerCapsules) {
-                            Modifier.drawerFadeEdges(
-                                topFade = topAreaHeight,
-                                bottomFade = bottomBarHeight,
-                            )
-                        } else {
-                            Modifier
-                        }
-                    ),
-                onClick = {
-                    navigateToChatPage(navController, it.id)
-                },
-                onRename = {
-                    drawerVm.requestRenameConversation(it)
-                },
-                onDelete = {
-                    scope.launch {
-                        val deletingCurrent = it.id == current.id
-                        if (deletingCurrent) {
-                            navigateToChatPage(navController)
-                        }
-                        drawerVm.deleteConversations(listOf(it.id)).join()
-                        conversations.refresh()
-                    }
-                },
-                onPin = {
-                    vm.updatePinnedStatus(it)
-                },
-                onMoveToAssistant = {
-                    conversationToMove = it
-                    batchMove = false
-                    showMoveToAssistantSheet = true
-                },
-                onMoveToFolder = {
-                    conversationToMoveFolder = it
-                    batchMove = false
-                    showMoveToFolderSheet = true
-                },
-                selectionMode = selectionMode,
-                selectedIds = selectedIds,
-                onToggleSelect = { toggleSelected(it) },
-                onEnterSelection = { enterSelection(it) },
-            )
-
-            // 上方功能区：固定悬浮在抽屉顶部，对话列表从其下方滚过时被玻璃折射虚化。
-            Column(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .fillMaxWidth()
-                    .onSizeChanged { topAreaHeightPx = it.height },
-            ) {
-                drawerTopArea()
+        // 助手导轨样式：左边一条竖向导轨，右边是会话面板；助手卡片样式只有面板。
+        Row(modifier = Modifier.fillMaxSize()) {
+            if (drawerStyle == DrawerStyle.RAIL) {
+                DrawerAssistantRail(
+                    assistants = settings.assistants,
+                    current = drawerAssistant,
+                    onSelect = { switchAssistant(it) },
+                    onOpenPicker = { showAssistantSheet = true },
+                    onManage = openAssistantManage,
+                    onFavorite = openFavorite,
+                    toolsMenu = toolsMenu,
+                    moreMenu = moreMenu,
+                    onSettings = openSettings,
+                    nickname = userNickname,
+                    avatar = settings.displaySetting.userAvatar,
+                    showAvatar = settings.displaySetting.showUserAvatar,
+                    onAvatarUpdate = updateUserAvatar,
+                    onEditNickname = openNicknameEdit,
+                )
             }
+            // 列表铺满整块，从上下玻璃卡片下方滚过；上方功能区固定悬浮，底部功能区浮在列表之上。
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+            ) {
+                ConversationList(
+                    current = current,
+                    conversations = conversations,
+                    subAgentConversations = subAgentConversations,
+                    conversationJobs = conversationJobs.keys,
+                    listState = conversationListState,
+                    contentPadding = PaddingValues(top = topAreaHeight + 12.dp, bottom = bottomBarHeight + 12.dp),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .then(
+                            // 胶囊路径没有底板挡在列表前面，所以让列表自己在控件所在的那一段淡出；
+                            // 卡片路径由卡片遮挡，保持原来的硬边界。
+                            if (drawerCapsules) {
+                                Modifier.drawerFadeEdges(
+                                    topFade = topAreaHeight,
+                                    bottomFade = bottomBarHeight,
+                                )
+                            } else {
+                                Modifier
+                            }
+                        ),
+                    onClick = {
+                        navigateToChatPage(navController, it.id)
+                    },
+                    onRename = {
+                        drawerVm.requestRenameConversation(it)
+                    },
+                    onDelete = {
+                        scope.launch {
+                            val deletingCurrent = it.id == current.id
+                            if (deletingCurrent) {
+                                navigateToChatPage(navController)
+                            }
+                            drawerVm.deleteConversations(listOf(it.id)).join()
+                            conversations.refresh()
+                        }
+                    },
+                    onPin = {
+                        vm.updatePinnedStatus(it)
+                    },
+                    onMoveToAssistant = {
+                        conversationToMove = it
+                        batchMove = false
+                        showMoveToAssistantSheet = true
+                    },
+                    onMoveToFolder = {
+                        conversationToMoveFolder = it
+                        batchMove = false
+                        showMoveToFolderSheet = true
+                    },
+                    selectionMode = selectionMode,
+                    selectedIds = selectedIds,
+                    onToggleSelect = { toggleSelected(it) },
+                    onEnterSelection = { enterSelection(it) },
+                )
 
-            // Flat action grid stays above the gesture navigation area.
-            val bottomBarShape = RoundedCornerShape(20.dp)
-            // 多选栏 / 助手行 + 五个动作：两条路径共用同一份内容，只是外壳不同。
-            val drawerBottomContent: @Composable () -> Unit = {
-                if (selectionMode) {
-                    SelectionActionBar(
-                        capsule = drawerCapsules,
-                        count = selectedIds.size,
-                        isAllSelected = isAllSelected,
-                        onToggleSelectAll = { toggleSelectAll() },
-                        onCancel = { exitSelection() },
-                        onDelete = {
-                            if (selectedIds.isNotEmpty()) showDeleteSelectedDialog = true
-                        },
-                        onMove = {
-                            if (selectedIds.isNotEmpty()) {
-                                batchMove = true
-                                conversationToMoveFolder = null
-                                showMoveToFolderSheet = true
-                            }
-                        },
-                        onCreateAndMove = {
-                            if (selectedIds.isNotEmpty()) {
-                                batchMove = true
-                                showCreateFolderDialog = true
-                            }
-                        },
-                        onMoveToAssistant = {
-                            if (selectedIds.isNotEmpty()) {
-                                batchMove = true
-                                conversationToMove = null
-                                showMoveToAssistantSheet = true
-                            }
-                        },
-                    )
-                } else {
-                    // 助手选择器
-                    AssistantPicker(
-                        settings = settings,
-                        onUpdateSettings = {
-                            FunctionalDiagnostics.event("assistant.switch.request")
-                            val updateJob = vm.updateSettings(it)
-                            scope.launch {
-                                updateJob.join()
-                                FunctionalDiagnostics.event("assistant.switch.settingsApplied")
-                                val id = if (context.readBooleanPreference("create_new_conversation_on_start", true)) {
-                                    Uuid.random()
-                                } else {
-                                    repo.getConversationsOfAssistant(it.assistantId)
-                                        .first()
-                                        .firstOrNull()
-                                        ?.id ?: Uuid.random()
+                // 上方功能区：固定悬浮在抽屉顶部，对话列表从其下方滚过时被玻璃折射虚化。
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .fillMaxWidth()
+                        .onSizeChanged { topAreaHeightPx = it.height },
+                ) {
+                    drawerTopArea()
+                }
+
+                // Flat action grid stays above the gesture navigation area.
+                val bottomBarShape = RoundedCornerShape(20.dp)
+                // 多选栏 / 助手行 + 五个动作：两条路径共用同一份内容，只是外壳不同。
+                val drawerBottomContent: @Composable () -> Unit = {
+                    if (selectionMode) {
+                        SelectionActionBar(
+                            capsule = drawerCapsules,
+                            count = selectedIds.size,
+                            isAllSelected = isAllSelected,
+                            onToggleSelectAll = { toggleSelectAll() },
+                            onCancel = { exitSelection() },
+                            onDelete = {
+                                if (selectedIds.isNotEmpty()) showDeleteSelectedDialog = true
+                            },
+                            onMove = {
+                                if (selectedIds.isNotEmpty()) {
+                                    batchMove = true
+                                    conversationToMoveFolder = null
+                                    showMoveToFolderSheet = true
                                 }
-                                navigateToChatPage(navigator = navController, chatId = id)
+                            },
+                            onCreateAndMove = {
+                                if (selectedIds.isNotEmpty()) {
+                                    batchMove = true
+                                    showCreateFolderDialog = true
+                                }
+                            },
+                            onMoveToAssistant = {
+                                if (selectedIds.isNotEmpty()) {
+                                    batchMove = true
+                                    conversationToMove = null
+                                    showMoveToAssistantSheet = true
+                                }
+                            },
+                        )
+                    } else {
+                        when (drawerStyle) {
+                            DrawerStyle.CARD -> {
+                                DrawerQuickChips(
+                                    onFavorite = openFavorite,
+                                    toolsMenu = toolsMenu,
+                                    moreMenu = moreMenu,
+                                )
+                                DrawerMeCard(
+                                    nickname = userNickname,
+                                    avatar = settings.displaySetting.userAvatar,
+                                    showAvatar = settings.displaySetting.showUserAvatar,
+                                    onAvatarUpdate = updateUserAvatar,
+                                    onEditNickname = openNicknameEdit,
+                                    onSettings = openSettings,
+                                )
                             }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        onClickSetting = {
-                            val currentAssistantId = settings.assistantId
-                            navController.navigate(Screen.AssistantDetail(id = currentAssistantId.toString()))
+
+                            DrawerStyle.RAIL -> {
+                                DrawerProfileRow(
+                                    nickname = userNickname,
+                                    onEditNickname = openNicknameEdit,
+                                )
+                            }
                         }
-                    )
-
-                    FlowRow(
-                        maxItemsInEachRow = 3,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        DrawerAction(
-                            modifier = Modifier.weight(1f),
-                            icon = { Icon(HugeIcons.LookTop, null) },
-                            label = { Text(stringResource(R.string.assistant_page_title)) },
-                            contentDescription = stringResource(R.string.assistant_page_title),
-                            onClick = { navController.navigate(Screen.Assistant) },
-                        )
-
-                        Box(modifier = Modifier.weight(1f)) {
-                            DrawerAction(
-                                modifier = Modifier.fillMaxWidth(),
-                                icon = { Icon(HugeIcons.Sparkles, null) },
-                                label = { Text(stringResource(R.string.menu)) },
-                                contentDescription = stringResource(R.string.menu),
-                                onClick = { showMenuPopup = true },
-                            )
-                            AppDropdownMenu(
-                                expanded = showMenuPopup,
-                                onDismissRequest = { showMenuPopup = false },
-                                items = listOf(
-                                    AppMenuEntry(
-                                        text = stringResource(R.string.setting_connectors_title),
-                                        icon = HugeIcons.Settings03,
-                                        onClick = { navController.navigate(Screen.SettingConnectors) },
-                                    ),
-                                    AppMenuEntry(
-                                        text = stringResource(R.string.chat_page_menu_ai_translator),
-                                        icon = HugeIcons.LanguageCircle,
-                                        onClick = { navController.navigate(Screen.Translator) },
-                                    ),
-                                    AppMenuEntry(
-                                        text = stringResource(R.string.chat_page_menu_image_generation),
-                                        icon = HugeIcons.Image02,
-                                        onClick = { navController.navigate(Screen.ImageGen) },
-                                    ),
-                                    AppMenuEntry(
-                                        text = stringResource(R.string.chat_page_menu_video_generation),
-                                        icon = HugeIcons.Video01,
-                                        onClick = { navController.navigate(Screen.VideoGen) },
-                                    ),
-                                ),
-                            )
-                        }
-
-                        DrawerAction(
-                            modifier = Modifier.weight(1f),
-                            icon = { Icon(HugeIcons.InLove, null) },
-                            label = { Text(stringResource(R.string.favorite_page_title)) },
-                            contentDescription = stringResource(R.string.favorite_page_title),
-                            onClick = { navController.navigate(Screen.Favorite) },
-                        )
-
-                        DrawerAction(
-                            modifier = Modifier.weight(1f),
-                            icon = { Icon(HugeIcons.Settings03, null) },
-                            label = { Text(stringResource(R.string.settings)) },
-                            contentDescription = stringResource(R.string.settings),
-                            onClick = { navController.navigate(Screen.Setting) },
-                        )
-
-                        DrawerAction(
-                            modifier = Modifier.weight(1f),
-                            icon = { Icon(HugeIcons.ChartColumn, null) },
-                            label = { Text(stringResource(R.string.chat_drawer_statistics)) },
-                            contentDescription = stringResource(R.string.chat_drawer_statistics),
-                            onClick = { navController.navigate(Screen.Stats) },
-                        )
-
-                        DrawerAction(
-                            modifier = Modifier.weight(1f),
-                            icon = { Icon(HugeIcons.ComputerTerminal01, null) },
-                            label = { Text(stringResource(R.string.virtual_display_manage_title)) },
-                            contentDescription = stringResource(R.string.virtual_display_manage_title),
-                            onClick = { navController.navigate(Screen.VirtualDisplays) },
-                        )
                     }
                 }
-            }
-            Column(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .padding(horizontal = if (drawerCapsules) 12.dp else 8.dp, vertical = 8.dp)
-                    .navigationBarsPadding()
-                    .onSizeChanged { bottomBarHeightPx = it.height },
-            ) {
-                if (drawerCapsules) {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        drawerBottomContent()
-                    }
-                } else {
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .then(
-                                if (drawerFrost != null) {
-                                    Modifier.frostedPlate(
-                                        hazeState, bottomBarShape, drawerFrost,
-                                        tint = MaterialTheme.colorScheme.surface,
-                                        selection = WallpaperOnlySelection,
-                                    )
-                                } else {
-                                    Modifier.shadow(4.dp, bottomBarShape, clip = false)
-                                }
-                            ),
-                        shape = bottomBarShape,
-                        color = if (drawerFrost != null) Color.Transparent else MaterialTheme.colorScheme.surfaceContainerHigh,
-                        border = drawerFrostBorder,
-                        tonalElevation = 0.dp,
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .padding(horizontal = if (drawerCapsules) 12.dp else 8.dp, vertical = 8.dp)
+                        .navigationBarsPadding()
+                        .onSizeChanged { bottomBarHeightPx = it.height },
+                ) {
+                    if (drawerCapsules) {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             drawerBottomContent()
+                        }
+                    } else {
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .then(
+                                    if (drawerFrost != null) {
+                                        Modifier.frostedPlate(
+                                            hazeState, bottomBarShape, drawerFrost,
+                                            tint = MaterialTheme.colorScheme.surface,
+                                            selection = WallpaperOnlySelection,
+                                        )
+                                    } else {
+                                        Modifier.shadow(4.dp, bottomBarShape, clip = false)
+                                    }
+                                ),
+                            shape = bottomBarShape,
+                            color = if (drawerFrost != null) Color.Transparent else MaterialTheme.colorScheme.surfaceContainerHigh,
+                            border = drawerFrostBorder,
+                            tonalElevation = 0.dp,
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                drawerBottomContent()
+                            }
                         }
                     }
                 }
             }
         }
+    }
+
+    // 助手选择面板：点助手名字 / 导轨里的当前助手打开。
+    if (showAssistantSheet) {
+        AssistantPickerSheet(
+            settings = settings,
+            currentAssistant = drawerAssistant,
+            onAssistantSelected = { assistant ->
+                showAssistantSheet = false
+                switchAssistant(assistant)
+            },
+            onDismiss = { showAssistantSheet = false },
+        )
     }
 
     // 昵称编辑对话框
@@ -1357,131 +1311,10 @@ private fun SelectionActionButton(
     }
 }
 
-@Composable
-private fun DrawerActions(
-    navController: Navigator,
-    modifier: Modifier = Modifier,
-    capsule: Boolean = false,
-) {
-    // 两个常用入口各占一格。卡片路径下图标在上、文字在下；胶囊路径下合成横向小胶囊
-    // （图标 + 文字），和下面那排文件夹胶囊、底部那排动作胶囊是同一种形状。
-    Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(if (capsule) 6.dp else 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        DrawerShortcut(
-            icon = HugeIcons.Search01,
-            label = stringResource(R.string.chat_page_search_chats),
-            onClick = { navController.navigate(Screen.MessageSearch) },
-            modifier = Modifier.weight(1f),
-            capsule = capsule,
-        )
-        DrawerShortcut(
-            icon = HugeIcons.TransactionHistory,
-            label = stringResource(R.string.chat_page_history),
-            onClick = { navController.navigate(Screen.History) },
-            modifier = Modifier.weight(1f),
-            capsule = capsule,
-        )
-    }
-}
-
-@Composable
-private fun DrawerShortcut(
-    icon: ImageVector,
-    label: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    capsule: Boolean = false,
-) {
-    Surface(
-        onClick = onClick,
-        modifier = modifier
-            .then(if (capsule) Modifier.height(40.dp) else Modifier)
-            .semantics(mergeDescendants = true) {
-                contentDescription = label
-            },
-        shape = if (capsule) DrawerCapsuleShape else MaterialTheme.shapes.medium,
-        color = if (capsule) drawerCapsuleColor() else Color.Transparent,
-    ) {
-        if (capsule) {
-            Row(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(5.dp, Alignment.CenterHorizontally),
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        } else {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun DrawerAction(
-    modifier: Modifier = Modifier,
-    icon: @Composable () -> Unit,
-    label: @Composable () -> Unit,
-    contentDescription: String? = null,
-    onClick: () -> Unit,
-) {
-    Surface(
-        onClick = onClick,
-        modifier = modifier.semantics(mergeDescendants = true) {
-            if (contentDescription != null) this.contentDescription = contentDescription
-        },
-        color = Color.Transparent,
-        shape = MaterialTheme.shapes.small,
-    ) {
-        Column(
-            modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(4.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
-        ) {
-            Box(Modifier.size(20.dp), contentAlignment = Alignment.Center) { icon() }
-            androidx.compose.material3.ProvideTextStyle(MaterialTheme.typography.labelSmall) {
-                label()
-            }
-        }
-    }
-}
-
+/**
+ * 分段式文件夹切换：浅色轨道上一排纯文字分段，选中的那段抬起来、用主题色字；
+ * 文件夹多时可横向滑动；末尾的「+」新建文件夹；长按自建文件夹可重命名 / 删除。
+ */
 @Composable
 private fun FolderBar(
     folders: List<Folder>,
@@ -1493,65 +1326,79 @@ private fun FolderBar(
     onDelete: (Folder) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    LazyRow(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(FolderTrackShape)
+            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
+            .padding(3.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        item {
-            FolderChip(
-                label = stringResource(R.string.chat_page_folder_default),
-                selected = selectedFolderId == null,
-                onClick = { onSelect(null) },
-                onLongClick = {},
-            )
-        }
-        items(folders) { folder ->
-            var menuExpanded by remember { mutableStateOf(false) }
-            Box {
+        LazyRow(
+            modifier = Modifier.weight(1f),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            item {
                 FolderChip(
-                    label = folder.name,
-                    icon = HugeIcons.Folder01,
-                    selected = selectedFolderId == folder.id,
-                    onClick = { onSelect(folder.id) },
-                    onLongClick = { menuExpanded = true },
-                )
-                // P2-23 (D7) - the sub-agent archive folder cannot be deleted while it
-                // holds conversations; the option is absent rather than failing on tap.
-                val folderItems = buildList {
-                    add(
-                        AppMenuEntry(
-                            text = stringResource(R.string.chat_page_rename),
-                            icon = HugeIcons.PencilEdit01,
-                            onClick = { onRename(folder) },
-                        )
-                    )
-                    if (folder.id != protectedFolderId) {
-                        add(
-                            AppMenuEntry(
-                                text = stringResource(R.string.chat_page_delete),
-                                icon = HugeIcons.Delete01,
-                                destructive = true,
-                                onClick = { onDelete(folder) },
-                            )
-                        )
-                    }
-                }
-                AppDropdownMenu(
-                    expanded = menuExpanded,
-                    onDismissRequest = { menuExpanded = false },
-                    items = folderItems,
+                    label = stringResource(R.string.chat_page_folder_default),
+                    selected = selectedFolderId == null,
+                    onClick = { onSelect(null) },
+                    onLongClick = {},
                 )
             }
+            items(folders) { folder ->
+                var menuExpanded by remember { mutableStateOf(false) }
+                Box {
+                    FolderChip(
+                        label = folder.name,
+                        selected = selectedFolderId == folder.id,
+                        onClick = { onSelect(folder.id) },
+                        onLongClick = { menuExpanded = true },
+                    )
+                    // P2-23 (D7) - the sub-agent archive folder cannot be deleted while it
+                    // holds conversations; the option is absent rather than failing on tap.
+                    val folderItems = buildList {
+                        add(
+                            AppMenuEntry(
+                                text = stringResource(R.string.chat_page_rename),
+                                icon = HugeIcons.PencilEdit01,
+                                onClick = { onRename(folder) },
+                            )
+                        )
+                        if (folder.id != protectedFolderId) {
+                            add(
+                                AppMenuEntry(
+                                    text = stringResource(R.string.chat_page_delete),
+                                    icon = HugeIcons.Delete01,
+                                    destructive = true,
+                                    onClick = { onDelete(folder) },
+                                )
+                            )
+                        }
+                    }
+                    AppDropdownMenu(
+                        expanded = menuExpanded,
+                        onDismissRequest = { menuExpanded = false },
+                        items = folderItems,
+                    )
+                }
+            }
         }
-        item {
-            FolderChip(
-                label = stringResource(R.string.chat_page_folder_add),
-                icon = HugeIcons.FolderAdd,
-                selected = false,
-                onClick = onCreate,
-                onLongClick = {},
-            )
+        Surface(
+            onClick = onCreate,
+            modifier = Modifier.size(30.dp),
+            shape = FolderSegmentShape,
+            color = Color.Transparent,
+            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        ) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = Lucide.FolderPlus,
+                    contentDescription = stringResource(R.string.chat_page_folder_add),
+                    modifier = Modifier.size(16.dp),
+                )
+            }
         }
     }
 }
@@ -1562,39 +1409,40 @@ private fun FolderChip(
     selected: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
-    icon: ImageVector? = null,
 ) {
     Surface(
-        shape = MaterialTheme.shapes.small,
-        color = if (selected) {
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
+        shape = FolderSegmentShape,
+        color = if (selected) drawerRaisedColor() else Color.Transparent,
+        contentColor = if (selected) {
+            MaterialTheme.colorScheme.primary
         } else {
-            Color.Transparent
+            MaterialTheme.colorScheme.onSurfaceVariant
         },
         modifier = Modifier
-            .clip(MaterialTheme.shapes.small)
+            .height(30.dp)
+            .clip(FolderSegmentShape)
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongClick,
             )
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        Box(
+            modifier = Modifier.padding(horizontal = 12.dp),
+            contentAlignment = Alignment.Center,
         ) {
-            if (icon != null) {
-                Icon(icon, null, modifier = Modifier.size(14.dp))
-            }
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelLarge,
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
         }
     }
 }
+
+private val FolderTrackShape = RoundedCornerShape(10.dp)
+private val FolderSegmentShape = RoundedCornerShape(8.dp)
 
 @Composable
 private fun AssistantItem(
@@ -1646,14 +1494,6 @@ private fun AssistantItem(
         }
     }
 }
-
-/**
- * 抽屉控件胶囊。
- *
- * 抽屉的功能区不再是一张盖住列表的卡片：身份、入口、文件夹、底部动作都是这种小胶囊，
- * 直接落在磨砂面板上。形状只在这里定义一次，两种路径之外的控件都从这里取。
- */
-private val DrawerCapsuleShape = RoundedCornerShape(percent = 50)
 
 /** 胶囊底色。比面板亮一档，但不加描边和阴影——它不该再读成一张卡。 */
 @Composable

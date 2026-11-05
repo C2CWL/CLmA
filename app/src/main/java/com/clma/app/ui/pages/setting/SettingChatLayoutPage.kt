@@ -18,6 +18,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clma.app.R
 import com.clma.app.data.datastore.ChatLayout
 import com.clma.app.data.datastore.DisplaySetting
+import com.clma.app.data.datastore.DrawerStyle
 import com.clma.app.data.datastore.effectiveChatLayout
 import com.clma.app.data.datastore.withChatLayout
 import com.clma.app.ui.components.ui.CardGroup
@@ -184,6 +185,30 @@ fun SettingChatLayoutPage(vm: SettingVM = koinViewModel()) {
                         },
                     )
                 }
+                item(
+                    headlineContent = { Text(stringResource(R.string.setting_display_page_drawer_style_title)) },
+                    supportingContent = { Text(stringResource(R.string.setting_display_page_drawer_style_desc)) },
+                    trailingContent = {
+                        Select(
+                            options = DrawerStyle.entries,
+                            selectedOption = displaySetting.drawerStyle,
+                            onOptionSelected = {
+                                updateDisplaySetting(displaySetting.copy(drawerStyle = it))
+                            },
+                            optionToString = {
+                                stringResource(
+                                    when (it) {
+                                        DrawerStyle.CARD -> R.string.drawer_style_card
+                                        DrawerStyle.RAIL -> R.string.drawer_style_rail
+                                    }
+                                )
+                            },
+                            containerColor = CustomColors.listItemColors.containerColor,
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                            modifier = Modifier.width(150.dp),
+                        )
+                    },
+                )
                 item(
                     headlineContent = { Text(stringResource(R.string.setting_display_page_drawer_capsules_title)) },
                     supportingContent = { Text(stringResource(R.string.setting_display_page_drawer_capsules_desc)) },

@@ -147,6 +147,7 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
             row(R.string.setting_display_page_clean_layout_top_height_title, R.string.setting_display_page_clean_layout_top_height_desc),
             row(R.string.setting_display_page_clean_layout_bottom_padding_title, R.string.setting_display_page_clean_layout_bottom_padding_desc),
             row(R.string.setting_display_page_clean_layout_bottom_opacity_title),
+            row(R.string.setting_display_page_drawer_style_title, R.string.setting_display_page_drawer_style_desc),
             row(R.string.setting_display_page_drawer_capsules_title, R.string.setting_display_page_drawer_capsules_desc),
         ),
     ),
