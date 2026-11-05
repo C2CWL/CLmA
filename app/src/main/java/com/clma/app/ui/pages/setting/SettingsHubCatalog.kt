@@ -11,7 +11,7 @@ import kotlinx.serialization.Serializable
  * cannot drift apart.
  */
 enum class SettingsHubItemId {
-    // 模型与服务
+    // 模型
     PROVIDERS,
     MODELS,
     ASSISTANT,
@@ -27,7 +27,7 @@ enum class SettingsHubItemId {
     TOOL_APPROVALS,
     RUNTIME,
 
-    // 连接与执行环境
+    // 执行环境与设备
     NETWORK,
     TERMUX,
     SSH,
@@ -35,52 +35,50 @@ enum class SettingsHubItemId {
     CONNECTORS,
     SECRETS,
 
-    // 设备与权限
+    // 设备与权限（仍属执行环境分组）
     PERMISSIONS,
     ACCESSIBILITY,
     SHIZUKU,
     NOTIF_ACCESS,
     FLOATING_BALL,
 
-    // 自动化与远程
+    // 自动化（归 Agent）
     WORKFLOWS,
     SCHEDULED,
     WEB,
 
-    // 外观与视觉基调
+    // 外观
     VISUAL_STYLE,
     COLOR_MODE,
     FONTS,
     CHAT_LAYOUT,
 
-    // 聊天
+    // 聊天外观项
     MESSAGE_DISPLAY,
     INPUT,
     QUICK_MESSAGES,
     NOTIF_PREFS,
 
-    // 数据
+    // 数据与关于
     BACKUP,
     FILES,
     LOGS,
-
-    // 关于
     DOCTOR,
     ABOUT,
     SHARE,
 }
 
+/**
+ * Six hub sections (v4 IA). Ordinal / name used by [Screen.SettingsCategory] deep links.
+ */
 @Serializable
 enum class SettingsHubSectionId {
     MODELS,
-    AGENT,
-    CONNECTIONS,
-    DEVICE,
-    AUTOMATION,
-    APPEARANCE,
     CHAT,
+    AGENT,
+    DEVICE,
+    APPEARANCE,
     DATA,
-    ABOUT,
 }
 
 /**
@@ -96,11 +94,22 @@ data class SettingsHubItemDef(
     @param:StringRes val descriptionRes: Int? = null,
 )
 
+/**
+ * Optional mid-section label used by「数据与关于」to split 数据 | 关于 under one section header.
+ * [startItem] is the first [SettingsHubItemId] in [SettingsHubSectionDef.items] that belongs
+ * to this subsection.
+ */
+data class SettingsHubSubsectionDef(
+    @param:StringRes val titleRes: Int,
+    val startItem: SettingsHubItemId,
+)
+
 data class SettingsHubSectionDef(
     val id: SettingsHubSectionId,
     @param:StringRes val titleRes: Int,
     @param:StringRes val descriptionRes: Int,
     val items: List<SettingsHubItemId>,
+    val subsections: List<SettingsHubSubsectionDef> = emptyList(),
 ) {
     val route: Screen.SettingsCategory get() = Screen.SettingsCategory(id)
 }
@@ -164,7 +173,10 @@ val settingsHubItems: Map<SettingsHubItemId, SettingsHubItemDef> = listOf(
     hubItem(SettingsHubItemId.SHARE, null, R.string.setting_page_share, R.string.setting_page_share_desc),
 ).associateBy { it.id }
 
-/** The hub, top to bottom. Every [SettingsHubItemId] appears exactly once. */
+/**
+ * The hub, top to bottom — six sections with leaf rows (flat Kelivo-like hub).
+ * Every [SettingsHubItemId] appears exactly once.
+ */
 val settingsHubSections: List<SettingsHubSectionDef> = listOf(
     SettingsHubSectionDef(
         id = SettingsHubSectionId.MODELS,
@@ -189,27 +201,34 @@ val settingsHubSections: List<SettingsHubSectionDef> = listOf(
         ),
     ),
     SettingsHubSectionDef(
-        id = SettingsHubSectionId.CONNECTIONS,
-        titleRes = R.string.setting_hub_group_connections,
-        descriptionRes = R.string.setting_hub_category_connections_desc,
+        id = SettingsHubSectionId.AGENT,
+        titleRes = R.string.setting_hub_group_agent,
+        descriptionRes = R.string.setting_hub_category_agent_desc,
         items = listOf(
             SettingsHubItemId.WORKSPACES,
             SettingsHubItemId.SKILLS,
             SettingsHubItemId.MCP,
             SettingsHubItemId.SUB_AGENTS,
             SettingsHubItemId.TOOL_APPROVALS,
+            SettingsHubItemId.CONNECTORS,
+            SettingsHubItemId.WORKFLOWS,
+            SettingsHubItemId.SCHEDULED,
+        ),
+    ),
+    SettingsHubSectionDef(
+        id = SettingsHubSectionId.DEVICE,
+        titleRes = R.string.setting_hub_group_device,
+        descriptionRes = R.string.setting_hub_category_device_desc,
+        items = listOf(
             SettingsHubItemId.NETWORK,
             SettingsHubItemId.TERMUX,
             SettingsHubItemId.SSH,
             SettingsHubItemId.BROWSER,
-            SettingsHubItemId.CONNECTORS,
+            SettingsHubItemId.WEB,
             SettingsHubItemId.PERMISSIONS,
             SettingsHubItemId.ACCESSIBILITY,
             SettingsHubItemId.SHIZUKU,
             SettingsHubItemId.NOTIF_ACCESS,
-            SettingsHubItemId.WORKFLOWS,
-            SettingsHubItemId.SCHEDULED,
-            SettingsHubItemId.WEB,
         ),
     ),
     SettingsHubSectionDef(
@@ -235,20 +254,33 @@ val settingsHubSections: List<SettingsHubSectionDef> = listOf(
             SettingsHubItemId.BACKUP,
             SettingsHubItemId.FILES,
             SettingsHubItemId.SECRETS,
-        ),
-    ),
-    SettingsHubSectionDef(
-        id = SettingsHubSectionId.ABOUT,
-        titleRes = R.string.setting_hub_group_about,
-        descriptionRes = R.string.setting_hub_category_about_desc,
-        items = listOf(
             SettingsHubItemId.DOCTOR,
             SettingsHubItemId.LOGS,
             SettingsHubItemId.ABOUT,
             SettingsHubItemId.SHARE,
         ),
+        subsections = listOf(
+            SettingsHubSubsectionDef(R.string.setting_hub_subsection_data, SettingsHubItemId.BACKUP),
+            SettingsHubSubsectionDef(R.string.setting_hub_subsection_about, SettingsHubItemId.DOCTOR),
+        ),
     ),
 )
+
+/** Split [SettingsHubSectionDef.items] by [SettingsHubSectionDef.subsections] labels. */
+fun SettingsHubSectionDef.itemGroups(): List<Pair<Int?, List<SettingsHubItemId>>> {
+    if (subsections.isEmpty()) return listOf(null to items)
+    val starts = subsections.associate { it.startItem to it.titleRes }
+    val groups = mutableListOf<Pair<Int?, MutableList<SettingsHubItemId>>>()
+    for (id in items) {
+        val label = starts[id]
+        if (label != null || groups.isEmpty()) {
+            groups += (label to mutableListOf(id))
+        } else {
+            groups.last().second += id
+        }
+    }
+    return groups.map { it.first to it.second.toList() }
+}
 
 /** Hub rows for the search index, with the title of the group they sit in (SHARE omitted). */
 fun settingsHubSearchRows(): List<Pair<SettingsHubItemDef, Int>> =

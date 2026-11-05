@@ -21,6 +21,17 @@ import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import me.rerere.hugeicons.stroke.ArrowRight01
+import me.rerere.hugeicons.HugeIcons
+import com.clma.app.ui.components.ai.rememberModelListState
+import com.clma.app.ui.components.ai.ModelListSheet
+import com.clma.app.data.ai.prompts.DEFAULT_COMPRESS_PROMPT
+import com.clma.ai.provider.ModelType
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -137,6 +148,12 @@ private fun AutoCompactionSettingItem(
     settings: Settings,
     vm: SettingVM,
 ) {
+    var showCompressPromptEditor by remember { mutableStateOf(false) }
+    val compressModelState = rememberModelListState(
+        modelId = settings.compressModelId,
+        providers = settings.providers,
+        type = ModelType.CHAT,
+    )
     var threshold by remember(settings.autoCompactionThresholdPercent) {
         mutableFloatStateOf(settings.autoCompactionThresholdPercent.toFloat())
     }
@@ -205,6 +222,27 @@ private fun AutoCompactionSettingItem(
                         vm.updateSettings { current -> current.copy(enableAutoCompaction = it) }
                     },
                 )
+            },
+        )
+        item(
+            onClick = { compressModelState.open() },
+            headlineContent = { Text(stringResource(R.string.setting_model_page_compress_model)) },
+            supportingContent = { Text(stringResource(R.string.setting_model_page_compress_model_desc)) },
+            trailingContent = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(
+                        text = compressModelState.currentModel?.displayName
+                            ?: stringResource(R.string.model_list_select_model),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Icon(HugeIcons.ArrowRight01, contentDescription = null, modifier = Modifier.size(16.dp))
+                }
             },
         )
         item(
@@ -420,6 +458,63 @@ private fun AutoCompactionSettingItem(
                 )
             },
         )
+        item(
+            onClick = { showCompressPromptEditor = true },
+            headlineContent = { Text(stringResource(R.string.setting_model_page_prompt_compress)) },
+            supportingContent = { Text(stringResource(R.string.setting_model_page_compress_prompt_vars)) },
+            trailingContent = {
+                Icon(HugeIcons.ArrowRight01, contentDescription = null, modifier = Modifier.size(16.dp))
+            },
+        )
+    }
+
+    ModelListSheet(
+        state = compressModelState,
+        onSelect = { model -> vm.updateSettings(settings.copy(compressModelId = model.id)) },
+    )
+
+    if (showCompressPromptEditor) {
+        ModalBottomSheet(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            tonalElevation = 0.dp,
+            onDismissRequest = { showCompressPromptEditor = false },
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = 16.dp)
+                    .imePadding(),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.setting_model_page_prompt_compress),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Text(
+                    text = stringResource(R.string.setting_model_page_compress_prompt_vars),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                val promptField = rememberSyncedTextField(
+                    externalValue = settings.compressPrompt,
+                    key = Unit,
+                    onValueChange = { text -> vm.updateSettings { it.copy(compressPrompt = text) } },
+                )
+                OutlinedTextField(
+                    value = promptField.value,
+                    onValueChange = promptField::onValueChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    maxLines = 15,
+                )
+                TextButton(
+                    onClick = {
+                        vm.updateSettings(settings.copy(compressPrompt = DEFAULT_COMPRESS_PROMPT))
+                    },
+                ) {
+                    Text(stringResource(R.string.setting_model_page_reset_to_default))
+                }
+            }
+        }
     }
 }
 

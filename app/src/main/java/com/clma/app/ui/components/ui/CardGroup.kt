@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.LargeFlexibleTopAppBar
@@ -33,7 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEachIndexed
 import com.clma.app.ui.theme.CustomColors
 
-private val CardGroupCorner = 24.dp
+private val CardGroupCorner = 20.dp
 private val CardGroupItemSpacing = 0.dp
 private val CardGroupInnerCorner = 0.dp
 
@@ -174,7 +175,14 @@ fun CardGroup(
         scope.items.fastForEachIndexed { index, item ->
             CardGroupListItem(item = item, count = count, index = index)
             if (index != count - 1) {
-                Spacer(modifier = Modifier.height(CardGroupItemSpacing))
+                if (CardGroupItemSpacing > 0.dp) {
+                    Spacer(modifier = Modifier.height(CardGroupItemSpacing))
+                } else {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(start = 44.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                    )
+                }
             }
         }
     }

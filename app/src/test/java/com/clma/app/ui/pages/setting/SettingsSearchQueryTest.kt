@@ -63,7 +63,7 @@ class SettingsSearchQueryTest {
     fun `workspace is a hub row now`() {
         val top = search("工作区").first() as SettingsSearchEntry
         assertEquals(emptyList<Int>(), top.breadcrumbRes)
-        assertEquals(R.string.setting_hub_group_connections, top.groupRes)
+        assertEquals(R.string.setting_hub_group_agent, top.groupRes)
     }
 
     @Test

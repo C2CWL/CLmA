@@ -119,10 +119,10 @@ fun SettingsSearchPage(vm: SettingVM = koinViewModel()) {
                 onValueChange = { query = it },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .padding(horizontal = 14.dp, vertical = 6.dp)
                     .focusRequester(focusRequester),
                 placeholder = { Text(stringResource(R.string.settings_search_placeholder)) },
-                shape = RoundedCornerShape(50),
+                shape = RoundedCornerShape(13.dp),
                 singleLine = true,
             )
 

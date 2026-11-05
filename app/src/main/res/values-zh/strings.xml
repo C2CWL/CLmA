@@ -1088,7 +1088,7 @@
   <string name="setting_page_hub_chat_display">聊天显示</string>
   <string name="setting_page_hub_chat_actions">聊天操作</string>
   <string name="setting_page_hub_app_alerts">应用提醒</string>
-  <string name="setting_page_hub_notif_access">通知读取</string>
+  <string name="setting_page_hub_notif_access">通知访问权限</string>
   <string name="setting_page_hub_notif_access_desc">读取系统通知与近期活动</string>
   <string name="setting_page_hub_network_desc">代理、User-Agent、重试与流式超时</string>
 
