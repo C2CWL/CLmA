@@ -47,6 +47,7 @@ import com.clma.app.data.datastore.ImageRecognitionMode
 import com.clma.app.ui.components.ui.Select
 import com.clma.app.ui.components.ai.ModelListSheet
 import com.clma.app.ui.components.ai.ReasoningButton
+import com.clma.app.data.datastore.supportsSpeedTier
 import com.clma.app.ui.components.ai.rememberModelListState
 import com.clma.app.ui.components.nav.BackButton
 import com.clma.app.ui.components.ui.CardGroup
@@ -131,6 +132,21 @@ private fun ModelSettingsPage(settings: Settings, vm: SettingVM, contentPadding:
                 reasoningLevel = settings.fastModelReasoningLevel,
                 onUpdateReasoningLevel = {
                     vm.updateSettings(settings.copy(fastModelReasoningLevel = it))
+                },
+                onUpdateCodexServiceTier = { tier ->
+                    settings.fastModelId?.let { modelId ->
+                        vm.updateSettings { current ->
+                            current.copy(
+                                providers = current.providers.map { provider ->
+                                    provider.copyProvider(
+                                        models = provider.models.map { model ->
+                                            if (model.id == modelId) model.copy(serviceTier = tier) else model
+                                        },
+                                    )
+                                },
+                            )
+                        }
+                    }
                 },
             )
         }
@@ -238,6 +254,7 @@ private fun ModelSettingItem(
     onSelect: (Model) -> Unit,
     reasoningLevel: ReasoningLevel? = null,
     onUpdateReasoningLevel: ((ReasoningLevel) -> Unit)? = null,
+    onUpdateCodexServiceTier: ((String?) -> Unit)? = null,
 ) {
     val state = rememberModelListState(
         modelId = modelId,
@@ -275,9 +292,15 @@ private fun ModelSettingItem(
                 item(
                     headlineContent = { Text(stringResource(R.string.assistant_page_thinking_budget)) },
                     trailingContent = {
+                        val model = state.currentModel
+                        val showSpeed = onUpdateCodexServiceTier != null &&
+                            model?.supportsSpeedTier(providers) == true
                         ReasoningButton(
                             reasoningLevel = reasoningLevel,
                             onUpdateReasoningLevel = onUpdateReasoningLevel,
+                            showCodexSpeed = showSpeed,
+                            codexServiceTier = model?.serviceTier,
+                            onUpdateCodexServiceTier = { onUpdateCodexServiceTier?.invoke(it) },
                         )
                     },
                 )

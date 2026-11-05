@@ -713,6 +713,14 @@
   <string name="codex_speed_standard_hint">标准速度与额度消耗。</string>
   <string name="codex_speed_fast_hint">优先高速通道（Fast），通常约 2.5× 额度或费用消耗，以供应商官方说明为准。</string>
   <string name="reasoning_picker_title">调整模型思考深度</string>
+  <string name="reasoning_picker_level_off">关闭</string>
+  <string name="reasoning_picker_level_auto">自动</string>
+  <string name="reasoning_picker_level_low">低</string>
+  <string name="reasoning_picker_level_medium">中</string>
+  <string name="reasoning_picker_level_high">高</string>
+  <string name="reasoning_picker_level_xhigh">超高</string>
+  <string name="reasoning_picker_level_max">最大</string>
+  <string name="reasoning_picker_max_usage_hint">使用额度消耗更快</string>
   <string name="reasoning_xhigh">研究</string>
   <string name="regenerate">重新生成</string>
   <string name="regenerate_confirm_message">确定要重新生成此消息吗？</string>
@@ -851,6 +859,10 @@
   <string name="setting_display_page_popup_menu_style_desc">表现力：圆角分组菜单 + 弹性动画。经典：系统默认平面菜单</string>
   <string name="setting_display_page_popup_menu_style_classic">经典</string>
   <string name="setting_display_page_popup_menu_style_expressive">表现力</string>
+  <string name="setting_display_page_reasoning_picker_style_title">思考强度样式</string>
+  <string name="setting_display_page_reasoning_picker_style_desc">能量条仿 Codex；星空为星等可视化</string>
+  <string name="setting_display_page_reasoning_picker_style_energy_bar">能量条</string>
+  <string name="setting_display_page_reasoning_picker_style_stellar">星空</string>
   <string name="setting_display_page_auto_play_tts_desc">助手消息生成完成后自动播放TTS</string>
   <string name="setting_display_page_auto_play_tts_title">生成后自动播放TTS</string>
   <string name="setting_display_page_chat_font_family_default">默认</string>

@@ -1426,6 +1426,8 @@ data class DisplaySetting(
     val toolCallStyle: ToolCallStyle = ToolCallStyle.CLASSIC,
     // 弹出菜单样式。默认表现力（圆角分组 + spring）；可切回经典平面菜单。
     val popupMenuStyle: PopupMenuStyle = PopupMenuStyle.EXPRESSIVE,
+    // 思考强度选择器样式。默认能量条（Codex 紫色胶囊）；可切到星空星等可视化。
+    val reasoningPickerStyle: ReasoningPickerStyle = ReasoningPickerStyle.ENERGY_BAR,
     // 旧版本这里有 settingsHubStyle（设置首页「原版 / 新版」）。开关已去掉，只剩一种首页；
     // 旧数据里残留的 "settingsHubStyle" 键由 JsonInstant 的 ignoreUnknownKeys 直接忽略。
     // 把夹在工具/思考轮次之间的过程旁白并进思考链，避免拆成多张「再显示 N 步」和正文穿插。
