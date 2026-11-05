@@ -4,6 +4,12 @@ import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.Surface
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.TextField
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.FlowRow
@@ -96,19 +102,11 @@ fun ProviderConfigure(
         modifier = modifier
     ) {
         if (!provider.builtIn) {
-            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                ProviderSetting.Types.forEachIndexed { index, type ->
-                    SegmentedButton(
-                        shape = SegmentedButtonDefaults.itemShape(
-                            index = index,
-                            count = ProviderSetting.Types.size
-                        ),
-                        label = { Text(type.simpleName ?: "") },
-                        selected = provider::class == type,
-                        onClick = { onEdit(provider.convertTo(type)) }
-                    )
-                }
-            }
+            ProviderSoftSegmentedRow(
+                options = ProviderSetting.Types.map { it to (it.simpleName ?: "") },
+                selected = provider::class,
+                onSelect = { onEdit(provider.convertTo(it)) },
+            )
         }
 
         when (provider) {
@@ -311,6 +309,86 @@ private val OFFICIAL_PROVIDER_HOSTS = setOf(
     CLAUDE_OFFICIAL_HOST
 )
 
+
+@Composable
+private fun <T> ProviderSoftSegmentedRow(
+    options: List<Pair<T, String>>,
+    selected: T,
+    onSelect: (T) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = MaterialTheme.colorScheme
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(colors.surfaceContainerHighest)
+            .padding(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        options.forEach { (value, label) ->
+            val on = value == selected
+            Surface(
+                onClick = { onSelect(value) },
+                shape = RoundedCornerShape(10.dp),
+                color = if (on) colors.surface else Color.Transparent,
+                contentColor = if (on) colors.primary else colors.onSurfaceVariant,
+                tonalElevation = 0.dp,
+                shadowElevation = if (on) 1.dp else 0.dp,
+                modifier = Modifier.weight(1f),
+            ) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 10.dp),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProviderFilledTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    isError: Boolean = false,
+    maxLines: Int = 1,
+    visualTransformation: VisualTransformation = VisualTransformation.None,
+    trailingIcon: @Composable (() -> Unit)? = null,
+    supportingText: @Composable (() -> Unit)? = null,
+) {
+    TextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = modifier.fillMaxWidth(),
+        enabled = enabled,
+        isError = isError,
+        maxLines = maxLines,
+        singleLine = maxLines == 1,
+        label = { Text(label) },
+        visualTransformation = visualTransformation,
+        trailingIcon = trailingIcon,
+        supportingText = supportingText,
+        shape = RoundedCornerShape(12.dp),
+        colors = TextFieldDefaults.colors(
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent,
+            disabledIndicatorColor = Color.Transparent,
+            errorIndicatorColor = Color.Transparent,
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+            disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.55f),
+            errorContainerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f),
+        ),
+    )
+}
+
 @Composable
 private fun ProviderConfigureOpenAI(
     provider: ProviderSetting.OpenAI,
@@ -320,19 +398,17 @@ private fun ProviderConfigureOpenAI(
 
     provider.description()
 
-    OutlinedTextField(
+    ProviderFilledTextField(
         value = provider.name,
         onValueChange = { onEdit(provider.copy(name = it)) },
-        label = { Text(stringResource(R.string.setting_provider_page_name)) },
-        modifier = Modifier.fillMaxWidth(),
+        label = stringResource(R.string.setting_provider_page_name),
     )
 
     var keyVisible by remember { mutableStateOf(false) }
-    OutlinedTextField(
+    ProviderFilledTextField(
         value = provider.apiKey,
         onValueChange = { onEdit(provider.copy(apiKey = it.trim())) },
-        label = { Text(stringResource(R.string.setting_provider_page_api_key)) },
-        modifier = Modifier.fillMaxWidth(),
+        label = stringResource(R.string.setting_provider_page_api_key),
         maxLines = 3,
         visualTransformation = if (keyVisible) VisualTransformation.None else PasswordVisualTransformation(),
         trailingIcon = {
@@ -342,15 +418,14 @@ private fun ProviderConfigureOpenAI(
         },
     )
 
-    OutlinedTextField(
+    ProviderFilledTextField(
         value = provider.baseUrl,
         onValueChange = { onEdit(provider.copy(baseUrl = it.trim())) },
-        label = { Text(stringResource(R.string.setting_provider_page_api_base_url)) },
-        modifier = Modifier.fillMaxWidth(),
+        label = stringResource(R.string.setting_provider_page_api_base_url),
         isError = provider.baseUrl.isNotBlank() && !provider.baseUrl.isValidBaseUrl(),
     )
 
-    OutlinedTextField(
+    ProviderFilledTextField(
         value = if (provider.useResponseApi) provider.responsesPath else provider.chatCompletionsPath,
         onValueChange = {
             onEdit(
@@ -361,8 +436,7 @@ private fun ProviderConfigureOpenAI(
                 }
             )
         },
-        label = { Text(stringResource(R.string.setting_provider_page_api_path)) },
-        modifier = Modifier.fillMaxWidth(),
+        label = stringResource(R.string.setting_provider_page_api_path),
         enabled = !provider.builtIn,
     )
 
@@ -591,20 +665,18 @@ private fun ProviderConfigureClaude(
 ) {
     provider.description()
 
-    OutlinedTextField(
+    ProviderFilledTextField(
         value = provider.name,
         onValueChange = { onEdit(provider.copy(name = it)) },
-        label = { Text(stringResource(R.string.setting_provider_page_name)) },
-        modifier = Modifier.fillMaxWidth(),
+        label = stringResource(R.string.setting_provider_page_name),
         maxLines = 3,
     )
 
     var keyVisible by remember { mutableStateOf(false) }
-    OutlinedTextField(
+    ProviderFilledTextField(
         value = provider.apiKey,
         onValueChange = { onEdit(provider.copy(apiKey = it.trim())) },
-        label = { Text(stringResource(R.string.setting_provider_page_api_key)) },
-        modifier = Modifier.fillMaxWidth(),
+        label = stringResource(R.string.setting_provider_page_api_key),
         maxLines = 3,
         visualTransformation = if (keyVisible) VisualTransformation.None else PasswordVisualTransformation(),
         trailingIcon = {
@@ -614,11 +686,10 @@ private fun ProviderConfigureClaude(
         },
     )
 
-    OutlinedTextField(
+    ProviderFilledTextField(
         value = provider.baseUrl,
         onValueChange = { onEdit(provider.copy(baseUrl = it.trim())) },
-        label = { Text(stringResource(R.string.setting_provider_page_api_base_url)) },
-        modifier = Modifier.fillMaxWidth(),
+        label = stringResource(R.string.setting_provider_page_api_base_url),
         isError = provider.baseUrl.isNotBlank() && !provider.baseUrl.isValidBaseUrl(),
     )
 
