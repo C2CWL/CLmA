@@ -77,6 +77,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.clma.ai.core.ReasoningLevel
+import androidx.compose.ui.input.pointer.awaitPointerEvent
+import com.clma.app.data.datastore.findProvider
+import com.clma.ai.provider.nearestSupportedReasoningLevel
+import com.clma.ai.provider.supportedReasoningLevels
+import com.clma.ai.provider.Model
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Atom02
 import com.clma.app.R
@@ -94,9 +99,6 @@ import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
 
-private val levels = ReasoningLevel.entries
-private val levelCount = levels.size
-
 @Composable
 fun ReasoningButton(
     modifier: Modifier = Modifier,
@@ -106,7 +108,19 @@ fun ReasoningButton(
     showCodexSpeed: Boolean = false,
     codexServiceTier: String? = null,
     onUpdateCodexServiceTier: (String?) -> Unit = {},
+    /** When null (unknown model), the picker shows every [ReasoningLevel]. */
+    model: Model? = null,
+    supportedLevels: List<ReasoningLevel>? = null,
 ) {
+    val settings = LocalSettings.current
+    val derivedLevels = remember(model?.id, model?.modelId, settings.providers) {
+        if (model == null) {
+            ReasoningLevel.entries.toList()
+        } else {
+            supportedReasoningLevels(model.findProvider(settings.providers), model)
+        }
+    }
+    val levels = supportedLevels ?: derivedLevels
     ReasoningPickerButton(
         reasoningLevel = reasoningLevel,
         onUpdateReasoningLevel = onUpdateReasoningLevel,
@@ -115,6 +129,7 @@ fun ReasoningButton(
         showCodexSpeed = showCodexSpeed,
         codexServiceTier = codexServiceTier,
         onUpdateCodexServiceTier = onUpdateCodexServiceTier,
+        supportedLevels = levels,
     )
 }
 
@@ -130,6 +145,7 @@ fun ReasoningPickerButton(
     showCodexSpeed: Boolean = false,
     codexServiceTier: String? = null,
     onUpdateCodexServiceTier: (String?) -> Unit = {},
+    supportedLevels: List<ReasoningLevel> = ReasoningLevel.entries,
 ) {
     var showPicker by remember { mutableStateOf(false) }
 
@@ -141,6 +157,7 @@ fun ReasoningPickerButton(
             showCodexSpeed = showCodexSpeed,
             codexServiceTier = codexServiceTier,
             onUpdateCodexServiceTier = onUpdateCodexServiceTier,
+            supportedLevels = supportedLevels,
         )
     }
 
@@ -191,9 +208,14 @@ fun ReasoningPicker(
     showCodexSpeed: Boolean = false,
     codexServiceTier: String? = null,
     onUpdateCodexServiceTier: (String?) -> Unit = {},
+    supportedLevels: List<ReasoningLevel> = ReasoningLevel.entries,
 ) {
+    val levels = remember(supportedLevels) {
+        supportedLevels.ifEmpty { ReasoningLevel.entries.toList() }
+    }
+    val displayLevel = nearestSupportedReasoningLevel(reasoningLevel, levels)
     val style = LocalSettings.current.displaySetting.reasoningPickerStyle
-    val isMax = reasoningLevel == ReasoningLevel.MAX
+    val isMax = displayLevel == ReasoningLevel.MAX
     val titleColor by animateColorAsState(
         targetValue = if (isMax) CodexUltraAccent else MaterialTheme.colorScheme.onSurface,
         label = "reasoningTitleTint",
@@ -241,24 +263,26 @@ fun ReasoningPicker(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         ReasoningIcon(
-                            level = reasoningLevel,
+                            level = displayLevel,
                             modifier = Modifier.size(22.dp),
                         )
                         ReasoningLevelWord(
-                            level = reasoningLevel,
+                            level = displayLevel,
                             style = MaterialTheme.typography.titleMedium,
                         )
                     }
                     ReasoningEnergyBar(
-                        currentLevel = reasoningLevel,
+                        currentLevel = displayLevel,
                         onSelectLevel = onUpdateReasoningLevel,
+                        levels = levels,
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
                 ReasoningPickerStyle.STELLAR -> {
                     ReasoningStellarSheet(
-                        currentLevel = reasoningLevel,
+                        currentLevel = displayLevel,
                         onSelectLevel = onUpdateReasoningLevel,
+                        levels = levels,
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
@@ -409,7 +433,7 @@ private fun StardustGlowOverlay(
     modifier: Modifier = Modifier,
 ) {
     if (level == ReasoningLevel.OFF) return
-    val ordinal = levels.indexOf(level).coerceAtLeast(0)
+    val ordinal = level.ordinal
     val count = (4 + ordinal * 2).coerceIn(4, 16)
     val particles = remember(ordinal) {
         val rnd = kotlin.random.Random(ordinal * 1013L + 73L)
@@ -607,25 +631,28 @@ internal fun CodexSpeedSelector(
 
 /**
  * Codex-style fat purple energy capsule (~32dp track, white thumb ≈ bar height).
- * Snaps to the 7 reasoning levels; tap a label to jump. Low/mid fill solid blue;
- * 超高/最大 use a blue→violet gradient with animated stardust.
+ * Snaps across the provided level list (2–7 stops); tap a label to jump. Low/mid
+ * fill solid blue; HIGH and above use a blue→violet gradient with animated stardust.
  */
 @Composable
 internal fun ReasoningEnergyBar(
     currentLevel: ReasoningLevel,
     onSelectLevel: (ReasoningLevel) -> Unit,
+    levels: List<ReasoningLevel> = ReasoningLevel.entries,
     modifier: Modifier = Modifier,
 ) {
     val haptic = LocalHapticFeedback.current
     val latestLevel by rememberUpdatedState(currentLevel)
     val latestOnSelect by rememberUpdatedState(onSelectLevel)
     val latestHaptic by rememberUpdatedState(haptic)
-    val currentIndex = levels.indexOf(currentLevel).coerceAtLeast(0)
+    val levelCount = levels.size.coerceAtLeast(1)
+    val currentIndex = levels.indexOf(currentLevel).let { if (it >= 0) it else 0 }
     var dragProgress by remember { mutableStateOf<Float?>(null) }
     val displayIndex = dragProgress ?: currentIndex.toFloat()
     val activeLevel = levels[displayIndex.roundToInt().coerceIn(0, levelCount - 1)]
 
-    val targetFraction = (displayIndex / (levelCount - 1).toFloat()).coerceIn(0f, 1f)
+    val denom = (levelCount - 1).toFloat().coerceAtLeast(1f)
+    val targetFraction = (displayIndex / denom).coerceIn(0f, 1f)
     val animatedFraction = animateFloatAsState(
         targetValue = targetFraction,
         animationSpec = if (dragProgress != null) tween(0)
@@ -634,7 +661,8 @@ internal fun ReasoningEnergyBar(
     )
 
     val levelColor = reasoningLevelColor(activeLevel)
-    val isUltra = activeLevel == ReasoningLevel.XHIGH || activeLevel == ReasoningLevel.MAX
+    // Purple stardust on HIGH and above (covers providers whose top stop is HIGH).
+    val isUltra = activeLevel.ordinal >= ReasoningLevel.HIGH.ordinal
     val isMax = activeLevel == ReasoningLevel.MAX
     val trackHeight = 32.dp
     val thumbSize = 32.dp

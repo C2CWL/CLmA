@@ -301,6 +301,7 @@ private fun ModelSettingItem(
                             showCodexSpeed = showSpeed,
                             codexServiceTier = model?.serviceTier,
                             onUpdateCodexServiceTier = { onUpdateCodexServiceTier?.invoke(it) },
+                            model = model,
                         )
                     },
                 )
