@@ -8,7 +8,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.clma.app.ui.theme.LocalDarkMode
 
-// 「现代」聊天布局（复用 ChatLayout.CLEAN 的存储值）的一套外观参数。
+// 「现代」聊天布局（ChatLayout.MODERN，存储值沿用原暖阳的 "claude"）的一套外观参数。
 // 思路：方为主、圆点缀；不用硬描边和虚线，改用浅色底块、柔和阴影和留白来分区。
 // 颜色全部取自 MaterialTheme，浅色/深色和动态取色都能跟着变。
 

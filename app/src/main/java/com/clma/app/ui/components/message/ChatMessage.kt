@@ -425,11 +425,10 @@ private fun MessagePartsBlock(
     // 消息输出HapticFeedback
     val hapticFeedback = LocalHapticFeedback.current
     val settings = LocalSettings.current
-    // 暖阳 / Gemini / 现代布局：助手消息不带气泡，贴近安静的阅读栏（强制的，不跟开关走）。
+    // Gemini / 现代布局：助手消息不带气泡，贴近安静的阅读栏（强制的，不跟开关走）。
     val modern = settings.displaySetting.usesModernChatUi
     val showAssistantBubble =
         settings.displaySetting.showAssistantBubble &&
-            settings.displaySetting.effectiveChatLayout != ChatLayout.CLAUDE &&
             settings.displaySetting.effectiveChatLayout != ChatLayout.GEMINI &&
             !modern
     val partsState by rememberUpdatedState(parts)

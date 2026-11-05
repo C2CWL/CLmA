@@ -35,7 +35,7 @@ import kotlin.math.roundToInt
 import androidx.compose.material3.MaterialTheme
 
 
-/** 聊天布局: chat layout (Gemini / 现代 / 暖阳), its panel knobs and the drawer capsules. */
+/** 聊天布局: chat layout (Gemini / 简洁 / 现代), its panel knobs and the drawer capsules. */
 @Composable
 fun SettingChatLayoutPage(vm: SettingVM = koinViewModel()) {
     val settings by vm.settings.collectAsStateWithLifecycle()
@@ -57,8 +57,8 @@ fun SettingChatLayoutPage(vm: SettingVM = koinViewModel()) {
                     supportingContent = {
                         Column {
                             Text(stringResource(R.string.setting_display_page_chat_layout_desc))
-                            // 「现代」（存储值仍是 clean）多一句说明它长什么样。
-                            if (displaySetting.effectiveChatLayout == ChatLayout.CLEAN) {
+                            // 「现代」多一句说明它长什么样。
+                            if (displaySetting.effectiveChatLayout == ChatLayout.MODERN) {
                                 Text(
                                     text = stringResource(R.string.setting_display_page_chat_layout_modern_desc),
                                     style = MaterialTheme.typography.bodySmall,
@@ -80,7 +80,7 @@ fun SettingChatLayoutPage(vm: SettingVM = koinViewModel()) {
                                         ChatLayout.GEMINI -> R.string.setting_display_page_chat_layout_gemini
                                         ChatLayout.ORIGINAL -> R.string.setting_display_page_chat_layout_original
                                         ChatLayout.CLEAN -> R.string.setting_display_page_chat_layout_clean
-                                        ChatLayout.CLAUDE -> R.string.setting_display_page_chat_layout_claude
+                                        ChatLayout.MODERN -> R.string.setting_display_page_chat_layout_modern
                                     }
                                 )
                             },
@@ -90,14 +90,14 @@ fun SettingChatLayoutPage(vm: SettingVM = koinViewModel()) {
                         )
                     },
                 )
-                // CLEAN / CLAUDE share the flat header + two-row composer; their panel knobs
+                // CLEAN / MODERN share the header panel + two-row composer; their panel knobs
                 // still apply. ORIGINAL hides them so the old chrome stays untouched; GEMINI keeps
                 // the header height / composer inset (both still used) but drops the material
                 // knobs, because its header is bare text and its composer is a solid pill.
                 val layout = displaySetting.effectiveChatLayout
                 if (layout != ChatLayout.ORIGINAL) {
-                    // Glass is a CLEAN-only material; CLAUDE keeps a solid paper card.
-                    if (layout == ChatLayout.CLEAN) {
+                    // Glass applies to CLEAN and MODERN; GEMINI keeps a solid pill.
+                    if (layout == ChatLayout.CLEAN || layout == ChatLayout.MODERN) {
                         item(
                             headlineContent = { Text(stringResource(R.string.setting_display_page_clean_layout_glass_title)) },
                             supportingContent = { Text(stringResource(R.string.setting_display_page_clean_layout_glass_desc)) },
