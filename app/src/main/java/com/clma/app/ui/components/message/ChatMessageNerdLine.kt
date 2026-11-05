@@ -11,13 +11,13 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import dev.chrisbanes.haze.HazeInput
 import dev.chrisbanes.haze.HazeSourceSelection
@@ -28,8 +28,6 @@ import dev.chrisbanes.haze.blur.hazeBlur
 import com.clma.ai.ui.UIMessage
 import com.clma.app.data.usage.TurnFooter
 import com.clma.app.ui.context.LocalSettings
-import com.clma.app.ui.components.ui.ModernSmallCorner
-import com.clma.app.ui.components.ui.modernTonal
 import com.clma.app.ui.pages.chat.CHAT_WALLPAPER_HAZE_KEY
 
 /**
@@ -49,10 +47,35 @@ fun ChatMessageNerdLine(
     modifier: Modifier = Modifier,
     photoShown: Boolean = false,
     hazeState: HazeState? = null,
-    // 现代布局：无壁纸时也放在一块 8dp 浅色小方块里，贴在操作栏右端。
+    // 现代布局：操作栏右端紧凑用量小方块（点开弹出本回合用量）；无用量时只显示结束时间。
     chip: Boolean = false,
 ) {
     val settings = LocalSettings.current.displaySetting
+    val finishTime = chatMessageTimeText(message)
+
+    // Modern layout: compact chip (+ optional popover). Show finish time even when token usage
+    // is off or the ledger has not landed yet.
+    if (chip) {
+        if (settings.showTokenUsage && turnFooter != null) {
+            ModernTurnUsageChip(
+                footer = turnFooter,
+                finishTime = finishTime,
+                photoShown = photoShown,
+                hazeState = hazeState,
+                modifier = modifier,
+            )
+        } else if (finishTime != null) {
+            Text(
+                text = finishTime,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                maxLines = 1,
+                modifier = modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+            )
+        }
+        return
+    }
+
     // A user message has no turn footer; when the ledger has nothing to say and the turn is not
     // running there is simply nothing to draw.
     if (!settings.showTokenUsage || turnFooter == null) return
@@ -101,16 +124,6 @@ fun ChatMessageNerdLine(
                     TurnUsageLine(
                         footer = turnFooter,
                         modifier = modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                    )
-                }
-            } else if (chip) {
-                Surface(
-                    shape = RoundedCornerShape(ModernSmallCorner),
-                    color = modernTonal(),
-                ) {
-                    TurnUsageLine(
-                        footer = turnFooter,
-                        modifier = modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                     )
                 }
             } else {

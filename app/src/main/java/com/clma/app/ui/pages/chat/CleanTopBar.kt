@@ -81,13 +81,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.vector.ImageVector
-import com.clma.app.data.datastore.findProvider
 import com.clma.app.ui.components.ui.ModernTopBarCorner
 import com.clma.app.ui.components.ui.ModernTopButtonCorner
 import com.clma.app.ui.components.ui.modernPanelBase
 import com.clma.app.ui.components.ui.modernPanelAlpha
 import com.clma.app.ui.components.ui.modernShadowColor
 import com.clma.app.ui.components.ui.modernStatusGreen
+import com.clma.app.ui.components.ui.modernAccentSoft
+import com.clma.app.ui.components.ui.ModernSmallCorner
 import com.clma.app.ui.components.ui.modernTonal
 import org.koin.androidx.compose.koinViewModel
 
@@ -95,10 +96,9 @@ import org.koin.androidx.compose.koinViewModel
  * "Clean layout" top bar (DisplaySetting.cleanLayout, off by default).
  *
  * Flat: no title plate, no glass discs behind the buttons. The conversation title is one line
- * and, like the regular bar, a small grey subtitle under it reads "model / N tokens"
- * (same token aggregation as the regular bar, see [conversationUsedTokens]). Only the
- * model name may ellipsize; the token count is its own text and always shows,
- * compacted per locale ([cleanTopBarTokenText]). Taps do the same as the regular bar: the title
+ * and a small grey subtitle under it. Non-modern clean layout: "model / N tokens"
+ * ([cleanTopBarTokenText], tokens never clipped). Modern layout: green-dot + model name
+ * only, with conversation tokens in a fixed chip beside the title ([compactTokenCountText]). Taps do the same as the regular bar: the title
  * renames, the buttons open the drawer, open conversation settings (or exit message outline) and start a new chat. The
  * buttons are a size smaller than the regular bar's ([CLEAN_TOP_BAR_BUTTON_DP] touch,
  * [CLEAN_TOP_BAR_ICON_DP] icon), leaving the title more room.
@@ -187,6 +187,9 @@ internal fun CleanTopBar(
                     }
                     .padding(horizontal = 4.dp, vertical = CLEAN_TOP_BAR_TITLE_VERTICAL_PADDING_DP.dp),
             ) {
+                val usedTokens = remember(turnFooters, conversation) {
+                    conversationUsedTokens(turnFooters, conversation)
+                }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = if (conversation.isTemporary && conversation.title.isBlank()) {
@@ -197,7 +200,9 @@ internal fun CleanTopBar(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         style = titleStyle,
-                        modifier = Modifier.weight(1f, fill = false),
+                        // fill=true so a long title yields width to the tokens chip instead of
+                        // pushing the chip off the bar.
+                        modifier = Modifier.weight(1f, fill = true),
                     )
                     if (conversation.isTemporary) {
                         Spacer(Modifier.width(6.dp))
@@ -208,11 +213,33 @@ internal fun CleanTopBar(
                             tint = MaterialTheme.colorScheme.primary,
                         )
                     }
+                    // Modern: a fixed compact tokens chip next to the title so a long name cannot
+                    // ellipsize the conversation total away (subtitle no longer carries tokens).
+                    if (modern && usedTokens > 0L) {
+                        val locale = LocalConfiguration.current.locales[0]
+                        Spacer(Modifier.width(8.dp))
+                        Surface(
+                            shape = RoundedCornerShape(ModernSmallCorner),
+                            color = modernAccentSoft(),
+                            tonalElevation = 0.dp,
+                            shadowElevation = 0.dp,
+                        ) {
+                            Text(
+                                text = compactTokenCountText(
+                                    usedTokens = usedTokens,
+                                    chinese = isChineseLocale(locale),
+                                    traditional = isTraditionalChineseLocale(locale),
+                                ),
+                                maxLines = 1,
+                                softWrap = false,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                            )
+                        }
+                    }
                 }
                 if (model != null && showSubtitle && modern) {
-                    val providerName = remember(model, settings.providers) {
-                        model.findProvider(settings.providers)?.name
-                    }
                     val dotColor = modernStatusGreen()
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
@@ -223,11 +250,7 @@ internal fun CleanTopBar(
                         )
                         Spacer(Modifier.width(5.dp))
                         Text(
-                            text = if (providerName.isNullOrBlank()) {
-                                model.displayName
-                            } else {
-                                "${model.displayName} · $providerName"
-                            },
+                            text = model.displayName,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             style = subtitleStyle,
@@ -235,9 +258,6 @@ internal fun CleanTopBar(
                         )
                     }
                 } else if (model != null && showSubtitle) {
-                    val usedTokens = remember(turnFooters, conversation) {
-                        conversationUsedTokens(turnFooters, conversation)
-                    }
                     val locale = LocalConfiguration.current.locales[0]
                     val style = subtitleStyle
                     val color = MaterialTheme.colorScheme.onSurfaceVariant

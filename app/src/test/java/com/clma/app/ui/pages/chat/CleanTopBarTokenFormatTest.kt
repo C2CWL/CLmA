@@ -1,5 +1,6 @@
 package com.clma.app.ui.pages.chat
 
+import com.clma.app.ui.pages.stats.formatCompactTokens
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -68,5 +69,13 @@ class CleanTopBarTokenFormatTest {
         assertEquals(" / 0 tokens", cleanTopBarTokenText(0L, chinese = true))
         assertEquals(" / 1 token", cleanTopBarTokenText(1L, chinese = true))
         assertEquals(" / 1 token", cleanTopBarTokenText(1L, chinese = false))
+    }
+
+    @Test
+    fun `compact chip text matches locale helpers without a unit word`() {
+        assertEquals("14.38万", compactTokenCountText(143_793L, chinese = true))
+        assertEquals("14.38萬", compactTokenCountText(143_793L, chinese = true, traditional = true))
+        assertEquals(formatCompactTokens(143_793L), compactTokenCountText(143_793L, chinese = false))
+        assertEquals("0", compactTokenCountText(0L, chinese = true))
     }
 }
