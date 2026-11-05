@@ -345,6 +345,8 @@ fun ChatDrawerContent(
         }
     }
 
+    val currentConversation by vm.conversation.collectAsStateWithLifecycle()
+
     // 顶部功能区：助手（卡片或导轨标题）、新聊天 + 搜索、分段文件夹。
     val drawerChrome: @Composable () -> Unit = {
         Column(
@@ -364,6 +366,10 @@ fun ChatDrawerContent(
                         onOpenDetail = openAssistantDetail,
                         onSelect = { switchAssistant(it) },
                         onManage = openAssistantManage,
+                    )
+                    DrawerModeSegmented(
+                        agentMode = currentConversation.agentModeEnabled,
+                        onChange = { vm.setAgentModeEnabled(it) },
                     )
                     DrawerNewChatRow(onNewChat = startNewChat, onSearch = openSearch)
                 }
@@ -492,6 +498,8 @@ fun ChatDrawerContent(
                     showAvatar = settings.displaySetting.showUserAvatar,
                     onAvatarUpdate = updateUserAvatar,
                     onEditNickname = openNicknameEdit,
+                    agentMode = currentConversation.agentModeEnabled,
+                    onAgentModeChange = { vm.setAgentModeEnabled(it) },
                 )
             }
             // 列表铺满整块，从上下玻璃卡片下方滚过；上方功能区固定悬浮，底部功能区浮在列表之上。

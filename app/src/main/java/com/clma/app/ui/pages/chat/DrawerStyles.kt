@@ -552,6 +552,8 @@ internal fun DrawerAssistantRail(
     showAvatar: Boolean,
     onAvatarUpdate: (Avatar) -> Unit,
     onEditNickname: () -> Unit,
+    agentMode: Boolean,
+    onAgentModeChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val defaultName = stringResource(R.string.assistant_page_default_assistant)
@@ -567,6 +569,8 @@ internal fun DrawerAssistantRail(
             .navigationBarsPadding(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        DrawerModeRailToggle(agentMode = agentMode, onChange = onAgentModeChange)
+        Spacer(modifier = Modifier.height(10.dp))
         LazyColumn(
             modifier = Modifier
                 .weight(1f)
