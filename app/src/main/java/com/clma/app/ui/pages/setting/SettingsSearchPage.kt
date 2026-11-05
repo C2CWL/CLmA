@@ -100,7 +100,7 @@ fun SettingsSearchPage(vm: SettingVM = koinViewModel()) {
         topBar = {
             LargeFlexibleTopAppBar(
                 navigationIcon = { BackButton() },
-                title = { Text(stringResource(R.string.settings_search_page_title)) },
+                title = { Text(stringResource(R.string.settings_search_page_title), color = settingsPrimaryTextColor()) },
                 scrollBehavior = scrollBehavior,
                 colors = settingsTopBarColors(),
             )

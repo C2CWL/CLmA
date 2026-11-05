@@ -132,7 +132,7 @@ fun SettingPage(
     Scaffold(
         topBar = {
             LargeFlexibleTopAppBar(
-                title = { Text(stringResource(section?.titleRes ?: R.string.settings)) },
+                title = { Text(stringResource(section?.titleRes ?: R.string.settings), color = settingsPrimaryTextColor()) },
                 navigationIcon = { BackButton() },
                 actions = {
                     if (section != null) {
@@ -193,7 +193,7 @@ fun SettingPage(
                     Text(
                         text = stringResource(R.string.setting_hub_categories),
                         style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = settingsSecondaryTextColor(),
                         fontWeight = FontWeight.Medium,
                         modifier = Modifier.padding(start = 4.dp, top = 8.dp, bottom = 2.dp),
                     )
@@ -284,11 +284,12 @@ private fun HubCategoryCard(section: SettingsHubSectionDef, onClick: () -> Unit)
                     text = stringResource(section.titleRes),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
+                    color = settingsPrimaryTextColor(),
                 )
                 Text(
                     text = stringResource(section.descriptionRes),
                     style = MaterialTheme.typography.bodySmall,
-                    color = colors.onSurfaceVariant,
+                    color = settingsSecondaryTextColor(),
                 )
             }
             Surface(shape = CircleShape, color = colors.surfaceContainerLow.copy(alpha = 0.85f)) {
@@ -297,7 +298,7 @@ private fun HubCategoryCard(section: SettingsHubSectionDef, onClick: () -> Unit)
                         HugeIcons.ArrowRight01,
                         null,
                         Modifier.size(16.dp),
-                        tint = colors.onSurfaceVariant,
+                        tint = settingsSecondaryTextColor(),
                     )
                 }
             }
@@ -324,7 +325,7 @@ private fun HubLeafGroup(
                     Icon(
                         hubItemIcon(itemId),
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.88f),
+                        tint = settingsIconTint(),
                         modifier = Modifier.size(20.dp),
                     )
                 },
@@ -336,6 +337,7 @@ private fun HubLeafGroup(
                             lineHeight = 20.sp,
                             fontWeight = FontWeight.Medium,
                         ),
+                        color = settingsPrimaryTextColor(),
                     )
                 },
                 supportingContent = if (!summary.isNullOrBlank()) {
@@ -343,7 +345,7 @@ private fun HubLeafGroup(
                         Text(
                             text = summary,
                             style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = settingsSecondaryTextColor(),
                             maxLines = 1,
                         )
                     }
@@ -354,7 +356,7 @@ private fun HubLeafGroup(
                     Icon(
                         HugeIcons.ArrowRight01,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
+                        tint = settingsSecondaryTextColor().copy(alpha = 0.55f),
                         modifier = Modifier.size(16.dp),
                     )
                 },

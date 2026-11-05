@@ -190,11 +190,17 @@ object CustomColors {
         @Composable get() {
             // Light: white cards over the settings gray wash. Dark/OLED: keep surfaceContainer
             // (#0A0A0A on AMOLED) so list rows stay slightly elevated over pure black.
-            val container = if (LocalDarkMode.current) {
-                colorScheme.surfaceContainer
-            } else {
-                colorScheme.surfaceContainerLowest
+            // Dark text is slightly muted — near-white headlines glare on low-brightness OLED.
+            if (LocalDarkMode.current) {
+                return ListItemDefaults.colors(
+                    containerColor = colorScheme.surfaceContainer,
+                    headlineColor = colorScheme.onSurface.copy(alpha = 0.78f),
+                    supportingTextColor = colorScheme.onSurfaceVariant.copy(alpha = 0.82f),
+                    leadingIconColor = colorScheme.onSurface.copy(alpha = 0.68f),
+                    trailingIconColor = colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
+                    overlineColor = colorScheme.onSurfaceVariant.copy(alpha = 0.82f),
+                )
             }
-            return ListItemDefaults.colors(containerColor = container)
+            return ListItemDefaults.colors(containerColor = colorScheme.surfaceContainerLowest)
         }
 }

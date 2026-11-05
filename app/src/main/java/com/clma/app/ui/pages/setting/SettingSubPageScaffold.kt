@@ -33,12 +33,52 @@ internal fun settingsPageContainerColor(): Color {
     }
 }
 
+/**
+ * Dark settings primary text — slightly muted so low-brightness OLED is less harsh.
+ * Does not brighten page/card surfaces.
+ */
+@Composable
+internal fun settingsPrimaryTextColor(): Color {
+    val scheme = MaterialTheme.colorScheme
+    return if (LocalDarkMode.current) {
+        scheme.onSurface.copy(alpha = 0.78f)
+    } else {
+        scheme.onSurface
+    }
+}
+
+/** Dark settings secondary / supporting text. */
+@Composable
+internal fun settingsSecondaryTextColor(): Color {
+    val scheme = MaterialTheme.colorScheme
+    return if (LocalDarkMode.current) {
+        scheme.onSurfaceVariant.copy(alpha = 0.82f)
+    } else {
+        scheme.onSurfaceVariant
+    }
+}
+
+/** Leading icons on hub leaf rows. */
+@Composable
+internal fun settingsIconTint(): Color {
+    val scheme = MaterialTheme.colorScheme
+    return if (LocalDarkMode.current) {
+        scheme.onSurface.copy(alpha = 0.68f)
+    } else {
+        scheme.onSurface.copy(alpha = 0.88f)
+    }
+}
+
 @Composable
 internal fun settingsTopBarColors(): TopAppBarColors {
     val bg = settingsPageContainerColor()
+    val title = settingsPrimaryTextColor()
     return TopAppBarDefaults.topAppBarColors(
         containerColor = bg,
         scrolledContainerColor = bg,
+        titleContentColor = title,
+        navigationIconContentColor = title,
+        actionIconContentColor = title.copy(alpha = if (LocalDarkMode.current) 0.85f else 1f),
     )
 }
 
@@ -55,10 +95,11 @@ internal fun SettingSubPageScaffold(
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val pageColor = settingsPageContainerColor()
     val topBarColors = settingsTopBarColors()
+    val titleColor = settingsPrimaryTextColor()
     Scaffold(
         topBar = {
             LargeFlexibleTopAppBar(
-                title = { Text(title) },
+                title = { Text(title, color = titleColor) },
                 navigationIcon = { BackButton() },
                 scrollBehavior = scrollBehavior,
                 colors = topBarColors,
