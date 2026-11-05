@@ -601,6 +601,8 @@ private fun ColumnScope.ModelList(
                             providerSetting = providerSetting,
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            displayMode = ProviderBalanceDisplayMode.Chips,
+                            modifier = Modifier.weight(1f, fill = false),
                         )
                     }
                 }
