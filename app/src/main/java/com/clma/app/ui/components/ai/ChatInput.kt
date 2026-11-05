@@ -94,6 +94,8 @@ import com.clma.ai.core.ReasoningLevel
 import com.clma.ai.provider.Model
 import com.clma.ai.provider.ModelType
 import com.clma.ai.provider.ProviderSetting
+import com.clma.ai.provider.nearestSupportedReasoningLevel
+import com.clma.ai.provider.supportedReasoningLevels
 import com.clma.ai.ui.UIMessagePart
 import com.clma.asr.ASRStatus
 import me.rerere.hugeicons.HugeIcons
@@ -464,9 +466,14 @@ fun ChatInput(
                         }
                     }
                     val currentReasoningLevel = effectiveChatModel?.reasoningLevel ?: assistant.reasoningLevel
+                    val supportedReasoningLevelsForModel = remember(effectiveChatModel, settings.providers) {
+                        supportedReasoningLevels(effectiveChatModel?.findProvider(settings.providers), effectiveChatModel)
+                    }
+                    val displayReasoningLevel =
+                        nearestSupportedReasoningLevel(currentReasoningLevel, supportedReasoningLevelsForModel)
                     val reasoningButton: @Composable () -> Unit = {
                         ReasoningPickerButton(
-                            reasoningLevel = currentReasoningLevel,
+                            reasoningLevel = displayReasoningLevel,
                             onUpdateReasoningLevel = {
                                 if (effectiveChatModel != null) onUpdateModelReasoningLevel(effectiveChatModel, it)
                             },
@@ -475,6 +482,7 @@ fun ChatInput(
                             onUpdateCodexServiceTier = { tier ->
                                 if (effectiveChatModel != null) onUpdateModelServiceTier(effectiveChatModel, tier)
                             },
+                            supportedLevels = supportedReasoningLevelsForModel,
                         )
                     }
                     ChatInputBar(
