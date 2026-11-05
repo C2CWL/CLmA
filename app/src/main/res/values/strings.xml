@@ -904,10 +904,6 @@
   <string name="setting_display_page_popup_menu_style_desc">Expressive uses rounded grouped menus with spring motion. Classic keeps the flat stock menu</string>
   <string name="setting_display_page_popup_menu_style_classic">Classic</string>
   <string name="setting_display_page_popup_menu_style_expressive">Expressive</string>
-  <string name="setting_display_page_reasoning_picker_style_title">Thinking intensity style</string>
-  <string name="setting_display_page_reasoning_picker_style_desc">Energy bar mimics Codex; Stellar visualises magnitude</string>
-  <string name="setting_display_page_reasoning_picker_style_energy_bar">Energy bar</string>
-  <string name="setting_display_page_reasoning_picker_style_stellar">Stellar</string>
   <string name="setting_display_page_auto_play_tts_desc">Automatically play TTS after assistant message generation completes</string>
   <string name="setting_display_page_auto_play_tts_title">Auto-play TTS After Generation</string>
   <string name="setting_display_page_chat_font_family_default">Default</string>
