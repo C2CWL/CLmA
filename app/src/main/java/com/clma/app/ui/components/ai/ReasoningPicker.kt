@@ -3,32 +3,25 @@ package com.clma.app.ui.components.ai
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.width
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.changedToUp
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.Dp
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
@@ -60,15 +53,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.graphics.drawscope.clipRect
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -215,7 +204,13 @@ fun ReasoningPicker(
     val isMax = displayLevel == ReasoningLevel.MAX
     val titleColor by animateColorAsState(
         targetValue = if (isMax) CodexUltraAccent else MaterialTheme.colorScheme.onSurface,
+        animationSpec = tween(250),
         label = "reasoningTitleTint",
+    )
+    val hintColor by animateColorAsState(
+        targetValue = if (isMax) CodexUltraAccent else MaterialTheme.colorScheme.onSurfaceVariant,
+        animationSpec = tween(250),
+        label = "reasoningHintTint",
     )
 
     ModalBottomSheet(
@@ -240,16 +235,24 @@ fun ReasoningPicker(
                     color = titleColor,
                     fontWeight = FontWeight.SemiBold,
                 )
-                Text(
-                    text = stringResource(
-                        if (isMax) R.string.reasoning_picker_max_usage_hint
-                        else R.string.reasoning_picker_hint,
-                    ),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (isMax) CodexUltraAccent else MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = if (isMax) FontWeight.SemiBold else FontWeight.Normal,
-                    textAlign = TextAlign.Center,
-                )
+                AnimatedContent(
+                    targetState = isMax,
+                    transitionSpec = {
+                        fadeIn(tween(250)) togetherWith fadeOut(tween(200))
+                    },
+                    label = "reasoningHint",
+                ) { max ->
+                    Text(
+                        text = stringResource(
+                            if (max) R.string.reasoning_picker_max_usage_hint
+                            else R.string.reasoning_picker_hint,
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = hintColor,
+                        fontWeight = if (max) FontWeight.SemiBold else FontWeight.Normal,
+                        textAlign = TextAlign.Center,
+                    )
+                }
             }
 
             // Compact badge for the active level — the fat capsule carries the interaction.
@@ -366,10 +369,7 @@ private fun DepthMark(level: ReasoningLevel, tint: Color, modifier: Modifier = M
 
 // ── Codex Ultra cool energy palette (no yellow / amber / orange / gold) ─────
 private val SurgeGlowBlue = Color(0xFF2B4CC2)       // solid low/mid fill
-private val SurgeGlowIndigo = Color(0xFF7166E6)
 private val SurgeGlowPurple = Color(0xFFAC72FF)
-private val SurgeGlowViolet = Color(0xFF9273F8)
-private val SurgeGlowLight = Color(0xFFE8EAF0)
 private val SurgeOffColor = Color(0xFF8B93A7)
 /** Title / badge tint at 最大 — matches real Codex Ultra accent. */
 internal val CodexUltraAccent = Color(0xFFB06DFF)
@@ -380,81 +380,9 @@ internal val CodexUltraAccent = Color(0xFFB06DFF)
 internal fun reasoningLevelColor(level: ReasoningLevel): Color = when (level) {
     ReasoningLevel.OFF -> SurgeOffColor
     ReasoningLevel.AUTO -> Color(0xFF5865F2)
-    ReasoningLevel.LOW -> SurgeGlowBlue
-    ReasoningLevel.MEDIUM -> SurgeGlowBlue
-    ReasoningLevel.HIGH -> Color(0xFF2F4FC5)
+    ReasoningLevel.LOW, ReasoningLevel.MEDIUM, ReasoningLevel.HIGH -> SurgeGlowBlue
     ReasoningLevel.XHIGH -> SurgeGlowPurple
     ReasoningLevel.MAX -> CodexUltraAccent
-}
-
-/** Blue → violet fill used at 超高 / 最大. */
-private val UltraGradientColors = listOf(
-    Color(0xFF2B4CC2),
-    Color(0xFFAC72FF),
-    Color(0xFF9273F8),
-    Color(0xFFB06DFF),
-)
-
-/** Stardust particle in the active pill indicator. */
-private data class Stardust(
-    val xFraction: Float,
-    val yFraction: Float,
-    val sizeDp: Float,
-    val phaseOffset: Float,
-    val speed: Float,
-)
-
-@Composable
-private fun StardustGlowOverlay(
-    level: ReasoningLevel,
-    modifier: Modifier = Modifier,
-) {
-    if (level == ReasoningLevel.OFF) return
-    val ordinal = level.ordinal
-    val count = (4 + ordinal * 2).coerceIn(4, 16)
-    val particles = remember(ordinal) {
-        val rnd = kotlin.random.Random(ordinal * 1013L + 73L)
-        List(count) {
-            Stardust(
-                xFraction = rnd.nextFloat(),
-                yFraction = 0.2f + 0.6f * rnd.nextFloat(),
-                sizeDp = 1.0f + 1.2f * rnd.nextFloat(),
-                phaseOffset = rnd.nextFloat() * 2f * PI.toFloat(),
-                speed = 0.8f + 0.6f * rnd.nextFloat(),
-            )
-        }
-    }
-
-    val transition = rememberInfiniteTransition(label = "stardust")
-    val clock = transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 2f * PI.toFloat(),
-        animationSpec = infiniteRepeatable(tween(2800, easing = LinearEasing)),
-        label = "stardustClock",
-    )
-
-    val starlightColor = SurgeGlowLight
-    val levelColor = reasoningLevelColor(level)
-
-    Canvas(modifier = modifier.fillMaxSize()) {
-        particles.forEach { p ->
-            val angle = clock.value * p.speed + p.phaseOffset
-            val alpha = (0.25f + 0.55f * ((sin(angle.toDouble()).toFloat() + 1f) / 2f)).coerceIn(0f, 1f)
-            val swayX = sin((angle * 0.7).toDouble()).toFloat() * 4.dp.toPx()
-            val swayY = sin((angle * 0.5).toDouble()).toFloat() * 2.dp.toPx()
-
-            val cx = (size.width * p.xFraction + swayX).coerceIn(0f, size.width)
-            val cy = (size.height * p.yFraction + swayY).coerceIn(0f, size.height)
-            val radius = p.sizeDp.dp.toPx()
-
-            drawCircle(
-                color = if (level == ReasoningLevel.MAX) starlightColor.copy(alpha = alpha)
-                else levelColor.copy(alpha = alpha * 0.85f),
-                radius = radius,
-                center = Offset(cx, cy),
-            )
-        }
-    }
 }
 
 /** Immediate label updates avoid stacking outgoing words during rapid level changes. */
@@ -603,211 +531,6 @@ internal fun CodexSpeedSelector(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-    }
-}
-
-/**
- * Codex-style fat purple energy capsule (~32dp track, white thumb ≈ bar height).
- * Snaps across the provided level list (2–7 stops); tap a label to jump. Low/mid
- * fill solid blue; HIGH and above use a blue→violet gradient with animated stardust.
- */
-@Composable
-internal fun ReasoningEnergyBar(
-    currentLevel: ReasoningLevel,
-    onSelectLevel: (ReasoningLevel) -> Unit,
-    levels: List<ReasoningLevel> = ReasoningLevel.entries,
-    modifier: Modifier = Modifier,
-) {
-    val haptic = LocalHapticFeedback.current
-    val latestLevel by rememberUpdatedState(currentLevel)
-    val latestOnSelect by rememberUpdatedState(onSelectLevel)
-    val latestHaptic by rememberUpdatedState(haptic)
-    val levelCount = levels.size.coerceAtLeast(1)
-    val currentIndex = levels.indexOf(currentLevel).let { if (it >= 0) it else 0 }
-    var dragProgress by remember { mutableStateOf<Float?>(null) }
-    val displayIndex = dragProgress ?: currentIndex.toFloat()
-    val activeLevel = levels[displayIndex.roundToInt().coerceIn(0, levelCount - 1)]
-
-    val denom = (levelCount - 1).toFloat().coerceAtLeast(1f)
-    val targetFraction = (displayIndex / denom).coerceIn(0f, 1f)
-    val animatedFraction = animateFloatAsState(
-        targetValue = targetFraction,
-        animationSpec = if (dragProgress != null) tween(0)
-        else spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMediumLow),
-        label = "energyBarFraction",
-    )
-
-    val levelColor = reasoningLevelColor(activeLevel)
-    // Purple stardust on HIGH and above (covers providers whose top stop is HIGH).
-    val isUltra = activeLevel.ordinal >= ReasoningLevel.HIGH.ordinal
-    val isMax = activeLevel == ReasoningLevel.MAX
-    val trackHeight = 32.dp
-    val thumbSize = 32.dp
-
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        BoxWithConstraints(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(trackHeight)
-                .pointerInput(levelCount) {
-                    awaitEachGesture {
-                        val down = awaitFirstDown(
-                            requireUnconsumed = false,
-                            pass = PointerEventPass.Initial,
-                        )
-                        down.consume()
-                        fun indexAt(x: Float): Float =
-                            (x / size.width.toFloat().coerceAtLeast(1f) * (levelCount - 1))
-                                .coerceIn(0f, (levelCount - 1).toFloat())
-                        var progress = indexAt(down.position.x)
-                        var committedLevel = latestLevel
-                        fun commit(index: Int) {
-                            val selected = levels[index.coerceIn(0, levelCount - 1)]
-                            if (selected == committedLevel) return
-                            committedLevel = selected
-                            latestHaptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            latestOnSelect(selected)
-                        }
-                        dragProgress = progress
-                        commit(progress.roundToInt())
-                        val pointerId = down.id
-                        try {
-                            while (true) {
-                                val event = awaitPointerEvent(PointerEventPass.Initial)
-                                val change = event.changes.firstOrNull { it.id == pointerId } ?: continue
-                                change.consume()
-                                if (!change.pressed) break
-                                progress = indexAt(change.position.x)
-                                dragProgress = progress
-                                commit(progress.roundToInt())
-                            }
-                        } finally {
-                            commit(progress.roundToInt())
-                            dragProgress = null
-                        }
-                    }
-                },
-        ) {
-            val trackShape = RoundedCornerShape(percent = 50)
-            // Track
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(trackShape)
-                    .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-                    .border(
-                        width = 1.dp,
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
-                        shape = trackShape,
-                    ),
-            ) {
-                val transition = rememberInfiniteTransition(label = "energySurgeFlow")
-                val flowPhase = transition.animateFloat(
-                    initialValue = 0f,
-                    targetValue = 1f,
-                    animationSpec = infiniteRepeatable(tween(3000, easing = LinearEasing)),
-                    label = "flowWave",
-                )
-                Box(
-                    Modifier
-                        .fillMaxSize()
-                        .drawWithContent {
-                            val fraction = animatedFraction.value.coerceIn(0f, 1f)
-                            val activeWidth = size.width * fraction
-                            val radius = CornerRadius(size.height / 2f)
-                            if (activeWidth > 0f) {
-                                val brush = if (isUltra) {
-                                    val period = 160.dp.toPx()
-                                    val shift = flowPhase.value * period
-                                    Brush.horizontalGradient(
-                                        colors = UltraGradientColors,
-                                        startX = shift - period,
-                                        endX = shift + period,
-                                        tileMode = TileMode.Repeated,
-                                    )
-                                } else {
-                                    Brush.horizontalGradient(
-                                        listOf(
-                                            SurgeGlowBlue.copy(alpha = 0.85f),
-                                            SurgeGlowBlue,
-                                        ),
-                                    )
-                                }
-                                drawRoundRect(brush, size = Size(activeWidth, size.height), cornerRadius = radius)
-                                if (isUltra) {
-                                    clipRect(right = activeWidth) { this@drawWithContent.drawContent() }
-                                }
-                                drawRoundRect(
-                                    brush = Brush.verticalGradient(
-                                        listOf(Color.White.copy(alpha = 0.28f), Color.Transparent),
-                                    ),
-                                    size = Size(activeWidth, size.height * 0.42f),
-                                    cornerRadius = radius,
-                                )
-                            }
-                        },
-                ) {
-                    if (isUltra) {
-                        StardustGlowOverlay(activeLevel)
-                    }
-                }
-            }
-
-            // White round thumb ≈ bar height, centred on the fill edge.
-            val thumbOffset = (maxWidth - thumbSize) * animatedFraction.value
-            Box(
-                modifier = Modifier
-                    .offset(x = thumbOffset)
-                    .size(thumbSize)
-                    .align(Alignment.CenterStart)
-                    .clip(CircleShape)
-                    .background(Color.White)
-                    .border(
-                        width = 1.dp,
-                        color = Color.Black.copy(alpha = 0.06f),
-                        shape = CircleShape,
-                    ),
-            )
-        }
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 2.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            levels.forEachIndexed { index, level ->
-                val isSelected = index == displayIndex.roundToInt()
-                Text(
-                    text = level.label(),
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                    color = if (isSelected) {
-                        if (isMax) CodexUltraAccent else levelColor
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f)
-                    },
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                        ) {
-                            if (level != currentLevel) {
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                onSelectLevel(level)
-                            }
-                        }
-                        .padding(vertical = 4.dp),
-                )
-            }
-        }
     }
 }
 
