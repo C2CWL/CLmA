@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.width
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.changedToUp
@@ -49,15 +48,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderState
 import androidx.compose.material3.Text
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -89,6 +84,11 @@ import com.clma.app.ui.components.ui.ToggleSurface
 import com.clma.app.ui.components.ui.LocalModernChatLayout
 import com.clma.app.ui.components.ui.ModernSmallCorner
 import com.clma.app.ui.components.ui.modernAccentSoft
+import com.clma.app.data.datastore.ReasoningPickerStyle
+import com.clma.app.data.datastore.Settings
+import com.clma.app.ui.context.LocalSettings
+import androidx.compose.runtime.CompositionLocalProvider
+import me.rerere.hugeicons.stroke.Sparkles
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.roundToInt
@@ -103,12 +103,18 @@ fun ReasoningButton(
     onlyIcon: Boolean = false,
     reasoningLevel: ReasoningLevel,
     onUpdateReasoningLevel: (ReasoningLevel) -> Unit,
+    showCodexSpeed: Boolean = false,
+    codexServiceTier: String? = null,
+    onUpdateCodexServiceTier: (String?) -> Unit = {},
 ) {
     ReasoningPickerButton(
         reasoningLevel = reasoningLevel,
         onUpdateReasoningLevel = onUpdateReasoningLevel,
         modifier = modifier,
         onlyIcon = onlyIcon,
+        showCodexSpeed = showCodexSpeed,
+        codexServiceTier = codexServiceTier,
+        onUpdateCodexServiceTier = onUpdateCodexServiceTier,
     )
 }
 
@@ -186,12 +192,12 @@ fun ReasoningPicker(
     codexServiceTier: String? = null,
     onUpdateCodexServiceTier: (String?) -> Unit = {},
 ) {
-    val currentIndex = levels.indexOf(reasoningLevel).coerceAtLeast(0)
-    var sliderValue by remember { mutableFloatStateOf(currentIndex.toFloat()) }
-
-    LaunchedEffect(currentIndex) {
-        sliderValue = currentIndex.toFloat()
-    }
+    val style = LocalSettings.current.displaySetting.reasoningPickerStyle
+    val isMax = reasoningLevel == ReasoningLevel.MAX
+    val titleColor by animateColorAsState(
+        targetValue = if (isMax) CodexUltraAccent else MaterialTheme.colorScheme.onSurface,
+        label = "reasoningTitleTint",
+    )
 
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
@@ -205,15 +211,6 @@ fun ReasoningPicker(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            if (showCodexSpeed) {
-                CodexSpeedSelector(
-                    serviceTier = codexServiceTier,
-                    onUpdate = onUpdateCodexServiceTier,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-
-            // 标题
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -221,53 +218,88 @@ fun ReasoningPicker(
                 Text(
                     text = stringResource(R.string.reasoning_picker_title),
                     style = MaterialTheme.typography.titleLarge,
+                    color = titleColor,
+                    fontWeight = FontWeight.SemiBold,
                 )
                 Text(
-                    text = stringResource(R.string.reasoning_picker_hint),
+                    text = stringResource(
+                        if (isMax) R.string.reasoning_picker_max_usage_hint
+                        else R.string.reasoning_picker_hint,
+                    ),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (isMax) CodexUltraAccent else MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = if (isMax) FontWeight.SemiBold else FontWeight.Normal,
                     textAlign = TextAlign.Center,
                 )
             }
 
-            // 当前等级展示
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                val iconColor by animateColorAsState(
-                    if (reasoningLevel.isEnabled) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurface
-                )
-                ReasoningIcon(
-                    level = reasoningLevel,
-                    modifier = Modifier.size(32.dp),
-                )
-                ReasoningLevelWord(
-                    level = reasoningLevel,
-                    style = MaterialTheme.typography.headlineSmall,
-                )
+            when (style) {
+                ReasoningPickerStyle.ENERGY_BAR -> {
+                    // Compact badge for the active level — the fat capsule carries the interaction.
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        ReasoningIcon(
+                            level = reasoningLevel,
+                            modifier = Modifier.size(22.dp),
+                        )
+                        ReasoningLevelWord(
+                            level = reasoningLevel,
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                    }
+                    ReasoningEnergyBar(
+                        currentLevel = reasoningLevel,
+                        onSelectLevel = onUpdateReasoningLevel,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                ReasoningPickerStyle.STELLAR -> {
+                    ReasoningStellarSheet(
+                        currentLevel = reasoningLevel,
+                        onSelectLevel = onUpdateReasoningLevel,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
             }
 
-            ReasoningEnergyBar(
-                currentLevel = reasoningLevel,
-                onSelectLevel = onUpdateReasoningLevel,
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-            )
+            // Codex 标准/快速：only when the model supports speed tiers; under the bar to match v7.
+            if (showCodexSpeed) {
+                CodexSpeedSelector(
+                    serviceTier = codexServiceTier,
+                    onUpdate = onUpdateCodexServiceTier,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
         }
     }
 }
 
 @Composable
 internal fun ReasoningIcon(level: ReasoningLevel, modifier: Modifier = Modifier) {
+    val style = LocalSettings.current.displaySetting.reasoningPickerStyle
     val iconColor by animateColorAsState(
         if (level.isEnabled) reasoningLevelColor(level)
         else MaterialTheme.colorScheme.onSurfaceVariant,
         label = "reasoningIconTint"
     )
-    when (level) {
-        ReasoningLevel.AUTO -> Icon(HugeIcons.Atom02, contentDescription = null, modifier = modifier, tint = iconColor)
-        else -> DepthMark(level = level, tint = iconColor, modifier = modifier)
+    when (style) {
+        ReasoningPickerStyle.STELLAR -> StellarMagnitudeIcon(
+            level = level,
+            tint = iconColor,
+            modifier = modifier,
+        )
+        ReasoningPickerStyle.ENERGY_BAR -> when (level) {
+            ReasoningLevel.AUTO -> Icon(HugeIcons.Atom02, contentDescription = null, modifier = modifier, tint = iconColor)
+            ReasoningLevel.MAX, ReasoningLevel.XHIGH -> Icon(
+                HugeIcons.Sparkles,
+                contentDescription = null,
+                modifier = modifier,
+                tint = iconColor,
+            )
+            else -> DepthMark(level = level, tint = iconColor, modifier = modifier)
+        }
     }
 }
 
@@ -331,35 +363,35 @@ private fun DepthMark(level: ReasoningLevel, tint: Color, modifier: Modifier = M
     }
 }
 
-// ── Deep Cold / Nebula Glow Visuals (CodeX Style) ──────────────────────────
-// 采用极简克制的科技深空冷调：量子青蓝、深空紫蓝与纯净微光白，告别粗暴红橙黄绿与彩虹
-private val SurgeGlowBlue = Color(0xFF38BDF8)       // 量子青蓝 / Sky Cyan
-private val SurgeGlowIndigo = Color(0xFF6366F1)     // 深空紫蓝 / Deep Indigo
-private val SurgeGlowPurple = Color(0xFF8B5CF6)     // 极光星紫 / Aurora Violet
-private val SurgeGlowLight = Color(0xFFE0E7FF)      // 微光冷白 / Starlight White
-private val SurgeOffColor = Color(0xFF94A3B8)       // 关闭浅灰 / Slate Grey
+// ── Codex Ultra cool energy palette (no yellow / amber / orange / gold) ─────
+private val SurgeGlowBlue = Color(0xFF2B4CC2)       // solid low/mid fill
+private val SurgeGlowIndigo = Color(0xFF7166E6)
+private val SurgeGlowPurple = Color(0xFFAC72FF)
+private val SurgeGlowViolet = Color(0xFF9273F8)
+private val SurgeGlowLight = Color(0xFFE8EAF0)
+private val SurgeOffColor = Color(0xFF8B93A7)
+/** Title / badge tint at 最大 — matches real Codex Ultra accent. */
+internal val CodexUltraAccent = Color(0xFFB06DFF)
 
 /**
- * The surge colour for [level]: a modern, coherent deep-space cool palette.
- * Transitioning gracefully from subtle slate to cyan, deep indigo, and aurora violet.
+ * Cool palette from slate → solid blue → violet. Used by the energy bar and stellar icons.
  */
 internal fun reasoningLevelColor(level: ReasoningLevel): Color = when (level) {
     ReasoningLevel.OFF -> SurgeOffColor
-    ReasoningLevel.AUTO -> Color(0xFF38BDF8)     // 柔和天青
-    ReasoningLevel.LOW -> Color(0xFF60A5FA)      // 纯净冰蓝
-    ReasoningLevel.MEDIUM -> Color(0xFF818CF8)   // 浅靛蓝
-    ReasoningLevel.HIGH -> Color(0xFF6366F1)     // 深空紫蓝
-    ReasoningLevel.XHIGH -> Color(0xFF8B5CF6)    // 极光星紫
-    ReasoningLevel.MAX -> Color(0xFFA855F7)      // 巅峰超新星紫
+    ReasoningLevel.AUTO -> Color(0xFF5865F2)
+    ReasoningLevel.LOW -> SurgeGlowBlue
+    ReasoningLevel.MEDIUM -> SurgeGlowBlue
+    ReasoningLevel.HIGH -> Color(0xFF2F4FC5)
+    ReasoningLevel.XHIGH -> SurgeGlowPurple
+    ReasoningLevel.MAX -> CodexUltraAccent
 }
 
-/** Looped smooth aurora nebula glow for MAX. */
-private val AuroraNebulaColors = listOf(
-    Color(0xFF38BDF8),
-    Color(0xFF6366F1),
-    Color(0xFF8B5CF6),
-    Color(0xFFA855F7),
-    Color(0xFF38BDF8),
+/** Blue → violet fill used at 超高 / 最大. */
+private val UltraGradientColors = listOf(
+    Color(0xFF2B4CC2),
+    Color(0xFFAC72FF),
+    Color(0xFF9273F8),
+    Color(0xFFB06DFF),
 )
 
 /** Stardust particle in the active pill indicator. */
@@ -574,9 +606,9 @@ internal fun CodexSpeedSelector(
 }
 
 /**
- * A sci-fi energy bar for thinking depth (能量条).
- * Features an animated glowing energy surge channel with deep-space aurora gradients,
- * floating stardust particles, smooth spring-animated seeking, and horizontal drag / discrete tap.
+ * Codex-style fat purple energy capsule (~32dp track, white thumb ≈ bar height).
+ * Snaps to the 7 reasoning levels; tap a label to jump. Low/mid fill solid blue;
+ * 超高/最大 use a blue→violet gradient with animated stardust.
  */
 @Composable
 internal fun ReasoningEnergyBar(
@@ -602,36 +634,21 @@ internal fun ReasoningEnergyBar(
     )
 
     val levelColor = reasoningLevelColor(activeLevel)
+    val isUltra = activeLevel == ReasoningLevel.XHIGH || activeLevel == ReasoningLevel.MAX
     val isMax = activeLevel == ReasoningLevel.MAX
+    val trackHeight = 32.dp
+    val thumbSize = 32.dp
 
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(10.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // The Energy Bar Capsule
-        Box(
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(36.dp)
-                .clip(RoundedCornerShape(18.dp))
-                .background(
-                    Brush.verticalGradient(
-                        listOf(
-                            MaterialTheme.colorScheme.surfaceContainerHigh,
-                            MaterialTheme.colorScheme.surfaceContainerLowest,
-                            MaterialTheme.colorScheme.surfaceContainerHigh,
-                        ),
-                    ),
-                )
-                .border(
-                    width = 1.dp,
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
-                    shape = RoundedCornerShape(18.dp),
-                )
+                .height(trackHeight)
                 .pointerInput(levelCount) {
-                    // Claim the pointer on the Initial pass so the bottom sheet's vertical
-                    // drag cannot cancel a slightly diagonal swipe, and a tap (no slop) seeks.
                     awaitEachGesture {
                         val down = awaitFirstDown(
                             requireUnconsumed = false,
@@ -642,9 +659,6 @@ internal fun ReasoningEnergyBar(
                             (x / size.width.toFloat().coerceAtLeast(1f) * (levelCount - 1))
                                 .coerceIn(0f, (levelCount - 1).toFloat())
                         var progress = indexAt(down.position.x)
-                        // The sheet cancels a diagonal swipe before changedToUp(), so a
-                        // release-only commit never lands. Write the level as soon as the
-                        // finger arrives and again whenever it crosses a notch.
                         var committedLevel = latestLevel
                         fun commit(index: Int) {
                             val selected = levels[index.coerceIn(0, levelCount - 1)]
@@ -673,79 +687,92 @@ internal fun ReasoningEnergyBar(
                     }
                 },
         ) {
-            val transition = rememberInfiniteTransition(label = "energySurgeFlow")
-            val flowPhase = transition.animateFloat(
-                initialValue = 0f,
-                targetValue = 1f,
-                animationSpec = infiniteRepeatable(tween(3000, easing = LinearEasing)),
-                label = "flowWave",
-            )
-            val crestPulse = transition.animateFloat(
-                initialValue = 0.6f,
-                targetValue = 1f,
-                animationSpec = infiniteRepeatable(
-                    tween(1000, easing = FastOutSlowInEasing),
-                    RepeatMode.Reverse,
-                ),
-                label = "crestPulse",
-            )
-            val inactiveTick = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.25f)
-            // Read frame-varying state only while drawing: no per-frame layout or composition.
+            val trackShape = RoundedCornerShape(percent = 50)
+            // Track
             Box(
-                Modifier.fillMaxSize().drawWithContent {
-                    val fraction = animatedFraction.value.coerceIn(0f, 1f)
-                    val activeWidth = size.width * fraction
-                    val radius = CornerRadius(18.dp.toPx())
-                    val period = 160.dp.toPx()
-                    val shift = flowPhase.value * period
-                    if (activeWidth > 0f) {
-                        val brush = Brush.horizontalGradient(
-                            colors = if (isMax) AuroraNebulaColors else listOf(
-                                SurgeGlowBlue.copy(alpha = 0.45f),
-                                levelColor.copy(alpha = 0.75f),
-                                SurgeGlowIndigo.copy(alpha = 0.85f),
-                                levelColor,
-                            ),
-                            startX = shift - period,
-                            endX = shift + period,
-                            tileMode = TileMode.Repeated,
-                        )
-                        drawRoundRect(brush, size = Size(activeWidth, size.height), cornerRadius = radius)
-                        clipRect(right = activeWidth) { this@drawWithContent.drawContent() }
-                        drawRoundRect(
-                            brush = Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.34f), Color.Transparent)),
-                            size = Size(activeWidth, size.height * 0.42f),
-                            cornerRadius = radius,
-                        )
-                        val crest = Offset((activeWidth - 12.dp.toPx()).coerceAtLeast(0f), size.height / 2f)
-                        drawCircle(levelColor.copy(alpha = 0.35f * crestPulse.value), 7.dp.toPx(), crest)
-                        drawCircle(Color.White.copy(alpha = 0.92f * crestPulse.value), 4.dp.toPx(), crest)
-                    }
-                    val inset = 14.dp.toPx()
-                    levels.forEachIndexed { index, _ ->
-                        val selected = index == displayIndex.roundToInt()
-                        val covered = index <= displayIndex.roundToInt() && fraction > 0.05f
-                        drawCircle(
-                            color = when {
-                                selected -> Color.White
-                                covered -> Color.White.copy(alpha = 0.65f)
-                                else -> inactiveTick
-                            },
-                            radius = (if (selected) 3.5.dp else 2.dp).toPx(),
-                            center = Offset(inset + (size.width - inset * 2f) * index / (levelCount - 1), size.height / 2f),
-                        )
-                    }
-                },
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(trackShape)
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                    .border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                        shape = trackShape,
+                    ),
             ) {
-                StardustGlowOverlay(activeLevel)
+                val transition = rememberInfiniteTransition(label = "energySurgeFlow")
+                val flowPhase = transition.animateFloat(
+                    initialValue = 0f,
+                    targetValue = 1f,
+                    animationSpec = infiniteRepeatable(tween(3000, easing = LinearEasing)),
+                    label = "flowWave",
+                )
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .drawWithContent {
+                            val fraction = animatedFraction.value.coerceIn(0f, 1f)
+                            val activeWidth = size.width * fraction
+                            val radius = CornerRadius(size.height / 2f)
+                            if (activeWidth > 0f) {
+                                val brush = if (isUltra) {
+                                    val period = 160.dp.toPx()
+                                    val shift = flowPhase.value * period
+                                    Brush.horizontalGradient(
+                                        colors = UltraGradientColors,
+                                        startX = shift - period,
+                                        endX = shift + period,
+                                        tileMode = TileMode.Repeated,
+                                    )
+                                } else {
+                                    Brush.horizontalGradient(
+                                        listOf(
+                                            SurgeGlowBlue.copy(alpha = 0.85f),
+                                            SurgeGlowBlue,
+                                        ),
+                                    )
+                                }
+                                drawRoundRect(brush, size = Size(activeWidth, size.height), cornerRadius = radius)
+                                if (isUltra) {
+                                    clipRect(right = activeWidth) { this@drawWithContent.drawContent() }
+                                }
+                                drawRoundRect(
+                                    brush = Brush.verticalGradient(
+                                        listOf(Color.White.copy(alpha = 0.28f), Color.Transparent),
+                                    ),
+                                    size = Size(activeWidth, size.height * 0.42f),
+                                    cornerRadius = radius,
+                                )
+                            }
+                        },
+                ) {
+                    if (isUltra) {
+                        StardustGlowOverlay(activeLevel)
+                    }
+                }
             }
+
+            // White round thumb ≈ bar height, centred on the fill edge.
+            val thumbOffset = (maxWidth - thumbSize) * animatedFraction.value
+            Box(
+                modifier = Modifier
+                    .offset(x = thumbOffset)
+                    .size(thumbSize)
+                    .align(Alignment.CenterStart)
+                    .clip(CircleShape)
+                    .background(Color.White)
+                    .border(
+                        width = 1.dp,
+                        color = Color.Black.copy(alpha = 0.06f),
+                        shape = CircleShape,
+                    ),
+            )
         }
 
-        // Discrete labels below the energy bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 6.dp),
+                .padding(horizontal = 2.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
@@ -754,13 +781,15 @@ internal fun ReasoningEnergyBar(
                 Text(
                     text = level.label(),
                     style = MaterialTheme.typography.labelSmall,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                     color = if (isSelected) {
-                        if (isMax) SurgeGlowPurple else levelColor
+                        if (isMax) CodexUltraAccent else levelColor
                     } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f)
                     },
+                    textAlign = TextAlign.Center,
                     modifier = Modifier
+                        .weight(1f)
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,
@@ -770,7 +799,7 @@ internal fun ReasoningEnergyBar(
                                 onSelectLevel(level)
                             }
                         }
-                        .padding(vertical = 4.dp, horizontal = 2.dp),
+                        .padding(vertical = 4.dp),
                 )
             }
         }
@@ -779,23 +808,25 @@ internal fun ReasoningEnergyBar(
 
 @Composable
 internal fun ReasoningLevel.label(): String = when (this) {
-    ReasoningLevel.OFF -> stringResource(R.string.reasoning_off)
-    ReasoningLevel.AUTO -> "自动"
-    ReasoningLevel.LOW -> "Low"
-    ReasoningLevel.MEDIUM -> "Med"
-    ReasoningLevel.HIGH -> "High"
-    ReasoningLevel.XHIGH -> "XHigh"
-    ReasoningLevel.MAX -> "Max"
+    ReasoningLevel.OFF -> stringResource(R.string.reasoning_picker_level_off)
+    ReasoningLevel.AUTO -> stringResource(R.string.reasoning_picker_level_auto)
+    ReasoningLevel.LOW -> stringResource(R.string.reasoning_picker_level_low)
+    ReasoningLevel.MEDIUM -> stringResource(R.string.reasoning_picker_level_medium)
+    ReasoningLevel.HIGH -> stringResource(R.string.reasoning_picker_level_high)
+    ReasoningLevel.XHIGH -> stringResource(R.string.reasoning_picker_level_xhigh)
+    ReasoningLevel.MAX -> stringResource(R.string.reasoning_picker_level_max)
 }
 
 @Composable
 @Preview(showBackground = true)
 private fun ReasoningPickerPreview() {
     MaterialTheme {
-        var level by remember { mutableStateOf(ReasoningLevel.AUTO) }
-        ReasoningPicker(
-            reasoningLevel = level,
-            onUpdateReasoningLevel = { level = it }
-        )
+        CompositionLocalProvider(LocalSettings provides Settings()) {
+            var level by remember { mutableStateOf(ReasoningLevel.AUTO) }
+            ReasoningPicker(
+                reasoningLevel = level,
+                onUpdateReasoningLevel = { level = it }
+            )
+        }
     }
 }

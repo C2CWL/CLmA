@@ -234,6 +234,12 @@ class AssistantDetailVM(
      * serialise; each transform sees the result of the previous one. Avatar / background
      * cleanup runs against the genuinely-prior assistant (read inside the lock).
      */
+    fun updateModelServiceTier(modelId: Uuid, serviceTier: String?) {
+        viewModelScope.launch(Dispatchers.IO) {
+            settingsStore.updateModelServiceTier(modelId, serviceTier)
+        }
+    }
+
     fun updateAssistant(transform: (Assistant) -> Assistant) {
         viewModelScope.launch {
             settingsStore.update { current ->

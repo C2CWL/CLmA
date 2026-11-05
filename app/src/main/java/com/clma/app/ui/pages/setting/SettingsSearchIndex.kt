@@ -114,6 +114,7 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
             row(R.string.setting_visual_style_section_details),
             row(R.string.setting_display_page_popup_menu_style_title, R.string.setting_display_page_popup_menu_style_desc, R.string.setting_display_page_popup_menu_style_classic, R.string.setting_display_page_popup_menu_style_expressive),
             row(R.string.setting_display_page_loading_indicator_style_title, R.string.setting_display_page_loading_indicator_style_desc),
+            row(R.string.setting_display_page_reasoning_picker_style_title, R.string.setting_display_page_reasoning_picker_style_desc, R.string.setting_display_page_reasoning_picker_style_energy_bar, R.string.setting_display_page_reasoning_picker_style_stellar),
             row(R.string.setting_display_page_enable_blur_effect_title, R.string.setting_display_page_enable_blur_effect_desc),
             row(R.string.setting_display_page_app_icon_title, R.string.setting_display_page_app_icon_desc),
         ),

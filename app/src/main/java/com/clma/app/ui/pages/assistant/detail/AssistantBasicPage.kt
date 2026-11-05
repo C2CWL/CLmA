@@ -56,6 +56,8 @@ import com.clma.app.data.ai.tools.ToolSurfaceMode
 import com.clma.app.subagent.SubAgentDefaults
 import com.clma.app.ui.components.ai.ModelSelector
 import com.clma.app.ui.components.ai.ReasoningButton
+import com.clma.app.data.datastore.supportsSpeedTier
+import com.clma.app.data.datastore.findModelById
 import com.clma.app.ui.components.nav.BackButton
 import com.clma.app.ui.components.ui.FormItem
 import com.clma.app.ui.components.ui.SettingSlider
@@ -513,11 +515,21 @@ internal fun AssistantBasicContent(
                     Text(stringResource(R.string.assistant_page_thinking_budget))
                 },
             ) {
+                val settings by vm.settings.collectAsStateWithLifecycle()
+                val chatModel = settings.findModelById(assistant.chatModelId, settings.chatModelId)
+                val showSpeed = chatModel?.supportsSpeedTier(providers) == true
                 ReasoningButton(
                     reasoningLevel = assistant.reasoningLevel,
                     onUpdateReasoningLevel = { level ->
                         onUpdate(assistant.copy(reasoningLevel = level))
-                    }
+                    },
+                    showCodexSpeed = showSpeed,
+                    codexServiceTier = chatModel?.serviceTier,
+                    onUpdateCodexServiceTier = { tier ->
+                        chatModel?.id?.let { modelId ->
+                            vm.updateModelServiceTier(modelId, tier)
+                        }
+                    },
                 )
             }
             HorizontalDivider()
