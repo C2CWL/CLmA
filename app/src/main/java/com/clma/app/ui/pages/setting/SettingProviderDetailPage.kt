@@ -7,6 +7,11 @@ import me.rerere.hugeicons.stroke.ArrowDown01
 import me.rerere.hugeicons.stroke.Add01
 import me.rerere.hugeicons.stroke.Refresh03
 import me.rerere.hugeicons.stroke.Tools
+import me.rerere.hugeicons.stroke.ArrowRight01
+import me.rerere.hugeicons.stroke.Image03
+import me.rerere.hugeicons.stroke.MusicNote03
+import me.rerere.hugeicons.stroke.Text
+import me.rerere.hugeicons.stroke.Video01
 import me.rerere.hugeicons.stroke.Share01
 import me.rerere.hugeicons.stroke.Delete01
 import me.rerere.hugeicons.stroke.Tick02
@@ -17,6 +22,11 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.material3.CardDefaults
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
@@ -26,6 +36,7 @@ import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.offset
@@ -33,6 +44,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.ui.util.fastForEach
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -353,7 +365,17 @@ fun SettingProviderDetailPage(id: Uuid, vm: SettingVM = koinViewModel()) {
                             } else {
                                 selectedModelIds + modelId
                             }
-                        }
+                        },
+                        onSelectAll = {
+                            selectedModelIds = provider.models.map { it.id }.toSet()
+                        },
+                        onClearSelection = {
+                            selectedModelIds = emptySet()
+                        },
+                        onRequestDeleteSelected = {
+                            showDeleteSelectedModelsDialog = true
+                        },
+                        onExitSelection = { exitModelSelection() },
                     )
                 }
 
@@ -512,32 +534,46 @@ private fun SettingProviderConfigPage(
             Spacer(Modifier.weight(1f))
 
             if (!internalProvider.builtIn) {
-                IconButton(
-                    onClick = {
-                        showDeleteDialog = true
-                    },
+                Surface(
+                    onClick = { showDeleteDialog = true },
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(40.dp),
                 ) {
-                    Icon(HugeIcons.Delete01, null)
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(HugeIcons.Delete01, null, modifier = Modifier.size(18.dp))
+                    }
                 }
             }
 
-            IconButton(
+            Surface(
                 onClick = {
-                    internalProvider = internalProvider.resetBaseUrlToDefault()
+                    if (!internalProvider.isUsingDefaultBaseUrl()) {
+                        internalProvider = internalProvider.resetBaseUrlToDefault()
+                    }
                 },
                 enabled = !internalProvider.isUsingDefaultBaseUrl(),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(40.dp),
             ) {
-                Icon(
-                    imageVector = HugeIcons.Refresh03,
-                    contentDescription = stringResource(R.string.setting_model_page_reset_to_default)
-                )
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = HugeIcons.Refresh03,
+                        contentDescription = stringResource(R.string.setting_model_page_reset_to_default),
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
             }
 
             Button(
                 onClick = {
                     val providerToSave: ProviderSetting = internalProvider
                     onEdit(providerToSave.copyProvider(name = providerToSave.name.trim()))
-                }
+                },
+                shape = RoundedCornerShape(12.dp),
             ) {
                 Text(stringResource(R.string.setting_provider_page_save))
             }
@@ -589,14 +625,22 @@ private fun SettingProviderModelPage(
     onEdit: (ProviderSetting) -> Unit,
     selectionMode: Boolean,
     selectedModelIds: Set<Uuid>,
-    onToggleSelection: (Uuid) -> Unit
+    onToggleSelection: (Uuid) -> Unit,
+    onSelectAll: () -> Unit,
+    onClearSelection: () -> Unit,
+    onRequestDeleteSelected: () -> Unit,
+    onExitSelection: () -> Unit,
 ) {
     ModelList(
         providerSetting = provider,
         onUpdateProvider = onEdit,
         selectionMode = selectionMode,
         selectedModelIds = selectedModelIds,
-        onToggleSelection = onToggleSelection
+        onToggleSelection = onToggleSelection,
+        onSelectAll = onSelectAll,
+        onClearSelection = onClearSelection,
+        onRequestDeleteSelected = onRequestDeleteSelected,
+        onExitSelection = onExitSelection,
     )
 }
 
@@ -628,7 +672,11 @@ private fun ModelList(
     onUpdateProvider: (ProviderSetting) -> Unit,
     selectionMode: Boolean = false,
     selectedModelIds: Set<Uuid> = emptySet(),
-    onToggleSelection: (Uuid) -> Unit = {}
+    onToggleSelection: (Uuid) -> Unit = {},
+    onSelectAll: () -> Unit = {},
+    onClearSelection: () -> Unit = {},
+    onRequestDeleteSelected: () -> Unit = {},
+    onExitSelection: () -> Unit = {},
 ) {
     val providerManager = koinInject<ProviderManager>()
     val toaster = LocalToaster.current
@@ -732,11 +780,84 @@ private fun ModelList(
                 }
             }
         }
-        if (!selectionMode) {
+        if (selectionMode) {
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 12.dp)
+                    .offset(y = -ScreenOffset),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                shadowElevation = 6.dp,
+                tonalElevation = 0.dp,
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 10.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text = stringResource(
+                            R.string.setting_provider_page_selected_models_count,
+                            selectedModelIds.size,
+                        ),
+                        style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier.weight(1f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    val allSelected = selectedModelIds.size == providerSetting.models.size &&
+                        providerSetting.models.isNotEmpty()
+                    Surface(
+                        onClick = { if (allSelected) onClearSelection() else onSelectAll() },
+                        shape = RoundedCornerShape(10.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    ) {
+                        Text(
+                            text = stringResource(
+                                if (allSelected) R.string.setting_provider_page_unselect_all
+                                else R.string.setting_provider_page_select_all_models
+                            ),
+                            style = MaterialTheme.typography.labelLarge,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        )
+                    }
+                    Surface(
+                        onClick = onRequestDeleteSelected,
+                        enabled = selectedModelIds.isNotEmpty(),
+                        shape = RoundedCornerShape(10.dp),
+                        color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.55f),
+                        contentColor = MaterialTheme.colorScheme.error,
+                    ) {
+                        Text(
+                            text = stringResource(R.string.setting_provider_page_delete_selected_models),
+                            style = MaterialTheme.typography.labelLarge,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        )
+                    }
+                    Surface(
+                        onClick = onExitSelection,
+                        shape = RoundedCornerShape(10.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    ) {
+                        Icon(
+                            HugeIcons.Cancel01,
+                            contentDescription = stringResource(R.string.cancel),
+                            modifier = Modifier.padding(8.dp).size(18.dp),
+                        )
+                    }
+                }
+            }
+        } else {
             HorizontalFloatingToolbar(
                 expanded = expanded,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp)
                     .offset(y = -ScreenOffset),
             ) {
                 AddModelButton(
@@ -750,7 +871,7 @@ private fun ModelList(
                     },
                     expanded = expanded,
                     parentProvider = providerSetting,
-                    onUpdateProvider = onUpdateProvider
+                    onUpdateProvider = onUpdateProvider,
                 )
             }
         }
@@ -1019,10 +1140,13 @@ private fun AddModelButton(
         Button(
             onClick = {
                 dialogState.open(Model())
-            }
+            },
+            modifier = Modifier.weight(1f),
+            shape = RoundedCornerShape(12.dp),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
         ) {
             Row(
-                modifier = Modifier,
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -1615,7 +1739,18 @@ private fun ModelCard(
         gesturesEnabled = !selectionMode,
         modifier = modifier
     ) {
-        OutlinedCard {
+        val colors = MaterialTheme.colorScheme
+        Card(
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = if (selectionMode && selected) {
+                    colors.primaryContainer.copy(alpha = 0.45f)
+                } else {
+                    colors.surfaceContainerHigh
+                },
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1623,13 +1758,16 @@ private fun ModelCard(
                         if (selectionMode) Modifier.clickable { onToggleSelection() }
                         else Modifier
                     )
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    .padding(horizontal = 12.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                if (selectionMode) {
+                    ModelCardCheckmark(checked = selected)
+                }
                 Surface(
-                    color = MaterialTheme.colorScheme.secondaryContainer,
-                    shape = MaterialTheme.shapes.small,
+                    color = colors.surfaceContainerHighest,
+                    shape = RoundedCornerShape(10.dp),
                 ) {
                     AutoAIIcon(
                         name = model.modelId,
@@ -1638,7 +1776,7 @@ private fun ModelCard(
                 }
                 Column(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalArrangement = Arrangement.spacedBy(5.dp),
                 ) {
                     Text(
                         text = model.displayName,
@@ -1646,38 +1784,153 @@ private fun ModelCard(
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        if (model.providerOverwrite != null) {
-                            Tag(type = TagType.INFO) {
-                                Text(
-                                    model.providerOverwrite?.javaClass?.simpleName ?: model.providerOverwrite?.name
-                                    ?: "ProviderOverwrite"
-                                )
-                            }
-                        }
-                        ModelTypeTag(model = model)
-                        ModelModalityTag(model = model)
-                        ModelAbilityTag(model = model)
-                    }
+                    ModelCardMutedAbilityRow(model = model)
                 }
 
-                if (selectionMode) {
-                    Checkbox(
-                        checked = selected,
-                        onCheckedChange = { onToggleSelection() }
-                    )
-                } else {
-                    // Edit button
-                    IconButton(
-                        onClick = {
-                            dialogState.open(model.copy())
-                        }
+                if (!selectionMode) {
+                    Surface(
+                        onClick = { dialogState.open(model.copy()) },
+                        shape = RoundedCornerShape(10.dp),
+                        color = colors.surfaceContainerHighest,
+                        contentColor = colors.onSurfaceVariant,
+                        modifier = Modifier.size(32.dp),
                     ) {
-                        Icon(HugeIcons.Tools, stringResource(R.string.accessibility_edit_model))
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                HugeIcons.Tools,
+                                stringResource(R.string.accessibility_edit_model),
+                                modifier = Modifier.size(16.dp),
+                            )
+                        }
                     }
+                }
+            }
+        }
+    }
+}
+
+
+@Composable
+private fun ModelCardCheckmark(checked: Boolean) {
+    val colors = MaterialTheme.colorScheme
+    val shape = RoundedCornerShape(4.dp)
+    Box(
+        modifier = Modifier
+            .size(18.dp)
+            .clip(shape)
+            .background(if (checked) colors.primary else colors.surfaceContainerHighest),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (checked) {
+            Icon(
+                imageVector = HugeIcons.Tick02,
+                contentDescription = null,
+                modifier = Modifier.size(12.dp),
+                tint = colors.onPrimary,
+            )
+        }
+    }
+}
+
+/** Provider-detail-only muted chips — does not touch shared [Tag]. */
+@Composable
+private fun ModelCardMutedChip(content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(5.dp))
+            .background(colors.surfaceContainerHighest)
+            .padding(horizontal = 6.dp, vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        content = content,
+    )
+}
+
+@Composable
+private fun ModelCardMutedAbilityRow(model: Model) {
+    val colors = MaterialTheme.colorScheme
+    val iconSize = 13.dp
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        if (model.providerOverwrite != null) {
+            ModelCardMutedChip {
+                Text(
+                    text = model.providerOverwrite?.javaClass?.simpleName
+                        ?: model.providerOverwrite?.name
+                        ?: "ProviderOverwrite",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = colors.onSurfaceVariant,
+                )
+            }
+        }
+        ModelCardMutedChip {
+            Text(
+                text = stringResource(
+                    when (model.type) {
+                        ModelType.CHAT -> R.string.setting_provider_page_chat_model
+                        ModelType.EMBEDDING -> R.string.setting_provider_page_embedding_model
+                        ModelType.IMAGE -> R.string.setting_provider_page_image_model
+                        ModelType.VIDEO -> R.string.setting_provider_page_video_model
+                    }
+                ),
+                style = MaterialTheme.typography.labelSmall,
+                color = colors.onSurfaceVariant,
+            )
+        }
+        ModelCardMutedChip {
+            model.inputModalities.fastForEach { modality ->
+                Icon(
+                    imageVector = when (modality) {
+                        Modality.TEXT -> HugeIcons.Text
+                        Modality.IMAGE -> HugeIcons.Image03
+                        Modality.AUDIO -> HugeIcons.MusicNote03
+                        Modality.VIDEO -> HugeIcons.Video01
+                    },
+                    contentDescription = null,
+                    modifier = Modifier.size(iconSize),
+                    tint = colors.onSurfaceVariant,
+                )
+            }
+            Icon(
+                imageVector = HugeIcons.ArrowRight01,
+                contentDescription = null,
+                modifier = Modifier.size(iconSize),
+                tint = colors.onSurfaceVariant,
+            )
+            model.outputModalities.fastForEach { modality ->
+                Icon(
+                    imageVector = when (modality) {
+                        Modality.TEXT -> HugeIcons.Text
+                        Modality.IMAGE -> HugeIcons.Image03
+                        Modality.AUDIO -> HugeIcons.MusicNote03
+                        Modality.VIDEO -> HugeIcons.Video01
+                    },
+                    contentDescription = null,
+                    modifier = Modifier.size(iconSize),
+                    tint = colors.onSurfaceVariant,
+                )
+            }
+        }
+        model.abilities.fastForEach { ability ->
+            when (ability) {
+                ModelAbility.TOOL -> ModelCardMutedChip {
+                    Icon(
+                        imageVector = HugeIcons.Tools,
+                        contentDescription = null,
+                        modifier = Modifier.size(iconSize),
+                        tint = colors.onSurfaceVariant,
+                    )
+                }
+                ModelAbility.REASONING -> ModelCardMutedChip {
+                    Icon(
+                        painter = painterResource(R.drawable.deepthink),
+                        contentDescription = null,
+                        modifier = Modifier.size(iconSize),
+                        tint = colors.onSurfaceVariant,
+                    )
                 }
             }
         }

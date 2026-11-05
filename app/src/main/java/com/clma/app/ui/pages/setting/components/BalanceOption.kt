@@ -6,10 +6,12 @@ import me.rerere.hugeicons.stroke.ArrowUp01
 import me.rerere.hugeicons.stroke.Refresh03
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.TextButton
@@ -105,13 +107,30 @@ fun SettingProviderBalanceOption(
                     textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = JetbrainsMono),
                     supportingText = { Text(stringResource(R.string.provider_balance_expression_help)) },
                 )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     BalanceMethod.entries.forEach { method ->
-                        FilterChip(
-                            selected = balanceOption.method == method,
+                        val on = balanceOption.method == method
+                        Surface(
                             onClick = { onEdit(balanceOption.copy(method = method)) },
-                            label = { Text(method.name) },
-                        )
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (on) {
+                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f)
+                            } else {
+                                MaterialTheme.colorScheme.surfaceContainerHighest
+                            },
+                            contentColor = if (on) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                            tonalElevation = 0.dp,
+                        ) {
+                            Text(
+                                text = method.name,
+                                style = MaterialTheme.typography.labelLarge,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                            )
+                        }
                     }
                 }
                 if (balanceOption.method == BalanceMethod.POST) {
