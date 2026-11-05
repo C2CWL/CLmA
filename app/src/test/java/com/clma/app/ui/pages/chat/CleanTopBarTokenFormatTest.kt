@@ -1,5 +1,6 @@
 package com.clma.app.ui.pages.chat
 
+import com.clma.app.ui.pages.stats.formatCompactTokens
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
