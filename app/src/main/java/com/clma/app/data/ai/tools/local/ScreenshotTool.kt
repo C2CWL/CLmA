@@ -22,6 +22,7 @@ import com.clma.app.data.ai.AgentTurnTracker
 import com.clma.app.data.ai.ScreenshotLedger
 import com.clma.app.service.ActionLogEntry
 import com.clma.app.service.RikkaAccessibilityService
+import com.clma.app.service.VirtualDisplayPreviewWindow
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
@@ -98,7 +99,10 @@ fun takeScreenshotTool(context: Context): Tool = Tool(
             AccessibilityServiceHandle.withService { svc ->
             val cacheDir = File(context.cacheDir, SCREENSHOT_CACHE_DIR).apply { mkdirs() }
             pruneOldCacheScreenshots(cacheDir)
-            val res = svc.captureScreenshot(displayId)
+            // A live preview is an overlay on this display: detach it for the capture, otherwise
+            // the model gets a scaled copy of the virtual display pasted over the real screen and
+            // reads every coordinate off the wrong picture.
+            val res = VirtualDisplayPreviewWindow.hiddenDuring { svc.captureScreenshot(displayId) }
             when (res) {
                 is RikkaAccessibilityService.ScreenshotOutcome.Failure -> {
                     svc.appendLog(
