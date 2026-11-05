@@ -17,6 +17,7 @@ class GeminiAccountTest {
         id: String,
         enabled: Boolean = true,
         tokenStatus: GeminiTokenStatus = GeminiTokenStatus.AVAILABLE,
+        usage: GeminiUsageSnapshot? = null,
     ) = GeminiAccount(
         id = id,
         name = id,
@@ -26,6 +27,7 @@ class GeminiAccountTest {
         expiresAt = Long.MAX_VALUE,
         enabled = enabled,
         tokenStatus = tokenStatus,
+        usage = usage,
     )
 
     @Test
@@ -84,6 +86,102 @@ class GeminiAccountTest {
     @Test
     fun `selection returns null for an empty list`() {
         assertNull(selectGeminiAccountIndex(emptyList(), startIndex = 0))
+    }
+
+    // --- Quota-aware selection and failover ------------------------------------------------
+
+    private fun window(remaining: Double, resetsAt: Long? = null) =
+        GeminiUsageWindow(remainingFraction = remaining, resetsAt = resetsAt)
+
+    private fun snapshot(daily: GeminiUsageWindow? = null, weekly: GeminiUsageWindow? = null) =
+        GeminiUsageSnapshot(daily = daily, weekly = weekly)
+
+    @Test
+    fun `selection skips the accounts this request already failed over from`() {
+        // streamText passes the accounts it has tried as `excluding`, so a request that already
+        // burned through "a" must not be handed "a" again.
+        val accounts = listOf(account("a"), account("b"), account("c"))
+        assertEquals(
+            1,
+            selectGeminiAccountIndex(accounts, startIndex = 0, excluding = setOf("a")),
+        )
+    }
+
+    @Test
+    fun `an excluded account is never selected, not even as the only available one`() {
+        val accounts = listOf(account("a"), account("b", enabled = false))
+        assertNull(selectGeminiAccountIndex(accounts, startIndex = 0, excluding = setOf("a")))
+    }
+
+    @Test
+    fun `selection prefers an account whose quota snapshot is not spent`() {
+        val accounts = listOf(
+            account("a", usage = snapshot(weekly = window(remaining = 0.0))),
+            account("b"),
+        )
+        assertEquals(
+            1,
+            selectGeminiAccountIndex(accounts, startIndex = 0, exhaustedIds = setOf("a")),
+        )
+    }
+
+    @Test
+    fun `a spent snapshot is only a preference and is still used when nothing better is left`() {
+        // The snapshot collapses every model into one reading per window, so an account that looks
+        // spent may still answer the model being asked for - it must stay selectable.
+        val accounts = listOf(
+            account("a", usage = snapshot(daily = window(remaining = 0.0))),
+            account("b", usage = snapshot(weekly = window(remaining = 0.0))),
+        )
+        assertEquals(
+            1,
+            selectGeminiAccountIndex(accounts, startIndex = 1, exhaustedIds = setOf("a", "b")),
+        )
+    }
+
+    @Test
+    fun `a window with nothing left and a reset still ahead is exhausted`() {
+        val nowMillis = 1_000_000_000_000L
+        assertTrue(window(remaining = 0.0, resetsAt = nowMillis / 1000 + 60).isExhausted(nowMillis))
+    }
+
+    @Test
+    fun `a window whose reset has already passed is not exhausted`() {
+        // The snapshot is only refreshed by hand, so a stale zero must not keep an account out of
+        // rotation once its window has reopened.
+        val nowMillis = 1_000_000_000_000L
+        assertFalse(window(remaining = 0.0, resetsAt = nowMillis / 1000 - 60).isExhausted(nowMillis))
+    }
+
+    @Test
+    fun `a window with quota left is not exhausted`() {
+        val nowMillis = 1_000_000_000_000L
+        assertFalse(window(remaining = 0.25, resetsAt = nowMillis / 1000 + 60).isExhausted(nowMillis))
+    }
+
+    @Test
+    fun `a zero window with no reported reset counts as exhausted`() {
+        assertTrue(window(remaining = 0.0).isExhausted(1_000_000_000_000L))
+    }
+
+    @Test
+    fun `an account with no quota snapshot is not exhausted`() {
+        assertFalse(account("a").isQuotaExhausted())
+    }
+
+    @Test
+    fun `an account is exhausted when either window is spent`() {
+        val nowMillis = 1_000_000_000_000L
+        val spendsDaily = account(
+            "a",
+            usage = snapshot(daily = window(0.0, resetsAt = nowMillis / 1000 + 60)),
+        )
+        val spendsWeekly = account(
+            "b",
+            usage = snapshot(weekly = window(0.0, resetsAt = nowMillis / 1000 + 60)),
+        )
+        assertTrue(spendsDaily.isQuotaExhausted(nowMillis))
+        assertTrue(spendsWeekly.isQuotaExhausted(nowMillis))
     }
 
     @Test

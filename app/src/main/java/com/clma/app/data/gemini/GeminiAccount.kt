@@ -53,3 +53,24 @@ enum class GeminiTokenStatus {
 
 internal fun GeminiAccount.isAvailable(): Boolean =
     enabled && tokenStatus != GeminiTokenStatus.INVALID
+
+/**
+ * True when this window has nothing left and its reset has not arrived yet.
+ *
+ * A zero fraction with no reported [GeminiUsageWindow.resetsAt] counts as exhausted: requests are
+ * already being refused and there is no other evidence the window recovered.
+ */
+internal fun GeminiUsageWindow.isExhausted(nowMillis: Long = System.currentTimeMillis()): Boolean =
+    remainingFraction <= 0.0 && (resetsAt == null || resetsAt * 1000L > nowMillis)
+
+/**
+ * True when the account's last snapshot says one of its windows is spent.
+ *
+ * The snapshot keeps the scarcest reading across every model the account can reach, so this is a
+ * hint for *ordering* accounts, never proof that the model a caller is about to ask for is spent -
+ * it must not be used to exclude an account outright.
+ */
+internal fun GeminiAccount.isQuotaExhausted(nowMillis: Long = System.currentTimeMillis()): Boolean =
+    usage?.let { snapshot ->
+        snapshot.daily?.isExhausted(nowMillis) == true || snapshot.weekly?.isExhausted(nowMillis) == true
+    } ?: false

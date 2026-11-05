@@ -234,6 +234,46 @@ class GeminiRetryTest {
         assertNull(classification.retryDelayMs)
     }
 
+    // --- classifyGeminiError: which failures another account can still answer ------------------
+
+    @Test
+    fun `a spent quota window is flagged so a request can fail over to another account`() {
+        val body = """
+            {
+              "error": {
+                "code": 429,
+                "message": "You have exhausted your capacity on this model.",
+                "status": "RESOURCE_EXHAUSTED",
+                "details": [
+                  {
+                    "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+                    "reason": "QUOTA_EXHAUSTED",
+                    "domain": "cloudcode-pa.googleapis.com"
+                  }
+                ]
+              }
+            }
+        """.trimIndent()
+        val classification = classifyGeminiError(429, body, json)
+        assertTrue(classification.quotaExhausted)
+        assertFalse(classification.retryable)
+    }
+
+    @Test
+    fun `a long RATE_LIMIT_EXCEEDED delay is flagged as a quota window too`() {
+        // Same account quota, promoted off the delay rather than the reason.
+        assertTrue(classifyGeminiError(429, rateLimitExceededBody("360s"), json).quotaExhausted)
+    }
+
+    @Test
+    fun `a transient throttle is not flagged as a quota window`() {
+        // Retrying this on another account would only waste the second account's quota: the status
+        // alone says the same account will answer again shortly.
+        assertFalse(classifyGeminiError(429, rateLimitExceededBody("12s"), json).quotaExhausted)
+        assertFalse(classifyGeminiError(500, null, json).quotaExhausted)
+        assertFalse(classifyGeminiError(400, """{"error":{"code":400,"message":"bad request"}}""", json).quotaExhausted)
+    }
+
     // --- resolveGeminiRetryDelayMs -----------------------------------------------------------
 
     @Test

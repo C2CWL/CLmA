@@ -92,19 +92,51 @@ class GeminiAccountRepository internal constructor(
         }
     }
 
-    suspend fun acquireAccount(): GeminiAccount = mutex.withLock {
-        if (state.accounts.isEmpty()) error("No Google account is signed in")
-        repeat(state.accounts.size) {
-            val index = selectGeminiAccountIndex(
-                accounts = state.accounts,
-                startIndex = state.nextAccountIndex,
-            ) ?: error("No available Google account")
-            val candidate = state.accounts[index]
-            updateState(state.copy(nextAccountIndex = (index + 1) % state.accounts.size))
-            val fresh = runCatching { ensureFreshLocked(candidate) }.getOrNull() ?: return@repeat
-            return fresh
+    suspend fun acquireAccount(): GeminiAccount =
+        acquireAccountOrNull() ?: error("No available Google account")
+
+    /**
+     * Round-robin selection that skips [excluding] and prefers accounts whose quota snapshot is not
+     * spent, or null when there is nothing left to try.
+     *
+     * [excluding] is what lets `streamText` fail a quota-exhausted request over to another signed-in
+     * account instead of surfacing it: the accounts it already tried are never handed back.
+     */
+    suspend fun acquireAccountOrNull(excluding: Set<String> = emptySet()): GeminiAccount? =
+        mutex.withLock {
+            if (state.accounts.isEmpty()) error("No Google account is signed in")
+            val exhaustedIds = state.accounts.filter { it.isQuotaExhausted() }.map { it.id }.toSet()
+            val skipped = excluding.toMutableSet()
+            // Each iteration either returns an account or skips one more, so the account count is a
+            // safe upper bound.
+            repeat(state.accounts.size) {
+                val index = selectGeminiAccountIndex(
+                    accounts = state.accounts,
+                    startIndex = state.nextAccountIndex,
+                    excluding = skipped,
+                    exhaustedIds = exhaustedIds,
+                ) ?: return@withLock null
+                val candidate = state.accounts[index]
+                updateState(state.copy(nextAccountIndex = (index + 1) % state.accounts.size))
+                val fresh = runCatching { ensureFreshLocked(candidate) }.getOrNull()
+                if (fresh != null) return@withLock fresh
+                skipped += candidate.id
+            }
+            null
         }
-        error("No available Google account")
+
+    /**
+     * Re-reads one account's quota snapshot after a request came back quota-exhausted, so the
+     * selection in [acquireAccountOrNull] stops preferring an account that has nothing left.
+     *
+     * Best effort: a backend that will not report quota must not fail the caller.
+     */
+    suspend fun refreshUsage(accountId: String) {
+        mutex.withLock {
+            val account = state.accounts.firstOrNull { it.id == accountId } ?: return@withLock
+            runCatching { fetchUsageLocked(account) }
+            Unit
+        }
     }
 
     suspend fun setEnabled(accountId: String, enabled: Boolean) = mutex.withLock {
@@ -513,16 +545,34 @@ internal fun readProjectId(element: kotlinx.serialization.json.JsonElement?): St
         ?: (element as? JsonPrimitive)?.contentOrNull)
         ?.takeIf { it.isNotBlank() }
 
+/**
+ * Picks the account to send a request to, starting at [startIndex] and wrapping around once.
+ *
+ * [excluding] is skipped outright - it carries the accounts this request already failed over from.
+ * [exhaustedIds] is only a preference: a spent window is read from a snapshot that is refreshed by
+ * hand and that collapses every model into one reading per window, so an account listed there may
+ * still answer the model being asked for. Those accounts are therefore used only when nothing
+ * better is left.
+ */
 internal fun selectGeminiAccountIndex(
     accounts: List<GeminiAccount>,
     startIndex: Int,
+    excluding: Set<String> = emptySet(),
+    exhaustedIds: Set<String> = emptySet(),
 ): Int? {
     if (accounts.isEmpty()) return null
+    var fallback: Int? = null
     repeat(accounts.size) { offset ->
         val index = (startIndex + offset).mod(accounts.size)
-        if (accounts[index].isAvailable()) return index
+        val account = accounts[index]
+        if (account.id in excluding || !account.isAvailable()) return@repeat
+        if (account.id in exhaustedIds) {
+            if (fallback == null) fallback = index
+            return@repeat
+        }
+        return index
     }
-    return null
+    return fallback
 }
 
 // oh-my-pi's MAX_RETRIES / BASE_DELAY_MS (google-gemini-cli.ts:319-320): the last endpoint in the
@@ -559,12 +609,16 @@ private val ANTIGRAVITY_MODEL_QUOTA_PATTERN = Regex("""\bexhausted your capacity
  * `RATE_LIMIT_EXCEEDED` one whose own retry delay is at or beyond [GEMINI_RETRY_DELAY_CAP_MS], or
  * whose message names a per-model quota ([ANTIGRAVITY_MODEL_QUOTA_PATTERN]) - is treated as a long
  * quota window, not a transient throttle, the same way rate-limit.ts:162,170-172 promotes it.
+ *
+ * [quotaExhausted] names that last case on its own, because it is the one failure a *different*
+ * signed-in account can still answer, which is what `streamText` fails a request over on.
  */
 internal data class GeminiErrorClassification(
     val status: Int?,
     val reason: String?,
     val retryDelayMs: Long?,
     val retryable: Boolean,
+    val quotaExhausted: Boolean = false,
 )
 
 /**
@@ -608,6 +662,7 @@ internal fun classifyGeminiError(statusCode: Int?, body: String?, json: Json): G
         reason = reason ?: rpcStatus,
         retryDelayMs = retryDelayMs,
         retryable = transientStatus && !quotaExhausted && withinRetryBudget,
+        quotaExhausted = quotaExhausted,
     )
 }
 
