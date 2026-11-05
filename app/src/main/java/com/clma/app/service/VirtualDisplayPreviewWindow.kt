@@ -17,7 +17,6 @@ import android.text.TextUtils
 import android.util.Log
 import android.util.TypedValue
 import android.view.Gravity
-import android.view.ScaleGestureDetector
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
@@ -27,6 +26,9 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import com.clma.app.R
 import com.clma.app.data.ai.tools.local.VirtualDisplayController
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 
 /**
  * Draggable "what the agent sees" window for a running virtual display.
@@ -39,6 +41,10 @@ import com.clma.app.data.ai.tools.local.VirtualDisplayController
  * and the left/right edge bar ([FloatingBallService]). The window is a single instance; creating a
  * second display replaces the preview, destroying the shown display closes it.
  *
+ * Two windows on purpose: the frame is FLAG_NOT_TOUCHABLE so it never swallows a tap, swipe or
+ * long-press aimed at whatever the agent is driving underneath, while a narrow bar above it stays
+ * touchable for drag / close / resize. Trade-off: pinch-to-zoom is gone, the bar keeps −/+.
+ *
  * No-ops silently when SYSTEM_ALERT_WINDOW has not been granted.
  */
 object VirtualDisplayPreviewWindow {
@@ -48,12 +54,26 @@ object VirtualDisplayPreviewWindow {
     /** ~15 fps. Smooth enough to follow what the agent is doing, cheap on a 1080p display. */
     private const val TICK_MS = 66L
 
+    /** Long enough for the compositor to drop the layer; a same-frame capture still sees it. */
+    private const val CAPTURE_SETTLE_MS = 120L
+
     private val main = Handler(Looper.getMainLooper())
 
+    /** Touchable bar: the only part of the preview that takes input. */
     private var root: View? = null
     private var windowManager: WindowManager? = null
     private var params: WindowManager.LayoutParams? = null
-    private var shownDisplayId = -1
+
+    /** Frame, kept [WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE] so agent gestures pass through. */
+    private var body: View? = null
+    private var bodyParams: WindowManager.LayoutParams? = null
+    private var shownInfo: VirtualDisplayController.DisplayInfo? = null
+    private var appContext: Context? = null
+
+    // Survives hide/show, so a screenshot's temporary detach does not reset size or position.
+    private var lastWidth = 0
+    private var lastX = Int.MIN_VALUE
+    private var lastY = Int.MIN_VALUE
 
     private var dragStartX = 0
     private var dragStartY = 0
@@ -73,13 +93,38 @@ object VirtualDisplayPreviewWindow {
     /** Close the preview if it is currently showing [displayId] (display was destroyed). */
     fun hideIfShowing(displayId: Int) {
         main.post {
-            if (shownDisplayId == displayId) hideInternal()
+            if (shownInfo?.displayId == displayId) hideInternal()
         }
     }
 
     /** Close the preview regardless of which display it shows. */
     fun hide() {
         main.post { hideInternal() }
+    }
+
+    /**
+     * Run [block] with the preview detached, then put it back.
+     *
+     * A physical-screen capture composites every overlay on the default display, so a visible
+     * picture would land in the model's image as a scaled copy of the virtual display and every
+     * coordinate read off that image would be off. Detaching is a hard guarantee (alpha /
+     * visibility may still be composited); the display keeps running — only the windows go away.
+     */
+    suspend fun <T> hiddenDuring(block: suspend () -> T): T {
+        val restore = withContext<Pair<Context, VirtualDisplayController.DisplayInfo>?>(Dispatchers.Main) {
+            val info = shownInfo ?: return@withContext null
+            val app = appContext ?: return@withContext null
+            hideInternal()
+            app to info
+        } ?: return block()
+        // Two frames plus slack: a capture on this frame could still include the layer.
+        delay(CAPTURE_SETTLE_MS)
+        return try {
+            block()
+        } finally {
+            val (app, info) = restore
+            main.post { showInternal(app, info) }
+        }
     }
 
     @Suppress("SetTextI18n")
@@ -125,23 +170,21 @@ object VirtualDisplayPreviewWindow {
             setOnClickListener { hide() }
         }
 
+        // Own window, so the frame below it can be touch-transparent.
         val header = LinearLayout(app).apply {
             orientation = LinearLayout.HORIZONTAL
-            background = GradientDrawable().apply { setColor(0x33FFFFFF) }
+            background = GradientDrawable().apply {
+                cornerRadius = dp(10).toFloat()
+                setColor(0xF01C1C1C.toInt())
+                setStroke(dp(1), 0x26FFFFFF)
+            }
             addView(title)
             addView(close)
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                dp(28),
-            )
         }
 
         val preview = PreviewView(app, info.displayId).apply {
-            layoutParams = LinearLayout.LayoutParams(contentWidth, contentHeight)
-        }
-
-        val container = LinearLayout(app).apply {
-            orientation = LinearLayout.VERTICAL
+            // A picture, not something to act on: keep it out of the model's window tree.
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
             background = GradientDrawable().apply {
                 cornerRadius = dp(12).toFloat()
                 setColor(0xF01C1C1C.toInt())
@@ -153,8 +196,6 @@ object VirtualDisplayPreviewWindow {
                     outline.setRoundRect(0, 0, view.width, view.height, dp(12).toFloat())
                 }
             }
-            addView(header)
-            addView(preview)
         }
 
         // Scale the preview only: VD geometry and agent screenshot coordinates never change.
@@ -167,10 +208,17 @@ object VirtualDisplayPreviewWindow {
             val minWidth = dp(120).coerceAtMost(maxWidth)
             contentWidth = requestedWidth.coerceIn(minWidth, maxWidth)
             contentHeight = (contentWidth * ratio).toInt().coerceAtLeast(1)
-            preview.layoutParams = LinearLayout.LayoutParams(contentWidth, contentHeight)
+            // The two windows are sized independently: the bar stays narrow, the frame follows.
+            current.width = minOf(contentWidth, dp(170))
+            bodyParams?.let { bodyLp ->
+                bodyLp.width = contentWidth
+                bodyLp.height = contentHeight
+            }
             current.x = current.x.coerceIn(0, (screenW - contentWidth).coerceAtLeast(0))
             current.y = current.y.coerceIn(0, (screenH - contentHeight - dp(28)).coerceAtLeast(0))
             runCatching { windowManager?.updateViewLayout(view, current) }
+            moveBody(current.x, current.y)
+            lastWidth = contentWidth
         }
         fun scaleButton(label: String, description: Int, factor: Float) = TextView(app).apply {
             text = label
@@ -182,27 +230,16 @@ object VirtualDisplayPreviewWindow {
         }
         header.addView(scaleButton("−", R.string.virtual_display_preview_shrink, 0.8f), 1)
         header.addView(scaleButton("+", R.string.virtual_display_preview_enlarge, 1.25f), 2)
-        val scaler = ScaleGestureDetector(app, object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
-            override fun onScale(detector: ScaleGestureDetector): Boolean {
-                resize((contentWidth * detector.scaleFactor).toInt())
-                return true
-            }
-        })
-        preview.contentDescription = app.getString(R.string.virtual_display_preview_scale_hint)
-        preview.setOnTouchListener { _, event ->
-            scaler.onTouchEvent(event)
-            true
-        }
-
         val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
         } else {
             @Suppress("DEPRECATION")
             WindowManager.LayoutParams.TYPE_PHONE
         }
+        // Bar: narrow on purpose — it is the only window that can swallow a touch.
         val lp = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.WRAP_CONTENT,
+            minOf(contentWidth, dp(170)),
+            dp(28),
             type,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT,
@@ -211,9 +248,28 @@ object VirtualDisplayPreviewWindow {
             x = dp(8)
             // Bottom-left, lifted above the gesture bar so system swipes stay usable.
             y = (screenH - contentHeight - dp(28) - dp(110)).coerceAtLeast(dp(80))
+            // Re-open where the user last left it: a detach/attach cycle must not jump.
+            if (lastX != Int.MIN_VALUE) {
+                x = lastX
+                y = lastY
+            }
         }
 
-        // Drag by the title/header; the frame owns pinch scaling and never forwards touches.
+        // Frame: never touchable, so a tap aimed at the app below is not intercepted.
+        val bodyLp = WindowManager.LayoutParams(
+            contentWidth,
+            contentHeight,
+            type,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+            PixelFormat.TRANSLUCENT,
+        ).apply {
+            gravity = Gravity.TOP or Gravity.START
+            x = lp.x
+            y = lp.y + dp(28)
+        }
+
+        // Drag by the bar only; the frame below is touch-transparent, so it never forwards touches.
         header.setOnTouchListener { _, event ->
             val current = params ?: return@setOnTouchListener false
             when (event.actionMasked) {
@@ -229,6 +285,7 @@ object VirtualDisplayPreviewWindow {
                     current.x = (dragStartX + (event.rawX - dragDownX)).toInt().coerceIn(0, (screenW - contentWidth).coerceAtLeast(0))
                     current.y = (dragStartY + (event.rawY - dragDownY)).toInt().coerceIn(0, (screenH - contentHeight - dp(28)).coerceAtLeast(0))
                     runCatching { windowManager?.updateViewLayout(view, current) }
+                    moveBody(current.x, current.y)
                     true
                 }
                 else -> true
@@ -237,26 +294,46 @@ object VirtualDisplayPreviewWindow {
 
         val wm = app.getSystemService(Context.WINDOW_SERVICE) as? WindowManager ?: return
         try {
-            wm.addView(container, lp)
-            root = container
+            wm.addView(preview, bodyLp)
+            wm.addView(header, lp)
+            root = header
+            body = preview
             windowManager = wm
             params = lp
-            resize(contentWidth)
-            shownDisplayId = info.displayId
+            bodyParams = bodyLp
+            appContext = app
+            shownInfo = info
+            resize(if (lastWidth > 0) lastWidth else contentWidth)
         } catch (t: Throwable) {
             Log.w(TAG, "addView failed", t)
+            hideInternal()
         }
     }
 
+    /** Keep the frame glued under the bar. */
+    private fun moveBody(x: Int, y: Int) {
+        val bodyView = body ?: return
+        val bodyLp = bodyParams ?: return
+        bodyLp.x = x
+        bodyLp.y = y + (params?.height ?: 0)
+        runCatching { windowManager?.updateViewLayout(bodyView, bodyLp) }
+        lastX = x
+        lastY = y
+    }
+
     private fun hideInternal() {
-        val view = root ?: return
+        val wm = windowManager
+        val barView = root
+        val bodyView = body
+        if (barView == null && bodyView == null) return
         root = null
+        body = null
         params = null
-        shownDisplayId = -1
-        try {
-            windowManager?.removeViewImmediate(view)
-        } catch (t: Throwable) {
-            Log.w(TAG, "removeView failed", t)
+        bodyParams = null
+        shownInfo = null
+        if (wm != null) {
+            if (barView != null) runCatching { wm.removeViewImmediate(barView) }
+            if (bodyView != null) runCatching { wm.removeViewImmediate(bodyView) }
         }
         windowManager = null
     }
