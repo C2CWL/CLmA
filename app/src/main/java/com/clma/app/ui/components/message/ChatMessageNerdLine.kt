@@ -28,6 +28,8 @@ import dev.chrisbanes.haze.blur.hazeBlur
 import com.clma.ai.ui.UIMessage
 import com.clma.app.data.usage.TurnFooter
 import com.clma.app.ui.context.LocalSettings
+import com.clma.app.ui.components.ui.ModernSmallCorner
+import com.clma.app.ui.components.ui.modernTonal
 import com.clma.app.ui.pages.chat.CHAT_WALLPAPER_HAZE_KEY
 
 /**
@@ -47,6 +49,8 @@ fun ChatMessageNerdLine(
     modifier: Modifier = Modifier,
     photoShown: Boolean = false,
     hazeState: HazeState? = null,
+    // 现代布局：无壁纸时也放在一块 8dp 浅色小方块里，贴在操作栏右端。
+    chip: Boolean = false,
 ) {
     val settings = LocalSettings.current.displaySetting
     // A user message has no turn footer; when the ledger has nothing to say and the turn is not
@@ -97,6 +101,16 @@ fun ChatMessageNerdLine(
                     TurnUsageLine(
                         footer = turnFooter,
                         modifier = modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                    )
+                }
+            } else if (chip) {
+                Surface(
+                    shape = RoundedCornerShape(ModernSmallCorner),
+                    color = modernTonal(),
+                ) {
+                    TurnUsageLine(
+                        footer = turnFooter,
+                        modifier = modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                     )
                 }
             } else {

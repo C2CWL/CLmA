@@ -2,6 +2,7 @@ package com.clma.app.ui.pages.chat
 
 import com.clma.app.diagnostics.FunctionalDiagnostics
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -71,6 +72,21 @@ import com.clma.app.ui.components.ui.rikkaGlassStyle
 import com.clma.app.ui.components.message.WallpaperOnlySelection
 import com.clma.app.ui.context.LocalToaster
 import com.clma.app.ui.theme.LocalDarkMode
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.clma.app.data.datastore.findProvider
+import com.clma.app.ui.components.ui.ModernTopBarCorner
+import com.clma.app.ui.components.ui.ModernTopButtonCorner
+import com.clma.app.ui.components.ui.modernPanelBase
+import com.clma.app.ui.components.ui.modernPanelAlpha
+import com.clma.app.ui.components.ui.modernShadowColor
+import com.clma.app.ui.components.ui.modernStatusGreen
+import com.clma.app.ui.components.ui.modernTonal
 import org.koin.androidx.compose.koinViewModel
 
 /**
@@ -110,6 +126,8 @@ internal fun CleanTopBar(
     val density = LocalDensity.current
     val titleStyle = MaterialTheme.typography.titleMedium
     val subtitleStyle = MaterialTheme.typography.labelSmall
+    // 现代（存储值 CLEAN）：悬浮圆角顶栏，按钮是浅色圆角小方块，副标题是「模型 · 供应商」加绿点。
+    val modern = settings.displaySetting.effectiveChatLayout == ChatLayout.CLEAN
     val showSubtitle = cleanTopBarShowsSubtitle(
         barHeightDp = barHeight,
         titleLineDp = lineHeightDp(titleStyle, density),
@@ -121,8 +139,21 @@ internal fun CleanTopBar(
         // is applied by the bar itself and is not part of this height, so a punch-hole stays clear.
         expandedHeight = barHeight.dp,
         colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+        // The modern panel already sits below the status bar (CleanTopBarPanel), so the bar must
+        // not add the inset a second time.
+        windowInsets = if (modern) WindowInsets(0, 0, 0, 0) else TopAppBarDefaults.windowInsets,
         navigationIcon = {
-            if (!bigScreen) {
+            if (!bigScreen && modern) {
+                ModernTopBarButton(
+                    icon = HugeIcons.LeftToRightListBullet,
+                    contentDescription = stringResource(R.string.menu),
+                    modifier = Modifier.padding(start = 6.dp),
+                    onClick = {
+                        FunctionalDiagnostics.event("drawer.open.request", System.identityHashCode(drawerState))
+                        scope.launch { drawerState.open() }
+                    },
+                )
+            } else if (!bigScreen) {
                 CleanTopBarButtonSize {
                     IconButton(
                         onClick = {
@@ -175,7 +206,32 @@ internal fun CleanTopBar(
                         )
                     }
                 }
-                if (model != null && showSubtitle) {
+                if (model != null && showSubtitle && modern) {
+                    val providerName = remember(model, settings.providers) {
+                        model.findProvider(settings.providers)?.name
+                    }
+                    val dotColor = modernStatusGreen()
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .clip(CircleShape)
+                                .background(dotColor),
+                        )
+                        Spacer(Modifier.width(5.dp))
+                        Text(
+                            text = if (providerName.isNullOrBlank()) {
+                                model.displayName
+                            } else {
+                                "${model.displayName} · $providerName"
+                            },
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            style = subtitleStyle,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                } else if (model != null && showSubtitle) {
                     val usedTokens = remember(turnFooters, conversation) {
                         conversationUsedTokens(turnFooters, conversation)
                     }
@@ -207,7 +263,32 @@ internal fun CleanTopBar(
             }
         },
         actions = {
-            CleanTopBarButtonSize {
+            if (modern) {
+                Row(
+                    modifier = Modifier.padding(end = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    ModernTopBarButton(
+                        icon = if (previewMode) HugeIcons.Cancel01 else HugeIcons.LeftToRightListBullet,
+                        contentDescription = stringResource(R.string.accessibility_chat_options),
+                        onClick = onClickMenu,
+                    )
+                    Box {
+                        ModernTopBarButton(
+                            icon = HugeIcons.PlusSign,
+                            contentDescription = stringResource(R.string.chat_page_new_message),
+                            onClick = { showNewChatMenu = true },
+                        )
+                        CleanNewChatMenu(
+                            expanded = showNewChatMenu,
+                            onDismiss = { showNewChatMenu = false },
+                            onNewChat = onNewChat,
+                            onNewTemporaryChat = onNewTemporaryChat,
+                        )
+                    }
+                }
+            } else CleanTopBarButtonSize {
                 IconButton(onClick = onClickMenu, modifier = Modifier.size(CLEAN_TOP_BAR_BUTTON_DP.dp)) {
                     Icon(
                         if (previewMode) HugeIcons.Cancel01 else HugeIcons.LeftToRightListBullet,
@@ -223,35 +304,73 @@ internal fun CleanTopBar(
                             modifier = Modifier.size(CLEAN_TOP_BAR_ICON_DP.dp),
                         )
                     }
-                    AppDropdownMenu(
+                    CleanNewChatMenu(
                         expanded = showNewChatMenu,
-                        onDismissRequest = { showNewChatMenu = false },
-                        // Keep the temporary-chat description from widening the popup.
-                        modifier = Modifier.widthIn(max = 240.dp),
-                        items = listOf(
-                            AppMenuEntry(
-                                text = stringResource(R.string.chat_page_new_chat),
-                                icon = HugeIcons.PlusSign,
-                                onClick = {
-                                    showNewChatMenu = false
-                                    onNewChat()
-                                }
-                            ),
-                            AppMenuEntry(
-                                text = stringResource(R.string.chat_page_temporary_chat),
-                                icon = HugeIcons.Shield01,
-                                supporting = stringResource(R.string.chat_page_temporary_chat_desc),
-                                onClick = {
-                                    showNewChatMenu = false
-                                    onNewTemporaryChat()
-                                }
-                            )
-                        )
+                        onDismiss = { showNewChatMenu = false },
+                        onNewChat = onNewChat,
+                        onNewTemporaryChat = onNewTemporaryChat,
                     )
                 }
             }
         },
     )
+}
+
+/** The new-chat / temporary-chat menu under the top bar's + button. */
+@Composable
+private fun CleanNewChatMenu(
+    expanded: Boolean,
+    onDismiss: () -> Unit,
+    onNewChat: () -> Unit,
+    onNewTemporaryChat: () -> Unit,
+) {
+    AppDropdownMenu(
+        expanded = expanded,
+        onDismissRequest = onDismiss,
+        // Keep the temporary-chat description from widening the popup.
+        modifier = Modifier.widthIn(max = 240.dp),
+        items = listOf(
+            AppMenuEntry(
+                text = stringResource(R.string.chat_page_new_chat),
+                icon = HugeIcons.PlusSign,
+                onClick = {
+                    onDismiss()
+                    onNewChat()
+                }
+            ),
+            AppMenuEntry(
+                text = stringResource(R.string.chat_page_temporary_chat),
+                icon = HugeIcons.Shield01,
+                supporting = stringResource(R.string.chat_page_temporary_chat_desc),
+                onClick = {
+                    onDismiss()
+                    onNewTemporaryChat()
+                }
+            )
+        )
+    )
+}
+
+/** 现代顶栏按钮：36dp 浅色圆角小方块（不是圆），图标 18dp。 */
+@Composable
+private fun ModernTopBarButton(
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier.size(36.dp),
+        shape = RoundedCornerShape(ModernTopButtonCorner),
+        color = modernTonal(),
+        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        tonalElevation = 0.dp,
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(icon, contentDescription, modifier = Modifier.size(18.dp))
+        }
+    }
 }
 
 /**
@@ -272,6 +391,10 @@ internal fun CleanTopBarPanel(
     content: @Composable () -> Unit,
 ) {
     val darkTheme = LocalDarkMode.current
+    if (settings.displaySetting.effectiveChatLayout == ChatLayout.CLEAN) {
+        ModernTopBarPanel(settings = settings, hazeState = hazeState, content = content)
+        return
+    }
     // CLAUDE (暖阳) keeps a solid paper header; glass is CLEAN-only.
     val glass = settings.displaySetting.effectiveChatLayout == ChatLayout.CLEAN &&
         settings.displaySetting.cleanLayoutGlass
@@ -312,6 +435,69 @@ internal fun CleanTopBarPanel(
         border = if (glass || gemini) null else BorderStroke(1.dp, cleanPanelOutline(darkTheme)),
         content = content,
     )
+}
+
+/**
+ * 现代顶栏的底板：不再贴满屏幕边缘，而是一块悬浮的 16dp 圆角卡片，左右各留 10dp，
+ * 状态栏下方再空 4dp。没有描边；不透明时靠一层很淡的阴影和内容分开。透明度滑块和玻璃开关照常生效。
+ */
+@Composable
+private fun ModernTopBarPanel(
+    settings: Settings,
+    hazeState: HazeState,
+    content: @Composable () -> Unit,
+) {
+    val glass = settings.displaySetting.cleanLayoutGlass
+    val alpha = modernPanelAlpha(settings.displaySetting.cleanLayoutTopOpacity)
+    val opacity = settings.displaySetting.cleanLayoutTopOpacity.coerceIn(0f, 1f)
+    val shape = RoundedCornerShape(ModernTopBarCorner)
+    val base = modernPanelBase()
+    val shadowColor = modernShadowColor()
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .padding(start = 10.dp, end = 10.dp, top = 4.dp, bottom = 4.dp),
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(
+                    // 半透明或玻璃时阴影会透出来变成灰雾，只给不透明底板加阴影。
+                    if (!glass && alpha >= 0.9f) {
+                        Modifier.shadow(
+                            elevation = 8.dp,
+                            shape = shape,
+                            clip = false,
+                            ambientColor = shadowColor,
+                            spotColor = shadowColor,
+                        )
+                    } else {
+                        Modifier
+                    }
+                )
+                .clip(shape)
+                .then(
+                    if (glass) {
+                        Modifier.hazeGlass(
+                            input = HazeInput.Sources(hazeState, selection = WallpaperOnlySelection),
+                            style = rikkaGlassStyle(
+                                shape,
+                                blurRadius = 12.dp,
+                                depth = 0.4f,
+                                tintStrength = opacity,
+                            ),
+                        )
+                    } else {
+                        Modifier
+                    }
+                ),
+            shape = shape,
+            tonalElevation = 0.dp,
+            color = base.copy(alpha = if (glass) alpha * 0.9f else alpha),
+            content = content,
+        )
+    }
 }
 
 /** Vertical padding around the clean bar's title column, in dp (top and bottom each). */

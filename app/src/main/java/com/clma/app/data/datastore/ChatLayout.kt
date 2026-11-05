@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
  * Chat page layout. [GEMINI] is the default: a flat header, no avatars on either side of the
  * conversation, the user's turn as a right-aligned capsule and the assistant's as a plain
  * centred reading column - the layout Gemini uses. [ORIGINAL] is retained only to decode old
- * settings and resolves to [GEMINI]; [CLEAN] is the flat header + two-row input box (the old
+ * settings and resolves to [GEMINI]; [CLEAN] is the 「现代」 layout: floating rounded top bar and input card, no assistant bubble (the old
  * `cleanLayout` switch); [CLAUDE] follows Claude.ai: an even quieter header, no assistant bubble,
  * a narrow centred reading column, a 24dp composer card and a coral send button.
  */
@@ -54,3 +54,11 @@ val DisplaySetting.effectiveChatLayout: ChatLayout
 /** True when the Gemini-style chat chrome (no avatars, capsule user turn, flat header) applies. */
 val DisplaySetting.usesGeminiChatUi: Boolean
     get() = effectiveChatLayout == ChatLayout.GEMINI
+
+/**
+ * True when the 「现代」 chat chrome applies. It reuses the [ChatLayout.CLEAN] value (serialized
+ * as "clean") so installs that picked the old 简洁 layout land on the new look with no migration:
+ * floating rounded header, tonal surfaces instead of hairlines, a floating 20dp composer card.
+ */
+val DisplaySetting.usesModernChatUi: Boolean
+    get() = effectiveChatLayout == ChatLayout.CLEAN

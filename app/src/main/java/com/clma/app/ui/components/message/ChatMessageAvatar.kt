@@ -10,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.clma.ai.core.MessageRole
 import com.clma.ai.provider.Model
@@ -29,9 +30,16 @@ fun ChatMessageUserAvatar(
     avatar: Avatar,
     nickname: String,
     modifier: Modifier = Modifier,
+    // 现代布局：时间放进头像行（名字后面），头像小一号。
+    time: String? = null,
+    avatarSize: Dp = 28.dp,
 ) {
     val settings = LocalSettings.current
-    if (message.role == MessageRole.USER && !message.parts.isEmptyUIMessage() && settings.displaySetting.showUserAvatar) {
+    if (message.role == MessageRole.USER && !message.parts.isEmptyUIMessage() && !settings.displaySetting.showUserAvatar && time != null) {
+        Row(modifier = modifier, horizontalArrangement = Arrangement.End) {
+            ChatMessageHeaderTime(time)
+        }
+    } else if (message.role == MessageRole.USER && !message.parts.isEmptyUIMessage() && settings.displaySetting.showUserAvatar) {
         Row(
             modifier = modifier,
             horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
@@ -42,9 +50,10 @@ fun ChatMessageUserAvatar(
                 style = MaterialTheme.typography.labelLargeEmphasized,
                 maxLines = 1,
             )
+            if (time != null) ChatMessageHeaderTime(time)
             UIAvatar(
                 name = nickname,
-                modifier = Modifier.size(28.dp),
+                modifier = Modifier.size(avatarSize),
                 value = avatar,
                 loading = false,
             )
@@ -59,6 +68,8 @@ fun ChatMessageAssistantAvatar(
     model: Model?,
     assistant: Assistant?,
     modifier: Modifier = Modifier,
+    time: String? = null,
+    avatarSize: Dp = 28.dp,
 ) {
     val settings = LocalSettings.current
     val showIcon = settings.displaySetting.showModelIcon
@@ -74,7 +85,7 @@ fun ChatMessageAssistantAvatar(
                     AssistantAvatar(
                         assistant = assistant,
                         name = assistant.name,
-                        modifier = Modifier.size(28.dp),
+                        modifier = Modifier.size(avatarSize),
                         loading = loading,
                     )
                 }
@@ -90,12 +101,13 @@ fun ChatMessageAssistantAvatar(
                             maxLines = 1,
                         )
                     }
+                    if (time != null) ChatMessageHeaderTime(time)
                 }
             } else if (model != null) {
                 if (showIcon) {
                     AutoAIIcon(
                         name = model.modelId,
-                        modifier = Modifier.size(28.dp),
+                        modifier = Modifier.size(avatarSize),
                         loading = loading
                     )
                 }
@@ -108,12 +120,25 @@ fun ChatMessageAssistantAvatar(
                         Text(
                             text = model.displayName,
                             style = MaterialTheme.typography.labelLargeEmphasized,
-                            maxLines = 2,
+                            maxLines = if (time != null) 1 else 2,
                             overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false),
                         )
                     }
+                    if (time != null) ChatMessageHeaderTime(time)
                 }
             }
         }
     }
+}
+
+/** Small grey time next to the name in the modern layout's message header. */
+@Composable
+private fun ChatMessageHeaderTime(time: String) {
+    Text(
+        text = time,
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+        maxLines = 1,
+    )
 }

@@ -77,6 +77,12 @@ import com.clma.app.ui.components.webview.WebViewContentCache
 import com.clma.app.ui.components.webview.rememberWebViewState
 import com.clma.app.ui.context.LocalNavController
 import com.clma.app.ui.context.LocalSettings
+import com.clma.app.data.datastore.usesModernChatUi
+import com.clma.app.ui.components.ui.ModernSurfaceCorner
+import com.clma.app.ui.components.ui.modernHairline
+import com.clma.app.ui.components.ui.modernTonal
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import com.clma.app.ui.context.Navigator
 import com.clma.app.ui.modifier.onClick
 import com.clma.app.ui.theme.AtomOneDarkPalette
@@ -137,17 +143,41 @@ fun HighlightCodeBlock(
         }
     }
 
+    // 现代布局：没有外框，12dp 圆角浅灰底；标题栏和代码同一个底色，只在中间留一条极淡的细线。
+    val modern = settings.displaySetting.usesModernChatUi
+    val modernShape = RoundedCornerShape(ModernSurfaceCorner)
+    val hairline = modernHairline()
     Column(
-        modifier = modifier
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, MaterialTheme.shapes.large)
-            .clip(MaterialTheme.shapes.large)
-            .background(MaterialTheme.colorScheme.surfaceContainer),
+        modifier = if (modern) {
+            modifier
+                .clip(modernShape)
+                .background(modernTonal())
+        } else {
+            modifier
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, MaterialTheme.shapes.large)
+                .clip(MaterialTheme.shapes.large)
+                .background(MaterialTheme.colorScheme.surfaceContainer)
+        },
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-                .padding(horizontal = 12.dp, vertical = 8.dp)
+                .then(
+                    if (modern) {
+                        Modifier.drawBehind {
+                            val stroke = 1.dp.toPx()
+                            drawLine(
+                                color = hairline,
+                                start = Offset(0f, size.height - stroke / 2),
+                                end = Offset(size.width, size.height - stroke / 2),
+                                strokeWidth = stroke,
+                            )
+                        }
+                    } else {
+                        Modifier.background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                    }
+                )
+                .padding(horizontal = 12.dp, vertical = if (modern) 6.dp else 8.dp)
         ) {
             HighlightCodeActions(
                 language = language,

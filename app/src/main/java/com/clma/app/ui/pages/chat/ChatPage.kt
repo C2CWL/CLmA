@@ -15,6 +15,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -806,6 +809,24 @@ private fun ChatPageContent(
                         topBarHeight + topFadeExtension
                     } else {
                         innerPadding.calculateTopPadding() + 64.dp + topFadeExtension
+                    }
+                    // 现代（CLEAN）的顶栏是一块悬浮卡片，和屏幕顶边之间留了状态栏那一条；
+                    // 给那一条一层很短的淡出，免得消息文字滚到状态栏图标底下。
+                    if (chatLayout == ChatLayout.CLEAN) {
+                        val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopCenter)
+                                .fillMaxWidth()
+                                .height(statusBarTop + 12.dp)
+                                .background(
+                                    Brush.verticalGradient(
+                                        0f to fadeColor.copy(alpha = topFade.topAlpha),
+                                        0.7f to fadeColor.copy(alpha = topFade.topAlpha * 0.6f),
+                                        1f to Color.Transparent,
+                                    )
+                                )
+                        )
                     }
                     if (topDissolve) {
                         Box(
