@@ -69,4 +69,12 @@ class CleanTopBarTokenFormatTest {
         assertEquals(" / 1 token", cleanTopBarTokenText(1L, chinese = true))
         assertEquals(" / 1 token", cleanTopBarTokenText(1L, chinese = false))
     }
+
+    @Test
+    fun `compact chip text matches locale helpers without a unit word`() {
+        assertEquals("14.38万", compactTokenCountText(143_793L, chinese = true))
+        assertEquals("14.38萬", compactTokenCountText(143_793L, chinese = true, traditional = true))
+        assertEquals(formatCompactTokens(143_793L), compactTokenCountText(143_793L, chinese = false))
+        assertEquals("0", compactTokenCountText(0L, chinese = true))
+    }
 }

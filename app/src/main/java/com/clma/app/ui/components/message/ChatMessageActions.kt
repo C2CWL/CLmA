@@ -88,7 +88,7 @@ fun ColumnScope.ChatMessageActionButtons(
     onClearTranslation: (UIMessage) -> Unit = {},
     photoShown: Boolean = false,
     hazeState: HazeState? = null,
-    // 现代布局：时间已经在消息头里，这里不再重复；右端改放 token 用量小块。
+    // 现代布局：结束时间合进右端用量小方块；操作栏本身不再单独画时间。
     showTime: Boolean = true,
     trailing: (@Composable RowScope.() -> Unit)? = null,
 ) {
