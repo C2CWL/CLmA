@@ -1826,7 +1826,7 @@ class ChatService(
             if (includeSearchTools) {
                 addAll(createSearchTools(settings))
             }
-            // Local groups (TimeInfo / AskUser / Tts / ImageGeneration / VideoGeneration /
+            // Local groups (TimeInfo / AskUser / Tts / Clipboard / ImageGeneration / VideoGeneration /
             // CostGuards / web_fetch|web_extract) — filter to the allowlist after resolve so
             // disabled LocalToolOption groups still stay off.
             addAll(ChatModeTools.filterTools(localToolsFull))
@@ -1917,7 +1917,7 @@ class ChatService(
         lastUserText: String = "",
     ): ChatToolSurface? {
         // 聊天模式：只保留 ChatModeTools 白名单里的工具（搜索 / 热记忆 / 时间 /
-        // ask_user / TTS / 图视频生成 / 会话检索 / 压缩 / token 用量），且仍受各自原有
+        // ask_user / TTS / 剪贴板 / 图视频生成 / 会话检索 / 压缩 / token 用量），且仍受各自原有
         // 开关约束；不走 progressive catalog，不装 MCP / workspace / 冷记忆 / skills 等。
         // Agent 模式（默认）保持历史全量行为。
         if (!conversation.agentModeEnabled) {

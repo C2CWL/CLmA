@@ -29,10 +29,11 @@ object ChatModeTools {
         "web_extract",
         // Hot memory (GenerationLoop / ChatToolFactory path)
         "memory_tool",
-        // Light local utilities (LocalToolOption.TimeInfo / AskUser / Tts)
+        // Light local utilities (LocalToolOption.TimeInfo / AskUser / Tts / Clipboard)
         "get_time_info",
         "ask_user",
         "text_to_speech",
+        "clipboard_tool",
         // App image / video generation (LocalToolOption.ImageGeneration / VideoGeneration)
         "generate_image",
         "edit_image",

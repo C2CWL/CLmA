@@ -3375,7 +3375,7 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="chat_agent_mode">Agent</string>
   <string name="chat_chat_mode">聊天</string>
   <string name="chat_agent_mode_toggle">Agent / 聊天模式</string>
-  <string name="chat_agent_mode_desc">Agent 模式可使用完整工具集（MCP、工作区、skills、浏览器等）。聊天模式仅保留：搜索、热记忆、时间、向用户提问、语音播报、图/视频生成、会话检索、上下文压缩、token 用量查询。</string>
+  <string name="chat_agent_mode_desc">Agent 模式可使用完整工具集（MCP、工作区、skills、浏览器等）。聊天模式仅保留：搜索、热记忆、时间、向用户提问、语音播报、剪贴板、图/视频生成、会话检索、上下文压缩、token 用量查询。</string>
   <string name="chat_agent_mode_on">已开启 Agent 模式</string>
   <string name="chat_agent_mode_off">已开启聊天模式</string>
 </resources>
