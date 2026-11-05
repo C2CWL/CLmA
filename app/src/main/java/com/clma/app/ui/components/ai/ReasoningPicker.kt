@@ -77,7 +77,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.clma.ai.core.ReasoningLevel
-import androidx.compose.ui.input.pointer.awaitPointerEvent
 import com.clma.app.data.datastore.findProvider
 import com.clma.ai.provider.nearestSupportedReasoningLevel
 import com.clma.ai.provider.supportedReasoningLevels
