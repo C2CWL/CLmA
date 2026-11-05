@@ -11,12 +11,14 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
+import com.clma.ai.core.MessageRole
 import com.clma.ai.core.Tool
 import com.clma.ai.provider.BuiltInTools
 import com.clma.ai.provider.Model
 import com.clma.ai.provider.ModelAbility
 import com.clma.ai.provider.TextGenerationParams
 import com.clma.ai.provider.stream.SseEvent
+import com.clma.ai.ui.GoogleThoughtMetadata
 import com.clma.ai.ui.ServerToolMetadata
 import com.clma.ai.ui.ServerToolProtocol
 import com.clma.ai.ui.ServerToolStatus
@@ -24,6 +26,7 @@ import com.clma.ai.ui.StreamChunkHandler
 import com.clma.ai.ui.UIMessage
 import com.clma.ai.ui.UIMessagePart
 import com.clma.ai.ui.metadataAs
+import com.clma.ai.ui.toMetadata
 import com.clma.ai.util.json
 import okhttp3.OkHttpClient
 import org.junit.Assert.assertEquals
@@ -161,6 +164,76 @@ class GoogleToolCombinationTest {
         )
     }
 
+    @Test
+    fun `unsigned function call gets the skip signature on gemini 3 only`() {
+        val messages = listOf(
+            UIMessage.user("save the weather"),
+            UIMessage(
+                role = MessageRole.ASSISTANT,
+                parts = listOf(
+                    UIMessagePart.Tool(
+                        toolCallId = "call-1",
+                        toolName = "save_weather",
+                        input = """{"city":"Shanghai"}""",
+                        output = listOf(UIMessagePart.Text("saved")),
+                    )
+                ),
+            ),
+        )
+
+        // Gemini 3 rejects a replayed functionCall without thoughtSignature - the documented
+        // escape hatch for calls it did not produce itself is this sentinel string.
+        val gemini3 = provider.buildCompletionRequestBody(
+            messages,
+            TextGenerationParams(model = toolModel(), tools = listOf(testTool())),
+        )
+        val call3 = firstFunctionCall(gemini3)
+        assertEquals(
+            "skip_thought_signature_validator",
+            call3["thoughtSignature"]!!.jsonPrimitive.content,
+        )
+
+        // Older models don't know the field, so it must not appear there.
+        val gemini25 = provider.buildCompletionRequestBody(
+            messages,
+            TextGenerationParams(model = toolModel(modelId = "gemini-2.5-flash"), tools = listOf(testTool())),
+        )
+        assertFalse(firstFunctionCall(gemini25).containsKey("thoughtSignature"))
+    }
+
+    @Test
+    fun `a real thought signature wins over the skip sentinel`() {
+        val messages = listOf(
+            UIMessage.user("save the weather"),
+            UIMessage(
+                role = MessageRole.ASSISTANT,
+                parts = listOf(
+                    UIMessagePart.Tool(
+                        toolCallId = "call-1",
+                        toolName = "save_weather",
+                        input = """{"city":"Shanghai"}""",
+                        output = listOf(UIMessagePart.Text("saved")),
+                        metadata = GoogleThoughtMetadata(thoughtSignature = "sig-real").toMetadata(),
+                    )
+                ),
+            ),
+        )
+
+        val call = firstFunctionCall(
+            provider.buildCompletionRequestBody(
+                messages,
+                TextGenerationParams(model = toolModel(), tools = listOf(testTool())),
+            )
+        )
+        assertEquals("sig-real", call["thoughtSignature"]!!.jsonPrimitive.content)
+    }
+
+    private fun firstFunctionCall(body: JsonObject): JsonObject =
+        body["contents"]!!.jsonArray
+            .flatMap { it.jsonObject["parts"]!!.jsonArray }
+            .first { it.jsonObject.containsKey("functionCall") }
+            .jsonObject
+
     private fun invokeBuildRequestBody(
         messages: List<UIMessage>,
         params: TextGenerationParams,
@@ -168,14 +241,24 @@ class GoogleToolCombinationTest {
         return provider.buildCompletionRequestBody(messages, params)
     }
 
-    private fun invokeBuildContents(messages: List<UIMessage>): JsonArray {
-        val method = GoogleProvider::class.java.getDeclaredMethod("buildContents", List::class.java)
+    private fun invokeBuildContents(
+        messages: List<UIMessage>,
+        requireThoughtSignatures: Boolean = false,
+    ): JsonArray {
+        val method = GoogleProvider::class.java.getDeclaredMethod(
+            "buildContents",
+            List::class.java,
+            Boolean::class.javaPrimitiveType,
+        )
         method.isAccessible = true
-        return method.invoke(provider, messages) as JsonArray
+        return method.invoke(provider, messages, requireThoughtSignatures) as JsonArray
     }
 
-    private fun toolModel(tools: Set<BuiltInTools> = emptySet()) = Model(
-        modelId = "gemini-3.7-flash",
+    private fun toolModel(
+        tools: Set<BuiltInTools> = emptySet(),
+        modelId: String = "gemini-3.7-flash",
+    ) = Model(
+        modelId = modelId,
         abilities = listOf(ModelAbility.TOOL),
         tools = tools,
     )

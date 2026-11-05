@@ -92,6 +92,15 @@ import kotlin.uuid.Uuid
 private const val TAG = "GoogleProvider"
 
 /**
+ * Gemini 3 会校验回放的每个 functionCall 是否带 thoughtSignature，缺了就 400
+ * (INVALID_ARGUMENT: Function call is missing a thought_signature in functionCall parts)，
+ * 整条会话无法继续。历史里的 functionCall 未必带签名：别的模型/客户端生成的、导入的会话、
+ * 文本解析出来的工具调用、以及压缩掉了带签名 thought part 的旧消息都可能是无签名的。
+ * 这类"不是本模型生成"的调用，官方给的绕过值就是这个哨兵字符串。真实签名永远优先。
+ */
+private const val SKIP_THOUGHT_SIGNATURE = "skip_thought_signature_validator"
+
+/**
  * Every category the generative-language API accepts on `safetySettings`.
  */
 val GOOGLE_SAFETY_CATEGORIES = listOf(
@@ -478,7 +487,11 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
         // Contents (user messages)
         put(
             "contents",
-            buildContents(messages)
+            buildContents(
+                messages,
+                // 只有 Gemini 3 系列强制校验 thought signature；老模型不认这个字段，别乱塞。
+                requireThoughtSignatures = ModelRegistry.GEMINI_3_SERIES.match(modelId = params.model.modelId),
+            )
         )
 
         // Client function tools and model built-in tools share the same array.
@@ -725,21 +738,27 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
         }
     }
 
-    private fun buildContents(messages: List<UIMessage>): JsonArray {
+    private fun buildContents(
+        messages: List<UIMessage>,
+        requireThoughtSignatures: Boolean,
+    ): JsonArray {
         return buildJsonArray {
             messages
                 .filter { it.role != MessageRole.SYSTEM && it.isValidToUpload() }
                 .forEach { message ->
                     if (message.role == MessageRole.ASSISTANT) {
-                        addModelMessage(message)
+                        addModelMessage(message, requireThoughtSignatures)
                     } else {
-                        addUserMessage(message)
+                        addUserMessage(message, requireThoughtSignatures)
                     }
                 }
         }
     }
 
-    private fun JsonArrayBuilder.addModelMessage(message: UIMessage) {
+    private fun JsonArrayBuilder.addModelMessage(
+        message: UIMessage,
+        requireThoughtSignatures: Boolean,
+    ) {
         val groups = groupPartsByToolBoundary(message.parts)
         val partsBuffer = mutableListOf<JsonObject>()
         // Forward thoughtSignature from any preceding Reasoning part to the next Tool
@@ -763,7 +782,8 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
                                 ?.let { carriedSig = it }
                         }
                     }
-                    group.parts.flatMap { it.toGoogleParts() }.forEach { partsBuffer.add(it) }
+                    group.parts.flatMap { it.toGoogleParts(requireThoughtSignatures) }
+                        .forEach { partsBuffer.add(it) }
                 }
 
                 is PartGroup.Tools -> {
@@ -775,7 +795,7 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
                         ) {
                             tool.copy(metadata = GoogleThoughtMetadata(thoughtSignature = carriedSig).toMetadata())
                         } else tool
-                        partsBuffer.add(effective.toFunctionCallPart())
+                        partsBuffer.add(effective.toFunctionCallPart(requireThoughtSignatures))
                     }
                     carriedSig = null  // consumed by this tool group
 
@@ -809,8 +829,11 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
         }
     }
 
-    private fun JsonArrayBuilder.addUserMessage(message: UIMessage) {
-        val parts = message.parts.flatMap { it.toGoogleParts() }
+    private fun JsonArrayBuilder.addUserMessage(
+        message: UIMessage,
+        requireThoughtSignatures: Boolean,
+    ) {
+        val parts = message.parts.flatMap { it.toGoogleParts(requireThoughtSignatures) }
         // Skip the turn entirely if every part was dropped (e.g. an unencodable image) - an
         // empty "parts" array is an invalid Google payload.
         if (parts.isEmpty()) return
@@ -820,7 +843,7 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
         })
     }
 
-    private fun UIMessagePart.toGoogleParts(): List<JsonObject> = when (this) {
+    private fun UIMessagePart.toGoogleParts(requireThoughtSignatures: Boolean): List<JsonObject> = when (this) {
         is UIMessagePart.ServerTool -> toGoogleServerToolParts()
         else -> listOfNotNull(toGooglePart())
     }
@@ -901,7 +924,7 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
         Log.w(TAG, "toGooglePart: dropping unencodable $partType part, url scheme=$scheme")
     }
 
-    private fun UIMessagePart.Tool.toFunctionCallPart() = buildJsonObject {
+    private fun UIMessagePart.Tool.toFunctionCallPart(requireThoughtSignature: Boolean) = buildJsonObject {
         put("functionCall", buildJsonObject {
             if (toolCallId.isNotBlank()) {
                 put("id", toolCallId)
@@ -911,9 +934,11 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
             put("args", com.clma.ai.util.redactSecrets(inputAsJson()))
             put("id", toolCallId)
         })
-        metadataAs<GoogleThoughtMetadata>()?.thoughtSignature?.let {
-            put("thoughtSignature", it)
-        }
+        // 真实签名优先；没有签名（别处生成/导入/文本解析出来的调用）时，Gemini 3 只接受哨兵值。
+        val thoughtSignature = metadataAs<GoogleThoughtMetadata>()?.thoughtSignature
+            ?.takeIf { it.isNotBlank() }
+            ?: SKIP_THOUGHT_SIGNATURE.takeIf { requireThoughtSignature }
+        thoughtSignature?.let { put("thoughtSignature", it) }
     }
 
     private fun UIMessagePart.Tool.toFunctionResponsePart() = buildJsonObject {
