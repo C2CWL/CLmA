@@ -834,7 +834,8 @@ class ClaudeProvider(private val client: OkHttpClient, context: Context? = null)
         put("id", toolCallId)
         put("name", toolName)
         // redactSecrets: password / private_key / token 等不得回灌给云端模型。
-        put("input", com.clma.ai.util.redactSecrets(inputAsJson()))
+        // input 必须是对象：Anthropic 对非对象的 tool_use.input 直接拒收整个会话。
+        put("input", com.clma.ai.util.redactSecrets(inputAsJsonObject()))
     }
 
     private fun UIMessagePart.Tool.toToolResultBlock() = buildJsonObject {

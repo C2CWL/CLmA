@@ -474,6 +474,40 @@ class ClaudeRequestMessageTest {
         assertEquals("Hello, how are you?", textBlock?.get("text")?.jsonPrimitive?.content)
     }
 
+    @Test
+    fun `non-object tool input must be sent as an empty object`() {
+        // 历史里可能存着 "null"、数组或标量（导入的会话、模型直出的怪参数）。
+        // Anthropic 要求 tool_use.input 是对象，缺字段或 null 会让整个请求被拒收。
+        val assistantMessage = UIMessage(
+            role = MessageRole.ASSISTANT,
+            parts = listOf(
+                createExecutedTool("call_null", "tool_null", "null", "ok"),
+                createExecutedTool("call_array", "tool_array", "[1,2]", "ok"),
+                createExecutedTool("call_scalar", "tool_scalar", "\"text\"", "ok"),
+                createExecutedTool("call_blank", "tool_blank", "", "ok"),
+            )
+        )
+
+        val result = invokeBuildMessages(
+            listOf(UIMessage.user("go"), assistantMessage)
+        )
+
+        val toolUseInputs = result.flatMap { msg ->
+            msg.jsonObject["content"]?.jsonArray.orEmpty()
+                .filter { it.jsonObject["type"]?.jsonPrimitive?.content == "tool_use" }
+                .map { it.jsonObject }
+        }
+
+        assertEquals(4, toolUseInputs.size)
+        toolUseInputs.forEach { block ->
+            val input = block["input"]
+            assertTrue(
+                "tool_use ${block["id"]?.jsonPrimitive?.content} must carry an object input, got $input",
+                input is kotlinx.serialization.json.JsonObject
+            )
+        }
+    }
+
     // ==================== Helper Functions ====================
 
     private fun createExecutedTool(

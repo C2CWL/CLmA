@@ -619,9 +619,9 @@ class ResponseAPI(
                             put("type", "function_call")
                             put("call_id", tool.toolCallId)
                             put("name", tool.toolName)
-                            // 使用 inputAsJson() 归一化，避免流式中断导致的残缺 JSON 被发送。
+                            // 归一化：残缺 JSON 与非对象入参一律退化为 {}，避免上游拒收整个会话。
                             // redactSecrets: password / private_key / token 等不得回灌给云端模型。
-                            put("arguments", com.clma.ai.util.redactSecrets(tool.inputAsJson()).toString())
+                            put("arguments", com.clma.ai.util.redactSecrets(tool.inputAsJsonObject()).toString())
                         })
                     }
                     group.tools.forEach { tool ->
