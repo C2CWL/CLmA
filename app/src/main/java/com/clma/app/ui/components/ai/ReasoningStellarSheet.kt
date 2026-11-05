@@ -71,11 +71,11 @@ private data class FieldStar(
 internal fun ReasoningStellarSheet(
     currentLevel: ReasoningLevel,
     onSelectLevel: (ReasoningLevel) -> Unit,
+    levels: List<ReasoningLevel> = ReasoningLevel.entries,
     modifier: Modifier = Modifier,
 ) {
     val haptic = LocalHapticFeedback.current
-    val levels = ReasoningLevel.entries
-    val ordinal = levels.indexOf(currentLevel).coerceAtLeast(0)
+    val ordinal = levels.indexOf(currentLevel).let { if (it >= 0) it else 0 }
 
     Column(
         modifier = modifier.fillMaxWidth(),

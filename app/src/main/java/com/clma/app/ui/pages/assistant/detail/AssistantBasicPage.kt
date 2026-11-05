@@ -530,6 +530,7 @@ internal fun AssistantBasicContent(
                             vm.updateModelServiceTier(modelId, tier)
                         }
                     },
+                    model = chatModel,
                 )
             }
             HorizontalDivider()

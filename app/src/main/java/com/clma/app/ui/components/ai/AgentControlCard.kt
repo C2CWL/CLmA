@@ -51,9 +51,6 @@ import org.koin.compose.koinInject
 import kotlin.math.roundToInt
 import kotlin.uuid.Uuid
 
-private val levels = ReasoningLevel.entries
-private val levelCount = levels.size
-
 /**
  * The chat model sheet's control bubble (拍板 2026-10-16): approval mode and sub-agent dispatch
  * posture chips on the left, the thinking-depth word (the only per-level-coloured element) on
