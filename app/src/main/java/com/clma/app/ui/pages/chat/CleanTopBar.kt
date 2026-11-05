@@ -55,6 +55,8 @@ import dev.chrisbanes.haze.glass.hazeGlass
 import kotlinx.coroutines.launch
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Cancel01
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.SlidersHorizontal
 import me.rerere.hugeicons.stroke.LeftToRightListBullet
 import me.rerere.hugeicons.stroke.PlusSign
 import com.clma.app.R
@@ -97,7 +99,7 @@ import org.koin.androidx.compose.koinViewModel
  * (same token aggregation as the regular bar, see [conversationUsedTokens]). Only the
  * model name may ellipsize; the token count is its own text and always shows,
  * compacted per locale ([cleanTopBarTokenText]). Taps do the same as the regular bar: the title
- * renames, the buttons open the drawer, toggle the preview list and start a new chat. The
+ * renames, the buttons open the drawer, open conversation settings (or exit message outline) and start a new chat. The
  * buttons are a size smaller than the regular bar's ([CLEAN_TOP_BAR_BUTTON_DP] touch,
  * [CLEAN_TOP_BAR_ICON_DP] icon), leaving the title more room.
  */
@@ -109,7 +111,8 @@ internal fun CleanTopBar(
     drawerState: DrawerState,
     bigScreen: Boolean,
     previewMode: Boolean,
-    onClickMenu: () -> Unit,
+    onOpenConversationSettings: () -> Unit,
+    onExitPreview: () -> Unit,
     onNewChat: () -> Unit,
     onNewTemporaryChat: () -> Unit = {},
 ) {
@@ -270,9 +273,14 @@ internal fun CleanTopBar(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     ModernTopBarButton(
-                        icon = if (previewMode) HugeIcons.Cancel01 else HugeIcons.LeftToRightListBullet,
-                        contentDescription = stringResource(R.string.accessibility_chat_options),
-                        onClick = onClickMenu,
+                        icon = if (previewMode) HugeIcons.Cancel01 else Lucide.SlidersHorizontal,
+                        contentDescription = stringResource(
+                            if (previewMode) R.string.chat_conversation_settings_exit_preview
+                            else R.string.chat_conversation_settings_a11y,
+                        ),
+                        onClick = {
+                            if (previewMode) onExitPreview() else onOpenConversationSettings()
+                        },
                     )
                     Box {
                         ModernTopBarButton(
@@ -289,10 +297,18 @@ internal fun CleanTopBar(
                     }
                 }
             } else CleanTopBarButtonSize {
-                IconButton(onClick = onClickMenu, modifier = Modifier.size(CLEAN_TOP_BAR_BUTTON_DP.dp)) {
+                IconButton(
+                    onClick = {
+                        if (previewMode) onExitPreview() else onOpenConversationSettings()
+                    },
+                    modifier = Modifier.size(CLEAN_TOP_BAR_BUTTON_DP.dp),
+                ) {
                     Icon(
-                        if (previewMode) HugeIcons.Cancel01 else HugeIcons.LeftToRightListBullet,
-                        stringResource(R.string.accessibility_chat_options),
+                        if (previewMode) HugeIcons.Cancel01 else Lucide.SlidersHorizontal,
+                        stringResource(
+                            if (previewMode) R.string.chat_conversation_settings_exit_preview
+                            else R.string.chat_conversation_settings_a11y,
+                        ),
                         modifier = Modifier.size(CLEAN_TOP_BAR_ICON_DP.dp),
                     )
                 }
