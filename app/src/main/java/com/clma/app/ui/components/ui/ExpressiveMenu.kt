@@ -40,16 +40,17 @@ import me.rerere.hugeicons.stroke.Tick02
 
 /** Shared bubble treatment, including menus hosted outside the main settings provider. */
 object AppMenuDefaults {
-    val Shape = RoundedCornerShape(16.dp)
+    val Shape = RoundedCornerShape(14.dp)
     val ItemShape = RoundedCornerShape(10.dp)
     val HorizontalPadding = 6.dp
-    val ShadowElevation = 4.dp
+    val ShadowElevation = 8.dp
 
     val containerColor: Color
         @Composable get() = MaterialTheme.colorScheme.surfaceContainerLowest
 
-    val border: BorderStroke
-        @Composable get() = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
+    /** No hairline — filled surface + shadow reads cleaner than an outlined bubble. */
+    val border: BorderStroke?
+        @Composable get() = null
 }
 
 /** One row in an [AppDropdownMenu]; null [selected] denotes an action, not a choice. */
