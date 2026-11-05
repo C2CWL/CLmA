@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.clma.app.R
 import com.clma.app.data.model.AssistantBackgroundMode
+import com.clma.app.data.model.AssistantBackgroundStyle
 import com.clma.app.data.files.FilesManager
 import com.clma.app.ui.components.ui.FormItem
 import com.clma.app.ui.components.ui.Select
@@ -321,6 +322,54 @@ fun BackgroundModeSelector(
                         when (it) {
                             AssistantBackgroundMode.AUTO -> R.string.assistant_page_background_mode_auto
                             AssistantBackgroundMode.GENERAL -> R.string.assistant_page_background_mode_general
+                        }
+                    )
+                },
+                containerColor = CustomColors.cardColorsOnSurfaceContainer.containerColor,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                modifier = Modifier.width(150.dp),
+            )
+        },
+    )
+}
+
+
+/**
+ * Classic (original flat / mesh) vs Starfield (v4 soft fog / glowing stars).
+ * Independent of wallpaper mode and of the gradient toggle: it only changes how
+ * generated backdrops look when there is no custom photo (or when gradient is on).
+ */
+@Composable
+fun BackgroundStyleSelector(
+    modifier: Modifier = Modifier,
+    style: AssistantBackgroundStyle,
+    onStyleChange: (AssistantBackgroundStyle) -> Unit,
+) {
+    FormItem(
+        modifier = modifier,
+        label = {
+            Text(stringResource(R.string.assistant_page_background_style))
+        },
+        description = {
+            Text(
+                stringResource(
+                    when (style) {
+                        AssistantBackgroundStyle.CLASSIC -> R.string.assistant_page_background_style_classic_desc
+                        AssistantBackgroundStyle.STARFIELD -> R.string.assistant_page_background_style_starfield_desc
+                    }
+                )
+            )
+        },
+        tail = {
+            Select(
+                options = AssistantBackgroundStyle.entries,
+                selectedOption = style,
+                onOptionSelected = onStyleChange,
+                optionToString = {
+                    stringResource(
+                        when (it) {
+                            AssistantBackgroundStyle.CLASSIC -> R.string.assistant_page_background_style_classic
+                            AssistantBackgroundStyle.STARFIELD -> R.string.assistant_page_background_style_starfield
                         }
                     )
                 },
