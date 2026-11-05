@@ -251,10 +251,12 @@ private fun HubLeafGroup(
     status: HubStatusSource,
     onOpen: (SettingsHubItemId) -> Unit,
 ) {
+    // Resolve composable summaries before entering CardGroup's non-@Composable DSL builder.
+    val rows = itemIds.map { itemId ->
+        Triple(itemId, settingsHubItems.getValue(itemId), hubItemSummary(itemId, settings, status))
+    }
     CardGroup {
-        itemIds.forEach { itemId ->
-            val def = settingsHubItems.getValue(itemId)
-            val summary = hubItemSummary(itemId, settings, status)
+        rows.forEach { (itemId, def, summary) ->
             item(
                 onClick = { onOpen(itemId) },
                 leadingContent = {
