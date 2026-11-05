@@ -510,7 +510,7 @@ private fun hubItemSummary(id: SettingsHubItemId, settings: Settings, status: Hu
                 ChatLayout.GEMINI -> R.string.setting_display_page_chat_layout_gemini
                 ChatLayout.ORIGINAL -> R.string.setting_display_page_chat_layout_original
                 ChatLayout.CLEAN -> R.string.setting_display_page_chat_layout_clean
-                ChatLayout.CLAUDE -> R.string.setting_display_page_chat_layout_claude
+                ChatLayout.MODERN -> R.string.setting_display_page_chat_layout_modern
             }
         )
         SettingsHubItemId.INPUT -> stringResource(

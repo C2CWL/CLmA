@@ -281,25 +281,22 @@ fun ChatInput(
         hasAttachments = state.messageContent.isNotEmpty(),
         multiLineDraft = multiLineDraft,
     )
-    // Every layout rests as the one-line pill and opens the same way. Once open, CLEAN / CLAUDE
+    // Every layout rests as the one-line pill and opens the same way. Once open, CLEAN / MODERN
     // put the full-width field on top and the tools underneath, with "+" on the right next to
     // send; they keep their own button order and corners while collapsed too. (They used to stay
     // open all the time, which made the empty box ~44dp taller than ORIGINAL's.)
     val chatLayout = settings.displaySetting.effectiveChatLayout
     val cleanLayout = chatLayout != ChatLayout.ORIGINAL
-    val claudeLayout = chatLayout == ChatLayout.CLAUDE
     // Gemini：同样走扁平顶栏/扁平输入条，但收起为胶囊、展开为圆角容器，不做玻璃。
     val geminiLayout = chatLayout == ChatLayout.GEMINI
-    // 现代（存储值仍是 CLEAN）：20dp 悬浮卡片、无描边、柔和阴影；底部工具栏方形按钮 + 圆形模型胶囊。
-    val modernLayout = chatLayout == ChatLayout.CLEAN
-    // Claude layout prefers a solid card (no glass) so the 24dp composer reads like paper.
+    // 现代：20dp 悬浮卡片、无描边、柔和阴影；底部工具栏方形按钮 + 圆形模型胶囊。
+    val modernLayout = chatLayout == ChatLayout.MODERN
     // 「模糊效果」(DisplaySetting.enableBlurEffect) 只负责这一条输入条（见设置页文案）。
     // 之前这里无视该开关、永远走玻璃，开关等于摆设；现在关掉即退回实心卡片，
     // 这同时是一条性能逃生阀：玻璃要每帧抓背景 + 做 RenderEffect，在有壁纸时很贵。
     val useGlass = settings.displaySetting.enableBlurEffect && when (chatLayout) {
         ChatLayout.ORIGINAL -> true
-        ChatLayout.CLEAN -> settings.displaySetting.cleanLayoutGlass
-        ChatLayout.CLAUDE -> false
+        ChatLayout.CLEAN, ChatLayout.MODERN -> settings.displaySetting.cleanLayoutGlass
         ChatLayout.GEMINI -> false
     }
     // Only boolean draft changes affect the surrounding composer.
@@ -308,11 +305,10 @@ fun ChatInput(
     }
     val expanded = naturallyExpanded
     // Animate the corner along with the layout change below, so the pill does not snap between
-    // its 28dp and 16dp radii while the bar is growing. Clean = flatter 14dp; Claude = 24dp card.
+    // its 28dp and 16dp radii while the bar is growing. Clean = flatter 14dp; Modern = 20dp card.
     val containerCorner by animateDpAsState(
         targetValue = when {
             geminiLayout -> if (expanded) 24.dp else 28.dp
-            claudeLayout -> 24.dp
             modernLayout -> ModernCardCorner
             cleanLayout -> 14.dp
             expanded -> 16.dp
@@ -322,14 +318,14 @@ fun ChatInput(
         label = "chatInputCorner",
     )
     val containerShape = RoundedCornerShape(containerCorner)
-    // Clean/Claude non-glass branch: a flat card with a hairline. Fill and rim come from the
+    // Clean non-glass branch: a flat card with a hairline. Fill and rim come from the
     // shared clean-panel helpers, so the header above is made of exactly the same pair.
     // The opacity slider scales both materials: the flat fill directly; glass through
     // rikkaGlassStyle's tintStrength plus cleanGlassFill laid over the backdrop (0 = clear).
     val darkTheme = LocalDarkMode.current
     val cleanOpacity = if (cleanLayout) settings.displaySetting.cleanLayoutBottomOpacity else 1f
     // Gemini：输入条是一块安静的实色胶囊（surfaceContainerHigh），不跟随简洁布局的面板浓度
-    // 滑块，也没有描边——那是 CLEAN / CLAUDE 的卡片语言。
+    // 滑块，也没有描边——那是 CLEAN 的卡片语言。
     val modernBase = modernPanelBase()
     val cleanCardColor = when {
         geminiLayout -> MaterialTheme.colorScheme.surfaceContainerHigh
@@ -808,7 +804,7 @@ private fun SendButton(
     modifier: Modifier = Modifier,
 ) {
     val showStop = loading && empty
-    // Every layout (incl. 暖阳) follows the theme's primary, so the visual style decides the
+    // Every layout follows the theme's primary, so the visual style decides the
     // send colour: coral under Claude warm, blue under Gemini cool.
     val containerColor = when {
         showStop -> MaterialTheme.colorScheme.errorContainer

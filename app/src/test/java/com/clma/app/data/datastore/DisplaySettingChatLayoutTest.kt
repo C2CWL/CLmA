@@ -74,40 +74,57 @@ class DisplaySettingChatLayoutTest {
         assertEquals(ChatLayout.GEMINI, gemini.effectiveChatLayout)
         assertTrue(gemini.usesGeminiChatUi)
 
-        // CLAUDE maps cleanLayout=true so an older build falls back to the closer chrome.
-        val claude = DisplaySetting().withChatLayout(ChatLayout.CLAUDE)
-        assertEquals(ChatLayout.CLAUDE, claude.chatLayout)
-        assertTrue(claude.cleanLayout)
-        assertEquals(ChatLayout.CLAUDE, claude.effectiveChatLayout)
+        // MODERN maps cleanLayout=true so an older build falls back to the closer chrome.
+        val modern = DisplaySetting().withChatLayout(ChatLayout.MODERN)
+        assertEquals(ChatLayout.MODERN, modern.chatLayout)
+        assertTrue(modern.cleanLayout)
+        assertEquals(ChatLayout.MODERN, modern.effectiveChatLayout)
     }
 
     @Test
     fun `explicit chatLayout round-trips and wins over the legacy switch`() {
         val json = JsonInstant.encodeToString(
-            DisplaySetting(chatLayout = ChatLayout.CLAUDE, cleanLayout = false),
+            DisplaySetting(chatLayout = ChatLayout.MODERN, cleanLayout = false),
         )
         val decoded = JsonInstant.decodeFromString<DisplaySetting>(json)
-        assertEquals(ChatLayout.CLAUDE, decoded.chatLayout)
+        assertEquals(ChatLayout.MODERN, decoded.chatLayout)
         // Explicit chatLayout wins even if the legacy flag disagrees.
-        assertEquals(ChatLayout.CLAUDE, decoded.effectiveChatLayout)
+        assertEquals(ChatLayout.MODERN, decoded.effectiveChatLayout)
     }
 
     @Test
     fun `picking a loading indicator style does not touch the chat layout`() {
-        val setting = DisplaySetting(chatLayout = ChatLayout.CLAUDE)
+        val setting = DisplaySetting(chatLayout = ChatLayout.MODERN)
             .withLoadingIndicatorStyle(LoadingIndicatorStyle.TWIN_ORBIT)
         assertEquals(LoadingIndicatorStyle.TWIN_ORBIT, setting.effectiveLoadingIndicatorStyle)
-        assertEquals(ChatLayout.CLAUDE, setting.effectiveChatLayout)
+        assertEquals(ChatLayout.MODERN, setting.effectiveChatLayout)
     }
 
     @Test
-    fun `modern chrome applies only to the stored clean value`() {
+    fun `modern chrome applies only to the modern layout`() {
+        val modern = DisplaySetting(chatLayout = ChatLayout.MODERN)
+        assertTrue(modern.usesModernChatUi)
+        // 简洁 renders its own (old) look again, never the modern chrome.
+        assertFalse(DisplaySetting(chatLayout = ChatLayout.CLEAN).usesModernChatUi)
+        assertFalse(DisplaySetting(cleanLayout = true).usesModernChatUi)
+        assertFalse(DisplaySetting().usesModernChatUi)
+        assertFalse(DisplaySetting(chatLayout = ChatLayout.GEMINI).usesModernChatUi)
+    }
+
+    @Test
+    fun `stored clean value still decodes to clean`() {
         val decoded = JsonInstant.decodeFromString<DisplaySetting>("""{"chatLayout":"clean"}""")
         assertEquals(ChatLayout.CLEAN, decoded.effectiveChatLayout)
+        assertFalse(decoded.usesModernChatUi)
+    }
+
+    @Test
+    fun `retired warm value claude decodes to modern`() {
+        // 暖阳 was stored as "claude"; 现代 took that slot, so those installs land on 现代.
+        val decoded = JsonInstant.decodeFromString<DisplaySetting>("""{"chatLayout":"claude"}""")
+        assertEquals(ChatLayout.MODERN, decoded.chatLayout)
+        assertEquals(ChatLayout.MODERN, decoded.effectiveChatLayout)
         assertTrue(decoded.usesModernChatUi)
-        assertTrue(DisplaySetting(cleanLayout = true).usesModernChatUi)
-        assertFalse(DisplaySetting().usesModernChatUi)
-        assertFalse(DisplaySetting(chatLayout = ChatLayout.CLAUDE).usesModernChatUi)
-        assertFalse(DisplaySetting(chatLayout = ChatLayout.GEMINI).usesModernChatUi)
+        assertTrue(JsonInstant.encodeToString(DisplaySetting(chatLayout = ChatLayout.MODERN)).contains("\"claude\""))
     }
 }

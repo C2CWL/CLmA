@@ -794,7 +794,7 @@ private fun ChatPageContent(
                     )
                     val bottomFade = bottomBarFade(darkTheme = darkTheme, photoShown = photoShown)
                     val fadeColor = MaterialTheme.colorScheme.background
-                    // CLEAN 与 CLAUDE 都走扁平顶栏 + 面板，不需要顶部溶解。
+                    // CLEAN 与 MODERN 都走顶栏面板，不需要顶部溶解。
                     val chatLayout = setting.displaySetting.effectiveChatLayout
                     val cleanLayout = chatLayout != ChatLayout.ORIGINAL
                     val topDissolve = !cleanLayout
@@ -810,9 +810,9 @@ private fun ChatPageContent(
                     } else {
                         innerPadding.calculateTopPadding() + 64.dp + topFadeExtension
                     }
-                    // 现代（CLEAN）的顶栏是一块悬浮卡片，和屏幕顶边之间留了状态栏那一条；
+                    // 现代的顶栏是一块悬浮卡片，和屏幕顶边之间留了状态栏那一条；
                     // 给那一条一层很短的淡出，免得消息文字滚到状态栏图标底下。
-                    if (chatLayout == ChatLayout.CLEAN) {
+                    if (chatLayout == ChatLayout.MODERN) {
                         val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
                         Box(
                             modifier = Modifier

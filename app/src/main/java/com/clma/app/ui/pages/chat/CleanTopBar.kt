@@ -126,8 +126,8 @@ internal fun CleanTopBar(
     val density = LocalDensity.current
     val titleStyle = MaterialTheme.typography.titleMedium
     val subtitleStyle = MaterialTheme.typography.labelSmall
-    // 现代（存储值 CLEAN）：悬浮圆角顶栏，按钮是浅色圆角小方块，副标题是「模型 · 供应商」加绿点。
-    val modern = settings.displaySetting.effectiveChatLayout == ChatLayout.CLEAN
+    // 现代：悬浮圆角顶栏，按钮是浅色圆角小方块，副标题是「模型 · 供应商」加绿点。
+    val modern = settings.displaySetting.effectiveChatLayout == ChatLayout.MODERN
     val showSubtitle = cleanTopBarShowsSubtitle(
         barHeightDp = barHeight,
         titleLineDp = lineHeightDp(titleStyle, density),
@@ -391,11 +391,11 @@ internal fun CleanTopBarPanel(
     content: @Composable () -> Unit,
 ) {
     val darkTheme = LocalDarkMode.current
-    if (settings.displaySetting.effectiveChatLayout == ChatLayout.CLEAN) {
+    if (settings.displaySetting.effectiveChatLayout == ChatLayout.MODERN) {
         ModernTopBarPanel(settings = settings, hazeState = hazeState, content = content)
         return
     }
-    // CLAUDE (暖阳) keeps a solid paper header; glass is CLEAN-only.
+    // Glass here is CLEAN-only (MODERN draws its own floating panel above).
     val glass = settings.displaySetting.effectiveChatLayout == ChatLayout.CLEAN &&
         settings.displaySetting.cleanLayoutGlass
     // Gemini (默认) 的顶栏是纯文字：没有面板填充、没有描边、也不切圆角，标题直接浮在内容之上。
