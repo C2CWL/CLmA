@@ -161,14 +161,10 @@ fun ChatInput(
     settings: Settings,
     hazeState: HazeState,
     onUpdateAssistant: (Assistant) -> Unit,
-    enableSearch: Boolean,
     conversationChatModelId: Uuid? = null,
-    conversationId: Uuid? = null,
     onUpdateChatModel: (Model) -> Unit,
     onUpdateModelReasoningLevel: (Model, ReasoningLevel) -> Unit,
     onUpdateModelServiceTier: (Model, String?) -> Unit,
-    onUpdateSearchMode: (SearchMode) -> Unit,
-    onUpdateSearchService: (Int) -> Unit,
     onMoreClick: () -> Unit,
     onCancelClick: () -> Unit,
     onSendClick: () -> Unit,
@@ -497,14 +493,10 @@ fun ChatInput(
                                     settings = settings,
                                     assistant = assistant,
                                     conversationChatModelId = conversationChatModelId,
-                                    conversationId = conversationId,
                                     expanded = expanded,
                                     onUpdateChatModel = onUpdateChatModel,
                                     onUpdateModelReasoningLevel = onUpdateModelReasoningLevel,
                                     onUpdateModelServiceTier = onUpdateModelServiceTier,
-                                    enableSearch = enableSearch,
-                                    onUpdateSearchMode = onUpdateSearchMode,
-                                    onUpdateSearchService = onUpdateSearchService,
                                 )
 
                                 // Clean layout groups the tools on the left: model, then reasoning.
@@ -632,21 +624,17 @@ internal fun compactModelLabel(name: String): String =
  * Model selection entry; thinking depth has its own button beside it.
  * Collapsed, only the icon: the name was what wrapped a five-character hint onto two lines.
  * The name comes back once the bar opens and the field has its own row. The sheet is the model
- * list with the search and agent controls on top.
+ * list (conversation search/agent controls live in the top-bar settings panel).
  */
 @Composable
 private fun ModelReasoningChip(
     settings: Settings,
     assistant: Assistant,
     conversationChatModelId: Uuid? = null,
-    conversationId: Uuid? = null,
     expanded: Boolean,
     onUpdateChatModel: (Model) -> Unit,
     onUpdateModelReasoningLevel: (Model, ReasoningLevel) -> Unit,
     onUpdateModelServiceTier: (Model, String?) -> Unit,
-    enableSearch: Boolean = false,
-    onUpdateSearchMode: ((SearchMode) -> Unit)? = null,
-    onUpdateSearchService: ((Int) -> Unit)? = null,
 ) {
     val model = settings.resolveChatModel(conversationChatModelId, assistant.id)
     val effectiveModelId = model?.id
@@ -713,16 +701,6 @@ private fun ModelReasoningChip(
     ModelListSheet(
         state = modelListState,
         onSelect = onUpdateChatModel,
-        header = {
-            AgentControlCard(
-                conversationId = conversationId,
-                enableSearch = enableSearch,
-                settings = settings,
-                model = model,
-                onUpdateSearchMode = onUpdateSearchMode,
-                onUpdateSearchService = onUpdateSearchService,
-            )
-        },
     )
 }
 

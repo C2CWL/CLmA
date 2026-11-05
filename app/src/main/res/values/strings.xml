@@ -3404,4 +3404,19 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="chat_agent_mode_desc">Agent mode can use the full tool set (MCP, workspace, skills, browser, and so on). Chat mode only keeps search, hot memory, time, ask-user, TTS, clipboard, image/video generation, chat history search, context compaction, and token usage checks.</string>
   <string name="chat_agent_mode_on">Agent mode on</string>
   <string name="chat_agent_mode_off">Chat mode on</string>
+
+  <!-- Per-conversation settings panel (top bar) -->
+  <string name="chat_conversation_settings">Conversation settings</string>
+  <string name="chat_conversation_settings_a11y">Conversation settings</string>
+  <string name="chat_conversation_settings_exit_preview">Exit message outline</string>
+  <string name="chat_conversation_settings_group_chat">Conversation</string>
+  <string name="chat_conversation_settings_group_general">General</string>
+  <string name="chat_conversation_settings_group_agent">Agent</string>
+  <string name="chat_conversation_settings_message_outline">Message outline</string>
+  <string name="chat_conversation_settings_message_outline_desc">Jump to a message in this chat</string>
+  <string name="chat_conversation_settings_approval_modes">Auto / General / Manual</string>
+  <string name="chat_conversation_settings_dispatch_range">Never → Unleashed</string>
+  <string name="chat_conversation_settings_hint_agent">Sidebar is in Agent mode. Approval, dispatch, and tool grants mainly apply here; Chat mode keeps a lighter allowlist (search, hot memory, time, ask-user, TTS, clipboard, image/video generation, chat history search, context compaction, token usage).</string>
+  <string name="chat_conversation_settings_hint_chat">Sidebar is in Chat mode. Only the light allowlist is available: search, hot memory, time, ask-user, TTS, clipboard, image/video generation, chat history search, context compaction, and token usage checks.</string>
+
 </resources>

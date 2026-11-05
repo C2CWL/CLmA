@@ -1,6 +1,8 @@
 package com.clma.app.ui.components.ai
 
 import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -14,15 +16,16 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -74,6 +77,7 @@ import me.rerere.hugeicons.stroke.Cpu
 import me.rerere.hugeicons.stroke.Cancel01
 import me.rerere.hugeicons.stroke.DragDropHorizontal
 import me.rerere.hugeicons.stroke.Favourite
+import me.rerere.hugeicons.stroke.MoreVertical
 import me.rerere.hugeicons.stroke.Image03
 import me.rerere.hugeicons.stroke.MusicNote03
 import me.rerere.hugeicons.stroke.Search01
@@ -500,13 +504,19 @@ private fun ColumnScope.ModelList(
 
         if (favoriteModels.isNotEmpty()) {
             stickyHeader {
-                Text(
-                    text = stringResource(R.string.model_list_favorite),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier
-                        .padding(bottom = 4.dp, top = 8.dp)
-                )
+                Surface(
+                    color = MaterialTheme.colorScheme.surface,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(
+                        text = stringResource(R.string.model_list_favorite),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .padding(horizontal = 8.dp)
+                            .padding(bottom = 4.dp, top = 8.dp),
+                    )
+                }
             }
 
             items(
@@ -569,25 +579,30 @@ private fun ColumnScope.ModelList(
 
         providers.fastForEach { providerSetting ->
             stickyHeader(key = "header:${providerSetting.id}") {
-                Row(
-                    modifier = Modifier
-                        .padding(horizontal = 8.dp)
-                        .padding(bottom = 4.dp, top = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                Surface(
+                    color = MaterialTheme.colorScheme.surface,
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text(
-                        text = providerSetting.name,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
+                    Row(
+                        modifier = Modifier
+                            .padding(horizontal = 8.dp)
+                            .padding(bottom = 4.dp, top = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = providerSetting.name,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
 
-                    Spacer(modifier = Modifier.weight(1f))
+                        Spacer(modifier = Modifier.weight(1f))
 
-                    ProviderBalanceText(
-                        providerSetting = providerSetting,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
+                        ProviderBalanceText(
+                            providerSetting = providerSetting,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
 
@@ -677,20 +692,51 @@ private fun ColumnScope.ModelList(
             state = providerBadgeListState
         ) {
             items(providers, key = { it.id }) { provider ->
-                AssistChip(
+                val selected = remember(lazyListState.firstVisibleItemIndex, providerPositions, provider.id) {
+                    val index = lazyListState.firstVisibleItemIndex
+                    val current = providerPositions.entries.findLast { index > it.value }
+                    current?.key == provider.id
+                }
+                Surface(
                     onClick = {
                         val position = providerPositions[provider.id] ?: 0
                         coroutineScope.launch {
                             lazyListState.animateScrollToItem(position)
                         }
                     },
-                    label = {
-                        Text(provider.name)
+                    shape = RoundedCornerShape(10.dp),
+                    color = if (selected) {
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                    } else {
+                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
                     },
-                    leadingIcon = {
+                    contentColor = if (selected) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                    border = if (selected) {
+                        androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
+                        )
+                    } else null,
+                    tonalElevation = 0.dp,
+                    modifier = Modifier.height(32.dp),
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
                         AutoAIIcon(name = provider.name, modifier = Modifier.size(16.dp))
-                    },
-                )
+                        Text(
+                            text = provider.name,
+                            style = MaterialTheme.typography.labelMedium,
+                            maxLines = 1,
+                        )
+                    }
+                }
             }
         }
     }
@@ -709,20 +755,31 @@ private fun ModelItem(
 ) {
     val navController = LocalNavController.current
     val interactionSource = remember { MutableInteractionSource() }
+    val selBg = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
     Card(
         modifier = modifier,
         colors = CardDefaults.cardColors(
-            containerColor = if (select) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
-            contentColor = if (select) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
-        )
+            containerColor = if (select) selBg else MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 12.dp, horizontal = 16.dp)
+                .padding(vertical = 12.dp, horizontal = 12.dp),
         ) {
+            Box(
+                modifier = Modifier
+                    .width(3.5.dp)
+                    .height(28.dp)
+                    .background(
+                        if (select) MaterialTheme.colorScheme.primary else Color.Transparent,
+                        RoundedCornerShape(topEnd = 3.dp, bottomEnd = 3.dp),
+                    ),
+            )
             Row(
                 modifier = Modifier
                     .weight(1f)
@@ -792,6 +849,21 @@ private fun ModelItem(
                 }
                 tail()
             }
+            IconButton(
+                onClick = {
+                    onDismiss()
+                    navController.navigate(
+                        Screen.SettingProviderDetail(providerSetting.id.toString())
+                    )
+                },
+            ) {
+                Icon(
+                    imageVector = HugeIcons.MoreVertical,
+                    contentDescription = stringResource(R.string.setting_provider_page_title),
+                    modifier = Modifier.size(18.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                )
+            }
             dragHandle?.let { it() }
         }
     }
@@ -800,7 +872,7 @@ private fun ModelItem(
 @Composable
 fun ModelTypeTag(model: Model) {
     Tag(
-        type = TagType.INFO
+        type = TagType.DEFAULT
     ) {
         Text(
             text = stringResource(
@@ -818,7 +890,7 @@ fun ModelTypeTag(model: Model) {
 @Composable
 fun ModelModalityTag(model: Model) {
     Tag(
-        type = TagType.SUCCESS
+        type = TagType.DEFAULT
     ) {
         model.inputModalities.fastForEach { modality ->
             Icon(
@@ -862,7 +934,7 @@ fun ModelAbilityTag(model: Model) {
         when (ability) {
             ModelAbility.TOOL -> {
                 Tag(
-                    type = TagType.WARNING
+                    type = TagType.DEFAULT
                 ) {
                     Icon(
                         imageVector = HugeIcons.Tools,
@@ -874,7 +946,7 @@ fun ModelAbilityTag(model: Model) {
 
             ModelAbility.REASONING -> {
                 Tag(
-                    type = TagType.INFO
+                    type = TagType.DEFAULT
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.deepthink),

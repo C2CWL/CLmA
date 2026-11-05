@@ -15,11 +15,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
@@ -46,11 +44,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.Deferred
 import com.clma.ai.provider.Modality
 import com.clma.ai.provider.ProviderSetting
 import me.rerere.hugeicons.HugeIcons
@@ -62,16 +58,11 @@ import me.rerere.hugeicons.stroke.Files02
 import me.rerere.hugeicons.stroke.Folder01
 import me.rerere.hugeicons.stroke.Image02
 import me.rerere.hugeicons.stroke.MusicNote03
-import me.rerere.hugeicons.stroke.Package
-import me.rerere.hugeicons.stroke.Package01
 import me.rerere.hugeicons.stroke.Settings02
 import me.rerere.hugeicons.stroke.Video01
 import com.clma.app.R
 import com.clma.app.Screen
-import com.clma.app.data.ai.mcp.McpManager
 import com.clma.app.data.datastore.Settings
-import com.clma.app.data.datastore.getEffectiveContextLength
-import com.clma.app.data.datastore.getContextCompactionTargetTokens
 import com.clma.app.data.datastore.resolveChatModel
 import com.clma.app.data.datastore.findProvider
 import com.clma.app.data.db.entity.WorkspaceEntity
@@ -94,14 +85,6 @@ internal fun FilesPicker(
     conversation: Conversation,
     assistant: Assistant,
     state: ChatInputState,
-    mcpManager: McpManager,
-    onCompressContext: (additionalPrompt: String, targetTokens: Int, keepRecentMessages: Int) -> Deferred<Result<Unit>>,
-    onUpdateAssistant: (Assistant) -> Unit,
-    onUpdateConversation: (Conversation) -> Unit,
-    showInjectionSheet: Boolean,
-    onShowInjectionSheetChange: (Boolean) -> Unit,
-    showCompressDialog: Boolean,
-    onShowCompressDialogChange: (Boolean) -> Unit,
     onDismiss: () -> Unit,
     onTakePic: () -> Unit,
     onPickImage: () -> Unit,
@@ -120,14 +103,12 @@ internal fun FilesPicker(
         Modality.VIDEO in (currentModel?.inputModalities ?: emptyList())
     val supportsAudio = provider is ProviderSetting.Google ||
         Modality.AUDIO in (currentModel?.inputModalities ?: emptyList())
-    val navController = LocalNavController.current
-    val workspaceRepository: WorkspaceRepository = koinInject()
-    val workspaces by workspaceRepository.listFlow().collectAsState(initial = emptyList())
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         FlowRow(
             modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.CenterHorizontally),
@@ -156,178 +137,11 @@ internal fun FilesPicker(
                 )
             }
         }
-
-        HorizontalDivider(
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        if (workspaces.isNotEmpty()) {
-            WorkspacePickerListItem(
-                assistant = assistant,
-                conversation = conversation,
-                workspaces = workspaces,
-                onUpdateAssistant = onUpdateAssistant,
-                onUpdateConversation = onUpdateConversation,
-                onNavigateToDetail = { id ->
-                    onDismiss()
-                    navController.navigate(Screen.WorkspaceDetail(id))
-                },
-                onNavigateToTerminal = { id ->
-                    onDismiss()
-                    navController.navigate(Screen.WorkspaceTerminal(id))
-                },
-                onNavigateToManage = {
-                    onDismiss()
-                    navController.navigate(Screen.Workspaces)
-                },
-            )
-        }
-
-        if (settings.mcpServers.isNotEmpty()) {
-            McpPickerListItem(
-                assistant = assistant,
-                servers = settings.mcpServers,
-                mcpManager = mcpManager,
-                onUpdateAssistant = onUpdateAssistant,
-            )
-        }
-
-        // Extensions (Quick Messages + Prompt Injections + Skills)
-        val modeAndLorebookCount =
-            if (assistant.allowConversationPromptInjection) {
-                conversation.modeInjectionIds.size + conversation.lorebookIds.size
-            } else {
-                assistant.modeInjectionIds.size + assistant.lorebookIds.size
-            }
-        val activeCount =
-            assistant.quickMessageIds.size +
-                modeAndLorebookCount +
-                assistant.enabledSkills.size
-        ListItem(
-            leadingContent = {
-                Icon(
-                    imageVector = HugeIcons.Package,
-                    contentDescription = stringResource(R.string.assistant_page_tab_extensions),
-                )
-            },
-            headlineContent = {
-                Text(stringResource(R.string.assistant_page_tab_extensions))
-            },
-            trailingContent = {
-                if (activeCount > 0) {
-                    Text(
-                        text = activeCount.toString(),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                }
-            },
-            colors = ListItemDefaults.colors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainer
-            ),
-            modifier = Modifier
-                .clip(MaterialTheme.shapes.large)
-                .clickable {
-                    onShowInjectionSheetChange(true)
-                },
-        )
-
-        // Compress History Button
-        ListItem(
-            leadingContent = {
-                Icon(
-                    imageVector = HugeIcons.Package01,
-                    contentDescription = stringResource(R.string.chat_page_compress_context),
-                )
-            },
-            headlineContent = {
-                Text(stringResource(R.string.chat_page_compress_context))
-            },
-            trailingContent = {
-                if (conversation.messageNodes.isNotEmpty()) {
-                    Text(
-                        text = stringResource(R.string.chat_page_message_count, conversation.messageNodes.size),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            },
-            colors = ListItemDefaults.colors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainer
-            ),
-            modifier = Modifier
-                .clip(MaterialTheme.shapes.large)
-                .clickable {
-                    onShowCompressDialogChange(true)
-                },
-        )
-
-        // Workspace CWD
-        val boundWorkspace = remember(workspaces, assistant.workspaceId) {
-            workspaces.find { it.id == assistant.workspaceId?.toString() }
-        }
-        if (boundWorkspace != null && boundWorkspace.shellStatus == WorkspaceShellStatus.READY.name) {
-            var showCwdSheet by remember { mutableStateOf(false) }
-            TextButton(
-                onClick = { showCwdSheet = true },
-                modifier = Modifier.fillMaxWidth(),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
-            ) {
-                Icon(
-                    imageVector = HugeIcons.Folder01,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                )
-                Spacer(Modifier.width(4.dp))
-                Text(
-                    text = conversation.workspaceCwd ?: "/workspace",
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            if (showCwdSheet) {
-                WorkspaceCwdPickerSheet(
-                    workspaceId = boundWorkspace.id,
-                    currentCwd = conversation.workspaceCwd,
-                    onSelectCwd = { newCwd ->
-                        onUpdateConversation(conversation.copy(workspaceCwd = newCwd))
-                    },
-                    onDismiss = { showCwdSheet = false },
-                )
-            }
-        }
-    }
-
-    // Injection Bottom Sheet
-    if (showInjectionSheet) {
-        InjectionQuickConfigSheet(
-            conversation = conversation,
-            assistant = assistant,
-            settings = settings,
-            onUpdateAssistant = onUpdateAssistant,
-            onUpdateConversation = onUpdateConversation,
-            onDismiss = { onShowInjectionSheetChange(false) },
-            onDismissAll = onDismiss,
-        )
-    }
-
-    // Compress Context Dialog
-    if (showCompressDialog) {
-        CompressContextDialog(
-            defaultTargetTokens = settings.getContextCompactionTargetTokens(
-                settings.getEffectiveContextLength(currentModel),
-            ),
-            onDismiss = {
-            onShowCompressDialogChange(false)
-            onDismiss()
-        }, onConfirm = { additionalPrompt, targetTokens, keepRecentMessages ->
-            onCompressContext(additionalPrompt, targetTokens, keepRecentMessages)
-        })
     }
 }
 
 @Composable
-private fun WorkspacePickerListItem(
+internal fun WorkspacePickerListItem(
     assistant: Assistant,
     conversation: Conversation,
     workspaces: List<WorkspaceEntity>,
@@ -336,10 +150,25 @@ private fun WorkspacePickerListItem(
     onNavigateToDetail: (String) -> Unit,
     onNavigateToTerminal: (String) -> Unit,
     onNavigateToManage: () -> Unit,
+    modifier: Modifier = Modifier,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceContainer,
 ) {
     var showSheet by remember { mutableStateOf(false) }
+    var showCwdSheet by remember { mutableStateOf(false) }
     val boundWorkspace = remember(workspaces, assistant.workspaceId) {
         workspaces.find { it.id == assistant.workspaceId?.toString() }
+    }
+
+    if (showCwdSheet && boundWorkspace != null) {
+        WorkspaceCwdPickerSheet(
+            workspaceId = boundWorkspace.id,
+            currentCwd = conversation.workspaceCwd,
+            onSelectCwd = { newCwd ->
+                onUpdateConversation(conversation.copy(workspaceCwd = newCwd))
+                showCwdSheet = false
+            },
+            onDismiss = { showCwdSheet = false },
+        )
     }
 
     ListItem(
@@ -353,17 +182,40 @@ private fun WorkspacePickerListItem(
             Text(stringResource(R.string.assistant_page_workspace))
         },
         supportingContent = {
-            Text(
-                text = boundWorkspace?.name ?: stringResource(R.string.assistant_page_workspace_unbound),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            val name = boundWorkspace?.name ?: stringResource(R.string.assistant_page_workspace_unbound)
+            val cwdReady = boundWorkspace != null &&
+                boundWorkspace.shellStatus == WorkspaceShellStatus.READY.name
+            val cwd = conversation.workspaceCwd ?: "/workspace"
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    text = name,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (cwdReady) {
+                    Text(
+                        text = cwd,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
         },
         trailingContent = {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 if (boundWorkspace != null) {
+                    if (boundWorkspace.shellStatus == WorkspaceShellStatus.READY.name) {
+                        IconButton(onClick = { showCwdSheet = true }) {
+                            Icon(
+                                imageVector = HugeIcons.Folder01,
+                                contentDescription = conversation.workspaceCwd ?: "/workspace",
+                            )
+                        }
+                    }
                     IconButton(onClick = { onNavigateToDetail(boundWorkspace.id) }) {
                         Icon(
                             imageVector = HugeIcons.Settings02,
@@ -382,9 +234,9 @@ private fun WorkspacePickerListItem(
             }
         },
         colors = ListItemDefaults.colors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
+            containerColor = containerColor,
         ),
-        modifier = Modifier
+        modifier = modifier
             .clip(MaterialTheme.shapes.large)
             .clickable { showSheet = true },
     )
@@ -413,7 +265,7 @@ private fun WorkspacePickerListItem(
 }
 
 @Composable
-private fun InjectionQuickConfigSheet(
+internal fun InjectionQuickConfigSheet(
     conversation: Conversation,
     assistant: Assistant,
     settings: Settings,

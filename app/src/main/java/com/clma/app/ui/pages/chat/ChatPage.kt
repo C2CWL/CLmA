@@ -117,6 +117,9 @@ import com.clma.app.ui.components.ai.ChatAttachmentPickerActions
 import com.clma.app.Screen
 import com.clma.app.data.datastore.KeepScreenOnMode
 import com.clma.app.ui.components.ai.ChatInput
+import com.clma.app.ui.components.ai.ChatConversationSettingsPanel
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.SlidersHorizontal
 import com.clma.app.ui.components.ui.KeepScreenOn
 import com.clma.app.ui.components.ai.FilesPicker
 import com.clma.app.ui.components.ai.SearchMode
@@ -477,6 +480,7 @@ private fun ChatPageContent(
     val geminiLayout = setting.displaySetting.effectiveChatLayout == ChatLayout.GEMINI
     val compressAndContinueLabel = stringResource(R.string.chat_suggestion_compress_continue)
     var showFilesSheet by remember { mutableStateOf(false) }
+    var showConversationSettings by remember { mutableStateOf(false) }
     val attachmentPickerActions = rememberChatAttachmentPickerActions(
         inputState = inputState,
         setting = setting,
@@ -663,9 +667,7 @@ private fun ChatPageContent(
                                 )
                             )
                         },
-                        enableSearch = enableWebSearch,
                         conversationChatModelId = conversation.chatModelId,
-                        conversationId = conversation.id,
                         onUpdateChatModel = onUpdateChatModel,
                         onUpdateModelReasoningLevel = { model, level ->
                             vm.setModelReasoningLevel(model, level)
@@ -673,8 +675,6 @@ private fun ChatPageContent(
                         onUpdateModelServiceTier = { model, tier ->
                             vm.setModelServiceTier(model, tier)
                         },
-                        onUpdateSearchMode = onUpdateSearchMode,
-                        onUpdateSearchService = onUpdateSearchService,
                         onMoreClick = {
                             showFilesSheet = true
                         },
@@ -881,6 +881,23 @@ private fun ChatPageContent(
                                     }
                                 }
                                 Spacer(Modifier.weight(1f))
+                                IconButton(
+                                    onClick = {
+                                        if (previewMode) {
+                                            previewMode = false
+                                        } else {
+                                            showConversationSettings = true
+                                        }
+                                    },
+                                ) {
+                                    Icon(
+                                        if (previewMode) HugeIcons.Cancel01 else Lucide.SlidersHorizontal,
+                                        stringResource(
+                                            if (previewMode) R.string.chat_conversation_settings_exit_preview
+                                            else R.string.chat_conversation_settings_a11y,
+                                        ),
+                                    )
+                                }
                                 IconButton(onClick = openChatDrawer) {
                                     Icon(HugeIcons.LeftToRightListBullet, stringResource(R.string.accessibility_chat_options))
                                 }
@@ -894,7 +911,8 @@ private fun ChatPageContent(
                                     drawerState = drawerState,
                                     bigScreen = bigScreen,
                                     previewMode = previewMode,
-                                    onClickMenu = { previewMode = !previewMode },
+                                    onOpenConversationSettings = { showConversationSettings = true },
+                                    onExitPreview = { previewMode = false },
                                     onNewChat = { navigateToChatPage(navController) },
                                     onNewTemporaryChat = { navigateToChatPage(navController, isTemporary = true) },
                                 )
@@ -913,11 +931,59 @@ private fun ChatPageContent(
                             onNewTemporaryChat = {
                                 navigateToChatPage(navController, isTemporary = true)
                             },
-                            onClickMenu = {
-                                previewMode = !previewMode
-                            },
+                            onOpenConversationSettings = { showConversationSettings = true },
+                            onExitPreview = { previewMode = false },
                         )
                     }
+
+                    ChatConversationSettingsPanel(
+                        visible = showConversationSettings,
+                        onDismiss = { showConversationSettings = false },
+                        conversation = conversation,
+                        assistant = assistant,
+                        settings = setting,
+                        enableSearch = enableWebSearch,
+                        model = currentChatModel,
+                        mcpManager = vm.mcpManager,
+                        onUpdateSearchMode = onUpdateSearchMode,
+                        onUpdateSearchService = onUpdateSearchService,
+                        onUpdateAssistant = { updated ->
+                            vm.updateSettings(
+                                setting.copy(
+                                    assistants = setting.assistants.map { a ->
+                                        if (a.id == updated.id) updated else a
+                                    }
+                                )
+                            )
+                        },
+                        onUpdateConversation = { edited ->
+                            vm.applyStreamingSafeConversationEdit { current ->
+                                current.copy(
+                                    workspaceCwd = if (edited.workspaceCwd != conversation.workspaceCwd) {
+                                        edited.workspaceCwd
+                                    } else {
+                                        current.workspaceCwd
+                                    },
+                                    modeInjectionIds = if (edited.modeInjectionIds != conversation.modeInjectionIds) {
+                                        edited.modeInjectionIds
+                                    } else {
+                                        current.modeInjectionIds
+                                    },
+                                    lorebookIds = if (edited.lorebookIds != conversation.lorebookIds) {
+                                        edited.lorebookIds
+                                    } else {
+                                        current.lorebookIds
+                                    },
+                                )
+                            }
+                            vm.saveConversationAsync()
+                        },
+                        onCompressContext = { additionalPrompt, targetTokens, keepRecentMessages ->
+                            vm.handleCompressContext(additionalPrompt, targetTokens, keepRecentMessages)
+                        },
+                        onOpenMessageOutline = { previewMode = true },
+                        modifier = Modifier.padding(top = topBarHeight),
+                    )
                 }
             }
         }
@@ -951,14 +1017,6 @@ private fun ChatFilesPickerSheet(
     val voiceState by vm.voiceSession.state.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
-    var showInjectionSheet by remember { mutableStateOf(false) }
-    var showCompressDialog by remember { mutableStateOf(false) }
-
-    fun dismissAll() {
-        showInjectionSheet = false
-        showCompressDialog = false
-        onDismiss()
-    }
 
     val filesSheetState = rememberBottomSheetState(
         initialValue = SheetValue.Hidden,
@@ -966,44 +1024,13 @@ private fun ChatFilesPickerSheet(
     )
     ModalBottomSheet(
         sheetState = filesSheetState,
-        onDismissRequest = { dismissAll() },
+        onDismissRequest = onDismiss,
     ) {
         FilesPicker(
             conversation = conversation,
             state = inputState,
             assistant = assistant,
-            mcpManager = vm.mcpManager,
-            onCompressContext = { additionalPrompt, targetTokens, keepRecentMessages ->
-                vm.handleCompressContext(additionalPrompt, targetTokens, keepRecentMessages)
-            },
-            onUpdateAssistant = {
-                vm.updateSettings(
-                    setting.copy(
-                        assistants = setting.assistants.map { assistant ->
-                            if (assistant.id == it.id) {
-                                it
-                            } else {
-                                assistant
-                            }
-                        }
-                    )
-                )
-            },
-            onUpdateConversation = { edited ->
-                vm.applyStreamingSafeConversationEdit { current ->
-                    current.copy(
-                        workspaceCwd = if (edited.workspaceCwd != conversation.workspaceCwd) edited.workspaceCwd else current.workspaceCwd,
-                        modeInjectionIds = if (edited.modeInjectionIds != conversation.modeInjectionIds) edited.modeInjectionIds else current.modeInjectionIds,
-                        lorebookIds = if (edited.lorebookIds != conversation.lorebookIds) edited.lorebookIds else current.lorebookIds,
-                    )
-                }
-                vm.saveConversationAsync()
-            },
-            showInjectionSheet = showInjectionSheet,
-            onShowInjectionSheetChange = { showInjectionSheet = it },
-            showCompressDialog = showCompressDialog,
-            onShowCompressDialogChange = { showCompressDialog = it },
-            onDismiss = { dismissAll() },
+            onDismiss = onDismiss,
             onTakePic = attachmentPickerActions.onTakePicture,
             onPickImage = attachmentPickerActions.onPickImage,
             onPickVideo = attachmentPickerActions.onPickVideo,
@@ -1014,7 +1041,7 @@ private fun ChatFilesPickerSheet(
                 voiceState.phase == VoicePhase.Off
             ) {
                 {
-                    dismissAll()
+                    onDismiss()
                     focusManager.clearFocus(force = true)
                     keyboardController?.hide()
                     onStartVoiceMode()
@@ -1033,7 +1060,8 @@ private fun TopBar(
     hazeState: HazeState,
     bigScreen: Boolean,
     previewMode: Boolean,
-    onClickMenu: () -> Unit,
+    onOpenConversationSettings: () -> Unit,
+    onExitPreview: () -> Unit,
     onNewChat: () -> Unit,
     onNewTemporaryChat: () -> Unit = {},
 ) {
@@ -1156,11 +1184,17 @@ private fun TopBar(
         actions = {
             GlassTopBarButton(
                 onClick = {
-                    onClickMenu()
+                    if (previewMode) onExitPreview() else onOpenConversationSettings()
                 },
                 hazeState = hazeState,
             ) {
-                Icon(if (previewMode) HugeIcons.Cancel01 else HugeIcons.LeftToRightListBullet, stringResource(R.string.accessibility_chat_options))
+                Icon(
+                    if (previewMode) HugeIcons.Cancel01 else Lucide.SlidersHorizontal,
+                    stringResource(
+                        if (previewMode) R.string.chat_conversation_settings_exit_preview
+                        else R.string.chat_conversation_settings_a11y,
+                    ),
+                )
             }
 
             Box {
