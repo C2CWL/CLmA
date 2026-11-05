@@ -105,7 +105,9 @@ import com.clma.app.data.ai.tools.ToolSurfaceMode
 import com.clma.app.data.ai.tools.matchAll
 import com.clma.app.data.memory.ColdMemoryLexicalSearch
 import com.clma.app.data.memory.ColdMemorySearchOutcome
+import com.clma.app.data.ai.tools.ChatModeTools
 import com.clma.app.data.ai.tools.ChatToolSurface
+import com.clma.app.data.ai.tools.createConversationTools
 import com.clma.app.data.ai.tools.CORE_LOCAL_TOOL_GROUPS
 import com.clma.app.data.ai.tools.LocalToolOption
 import com.clma.app.data.ai.tools.LocalToolPalette
@@ -1279,8 +1281,7 @@ class ChatService(
         // Headless paths (cron / sub-agent / external-automation / workflow) must always go
         // through the LLM — the fast-path is a per-user-turn optimisation, not a system-flow.
         if (com.clma.app.data.ai.tools.HeadlessConversations.isHeadless(conversationId)) return false
-        // 聊天模式不走工具快路径：没有工具表面可供执行。
-        if (!afterUserSave.agentModeEnabled) return false
+        // 聊天模式仍可走快路径，但只允许白名单工具（见下方 match 后的检查）。
 
         // assistant is resolved from the conversation's own assistantId by the caller — do NOT
         // re-read the global getCurrentAssistant() here or a mid-turn assistant switch makes the
@@ -1310,6 +1311,8 @@ class ChatService(
         }
 
         if (com.clma.app.connectors.ConnectorWriteApproval.requiresApproval(tool.name)) return false
+        // 聊天模式快路径：只执行白名单工具，其余回落 LLM。
+        if (!afterUserSave.agentModeEnabled && !ChatModeTools.isAllowed(tool.name)) return false
 
         // Defence-in-depth — even though v1's intent set is read-only, run HARDLINE here so
         // that adding a side-effecting intent later (e.g. "set brightness 50%") can't bypass
@@ -1793,6 +1796,82 @@ class ChatService(
     }
 
     /**
+     * Chat-mode surface: only [ChatModeTools.ALLOWED_TOOL_NAMES], each still gated by its
+     * normal enable conditions. Always DIRECT (no progressive catalog / MCP / workspace /
+     * cold memory / skills / tool_output_read).
+     */
+    private suspend fun assembleChatModeToolSurface(
+        surfaceAssistant: Assistant,
+        conversationId: Uuid,
+        model: Model,
+        settings: Settings,
+        includeSearchTools: Boolean,
+        includeCompactionTools: Boolean,
+    ): ChatToolSurface {
+        com.clma.app.subagent.SubAgentDispatchProfileRules
+            .setLiveDispatchProfile(settings.subAgentDispatchProfile)
+        val localContext = ToolSurfaceResolver.chatContext(
+            assistant = surfaceAssistant,
+            conversationId = conversationId,
+            model = model,
+            isHeadless = com.clma.app.data.ai.tools.HeadlessConversations.isHeadless(conversationId),
+            appPlaybook = coldMemoryPlaybookReader(surfaceAssistant),
+        )
+        val localToolsFull = ToolSurfaceResolver.resolve(
+            localTools = localTools,
+            assistant = surfaceAssistant,
+            context = localContext,
+        )
+        val fixedTools = buildList {
+            if (includeSearchTools) {
+                addAll(createSearchTools(settings))
+            }
+            // Local groups (TimeInfo / AskUser / Tts / ImageGeneration / VideoGeneration /
+            // CostGuards / web_fetch|web_extract) — filter to the allowlist after resolve so
+            // disabled LocalToolOption groups still stay off.
+            addAll(ChatModeTools.filterTools(localToolsFull))
+            if (surfaceAssistant.enableRecentChatsReference) {
+                addAll(
+                    ChatModeTools.filterTools(
+                        createConversationTools(conversationRepo, surfaceAssistant.id),
+                    )
+                )
+            }
+            add(
+                com.clma.app.data.ai.tools.createCurrentConversationSearchTool(
+                    conversationRepo = conversationRepo,
+                    conversationId = conversationId,
+                )
+            )
+            if (includeCompactionTools && surfaceAssistant.enableCompactContextTool) {
+                addAll(
+                    ChatModeTools.filterTools(
+                        buildCompactionTools(
+                            onCompact = { instructions ->
+                                compactConversationFromTool(
+                                    conversationId = conversationId,
+                                    conversation = getConversationFlow(conversationId).value,
+                                    settings = settings,
+                                    model = model,
+                                    instructions = instructions,
+                                )
+                            },
+                        )
+                    )
+                )
+            }
+        }
+        // Final allowlist pass (belt-and-suspenders) so a future assembly addition cannot leak.
+        val allowed = ChatModeTools.filterTools(fixedTools)
+        return ChatToolSurface(
+            fixed = com.clma.app.subagent.SubAgentSurface.apply(
+                conversationId = conversationId,
+                tools = allowed,
+            ).let { ChatModeTools.filterTools(it) },
+        )
+    }
+
+    /**
      * P2-05 (chat half) — the ONE place a chat turn's tool surface is assembled.
      *
      * ## What changed
@@ -1837,11 +1916,19 @@ class ChatService(
         abortOnInvalidMcpNames: Boolean,
         lastUserText: String = "",
     ): ChatToolSurface? {
-        // 聊天模式：不组装任何工具（本地 / MCP / 搜索 / 记忆 / skills / 压缩……），
-        // 也不带工具相关 system prompt（GenerationLoop 在 tools 为空时跳过 tool prompts）。
-        // 默认 Agent 模式（agentModeEnabled=true）保持历史行为。
+        // 聊天模式：只保留 ChatModeTools 白名单里的工具（搜索 / 热记忆 / 时间 /
+        // ask_user / TTS / 图视频生成 / 会话检索 / 压缩 / token 用量），且仍受各自原有
+        // 开关约束；不走 progressive catalog，不装 MCP / workspace / 冷记忆 / skills 等。
+        // Agent 模式（默认）保持历史全量行为。
         if (!conversation.agentModeEnabled) {
-            return ChatToolSurface(fixed = emptyList())
+            return assembleChatModeToolSurface(
+                surfaceAssistant = surfaceAssistant,
+                conversationId = conversationId,
+                model = model,
+                settings = settings,
+                includeSearchTools = includeSearchTools,
+                includeCompactionTools = includeCompactionTools,
+            )
         }
         // Synchronise the live dispatch profile before tool resolution so subagent_dispatch is
         // registered when the profile != NEVER. generateText used to be the missing third call
@@ -1889,6 +1976,10 @@ class ChatService(
                 )
             } else {
                 addAll(localToolsFull)
+            }
+            // Same gate as legacy ChatToolFactory: only when the assistant opted into recent-chat reference.
+            if (surfaceAssistant.enableRecentChatsReference) {
+                addAll(createConversationTools(conversationRepo, surfaceAssistant.id))
             }
             addAll(
                 createWorkspaceToolsIfReady(
@@ -2227,11 +2318,11 @@ class ChatService(
                 lastUserText = lastUserText,
             ) ?: return
 
-            // 聊天模式同时清掉模型侧内置工具（如 Search / UrlContext），避免仍走 provider 原生工具通道。
+            // 聊天模式保留 provider 内置 Search / UrlContext / ImageGeneration，去掉其它内置工具。
             val generationModel = if (conversation.agentModeEnabled) {
                 model
             } else {
-                model.copy(tools = emptySet())
+                model.copy(tools = ChatModeTools.filterBuiltIns(model.tools))
             }
 
             generationLoop.generateText(
@@ -2364,6 +2455,13 @@ class ChatService(
                 // model another user round-trip.
                 tools = toolSurface.tools(),
                 toolsProvider = { toolSurface.tools() },
+                // Chat mode: GenerationLoop also injects memory_tool; restrict the combined
+                // list so nothing outside the allowlist reaches the model / tool prompts.
+                allowedToolNames = if (conversation.agentModeEnabled) {
+                    null
+                } else {
+                    ChatModeTools.ALLOWED_TOOL_NAMES
+                },
                 // A catalogued-but-not-activated call is answered with the real schema instead of
                 // a bare tool_not_found (see GenerationLoop).
                 unloadedToolSchema = { name -> toolSurface.schemaForUnloadedTool(name) },

@@ -3387,7 +3387,7 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="chat_agent_mode">Agent</string>
   <string name="chat_chat_mode">Chat</string>
   <string name="chat_agent_mode_toggle">Agent / Chat mode</string>
-  <string name="chat_agent_mode_desc">Agent mode can use tools (MCP, search, skills, memory, and so on). Chat mode sends no tool definitions, which saves tokens.</string>
+  <string name="chat_agent_mode_desc">Agent mode can use the full tool set (MCP, workspace, skills, browser, and so on). Chat mode only keeps search, hot memory, time, ask-user, TTS, image/video generation, chat history search, context compaction, and token usage checks.</string>
   <string name="chat_agent_mode_on">Agent mode on</string>
   <string name="chat_agent_mode_off">Chat mode on</string>
 </resources>
