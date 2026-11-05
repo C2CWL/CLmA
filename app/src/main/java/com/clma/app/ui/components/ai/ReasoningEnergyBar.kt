@@ -66,22 +66,22 @@ import kotlin.math.sin
 import kotlin.random.Random
 
 /**
- * Greenfield Codex Ultra energy bar (v7 mockup).
+ * v8 energy bar (greenfield) — matches mockups/reasoning/v8.
  *
- * - ~32dp capsule track, white round thumb ≈ bar height
- * - Low / mid / 高: solid cool blue `#2B4CC2`
- * - 超高 / 最大 (or 高 when it is the model's top stop): blue→violet gradient
- *   with fixed-seed drifting + twinkling stardust, soft leading-edge bloom,
- *   thumb shadow + faint violet outer glow
- * - Spring fill / thumb; ~250ms color crossfades
- * - Single Canvas for the track fill (no nested overlay composables)
+ * - ~32dp capsule, white thumb ≈ bar height
+ * - 自动–高: solid cool blue `#2B4CC2`
+ * - 超高–最大: blue→violet gradient, drifting stardust with motion streaks,
+ *   soft violet bloom past the thumb, thumb shadow + outer glow
+ * - Spring fill/thumb; ~250ms color crossfades
+ * - 2–7 stops; single Canvas for track/fill/particles
  */
 private val EnergyBlue = Color(0xFF2B4CC2)
+private val EnergyBlueSoft = Color(0xFF3A5FD4)
 private val EnergyIndigo = Color(0xFF7166E6)
 private val EnergyPurple = Color(0xFFAC72FF)
 private val EnergyViolet = Color(0xFF9273F8)
 private val EnergyAccent = Color(0xFFB06DFF)
-private val EnergyStar = Color(0xFFF5F2FF)
+private val EnergyStar = Color(0xFFFFFFFF)
 
 private val UltraFillColors = listOf(
     Color(0xFF2B4CC2),
@@ -91,34 +91,37 @@ private val UltraFillColors = listOf(
     EnergyViolet,
 )
 
-/** Fixed-seed particle field: drifts right and twinkles. */
+/** Fixed-seed dust grain: drifts right with an optional trailing streak. */
 private class Dust(
     val x0: Float,
-    val y: Float,
+    val y0: Float,
     val rDp: Float,
     val drift: Float,
     val twinkle: Float,
     val phase: Float,
+    val hasStreak: Boolean,
+    val hasBloom: Boolean,
 )
 
 private val DustField: List<Dust> = run {
-    val rnd = Random(0xC0DE5)
-    List(40) {
+    val rnd = Random(0x8EED0088L)
+    List(44) { i ->
         Dust(
             x0 = rnd.nextFloat(),
-            y = 0.16f + 0.68f * rnd.nextFloat(),
-            rDp = 0.55f + 1.6f * rnd.nextFloat() * rnd.nextFloat(),
-            drift = 0.45f + 1.1f * rnd.nextFloat(),
-            twinkle = 2.5f + 5.5f * rnd.nextFloat(),
+            y0 = 0.14f + 0.72f * rnd.nextFloat(),
+            rDp = 0.55f + 1.7f * rnd.nextFloat() * rnd.nextFloat(),
+            drift = 0.55f + 1.15f * rnd.nextFloat(),
+            twinkle = 2.2f + 5.8f * rnd.nextFloat(),
             phase = rnd.nextFloat() * (2f * PI.toFloat()),
+            hasStreak = i % 2 == 0 || rnd.nextFloat() > 0.55f,
+            hasBloom = i % 4 == 0,
         )
     }
 }
 
-/** True when this stop should show the Ultra gradient + stardust. */
+/** Ultra visual (gradient + stardust + bloom) at 超高 / 最大, or 高 when it is the top stop. */
 private fun isUltraStop(level: ReasoningLevel, levels: List<ReasoningLevel>): Boolean {
     if (level == ReasoningLevel.XHIGH || level == ReasoningLevel.MAX) return true
-    // When the model tops out at HIGH, HIGH is the highest high-tier stop.
     return level == ReasoningLevel.HIGH && levels.lastOrNull() == ReasoningLevel.HIGH
 }
 
@@ -163,8 +166,10 @@ internal fun ReasoningEnergyBar(
     )
     val labelColor by animateColorAsState(
         targetValue = when {
-            ultra && activeLevel == ReasoningLevel.MAX -> EnergyAccent
+            activeLevel == ReasoningLevel.MAX -> EnergyAccent
             ultra -> EnergyPurple
+            activeLevel == ReasoningLevel.OFF -> Color(0xFF8B93A7)
+            activeLevel == ReasoningLevel.AUTO -> EnergyBlueSoft
             else -> EnergyBlue
         },
         animationSpec = tween(250),
@@ -181,11 +186,11 @@ internal fun ReasoningEnergyBar(
         animationSpec = infiniteRepeatable(tween(3200, easing = LinearEasing)),
         label = "energyFlow",
     )
-    // One full horizontal drift every 12s.
+    // One full horizontal drift every 11s — streaks make the motion readable.
     val drift by infinite.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(12_000, easing = LinearEasing)),
+        animationSpec = infiniteRepeatable(tween(11_000, easing = LinearEasing)),
         label = "energyDustDrift",
     )
 
@@ -242,6 +247,39 @@ internal fun ReasoningEnergyBar(
             val thumbPx = with(LocalDensity.current) { thumbSize.toPx() }
             val trackShape = RoundedCornerShape(percent = 50)
 
+            // Soft outer violet glow around the filled capsule (v8 glow_box), unclipped.
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .drawBehind {
+                        if (ultraMix <= 0.01f || animatedFraction <= 0f) return@drawBehind
+                        val fraction = animatedFraction.coerceIn(0f, 1f)
+                        val edgeX = (size.width - thumbPx) * fraction + thumbPx / 2f
+                        val activeWidth = (edgeX + thumbPx / 2f).coerceAtMost(size.width)
+                        val glow = Brush.horizontalGradient(
+                            colors = listOf(
+                                EnergyBlue.copy(alpha = 0.0f),
+                                EnergyPurple.copy(alpha = 0.35f * ultraMix),
+                                EnergyAccent.copy(alpha = 0.45f * ultraMix),
+                            ),
+                            endX = activeWidth,
+                        )
+                        drawRoundRect(
+                            brush = glow,
+                            size = Size(activeWidth, size.height),
+                            cornerRadius = CornerRadius(size.height / 2f),
+                            alpha = 0.55f,
+                        )
+                        // Blur-like expansion: larger translucent roundrect behind.
+                        val pad = 6.dp.toPx() * ultraMix
+                        drawRoundRect(
+                            color = EnergyPurple.copy(alpha = 0.22f * ultraMix),
+                            topLeft = Offset(-pad * 0.2f, -pad),
+                            size = Size(activeWidth + pad * 0.4f, size.height + pad * 2f),
+                            cornerRadius = CornerRadius((size.height + pad * 2f) / 2f),
+                        )
+                    },
+            ) {
             Canvas(
                 modifier = Modifier
                     .fillMaxSize()
@@ -251,7 +289,7 @@ internal fun ReasoningEnergyBar(
                 drawRoundRect(color = trackColor, cornerRadius = radius)
 
                 val fraction = animatedFraction.coerceIn(0f, 1f)
-                // Fill extends past the thumb centre so the bloom sits under it.
+                // Fill past the thumb centre so bloom / streaks read under the thumb.
                 val edgeX = (size.width - thumbPx) * fraction + thumbPx / 2f
                 val fillOff = activeLevel == ReasoningLevel.OFF && fraction <= 0.001f
                 val activeWidth = if (fillOff) 0f else (edgeX + thumbPx / 2f).coerceAtMost(size.width)
@@ -261,9 +299,10 @@ internal fun ReasoningEnergyBar(
                     val mix = ultraMix
 
                     if (mix < 1f) {
+                        val solid = if (activeLevel == ReasoningLevel.AUTO) EnergyBlueSoft else EnergyBlue
                         drawRoundRect(
                             brush = Brush.horizontalGradient(
-                                listOf(EnergyBlue.copy(alpha = 0.9f), EnergyBlue),
+                                listOf(solid.copy(alpha = 0.92f), solid),
                             ),
                             size = fillSize,
                             cornerRadius = radius,
@@ -285,31 +324,54 @@ internal fun ReasoningEnergyBar(
                             alpha = mix,
                         )
 
-                        // Drifting + twinkling stardust, clipped to the filled capsule.
+                        // Drifting stardust + motion streaks, clipped to the filled capsule.
                         clipRect(right = activeWidth) {
                             val twoPi = 2f * PI.toFloat()
                             for (p in DustField) {
                                 val x = ((p.x0 + drift * p.drift) % 1f) * size.width
+                                val y = (p.y0 + 0.04f * sin(drift * twoPi + p.phase))
+                                    .coerceIn(0.08f, 0.92f) * size.height
                                 val tw = (sin(drift * twoPi * p.twinkle + p.phase) + 1f) * 0.5f
-                                val alpha = (0.22f + 0.78f * tw) * mix
+                                val alpha = (0.28f + 0.72f * tw) * mix
                                 val r = p.rDp.dp.toPx() * (0.75f + 0.45f * tw)
+
+                                // Horizontal streak trailing left of the particle (reads as drift).
+                                if (p.hasStreak) {
+                                    val sw = r * (5.5f + 3.5f * tw)
+                                    val sh = (r * 0.85f).coerceAtLeast(0.8.dp.toPx())
+                                    drawRoundRect(
+                                        color = EnergyStar,
+                                        topLeft = Offset(x - sw, y - sh / 2f),
+                                        size = Size(sw, sh),
+                                        cornerRadius = CornerRadius(sh / 2f),
+                                        alpha = alpha * 0.42f,
+                                    )
+                                }
+                                if (p.hasBloom) {
+                                    drawCircle(
+                                        color = EnergyStar,
+                                        radius = r * 2.2f,
+                                        center = Offset(x, y),
+                                        alpha = alpha * 0.22f,
+                                    )
+                                }
                                 drawCircle(
                                     color = EnergyStar,
                                     radius = r,
-                                    center = Offset(x, p.y * size.height),
+                                    center = Offset(x, y),
                                     alpha = alpha,
                                 )
                             }
                         }
                     }
 
-                    // Soft bloom at the leading edge — energy, not a hard cut.
+                    // Soft bloom at the leading edge — energy past the thumb, not a hard cut.
                     val bloomColor = lerp(EnergyBlue, EnergyPurple, mix)
-                    val bloomR = size.height * 1.75f
+                    val bloomR = size.height * (1.55f + 0.55f * mix)
                     drawCircle(
                         brush = Brush.radialGradient(
                             colors = listOf(
-                                bloomColor.copy(alpha = 0.32f + 0.38f * mix),
+                                bloomColor.copy(alpha = 0.28f + 0.42f * mix),
                                 Color.Transparent,
                             ),
                             center = Offset(edgeX, size.height / 2f),
@@ -330,7 +392,7 @@ internal fun ReasoningEnergyBar(
                     )
                 }
 
-                // Tick dots for intermediate stops (mockup cdot).
+                // Intermediate tick dots (mockup cdot).
                 if (levelCount > 2) {
                     for (i in 1 until levelCount - 1) {
                         val x = size.width * (i / denom)
@@ -350,6 +412,7 @@ internal fun ReasoningEnergyBar(
                     style = Stroke(width = 1.dp.toPx()),
                 )
             }
+            } // outer glow Box
 
             val thumbOffset = (maxWidth - thumbSize) * animatedFraction
             Box(
@@ -358,12 +421,14 @@ internal fun ReasoningEnergyBar(
                     .size(thumbSize)
                     .align(Alignment.CenterStart)
                     .drawBehind {
+                        // Violet halo behind the thumb at ultra levels (unclipped).
                         if (ultraMix > 0.01f) {
-                            val r = size.minDimension * 1.05f
+                            val r = size.minDimension * 1.15f
                             drawCircle(
                                 brush = Brush.radialGradient(
                                     colors = listOf(
-                                        EnergyPurple.copy(alpha = 0.5f * ultraMix),
+                                        EnergyPurple.copy(alpha = 0.55f * ultraMix),
+                                        EnergyViolet.copy(alpha = 0.18f * ultraMix),
                                         Color.Transparent,
                                     ),
                                     center = center,
