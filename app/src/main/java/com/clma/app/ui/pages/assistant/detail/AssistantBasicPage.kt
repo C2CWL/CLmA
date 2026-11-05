@@ -909,14 +909,6 @@ internal fun AssistantBasicContent(
         Card(
             colors = CustomColors.cardColorsOnSurfaceContainer
         ) {
-            BackgroundStyleSelector(
-                modifier = Modifier.padding(8.dp),
-                style = assistant.backgroundStyle,
-                onStyleChange = { onUpdate(assistant.copy(backgroundStyle = it)) },
-            )
-
-            HorizontalDivider()
-
             FormItem(
                 modifier = Modifier.padding(8.dp),
                 label = {
