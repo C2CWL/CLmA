@@ -11,7 +11,6 @@ import me.rerere.hugeicons.stroke.Tick02
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -447,18 +446,20 @@ private fun ConversationItem(
 
 @Composable
 private fun SelectionCheckmark(checked: Boolean) {
-    val borderColor = if (checked) {
-        MaterialTheme.colorScheme.primary
-    } else {
-        MaterialTheme.colorScheme.outline.copy(alpha = 0.55f)
-    }
-    val fill = if (checked) MaterialTheme.colorScheme.primary else Color.Transparent
+    val shape = RoundedCornerShape(4.dp)
+    val colors = MaterialTheme.colorScheme
     Box(
         modifier = Modifier
             .size(18.dp)
-            .clip(RoundedCornerShape(5.dp))
-            .border(1.5.dp, borderColor, RoundedCornerShape(5.dp))
-            .background(fill)
+            .clip(shape)
+            .then(
+                if (checked) {
+                    Modifier.background(colors.primary)
+                } else {
+                    // 未选中：淡底而非描边框，避免多选列表一排「线框」感
+                    Modifier.background(colors.surfaceContainerHighest)
+                }
+            )
             .semantics { this.selected = checked },
         contentAlignment = Alignment.Center,
     ) {
@@ -467,7 +468,7 @@ private fun SelectionCheckmark(checked: Boolean) {
                 imageVector = HugeIcons.Tick02,
                 contentDescription = null,
                 modifier = Modifier.size(12.dp),
-                tint = MaterialTheme.colorScheme.onPrimary,
+                tint = colors.onPrimary,
             )
         }
     }

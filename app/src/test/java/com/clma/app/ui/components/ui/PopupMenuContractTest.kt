@@ -11,11 +11,13 @@ class PopupMenuContractTest {
     @Test
     fun `shared menu keeps one lightweight bubble surface`() {
         val source = menuSource()
-        assertTrue(source.contains("val Shape = RoundedCornerShape(16.dp)"))
+        assertTrue(source.contains("val Shape = RoundedCornerShape(14.dp)"))
         assertTrue(source.contains("val ItemShape = RoundedCornerShape(10.dp)"))
         assertTrue(source.contains("surfaceContainerLowest"))
-        assertTrue(source.contains("outlineVariant.copy(alpha = 0.55f)"))
+        assertTrue(source.contains("val border: BorderStroke?"))
+        assertTrue(source.contains("@Composable get() = null"))
         assertTrue(source.contains("shadowElevation = AppMenuDefaults.ShadowElevation"))
+        assertTrue(source.contains("val ShadowElevation = 8.dp"))
         assertFalse(source.contains("DropdownMenuGroup("))
         assertFalse(source.contains("selected = destructive"))
         assertFalse(source.contains("destructive = selected"))

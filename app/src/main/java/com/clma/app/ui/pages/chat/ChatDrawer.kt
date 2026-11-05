@@ -575,7 +575,7 @@ fun ChatDrawerContent(
                 }
 
                 // Flat action grid stays above the gesture navigation area.
-                val bottomBarShape = RoundedCornerShape(20.dp)
+                val bottomBarShape = RoundedCornerShape(if (selectionMode) 14.dp else 20.dp)
                 // 多选栏 / 助手行 + 五个动作：两条路径共用同一份内容，只是外壳不同。
                 val drawerBottomContent: @Composable () -> Unit = {
                     if (selectionMode) {
@@ -1184,30 +1184,33 @@ private fun SelectionActionBar(
     capsule: Boolean = false,
 ) {
     val canAct = count > 0
+    val colors = MaterialTheme.colorScheme
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .then(
                 if (capsule) {
                     Modifier
-                        .clip(RoundedCornerShape(20.dp))
+                        .clip(RoundedCornerShape(14.dp))
                         .background(drawerCapsuleColor())
-                        .padding(horizontal = 8.dp, vertical = 6.dp)
+                        .padding(horizontal = 10.dp, vertical = 10.dp)
                 } else {
-                    Modifier
+                    Modifier.padding(horizontal = 2.dp, vertical = 2.dp)
                 }
             ),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        // 第一行：全选/全不选切换、已选择数量、取消多选
+        // 顶行：全选 / 已选择 / 取消（方块胶囊，避免挤在一行文字链里）
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            TextButton(
+            Surface(
                 onClick = onToggleSelectAll,
-                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp),
+                shape = RoundedCornerShape(10.dp),
+                color = colors.surfaceContainerHighest,
+                contentColor = colors.onSurface,
             ) {
                 Text(
                     text = stringResource(
@@ -1215,61 +1218,73 @@ private fun SelectionActionBar(
                         else R.string.chat_page_select_all
                     ),
                     style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                 )
             }
             Text(
                 text = stringResource(R.string.chat_page_selected_count, count),
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = colors.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             )
-            TextButton(
+            Surface(
                 onClick = onCancel,
-                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp),
+                shape = RoundedCornerShape(10.dp),
+                color = Color.Transparent,
+                contentColor = colors.primary,
             ) {
                 Text(
                     text = stringResource(R.string.chat_page_exit_multi_select),
                     style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                 )
             }
         }
 
-        // 第二行：操作按钮区（移至文件夹、新建文件夹、移至助手、删除），上下结构排版，避免文字水平截断
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(2.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            SelectionActionButton(
-                icon = HugeIcons.Folder01,
-                label = stringResource(R.string.chat_page_move_to_folder),
-                onClick = onMove,
-                enabled = canAct,
-                modifier = Modifier.weight(1f),
-            )
-            SelectionActionButton(
-                icon = HugeIcons.FolderAdd,
-                label = stringResource(R.string.chat_page_create_folder),
-                onClick = onCreateAndMove,
-                enabled = canAct,
-                modifier = Modifier.weight(1f),
-            )
-            SelectionActionButton(
-                icon = HugeIcons.LookTop,
-                label = stringResource(R.string.chat_page_move_to_assistant),
-                onClick = onMoveToAssistant,
-                enabled = canAct,
-                modifier = Modifier.weight(1f),
-            )
-            SelectionActionButton(
-                icon = HugeIcons.Delete01,
-                label = stringResource(R.string.chat_page_delete),
-                onClick = onDelete,
-                enabled = canAct,
-                isDestructive = true,
-                modifier = Modifier.weight(1f),
-            )
+        // 2×2 满字标签动作格：图标 + 完整文案，不再水平截断
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                SelectionActionButton(
+                    icon = HugeIcons.Folder01,
+                    label = stringResource(R.string.chat_page_move_to_folder),
+                    onClick = onMove,
+                    enabled = canAct,
+                    modifier = Modifier.weight(1f),
+                )
+                SelectionActionButton(
+                    icon = HugeIcons.FolderAdd,
+                    label = stringResource(R.string.chat_page_create_folder),
+                    onClick = onCreateAndMove,
+                    enabled = canAct,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                SelectionActionButton(
+                    icon = HugeIcons.LookTop,
+                    label = stringResource(R.string.chat_page_move_to_assistant),
+                    onClick = onMoveToAssistant,
+                    enabled = canAct,
+                    modifier = Modifier.weight(1f),
+                )
+                SelectionActionButton(
+                    icon = HugeIcons.Delete01,
+                    label = stringResource(R.string.chat_page_delete),
+                    onClick = onDelete,
+                    enabled = canAct,
+                    isDestructive = true,
+                    modifier = Modifier.weight(1f),
+                )
+            }
         }
     }
 }
@@ -1283,37 +1298,42 @@ private fun SelectionActionButton(
     modifier: Modifier = Modifier,
     isDestructive: Boolean = false,
 ) {
+    val colors = MaterialTheme.colorScheme
     val contentColor = when {
-        !enabled -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-        isDestructive -> MaterialTheme.colorScheme.error
-        else -> MaterialTheme.colorScheme.onSurface
+        !enabled -> colors.onSurface.copy(alpha = 0.38f)
+        isDestructive -> colors.error
+        else -> colors.onSurface
+    }
+    val container = when {
+        !enabled -> colors.surfaceContainerHighest.copy(alpha = 0.45f)
+        isDestructive -> colors.errorContainer.copy(alpha = 0.55f)
+        else -> colors.surfaceContainerHighest
     }
 
     Surface(
         onClick = onClick,
         enabled = enabled,
         shape = RoundedCornerShape(12.dp),
-        color = Color.Transparent,
+        color = container,
         contentColor = contentColor,
         modifier = modifier,
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(horizontal = 2.dp, vertical = 6.dp),
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp),
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = label,
-                modifier = Modifier.size(20.dp),
+                modifier = Modifier.size(18.dp),
             )
-            Spacer(Modifier.height(3.dp))
             Text(
                 text = label,
-                style = MaterialTheme.typography.labelSmall,
-                maxLines = 1,
+                style = MaterialTheme.typography.labelMedium,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                modifier = Modifier.weight(1f, fill = false),
             )
         }
     }
