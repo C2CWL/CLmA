@@ -44,7 +44,6 @@ import com.clma.app.Screen
 import com.clma.app.data.datastore.DisplaySetting
 import com.clma.app.data.datastore.LoadingIndicatorStyle
 import com.clma.app.data.datastore.PopupMenuStyle
-import com.clma.app.data.datastore.ReasoningPickerStyle
 import com.clma.app.data.datastore.effectiveLoadingIndicatorStyle
 import com.clma.app.data.datastore.withLoadingIndicatorStyle
 import com.clma.app.ui.components.ui.CardGroup
@@ -183,30 +182,6 @@ fun SettingPreferencesThemePage(vm: SettingVM = koinViewModel()) {
                                         LoadingIndicatorStyle.ATOM_DOTS -> R.string.setting_display_page_loading_indicator_style_atom_dots
                                         LoadingIndicatorStyle.BREATHING_ORB -> R.string.setting_display_page_loading_indicator_style_breathing_orb
                                         LoadingIndicatorStyle.TWIN_ORBIT -> R.string.setting_display_page_loading_indicator_style_twin_orbit
-                                    }
-                                )
-                            },
-                            containerColor = CustomColors.listItemColors.containerColor,
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                            modifier = Modifier.width(150.dp),
-                        )
-                    },
-                )
-                item(
-                    headlineContent = { Text(stringResource(R.string.setting_display_page_reasoning_picker_style_title)) },
-                    supportingContent = { Text(stringResource(R.string.setting_display_page_reasoning_picker_style_desc)) },
-                    trailingContent = {
-                        Select(
-                            options = ReasoningPickerStyle.entries,
-                            selectedOption = displaySetting.reasoningPickerStyle,
-                            onOptionSelected = {
-                                updateDisplaySetting(displaySetting.copy(reasoningPickerStyle = it))
-                            },
-                            optionToString = {
-                                stringResource(
-                                    when (it) {
-                                        ReasoningPickerStyle.ENERGY_BAR -> R.string.setting_display_page_reasoning_picker_style_energy_bar
-                                        ReasoningPickerStyle.STELLAR -> R.string.setting_display_page_reasoning_picker_style_stellar
                                     }
                                 )
                             },

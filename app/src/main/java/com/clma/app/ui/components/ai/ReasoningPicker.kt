@@ -88,7 +88,6 @@ import com.clma.app.ui.components.ui.ToggleSurface
 import com.clma.app.ui.components.ui.LocalModernChatLayout
 import com.clma.app.ui.components.ui.ModernSmallCorner
 import com.clma.app.ui.components.ui.modernAccentSoft
-import com.clma.app.data.datastore.ReasoningPickerStyle
 import com.clma.app.data.datastore.Settings
 import com.clma.app.ui.context.LocalSettings
 import androidx.compose.runtime.CompositionLocalProvider
@@ -213,7 +212,6 @@ fun ReasoningPicker(
         supportedLevels.ifEmpty { ReasoningLevel.entries.toList() }
     }
     val displayLevel = nearestSupportedReasoningLevel(reasoningLevel, levels)
-    val style = LocalSettings.current.displaySetting.reasoningPickerStyle
     val isMax = displayLevel == ReasoningLevel.MAX
     val titleColor by animateColorAsState(
         targetValue = if (isMax) CodexUltraAccent else MaterialTheme.colorScheme.onSurface,
@@ -254,38 +252,26 @@ fun ReasoningPicker(
                 )
             }
 
-            when (style) {
-                ReasoningPickerStyle.ENERGY_BAR -> {
-                    // Compact badge for the active level — the fat capsule carries the interaction.
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        ReasoningIcon(
-                            level = displayLevel,
-                            modifier = Modifier.size(22.dp),
-                        )
-                        ReasoningLevelWord(
-                            level = displayLevel,
-                            style = MaterialTheme.typography.titleMedium,
-                        )
-                    }
-                    ReasoningEnergyBar(
-                        currentLevel = displayLevel,
-                        onSelectLevel = onUpdateReasoningLevel,
-                        levels = levels,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-                ReasoningPickerStyle.STELLAR -> {
-                    ReasoningStellarSheet(
-                        currentLevel = displayLevel,
-                        onSelectLevel = onUpdateReasoningLevel,
-                        levels = levels,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
+            // Compact badge for the active level — the fat capsule carries the interaction.
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                ReasoningIcon(
+                    level = displayLevel,
+                    modifier = Modifier.size(22.dp),
+                )
+                ReasoningLevelWord(
+                    level = displayLevel,
+                    style = MaterialTheme.typography.titleMedium,
+                )
             }
+            ReasoningEnergyBar(
+                currentLevel = displayLevel,
+                onSelectLevel = onUpdateReasoningLevel,
+                levels = levels,
+                modifier = Modifier.fillMaxWidth(),
+            )
 
             // Codex 标准/快速：only when the model supports speed tiers; under the bar to match v7.
             if (showCodexSpeed) {
@@ -301,28 +287,20 @@ fun ReasoningPicker(
 
 @Composable
 internal fun ReasoningIcon(level: ReasoningLevel, modifier: Modifier = Modifier) {
-    val style = LocalSettings.current.displaySetting.reasoningPickerStyle
     val iconColor by animateColorAsState(
         if (level.isEnabled) reasoningLevelColor(level)
         else MaterialTheme.colorScheme.onSurfaceVariant,
         label = "reasoningIconTint"
     )
-    when (style) {
-        ReasoningPickerStyle.STELLAR -> StellarMagnitudeIcon(
-            level = level,
-            tint = iconColor,
+    when (level) {
+        ReasoningLevel.AUTO -> Icon(HugeIcons.Atom02, contentDescription = null, modifier = modifier, tint = iconColor)
+        ReasoningLevel.MAX, ReasoningLevel.XHIGH -> Icon(
+            HugeIcons.Sparkles,
+            contentDescription = null,
             modifier = modifier,
+            tint = iconColor,
         )
-        ReasoningPickerStyle.ENERGY_BAR -> when (level) {
-            ReasoningLevel.AUTO -> Icon(HugeIcons.Atom02, contentDescription = null, modifier = modifier, tint = iconColor)
-            ReasoningLevel.MAX, ReasoningLevel.XHIGH -> Icon(
-                HugeIcons.Sparkles,
-                contentDescription = null,
-                modifier = modifier,
-                tint = iconColor,
-            )
-            else -> DepthMark(level = level, tint = iconColor, modifier = modifier)
-        }
+        else -> DepthMark(level = level, tint = iconColor, modifier = modifier)
     }
 }
 
@@ -397,7 +375,7 @@ private val SurgeOffColor = Color(0xFF8B93A7)
 internal val CodexUltraAccent = Color(0xFFB06DFF)
 
 /**
- * Cool palette from slate → solid blue → violet. Used by the energy bar and stellar icons.
+ * Cool palette from slate → solid blue → violet. Used by the energy bar and icons.
  */
 internal fun reasoningLevelColor(level: ReasoningLevel): Color = when (level) {
     ReasoningLevel.OFF -> SurgeOffColor
