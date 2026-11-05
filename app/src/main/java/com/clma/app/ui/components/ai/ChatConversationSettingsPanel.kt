@@ -1,6 +1,12 @@
 package com.clma.app.ui.components.ai
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -96,354 +102,365 @@ fun ChatConversationSettingsPanel(
     onOpenMessageOutline: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    if (!visible) return
+    AnimatedVisibility(
+        visible = visible,
+        enter = expandVertically(
+            expandFrom = Alignment.Top,
+            animationSpec = tween(260),
+        ) + fadeIn(animationSpec = tween(240)),
+        exit = shrinkVertically(
+            shrinkTowards = Alignment.Top,
+            animationSpec = tween(220),
+        ) + fadeOut(animationSpec = tween(180)),
+        modifier = modifier,
+    ) {
+        val scope = rememberCoroutineScope()
+        val navController = LocalNavController.current
+        val approvalPrefs = koinInject<ToolApprovalPreferences>()
+        val settingsStore = koinInject<SettingsStore>()
+        val workspaceRepository: WorkspaceRepository = koinInject()
+        val workspaces by workspaceRepository.listFlow().collectAsState(initial = emptyList())
+        val approvalMode by approvalPrefs.modeFlow.collectAsStateWithLifecycle(initialValue = ApprovalMode.MANUAL)
+        val liveSettings by settingsStore.settingsFlow.collectAsStateWithLifecycle()
+        val dispatchProfile = liveSettings.subAgentDispatchProfile
+        val currentModel = model ?: settings.resolveChatModel(conversation.chatModelId, conversation.assistantId)
 
-    val scope = rememberCoroutineScope()
-    val navController = LocalNavController.current
-    val approvalPrefs = koinInject<ToolApprovalPreferences>()
-    val settingsStore = koinInject<SettingsStore>()
-    val workspaceRepository: WorkspaceRepository = koinInject()
-    val workspaces by workspaceRepository.listFlow().collectAsState(initial = emptyList())
-    val approvalMode by approvalPrefs.modeFlow.collectAsStateWithLifecycle(initialValue = ApprovalMode.MANUAL)
-    val liveSettings by settingsStore.settingsFlow.collectAsStateWithLifecycle()
-    val dispatchProfile = liveSettings.subAgentDispatchProfile
-    val currentModel = model ?: settings.resolveChatModel(conversation.chatModelId, conversation.assistantId)
+        var showPresetSheet by remember { mutableStateOf(false) }
+        var showInjectionSheet by remember { mutableStateOf(false) }
+        var showCompressDialog by remember { mutableStateOf(false) }
+        var pendingAuto by remember { mutableStateOf(false) }
 
-    var showPresetSheet by remember { mutableStateOf(false) }
-    var showInjectionSheet by remember { mutableStateOf(false) }
-    var showCompressDialog by remember { mutableStateOf(false) }
-    var pendingAuto by remember { mutableStateOf(false) }
+        BackHandler(onBack = onDismiss)
 
-    BackHandler(onBack = onDismiss)
-
-    Box(modifier = modifier.fillMaxSize()) {
-        // Scrim
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.32f))
-                .clickable(onClick = onDismiss),
-        )
-
-        Surface(
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .fillMaxWidth()
-                .padding(horizontal = 10.dp)
-                .heightIn(max = 520.dp),
-            shape = RoundedCornerShape(16.dp),
-            color = MaterialTheme.colorScheme.surfaceContainerLowest,
-            tonalElevation = 2.dp,
-            shadowElevation = 8.dp,
-        ) {
-            Column(
+        Box(modifier = Modifier.fillMaxSize()) {
+            // Scrim
+            Box(
                 modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.32f))
+                    .clickable(onClick = onDismiss),
+            )
+
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
                     .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(top = 10.dp, bottom = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                    .padding(horizontal = 10.dp)
+                    .heightIn(max = 520.dp),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerLowest,
+                tonalElevation = 2.dp,
+                shadowElevation = 8.dp,
             ) {
-                Text(
-                    text = stringResource(R.string.chat_conversation_settings),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 14.dp),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                )
-
-                AgentModeHint(agentModeEnabled = conversation.agentModeEnabled)
-
-                SettingsGroupCard(title = stringResource(R.string.chat_conversation_settings_group_chat)) {
-                    SettingsActionRow(
-                        icon = Lucide.List,
-                        title = stringResource(R.string.chat_conversation_settings_message_outline),
-                        subtitle = stringResource(R.string.chat_conversation_settings_message_outline_desc),
-                        onClick = {
-                            onDismiss()
-                            onOpenMessageOutline()
-                        },
+                        .verticalScroll(rememberScrollState())
+                        .padding(top = 10.dp, bottom = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.chat_conversation_settings),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                     )
-                    HorizontalDivider(
-                        modifier = Modifier.padding(start = 50.dp, end = 12.dp),
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                    )
-                    ListItem(
-                        leadingContent = {
-                            SettingsIconBadge(icon = { Icon(HugeIcons.Package01, null, Modifier.size(16.dp)) })
-                        },
-                        headlineContent = {
-                            Text(stringResource(R.string.chat_page_compress_context))
-                        },
-                        supportingContent = {
-                            Text(
-                                text = stringResource(R.string.chat_page_compress_context_desc),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        },
-                        trailingContent = {
-                            if (conversation.messageNodes.isNotEmpty()) {
+
+                    AgentModeHint(agentModeEnabled = conversation.agentModeEnabled)
+
+                    SettingsGroupCard(title = stringResource(R.string.chat_conversation_settings_group_chat)) {
+                        SettingsActionRow(
+                            icon = Lucide.List,
+                            title = stringResource(R.string.chat_conversation_settings_message_outline),
+                            subtitle = stringResource(R.string.chat_conversation_settings_message_outline_desc),
+                            onClick = {
+                                onDismiss()
+                                onOpenMessageOutline()
+                            },
+                        )
+                        HorizontalDivider(
+                            modifier = Modifier.padding(start = 50.dp, end = 12.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                        )
+                        ListItem(
+                            leadingContent = {
+                                SettingsIconBadge(icon = { Icon(HugeIcons.Package01, null, Modifier.size(16.dp)) })
+                            },
+                            headlineContent = {
+                                Text(stringResource(R.string.chat_page_compress_context))
+                            },
+                            supportingContent = {
                                 Text(
-                                    text = stringResource(
-                                        R.string.chat_page_message_count,
-                                        conversation.messageNodes.size,
-                                    ),
+                                    text = stringResource(R.string.chat_page_compress_context_desc),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
                                 )
-                            } else {
-                                Icon(
-                                    HugeIcons.ArrowRight01,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        },
-                        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                        modifier = Modifier.clickable { showCompressDialog = true },
-                    )
-                }
+                            },
+                            trailingContent = {
+                                if (conversation.messageNodes.isNotEmpty()) {
+                                    Text(
+                                        text = stringResource(
+                                            R.string.chat_page_message_count,
+                                            conversation.messageNodes.size,
+                                        ),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                } else {
+                                    Icon(
+                                        HugeIcons.ArrowRight01,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            },
+                            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                            modifier = Modifier.clickable { showCompressDialog = true },
+                        )
+                    }
 
-                SettingsGroupCard(title = stringResource(R.string.chat_conversation_settings_group_general)) {
-                    SearchControlCard(
-                        enableSearch = enableSearch,
-                        settings = settings,
-                        model = currentModel,
-                        onUpdateSearchMode = onUpdateSearchMode,
-                        onUpdateSearchService = onUpdateSearchService,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
-                    )
-                    if (workspaces.isNotEmpty()) {
+                    SettingsGroupCard(title = stringResource(R.string.chat_conversation_settings_group_general)) {
+                        SearchControlCard(
+                            enableSearch = enableSearch,
+                            settings = settings,
+                            model = currentModel,
+                            onUpdateSearchMode = onUpdateSearchMode,
+                            onUpdateSearchService = onUpdateSearchService,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                        )
+                        if (workspaces.isNotEmpty()) {
+                            HorizontalDivider(
+                                modifier = Modifier.padding(start = 50.dp, end = 12.dp),
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                            )
+                            WorkspacePickerListItem(
+                                assistant = assistant,
+                                conversation = conversation,
+                                workspaces = workspaces,
+                                onUpdateAssistant = onUpdateAssistant,
+                                onUpdateConversation = onUpdateConversation,
+                                onNavigateToDetail = { id ->
+                                    onDismiss()
+                                    navController.navigate(Screen.WorkspaceDetail(id))
+                                },
+                                onNavigateToTerminal = { id ->
+                                    onDismiss()
+                                    navController.navigate(Screen.WorkspaceTerminal(id))
+                                },
+                                onNavigateToManage = {
+                                    onDismiss()
+                                    navController.navigate(Screen.Workspaces)
+                                },
+                                containerColor = Color.Transparent,
+                            )
+                        }
+                    }
+
+                    SettingsGroupCard(title = stringResource(R.string.chat_conversation_settings_group_agent)) {
+                        ApprovalModeRow(
+                            mode = approvalMode,
+                            onSelect = { mode ->
+                                if (mode == ApprovalMode.AUTO && approvalMode != ApprovalMode.AUTO) {
+                                    pendingAuto = true
+                                } else {
+                                    scope.launch { approvalPrefs.setMode(mode) }
+                                }
+                            },
+                        )
                         HorizontalDivider(
                             modifier = Modifier.padding(start = 50.dp, end = 12.dp),
                             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
                         )
-                        WorkspacePickerListItem(
-                            assistant = assistant,
-                            conversation = conversation,
-                            workspaces = workspaces,
-                            onUpdateAssistant = onUpdateAssistant,
-                            onUpdateConversation = onUpdateConversation,
-                            onNavigateToDetail = { id ->
-                                onDismiss()
-                                navController.navigate(Screen.WorkspaceDetail(id))
+                        DispatchProfileRow(
+                            profile = dispatchProfile,
+                            onSelect = { profile ->
+                                scope.launch {
+                                    settingsStore.update { it.copy(subAgentDispatchProfile = profile) }
+                                }
                             },
-                            onNavigateToTerminal = { id ->
-                                onDismiss()
-                                navController.navigate(Screen.WorkspaceTerminal(id))
-                            },
-                            onNavigateToManage = {
-                                onDismiss()
-                                navController.navigate(Screen.Workspaces)
-                            },
-                            containerColor = Color.Transparent,
                         )
-                    }
-                }
-
-                SettingsGroupCard(title = stringResource(R.string.chat_conversation_settings_group_agent)) {
-                    ApprovalModeRow(
-                        mode = approvalMode,
-                        onSelect = { mode ->
-                            if (mode == ApprovalMode.AUTO && approvalMode != ApprovalMode.AUTO) {
-                                pendingAuto = true
-                            } else {
-                                scope.launch { approvalPrefs.setMode(mode) }
-                            }
-                        },
-                    )
-                    HorizontalDivider(
-                        modifier = Modifier.padding(start = 50.dp, end = 12.dp),
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                    )
-                    DispatchProfileRow(
-                        profile = dispatchProfile,
-                        onSelect = { profile ->
-                            scope.launch {
-                                settingsStore.update { it.copy(subAgentDispatchProfile = profile) }
-                            }
-                        },
-                    )
-                    HorizontalDivider(
-                        modifier = Modifier.padding(start = 50.dp, end = 12.dp),
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                    )
-                    val grantCount = rememberChatGrantCount(conversation.id)
-                    ListItem(
-                        leadingContent = {
-                            SettingsIconBadge(
-                                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-                            ) {
-                                Text("\uD83D\uDD13", style = MaterialTheme.typography.labelMedium)
-                            }
-                        },
-                        headlineContent = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(stringResource(R.string.setting_page_tool_approvals_preset_chip))
-                                if (grantCount > 0) {
-                                    Spacer(Modifier.size(6.dp))
-                                    Surface(
-                                        shape = RoundedCornerShape(6.dp),
-                                        color = MaterialTheme.colorScheme.primaryContainer,
-                                    ) {
-                                        Text(
-                                            text = grantCount.toString(),
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp),
-                                        )
+                        HorizontalDivider(
+                            modifier = Modifier.padding(start = 50.dp, end = 12.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                        )
+                        val grantCount = rememberChatGrantCount(conversation.id)
+                        ListItem(
+                            leadingContent = {
+                                SettingsIconBadge(
+                                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                                ) {
+                                    Text("\uD83D\uDD13", style = MaterialTheme.typography.labelMedium)
+                                }
+                            },
+                            headlineContent = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(stringResource(R.string.setting_page_tool_approvals_preset_chip))
+                                    if (grantCount > 0) {
+                                        Spacer(Modifier.size(6.dp))
+                                        Surface(
+                                            shape = RoundedCornerShape(6.dp),
+                                            color = MaterialTheme.colorScheme.primaryContainer,
+                                        ) {
+                                            Text(
+                                                text = grantCount.toString(),
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp),
+                                            )
+                                        }
                                     }
                                 }
-                            }
-                        },
-                        supportingContent = {
-                            Text(
-                                text = stringResource(R.string.setting_page_tool_approvals_preset_subtitle),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        },
-                        trailingContent = {
-                            Icon(
-                                HugeIcons.ArrowRight01,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        },
-                        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                        modifier = Modifier.clickable { showPresetSheet = true },
-                    )
-
-                    if (settings.mcpServers.isNotEmpty()) {
-                        HorizontalDivider(
-                            modifier = Modifier.padding(start = 50.dp, end = 12.dp),
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                        )
-                        McpPickerListItem(
-                            assistant = assistant,
-                            servers = settings.mcpServers,
-                            mcpManager = mcpManager,
-                            onUpdateAssistant = onUpdateAssistant,
-                            modifier = Modifier,
-                        )
-                    }
-
-                    HorizontalDivider(
-                        modifier = Modifier.padding(start = 50.dp, end = 12.dp),
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                    )
-                    val modeAndLorebookCount =
-                        if (assistant.allowConversationPromptInjection) {
-                            conversation.modeInjectionIds.size + conversation.lorebookIds.size
-                        } else {
-                            assistant.modeInjectionIds.size + assistant.lorebookIds.size
-                        }
-                    val activeCount =
-                        assistant.quickMessageIds.size +
-                            modeAndLorebookCount +
-                            assistant.enabledSkills.size
-                    ListItem(
-                        leadingContent = {
-                            SettingsIconBadge {
-                                Icon(Lucide.Package, null, Modifier.size(16.dp))
-                            }
-                        },
-                        headlineContent = {
-                            Text(stringResource(R.string.assistant_page_tab_extensions))
-                        },
-                        trailingContent = {
-                            if (activeCount > 0) {
+                            },
+                            supportingContent = {
                                 Text(
-                                    text = activeCount.toString(),
+                                    text = stringResource(R.string.setting_page_tool_approvals_preset_subtitle),
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.primary,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
                                 )
-                            } else {
+                            },
+                            trailingContent = {
                                 Icon(
                                     HugeIcons.ArrowRight01,
                                     contentDescription = null,
                                     modifier = Modifier.size(16.dp),
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
+                            },
+                            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                            modifier = Modifier.clickable { showPresetSheet = true },
+                        )
+
+                        if (settings.mcpServers.isNotEmpty()) {
+                            HorizontalDivider(
+                                modifier = Modifier.padding(start = 50.dp, end = 12.dp),
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                            )
+                            McpPickerListItem(
+                                assistant = assistant,
+                                servers = settings.mcpServers,
+                                mcpManager = mcpManager,
+                                onUpdateAssistant = onUpdateAssistant,
+                                modifier = Modifier,
+                            )
+                        }
+
+                        HorizontalDivider(
+                            modifier = Modifier.padding(start = 50.dp, end = 12.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                        )
+                        val modeAndLorebookCount =
+                            if (assistant.allowConversationPromptInjection) {
+                                conversation.modeInjectionIds.size + conversation.lorebookIds.size
+                            } else {
+                                assistant.modeInjectionIds.size + assistant.lorebookIds.size
                             }
-                        },
-                        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                        modifier = Modifier.clickable { showInjectionSheet = true },
-                    )
+                        val activeCount =
+                            assistant.quickMessageIds.size +
+                                modeAndLorebookCount +
+                                assistant.enabledSkills.size
+                        ListItem(
+                            leadingContent = {
+                                SettingsIconBadge {
+                                    Icon(Lucide.Package, null, Modifier.size(16.dp))
+                                }
+                            },
+                            headlineContent = {
+                                Text(stringResource(R.string.assistant_page_tab_extensions))
+                            },
+                            trailingContent = {
+                                if (activeCount > 0) {
+                                    Text(
+                                        text = activeCount.toString(),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.primary,
+                                    )
+                                } else {
+                                    Icon(
+                                        HugeIcons.ArrowRight01,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            },
+                            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                            modifier = Modifier.clickable { showInjectionSheet = true },
+                        )
+                    }
                 }
             }
         }
-    }
 
-    if (showPresetSheet) {
-        ChatToolPresetSheet(
-            conversationId = conversation.id,
-            assistant = liveSettings.getCurrentAssistant(),
-            onDismiss = { showPresetSheet = false },
-        )
-    }
-    if (showInjectionSheet) {
-        InjectionQuickConfigSheet(
-            conversation = conversation,
-            assistant = assistant,
-            settings = settings,
-            onUpdateAssistant = onUpdateAssistant,
-            onUpdateConversation = onUpdateConversation,
-            onDismiss = { showInjectionSheet = false },
-            onDismissAll = {
-                showInjectionSheet = false
-                onDismiss()
-            },
-        )
-    }
-    if (showCompressDialog) {
-        CompressContextDialog(
-            defaultTargetTokens = settings.getContextCompactionTargetTokens(
-                settings.getEffectiveContextLength(currentModel),
-            ),
-            onDismiss = { showCompressDialog = false },
-            onConfirm = { additionalPrompt, targetTokens, keepRecentMessages ->
-                onCompressContext(additionalPrompt, targetTokens, keepRecentMessages)
-            },
-        )
-    }
-    if (pendingAuto) {
-        AlertDialog(
-            onDismissRequest = { pendingAuto = false },
-            title = {
-                Text(
-                    text = stringResource(R.string.setting_page_tool_approvals_auto_dialog_title),
-                    fontWeight = FontWeight.Bold,
-                )
-            },
-            text = { Text(stringResource(R.string.setting_page_tool_approvals_auto_dialog_body)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    pendingAuto = false
-                    scope.launch { approvalPrefs.setMode(ApprovalMode.AUTO) }
-                }) {
+        if (showPresetSheet) {
+            ChatToolPresetSheet(
+                conversationId = conversation.id,
+                assistant = liveSettings.getCurrentAssistant(),
+                onDismiss = { showPresetSheet = false },
+            )
+        }
+        if (showInjectionSheet) {
+            InjectionQuickConfigSheet(
+                conversation = conversation,
+                assistant = assistant,
+                settings = settings,
+                onUpdateAssistant = onUpdateAssistant,
+                onUpdateConversation = onUpdateConversation,
+                onDismiss = { showInjectionSheet = false },
+                onDismissAll = {
+                    showInjectionSheet = false
+                    onDismiss()
+                },
+            )
+        }
+        if (showCompressDialog) {
+            CompressContextDialog(
+                defaultTargetTokens = settings.getContextCompactionTargetTokens(
+                    settings.getEffectiveContextLength(currentModel),
+                ),
+                onDismiss = { showCompressDialog = false },
+                onConfirm = { additionalPrompt, targetTokens, keepRecentMessages ->
+                    onCompressContext(additionalPrompt, targetTokens, keepRecentMessages)
+                },
+            )
+        }
+        if (pendingAuto) {
+            AlertDialog(
+                onDismissRequest = { pendingAuto = false },
+                title = {
                     Text(
-                        text = stringResource(R.string.setting_page_tool_approvals_auto_dialog_confirm),
-                        color = MaterialTheme.colorScheme.error,
+                        text = stringResource(R.string.setting_page_tool_approvals_auto_dialog_title),
+                        fontWeight = FontWeight.Bold,
                     )
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { pendingAuto = false }) {
-                    Text(stringResource(R.string.setting_page_tool_approvals_auto_dialog_cancel))
-                }
-            },
-        )
-    }
+                },
+                text = { Text(stringResource(R.string.setting_page_tool_approvals_auto_dialog_body)) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        pendingAuto = false
+                        scope.launch { approvalPrefs.setMode(ApprovalMode.AUTO) }
+                    }) {
+                        Text(
+                            text = stringResource(R.string.setting_page_tool_approvals_auto_dialog_confirm),
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { pendingAuto = false }) {
+                        Text(stringResource(R.string.setting_page_tool_approvals_auto_dialog_cancel))
+                    }
+                },
+            )
+        }
+    } // AnimatedVisibility
 }
 
 @Composable
