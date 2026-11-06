@@ -248,6 +248,46 @@ class GoogleToolCombinationTest {
     }
 
     @Test
+    fun `every model gets the skip signature except gemini 2_5 and older`() {
+        val messages = listOf(
+            UIMessage.user("save the weather"),
+            UIMessage(
+                role = MessageRole.ASSISTANT,
+                parts = listOf(
+                    UIMessagePart.Tool(
+                        toolCallId = "call-1",
+                        toolName = "save_weather",
+                        input = """{"city":"Shanghai"}""",
+                        output = listOf(UIMessagePart.Text("saved")),
+                    )
+                ),
+            ),
+        )
+
+        // Cloud Code Assist validates every replayed functionCall, so anything it fronts - current
+        // or not yet in the registry - needs the sentinel. Only Gemini 2.5 and earlier reject it.
+        listOf("gemini-3.8-pro", "gemini-4-pro", "claude-5-sonnet", "gpt-oss-120b").forEach { id ->
+            val body = provider.buildCompletionRequestBody(
+                messages,
+                TextGenerationParams(model = toolModel(modelId = id), tools = listOf(testTool())),
+            )
+            assertEquals(
+                id,
+                "skip_thought_signature_validator",
+                firstFunctionCall(body)["thoughtSignature"]!!.jsonPrimitive.content,
+            )
+        }
+
+        listOf("gemini-2.5-pro", "gemini-2.0-flash", "gemini-1.5-pro").forEach { id ->
+            val body = provider.buildCompletionRequestBody(
+                messages,
+                TextGenerationParams(model = toolModel(modelId = id), tools = listOf(testTool())),
+            )
+            assertFalse(id, firstFunctionCall(body).containsKey("thoughtSignature"))
+        }
+    }
+
+    @Test
     fun `a real thought signature wins over the skip sentinel`() {
         val messages = listOf(
             UIMessage.user("save the weather"),
