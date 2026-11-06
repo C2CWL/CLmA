@@ -7,7 +7,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 private const val TAG = "Migration_33_34"
 
 /** Rewrites only cells whose storage class is blob. CAST leaves TEXT untouched. */
-internal const val SSH_HOST_BLOB_TO_TEXT_SQL = """
+internal val SSH_HOST_BLOB_TO_TEXT_SQL = """
     UPDATE ssh_hosts
     SET password = CAST(password AS TEXT),
         privateKey = CAST(privateKey AS TEXT),
