@@ -94,8 +94,6 @@ object WorkflowConstants {
     const val MAX_COOLDOWN_S = 24 * 60 * 60 // 24h
     const val MAX_RUNS_PER_DAY_FLOOR = 1
     const val MAX_RUNS_PER_DAY_CEIL = 1000
-    const val MIN_GEOFENCE_RADIUS_M = 50
-    const val MAX_GEOFENCE_RADIUS_M = 5000
     const val MAX_RUNS_HISTORY = 100
     const val MAX_ERROR_LENGTH = 500
 }

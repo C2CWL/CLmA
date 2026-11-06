@@ -733,38 +733,13 @@ class SettingsStore(
                         else -> true
                     }
             }
-            // For existing installs that pre-date the on-device AICore provider being
-            // promoted to first-place, hoist it to the top so the user does not have to
-            // scroll past every legacy aggregator to find it.
-            val aicoreIndex = providers.indexOfFirst { it is ProviderSetting.AICore }
-            if (aicoreIndex > 0) {
-                val aicoreRow = providers.removeAt(aicoreIndex)
-                providers.add(0, aicoreRow)
-            }
+            // Removed on-device Google providers no longer decode and are dropped on read.
+            // llama.cpp is the remaining on-device provider and stays pinned at the top.
             DEFAULT_PROVIDERS.forEach { defaultProvider ->
                 if (defaultProvider.id in deletedDefaultIds) return@forEach
                 if (providers.none { it.id == defaultProvider.id }) {
-                    // On-device built-in providers (AICore, LiteRT) are pinned to the top of
-                    // the list in the order they appear in DEFAULT_PROVIDERS. Remote provider
-                    // defaults continue to append at the end so existing users see no
-                    // reordering of their configured remote providers.
                     when (defaultProvider) {
-                        is ProviderSetting.AICore -> providers.add(0, defaultProvider.copyProvider())
-                        is ProviderSetting.LiteRtLocal -> {
-                            // Insert right after AICore, or at 0 if AICore is absent.
-                            // indexOfFirst returns -1 when absent; -1 + 1 = 0, so insert at 0.
-                            val insertAt = providers.indexOfFirst { it is ProviderSetting.AICore } + 1
-                            providers.add(insertAt, defaultProvider.copyProvider())
-                        }
-                        is ProviderSetting.LlamaCppLocal -> {
-                            // Insert right after LiteRtLocal, so it groups with the other
-                            // on-device provider instead of appending after every remote
-                            // provider below. Falls back to right after AICore, or 0, if
-                            // LiteRtLocal is absent - same absent-index fallback as above.
-                            val insertAt = providers.indexOfFirst { it is ProviderSetting.LiteRtLocal }
-                                .let { if (it >= 0) it + 1 else providers.indexOfFirst { p -> p is ProviderSetting.AICore } + 1 }
-                            providers.add(insertAt, defaultProvider.copyProvider())
-                        }
+                        is ProviderSetting.LlamaCppLocal -> providers.add(0, defaultProvider.copyProvider())
                         else -> providers.add(defaultProvider.copyProvider())
                     }
                 }
@@ -846,14 +821,6 @@ class SettingsStore(
                         )
 
                         is ProviderSetting.Claude -> provider.copy(
-                            models = provider.models.distinctBy { model -> model.id }
-                        )
-
-                        is ProviderSetting.AICore -> provider.copy(
-                            models = provider.models.distinctBy { model -> model.id }
-                        )
-
-                        is ProviderSetting.LiteRtLocal -> provider.copy(
                             models = provider.models.distinctBy { model -> model.id }
                         )
 

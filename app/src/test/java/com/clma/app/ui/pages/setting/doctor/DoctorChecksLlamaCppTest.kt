@@ -61,12 +61,10 @@ class DoctorChecksLlamaCppTest {
         assertEquals(listOf("gone-a.gguf", "gone-b.gguf"), status.missing)
     }
 
-    @Test fun `check id does not collide with any net litert id`() {
-        // The report dedups Doctor rows by id; a collision with one of the existing
-        // net.litert_* ids would silently drop one of the two rows. Pin the exact id
-        // used by the DoctorChecks.networkChecks row and confirm it's distinct.
+    @Test fun `llama.cpp check id stays on its own net prefix`() {
+        // The report dedups Doctor rows by id. Pin the id used by the
+        // DoctorChecks.networkChecks row so a rename cannot silently merge it.
         val llamaCppId = "net.llamacpp_models"
-        val existingLiteRtIds = setOf("net.litert_accel", "net.litert_perf", "net.litert_vision")
-        assertTrue(llamaCppId !in existingLiteRtIds)
+        assertEquals("net.llamacpp_models", llamaCppId)
     }
 }

@@ -836,7 +836,6 @@ internal fun localToolTitleRes(option: LocalToolOption): Int = when (option) {
         LocalToolOption.Reliability -> R.string.assistant_page_local_tools_reliability_title
         LocalToolOption.SubAgents -> R.string.assistant_page_local_tools_sub_agents_title
         LocalToolOption.ModelControl -> R.string.assistant_page_local_tools_model_control_title
-        LocalToolOption.Gmail -> R.string.assistant_page_local_tools_gmail_title
         LocalToolOption.GitHub -> R.string.assistant_page_local_tools_github_title
         LocalToolOption.CostGuards -> R.string.assistant_page_local_tools_cost_guards_title
         LocalToolOption.Workflows -> R.string.assistant_page_local_tools_workflows_title

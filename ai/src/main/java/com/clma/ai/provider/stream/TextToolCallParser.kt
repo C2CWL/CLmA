@@ -13,8 +13,7 @@ import com.clma.ai.ui.UIMessagePart
  * Fallback parser for models that emit tool calls as **literal text** in the message content
  * instead of as structured tool calls.
  *
- * Two shipping examples: Gemini Nano on-device ([com.clma.ai.provider.providers.AICoreProvider])
- * and MiniMax-style models served through OpenAI-compatible gateways, where the chat template asks
+ * One shipping example: MiniMax-style models served through OpenAI-compatible gateways, where the chat template asks
  * for `<tool_call>{"name":…,"input":…}</tool_call>` and the gateway streams that block as ordinary
  * content text. Without this, the markup is shown to the user verbatim *and* the tool never runs —
  * the turn just ends as prose.

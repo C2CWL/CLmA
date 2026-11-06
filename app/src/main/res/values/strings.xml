@@ -1878,8 +1878,6 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="setting_provider_delete_body">This will permanently remove %1$s and all its configured models. You can re-add it later.</string>
   <string name="setting_provider_delete_confirm">Remove</string>
   <string name="setting_provider_delete_cancel">Cancel</string>
-  <string name="setting_provider_aicore_release_stage">Release stage</string>
-  <string name="setting_provider_aicore_status_help">On-device. Requires Pixel 8/9/10 with the AICore app installed AND enrollment in the GenAI Prompt-API early-access program (separate opt-in). If you see ErrorCode 606 / FEATURE_NOT_FOUND on first run, you have AICore installed but not the Prompt-API channel — request access via the GenAI Prompt-API early-access form, then reboot. Tool calling is supported via prompt engineering — Gemini Nano emits &lt;tool_call&gt; markup which CLmA parses and dispatches.</string>
   <string name="setting_page_notifications">Notification access</string>
   <string name="setting_page_notifications_status_section">Status</string>
   <string name="setting_page_notifications_status_connected">Service: Connected</string>
@@ -1900,9 +1898,9 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="assistant_page_local_tools_system_intents_title">System intents</string>
   <string name="assistant_page_local_tools_system_intents_desc">Let the assistant pre-fill system apps for you to finalise: Calendar event, new Contact, email composer, SMS composer, WiFi settings, Maps. Nothing is saved or sent without your tap in the destination app.</string>
   <string name="assistant_page_local_tools_workflows_hint_title">Workflows need extra setup</string>
-  <string name="assistant_page_local_tools_workflows_hint_message">Workflows are enabled. Some trigger types need permissions the toggle can\'t request:\n\n• Geofences (you arrive somewhere): Settings → Apps → CLmA → Permissions → Location → Allow all the time.\n• Notification arrives: Settings → Apps → Special access → Notification access → enable CLmA.\n• App launches/closes: Settings → Accessibility → enable CLmA.\n• Bluetooth connect/disconnect: grant BLUETOOTH_CONNECT when the system asks.\n\nSchedule, WiFi, headphones, power, screen on/off, and battery triggers work right out of the box. The assistant will flag any extra setup at the moment you author a workflow that needs it.</string>
+  <string name="assistant_page_local_tools_workflows_hint_message">Workflows are enabled. Some trigger types need permissions the toggle can\'t request:\n\n• Notification arrives: Settings → Apps → Special access → Notification access → enable CLmA.\n• App launches/closes: Settings → Accessibility → enable CLmA.\n• Bluetooth connect/disconnect: grant BLUETOOTH_CONNECT when the system asks.\n\nSchedule, WiFi, headphones, power, screen on/off, and battery triggers work right out of the box. The assistant will flag any extra setup at the moment you author a workflow that needs it.</string>
   <string name="assistant_page_local_tools_workflows_title">Workflows</string>
-  <string name="assistant_page_local_tools_workflows_desc">Let the assistant create automations that run on triggers — WiFi connect, schedule, geofence, notification arrival, and more.</string>
+  <string name="assistant_page_local_tools_workflows_desc">Let the assistant create automations that run on triggers — WiFi connect, schedule, notification arrival, and more.</string>
   <string name="setting_page_workflows_empty">No workflows yet. Ask your assistant to create one.</string>
   <string name="setting_page_workflows_how_it_works">How workflows work</string>
   <string name="setting_page_workflows_how_it_works_dialog_title">How workflows work</string>
@@ -1925,7 +1923,7 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="setting_page_workflow_detail_edit">Edit in chat</string>
   <string name="setting_page_workflow_detail_delete">Delete</string>
   <string name="setting_page_workflow_detail_delete_confirm_title">Delete workflow?</string>
-  <string name="setting_page_workflow_detail_delete_confirm_body">This removes the workflow and its history. Triggers it owned (geofences, schedules, broadcasts) are torn down on the next reconciliation. Cannot be undone.</string>
+  <string name="setting_page_workflow_detail_delete_confirm_body">This removes the workflow and its history. Triggers it owned (schedules, broadcasts) are torn down on the next reconciliation. Cannot be undone.</string>
   <string name="setting_page_workflow_detail_delete_confirm_yes">Delete</string>
   <string name="setting_page_workflow_detail_delete_confirm_no">Cancel</string>
   <string name="setting_page_workflow_detail_run_now_done">Run finished: %1$s</string>
@@ -2196,7 +2194,6 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="browser_ai_stripe_active">AI: %1$s</string>
   <string name="browser_ai_stripe_expand">Show recent</string>
   <string name="browser_ai_stripe_collapse">Hide</string>
-  <string name="local_llm_litert_name">Local · LiteRT</string>
   <string name="local_llm_default_disabled">Run open models on this device. ~1.5 GB download required (Qwen2.5 1.5B Q8).</string>
   <string name="local_llm_download_title">Download default model</string>
   <string name="local_llm_download_message">CLmA needs to download a starter model for this provider. The download is ~1.5 GB (Qwen2.5 1.5B Q8). Continue?</string>
@@ -2218,7 +2215,6 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="local_llm_insufficient_memory_format">Need about %1$d MB of free RAM (model is %2$d MB plus runtime headroom) but only %3$d MB is available. Close other apps or pick a smaller model.</string>
   <string name="local_llm_install_url_label">Or paste a HuggingFace URL (/blob/ or /resolve/ both work)</string>
   <string name="local_llm_install_url_action">Install</string>
-  <string name="local_llm_tool_calling_litert">Tool calling: prompt-engineered. Accuracy varies per model.</string>
   <string name="local_llm_enable_label">Enable</string>
   <string name="local_llm_install_url_hint">HuggingFace /blob/ or /resolve/ URLs both work.</string>
   <string name="local_llm_download_default">Download default model</string>
@@ -2771,8 +2767,6 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="perm_desc_manage_storage">Allows the agent to read and manage files on shared device storage.</string>
   <string name="perm_label_usage_stats">Usage access</string>
   <string name="perm_desc_usage_stats">Allows the agent to query app usage statistics and screen time.</string>
-  <string name="perm_label_background_location">Background location</string>
-  <string name="perm_desc_background_location">Allows geofence and location triggers to work when the app is in the background.</string>
   <string name="perm_label_local_network">Local network</string>
   <string name="perm_desc_local_network">Allows network communication with devices on the same local network.</string>
   <string name="perm_label_bluetooth_connect">Bluetooth connect</string>
@@ -2811,7 +2805,6 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="doctor_fix_open_providers">Open Providers</string>
   <string name="doctor_fix_open_mcp">Open MCP servers</string>
   <string name="doctor_fix_open_skills">Open Skills</string>
-  <string name="doctor_fix_open_litert">Open Local LiteRT</string>
   <string name="doctor_fix_open_llamacpp">Open Local llama.cpp</string>
   <string name="doctor_fix_open_nfc">Open NFC settings</string>
   <string name="doctor_fix_request_whitelist">Request whitelist</string>
@@ -2875,9 +2868,6 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="doctor_check_stranded_runs">Stranded scheduled-job runs</string>
   <string name="doctor_check_granted_dirs">Granted directories</string>
   <string name="doctor_check_providers">LLM providers configured</string>
-  <string name="doctor_check_litert_accel">LiteRT accelerator</string>
-  <string name="doctor_check_litert_perf">LiteRT performance</string>
-  <string name="doctor_check_litert_vision">LiteRT vision encoder</string>
   <string name="doctor_check_llamacpp_models">llama.cpp models</string>
   <string name="doctor_check_dns">DNS resolution</string>
   <string name="doctor_check_termux_installed">Termux installed</string>
@@ -2904,7 +2894,7 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="doctor_detail_perm_notifications_granted">Granted — listener can read notifications.</string>
   <string name="doctor_detail_perm_notifications_missing">Not granted. The notification_received trigger and notification tools won\'t work.</string>
   <string name="doctor_detail_perm_location_granted">Granted.</string>
-  <string name="doctor_detail_perm_location_missing">Needed for geofence triggers and reading WiFi SSID on Android 10+.</string>
+  <string name="doctor_detail_perm_location_missing">Needed for location tools and reading WiFi SSID on Android 10+.</string>
   <string name="doctor_detail_perm_battery_granted">App is whitelisted — background services run reliably.</string>
   <string name="doctor_detail_perm_battery_missing">Doze can interrupt cron jobs and workflows.</string>
   <string name="doctor_detail_perm_accessibility_granted">Enabled in system settings.</string>
@@ -2921,8 +2911,6 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="doctor_detail_perm_bluetooth_missing">Workflow Bluetooth triggers can\'t read paired-device state.</string>
   <string name="doctor_detail_perm_wifi_granted">Granted.</string>
   <string name="doctor_detail_perm_wifi_missing">WiFi scan/info may be limited on Android 13+ without it.</string>
-  <string name="doctor_detail_perm_geofence_granted">Granted.</string>
-  <string name="doctor_detail_perm_geofence_missing">Geofence workflow triggers won\'t fire when the app is closed.</string>
   <string name="doctor_detail_perm_needed_by">%1$s Needed by: %2$s.</string>
   <string name="doctor_detail_nfc_no_hardware">Device has no NFC hardware.</string>
   <string name="doctor_detail_nfc_off_not_required">NFC is turned off in system settings. Not required by any enabled tool.</string>
@@ -2981,17 +2969,13 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="doctor_detail_storage_not_enabled">External Storage tool not enabled. Not required.</string>
   <string name="doctor_detail_storage_no_grants">No directories granted yet. Call grant_directory_access to add one.</string>
   <string name="doctor_detail_storage_grants">%1$d directory(ies) granted: %2$s.</string>
-  <string name="doctor_detail_providers_count">%1$d provider(s) configured (API key set, AICore enabled, or local model loaded) out of %2$d total.</string>
+  <string name="doctor_detail_providers_count">%1$d provider(s) configured (API key set or local model loaded) out of %2$d total.</string>
   <string name="doctor_detail_accel_not_probed">Not probed yet. The accelerator is decided on the first model load.</string>
-  <string name="doctor_detail_accel_cpu">CPU (Try-GPU toggle off in Settings -&gt; Local LiteRT). Flip it on to retry the device\'s GPU on the next load.</string>
-  <string name="doctor_detail_accel_cpu_fallback">CPU (fallback: the GPU delegate failed to initialise on this device, likely an MLDrift issue. Tap \'Re-detect\' in Settings -&gt; Local LiteRT to retry with a fresh probe.)</string>
-  <string name="doctor_detail_accel_gpu">GPU (OpenCL or OpenGL, picked by LiteRT\'s internal probe).</string>
   <string name="doctor_detail_accel_npu">NPU (Qualcomm QNN delegate).</string>
   <string name="doctor_detail_accel_nnapi">NNAPI.</string>
   <string name="doctor_detail_accel_unknown">Backend label: %1$s</string>
   <string name="doctor_detail_model_rates">Last-known per-model rates (character-based estimate, ~10%% accurate for English text):
 %1$s</string>
-  <string name="doctor_detail_vision_unavailable">Vision encoder unavailable on this device for: %1$s. These multimodal models run in text-only mode — chat works, image inputs don\'t. Often fixed by a future LiteRT-LM SDK update.</string>
   <string name="doctor_detail_skills_count">%1$d installed (%2$d bundled, %3$d user-added).</string>
   <string name="doctor_detail_cache_size">Cache is using %1$s. Tap "Clear cache" to reclaim space.</string>
   <string name="doctor_check_storage_breakdown">Storage usage by category</string>
@@ -3001,7 +2985,6 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="doctor_unnamed">Unnamed</string>
   <string name="doctor_unnamed_paren">(unnamed)</string>
   <string name="doctor_fix_open_keyboard_settings">Open keyboard settings</string>
-  <string name="doctor_fix_open_local_litert">Open Local LiteRT</string>
   <string name="doctor_relies_on_acc_overlay">accessibility service (required), overlay permission (optional banner)</string>
   <string name="doctor_relies_on_launch">nothing (standalone); uses the accessibility service only to verify the app reached the foreground when it happens to be on</string>
   <string name="doctor_relies_on_keyboard">the co-signed agent-keyboard app, installed and enabled as an IME</string>
@@ -3011,13 +2994,9 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="doctor_relies_on_all_files">all-files access on Android 11+ to reach arbitrary paths</string>
   <string name="doctor_relies_on_browser_profile">a writable profile directory to persist cookies and localStorage</string>
   <string name="doctor_detail_accel_cpu_2">Flip it on to retry the device\'s GPU on the next load.</string>
-  <string name="doctor_detail_accel_cpu_full">CPU (Try-GPU toggle off in Settings -&gt; Local LiteRT). Flip it on to retry the device\'s GPU on the next load.</string>
-  <string name="doctor_detail_accel_cpu_fallback_full">CPU (fallback: the GPU delegate failed to initialise on this device, likely an MLDrift issue. Tap \'Re-detect\' in Settings -&gt; Local LiteRT to retry with a fresh probe.)</string>
-  <string name="doctor_detail_accel_gpu_full">GPU (OpenCL or OpenGL, picked by LiteRT\'s internal probe).</string>
   <string name="doctor_detail_accel_npu_full">NPU (Qualcomm QNN delegate).</string>
   <string name="doctor_detail_model_rates_full">Last-known per-model rates (character-based estimate, ~10%% accurate for English text):
 %1$s</string>
-  <string name="doctor_detail_vision_unavailable_full">Vision encoder unavailable on this device for: %1$s. These multimodal models run in text-only mode — chat works, image inputs don\'t. Often fixed by a future LiteRT-LM SDK update.</string>
   <string name="doctor_detail_no_llama_models">No llama.cpp models installed.</string>
   <string name="doctor_fix_open_local_llama">Open Local llama.cpp</string>
   <string name="doctor_detail_termux_not_installed_2">Termux not installed. Required by: %1$s.</string>

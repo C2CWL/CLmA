@@ -49,11 +49,6 @@ dependencies {
     api(libs.okhttp.sse)
     api(libs.okhttp.logging)
 
-    // ML Kit GenAI (AICore / Gemini Nano on-device).
-    // Only loads runtime native code on GenAI-capable devices; on others
-    // checkStatus() returns UNAVAILABLE and the provider self-disables.
-    api(libs.genai.prompt)
-
     // kotlinx
     api(libs.kotlinx.serialization.json)
     api(libs.kotlinx.coroutines.core)

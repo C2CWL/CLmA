@@ -57,18 +57,18 @@ class ConnectorWriteApprovalTest {
 
     @Test
     fun `changing arguments or tool consumes but never broadens consent`() = runBlocking {
-        val tool = guardedTool("gmail_send")
+        val tool = guardedTool("github_issue_create")
         ConnectorWriteApproval.approveOnce(conversation, call, tool.name, args)
         assertDenied(ConnectorWriteApproval.execute(tool, changed, conversation, call, true, false))
         assertDenied(ConnectorWriteApproval.execute(tool, args, conversation, call, true, false))
         ConnectorWriteApproval.approveOnce(conversation, call, tool.name, args)
-        assertDenied(ConnectorWriteApproval.execute(guardedTool("github_issue_create"), args, conversation, call, true, false))
+        assertDenied(ConnectorWriteApproval.execute(guardedTool("github_comment_create"), args, conversation, call, true, false))
         assertDenied(ConnectorWriteApproval.execute(tool, args, conversation, call, true, false))
     }
 
     @Test
     fun `consent is bound to its conversation and call id`() = runBlocking {
-        val tool = guardedTool("gmail_send")
+        val tool = guardedTool("github_issue_create")
         ConnectorWriteApproval.approveOnce(conversation, call, tool.name, args)
         assertDenied(ConnectorWriteApproval.execute(tool, args, "other-$conversation", call, true, false))
         assertDenied(ConnectorWriteApproval.execute(tool, args, conversation, "other-$call", true, false))
@@ -78,7 +78,7 @@ class ConnectorWriteApprovalTest {
 
     @Test
     fun `auto and headless execution cannot spend interactive consent`() = runBlocking {
-        val tool = guardedTool("gmail_send")
+        val tool = guardedTool("github_issue_create")
         listOf(false to false, true to true).forEach { (approved, headless) ->
             ConnectorWriteApproval.approveOnce(conversation, call, tool.name, args)
             assertDenied(ConnectorWriteApproval.execute(tool, args, conversation, call, approved, headless))
@@ -88,9 +88,9 @@ class ConnectorWriteApprovalTest {
 
     @Test
     fun `a grant matches exact arguments and is single use inside the execution context`() = runBlocking {
-        val name = "gmail_send"
+        val name = "github_issue_create"
         val tool = Tool(name = name, description = "Grant boundary", execute = {
-            assertFalse(ConnectorWriteApproval.isGranted("github_issue_create", it))
+            assertFalse(ConnectorWriteApproval.isGranted("github_comment_create", it))
             assertFalse(ConnectorWriteApproval.isGranted(name, changed))
             assertTrue(ConnectorWriteApproval.isGranted(name, it))
             assertFalse(ConnectorWriteApproval.isGranted(name, it))
@@ -103,7 +103,7 @@ class ConnectorWriteApprovalTest {
 
     @Test
     fun `concurrent children cannot consume the same grant twice`() = runBlocking {
-        val name = "gmail_send"
+        val name = "github_issue_create"
         val tool = Tool(name = name, description = "Concurrent grant boundary", execute = { input ->
             val winners = coroutineScope {
                 (1..16).map { async(Dispatchers.Default) { ConnectorWriteApproval.isGranted(name, input) } }.awaitAll()
@@ -118,7 +118,7 @@ class ConnectorWriteApprovalTest {
 
     @Test
     fun `ordinary tools still execute without consent and writes are never retryable`() = runBlocking {
-        val tool = Tool(name = "gmail_read", description = "Read", execute = { listOf(UIMessagePart.Text("read")) })
+        val tool = Tool(name = "github_repository", description = "Read", execute = { listOf(UIMessagePart.Text("read")) })
         assertEquals("read", (ConnectorWriteApproval.execute(tool, args, null, call, false, true).single() as UIMessagePart.Text).text)
         ConnectorWriteApproval.WRITE_TOOL_NAMES.forEach {
             assertFalse(ToolExecutionRetryPolicy.isIdempotentReadOnly(it, args))

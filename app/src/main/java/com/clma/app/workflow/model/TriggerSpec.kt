@@ -9,7 +9,7 @@ import kotlinx.serialization.Serializable
  * sealed-class serializer maps `type` to the right variant; unknown `type` strings fail
  * validation with a clear error.
  *
- * 19 variants per the locked spec. Variants that need no params are `data object`s; those
+ * Variants that need no params are `data object`s; those
  * with params are `data class`es with their own fields. The JSON shape on the wire is
  * `{"type": "wifi_connected", "ssid": "HomeWiFi"}` (flat) — see WorkflowJson for how this is
  * parsed using a discriminator + wrapper, since we want to keep the user-facing schema as
@@ -64,24 +64,6 @@ sealed class TriggerSpec {
     @Serializable
     @SerialName("battery_above")
     data class BatteryAbove(val thresholdPercent: Int) : TriggerSpec()
-
-    @Serializable
-    @SerialName("geofence_enter")
-    data class GeofenceEnter(
-        val lat: Double,
-        val lng: Double,
-        val radiusM: Int,
-        val label: String? = null,
-    ) : TriggerSpec()
-
-    @Serializable
-    @SerialName("geofence_exit")
-    data class GeofenceExit(
-        val lat: Double,
-        val lng: Double,
-        val radiusM: Int,
-        val label: String? = null,
-    ) : TriggerSpec()
 
     @Serializable
     @SerialName("app_launched")

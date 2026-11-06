@@ -20,46 +20,8 @@ val DEFAULT_GROK_PROVIDER_ID = Uuid.parse("8f3e1d20-4b6a-4c9e-a1f2-9d5c7e0b3a44"
 val DEFAULT_GEMINI_OAUTH_PROVIDER_ID = Uuid.parse("2b6c1f84-73ad-4e35-b0c7-1a9e4d5f8c21")
 
 val DEFAULT_PROVIDERS = listOf(
-    ProviderSetting.AICore(
-        // On-device provider sits at the top of the list so the agent's primary surface for
-        // privacy-conscious / offline use is the first thing users see.
-        //
-        // OFF by default. The vast majority of users don't have a Pixel 8/9/10 with the
-        // AICore beta enrolled, and an enabled-but-broken provider at the top of the list
-        // is more confusing than a disabled-but-discoverable one. AICore-eligible users
-        // flip a single toggle on the provider card to turn it on. Existing users who
-        // already had it enabled keep their choice — PreferencesStore's merge only copies
-        // builtIn/description/shortDescription back from the defaults, not enabled.
-        enabled = false,
-        builtIn = true,
-        description = {
-            Text("Runs Gemini Nano on-device through Android AICore. Off by default — flip the switch to enable. Requires AICore beta on a supported Pixel device.")
-        },
-        shortDescription = {
-            Text("On-device — no API key, no network")
-        },
-    ),
-    ProviderSetting.LiteRtLocal(
-        // LiteRT-LM on-device provider. Disabled by default. Settings → Local · LiteRT
-        // shows a curated picker (LiteRtCatalog) with Google AI Edge Gallery's recommended
-        // models — Gemma 4 E2B / Gemma3-1B-IT / Qwen2.5-1.5B / DeepSeek-R1 distill / etc.
-        // — each with the per-model sampler + length defaults Gallery curates for them.
-        // The runtime mirrors Gallery's exact SDK call sequence (engine.initialize() +
-        // maxNumTokens + systemInstruction via ConversationConfig + speculative decoding
-        // probe via Capabilities) so on-device inference behaves the same as Gallery.
-        enabled = false,
-        builtIn = true,
-        description = {
-            Text("Runs .litertlm models on-device via LiteRT-LM. Pick a curated model from Settings → Local · LiteRT (Google AI Edge Gallery's allowlist) — no API key, no network at inference.")
-        },
-        shortDescription = {
-            Text("On-device — LiteRT-LM")
-        },
-    ),
     ProviderSetting.LlamaCppLocal(
-        // llama.cpp on-device provider. Disabled by default, matching LiteRT above. The
-        // model catalog, settings tile and SAF picker are built in later tasks of the
-        // llama.cpp model-selection plan; for now this only makes the Settings tile exist.
+        // llama.cpp on-device provider. Disabled by default until the user installs a GGUF.
         enabled = false,
         builtIn = true,
         description = {
@@ -74,7 +36,7 @@ val DEFAULT_PROVIDERS = listOf(
     // bill any account) until the user explicitly enables a provider AND adds an API
     // key. Existing users keep their per-provider enabled state — PreferencesStore's
     // merge only re-copies builtIn/description/shortDescription back from defaults,
-    // not enabled (same pattern as the AICore default-off comment above).
+    // not enabled.
     ProviderSetting.OpenAI(
         id = Uuid.parse("1eeea727-9ee5-4cae-93e6-6fb01a4d051e"),
         name = "OpenAI",

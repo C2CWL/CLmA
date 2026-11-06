@@ -104,8 +104,6 @@ class ModelControlToolsTest {
         assertEquals("openai", providerKind(ProviderSetting.OpenAI()))
         assertEquals("google", providerKind(ProviderSetting.Google()))
         assertEquals("claude", providerKind(ProviderSetting.Claude()))
-        assertEquals("aicore", providerKind(ProviderSetting.AICore()))
-        assertEquals("local_litert", providerKind(ProviderSetting.LiteRtLocal()))
         assertEquals("local_llamacpp", providerKind(ProviderSetting.LlamaCppLocal()))
         assertEquals("codex", providerKind(ProviderSetting.Codex()))
         assertEquals("grok", providerKind(ProviderSetting.Grok()))

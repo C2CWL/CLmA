@@ -31,8 +31,6 @@ fun supportedReasoningLevels(
         is ProviderSetting.OpenAI -> openAiLevels(provider, modelId)
         // Local / on-device providers either ignore reasoning or have no graded
         // effort knob — keep AUTO so the control still opens.
-        is ProviderSetting.AICore,
-        is ProviderSetting.LiteRtLocal,
         is ProviderSetting.LlamaCppLocal -> listOf(ReasoningLevel.AUTO)
     }
 }

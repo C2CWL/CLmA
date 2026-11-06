@@ -1,9 +1,7 @@
 package com.clma.app.data.datastore
 
 import androidx.annotation.StringRes
-import com.clma.ai.provider.AICORE_PROVIDER_ID
 import com.clma.ai.provider.LLAMACPP_PROVIDER_ID
-import com.clma.ai.provider.LITERT_PROVIDER_ID
 import com.clma.ai.provider.ProviderSetting
 import com.clma.app.R
 import kotlin.uuid.Uuid
@@ -25,14 +23,12 @@ enum class ProviderCategory(@StringRes val titleRes: Int) {
  * 用户自己添加的服务商 id 是随机的，查不到即 [ProviderCategory.OTHER]。
  *
  * 分类按「模型/厂商归属」而非「接入协议」划分：
- * - 本地：端侧推理（AICore / LiteRT-LM / llama.cpp），不联网、无需 Key。
+ * - 本地：端侧推理（llama.cpp），不联网、无需 Key。
  * - 国模：国内厂商（含国内聚合网关）。
  * - 国际：海外厂商与全球聚合网关。
  */
 private val BUILT_IN_PROVIDER_CATEGORY: Map<Uuid, ProviderCategory> = buildMap {
     // 本地（端侧）
-    put(AICORE_PROVIDER_ID, ProviderCategory.LOCAL)
-    put(LITERT_PROVIDER_ID, ProviderCategory.LOCAL)
     put(LLAMACPP_PROVIDER_ID, ProviderCategory.LOCAL)
 
     // 国模

@@ -33,58 +33,38 @@ class LocalRuntimePreferences(private val context: Context) {
     private fun installedModelsKey(runtime: LocalRuntime) =
         stringPreferencesKey("installed_${runtime.displayName}")
 
-    /** Per-runtime force-CPU override. The default is device-dependent (see
-     *  [defaultForceCpu]): CPU for the Google Tensor crash class, GPU everywhere else.
-     *  Users can flip it either way via the "Try GPU acceleration" toggle. */
+    /** Per-runtime force-CPU override. llama.cpp is CPU-only, so the unset default is CPU. */
     private fun forceCpuKey(runtime: LocalRuntime) =
         booleanPreferencesKey("force_cpu_${runtime.displayName}")
 
-    /** The default value for [forceCpuFlow] when the user has not set a preference.
-     *  Computed once from the SoC: GPU for capable devices, CPU for Google Tensor (where
-     *  LiteRT-LM 0.11.0's GPU path has a native SIGSEGV). [AcceleratorProbe.defaultForceCpu]
-     *  carries the rationale. The ClmaApp crash sweep + the runtime's GPU->CPU
-     *  fallback both still backstop a wrong guess. */
-    private val defaultForceCpu: Boolean by lazy {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-            AcceleratorProbe.defaultForceCpu(
-                socManufacturer = android.os.Build.SOC_MANUFACTURER,
-                socModel = android.os.Build.SOC_MODEL,
-            )
-        } else {
-            // SOC_* is API 31+. No Google Tensor device runs an OS this old, so we
-            // cannot be on the crash class - default to the GPU fast path.
-            false
-        }
-    }
+    private val defaultForceCpu: Boolean = true
 
-    /** Stamped by [ClmaApp]'s ApplicationExitInfo sweep when the previous process
-     *  exited with REASON_CRASH_NATIVE inside liblitertlm_jni.so. The settings UI
-     *  reads this, shows a friendly recovery banner, and clears it on dismiss. Value
-     *  is the accelerator label that crashed (so the banner can name it). */
+    /** Stamped when the previous process exited with REASON_CRASH_NATIVE inside the
+     *  runtime's JNI library. The settings UI reads this, shows a recovery banner, and
+     *  clears it on dismiss. Value is the accelerator label that crashed. */
     private fun crashRecoveryKey(runtime: LocalRuntime) =
         stringPreferencesKey("crash_recovery_${runtime.displayName}")
 
     /** Per-runtime set of model filenames whose GPU vision encoder failed to initialise on
-     *  this device. The provider seeds this from [LiteRtRuntime.LoadOutcome.visionFellBackToTextOnly]
+     *  this device. The provider seeds this when a model load falls back to text-only
      *  the first time a model loads. Stored as a JSON-encoded set so a future fourth field
      *  doesn't need a schema migration. The user can clear an entry via the settings row
      *  ("re-try vision") if they install a driver update or move the file to a capable device. */
     private fun visionUnavailableKey(runtime: LocalRuntime) =
         stringPreferencesKey("vision_unavailable_${runtime.displayName}")
 
-    /** The LiteRT-LM SDK version the persisted [accelerator], [visionUnavailable], and
-     *  [crashRecovery] decisions were made under. When the compiled-in SDK version differs
+    /** The SDK version the persisted [accelerator], [visionUnavailable], and
+     *  [crashRecovery] decisions were made under. When the compiled-in version differs
      *  (an app update bumped the dependency), [maybeInvalidateOnSdkUpgrade] clears those
      *  stale decisions so the new SDK gets a fresh probe — picks up upstream fixes that
      *  would otherwise be masked by the previous fallback. */
     private fun sdkVersionKey(runtime: LocalRuntime) =
         stringPreferencesKey("sdk_version_${runtime.displayName}")
 
-    /** Compiled-in SDK identifier. Bumped in lockstep with the dependency line in
-     *  `local-llm/build.gradle.kts`. Mismatch with the persisted [sdkVersionKey] triggers
-     *  the one-shot invalidation. */
+    /** Compiled-in runtime identifier. llama.cpp has no Google SDK pin; the constant
+     *  stays so a future runtime bump can still invalidate stale accelerator decisions. */
     @Suppress("MemberVisibilityCanBePrivate")
-    val currentSdkVersion: String = LITERTLM_SDK_VERSION
+    val currentSdkVersion: String = "llamacpp"
 
     /**
      * Compares the persisted SDK version for [runtime] against [currentSdkVersion]; on
@@ -171,11 +151,6 @@ class LocalRuntimePreferences(private val context: Context) {
     }
 
     companion object {
-        /** The LiteRT-LM version this build compiled against, generated from the version
-         *  catalog entry the module actually depends on. Reading it from BuildConfig means
-         *  the dependency and this value cannot drift: bumping the catalog alone is enough
-         *  to invalidate the persisted SDK-coupled decisions on the next launch. */
-        val LITERTLM_SDK_VERSION: String = BuildConfig.LITERTLM_SDK_VERSION
     }
 
     private fun decodeInstalledMap(raw: String?): Map<String, String> {
@@ -213,7 +188,7 @@ class LocalRuntimePreferences(private val context: Context) {
         context.localRuntimeDataStore.data.map { it[forceCpuKey(runtime)] ?: defaultForceCpu }
 
     /** Per-runtime override for `EngineConfig.maxNumTokens`. Null (default) means use
-     *  the per-model curated value from `LiteRtModelDefaults`. Setting it lets users
+     *  the runtime default. Setting it lets users
      *  unlock the headroom on capable models (e.g. Gemma 4 E2B's 32k context where
      *  Gallery's default is 4000). The model's underlying KV cache size is still a
      *  hard ceiling — Qwen's `ekv4096` files cannot exceed 4096 regardless of this. */
@@ -324,7 +299,7 @@ class LocalRuntimePreferences(private val context: Context) {
      * entries removed. Called once per app start from [ClmaApp]'s SDK-aware sweep so
      * the next inference can re-attempt GPU vision from scratch on every model the user
      * has installed. If the GPU vision encoder really is still broken on this device, the
-     * runtime's text-only fallback in [LiteRtRuntime.ensureLoaded] re-stamps the relevant
+     * runtime's text-only fallback re-stamps the relevant
      * file the moment it observes a fresh failure — so this wipe never strands the app in
      * a crash loop.
      */

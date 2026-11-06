@@ -1,7 +1,6 @@
 package com.clma.ai.provider
 
 import android.content.Context
-import com.clma.ai.provider.providers.AICoreProvider
 import com.clma.ai.provider.providers.claude.ClaudeProvider
 import com.clma.ai.provider.providers.google.GoogleProvider
 import com.clma.ai.provider.providers.openai.OpenAIProvider
@@ -19,7 +18,6 @@ class ProviderManager(client: OkHttpClient, context: Context) {
         registerProvider("openai", OpenAIProvider(client, context))
         registerProvider("google", GoogleProvider(client, context))
         registerProvider("claude", ClaudeProvider(client, context))
-        registerProvider("aicore", AICoreProvider(context))
     }
 
     /**
@@ -65,8 +63,6 @@ class ProviderManager(client: OkHttpClient, context: Context) {
             is ProviderSetting.OpenAI -> getProvider("openai")
             is ProviderSetting.Google -> getProvider("google")
             is ProviderSetting.Claude -> getProvider("claude")
-            is ProviderSetting.AICore -> getProvider("aicore")
-            is ProviderSetting.LiteRtLocal -> getProvider("local_litert")
             is ProviderSetting.LlamaCppLocal -> getProvider("local_llamacpp")
             is ProviderSetting.Codex -> getProvider("codex")
             is ProviderSetting.Grok -> getProvider("grok")

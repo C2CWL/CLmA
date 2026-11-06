@@ -127,8 +127,6 @@ object WorkflowApprovalRenderer {
         is TriggerSpec.PowerDisconnected -> "power disconnected"
         is TriggerSpec.BatteryBelow -> "battery drops below ${t.thresholdPercent}%"
         is TriggerSpec.BatteryAbove -> "battery rises above ${t.thresholdPercent}%"
-        is TriggerSpec.GeofenceEnter -> "you enter ${t.label ?: "a place (${t.lat},${t.lng}, ${t.radiusM}m)"}"
-        is TriggerSpec.GeofenceExit -> "you leave ${t.label ?: "a place (${t.lat},${t.lng}, ${t.radiusM}m)"}"
         is TriggerSpec.AppLaunched -> "${t.packageName} is launched"
         is TriggerSpec.AppClosed -> "${t.packageName} is closed"
         is TriggerSpec.NotificationReceived -> {

@@ -1186,7 +1186,7 @@
           <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="6" cy="6" r="2"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="12" r="2"/><line x1="8" y1="6" x2="16" y2="11"/><line x1="8" y1="18" x2="16" y2="13"/></svg>
         </div>
         <h3>Workflows</h3>
-        <p>Tasker-class automation, but the AI writes the rules from natural language. <strong>20 trigger types</strong> (WiFi, Bluetooth, headphones, geofence, app launch, notification, screen, charging, time, more) and <strong>14 conditions</strong> (battery, sunrise/sunset, foreground app, day-of-week). Receivers register only when needed, so battery drain stays minimal.</p>
+        <p>Tasker-class automation, but the AI writes the rules from natural language. Trigger types cover WiFi, Bluetooth, headphones, app launch, notification, screen, charging, and time, with conditions for battery, sunrise/sunset, foreground app, and day-of-week. Receivers register only when needed, so battery drain stays minimal.</p>
       </div>
 
       <div class="feature-card reveal">
@@ -1338,7 +1338,7 @@
           <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
         </div>
         <h3>Fully on-device</h3>
-        <p>Download a local model (Gemma, Qwen, and more) from HuggingFace search or from storage and run it through <strong>llama.cpp</strong> (GGUF) or <strong>LiteRT</strong>, with GPU acceleration where supported. No key, no network, nothing leaves the phone. Pixel 8/9/10 users can also enable <strong>Gemini Nano</strong> via AICore (currently requires the AICore Beta).</p>
+        <p>Download a local model (Gemma, Qwen, and more) from HuggingFace search or from storage and run it through <strong>llama.cpp</strong> (GGUF), with GPU acceleration where supported. No key, no network, nothing leaves the phone.</p>
       </div>
 
     </div>
@@ -1456,14 +1456,14 @@
       <details>
         <summary>Is my data sent anywhere?</summary>
         <div class="faq-answer">
-          Only to the LLM provider <em>you</em> pick, and the app ships zero analytics or telemetry. If you run a downloaded local model (llama.cpp or LiteRT) or <strong>AICore</strong> on a Pixel 8/9/10, inference is fully on-device and nothing leaves the phone. Passwords and API keys are never written to log files. Cloud backups skip your saved server credentials and Telegram bot token.
+          Only to the LLM provider <em>you</em> pick, and the app ships zero analytics or telemetry. If you run a downloaded local GGUF model through llama.cpp, inference is fully on-device and nothing leaves the phone. Passwords and API keys are never written to log files. Cloud backups skip your saved server credentials and Telegram bot token.
         </div>
       </details>
 
       <details>
         <summary>What LLM providers work?</summary>
         <div class="faq-answer">
-          Cloud APIs: OpenAI, Anthropic, Google, DeepSeek, OpenRouter (first-class, with fallback models), xAI, Ollama, and any OpenAI-compatible endpoint (Groq, Mistral, vLLM, LM Studio, etc.). Account sign-ins: <strong>Codex</strong> (ChatGPT plan), <strong>Grok</strong> (SuperGrok or X Premium+), and a <strong>Google account sign-in</strong> for Gemini. On-device: downloaded GGUF/LiteRT models, or Gemini Nano via AICore on Pixel 8/9/10+.
+          Cloud APIs: OpenAI, Anthropic, Google, DeepSeek, OpenRouter (first-class, with fallback models), xAI, Ollama, and any OpenAI-compatible endpoint (Groq, Mistral, vLLM, LM Studio, etc.). Account sign-ins: <strong>Codex</strong> (ChatGPT plan), <strong>Grok</strong> (SuperGrok or X Premium+), and a <strong>Google account sign-in</strong> for Gemini. On-device: downloaded GGUF models through llama.cpp.
         </div>
       </details>
 

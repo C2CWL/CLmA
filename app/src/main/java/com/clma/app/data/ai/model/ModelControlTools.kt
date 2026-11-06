@@ -40,7 +40,7 @@ import kotlin.uuid.Uuid
  *
  * Scope is deliberately the **model** entry, not the provider. Provider rows carry the apiKey
  * and baseUrl (secrets); this family never touches them, and an unknown or built-in synthetic
- * provider (AICore) is refused rather than half-edited.
+ * provider is edited as a whole.
  *
  * The write half requires approval ([com.clma.app.data.ai.tools.ToolApprovalDefaults])
  * and is refused outright in a headless run
@@ -64,8 +64,6 @@ internal fun providerKind(provider: ProviderSetting): String = when (provider) {
     is ProviderSetting.OpenAI -> "openai"
     is ProviderSetting.Google -> "google"
     is ProviderSetting.Claude -> "claude"
-    is ProviderSetting.AICore -> "aicore"
-    is ProviderSetting.LiteRtLocal -> "local_litert"
     is ProviderSetting.LlamaCppLocal -> "local_llamacpp"
     is ProviderSetting.Codex -> "codex"
     is ProviderSetting.Grok -> "grok"
@@ -289,9 +287,6 @@ fun modelAddTool(
         val settings = settingsStore.settingsFlow.first()
         val provider = findProviderForControl(settings.providers, providerSelector)
             ?: return@Tool errorPart("unknown_provider", "no provider matches '$providerSelector'; call model_list first")
-        if (provider is ProviderSetting.AICore) {
-            return@Tool errorPart("provider_read_only", "the AICore provider synthesizes its models on the device and cannot be edited")
-        }
         if (provider.models.any { it.modelId.equals(modelId, ignoreCase = true) }) {
             return@Tool errorPart(
                 "duplicate_model",
@@ -423,9 +418,6 @@ fun modelUpdateTool(
         val settings = settingsStore.settingsFlow.first()
         val provider = findProviderForControl(settings.providers, providerSelector)
             ?: return@Tool errorPart("unknown_provider", "no provider matches '$providerSelector'; call model_list first")
-        if (provider is ProviderSetting.AICore) {
-            return@Tool errorPart("provider_read_only", "the AICore provider synthesizes its models on the device and cannot be edited")
-        }
         val model = findModelForControl(provider, modelSelector)
             ?: return@Tool errorPart("unknown_model", "provider '${provider.name}' has no model matching '$modelSelector'")
         if (newModelId != null && !newModelId.equals(model.modelId, ignoreCase = true) &&
@@ -537,9 +529,6 @@ fun modelDeleteTool(
         val settings = settingsStore.settingsFlow.first()
         val provider = findProviderForControl(settings.providers, providerSelector)
             ?: return@Tool errorPart("unknown_provider", "no provider matches '$providerSelector'; call model_list first")
-        if (provider is ProviderSetting.AICore) {
-            return@Tool errorPart("provider_read_only", "the AICore provider synthesizes its models on the device and cannot be edited")
-        }
         val model = findModelForControl(provider, modelSelector)
             ?: return@Tool errorPart("unknown_model", "provider '${provider.name}' has no model matching '$modelSelector'")
         val referencing = settings.assistants.count { it.chatModelId == model.id || it.subAgentModelId == model.id }

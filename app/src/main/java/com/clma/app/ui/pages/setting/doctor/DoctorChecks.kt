@@ -56,7 +56,6 @@ private object Capability {
     val FineLocation: Set<LocalToolOption> = setOf(
         LocalToolOption.Location,            // get_location, geocode tools
         LocalToolOption.WifiInfo,            // SSID/BSSID on Android 10+
-        LocalToolOption.Workflows,           // geofence_enter / geofence_exit triggers
     )
     val NotificationListener: Set<LocalToolOption> = setOf(
         LocalToolOption.NotificationListener,
@@ -102,9 +101,6 @@ private object Capability {
     )
     val NearbyWifi: Set<LocalToolOption> = setOf(
         LocalToolOption.WifiInfo,            // WiFi scan/info on Android 13+
-    )
-    val BackgroundLocation: Set<LocalToolOption> = setOf(
-        LocalToolOption.Workflows,           // geofence triggers fire while the app is closed
     )
     val Shizuku: Set<LocalToolOption> = setOf(
         LocalToolOption.Shizuku,             // shizuku_exec runs shell commands with Shizuku's privileges
@@ -165,9 +161,8 @@ class DoctorChecks(
     // Phase 25 — SAF tree-grant store, backs the "granted directories" Doctor row.
     // Nullable + defaulted so legacy test paths that don't build the full DI graph compile.
     private val storageVolumeGrantStore: com.clma.app.data.storage.StorageVolumeGrantStore? = null,
-    // Surface the persisted LiteRT accelerator decision so the user can see whether their
-    // local models actually engaged GPU/NPU or silently fell back to CPU.
-    // Nullable + defaulted same as the others above for legacy test path compatibility.
+    // Persisted local-runtime preference. Nullable + defaulted so legacy test paths that
+    // do not build the full DI graph keep compiling.
     private val localRuntimePreferences: com.clma.locallm.LocalRuntimePreferences? = null,
     // Doctor refresh: backs the skills.* rows. Nullable + defaulted same as the others.
     private val skillManager: SkillManager? = null,
@@ -381,21 +376,6 @@ class DoctorChecks(
                     granted = PermissionHelper.hasRuntime(context, listOf(Manifest.permission.NEARBY_WIFI_DEVICES)),
                     grantedDetail = context.getString(R.string.doctor_detail_granted),
                     missingDetail = context.getString(R.string.doctor_detail_perm_wifi_missing),
-                    fix = FixAction.OpenAppRoute(context.getString(R.string.doctor_fix_open_permissions), AppRouteKey.SettingPermissions),
-                )
-            )
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            add(
-                capabilityRow(
-                    id = "perm.background_location",
-                    category = DoctorCategory.Permissions,
-                    label = context.getString(R.string.doctor_check_bg_location),
-                    cap = Capability.BackgroundLocation,
-                    enabled = enabled,
-                    granted = PermissionHelper.hasRuntime(context, listOf(Manifest.permission.ACCESS_BACKGROUND_LOCATION)),
-                    grantedDetail = context.getString(R.string.doctor_detail_granted),
-                    missingDetail = context.getString(R.string.doctor_detail_perm_geofence_missing),
                     fix = FixAction.OpenAppRoute(context.getString(R.string.doctor_fix_open_permissions), AppRouteKey.SettingPermissions),
                 )
             )
@@ -979,13 +959,9 @@ class DoctorChecks(
                     is com.clma.ai.provider.ProviderSetting.OpenAI -> p.apiKey.isNotBlank()
                     is com.clma.ai.provider.ProviderSetting.Google -> p.apiKey.isNotBlank()
                     is com.clma.ai.provider.ProviderSetting.Claude -> p.apiKey.isNotBlank()
-                    is com.clma.ai.provider.ProviderSetting.AICore -> p.enabled  // on-device, no API key
-                    // Local provider (LiteRT): usable when enabled AND at least one model has
-                    // been loaded/downloaded. A disabled provider with no models is the factory
-                    // default — don't count it.
-                    is com.clma.ai.provider.ProviderSetting.LiteRtLocal -> p.enabled && p.models.isNotEmpty()
                     // Local provider (llama.cpp): usable when enabled AND at least one model
-                    // has been loaded, same criterion as LiteRT above.
+                    // has been loaded. A disabled provider with no models is the factory
+                    // default — don't count it.
                     is com.clma.ai.provider.ProviderSetting.LlamaCppLocal -> p.enabled && p.models.isNotEmpty()
                     is com.clma.ai.provider.ProviderSetting.Codex -> p.enabled  // OAuth, no API key
                     is com.clma.ai.provider.ProviderSetting.Grok -> p.enabled  // OAuth, no API key
@@ -1003,104 +979,10 @@ class DoctorChecks(
                 )
             )
         }
-        // LiteRT accelerator status. The runtime's GPU -> CPU fallback is silent today:
-        // if the device's OpenCL/OpenGL delegate fails to init (e.g. MLDrift's
-        // "CreateSharedMemoryManager is not implemented" on some Adreno drivers), the
-        // model loads on CPU and the user has no UI indication. LiteRtProvider now
-        // persists the actually-chosen accelerator after every load; surface that here
-        // so the user can confirm GPU is engaged.
-        runCatching {
-            val prefs = localRuntimePreferences
-            if (prefs != null) {
-                val accel = prefs.acceleratorFlow(com.clma.locallm.LocalRuntime.LiteRT).first()
-                val forceCpu = prefs.forceCpu(com.clma.locallm.LocalRuntime.LiteRT)
-                val detail = when {
-                    accel == null -> context.getString(R.string.doctor_detail_accel_not_probed)
-                    forceCpu && accel == "CPU" ->
-                        context.getString(R.string.doctor_detail_accel_cpu_full)
-                    accel == "CPU" ->
-                        context.getString(R.string.doctor_detail_accel_cpu_fallback_full)
-                    accel == "GPU" -> context.getString(R.string.doctor_detail_accel_gpu_full)
-                    accel == "QNN" || accel == "NPU" -> context.getString(R.string.doctor_detail_accel_npu_full)
-                    accel == "NNAPI" -> context.getString(R.string.doctor_detail_accel_nnapi)
-                    else -> context.getString(R.string.doctor_detail_accel_unknown, accel)
-                }
-                val severity = when {
-                    accel == null -> Severity.INFO
-                    accel == "CPU" && !forceCpu -> Severity.WARN  // unexpected fallback
-                    else -> Severity.OK
-                }
-                add(
-                    DoctorCheck(
-                        id = "net.litert_accel",
-                        category = DoctorCategory.Network,
-                        label = context.getString(R.string.doctor_check_litert_accel),
-                        detail = detail,
-                        severity = severity,
-                        fix = FixAction.OpenAppRoute(
-                            context.getString(R.string.doctor_fix_open_local_litert),
-                            AppRouteKey.SettingProvider,
-                        ),
-                    )
-                )
-                // Performance telemetry — surface the last-known prefill/decode tok/s for
-                // each model so the user (and the support team triaging a slow report)
-                // can see at a glance whether the runtime is hitting expected rates. We
-                // INFO when present; WARN never (the model could legitimately be slow on a
-                // weak device — the user knows their hardware better than we do).
-                val perfMap = prefs.perfTelemetryFlow(com.clma.locallm.LocalRuntime.LiteRT).first()
-                if (perfMap.isNotEmpty()) {
-                    val rows = perfMap.values.sortedByDescending { it.sampledAtMs }
-                    val detail = rows.joinToString("\n") { s ->
-                        val spec = if (s.specDecodingEngaged) context.getString(R.string.doctor_detail_mtp_on) else ""
-                        context.getString(R.string.doctor_detail_model_rates_row, s.modelId, "%.1f".format(s.prefillTps).toFloat(), "%.1f".format(s.decodeTps).toFloat(), spec)
-                    }
-                    add(
-                        DoctorCheck(
-                            id = "net.litert_perf",
-                            category = DoctorCategory.Network,
-                            label = context.getString(R.string.doctor_check_litert_perf),
-                            detail = context.getString(R.string.doctor_detail_model_rates_full, detail),
-                            severity = Severity.INFO,
-                            fix = FixAction.OpenAppRoute(
-                                context.getString(R.string.doctor_fix_open_local_litert),
-                                AppRouteKey.SettingProvider,
-                            ),
-                        )
-                    )
-                }
-                // Vision-encoder availability — surface any models the runtime had to drop
-                // to text-only on this device's GPU. The provider's vision-CPU fallback
-                // means a multimodal model still works for chat, but the user has lost
-                // image input on this chip. Most common cause: Adreno 7xx + restrictive
-                // OEM linker namespace (One UI / OriginOS) hitting upstream LiteRT-LM
-                // issue #2292 (gpu_backend_opengl.cc:CreateSharedMemoryManager UNIMPLEMENTED).
-                val visionUnavailable = prefs
-                    .visionUnavailableFlow(com.clma.locallm.LocalRuntime.LiteRT).first()
-                if (visionUnavailable.isNotEmpty()) {
-                    add(
-                        DoctorCheck(
-                            id = "net.litert_vision",
-                            category = DoctorCategory.Network,
-                            label = context.getString(R.string.doctor_check_litert_vision),
-                            detail = context.getString(R.string.doctor_detail_vision_unavailable_full, visionUnavailable.joinToString(", ")),
-                            severity = Severity.WARN,
-                            fix = FixAction.OpenAppRoute(
-                                context.getString(R.string.doctor_fix_open_local_litert),
-                                AppRouteKey.SettingProvider,
-                            ),
-                        )
-                    )
-                }
-            }
-        }
-        // llama.cpp installed-model check. Unlike LiteRT, this runtime is CPU-only with no
-        // vision encoder and nothing to probe for an accelerator, so there is no analogue
-        // to net.litert_accel/_perf/_vision here — those would be reporting on things that
-        // cannot vary on this build. The one thing that genuinely can go wrong: a model
-        // registered in prefs whose backing file was moved, deleted, or lives on a volume
-        // that got unmounted. Own id (net.llamacpp_models) so it can't collide with the
-        // net.litert_* rows above.
+        // llama.cpp installed-model check. The runtime is CPU-only with no vision encoder
+        // and nothing to probe for an accelerator. The one thing that genuinely can go
+        // wrong: a model registered in prefs whose backing file was moved, deleted, or
+        // lives on a volume that got unmounted.
         runCatching {
             val prefs = localRuntimePreferences
             if (prefs != null) {

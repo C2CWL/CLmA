@@ -1,9 +1,7 @@
 package com.clma.llamacpp
 
 /**
- * A curated GGUF the Settings -> Local · llama.cpp picker offers. Mirrors
- * `com.clma.locallm.litert.LiteRtCatalogEntry`'s shape, minus its `config()`, which returns a
- * LiteRT-specific config type llama.cpp has no equivalent for.
+ * A curated GGUF the Settings -> Local · llama.cpp picker offers.
  */
 data class LlamaCppCatalogEntry(
     val displayName: String, // e.g. "Qwen3 4B"

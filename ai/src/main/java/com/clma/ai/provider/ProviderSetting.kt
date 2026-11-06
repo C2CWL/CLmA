@@ -249,102 +249,6 @@ sealed class ProviderSetting {
     }
 
     @Serializable
-    @SerialName("aicore")
-    data class AICore(
-        override var id: Uuid = AICORE_PROVIDER_ID,
-        override var enabled: Boolean = true,
-        override var name: String = "AICore (on-device)",
-        override var models: List<Model> = AICORE_DEFAULT_MODELS,
-        override val balanceOption: BalanceOption = BalanceOption(),
-        override val customHeaders: List<CustomHeader> = emptyList(),
-        @Transient override val builtIn: Boolean = true,
-        @Transient override val description: @Composable (() -> Unit) = {},
-        @Transient override val shortDescription: @Composable (() -> Unit) = {},
-        // Defaults to PREVIEW because the STABLE feature ID is missing on most current
-        // AICore beta channels — PREVIEW is what actually resolves to a working model on
-        // Pixel 8/9/10 today. Users can flip back to STABLE once Google promotes it.
-        var releaseStage: AICoreReleaseStage = AICoreReleaseStage.PREVIEW,
-    ) : ProviderSetting() {
-        override fun addModel(model: Model): ProviderSetting = this // synthetic models, no add
-        override fun editModel(model: Model): ProviderSetting {
-            return copy(models = models.map { if (it.id == model.id) model else it })
-        }
-
-        override fun delModel(model: Model): ProviderSetting = this // synthetic models, no delete
-
-        override fun moveMove(from: Int, to: Int): ProviderSetting {
-            return copy(models = models.toMutableList().apply {
-                val m = removeAt(from)
-                add(to, m)
-            })
-        }
-
-        override fun copyProvider(
-            id: Uuid,
-            enabled: Boolean,
-            name: String,
-            models: List<Model>,
-            balanceOption: BalanceOption,
-            customHeaders: List<CustomHeader>,
-            builtIn: Boolean,
-            description: @Composable (() -> Unit),
-            shortDescription: @Composable (() -> Unit),
-        ): ProviderSetting {
-            return this.copy(
-                id = id,
-                enabled = enabled,
-                name = name,
-                models = models,
-                builtIn = builtIn,
-                description = description,
-                shortDescription = shortDescription,
-                balanceOption = balanceOption,
-
-                customHeaders = customHeaders,
-            )
-        }
-    }
-
-    @Serializable
-    @SerialName("local_litert")
-    data class LiteRtLocal(
-        override var id: Uuid = LITERT_PROVIDER_ID,
-        override var enabled: Boolean = false,
-        override var name: String = "Local · LiteRT",
-        override var models: List<Model> = emptyList(),
-        override val balanceOption: BalanceOption = BalanceOption(),
-        override val customHeaders: List<CustomHeader> = emptyList(),
-        @Transient override val builtIn: Boolean = true,
-        @Transient override val description: @Composable (() -> Unit) = {},
-        @Transient override val shortDescription: @Composable (() -> Unit) = {},
-    ) : ProviderSetting() {
-        override fun addModel(model: Model): ProviderSetting = copy(models = models + model)
-        override fun editModel(model: Model): ProviderSetting =
-            copy(models = models.map { if (it.id == model.id) model else it })
-        override fun delModel(model: Model): ProviderSetting =
-            copy(models = models.filter { it.id != model.id })
-        override fun moveMove(from: Int, to: Int): ProviderSetting =
-            copy(models = models.toMutableList().apply { add(to, removeAt(from)) })
-        override fun copyProvider(
-            id: Uuid,
-            enabled: Boolean,
-            name: String,
-            models: List<Model>,
-            balanceOption: BalanceOption,
-            customHeaders: List<CustomHeader>,
-            builtIn: Boolean,
-            description: @Composable (() -> Unit),
-            shortDescription: @Composable (() -> Unit),
-        ): ProviderSetting = copy(
-            id = id, enabled = enabled, name = name, models = models,
-            builtIn = builtIn, description = description, shortDescription = shortDescription,
-            balanceOption = balanceOption,
-
-            customHeaders = customHeaders,
-        )
-    }
-
-    @Serializable
     @SerialName("local_llamacpp")
     data class LlamaCppLocal(
         override var id: Uuid = LLAMACPP_PROVIDER_ID,
@@ -546,12 +450,8 @@ sealed class ProviderSetting {
     }
 
     companion object {
-        // Types presented to the user when adding / converting a provider. AICore is
-        // intentionally NOT in this list: it is a singleton built-in (one per device,
-        // synthesized from the AICore system app), so the "type segmented row" inside
-        // the Add-Provider dialog and ProviderConfigure should not offer it as a choice.
-        // Including it overflowed the dialog width and wrapped the OpenAI / Google labels
-        // onto two lines on a Pixel 10 Pro.
+        // Types presented when adding or converting a provider. On-device llama.cpp is
+        // a built-in singleton and is not offered in this row.
         val Types by lazy {
             listOf(
                 OpenAI::class,
@@ -561,30 +461,3 @@ sealed class ProviderSetting {
         }
     }
 }
-
-@Serializable
-enum class AICoreReleaseStage { STABLE, PREVIEW }
-
-// Stable IDs for the synthetic AICore provider + models so saved settings and
-// conversations referencing them survive app re-installs and provider re-seeds.
-val AICORE_PROVIDER_ID: Uuid = Uuid.parse("a1c0a1c0-1234-4111-a000-000000000001")
-val LITERT_PROVIDER_ID: Uuid = Uuid.parse("11111111-aaaa-bbbb-cccc-000000000002")
-val LLAMACPP_PROVIDER_ID: Uuid = Uuid.parse("11111111-aaaa-bbbb-cccc-000000000003")
-private val AICORE_NANO_FAST_ID: Uuid = Uuid.parse("a1c0a1c0-1234-4111-a000-000000000002")
-private val AICORE_NANO_FULL_ID: Uuid = Uuid.parse("a1c0a1c0-1234-4111-a000-000000000003")
-
-val AICORE_NANO_FAST_MODEL: Model = Model(
-    id = AICORE_NANO_FAST_ID,
-    modelId = "nano-fast",
-    displayName = "Gemini Nano (FAST)",
-    abilities = listOf(ModelAbility.TOOL),
-)
-
-val AICORE_NANO_FULL_MODEL: Model = Model(
-    id = AICORE_NANO_FULL_ID,
-    modelId = "nano-full",
-    displayName = "Gemini Nano (FULL)",
-    abilities = listOf(ModelAbility.TOOL),
-)
-
-val AICORE_DEFAULT_MODELS: List<Model> = listOf(AICORE_NANO_FAST_MODEL, AICORE_NANO_FULL_MODEL)

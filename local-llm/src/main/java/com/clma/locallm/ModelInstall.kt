@@ -25,7 +25,7 @@ private const val TAG = "ModelInstall"
  * check. Cancel-safe: a cancelled coroutine leaves no partial file (it is deleted on
  * failure paths and never renamed on cancellation before [Progress.Done]).
  *
- * Files land under `${context.filesDir}/local-models/litert/<basename>`.
+ * Files land under `${context.filesDir}/local-models/llamacpp/<basename>`.
  */
 object ModelInstall {
 
@@ -71,7 +71,6 @@ object ModelInstall {
     }
 
     fun runtimeForExtension(extension: String): LocalRuntime? = when (extension.lowercase()) {
-        "litertlm" -> LocalRuntime.LiteRT
         "gguf" -> LocalRuntime.LlamaCpp
         else -> null
     }
@@ -83,7 +82,6 @@ object ModelInstall {
 
     fun targetFile(baseDir: File, runtime: LocalRuntime, fileName: String): File {
         val sub = when (runtime) {
-            LocalRuntime.LiteRT -> "litert"
             LocalRuntime.LlamaCpp -> "llamacpp"
         }
         return File(File(baseDir, sub), fileName)
@@ -116,23 +114,6 @@ object ModelInstall {
     fun isValidMagicForExtension(extension: String, firstBytes: ByteArray): Boolean {
         if (firstBytes.size < 4) return false
         return when (extension.lowercase()) {
-            "litertlm", "tflite", "task" -> {
-                // LiteRT-LM files start with ASCII "LITERTLM"
-                // (0x4c 0x49 0x54 0x45 0x52 0x54 0x4c 0x4d).
-                // .tflite / .task files start with TFL3 (0x54 0x46 0x4c 0x33) at offset 4 in the
-                // FlatBuffer header (offset 0..3 is the size prefix). The simplest check: first
-                // 8 bytes are "LITERTLM" OR bytes 4..7 are "TFL3". Reject all-zero, all-FF,
-                // or HTML-like first bytes.
-                val isLitertlm = firstBytes.size >= 8 &&
-                    firstBytes[0] == 0x4c.toByte() && firstBytes[1] == 0x49.toByte() &&
-                    firstBytes[2] == 0x54.toByte() && firstBytes[3] == 0x45.toByte() &&
-                    firstBytes[4] == 0x52.toByte() && firstBytes[5] == 0x54.toByte() &&
-                    firstBytes[6] == 0x4c.toByte() && firstBytes[7] == 0x4d.toByte()
-                val isTflite = firstBytes.size >= 8 &&
-                    firstBytes[4] == 0x54.toByte() && firstBytes[5] == 0x46.toByte() &&
-                    firstBytes[6] == 0x4c.toByte() && firstBytes[7] == 0x33.toByte()
-                isLitertlm || isTflite
-            }
             "gguf" -> {
                 // GGUF files start with the ASCII magic "GGUF"
                 // (0x47 0x47 0x55 0x46). A truncated download or an HTML error page

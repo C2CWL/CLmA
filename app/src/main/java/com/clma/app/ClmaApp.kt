@@ -183,7 +183,7 @@ class ClmaApp : Application() {
         incrementLaunchCount()
 
         // Phase 12: kick off the workflow trigger registry. It subscribes to the workflows
-        // table and reconciles broadcast receivers / geofences / time_cron schedules with
+        // table and reconciles broadcast receivers / time_cron schedules with
         // every change. With zero enabled workflows, no receivers are registered.
         startWorkflowRegistry()
 
@@ -210,23 +210,6 @@ class ClmaApp : Application() {
         // turn forever - the number keeps climbing. See OrphanedReasoningRecovery.
         runOrphanedReasoningRecovery()
 
-        // Auto-recover from a prior native crash inside a local-runtime JNI lib
-        // (LiteRT-LM 0.11.0 has known SIGSEGVs on the GPU/NNAPI backend during
-        // inference on Pixel Tensor-G). If we detect one, force the runtime to
-        // CPU on the next load and stamp a recovery banner the LiteRT settings
-        // page picks up — so users see "Recovered: switched to CPU" instead of
-        // a silent re-crash.
-        sweepLocalLlmNativeCrashes()
-
-        // Clear stale per-device decisions (cached accelerator, vision-unavailable set,
-        // crash-recovery banner) when the bundled LiteRT-LM SDK has been bumped since
-        // the last app start. An older SDK's "GPU is broken on Adreno 7xx" / "vision
-        // encoder unavailable" decisions can mask a fix shipped in the new SDK; without
-        // this sweep, a 0.11→0.12 bump would silently stay on CPU even though 0.12 may
-        // have fixed the GPU path. Decisions are re-inferred from a fresh probe on the
-        // next inference / re-detect tap. User-set knobs (force-CPU toggle, max-context
-        // override) are NOT touched.
-        invalidateLocalLlmDecisionsOnSdkUpgrade()
 
         // Composer.setDiagnosticStackTraceMode(ComposeStackTraceMode.Auto)
     }
@@ -258,92 +241,6 @@ class ClmaApp : Application() {
                 .distinctUntilChanged()
                 .catch { e -> Log.w(TAG, "Failed to restore request logging setting", e) }
                 .collect(Logging::setRequestLoggingEnabled)
-        }
-    }
-
-    /**
-     * Inspect the package's recent ApplicationExitInfo records for a native crash whose
-     * stack/description points at a local-runtime JNI library. When one is found, set the
-     * matching runtime's force-CPU flag so the next inference runs on CPU, and record the
-     * crashed accelerator label so the settings UI can surface a "switched to CPU" notice.
-     *
-     * Best-effort: errors are logged, never thrown — a stuck app start is worse than a
-     * skipped recovery sweep.
-     */
-    private fun sweepLocalLlmNativeCrashes() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return  // ApplicationExitInfo is API 30+
-        get<AppScope>().launch(Dispatchers.IO) {
-            runCatching {
-                val am = getSystemService(android.app.ActivityManager::class.java) ?: return@runCatching
-                // Look at the last ~5 exits: more than enough to spot a recent crash even if
-                // the user opened the app a few times since (each open = one exit record).
-                val recentExits = am.getHistoricalProcessExitReasons(packageName, 0, 5)
-                val nativeCrash = recentExits.firstOrNull { exit ->
-                    exit.reason == android.app.ApplicationExitInfo.REASON_CRASH_NATIVE &&
-                        // ApplicationExitInfo.description includes the offending shared library
-                        // for native crashes. Match the JNI sidekick of each runtime.
-                        (exit.description?.contains("liblitertlm", ignoreCase = true) == true)
-                } ?: return@runCatching
-                val prefs = get<com.clma.locallm.LocalRuntimePreferences>()
-                val runtime = com.clma.locallm.LocalRuntime.LiteRT
-                // Don't double-stamp if the user has already seen and dismissed an earlier
-                // crash banner — the prior dismiss cleared the recovery key, but if a NEW
-                // crash happened after, we want a fresh notice.
-                val crashedAccel = prefs.acceleratorFlow(runtime).first() ?: "GPU/NPU"
-                if (!prefs.forceCpu(runtime)) {
-                    prefs.setForceCpu(runtime, true)
-                    prefs.clearAccelerator(runtime)
-                }
-                prefs.setCrashRecovery(runtime, crashedAccel)
-                Log.w(
-                    TAG,
-                    "sweepLocalLlmNativeCrashes: detected native crash in liblitertlm at " +
-                        "${nativeCrash.timestamp} (accel=$crashedAccel) — forcing CPU + stamping recovery banner"
-                )
-            }.onFailure {
-                Log.w(TAG, "sweepLocalLlmNativeCrashes failed", it)
-            }
-        }
-    }
-
-    /**
-     * Fire-and-forget: clear stale SDK-coupled decisions (accelerator, vision-unavailable
-     * set, crash-recovery banner) whenever the compiled-in LiteRT-LM version differs from
-     * the last-persisted one. Best-effort — failure is logged and ignored so a slow or
-     * broken DataStore read can never block app start. Idempotent across multiple calls
-     * within the same process (the version write makes the second call a no-op).
-     */
-    private fun invalidateLocalLlmDecisionsOnSdkUpgrade() {
-        get<AppScope>().launch(Dispatchers.IO) {
-            runCatching {
-                val prefs = get<com.clma.locallm.LocalRuntimePreferences>()
-                val invalidated = prefs.maybeInvalidateOnSdkUpgrade(com.clma.locallm.LocalRuntime.LiteRT)
-                if (invalidated) {
-                    Log.i(
-                        TAG,
-                        "invalidateLocalLlmDecisionsOnSdkUpgrade: SDK version changed — cleared " +
-                            "accelerator + vision-unavailable + crash-recovery for LiteRT (new=${prefs.currentSdkVersion})",
-                    )
-                }
-                // Unconditionally wipe the visionUnavailable set on every app start. Stale
-                // flags can be left behind by transient failures the SDK has since
-                // recovered from (most notably the 0.12.0 -> 0.11.0 downgrade where the
-                // SDK-version key may already match because the device ran 0.11.0 first).
-                // If GPU vision really is broken on this device, [LiteRtRuntime.ensureLoaded]
-                // re-stamps the flag the moment it observes a fresh failure — so the wipe
-                // never strands the app in a crash loop, it just ensures we re-test on
-                // every launch.
-                val wipedVision = prefs.clearAllVisionUnavailable(com.clma.locallm.LocalRuntime.LiteRT)
-                if (wipedVision > 0) {
-                    Log.i(
-                        TAG,
-                        "invalidateLocalLlmDecisionsOnSdkUpgrade: wiped $wipedVision stale " +
-                            "visionUnavailable entries (forcing fresh attempt next inference)",
-                    )
-                }
-            }.onFailure {
-                Log.w(TAG, "invalidateLocalLlmDecisionsOnSdkUpgrade failed", it)
-            }
         }
     }
 

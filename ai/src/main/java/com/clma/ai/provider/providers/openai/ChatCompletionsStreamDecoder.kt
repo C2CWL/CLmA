@@ -121,7 +121,7 @@ internal class ChatCompletionsStreamDecoder(
             }
         }.orEmpty()
         // If the model wrote its tool call as text, report "tool_calls" so the turn is not treated
-        // as finished prose. Matches AICoreProvider's precedence: the recovered call wins over
+        // as finished prose. The recovered call wins over
         // whatever the gateway declared, which for these gateways is a plain "stop".
         val reason = textToolParser?.consumePendingFinishReason() ?: finishReason
         return trailing + streamState.finish(reason, responseId, responseModel)

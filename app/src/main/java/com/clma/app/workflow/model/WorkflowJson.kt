@@ -298,7 +298,7 @@ object WorkflowJson {
         // Accept either nested {type, params:{...}} OR flat {type, ...keys}. The nested
         // form is canonical and what encodeTrigger emits, but most LLMs default to the
         // flat shape (it's the natural JSON for a single object). Without this leniency
-        // any trigger with required params (time_cron's time_of_day, geofence_*'s lat/lng,
+        // any trigger with required params (time_cron's time_of_day,
         // battery_*'s threshold_percent) gets rejected with a confusing serializer error.
         val nestedParams = triggerObj["params"] as? JsonObject
         val flat = buildJsonObject {
@@ -385,8 +385,6 @@ object WorkflowJson {
             ParseResult.Err("invalid_trigger", "battery_below.threshold_percent must be 1..100") else null
         is TriggerSpec.BatteryAbove -> if (t.thresholdPercent !in 1..100)
             ParseResult.Err("invalid_trigger", "battery_above.threshold_percent must be 1..100") else null
-        is TriggerSpec.GeofenceEnter -> validateGeofence(t.lat, t.lng, t.radiusM)
-        is TriggerSpec.GeofenceExit -> validateGeofence(t.lat, t.lng, t.radiusM)
         is TriggerSpec.AppLaunched -> if (t.packageName.isBlank())
             ParseResult.Err("invalid_trigger", "app_launched.package_name must be non-blank") else null
         is TriggerSpec.AppClosed -> if (t.packageName.isBlank())
@@ -411,16 +409,6 @@ object WorkflowJson {
 
     private fun isValidRegex(pattern: String): Boolean =
         runCatching { java.util.regex.Pattern.compile(pattern) }.isSuccess
-
-    private fun validateGeofence(lat: Double, lng: Double, radiusM: Int): ParseResult.Err? {
-        if (lat !in -90.0..90.0) return ParseResult.Err("invalid_trigger", "geofence.lat must be -90..90")
-        if (lng !in -180.0..180.0) return ParseResult.Err("invalid_trigger", "geofence.lng must be -180..180")
-        if (radiusM !in WorkflowConstants.MIN_GEOFENCE_RADIUS_M..WorkflowConstants.MAX_GEOFENCE_RADIUS_M) {
-            return ParseResult.Err("invalid_trigger",
-                "geofence.radius_m must be ${WorkflowConstants.MIN_GEOFENCE_RADIUS_M}..${WorkflowConstants.MAX_GEOFENCE_RADIUS_M}")
-        }
-        return null
-    }
 
     private fun sanityCheckCondition(c: ConditionSpec): ParseResult.Err? = when (c) {
         is ConditionSpec.TimeBetween -> when {

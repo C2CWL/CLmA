@@ -11,7 +11,7 @@ import androidx.room.PrimaryKey
  * Settings UI can sort / filter without parsing every row. The JSON is the source of
  * truth — projected columns must be re-derived on every write.
  *
- * Triggered triggers (broadcast receivers, geofence client, etc.) read [enabled] off this
+ * Triggered triggers (broadcast receivers, scheduled work, etc.) read [enabled] off this
  * row — the auth/disable cycle does NOT round-trip through the JSON because that would
  * spam pointless rewrites.
  */

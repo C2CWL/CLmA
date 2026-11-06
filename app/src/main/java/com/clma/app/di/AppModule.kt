@@ -31,7 +31,6 @@ val appModule = module {
 
     single { com.clma.app.connectors.ConnectorStore(get()) }
     single { com.clma.app.connectors.ConnectorHttp(get()) }
-    single { com.clma.app.connectors.GmailConnector(get(), get(), get()) }
     single { com.clma.app.connectors.GitHubConnector(get(), get()) }
 
     single { CameraResultBuffer() }
@@ -197,7 +196,6 @@ val appModule = module {
             providerManager = get(),
             filesManager = get(),
             genMediaRepository = get(),
-            gmailConnector = get(),
             gitHubConnector = get(),
         )
     }
@@ -231,7 +229,6 @@ val appModule = module {
 
     // Phase 22A: Local-LLM on-device providers
     single { com.clma.locallm.LocalRuntimePreferences(get()) }
-    single { com.clma.locallm.litert.LiteRtRuntime(get()) }
     single { com.clma.llamacpp.LlamaCppRuntime() }
 
     single {
@@ -294,8 +291,7 @@ val appModule = module {
             browserPreferences = get(),
             // Phase 25: surface the SAF granted-directories live count.
             storageVolumeGrantStore = get(),
-            // LiteRT accelerator status row in the Doctor: shows the persisted backend
-            // decision so a silent GPU -> CPU fallback is visible.
+            // llama.cpp model-file status row in the Doctor.
             localRuntimePreferences = get(),
             // Doctor refresh: skills.* and service.mcp_servers rows.
             skillManager = get(),
