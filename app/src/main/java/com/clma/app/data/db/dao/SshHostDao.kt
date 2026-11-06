@@ -9,10 +9,34 @@ import com.clma.app.data.db.entity.SshHostEntity
 
 @Dao
 interface SshHostDao {
-    @Query("SELECT * FROM ssh_hosts ORDER BY name ASC")
+    // CAST: a TEXT column can still hold a BLOB (SQLite stores types per value).
+    // requery's getString throws "Unable to convert BLOB to string" on those cells.
+    // CAST(... AS TEXT) decodes UTF-8 bytes before Room reads the cursor.
+    @Query(
+        """
+        SELECT name, host, port, user,
+               CAST(password AS TEXT) AS password,
+               CAST(privateKey AS TEXT) AS privateKey,
+               CAST(passphrase AS TEXT) AS passphrase,
+               createdAtMs
+        FROM ssh_hosts
+        ORDER BY name ASC
+        """
+    )
     suspend fun getAll(): List<SshHostEntity>
 
-    @Query("SELECT * FROM ssh_hosts WHERE name = :name LIMIT 1")
+    @Query(
+        """
+        SELECT name, host, port, user,
+               CAST(password AS TEXT) AS password,
+               CAST(privateKey AS TEXT) AS privateKey,
+               CAST(passphrase AS TEXT) AS passphrase,
+               createdAtMs
+        FROM ssh_hosts
+        WHERE name = :name
+        LIMIT 1
+        """
+    )
     suspend fun getByName(name: String): SshHostEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
