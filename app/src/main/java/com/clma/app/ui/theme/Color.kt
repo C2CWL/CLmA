@@ -198,7 +198,7 @@ object CustomColors {
                 return ListItemDefaults.colors(
                     containerColor = colorScheme.surfaceContainer,
                     headlineColor = blendOver(colorScheme.onSurface, bg, 0.68f),
-                    supportingTextColor = blendOver(colorScheme.onSurfaceVariant, bg, 0.68f),
+                    supportingColor = blendOver(colorScheme.onSurfaceVariant, bg, 0.68f),
                     leadingIconColor = blendOver(colorScheme.onSurface, bg, 0.60f),
                     trailingIconColor = blendOver(colorScheme.onSurfaceVariant, bg, 0.48f),
                     overlineColor = blendOver(colorScheme.onSurfaceVariant, bg, 0.68f),
