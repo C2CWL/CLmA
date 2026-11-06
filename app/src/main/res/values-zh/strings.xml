@@ -717,6 +717,8 @@
   <string name="codex_speed_fast">Fast</string>
   <string name="codex_speed_standard_hint">标准速度与额度消耗。</string>
   <string name="codex_speed_fast_hint">优先高速通道（Fast），通常约 2.5× 额度或费用消耗，以供应商官方说明为准。</string>
+  <string name="setting_provider_page_supports_speed_tiers">支持速度调节</string>
+  <string name="setting_provider_page_supports_speed_tiers_desc">在思考强度选择器中显示「标准 / 快速」，并在请求中发送 service_tier。适用于会转发 OpenAI service_tier 的中转。</string>
   <string name="reasoning_picker_title">调整模型思考深度</string>
   <string name="reasoning_picker_level_off">关闭</string>
   <string name="reasoning_picker_level_auto">自动</string>

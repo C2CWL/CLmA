@@ -35,6 +35,7 @@ import kotlinx.serialization.json.buildJsonObject
 import com.clma.ai.core.MessageRole
 import com.clma.ai.core.Tool
 import com.clma.ai.provider.Model
+import com.clma.ai.provider.CustomBody
 import com.clma.ai.provider.Provider
 import com.clma.ai.provider.ProviderManager
 import com.clma.ai.provider.ProviderSetting
@@ -1985,6 +1986,15 @@ class GenerationLoop(
             customBody = buildList {
                 addAll(assistant.customBodies)
                 addAll(model.customBodies)
+                // Relays that opted into speed tiers: forward service_tier on the request.
+                // CodexProvider already injects it in withCodexParams — skip to avoid doubles.
+                if (provider !is ProviderSetting.Codex && model.supportsSpeedTiers) {
+                    model.serviceTier?.let { tier ->
+                        if (none { it.key == "service_tier" }) {
+                            add(CustomBody("service_tier", JsonPrimitive(tier)))
+                        }
+                    }
+                }
             },
             sessionId = (conversationId ?: Uuid.random()).toString(),
         )
