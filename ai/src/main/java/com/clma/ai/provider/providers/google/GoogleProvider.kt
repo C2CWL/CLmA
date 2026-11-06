@@ -743,18 +743,26 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
     /**
      * Whether a replayed `functionCall` has to carry a `thoughtSignature`.
      *
-     * Gemini 3 enforces this. Cloud Code Assist also fronts Anthropic models
-     * (`gemini-claude-*-thinking`) and runs the replayed history through the same Gemini-shaped
-     * validator, so an unsigned call fails the whole turn with 400 "Function call is missing a
-     * thought_signature in functionCall parts" - even though Claude has no signatures of its own,
-     * which is exactly why those calls take [SKIP_THOUGHT_SIGNATURE]. The `contains` fallback keeps
-     * Code Assist ids that [ModelRegistry.CLAUDE_SERIES] does not know yet on the safe side; older
-     * Gemini models must never see the field, so this stays a positive test rather than a default.
+     * Cloud Code Assist validates every replayed functionCall the same way, regardless of which
+     * model it fronts: an unsigned call fails the whole turn with 400 "Function call is missing a
+     * thought_signature in functionCall parts". That covers Gemini 3 and later, the Claude models
+     * fronted as `gemini-claude-*`, and anything the registry does not know yet. Claude has no
+     * signatures of its own, which is why those calls take [SKIP_THOUGHT_SIGNATURE].
+     *
+     * Only the older Gemini models reject the field, so the rule is inverted: every model gets the
+     * sentinel except Gemini 2.5 and earlier. A real signature still wins over the sentinel.
      */
     private fun requiresThoughtSignatures(modelId: String): Boolean =
-        ModelRegistry.GEMINI_3_SERIES.match(modelId = modelId) ||
-            ModelRegistry.CLAUDE_SERIES.match(modelId = modelId) ||
-            modelId.contains("claude", ignoreCase = true)
+        !isLegacyGeminiWithoutThoughtSignatures(modelId)
+
+    /** Gemini 2.5 and everything before it do not accept `thoughtSignature` at all. */
+    private fun isLegacyGeminiWithoutThoughtSignatures(modelId: String): Boolean {
+        if (!modelId.startsWith("gemini-", ignoreCase = true)) return false
+        val generation = modelId.removePrefix("gemini-").removePrefix("Gemini-")
+            .takeWhile { it.isDigit() }
+            .toIntOrNull()
+        return generation != null && generation < 3
+    }
 
     private fun buildContents(
         messages: List<UIMessage>,
