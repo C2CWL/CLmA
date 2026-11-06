@@ -283,11 +283,11 @@ class GoogleToolCombinationTest {
                 messages,
                 TextGenerationParams(model = toolModel(modelId = id), tools = listOf(testTool())),
             )
-            assertFalse(firstFunctionCall(body).containsKey("thoughtSignature"), id)
+            assertFalse(id, firstFunctionCall(body).containsKey("thoughtSignature"))
         }
     }
 
-        @Test
+    @Test
     fun `a real thought signature wins over the skip sentinel`() {
         val messages = listOf(
             UIMessage.user("save the weather"),
