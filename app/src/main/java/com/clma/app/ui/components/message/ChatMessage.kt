@@ -94,7 +94,6 @@ import com.clma.app.data.datastore.usesGeminiChatUi
 import com.clma.app.data.datastore.usesModernChatUi
 import com.clma.app.ui.components.ui.ModernSurfaceCorner
 import com.clma.app.ui.components.ui.ModernUserBubbleShape
-import com.clma.app.ui.components.ui.modernAccentSoft
 import com.clma.app.ui.components.ui.modernThinkFill
 import com.clma.app.data.model.Assistant
 import com.clma.app.data.model.AssistantAffectScope
@@ -617,14 +616,8 @@ private fun MessagePartsBlock(
                                         scope = AssistantAffectScope.USER,
                                         visual = true,
                                     ),
-                                    // Gemini 的用户气泡是一块安静的灰面，不是主题色块。
-                                    // 现代：很淡的主题色底，不加描边。
-                                    bubbleColor = if (modern) {
-                                        // 主题色本身已经很淡，透明度滑块在它的基础上再按比例减。
-                                        modernAccentSoft().let {
-                                            it.copy(alpha = it.alpha * settings.displaySetting.bubbleOpacity)
-                                        }
-                                    } else (
+                                    // Use a tonal container so 100% opacity is solid in every layout.
+                                    bubbleColor = (
                                         if (settings.displaySetting.usesGeminiChatUi) {
                                             MaterialTheme.colorScheme.surfaceContainerHighest
                                         } else {
