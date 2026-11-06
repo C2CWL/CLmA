@@ -461,3 +461,7 @@ sealed class ProviderSetting {
         }
     }
 }
+
+// Stable id for the built-in on-device llama.cpp provider. Existing installs persist
+// provider settings by this UUID, so it must not change.
+val LLAMACPP_PROVIDER_ID: Uuid = Uuid.parse("11111111-aaaa-bbbb-cccc-000000000003")
