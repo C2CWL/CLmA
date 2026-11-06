@@ -272,9 +272,9 @@ class GoogleToolCombinationTest {
                 TextGenerationParams(model = toolModel(modelId = id), tools = listOf(testTool())),
             )
             assertEquals(
+                id,
                 "skip_thought_signature_validator",
                 firstFunctionCall(body)["thoughtSignature"]!!.jsonPrimitive.content,
-                id,
             )
         }
 
