@@ -75,11 +75,6 @@
   <string name="assistant_page_background_mode_general">Always common</string>
   <string name="assistant_page_background_mode_auto_desc">Uses the dark / light wallpaper for the current theme, or the common one when that slot is empty.</string>
   <string name="assistant_page_background_mode_general_desc">Always uses the common wallpaper. The dark / light wallpapers are kept but not shown.</string>
-  <string name="assistant_page_background_style">Background style</string>
-  <string name="assistant_page_background_style_classic">Classic</string>
-  <string name="assistant_page_background_style_starfield">Starfield</string>
-  <string name="assistant_page_background_style_classic_desc">Original flat theme colour and the classic mesh gradient.</string>
-  <string name="assistant_page_background_style_starfield_desc">Soft fog wash; dark adds glowing stars (and a rare meteor with gradient on). Light stays fog only.</string>
   <string name="assistant_page_chat_model">Chat Model</string>
   <string name="assistant_page_chat_model_desc">Set the default chat model for the assistant. If not set, the global default chat model will be used</string>
   <string name="assistant_page_clone">Clone</string>

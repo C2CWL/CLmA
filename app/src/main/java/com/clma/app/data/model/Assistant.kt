@@ -57,10 +57,6 @@ data class Assistant(
     // Which slot wins. AUTO is the original rule (per-theme slot, else [background]).
     @EncodeDefault(EncodeDefault.Mode.NEVER)
     val backgroundMode: AssistantBackgroundMode = AssistantBackgroundMode.AUTO,
-    // Drawn background look when not using a custom photo. CLASSIC keeps the original
-    // flat theme / mesh colours; STARFIELD is the v4 soft-fog / glowing-star look.
-    @EncodeDefault(EncodeDefault.Mode.NEVER)
-    val backgroundStyle: AssistantBackgroundStyle = AssistantBackgroundStyle.CLASSIC,
     val modeInjectionIds: Set<Uuid> = emptySet(),      // 关联的模式注入 ID
     val lorebookIds: Set<Uuid> = emptySet(),            // 关联的 Lorebook ID
     val enabledSkills: Set<String> = emptySet(),        // 启用的 skill 名称列表
@@ -204,20 +200,6 @@ enum class AssistantBackgroundMode {
 
     /** Always the common wallpaper; the per-theme slots are kept but ignored. */
     GENERAL,
-}
-
-/**
- * Look of the generated chat backdrop (no custom photo). Default [CLASSIC] keeps the
- * historical flat theme colour and the original mesh gradient; [STARFIELD] is the
- * soft-fog / glowing-star style (light = fog only, dark = nebula + stars).
- */
-@Serializable
-enum class AssistantBackgroundStyle {
-    /** Original flat theme / original mesh colours and layout. */
-    CLASSIC,
-
-    /** Soft fog wash; dark adds glowing stars and a rare meteor on the mesh. */
-    STARFIELD,
 }
 
 @Serializable

@@ -75,11 +75,6 @@
   <string name="assistant_page_background_mode_general">始终通用</string>
   <string name="assistant_page_background_mode_auto_desc">按当前主题使用深色 / 浅色壁纸，该项未设置时使用通用壁纸。</string>
   <string name="assistant_page_background_mode_general_desc">始终使用通用壁纸。深色 / 浅色壁纸会保留，但不显示。</string>
-  <string name="assistant_page_background_style">背景样式</string>
-  <string name="assistant_page_background_style_classic">经典</string>
-  <string name="assistant_page_background_style_starfield">星空</string>
-  <string name="assistant_page_background_style_classic_desc">原版纯色主题底与经典 mesh 渐变。</string>
-  <string name="assistant_page_background_style_starfield_desc">柔雾铺满；深色带发光星点（开渐变时偶有流星）。浅色只做柔雾，不做夜空。</string>
   <string name="assistant_page_chat_model">聊天模型</string>
   <string name="assistant_page_chat_model_desc">设置助手的默认聊天模型，如果不设置，则使用全局默认聊天模型</string>
   <string name="assistant_page_clone">复制</string>

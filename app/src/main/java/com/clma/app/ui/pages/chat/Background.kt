@@ -16,40 +16,28 @@ import coil3.compose.AsyncImage
 import com.clma.app.data.datastore.Settings
 import com.clma.app.data.datastore.usesGeminiChatUi
 import com.clma.app.data.datastore.getCurrentAssistant
-import com.clma.app.data.model.AssistantBackgroundStyle
 import com.clma.app.ui.theme.LocalDarkMode
 
 @Composable
 fun AssistantBackground(setting: Settings, modifier: Modifier, emptyConversation: Boolean = true) {
     val assistant = setting.getCurrentAssistant()
-    val style = assistant.backgroundStyle
     if (assistant.useGradientBackground) {
-        when (style) {
-            AssistantBackgroundStyle.STARFIELD -> {
-                StarfieldMeshGradientBackground(modifier = modifier)
-            }
-            AssistantBackgroundStyle.CLASSIC -> {
-                if (setting.displaySetting.usesGeminiChatUi) {
-                    if (emptyConversation) {
-                        val accent = MaterialTheme.colorScheme.primary
-                        val dark = LocalDarkMode.current
-                        Canvas(modifier.fillMaxSize()) {
-                            drawRect(
-                                brush = Brush.radialGradient(
-                                    colors = listOf(
-                                        accent.copy(alpha = if (dark) 0.14f else 0.09f),
-                                        Color.Transparent,
-                                    ),
-                                    center = Offset(size.width * 0.5f, size.height * 0.22f),
-                                    radius = minOf(size.width * 0.8f, size.height * 0.42f),
-                                ),
-                            )
-                        }
-                    }
-                } else {
-                    MeshGradientBackground(modifier = modifier)
+        if (setting.displaySetting.usesGeminiChatUi) {
+            if (emptyConversation) {
+                val accent = MaterialTheme.colorScheme.primary
+                val dark = LocalDarkMode.current
+                Canvas(modifier.fillMaxSize()) {
+                    drawRect(
+                        brush = Brush.radialGradient(
+                            colors = listOf(accent.copy(alpha = if (dark) 0.14f else 0.09f), Color.Transparent),
+                            center = Offset(size.width * 0.5f, size.height * 0.22f),
+                            radius = minOf(size.width * 0.8f, size.height * 0.42f),
+                        ),
+                    )
                 }
             }
+        } else {
+            MeshGradientBackground(modifier = modifier)
         }
         return
     }
@@ -91,8 +79,5 @@ fun AssistantBackground(setting: Settings, modifier: Modifier, emptyConversation
                 )
             }
         }
-    } else if (style == AssistantBackgroundStyle.STARFIELD) {
-        // No custom photo: classic stays on the theme colour; starfield paints soft fog / night.
-        StarfieldAmbientBackground(modifier = modifier)
     }
 }
