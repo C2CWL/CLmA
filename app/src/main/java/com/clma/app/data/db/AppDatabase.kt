@@ -64,11 +64,13 @@ import com.clma.app.workflow.db.WorkflowRunEntity
         WorkspaceEntity::class,
         FolderEntity::class,
     ],
-    version = 33,
+    version = 34,
     autoMigrations = [
         // v32: parent_conversation_id — Migration_31_32 (AppDatabaseFactory), not AutoMigration:
         // schema 32.json was never committed on main, so Room cannot generate 31→32.
         // v33: agent_mode_enabled — Migration_32_33 (AppDatabaseFactory), same reason.
+        // v34: Migration_33_34 rewrites ssh_hosts secret cells stored as BLOB back to TEXT.
+        // No column change; Room identity hash is unchanged.
         AutoMigration(from = 1, to = 2),
         AutoMigration(from = 2, to = 3),
         AutoMigration(from = 3, to = 4),
