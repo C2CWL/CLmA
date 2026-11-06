@@ -9,6 +9,8 @@ import androidx.compose.material3.TopAppBarColors
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import com.clma.app.ui.pages.setting.SettingsPageBackgroundDark
+import com.clma.app.ui.pages.setting.blendOver
 
 data class ExtendColors(
     val red1: Color,
@@ -187,5 +189,21 @@ object CustomColors {
         @Composable get() = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainer)
 
     val listItemColors: ListItemColors
-        @Composable get() = ListItemDefaults.colors(containerColor = colorScheme.surfaceContainer)
+        @Composable get() {
+            // Light: white cards over the settings gray wash. Dark/OLED: keep surfaceContainer
+            // (#0A0A0A on AMOLED) so list rows stay slightly elevated over pure black.
+            // Dark text is slightly muted — near-white headlines glare on low-brightness OLED.
+            if (LocalDarkMode.current) {
+                val bg = SettingsPageBackgroundDark
+                return ListItemDefaults.colors(
+                    containerColor = colorScheme.surfaceContainer,
+                    headlineColor = blendOver(colorScheme.onSurface, bg, 0.68f),
+                    supportingColor = blendOver(colorScheme.onSurfaceVariant, bg, 0.68f),
+                    leadingIconColor = blendOver(colorScheme.onSurface, bg, 0.60f),
+                    trailingIconColor = blendOver(colorScheme.onSurfaceVariant, bg, 0.48f),
+                    overlineColor = blendOver(colorScheme.onSurfaceVariant, bg, 0.68f),
+                )
+            }
+            return ListItemDefaults.colors(containerColor = colorScheme.surfaceContainerLowest)
+        }
 }

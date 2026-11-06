@@ -174,8 +174,8 @@ val settingsHubItems: Map<SettingsHubItemId, SettingsHubItemDef> = listOf(
 ).associateBy { it.id }
 
 /**
- * The hub, top to bottom — six sections with leaf rows (flat Kelivo-like hub).
- * Every [SettingsHubItemId] appears exactly once.
+ * The hub, top to bottom — six category cards that drill into leaf lists.
+ * Every [SettingsHubItemId] appears exactly once. IA matches the #226 grouping.
  */
 val settingsHubSections: List<SettingsHubSectionDef> = listOf(
     SettingsHubSectionDef(
