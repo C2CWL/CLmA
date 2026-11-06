@@ -42,13 +42,15 @@ import me.rerere.hugeicons.stroke.Tick02
 object AppMenuDefaults {
     val Shape = RoundedCornerShape(14.dp)
     val ItemShape = RoundedCornerShape(10.dp)
-    val HorizontalPadding = 6.dp
-    val ShadowElevation = 8.dp
+    val HorizontalPadding = 8.dp
+    val ShadowElevation = 12.dp
+    val ItemContentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp)
 
+    /** Elevated fill so the bubble stays readable over chat wallpaper / scrims. */
     val containerColor: Color
-        @Composable get() = MaterialTheme.colorScheme.surfaceContainerLowest
+        @Composable get() = MaterialTheme.colorScheme.surfaceContainerHigh
 
-    /** No hairline — filled surface + shadow reads cleaner than an outlined bubble. */
+    /** No hairline — elevated fill + soft shadow reads clearer than an outlined bubble. */
     val border: BorderStroke?
         @Composable get() = null
 }
@@ -131,7 +133,7 @@ fun AppDropdownMenu(
                 Column(
                     modifier = Modifier
                         .verticalScroll(rememberScrollState())
-                        .padding(horizontal = AppMenuDefaults.HorizontalPadding, vertical = 8.dp),
+                        .padding(horizontal = AppMenuDefaults.HorizontalPadding, vertical = 10.dp),
                     content = content,
                 )
             }
@@ -219,7 +221,7 @@ fun AppDropdownMenuItem(
             leadingIconColor = if (destructive || selected == true) foreground else colors.onSurfaceVariant,
             trailingIconColor = foreground,
         ),
-        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+        contentPadding = AppMenuDefaults.ItemContentPadding,
     )
 }
 

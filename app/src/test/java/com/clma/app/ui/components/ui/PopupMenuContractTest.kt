@@ -9,15 +9,18 @@ import org.junit.Test
 class PopupMenuContractTest {
 
     @Test
-    fun `shared menu keeps one lightweight bubble surface`() {
+    fun `shared menu keeps one high-contrast bubble surface`() {
         val source = menuSource()
         assertTrue(source.contains("val Shape = RoundedCornerShape(14.dp)"))
         assertTrue(source.contains("val ItemShape = RoundedCornerShape(10.dp)"))
-        assertTrue(source.contains("surfaceContainerLowest"))
+        assertTrue(source.contains("surfaceContainerHigh"))
         assertTrue(source.contains("val border: BorderStroke?"))
         assertTrue(source.contains("@Composable get() = null"))
         assertTrue(source.contains("shadowElevation = AppMenuDefaults.ShadowElevation"))
-        assertTrue(source.contains("val ShadowElevation = 8.dp"))
+        assertTrue(source.contains("val ShadowElevation = 12.dp"))
+        assertTrue(source.contains("val ItemContentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp)"))
+        assertTrue(source.contains("contentPadding = AppMenuDefaults.ItemContentPadding"))
+        assertFalse(source.contains("surfaceContainerLowest"))
         assertFalse(source.contains("DropdownMenuGroup("))
         assertFalse(source.contains("selected = destructive"))
         assertFalse(source.contains("destructive = selected"))
