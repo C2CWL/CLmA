@@ -23,25 +23,28 @@ import com.clma.app.utils.plus
 /** Light settings page wash — aligns with mock `#F2F3F5`, not a global theme preset. */
 internal val SettingsPageBackgroundLight = Color(0xFFF2F3F5)
 
-/** Settings hub / sub-page scaffold fill. Dark & OLED keep theme `surfaceContainerLow`. */
+/** Dark settings page fill. Near-white theme text on `surfaceContainerLow` (#22191A) glares. */
+internal val SettingsPageBackgroundDark = Color.Black
+
+/** Settings hub / sub-page scaffold fill. Dark & OLED stay pure black. */
 @Composable
 internal fun settingsPageContainerColor(): Color {
     return if (LocalDarkMode.current) {
-        MaterialTheme.colorScheme.surfaceContainerLow
+        SettingsPageBackgroundDark
     } else {
         SettingsPageBackgroundLight
     }
 }
 
 /**
- * Dark settings primary text — slightly muted so low-brightness OLED is less harsh.
- * Does not brighten page/card surfaces.
+ * Dark settings primary text — blended over black, not just translucent.
+ * Copying a near-white color with alpha still reads as white on OLED.
  */
 @Composable
 internal fun settingsPrimaryTextColor(): Color {
     val scheme = MaterialTheme.colorScheme
     return if (LocalDarkMode.current) {
-        scheme.onSurface.copy(alpha = 0.78f)
+        blendOver(scheme.onSurface, SettingsPageBackgroundDark, 0.68f)
     } else {
         scheme.onSurface
     }
@@ -52,7 +55,7 @@ internal fun settingsPrimaryTextColor(): Color {
 internal fun settingsSecondaryTextColor(): Color {
     val scheme = MaterialTheme.colorScheme
     return if (LocalDarkMode.current) {
-        scheme.onSurfaceVariant.copy(alpha = 0.82f)
+        blendOver(scheme.onSurfaceVariant, SettingsPageBackgroundDark, 0.68f)
     } else {
         scheme.onSurfaceVariant
     }
@@ -63,22 +66,34 @@ internal fun settingsSecondaryTextColor(): Color {
 internal fun settingsIconTint(): Color {
     val scheme = MaterialTheme.colorScheme
     return if (LocalDarkMode.current) {
-        scheme.onSurface.copy(alpha = 0.68f)
+        blendOver(scheme.onSurface, SettingsPageBackgroundDark, 0.60f)
     } else {
         scheme.onSurface.copy(alpha = 0.88f)
     }
+}
+
+/** Opaque blend: translucent white over black still looks white. */
+internal fun blendOver(foreground: Color, background: Color, alpha: Float): Color {
+    val a = alpha.coerceIn(0f, 1f)
+    return Color(
+        red = foreground.red * a + background.red * (1f - a),
+        green = foreground.green * a + background.green * (1f - a),
+        blue = foreground.blue * a + background.blue * (1f - a),
+        alpha = 1f,
+    )
 }
 
 @Composable
 internal fun settingsTopBarColors(): TopAppBarColors {
     val bg = settingsPageContainerColor()
     val title = settingsPrimaryTextColor()
+    val icon = settingsIconTint()
     return TopAppBarDefaults.topAppBarColors(
         containerColor = bg,
         scrolledContainerColor = bg,
         titleContentColor = title,
-        navigationIconContentColor = title,
-        actionIconContentColor = title.copy(alpha = if (LocalDarkMode.current) 0.85f else 1f),
+        navigationIconContentColor = icon,
+        actionIconContentColor = icon,
     )
 }
 
