@@ -61,7 +61,7 @@ class DoctorChecksLlamaCppTest {
         assertEquals(listOf("gone-a.gguf", "gone-b.gguf"), status.missing)
     }
 
-    @Test fun `llama.cpp check id stays on its own net prefix`() {
+    @Test fun `llamaCpp check id stays on its own net prefix`() {
         // The report dedups Doctor rows by id. Pin the id used by the
         // DoctorChecks.networkChecks row so a rename cannot silently merge it.
         val llamaCppId = "net.llamacpp_models"
