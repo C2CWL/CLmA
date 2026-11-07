@@ -5,23 +5,20 @@ import com.clma.ai.provider.Model
 import com.clma.ai.provider.ModelAbility
 import com.clma.ai.provider.ProviderSetting
 import com.clma.locallm.LocalRuntime
-import com.clma.locallm.litert.LiteRtModelMetadata
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Pins the runtime-aware `deriveLocalModelCapabilities` fix: before this, every call site
- * routed unconditionally through `LiteRtModelMetadata.deriveCapabilities`, which would stamp
- * a GGUF with LiteRT-derived capabilities (and could grant IMAGE input, which llama.cpp never
- * supports in this build).
+ * Pins llama.cpp capability derivation: catalog files take TOOL and REASONING from their
+ * tags, anything else still gets TOOL, and input is always TEXT (no vision in this build).
  */
 class SettingLocalLlmCapabilitiesTest {
 
     @Test
     fun `llama cpp catalog file gets TOOL and REASONING from its tags`() {
-        val caps = deriveLocalModelCapabilities(LocalRuntime.LlamaCpp, "Qwen3-4B-Q4_K_M.gguf")
+        val caps = deriveLocalModelCapabilities("Qwen3-4B-Q4_K_M.gguf")
 
         assertEquals(listOf(Modality.TEXT), caps.inputModalities)
         assertEquals(listOf(ModelAbility.TOOL, ModelAbility.REASONING), caps.abilities)
@@ -29,39 +26,24 @@ class SettingLocalLlmCapabilitiesTest {
 
     @Test
     fun `llama cpp file outside the catalog still gets TOOL, never REASONING`() {
-        val caps = deriveLocalModelCapabilities(LocalRuntime.LlamaCpp, "some-manual-model.gguf")
+        val caps = deriveLocalModelCapabilities("some-manual-model.gguf")
 
         assertEquals(listOf(Modality.TEXT), caps.inputModalities)
         assertEquals(listOf(ModelAbility.TOOL), caps.abilities)
     }
 
     @Test
-    fun `llama cpp never derives IMAGE input, unlike LiteRT`() {
-        val caps = deriveLocalModelCapabilities(LocalRuntime.LlamaCpp, "Qwen3-0.6B-Q8_0.gguf")
+    fun `llama cpp never derives IMAGE input`() {
+        val caps = deriveLocalModelCapabilities("Qwen3-0.6B-Q8_0.gguf")
 
         assertFalse(Modality.IMAGE in caps.inputModalities)
     }
 
     @Test
-    fun `LiteRT branch is unchanged, still routes through LiteRtModelMetadata`() {
-        val direct = LiteRtModelMetadata.deriveCapabilities("some-litert-file.litertlm")
-        val viaHelper = deriveLocalModelCapabilities(LocalRuntime.LiteRT, "some-litert-file.litertlm")
-
-        assertEquals(direct, viaHelper)
-    }
-
-    @Test
-    fun `enableAfterFirstDownload enables a llama cpp provider, not just LiteRT`() {
+    fun `enableAfterFirstDownload enables a llama cpp provider`() {
         val enabled = enableAfterFirstDownload(ProviderSetting.LlamaCppLocal(enabled = false))
 
         assertTrue((enabled as ProviderSetting.LlamaCppLocal).enabled)
-    }
-
-    @Test
-    fun `enableAfterFirstDownload still enables a LiteRT provider`() {
-        val enabled = enableAfterFirstDownload(ProviderSetting.LiteRtLocal(enabled = false))
-
-        assertTrue((enabled as ProviderSetting.LiteRtLocal).enabled)
     }
 
     @Test

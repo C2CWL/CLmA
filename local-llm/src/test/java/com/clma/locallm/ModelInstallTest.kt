@@ -101,15 +101,15 @@ class ModelInstallTest {
         assertEquals(false, ModelInstall.isValidDownloadUrl("file:///etc/passwd"))
     }
 
-    @Test fun `runtimeForExtension routes litertlm to LiteRT, gguf to llama_cpp, and unknowns to null`() {
-        assertEquals(LocalRuntime.LiteRT, ModelInstall.runtimeForExtension("litertlm"))
+    @Test fun `runtimeForExtension routes gguf to llama_cpp and unknowns to null`() {
+        assertEquals(null, ModelInstall.runtimeForExtension("litertlm"))
         assertEquals(LocalRuntime.LlamaCpp, ModelInstall.runtimeForExtension("gguf"))
         assertEquals(null, ModelInstall.runtimeForExtension("task"))
         assertEquals(null, ModelInstall.runtimeForExtension("tflite"))
     }
 
     @Test fun `runtimeForExtension is case-insensitive`() {
-        assertEquals(LocalRuntime.LiteRT, ModelInstall.runtimeForExtension("LITERTLM"))
+        assertEquals(null, ModelInstall.runtimeForExtension("LITERTLM"))
         assertEquals(LocalRuntime.LlamaCpp, ModelInstall.runtimeForExtension("GGUF"))
     }
 
@@ -134,9 +134,9 @@ class ModelInstallTest {
 
     @Test fun `targetFile builds a path under the runtime-specific subdir`() {
         val baseDir = File("/data/data/com.test/files/local-models")
-        val out = ModelInstall.targetFile(baseDir, LocalRuntime.LiteRT, "model.task")
+        val out = ModelInstall.targetFile(baseDir, LocalRuntime.LlamaCpp, "model.gguf")
         assertEquals(
-            "/data/data/com.test/files/local-models/litert/model.task",
+            "/data/data/com.test/files/local-models/llamacpp/model.gguf",
             out.absolutePath,
         )
     }
@@ -203,20 +203,14 @@ class ModelInstallTest {
 
     // isValidMagicForExtension -------------------------------------------------
 
-    @Test fun `isValidMagicForExtension accepts LITERTLM magic for litertlm`() {
+    @Test fun `isValidMagicForExtension treats litertlm as an unknown extension`() {
+        // The format is no longer recognised, so it falls through to the generic check:
+        // non-zero, non-HTML bytes pass; zeros and HTML do not.
         val bytes = "LITERTLM      ".toByteArray().copyOf(16)
         assertTrue(ModelInstall.isValidMagicForExtension("litertlm", bytes))
-        assertTrue(ModelInstall.isValidMagicForExtension("LITERTLM", bytes))  // case-insensitive
-    }
-
-    @Test fun `isValidMagicForExtension rejects all-zero file for litertlm`() {
-        val bytes = ByteArray(16)  // all zeros
-        assertFalse(ModelInstall.isValidMagicForExtension("litertlm", bytes))
-    }
-
-    @Test fun `isValidMagicForExtension rejects HTML file for litertlm`() {
-        val bytes = "<!DOCTYPE html><html>".toByteArray().copyOf(16)
-        assertFalse(ModelInstall.isValidMagicForExtension("litertlm", bytes))
+        assertFalse(ModelInstall.isValidMagicForExtension("litertlm", ByteArray(16)))
+        val html = "<!DOCTYPE html><html>".toByteArray().copyOf(16)
+        assertFalse(ModelInstall.isValidMagicForExtension("litertlm", html))
     }
 
     @Test fun `isValidMagicForExtension accepts GGUF magic for gguf`() {
@@ -235,8 +229,8 @@ class ModelInstallTest {
 
     @Test fun `isValidMagicForExtension rejects buffer shorter than 4 bytes`() {
         // Any buffer < 4 bytes returns false regardless of extension.
-        assertFalse(ModelInstall.isValidMagicForExtension("litertlm", byteArrayOf()))
-        assertFalse(ModelInstall.isValidMagicForExtension("litertlm", byteArrayOf(0x4c)))
+        assertFalse(ModelInstall.isValidMagicForExtension("gguf", byteArrayOf()))
+        assertFalse(ModelInstall.isValidMagicForExtension("gguf", byteArrayOf(0x4c)))
     }
 
     @Test fun `isValidMagicForExtension unknown extension rejects all-zero bytes`() {

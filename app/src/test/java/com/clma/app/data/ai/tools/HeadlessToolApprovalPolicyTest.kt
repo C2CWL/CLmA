@@ -372,14 +372,14 @@ class HeadlessToolApprovalPolicyTest {
     }
 
     @Test
-    fun `connector external writes are refused unattended but local drafts remain usable`() {
+    fun `connector external writes are refused unattended but repository reads remain usable`() {
         com.clma.app.connectors.ConnectorWriteApproval.WRITE_TOOL_NAMES.forEach { name ->
             assertTrue(HeadlessToolApprovalPolicy.REFUSED_TOOL_NAMES.contains(name))
             assertNotNull(HeadlessToolApprovalPolicy.refusalEnvelopeFor(name, headless = true))
             assertNull(HeadlessToolApprovalPolicy.refusalEnvelopeFor(name, headless = false))
             assertTrue(HeadlessToolApprovalPolicy.refusalDetail(name)!!.contains("per-call"))
         }
-        listOf("gmail_read", "gmail_search", "gmail_draft_create", "gmail_draft_get", "github_repository").forEach { name ->
+        listOf("github_repository").forEach { name ->
             assertFalse(HeadlessToolApprovalPolicy.isRefused(name))
         }
     }

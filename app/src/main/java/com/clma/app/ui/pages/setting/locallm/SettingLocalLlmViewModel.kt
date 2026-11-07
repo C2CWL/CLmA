@@ -17,13 +17,10 @@ import com.clma.ai.provider.Model
 import com.clma.ai.provider.Modality
 import com.clma.ai.provider.ModelAbility
 import com.clma.ai.provider.ProviderSetting
-import com.clma.ai.provider.LITERT_PROVIDER_ID
 import com.clma.ai.provider.LLAMACPP_PROVIDER_ID
 import com.clma.llamacpp.LlamaCppCatalog
-import com.clma.locallm.AcceleratorProbe
 import com.clma.locallm.LocalRuntime
 import com.clma.locallm.LocalRuntimePreferences
-import com.clma.locallm.litert.LiteRtModelMetadata
 import com.clma.locallm.MemoryGuard
 import com.clma.locallm.ModelInstall
 import com.clma.app.R
@@ -34,18 +31,13 @@ import com.clma.app.data.model.HfModelSearchResult
 import okhttp3.OkHttpClient
 
 /**
- * Drives the LiteRT provider configure pane inside the standard
+ * Drives the llama.cpp provider configure pane inside the standard
  * SettingProviderDetailPage pipeline (tab 0).
  *
- * State is split into individual flows so ProviderConfigureLiteRT can observe
- * exactly what it needs:
+ * State is split into individual flows so the configure pane can observe exactly what it needs:
  *  - [downloadProgress]: non-null while a download is running
  *  - [errorMessage]: non-null when the last action failed
- *  - [accelerator]: the cached accelerator string (null = never probed)
- *
- * The [runtime] parameter is what lets this single class drive both the LiteRT and
- * llama.cpp settings tiles: each call site supplies its own [LocalRuntime] and every flow
- * above fans out on it rather than hardcoding one runtime.
+ *  - [accelerator]: the cached accelerator string (llama.cpp is CPU-only, so always "cpu")
  */
 class SettingLocalLlmViewModel(
     val runtime: LocalRuntime,
@@ -92,8 +84,8 @@ class SettingLocalLlmViewModel(
     val forceCpu: StateFlow<Boolean> = prefs.forceCpuFlow(runtime)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
 
-    /** Override for `EngineConfig.maxNumTokens`. null = use the per-model curated default
-     *  from `LiteRtModelDefaults`. Persisted in `LocalRuntimePreferences`. */
+    /** Override for the runtime context length. null = use the runtime default.
+     *  Persisted in `LocalRuntimePreferences`. */
     val maxNumTokensOverride: StateFlow<Int?> = prefs.maxNumTokensOverrideFlow(runtime)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
@@ -126,8 +118,7 @@ class SettingLocalLlmViewModel(
 
     /** File names of every model currently registered on the provider. The catalog UI
      *  uses this to render an "Installed" badge instead of an Install button when the
-     *  catalog entry's `modelFile` already lives in `provider.models` (modelId == file
-     *  name in the LiteRT case). */
+     *  catalog entry's file already lives in `provider.models` (modelId == file name). */
     val installedModelFiles: StateFlow<Set<String>> = settingsStore.settingsFlow
         .map { settings ->
             settings.providers.firstOrNull { it.id == providerIdForRuntime() }?.models?.map { it.modelId }?.toSet() ?: emptySet()
@@ -139,30 +130,10 @@ class SettingLocalLlmViewModel(
      *  all. [LlamaCppCatalog.ENTRIES] is ordered smallest-first. */
     private val defaultLlamaCppEntry = LlamaCppCatalog.ENTRIES.first()
 
-    /**
-     * The default model URL for the runtime.
-     *
-     * LiteRT default: litert-community/Qwen2.5-1.5B-Instruct — q8 multi-prefill variant
-     * (~1.6 GB on disk). Public and ungated (Apache-2.0), and its chat template supports
-     * tool calling, which the agent loop depends on.
-     *
-     * paulsp94/Qwen3.5-2B-LiteRT-LM was dropped: that model is packaged for a different
-     * runtime version and throws FAILED_PRECONDITION: No KV cache inputs found.
-     *
-     * llama.cpp default: [defaultLlamaCppEntry] from the curated GGUF catalog.
-     */
-    private val defaultModelUrl: String = when (runtime) {
-        LocalRuntime.LiteRT ->
-            "https://huggingface.co/litert-community/Qwen2.5-1.5B-Instruct/resolve/main/Qwen2.5-1.5B-Instruct_multi-prefill-seq_q8_ekv4096.litertlm"
-        LocalRuntime.LlamaCpp -> defaultLlamaCppEntry.resolveUrl()
-    }
+    /** Default download: the smallest curated GGUF, the one the memory guard can approve. */
+    private val defaultModelUrl: String = defaultLlamaCppEntry.resolveUrl()
 
-    /** Currently only LiteRT is wired; the helper exists so a future runtime can fan out
-     *  by adding a `when` arm without touching every flow above. */
-    private fun providerIdForRuntime(): kotlin.uuid.Uuid = when (runtime) {
-        LocalRuntime.LiteRT -> LITERT_PROVIDER_ID
-        LocalRuntime.LlamaCpp -> LLAMACPP_PROVIDER_ID
-    }
+    private fun providerIdForRuntime(): kotlin.uuid.Uuid = LLAMACPP_PROVIDER_ID
 
     init {
         viewModelScope.launch {
@@ -172,12 +143,9 @@ class SettingLocalLlmViewModel(
     }
 
     /**
-     * One-shot startup migration for users who installed LiteRT models BEFORE the
-     * ability auto-detect landed. Walks the persisted [ProviderSetting.LiteRtLocal]
-     * models list and adds (never removes) capabilities the catalog declares. Idempotent
-     * — re-running finds nothing to change and exits without a write. Migration runs
-     * each time Settings → LiteRT mounts; cheap (in-memory comparison + at most one
-     * DataStore write).
+     * One-shot startup migration for models installed before capability auto-detect.
+     * Adds (never removes) the capabilities the llama.cpp catalog declares. Idempotent:
+     * re-running finds nothing to change and exits without a write.
      */
     private suspend fun migrateExistingModelMetadata() {
         val targetId = providerIdForRuntime()
@@ -187,21 +155,16 @@ class SettingLocalLlmViewModel(
         val originals = provider.models.toList()
         var anyChange = false
         val patched = originals.map { model ->
-            val current = LiteRtModelMetadata.Capabilities(
-                inputModalities = model.inputModalities,
-                abilities = model.abilities,
-            )
-            val target = deriveLocalModelCapabilities(runtime, model.modelId)
-            val merged = LiteRtModelMetadata.mergeAdditive(current, target)
-            if (merged.inputModalities == model.inputModalities &&
-                merged.abilities == model.abilities
-            ) {
+            val target = deriveLocalModelCapabilities(model.modelId)
+            val mergedModalities = (model.inputModalities + target.inputModalities).distinct()
+            val mergedAbilities = (model.abilities + target.abilities).distinct()
+            if (mergedModalities == model.inputModalities && mergedAbilities == model.abilities) {
                 model
             } else {
                 anyChange = true
                 model.copy(
-                    inputModalities = merged.inputModalities,
-                    abilities = merged.abilities,
+                    inputModalities = mergedModalities,
+                    abilities = mergedAbilities,
                 )
             }
         }
@@ -273,7 +236,7 @@ class SettingLocalLlmViewModel(
             val knownModelIds = currentProvider.models.map { it.modelId }.toSet()
             val missing = finalInstalled.keys.filter { it !in knownModelIds }
             for (fileName in missing) {
-                val caps = deriveLocalModelCapabilities(runtime, fileName)
+                val caps = deriveLocalModelCapabilities(fileName)
                 val model = Model(
                     modelId = fileName,
                     displayName = fileName,
@@ -289,21 +252,15 @@ class SettingLocalLlmViewModel(
     }
 
     private suspend fun probeAndCache(): String {
-        val forceCpuNow = prefs.forceCpu(runtime)
-        val accel = when (runtime) {
-            LocalRuntime.LiteRT -> AcceleratorProbe.probeLiteRt(context, forceCpu = forceCpuNow)
-            // llama.cpp is CPU-only in this build (no GPU backend compiled in), so there is
-            // nothing to probe and no force-CPU toggle to honour.
-            LocalRuntime.LlamaCpp -> "cpu"
-        }
+        // llama.cpp is CPU-only in this build (no GPU backend compiled in).
+        val accel = "cpu"
         prefs.setAccelerator(runtime, accel)
         _accelerator.value = accel
         return accel
     }
 
-    /** Flip the runtime's force-CPU override AND re-probe so the cached accelerator
-     *  flips with it. Off → next probe picks GPU/NNAPI/QNN; on → CPU. Called from the
-     *  "Try GPU acceleration" toggle on the LiteRT settings page. */
+    /** Persist the force-CPU override. llama.cpp has no GPU backend, so the cached
+     *  accelerator stays "cpu" either way. */
     fun setForceCpu(force: Boolean) {
         viewModelScope.launch {
             prefs.setForceCpu(runtime, force)
@@ -333,7 +290,7 @@ class SettingLocalLlmViewModel(
     }
 
     /**
-     * Mutates the LiteRtLocal ProviderSetting in the persisted settings store.
+     * Mutates the llama.cpp ProviderSetting in the persisted settings store.
      * Identity is established by the stable provider ID constant, not by position.
      */
     private suspend fun updateMyProvider(transform: (ProviderSetting) -> ProviderSetting) {
@@ -500,7 +457,7 @@ class SettingLocalLlmViewModel(
                 is ModelInstall.Progress.Done -> {
                     _downloadProgress.value = null
                     prefs.addInstalledModel(runtime, fileName, p.file.absolutePath)
-                    val caps = deriveLocalModelCapabilities(runtime, fileName)
+                    val caps = deriveLocalModelCapabilities(fileName)
                     val model = Model(
                         modelId = fileName,
                         displayName = fileName,
@@ -566,10 +523,7 @@ class SettingLocalLlmViewModel(
     }
 
     /** The file extension a picked-file import must carry the right magic bytes for. */
-    private fun expectedExtensionForRuntime(): String = when (runtime) {
-        LocalRuntime.LiteRT -> "litertlm"
-        LocalRuntime.LlamaCpp -> "gguf"
-    }
+    private fun expectedExtensionForRuntime(): String = LocalRuntime.LlamaCpp.fileExtension
 
     fun clearError() {
         _errorMessage.value = null
@@ -612,24 +566,16 @@ class SettingLocalLlmViewModel(
         }
     }
 
-    private fun estimatedSize(rt: LocalRuntime): Long = when (rt) {
-        // Gallery allowlist sizeInBytes = 1_597_931_520 (~1.49 GB) + 200 MB safety pad.
-        LocalRuntime.LiteRT -> 1_800_000_000L
-        // The real byte size of defaultLlamaCppEntry, straight from the verified catalog.
-        LocalRuntime.LlamaCpp -> defaultLlamaCppEntry.sizeBytes
-    }
+    private fun estimatedSize(rt: LocalRuntime): Long = defaultLlamaCppEntry.sizeBytes
 }
 
 /**
- * Auto-enable transform applied after a model download completes: local-runtime provider
- * settings (LiteRT, llama.cpp) flip to `enabled = true` so the just-downloaded model becomes
- * usable without a second trip to Settings. Everything else (cloud providers, AICore) passes
- * through unchanged — this only ever runs against the provider identified by
- * [SettingLocalLlmViewModel.providerIdForRuntime], but stays a total function over
+ * Auto-enable transform applied after a model download completes: the llama.cpp provider
+ * flips to `enabled = true` so the just-downloaded model becomes usable without a second
+ * trip to Settings. Everything else passes through unchanged. Stays a total function over
  * [ProviderSetting] so it's directly unit-testable.
  */
 internal fun enableAfterFirstDownload(provider: ProviderSetting): ProviderSetting = when (provider) {
-    is ProviderSetting.LiteRtLocal -> provider.copy(enabled = true)
     is ProviderSetting.LlamaCppLocal -> provider.copy(enabled = true)
     else -> provider
 }
@@ -657,27 +603,23 @@ internal fun registerInstalledModel(provider: ProviderSetting, model: Model): Pr
  * Runtime-aware capability derivation for a just-installed or freshly-reconciled model
  * file, shared by [SettingLocalLlmViewModel.migrateExistingModelMetadata],
  * [SettingLocalLlmViewModel.refreshFromDisk]'s reconcile step, and the post-download
- * registration path. LiteRT routes through the catalog-driven
- * [LiteRtModelMetadata.deriveCapabilities]. llama.cpp has no per-file config table and no
- * vision support in this build (vision is a spec non-goal), so it always reports TEXT-only
- * input; TOOL and REASONING come from a matching [LlamaCppCatalog] entry's tags when the
- * file is a catalog pick. A file that isn't in the catalog (e.g. a manually installed GGUF)
- * still gets TOOL — the same "assume tool-tuned" fallback LiteRT applies to files outside
- * its own catalog.
+ * registration path. llama.cpp has no vision support in this build, so it always reports
+ * TEXT-only input; TOOL and REASONING come from a matching [LlamaCppCatalog] entry's tags
+ * when the file is a catalog pick. A file that isn't in the catalog (e.g. a manually
+ * installed GGUF) still gets TOOL.
  */
-internal fun deriveLocalModelCapabilities(
-    runtime: LocalRuntime,
-    fileName: String,
-): LiteRtModelMetadata.Capabilities = when (runtime) {
-    LocalRuntime.LiteRT -> LiteRtModelMetadata.deriveCapabilities(fileName)
-    LocalRuntime.LlamaCpp -> {
-        val tags = LlamaCppCatalog.ENTRIES.firstOrNull { it.file == fileName }?.tags.orEmpty()
-        LiteRtModelMetadata.Capabilities(
-            inputModalities = listOf(Modality.TEXT),
-            abilities = buildList {
-                add(ModelAbility.TOOL)
-                if ("thinking" in tags) add(ModelAbility.REASONING)
-            },
-        )
-    }
+internal data class LocalModelCapabilities(
+    val inputModalities: List<Modality>,
+    val abilities: List<ModelAbility>,
+)
+
+internal fun deriveLocalModelCapabilities(fileName: String): LocalModelCapabilities {
+    val tags = LlamaCppCatalog.ENTRIES.firstOrNull { it.file == fileName }?.tags.orEmpty()
+    return LocalModelCapabilities(
+        inputModalities = listOf(Modality.TEXT),
+        abilities = buildList {
+            add(ModelAbility.TOOL)
+            if ("thinking" in tags) add(ModelAbility.REASONING)
+        },
+    )
 }

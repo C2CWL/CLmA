@@ -11,7 +11,7 @@ import org.junit.Test
 
 class ConnectorCipherTest {
     private val key = KeyGenerator.getInstance("AES").apply { init(256) }.generateKey()
-    private val name = "gmail.draft.test"
+    private val name = "github.account.test"
     private val text = "Local draft: 中文 😀\nCredential: test-not-a-real-token"
 
     @Test

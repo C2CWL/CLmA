@@ -303,8 +303,9 @@ dependencies {
 
     // quickie (qrcode scanner)
     implementation(libs.quickie.bundled)
-    implementation(libs.barcode.scanning)
     implementation(libs.androidx.camera.core)
+    // Direct dependency: previously arrived transitively through ML Kit barcode scanning.
+    implementation(libs.androidx.exifinterface)
 
     // Room
     implementation(libs.androidx.room.runtime)
@@ -351,12 +352,8 @@ dependencies {
     // sqlite-android (requery SQLite for Android)
     implementation(libs.sqlite.android)
 
-    // Google Play Services Location (FusedLocationProvider)
-    implementation(libs.play.services.location)
-    implementation(libs.play.services.auth)
     implementation(libs.jsoup)
     // kotlinx.coroutines.tasks.await for Task<*> (was previously transitive via Firebase)
-    implementation(libs.kotlinx.coroutines.play.services)
 
     // AndroidX Biometric (BiometricPrompt)
     implementation(libs.androidx.biometric)

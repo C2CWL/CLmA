@@ -62,7 +62,6 @@ fun workflowCreateTool(
           headphones_plugged / headphones_unplugged — no params
           power_connected / power_disconnected — no params (charger plug/unplug)
           battery_below / battery_above — params: threshold_percent (1..100), fires on transition
-          geofence_enter / geofence_exit — params: lat, lng, radius_m (50..5000), label (optional)
           app_launched / app_closed — params: package_name
           notification_received — params: at least one of package_name, title_contains,
               text_contains, title_matches, text_matches. The *_contains fields match a
@@ -245,7 +244,7 @@ fun workflowUpdateTool(
         workflow; otherwise the call is rejected. Same trigger / condition / action schema
         as workflow_create — see that tool's description for the full enumeration of
         supported trigger types (time_cron, wifi_*, bluetooth_*, headphones_*, power_*,
-        battery_*, geofence_*, app_*, notification_received, boot_completed, screen_*,
+        battery_*, app_*, notification_received, boot_completed, screen_*,
         manual) and condition types.
     """.trimIndent().replace("\n", " "),
     parameters = {
@@ -295,8 +294,8 @@ fun workflowUpdateTool(
 fun workflowDeleteTool(repository: WorkflowRepository): Tool = Tool(
     name = "workflow_delete",
     description = """
-        Delete a workflow and all of its run history. The triggers it owned (geofences,
-        broadcast registrations, scheduled work) are torn down on the next reconciliation.
+        Delete a workflow and all of its run history. The triggers it owned (broadcast
+        registrations, scheduled work) are torn down on the next reconciliation.
     """.trimIndent().replace("\n", " "),
     parameters = {
         InputSchema.Obj(

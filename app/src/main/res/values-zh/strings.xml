@@ -1649,8 +1649,8 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="assistant_page_local_tools_volume_title">音量</string>
   <string name="assistant_page_local_tools_wifi_desc">读取当前 Wi-Fi 连接（SSID、IP、信号）。读取 SSID 需要位置权限。</string>
   <string name="assistant_page_local_tools_wifi_title">Wi-Fi 信息</string>
-  <string name="assistant_page_local_tools_workflows_desc">让助手创建由触发器运行的自动化 — WiFi 连接、定时、地理围栏、通知到达等。</string>
-  <string name="assistant_page_local_tools_workflows_hint_message">工作流已启用。某些触发器类型需要开关无法请求的权限：\n\n• 地理围栏（你到达某地）：设置 → 应用 → CLmA → 权限 → 位置 → 始终允许。\n• 通知到达：设置 → 应用 → 特殊访问权限 → 通知使用权 → 启用 CLmA。\n• 应用启动/关闭：设置 → 无障碍 → 启用 CLmA。\n• 蓝牙连接/断开：在系统询问时授予 BLUETOOTH_CONNECT。\n\n定时、WiFi、耳机、电源、屏幕开/关和电池触发器开箱即用。当你创建需要额外设置的工作流时，助手会即时提示。</string>
+  <string name="assistant_page_local_tools_workflows_desc">让助手创建由触发器运行的自动化 — WiFi 连接、定时、通知到达等。</string>
+  <string name="assistant_page_local_tools_workflows_hint_message">工作流已启用。某些触发器类型需要开关无法请求的权限：\n\n• 通知到达：设置 → 应用 → 特殊访问权限 → 通知使用权 → 启用 CLmA。\n• 应用启动/关闭：设置 → 无障碍 → 启用 CLmA。\n• 蓝牙连接/断开：在系统询问时授予 BLUETOOTH_CONNECT。\n\n定时、WiFi、耳机、电源、屏幕开/关和电池触发器开箱即用。当你创建需要额外设置的工作流时，助手会即时提示。</string>
   <string name="assistant_page_local_tools_workflows_hint_title">工作流需要额外设置</string>
   <string name="assistant_page_local_tools_workflows_title">工作流</string>
   <string name="browser_address_bar_back">浏览器后退</string>
@@ -1723,7 +1723,6 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="local_llm_installed_models_count">已安装 %1$d 个模型。在“模型”标签页中管理它们。</string>
   <string name="local_llm_insufficient_memory_format">需要约 %1$d MB 的可用内存（模型 %2$d MB 加上运行时余量），但只有 %3$d MB 可用。请关闭其他应用或选择更小的模型。</string>
   <string name="local_llm_invalid_url">无效网址：必须是 https 且格式正确</string>
-  <string name="local_llm_litert_name">本地 · LiteRT</string>
   <string name="local_llm_manage_files_title">已安装的模型文件</string>
   <string name="local_llm_max_tokens_desc">覆盖精选的默认值。模型文件的 KV 缓存是硬上限 — Qwen ekv4096 无论如何都封顶在 4096。能力更强的模型（Gemma 4 E2B = 32000）受益于更大的值。留空则使用精选默认值。</string>
   <string name="local_llm_max_tokens_label">最大上下文（token）</string>
@@ -1737,7 +1736,6 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="local_llm_status_error_format">上次错误：%1$s</string>
   <string name="local_llm_status_ready_format">%1$s · %2$s</string>
   <string name="local_llm_test_model">测试</string>
-  <string name="local_llm_tool_calling_litert">工具调用：基于提示工程。准确性因模型而异。</string>
   <string name="local_llm_try_gpu_desc">默认关闭。某些设备在此运行时使用 GPU/NPU 后端推理时会崩溃 — 如遇崩溃请保持关闭。仅 CPU 较慢但可靠。</string>
   <string name="local_llm_try_gpu_label">尝试 GPU 加速</string>
   <string name="mcp_error_reconnect_exhausted">连接已断开 — 已达到最大重连次数</string>
@@ -2010,7 +2008,7 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="setting_page_tool_approvals_yolo_on">🚨 已开启。每个工具 — 包括黑名单与安全底线 — 都无需提示直接运行。HARDLINE 拦截（rm -rf /、mkfs、shutdown …）仍然生效。</string>
   <string name="setting_page_tool_approvals_yolo_title">我很蠢 — 自动批准一切</string>
   <string name="setting_page_workflow_detail_delete">删除</string>
-  <string name="setting_page_workflow_detail_delete_confirm_body">这将移除工作流及其历史。它拥有的触发器（地理围栏、定时、广播）会在下次协调时被拆除。无法撤销。</string>
+  <string name="setting_page_workflow_detail_delete_confirm_body">这将移除工作流及其历史。它拥有的触发器（定时、广播）会在下次协调时被拆除。无法撤销。</string>
   <string name="setting_page_workflow_detail_delete_confirm_no">取消</string>
   <string name="setting_page_workflow_detail_delete_confirm_title">删除工作流？</string>
   <string name="setting_page_workflow_detail_delete_confirm_yes">删除</string>
@@ -2045,8 +2043,6 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="setting_page_workflows_subtitle_ran_skipped">跳过于 %1$s</string>
   <string name="setting_page_workflows_subtitle_ran_success">运行于 %1$s • 成功</string>
   <string name="setting_page_workflows_subtitle_when">时间：%1$s</string>
-  <string name="setting_provider_aicore_release_stage">发布阶段</string>
-  <string name="setting_provider_aicore_status_help">在设备本地运行。需要安装了 AICore 应用的 Pixel 8/9/10，并且加入 GenAI Prompt-API 抢先体验计划（单独的选择加入）。如果你在首次运行时看到 ErrorCode 606 / FEATURE_NOT_FOUND，说明你安装了 AICore 但没有 Prompt-API 通道 — 通过 GenAI Prompt-API 抢先体验表单申请访问权限，然后重启。通过提示工程支持工具调用 — Gemini Nano 发出 &lt;tool_call&gt; 标记，由 CLmA 解析并派发。</string>
   <string name="setting_provider_delete_body">这将永久移除 %1$s 及其所有已配置的模型。你可以稍后重新添加。</string>
   <string name="setting_provider_delete_cancel">取消</string>
   <string name="setting_provider_delete_confirm">移除</string>
@@ -2708,8 +2704,6 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="perm_desc_manage_storage">允许代理读取和管理设备外部共享存储中的所有文件。</string>
   <string name="perm_label_usage_stats">使用情况访问权限</string>
   <string name="perm_desc_usage_stats">允许代理查询应用使用情况统计数据和屏幕使用时间。</string>
-  <string name="perm_label_background_location">后台位置信息</string>
-  <string name="perm_desc_background_location">允许应用在后台时仍可响应地理围栏和位置触发器。</string>
   <string name="perm_label_local_network">本地网络</string>
   <string name="perm_desc_local_network">允许与同一本地局域网内的设备进行网络通信。</string>
   <string name="perm_label_bluetooth_connect">蓝牙连接</string>
@@ -3139,7 +3133,6 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="doctor_fix_open_providers">打开服务商</string>
   <string name="doctor_fix_open_mcp">打开 MCP 服务器</string>
   <string name="doctor_fix_open_skills">打开技能</string>
-  <string name="doctor_fix_open_litert">打开本地 LiteRT</string>
   <string name="doctor_fix_open_llamacpp">打开本地 llama.cpp</string>
   <string name="doctor_fix_open_nfc">打开 NFC 设置</string>
   <string name="doctor_fix_request_whitelist">申请加入白名单</string>
@@ -3178,9 +3171,6 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="doctor_check_stranded_runs">滞留的定时任务运行</string>
   <string name="doctor_check_granted_dirs">已授权目录</string>
   <string name="doctor_check_providers">已配置的大模型服务商</string>
-  <string name="doctor_check_litert_accel">LiteRT 加速器</string>
-  <string name="doctor_check_litert_perf">LiteRT 性能</string>
-  <string name="doctor_check_litert_vision">LiteRT 视觉编码器</string>
   <string name="doctor_check_llamacpp_models">llama.cpp 模型</string>
   <string name="doctor_check_dns">DNS 解析</string>
   <string name="doctor_check_termux_installed">已安装 Termux</string>
@@ -3207,7 +3197,7 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="doctor_detail_perm_notifications_granted">已授权 — 监听器可以读取通知。</string>
   <string name="doctor_detail_perm_notifications_missing">未授权。notification_received 触发器和通知类工具将无法使用。</string>
   <string name="doctor_detail_perm_location_granted">已授权。</string>
-  <string name="doctor_detail_perm_location_missing">地理围栏触发器和在 Android 10+ 上读取 Wi-Fi SSID 都需要它。</string>
+  <string name="doctor_detail_perm_location_missing">位置工具和在 Android 10+ 上读取 Wi-Fi SSID 都需要它。</string>
   <string name="doctor_detail_perm_battery_granted">应用已在白名单中 — 后台服务可稳定运行。</string>
   <string name="doctor_detail_perm_battery_missing">待机优化可能会中断定时任务和工作流。</string>
   <string name="doctor_detail_perm_accessibility_granted">已在系统设置中启用。</string>
@@ -3224,8 +3214,6 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="doctor_detail_perm_bluetooth_missing">工作流的蓝牙触发器无法读取已配对设备状态。</string>
   <string name="doctor_detail_perm_wifi_granted">已授权。</string>
   <string name="doctor_detail_perm_wifi_missing">在 Android 13+ 上没有它时，Wi-Fi 扫描/信息可能受限。</string>
-  <string name="doctor_detail_perm_geofence_granted">已授权。</string>
-  <string name="doctor_detail_perm_geofence_missing">应用关闭后地理围栏工作流触发器不会触发。</string>
   <string name="doctor_detail_perm_needed_by">%1$s 使用者：%2$s。</string>
   <string name="doctor_detail_nfc_no_hardware">设备没有 NFC 硬件。</string>
   <string name="doctor_detail_nfc_off_not_required">系统设置中 NFC 已关闭。没有被任何已启用的工具使用。</string>
@@ -3284,16 +3272,12 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="doctor_detail_storage_not_enabled">未启用外部存储工具。无需处理。</string>
   <string name="doctor_detail_storage_no_grants">还没有授权任何目录。调用 grant_directory_access 来添加。</string>
   <string name="doctor_detail_storage_grants">已授权 %1$d 个目录：%2$s。</string>
-  <string name="doctor_detail_providers_count">共 %2$d 个服务商，其中 %1$d 个已配置（已设 API 密钥、已启用 AICore 或已加载本地模型）。</string>
+  <string name="doctor_detail_providers_count">共 %2$d 个服务商，其中 %1$d 个已配置（已设 API 密钥或已加载本地模型）。</string>
   <string name="doctor_detail_accel_not_probed">尚未探测。加速器会在首次加载模型时确定。</string>
-  <string name="doctor_detail_accel_cpu">CPU（设置 -> 本地 LiteRT 中「尝试 GPU」开关为关闭）。打开它可在下次加载时重试本机 GPU。</string>
-  <string name="doctor_detail_accel_cpu_fallback">CPU（回退：本机 GPU 委托初始化失败，多半是 MLDrift 问题。在设置 -> 本地 LiteRT 点「重新检测」可重新探测。）</string>
-  <string name="doctor_detail_accel_gpu">GPU（OpenCL 或 OpenGL，由 LiteRT 内部探测选择）。</string>
   <string name="doctor_detail_accel_npu">NPU（高通 QNN 委托）。</string>
   <string name="doctor_detail_accel_nnapi">NNAPI。</string>
   <string name="doctor_detail_accel_unknown">后端标识：%1$s</string>
   <string name="doctor_detail_model_rates">最近一次各模型速率（按字符估算，英文文本约 10%% 准确）：%1$s</string>
-  <string name="doctor_detail_vision_unavailable">本机无法使用视觉编码器：%1$s。这些多模态模型只能以纯文本模式运行 — 对话可用，图片输入不行。通常需要等 LiteRT-LM SDK 更新修复。</string>
   <string name="doctor_detail_skills_count">已安装 %1$d 个（内置 %2$d 个，用户添加 %3$d 个）。</string>
   <string name="doctor_detail_cache_size">缓存占用 %1$s。点「清除缓存」可释放空间。</string>
   <string name="doctor_detail_app_build">CLmA %1$s（%2$s）— debug=%3$s</string>
@@ -3301,7 +3285,6 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="doctor_unnamed">未命名</string>
   <string name="doctor_unnamed_paren">（未命名）</string>
   <string name="doctor_fix_open_keyboard_settings">打开键盘设置</string>
-  <string name="doctor_fix_open_local_litert">打开本地 LiteRT</string>
   <string name="doctor_relies_on_acc_overlay">无障碍服务（必需）、悬浮窗权限（可选提示条）</string>
   <string name="doctor_relies_on_launch">无（独立运行）；仅在无障碍服务开启时用它验证应用是否到了前台</string>
   <string name="doctor_relies_on_keyboard">同签名安装的 agent-keyboard 应用，已安装并作为输入法启用</string>
@@ -3311,12 +3294,8 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="doctor_relies_on_all_files">Android 11+ 上的所有文件访问权限，用于访问任意路径</string>
   <string name="doctor_relies_on_browser_profile">可写的配置目录，用于持久化 Cookie 和 localStorage</string>
   <string name="doctor_detail_accel_cpu_2">打开它可在下次加载时重试本机 GPU。</string>
-  <string name="doctor_detail_accel_cpu_full">CPU（设置 -> 本地 LiteRT 中「尝试 GPU」开关为关闭）。打开它可在下次加载时重试本机 GPU。</string>
-  <string name="doctor_detail_accel_cpu_fallback_full">CPU（回退：本机 GPU 委托初始化失败，多半是 MLDrift 问题。在设置 -> 本地 LiteRT 点「重新检测」可重新探测。）</string>
-  <string name="doctor_detail_accel_gpu_full">GPU（OpenCL 或 OpenGL，由 LiteRT 内部探测选择）。</string>
   <string name="doctor_detail_accel_npu_full">NPU（高通 QNN 委托）。</string>
   <string name="doctor_detail_model_rates_full">最近一次各模型速率（按字符估算，英文文本约 10%% 准确）：%1$s</string>
-  <string name="doctor_detail_vision_unavailable_full">本机无法使用视觉编码器：%1$s。这些多模态模型只能以纯文本模式运行 — 对话可用，图片输入不行。通常需要等 LiteRT-LM SDK 更新修复。</string>
   <string name="doctor_detail_no_llama_models">未安装 llama.cpp 模型。</string>
   <string name="doctor_fix_open_local_llama">打开本地 llama.cpp</string>
   <string name="doctor_detail_termux_not_installed_2">未安装 Termux。需要它的功能：%1$s。</string>

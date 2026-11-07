@@ -42,7 +42,6 @@ FilesPicker -> ChatPage -> ChatVM.handleCompressContext -> ChatService.compressC
 
 - `Assistant.contextMessageSize` 默认值为 `0`，表示不限条数。
 - `limitContext()` 只按消息条数截取，保留完整工具调用依赖，不做摘要，也不按 token 预算。
-- `AICoreProvider` 对 Gemini Nano 特殊保留最近 6 条消息，这是提供商专用截断，不是通用自动压缩。
 - `Model.contextLength` 已存在，但目前没有接入生成请求预算。
 - 半途停止也可能来自网络错误、工具墙钟预算或最大步骤数，后续应通过日志中的错误类型区分，不能把所有停止都归因于上下文溢出。
 
@@ -196,7 +195,7 @@ D:\Temp\aider\aider\history.py
 3. 将手动压缩改为写入压缩记录，并在 `GenerationHandler` 请求前接入统一规划器。
 4. 在 provider overflow 错误路径接入一次自动压缩和自动继续。
 5. 增加设置页、会话状态、历史查看/回退和日志指标。
-6. 为 OpenAI、Claude、Google、OpenRouter、AICore、工具调用、图片附件、并发压缩和迁移分别补测试，再进行真机验证。
+6. 为 OpenAI、Claude、Google、OpenRouter、工具调用、图片附件、并发压缩和迁移分别补测试，再进行真机验证。
 
 ## 5. 验收标准
 

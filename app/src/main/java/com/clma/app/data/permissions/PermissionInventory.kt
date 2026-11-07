@@ -191,24 +191,6 @@ object PermissionInventory {
                     ),
                 )
             }
-            Manifest.permission.ACCESS_BACKGROUND_LOCATION -> {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    val granted = ContextCompat.checkSelfPermission(context, perm) ==
-                        PackageManager.PERMISSION_GRANTED
-                    return Row(
-                        id = perm,
-                        label = labelOrHumanize(context, perm),
-                        description = describeRuntime(context, perm),
-                        status = if (granted) Status.GRANTED else Status.DENIED,
-                        group = Group.SpecialAccess,
-                        grant = GrantAction.SystemSettings(
-                            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, pkgUri)
-                        ),
-                    )
-                } else {
-                    return autoRow(context, perm, labelOrHumanize(context, perm))
-                }
-            }
             "android.permission.ACCESS_LOCAL_NETWORK" -> {
                 if (Build.VERSION.SDK_INT >= 37) {
                     val granted = ContextCompat.checkSelfPermission(context, perm) ==
@@ -345,7 +327,6 @@ object PermissionInventory {
         Manifest.permission.READ_PHONE_STATE -> context.getString(R.string.perm_label_phone_state)
         Manifest.permission.ACCESS_FINE_LOCATION -> context.getString(R.string.perm_label_fine_location)
         Manifest.permission.ACCESS_COARSE_LOCATION -> context.getString(R.string.perm_label_coarse_location)
-        Manifest.permission.ACCESS_BACKGROUND_LOCATION -> context.getString(R.string.perm_label_background_location)
         "android.permission.ACCESS_LOCAL_NETWORK" -> context.getString(R.string.perm_label_local_network)
         Manifest.permission.READ_CONTACTS -> context.getString(R.string.perm_label_contacts)
         Manifest.permission.READ_CALL_LOG -> context.getString(R.string.perm_label_call_log)
@@ -367,7 +348,6 @@ object PermissionInventory {
         Manifest.permission.READ_PHONE_STATE -> context.getString(R.string.perm_desc_phone_state)
         Manifest.permission.ACCESS_FINE_LOCATION -> context.getString(R.string.perm_desc_fine_location)
         Manifest.permission.ACCESS_COARSE_LOCATION -> context.getString(R.string.perm_desc_coarse_location)
-        Manifest.permission.ACCESS_BACKGROUND_LOCATION -> context.getString(R.string.perm_desc_background_location)
         "android.permission.ACCESS_LOCAL_NETWORK" -> context.getString(R.string.perm_desc_local_network)
         Manifest.permission.READ_CONTACTS -> context.getString(R.string.perm_desc_contacts)
         Manifest.permission.READ_CALL_LOG -> context.getString(R.string.perm_desc_call_log)

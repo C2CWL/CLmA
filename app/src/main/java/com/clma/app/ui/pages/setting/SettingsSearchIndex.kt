@@ -464,13 +464,11 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
             row(R.string.setting_secrets_page_about_title),
         ),
     ),
-        SettingsSearchPageSpec(
+    SettingsSearchPageSpec(
         route = Screen.SettingConnectors,
         items = listOf(
             row(R.string.connector_privacy_title, R.string.connector_privacy_body),
-            row(R.string.connector_gmail_send),
             row(R.string.connector_github_writes),
-            row(R.string.connector_local_drafts, R.string.connector_local_drafts_note),
         ),
     ),
 SettingsSearchPageSpec(

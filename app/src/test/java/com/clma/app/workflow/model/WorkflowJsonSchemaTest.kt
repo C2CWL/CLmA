@@ -81,9 +81,9 @@ class WorkflowJsonSchemaTest {
         assertEquals("invalid_trigger", r.error)
     }
 
-    @Test fun `reject geofence radius out of range`() {
-        val r = WorkflowJson.parse("""{"name":"X","trigger":{"type":"geofence_enter","params":{"lat":0,"lng":0,"radius_m":10}},"actions":[{"tool":"show_toast","args":{}}]}""", knownTools) as WorkflowJson.ParseResult.Err
-        assertEquals("invalid_trigger", r.error)
+    @Test fun `reject removed geofence trigger`() {
+        val r = WorkflowJson.parse("""{"name":"X","trigger":{"type":"geofence_enter","params":{"lat":0,"lng":0,"radius_m":200}},"actions":[{"tool":"show_toast","args":{}}]}""", knownTools) as WorkflowJson.ParseResult.Err
+        assertEquals("unknown_trigger_type", r.error)
     }
 
     @Test fun `reject notification_received with no filter`() {
@@ -121,10 +121,10 @@ class WorkflowJsonSchemaTest {
         assertTrue(r is WorkflowJson.ParseResult.Ok)
     }
 
-    @Test fun `accept geofence with conditions`() {
+    @Test fun `accept battery_below with conditions`() {
         val r = WorkflowJson.parse("""{
             "name":"Lights",
-            "trigger":{"type":"geofence_enter","params":{"lat":40.7,"lng":-74.0,"radius_m":200,"label":"home"}},
+            "trigger":{"type":"battery_below","params":{"threshold_percent":20}},
             "conditions":[{"type":"time_after_sunset","params":{}}],
             "actions":[{"tool":"ssh_exec_saved","args":{"host_label":"home","command":"on"}}],
             "cooldown_seconds":300,

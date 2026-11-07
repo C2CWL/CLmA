@@ -370,17 +370,6 @@ val dataSourceModule = module {
             // getProviderByType are covered exactly once.
             pm.providerDecorator = { provider -> decorateForUsage(provider, usageLedger) }
             pm.registerProvider(
-                "local_litert",
-                com.clma.locallm.litert.LiteRtProvider(
-                    context = get(),
-                    runtime = get(),
-                    prefs = get(),
-                    settingsUpdater = { transform ->
-                        settingsStore.update { old -> old.copy(providers = transform(old.providers)) }
-                    },
-                ),
-            )
-            pm.registerProvider(
                 "local_llamacpp",
                 com.clma.llamacpp.LlamaCppProvider(
                     context = get(),

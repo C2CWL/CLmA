@@ -23,7 +23,7 @@ fun interface TriggerFireCallback {
  *      decides which ones match (e.g. SSID equality), and fires [TriggerFireCallback].
  *
  * Families are stateful — they hold receiver registrations, last-known battery levels,
- * geofence client refs, etc. Construction happens once at app start; [sync] is safe to
+ * last-known device state, etc. Construction happens once at app start; [sync] is safe to
  * call repeatedly (it diffs against the family's own state).
  */
 interface WorkflowTriggerFamily {

@@ -181,8 +181,6 @@ internal fun oneLineTriggerSummary(def: WorkflowDefinition): String = when (val 
     is TriggerSpec.PowerDisconnected -> "power disconnected"
     is TriggerSpec.BatteryBelow -> "battery < ${t.thresholdPercent}%"
     is TriggerSpec.BatteryAbove -> "battery > ${t.thresholdPercent}%"
-    is TriggerSpec.GeofenceEnter -> "you arrive at ${t.label ?: "a place"}"
-    is TriggerSpec.GeofenceExit -> "you leave ${t.label ?: "a place"}"
     is TriggerSpec.AppLaunched -> "${t.packageName} launches"
     is TriggerSpec.AppClosed -> "${t.packageName} closes"
     is TriggerSpec.NotificationReceived -> "notification${t.packageName?.let { " from $it" } ?: ""}"

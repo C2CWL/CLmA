@@ -23,7 +23,6 @@ class SupportedReasoningLevelsTest {
             ProviderSetting.OpenAI(),
             ProviderSetting.OpenAI(baseUrl = "https://api.deepseek.com/v1"),
             ProviderSetting.OpenAI(baseUrl = "https://api.moonshot.cn/v1"),
-            ProviderSetting.AICore(),
         )
         providers.forEach { provider ->
             assertTrue(

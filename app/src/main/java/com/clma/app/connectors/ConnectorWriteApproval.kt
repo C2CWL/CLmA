@@ -13,7 +13,7 @@ import kotlinx.serialization.json.JsonElement
 /** In-memory, single-use consent. Persisted Approved states are not capabilities. */
 object ConnectorWriteApproval {
     val WRITE_TOOL_NAMES: Set<String> = setOf(
-        "gmail_send", "gmail_draft_upload", "github_issue_create", "github_comment_create",
+        "github_issue_create", "github_comment_create",
     )
     private data class Call(val conversationId: String, val toolCallId: String)
     private data class Consent(val name: String, val args: JsonElement)

@@ -102,7 +102,7 @@ class LlamaCppProvider(
      *  window where a second concurrent call - e.g. a post-turn generateTitle and
      *  generateSuggestion firing right after each other, configurable to different model ids -
      *  swaps [runtime] to its own model before the first call's generation reads it, feeding a
-     *  mismatched template/tokenizer/grammar into native code. Mirrors LiteRtRuntime.streamTurns,
+     *  mismatched template/tokenizer/grammar into native code. Validates before native code runs,
      *  which holds its own mutex for the whole inference so concurrent callers queue up rather
      *  than racing the loaded model. */
     private val loadMutex = Mutex()
@@ -141,7 +141,7 @@ class LlamaCppProvider(
         val modelPath = resolveModelPath(installed, params.model.modelId)
         // The load blocks the calling thread on a multi-gigabyte mmap, metadata parse and
         // context allocation, so it runs on Dispatchers.IO rather than whatever dispatcher the
-        // caller used - mirrors LiteRtRuntime's engine init (LiteRtRuntime.kt:758). Without this,
+        // caller used - mirrors the previous on-device engine init. Without this,
         // a Main-confined caller like ProviderConnectionTester's rememberCoroutineScope would
         // load the model on the UI thread and ANR.
         withContext(Dispatchers.IO) {
@@ -188,7 +188,7 @@ class LlamaCppProvider(
          * Resolves [modelId] - a bare file name, never a path - against [installed], the
          * `filename -> absolutePath` index [LocalRuntimePreferences.installedModels] returns.
          * Throws a user-readable, model-named error rather than letting a missing or stale
-         * entry fail opaquely later on - mirrors `LiteRtProvider.streamText`'s guard.
+         * entry fail opaquely later on - rejects an incomplete entry before streaming.
          */
         internal fun resolveModelPath(installed: Map<String, String>, modelId: String): String {
             val path = installed[modelId]
@@ -246,7 +246,7 @@ class LlamaCppProvider(
          * [generateText]'s logic, given a [runtime] that already has the right model loaded
          * (see [ensureLoaded]). Every chunk [streamFromLoadedModel] emits carries an
          * incremental delta, not the full message, so the pieces are summed here rather than
-         * just keeping the last one - mirrors LiteRtProvider.generateText. Kept as a function
+         * just keeping the last one - keeps the last one. Kept as a function
          * of an explicit [runtime] parameter for the same testability reason as
          * [streamFromLoadedModel].
          */

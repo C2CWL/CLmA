@@ -72,8 +72,6 @@ import com.clma.ai.provider.ProviderSetting
 import com.clma.llamacpp.LlamaCppCatalog
 import com.clma.llamacpp.LlamaCppCatalogEntry
 import com.clma.locallm.LocalRuntime
-import com.clma.locallm.litert.LiteRtCatalog
-import com.clma.locallm.litert.LiteRtCatalogEntry
 import com.clma.app.R
 import com.clma.app.data.api.HuggingFaceModelSearch
 import com.clma.app.data.datastore.DEFAULT_PROVIDERS
@@ -122,14 +120,6 @@ fun ProviderConfigure(
                 ProviderConfigureClaude(provider, onEdit)
             }
 
-            is ProviderSetting.AICore -> {
-                ProviderConfigureAICore(provider, onEdit)
-            }
-
-            is ProviderSetting.LiteRtLocal -> {
-                ProviderConfigureLiteRT(provider, onEdit)
-            }
-
             is ProviderSetting.LlamaCppLocal -> {
                 ProviderConfigureLlamaCpp(provider, onEdit)
             }
@@ -148,8 +138,6 @@ fun ProviderSetting.convertTo(type: KClass<out ProviderSetting>): ProviderSettin
         is ProviderSetting.OpenAI -> this.apiKey
         is ProviderSetting.Google -> this.apiKey
         is ProviderSetting.Claude -> this.apiKey
-        is ProviderSetting.AICore -> "" // on-device, no API key
-        is ProviderSetting.LiteRtLocal -> "" // on-device, no API key
         is ProviderSetting.LlamaCppLocal -> "" // on-device, no API key
         is ProviderSetting.Codex -> "" // OAuth, no API key
         is ProviderSetting.Grok -> "" // OAuth, no API key
@@ -159,8 +147,6 @@ fun ProviderSetting.convertTo(type: KClass<out ProviderSetting>): ProviderSettin
         is ProviderSetting.OpenAI -> this.baseUrl
         is ProviderSetting.Google -> this.baseUrl
         is ProviderSetting.Claude -> this.baseUrl
-        is ProviderSetting.AICore -> "" // on-device, no base URL
-        is ProviderSetting.LiteRtLocal -> "" // on-device, no base URL
         is ProviderSetting.LlamaCppLocal -> "" // on-device, no base URL
         is ProviderSetting.Codex -> "" // OAuth, no base URL
         is ProviderSetting.Grok -> "" // OAuth, no base URL
@@ -170,7 +156,6 @@ fun ProviderSetting.convertTo(type: KClass<out ProviderSetting>): ProviderSettin
         ProviderSetting.OpenAI::class -> ProviderSetting.OpenAI().baseUrl
         ProviderSetting.Google::class -> ProviderSetting.Google().baseUrl
         ProviderSetting.Claude::class -> ProviderSetting.Claude().baseUrl
-        ProviderSetting.AICore::class -> ""
         else -> error("Unsupported provider type: $type")
     }
     val convertedBaseUrl = sourceBaseUrl.convertToTargetBaseUrl(targetDefaultBaseUrl)
@@ -195,17 +180,6 @@ fun ProviderSetting.convertTo(type: KClass<out ProviderSetting>): ProviderSettin
             apiKey = apiKey, baseUrl = convertedBaseUrl
         )
 
-        ProviderSetting.AICore::class -> ProviderSetting.AICore(
-            id = this.id,
-            enabled = this.enabled,
-            name = this.name,
-            models = this.models,
-            balanceOption = this.balanceOption,
-            builtIn = this.builtIn,
-            description = this.description,
-            shortDescription = this.shortDescription,
-        )
-
         else -> error("Unsupported provider type: $type")
     }
 }
@@ -217,8 +191,6 @@ internal fun ProviderSetting.defaultBaseUrlForReset(): String {
             is ProviderSetting.OpenAI -> if (defaultProvider is ProviderSetting.OpenAI) return defaultProvider.baseUrl
             is ProviderSetting.Google -> if (defaultProvider is ProviderSetting.Google) return defaultProvider.baseUrl
             is ProviderSetting.Claude -> if (defaultProvider is ProviderSetting.Claude) return defaultProvider.baseUrl
-            is ProviderSetting.AICore -> return "" // on-device, no base URL
-            is ProviderSetting.LiteRtLocal -> return "" // on-device, no base URL
             is ProviderSetting.LlamaCppLocal -> return "" // on-device, no base URL
             is ProviderSetting.Codex -> return "" // OAuth, no base URL
             is ProviderSetting.Grok -> return "" // OAuth, no base URL
@@ -229,8 +201,6 @@ internal fun ProviderSetting.defaultBaseUrlForReset(): String {
         is ProviderSetting.OpenAI -> ProviderSetting.OpenAI().baseUrl
         is ProviderSetting.Google -> ProviderSetting.Google().baseUrl
         is ProviderSetting.Claude -> ProviderSetting.Claude().baseUrl
-        is ProviderSetting.AICore -> ""
-        is ProviderSetting.LiteRtLocal -> ""
         is ProviderSetting.LlamaCppLocal -> ""
         is ProviderSetting.Codex -> ""
         is ProviderSetting.Grok -> ""
@@ -244,8 +214,6 @@ internal fun ProviderSetting.resetBaseUrlToDefault(): ProviderSetting {
         is ProviderSetting.OpenAI -> this.copy(baseUrl = defaultBaseUrl)
         is ProviderSetting.Google -> this.copy(baseUrl = defaultBaseUrl)
         is ProviderSetting.Claude -> this.copy(baseUrl = defaultBaseUrl)
-        is ProviderSetting.AICore -> this // no base URL to reset
-        is ProviderSetting.LiteRtLocal -> this // no base URL to reset
         is ProviderSetting.LlamaCppLocal -> this // no base URL to reset
         is ProviderSetting.Codex -> this // no base URL to reset
         is ProviderSetting.Grok -> this // no base URL to reset
@@ -258,8 +226,6 @@ internal fun ProviderSetting.isUsingDefaultBaseUrl(): Boolean {
         is ProviderSetting.OpenAI -> this.baseUrl
         is ProviderSetting.Google -> this.baseUrl
         is ProviderSetting.Claude -> this.baseUrl
-        is ProviderSetting.AICore -> return true // no base URL concept
-        is ProviderSetting.LiteRtLocal -> return true // no base URL concept
         is ProviderSetting.LlamaCppLocal -> return true // no base URL concept
         is ProviderSetting.Codex -> return true // no base URL concept
         is ProviderSetting.Grok -> return true // no base URL concept
@@ -900,323 +866,6 @@ private fun ProviderConfigureGoogle(
 }
 
 @Composable
-private fun ColumnScope.ProviderConfigureAICore(
-    provider: ProviderSetting.AICore,
-    onEdit: (provider: ProviderSetting.AICore) -> Unit,
-) {
-    provider.description()
-
-    Row(
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(stringResource(id = R.string.setting_provider_page_enable), modifier = Modifier.weight(1f))
-        Checkbox(
-            checked = provider.enabled,
-            onCheckedChange = { onEdit(provider.copy(enabled = it)) },
-        )
-    }
-
-    OutlinedTextField(
-        value = provider.name,
-        onValueChange = { onEdit(provider.copy(name = it.trim())) },
-        label = { Text(stringResource(id = R.string.setting_provider_page_name)) },
-        modifier = Modifier.fillMaxWidth(),
-        maxLines = 3,
-    )
-
-    // Release-stage radio. PREVIEW pulls a higher-quality but more flappy build of Gemini
-    // Nano; STABLE is the default. Spec details in
-    // docs/superpowers/specs/2026-05-04-aicore-provider-design.md.
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(stringResource(R.string.setting_provider_aicore_release_stage), modifier = Modifier.weight(1f))
-        SingleChoiceSegmentedButtonRow {
-            val stages = com.clma.ai.provider.AICoreReleaseStage.entries
-            stages.forEachIndexed { index, stage ->
-                SegmentedButton(
-                    shape = SegmentedButtonDefaults.itemShape(index = index, count = stages.size),
-                    label = { Text(stage.name) },
-                    selected = provider.releaseStage == stage,
-                    onClick = { onEdit(provider.copy(releaseStage = stage)) },
-                )
-            }
-        }
-    }
-
-    Text(
-        text = stringResource(R.string.setting_provider_aicore_status_help),
-        style = MaterialTheme.typography.labelSmall,
-        modifier = Modifier.fillMaxWidth(),
-    )
-}
-
-@Composable
-private fun ColumnScope.ProviderConfigureLiteRT(
-    provider: ProviderSetting.LiteRtLocal,
-    onEdit: (ProviderSetting.LiteRtLocal) -> Unit,
-) {
-    val vm = koinViewModel<SettingLocalLlmViewModel>(
-        key = "configure-${LocalRuntime.LiteRT.displayName}",
-        parameters = { parametersOf(LocalRuntime.LiteRT) },
-    )
-    val downloadProgress by vm.downloadProgress.collectAsStateWithLifecycle()
-    val errorMessage by vm.errorMessage.collectAsStateWithLifecycle()
-    val accelerator by vm.accelerator.collectAsStateWithLifecycle()
-    val forceCpu by vm.forceCpu.collectAsStateWithLifecycle()
-    val maxNumTokensOverride by vm.maxNumTokensOverride.collectAsStateWithLifecycle()
-    val crashRecoveryAccel by vm.crashRecoveryAccelerator.collectAsStateWithLifecycle()
-    val installedModelFiles by vm.installedModelFiles.collectAsStateWithLifecycle()
-    val visionUnavailableSet by vm.visionUnavailableSet.collectAsStateWithLifecycle()
-    val perfTelemetry by vm.perfTelemetry.collectAsStateWithLifecycle()
-
-    provider.description()
-
-    // Friendly post-crash banner. Default tone is "we handled it", not "panic".
-    crashRecoveryAccel?.let { accel ->
-        Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-            ),
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { vm.dismissCrashRecovery() },
-        ) {
-            Text(
-                text = stringResource(R.string.local_llm_crash_recovery_format, accel),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onTertiaryContainer,
-                modifier = Modifier.padding(12.dp),
-            )
-        }
-    }
-
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(stringResource(id = R.string.setting_provider_page_enable), modifier = Modifier.weight(1f))
-        Checkbox(
-            checked = provider.enabled,
-            onCheckedChange = { onEdit(provider.copy(enabled = it)) },
-        )
-    }
-
-    OutlinedTextField(
-        value = provider.name,
-        onValueChange = { onEdit(provider.copy(name = it.trim())) },
-        label = { Text(stringResource(id = R.string.setting_provider_page_name)) },
-        modifier = Modifier.fillMaxWidth(),
-        maxLines = 3,
-    )
-
-    // Installed model count — model management is on the Models tab (page 1).
-    Text(
-        text = stringResource(R.string.local_llm_installed_models_count, provider.models.size),
-        style = MaterialTheme.typography.bodySmall,
-    )
-
-    // URL install field — paste an HF URL, hit Install.
-    var manualUrl by remember { mutableStateOf("") }
-    OutlinedTextField(
-        value = manualUrl,
-        onValueChange = { manualUrl = it },
-        label = { Text(stringResource(R.string.local_llm_install_url_label)) },
-        supportingText = { Text(stringResource(R.string.local_llm_install_url_hint)) },
-        modifier = Modifier.fillMaxWidth(),
-    )
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Button(
-            onClick = {
-                vm.startManualDownload(manualUrl)
-                manualUrl = ""
-            },
-            enabled = manualUrl.isNotBlank() && downloadProgress == null,
-        ) {
-            Text(stringResource(R.string.local_llm_install_url_action))
-        }
-        OutlinedButton(
-            onClick = { vm.startDefaultDownload() },
-            enabled = downloadProgress == null,
-        ) {
-            Text(stringResource(R.string.local_llm_download_default))
-        }
-    }
-
-    // Manage installed files — rename or delete each downloaded .litertlm.
-    if (provider.models.isNotEmpty()) {
-        Text(
-            stringResource(R.string.local_llm_manage_files_title),
-            style = MaterialTheme.typography.titleSmall,
-            modifier = Modifier.padding(top = 8.dp),
-        )
-        provider.models.forEach { model ->
-            InstalledModelRow(
-                model = model,
-                visionUnavailable = model.modelId in visionUnavailableSet,
-                // After a native crash inside liblitertlm we suppress the Re-try
-                // vision button: re-trying immediately is what just crashed the app.
-                // The user dismisses the crash banner (above) when they want to opt
-                // back in to taking that risk; the button reappears.
-                allowVisionRetry = crashRecoveryAccel == null,
-                perfSample = perfTelemetry[model.modelId],
-                onRename = { newName -> vm.renameModel(model.modelId, newName) },
-                onDelete = { vm.deleteModel(model.modelId) },
-                onRetryVision = { vm.retryVisionEncoder(model.modelId) },
-            )
-        }
-    }
-
-    // Recommended-models curated picker. Sourced from Google AI Edge Gallery's allowlist
-    // (LiteRtCatalog.ENTRIES). Per-entry Install button calls the same startManualDownload
-    // path the URL-paste field uses, so the install flow is identical.
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
-        Text(
-            stringResource(R.string.local_llm_catalog_title),
-            style = MaterialTheme.typography.titleSmall,
-        )
-        Text(
-            stringResource(R.string.local_llm_catalog_subtitle),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        LiteRtCatalog.ENTRIES.forEach { entry ->
-            LiteRtCatalogEntryCard(
-                entry = entry,
-                installed = entry.modelFile in installedModelFiles,
-                downloadInProgress = downloadProgress != null,
-                onInstall = { vm.startManualDownload(entry.resolveUrl()) },
-            )
-        }
-    }
-
-    // Accelerator row with re-detect button.
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Text(
-            stringResource(R.string.local_llm_accelerator_label, accelerator ?: "auto"),
-            modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.bodyMedium,
-        )
-        OutlinedButton(onClick = { vm.reDetectAccelerator() }) {
-            Text(stringResource(R.string.local_llm_re_detect))
-        }
-    }
-
-    // GPU acceleration toggle. The default is now device-dependent (see
-    // LocalRuntimePreferences.defaultForceCpu): ON for capable devices, OFF only for the
-    // Google Tensor crash class where LiteRT-LM 0.11.0's GPU/NNAPI backend SIGSEGVs during
-    // inference. The toggle still lets the user override either way; the crash sweep and
-    // the runtime's GPU->CPU fallback backstop a wrong default.
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                stringResource(R.string.local_llm_try_gpu_label),
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            Text(
-                stringResource(R.string.local_llm_try_gpu_desc),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        Switch(
-            checked = !forceCpu,
-            onCheckedChange = { wantGpu -> vm.setForceCpu(!wantGpu) },
-        )
-    }
-
-    // Max-context override. Lets users push capable models (Gemma 4 E2B = 32k) past
-    // Gallery's curated defaults — the model's underlying KV cache size is still the
-    // hard ceiling (Qwen `ekv4096` rejects values above 4096 regardless of this).
-    var maxTokensInput by remember(maxNumTokensOverride) {
-        mutableStateOf(maxNumTokensOverride?.toString() ?: "")
-    }
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(
-            stringResource(R.string.local_llm_max_tokens_label),
-            style = MaterialTheme.typography.bodyMedium,
-        )
-        Text(
-            stringResource(R.string.local_llm_max_tokens_desc),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedTextField(
-                value = maxTokensInput,
-                onValueChange = { newValue ->
-                    // Accept digits-only input; empty string = use curated default.
-                    if (newValue.isEmpty() || newValue.all { it.isDigit() }) {
-                        maxTokensInput = newValue
-                        val parsed = newValue.toIntOrNull()?.takeIf { it in 1..131072 }
-                        vm.setMaxNumTokensOverride(parsed)
-                    }
-                },
-                placeholder = {
-                    Text(stringResource(R.string.local_llm_max_tokens_placeholder))
-                },
-                modifier = Modifier.weight(1f),
-                singleLine = true,
-            )
-            OutlinedButton(
-                onClick = {
-                    maxTokensInput = ""
-                    vm.setMaxNumTokensOverride(null)
-                },
-                enabled = maxNumTokensOverride != null,
-            ) {
-                Text(stringResource(R.string.local_llm_max_tokens_reset))
-            }
-        }
-    }
-
-    // Download progress indicator.
-    downloadProgress?.let { progress ->
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            if (progress.totalBytes != null && progress.totalBytes > 0) {
-                LinearProgressIndicator(
-                    progress = { progress.percent / 100f },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            } else {
-                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-            }
-            Text(
-                text = stringResource(R.string.local_llm_download_progress, progress.percent),
-                style = MaterialTheme.typography.labelSmall,
-            )
-        }
-    }
-
-    // Error text + optional "Delete model" action when a model file is the likely culprit.
-    errorMessage?.let { msg ->
-        Text(
-            text = stringResource(R.string.local_llm_status_error_format, msg),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.error,
-        )
-        // If there are installed models, offer to delete them so the user can clear a
-        // broken file (e.g. wrong runtime version) without navigating away.
-        if (provider.models.isNotEmpty()) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                provider.models.forEach { model ->
-                    OutlinedButton(onClick = { vm.deleteModel(model.modelId) }) {
-                        Text(
-                            text = stringResource(R.string.local_llm_delete_model) +
-                                if (provider.models.size > 1) " ${model.modelId}" else "",
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
 private fun ColumnScope.ProviderConfigureLlamaCpp(
     provider: ProviderSetting.LlamaCppLocal,
     onEdit: (ProviderSetting.LlamaCppLocal) -> Unit,
@@ -1301,7 +950,7 @@ private fun ColumnScope.ProviderConfigureLlamaCpp(
     }
 
     // Curated GGUF picker (LlamaCppCatalog.ENTRIES). Per-entry Install button calls the
-    // same startManualDownload path the LiteRT catalog uses below, so the install flow
+    // same startManualDownload path as a manual URL, so the install flow
     // (and the progress/error reporting at the bottom of this tile) is identical.
     Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
         Text(
@@ -1566,120 +1215,6 @@ private fun LlamaCppCatalogEntryCard(
                     stringResource(R.string.local_llm_catalog_size_format),
                     entry.sizeBytes / 1_000_000_000.0,
                     entry.minMemGb,
-                ),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                if (installed) {
-                    Text(
-                        text = stringResource(R.string.local_llm_catalog_installed),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                } else {
-                    Button(
-                        onClick = onInstall,
-                        enabled = !downloadInProgress,
-                    ) {
-                        Text(stringResource(R.string.local_llm_catalog_install))
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun LiteRtCatalogEntryCard(
-    entry: LiteRtCatalogEntry,
-    installed: Boolean,
-    downloadInProgress: Boolean,
-    onInstall: () -> Unit,
-) {
-    Card(
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-        ),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-            modifier = Modifier.padding(12.dp),
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(
-                    entry.displayName,
-                    style = MaterialTheme.typography.titleSmall,
-                    modifier = Modifier.weight(1f),
-                )
-                if (entry.recommended) {
-                    Text(
-                        text = stringResource(R.string.local_llm_catalog_recommended),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer,
-                        modifier = Modifier
-                            .clip(MaterialTheme.shapes.small)
-                            .background(MaterialTheme.colorScheme.secondaryContainer)
-                            .padding(horizontal = 8.dp, vertical = 2.dp),
-                    )
-                }
-            }
-
-            Text(
-                entry.description,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
-            )
-
-            if (entry.tags.isNotEmpty()) {
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    entry.tags.forEach { tag ->
-                        val labelRes = when (tag) {
-                            "multimodal" -> R.string.local_llm_catalog_tag_multimodal
-                            "thinking" -> R.string.local_llm_catalog_tag_thinking
-                            "speculative-decoding" -> R.string.local_llm_catalog_tag_speculative
-                            else -> null
-                        }
-                        val label = labelRes?.let { stringResource(it) } ?: tag
-                        SuggestionChip(
-                            onClick = {},
-                            enabled = false,
-                            label = {
-                                Text(
-                                    label,
-                                    style = MaterialTheme.typography.labelSmall,
-                                )
-                            },
-                            colors = SuggestionChipDefaults.suggestionChipColors(
-                                disabledContainerColor = MaterialTheme.colorScheme.surface,
-                                disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            ),
-                        )
-                    }
-                }
-            }
-
-            Text(
-                text = String.format(
-                    java.util.Locale.US,
-                    stringResource(R.string.local_llm_catalog_size_format),
-                    entry.sizeBytes / 1_000_000_000.0,
-                    entry.minDeviceMemoryGb,
                 ),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

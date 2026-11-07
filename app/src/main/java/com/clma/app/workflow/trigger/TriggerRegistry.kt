@@ -55,14 +55,13 @@ class TriggerRegistry(
     private val screen = ScreenTriggerFamily(context, triggerScope)
     private val battery = BatteryTriggerFamily(context, triggerScope)
     private val timeCron = TimeCronTriggerFamily(context, triggerScope)
-    private val geofence = GeofenceTriggerFamily(context, triggerScope)
     private val appForeground = AppForegroundTriggerFamily(triggerScope)
     private val notification = NotificationTriggerFamily(triggerScope)
     private val boot = BootTriggerFamily(triggerScope)
     private val manual = ManualTriggerFamily()
 
     private val families: List<WorkflowTriggerFamily> = listOf(
-        wifi, bluetooth, headphones, power, screen, battery, timeCron, geofence,
+        wifi, bluetooth, headphones, power, screen, battery, timeCron,
         appForeground, notification, boot, manual,
     )
 
@@ -83,7 +82,7 @@ class TriggerRegistry(
                 .distinctUntilChanged()
                 // 500 ms quiet window so a burst of edits in the workflow editor (10 rapid
                 // toggles, drag-to-reorder, paste-to-edit) coalesces into a single resync
-                // instead of paying 10 × (12 trigger families × register/unregister) of
+                // instead of paying 10 × (trigger families × register/unregister) of
                 // receiver churn. The first toggle to enable a previously-zero family
                 // still pays a one-off 500 ms latency before the receiver is live, which
                 // is well below user-perceptible and well above the OS broadcast delay.

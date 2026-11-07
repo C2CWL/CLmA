@@ -156,7 +156,6 @@ class WorkflowEngine(
         // Trigger runtime pre-flight — surface "this trigger needs setup" as an explicit
         // FAILED row in history so the user sees WHY the workflow doesn't fire instead of
         // just "Never run". The audit found these were silently dying:
-        //  - geofence triggers without ACCESS_FINE_LOCATION + ACCESS_BACKGROUND_LOCATION
         //  - notification_received without notification listener bound
         //  - app_launched / app_closed without accessibility service running
         triggerRuntimeCheck(def.trigger)?.let { reason ->
@@ -235,8 +234,8 @@ class WorkflowEngine(
     }
 
     /**
-     * Pre-flight check for trigger types that depend on runtime state (a permission, a
-     * service binding, Play Services availability). Returns null if the trigger can fire,
+     * Pre-flight check for trigger types that depend on runtime state (a permission or a
+     * service binding). Returns null if the trigger can fire,
      * or a stable error code otherwise — the engine then records the fire as FAILED with
      * that reason and the user sees a clear "missing setup" message in workflow_get history.
      */
@@ -248,22 +247,6 @@ class WorkflowEngine(
             org.koin.java.KoinJavaComponent.getKoin().get<android.content.Context>()
         }
         return when (trigger) {
-            is com.clma.app.workflow.model.TriggerSpec.GeofenceEnter,
-            is com.clma.app.workflow.model.TriggerSpec.GeofenceExit -> {
-                val fineGranted = androidx.core.content.ContextCompat.checkSelfPermission(
-                    ctx, android.Manifest.permission.ACCESS_FINE_LOCATION
-                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-                val bgGranted = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                    androidx.core.content.ContextCompat.checkSelfPermission(
-                        ctx, android.Manifest.permission.ACCESS_BACKGROUND_LOCATION
-                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-                } else true
-                when {
-                    !fineGranted -> "geofence_unavailable: ACCESS_FINE_LOCATION not granted — open Settings → Apps → CLmA → Permissions → Location and pick Allow all the time"
-                    !bgGranted -> "geofence_unavailable: ACCESS_BACKGROUND_LOCATION not granted — open Settings → Apps → CLmA → Permissions → Location and pick Allow all the time"
-                    else -> null
-                }
-            }
             is com.clma.app.workflow.model.TriggerSpec.NotificationReceived -> {
                 if (!com.clma.app.data.ai.tools.local.NotificationListenerHandle.isBound()) {
                     "notification_listener_not_enabled: enable the CLmA notification listener in Settings → Apps → Special access → Notification access"

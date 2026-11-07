@@ -341,7 +341,6 @@ object LocalToolGroups {
         LocalToolOption.VirtualDisplay,
         LocalToolOption.KeyboardControl,
         LocalToolOption.ModelControl,
-        LocalToolOption.Gmail,
         LocalToolOption.GitHub,
     )
 
