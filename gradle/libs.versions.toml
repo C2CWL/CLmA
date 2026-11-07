@@ -1,6 +1,7 @@
 [versions]
 agp = "9.3.1"
 cameraCore = "1.6.2"
+exifinterface = "1.4.2"
 dom4j = "2.2.0"
 jlatexmath = "1.5"
 kotlin = "2.4.10"
@@ -87,6 +88,7 @@ android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref
 kotlin-compose-gradle-plugin = { module = "org.jetbrains.kotlin:compose-compiler-gradle-plugin", version.ref = "kotlin" }
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 androidx-camera-core = { module = "androidx.camera:camera-core", version.ref = "cameraCore" }
+androidx-exifinterface = { module = "androidx.exifinterface:exifinterface", version.ref = "exifinterface" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "coreSplashscreen" }
 androidx-media3-common = { module = "androidx.media3:media3-common", version.ref = "media3" }

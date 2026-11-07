@@ -145,6 +145,7 @@ fun SettingConnectorsPage() {
                 }
             }
         }
+    }
     disconnect?.let { target ->
         AppAlertDialog(
             onDismissRequest = { disconnect = null },

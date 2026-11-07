@@ -304,6 +304,8 @@ dependencies {
     // quickie (qrcode scanner)
     implementation(libs.quickie.bundled)
     implementation(libs.androidx.camera.core)
+    // Direct dependency: previously arrived transitively through ML Kit barcode scanning.
+    implementation(libs.androidx.exifinterface)
 
     // Room
     implementation(libs.androidx.room.runtime)
