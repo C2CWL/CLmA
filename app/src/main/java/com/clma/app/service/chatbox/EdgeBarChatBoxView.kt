@@ -142,7 +142,21 @@ internal class EdgeBarChatBoxView(
     private var anchor: Anchor? = null
     private var dark = false
     private var glass = false
+    /**
+     * Keyboard height in px as reported by [imeProbe]; 0 = keyboard down. Deliberately *not*
+     * read from the box's own window — see [imeProbe].
+     */
     private var imeBottom = 0
+
+    /**
+     * Transparent, non-interactive, full-screen window that exists only to measure the keyboard.
+     * The box is lifted above the keyboard, and the system reports the keyboard inset relative to
+     * each window's own frame: for a window sitting above the keyboard that is 0. Reading it from
+     * the box therefore put the box back down into the keyboard, which lifted it again — the card
+     * jumped up and down for as long as the keyboard stayed open. This window never moves and
+     * always spans the keyboard, so its inset is the real height, both coming up and going away.
+     */
+    private var imeProbe: View? = null
     private var blurListener: Consumer<Boolean>? = null
 
     // Views, (re)built by [buildContent] for the current palette.
@@ -229,6 +243,8 @@ internal class EdgeBarChatBoxView(
         render(newState)
         applyBackground()
         place()
+        // Before the dialog, so this window ends up below it in the z-order.
+        addImeProbe()
         try {
             d.show()
         } catch (t: Throwable) {
@@ -236,9 +252,12 @@ internal class EdgeBarChatBoxView(
             dialog = null
             return
         }
+        // Fallback only: the box sits above the keyboard, so the size this window reports drops
+        // to 0 once the card is up (see [imeProbe]). Raising on a positive report keeps the first
+        // lift responsive; lowering is left to the probe, which never loses sight of the keyboard.
         ViewCompat.setOnApplyWindowInsetsListener(w.decorView) { v, insets ->
             val ime = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom
-            if (ime != imeBottom) {
+            if (ime > imeBottom) {
                 imeBottom = ime
                 place()
             }
@@ -294,6 +313,7 @@ internal class EdgeBarChatBoxView(
         conversationMenu?.dismiss()
         conversationMenu = null
         handler.removeCallbacks(ticker)
+        removeImeProbe()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) unregisterBlurListener()
         dialog = null
         state = null
@@ -1398,7 +1418,13 @@ internal class EdgeBarChatBoxView(
         }
 
         val lp = w.attributes
-        lp.gravity = Gravity.TOP or Gravity.LEFT
+        val gravity = Gravity.TOP or Gravity.LEFT
+        // Writing the attributes re-lays out the whole window. The box is re-placed on every
+        // state update (~once a second), and re-laying out an overlay window with unchanged
+        // bounds makes the card blink on some ROMs, so skip it when nothing moved.
+        val moved = lp.gravity != gravity || lp.x != x || lp.y != y ||
+            lp.width != winWidth || lp.height != winHeight
+        lp.gravity = gravity
         lp.x = x
         lp.y = y
         lp.width = winWidth
@@ -1406,7 +1432,55 @@ internal class EdgeBarChatBoxView(
         lp.dimAmount = 0f
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) lp.setFitInsetsTypes(0)
         lp.title = "EdgeBarChatBox"
+        if (!moved) return
         w.attributes = lp
+    }
+
+    /** Starts the keyboard-measuring window described in [imeProbe]. */
+    private fun addImeProbe() {
+        if (imeProbe != null) return
+        val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+        } else {
+            @Suppress("DEPRECATION")
+            WindowManager.LayoutParams.TYPE_PHONE
+        }
+        val lp = WindowManager.LayoutParams(
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.MATCH_PARENT,
+            type,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+                or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+                or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
+                or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+            PixelFormat.TRANSLUCENT,
+        ).apply {
+            gravity = Gravity.TOP or Gravity.LEFT
+            alpha = 0f
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) setFitInsetsTypes(0)
+            title = "EdgeBarChatBoxIme"
+        }
+        val probe = View(context)
+        ViewCompat.setOnApplyWindowInsetsListener(probe) { _, insets ->
+            val ime = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom
+            if (ime != imeBottom) {
+                imeBottom = ime
+                place()
+            }
+            insets
+        }
+        if (!runCatching { wm.addView(probe, lp) }.isSuccess) {
+            Log.w(TAG, "ime probe add failed")
+            return
+        }
+        imeProbe = probe
+    }
+
+    private fun removeImeProbe() {
+        val probe = imeProbe ?: return
+        imeProbe = null
+        runCatching { wm.removeViewImmediate(probe) }
+            .onFailure { Log.w(TAG, "ime probe remove failed", it) }
     }
 
     private fun collapseKind(): IconView.Kind = when (anchor?.edge) {
