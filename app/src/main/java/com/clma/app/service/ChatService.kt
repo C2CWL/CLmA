@@ -3785,6 +3785,34 @@ class ChatService(
             "compact_context: $conversationId ${tokensBefore} -> ${tokensAfter} estimated tokens, " +
                 "summary ${summaryChars} chars",
         )
+        // A compaction whose boundary cannot advance past the retained tail reduces nothing:
+        // `compressConversation` keeps the last N messages verbatim (32 for this entry point)
+        // and never caps them by size, so one huge tool result inside that tail is enough for
+        // the post-compaction request to stay over the reminder threshold. The budget reminder
+        // then fires again next step, the model calls compact_context again — with slightly
+        // different `instructions`, so identical-args detection never sees a repeat — and the
+        // turn burns every remaining step on a no-op. Report the no-op as such so the model
+        // stops instead of retrying.
+        val minimumReduction = (tokensBefore / 20).coerceAtLeast(1)
+        if (tokensAfter > tokensBefore - minimumReduction) {
+            Log.w(
+                TAG,
+                "compact_context: no meaningful reduction for $conversationId " +
+                    "($tokensBefore -> $tokensAfter estimated tokens); telling the model to stop",
+            )
+            return CompactionToolResult(
+                compacted = false,
+                tokensBefore = tokensBefore,
+                tokensAfter = tokensAfter,
+                summaryChars = summaryChars,
+                note = "compact_context did not shrink the context: an estimated " +
+                    "$tokensBefore -> $tokensAfter tokens. The raw messages this tool must " +
+                    "keep are themselves at or above the target, so further calls in this turn " +
+                    "cannot help. STOP calling compact_context. Answer the user now with what " +
+                    "you have (a short conclusion plus the next step), and suggest starting a " +
+                    "new conversation for the remaining work.",
+            )
+        }
         return CompactionToolResult(
             compacted = true,
             tokensBefore = tokensBefore,

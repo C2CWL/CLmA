@@ -4,7 +4,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-
 /**
  * Covers the loop guard's two non-obvious rules:
  *  - Observation tools (read_window_tree / take_screenshot) run in an act-observe cycle, so an
@@ -158,5 +157,83 @@ class LoopGuardTest {
         val decision = evaluate(prior, "current_conversation_search", "{\"query\":\"query4\"}")
         assertFalse("action resets consecutive search count", decision.block)
         assertEquals(null, decision.softNudge)
+    }
+
+    // ---- compact_context: the "compaction treadmill" regression ----------------------------
+    //
+    // Reported from a real turn: 20+ steps where every step was `compact_context` with
+    // slightly reworded `instructions`, each call succeeding, nothing ever produced. The
+    // free-form args made every call a fresh signature, so identical-args detection never
+    // fired — the model retried a no-op until maxSteps.
+
+    @Test
+    fun compactContext_takesDifferentInstructions_isStillTheSameCall() {
+        assertEquals(
+            "compact_context::*",
+            loopGuardSignature("compact_context", "{\"instructions\":\"compress, then answer\"}"),
+        )
+        assertEquals(
+            loopGuardSignature("compact_context", "{\"instructions\":\"one\"}"),
+            loopGuardSignature("compact_context", "{\"instructions\":\"two\"}"),
+        )
+        // Every other tool keeps args in its fingerprint.
+        assertEquals(
+            "workspace_shell::{\"command\":\"ls\"}",
+            loopGuardSignature("workspace_shell", "{\"command\":\"ls\"}"),
+        )
+    }
+
+    @Test
+    fun compactContext_existingInThisTurn_blocksTheSecondCall() {
+        val prior = listOf(
+            PriorToolCall(
+                "compact_context",
+                loopGuardSignature("compact_context", "{\"instructions\":\"first\"}"),
+                1_000L,
+            )
+        )
+        val decision = LoopGuard.evaluate(
+            priorCalls = prior,
+            toolName = "compact_context",
+            signature = loopGuardSignature("compact_context", "{\"instructions\":\"second\"}"),
+            nowMs = 2_000L,
+            threshold = COMPACT_CONTEXT_REPEAT_THRESHOLD,
+        )
+        assertTrue("a second compact_context in one turn is never progress", decision.block)
+        assertEquals(LoopBlockReason.IDENTICAL_ARGS, decision.blockReason)
+    }
+
+    @Test
+    fun mergePriorCalls_doesNotDoubleCountTheSameCall() {
+        val ledger = listOf(PriorToolCall("read_window_tree", "read_window_tree::{}", 10L))
+        val visible = listOf(PriorToolCall("read_window_tree", "read_window_tree::{}", 10L))
+        assertEquals(1, mergePriorCalls(ledger, visible).size)
+        assertEquals(ledger, mergePriorCalls(ledger, visible))
+    }
+
+    @Test
+    fun mergePriorCalls_keepsCallsOnlyTheLedgerSaw() {
+        // After a mid-turn compaction the request history no longer holds the executed calls;
+        // the ledger must still report them, or the guard goes blind exactly when a model is
+        // most likely to repeat itself.
+        val ledger = listOf(
+            PriorToolCall("click_node", "click_node::{\"node_id\":\"1:2\"}", 10L),
+            PriorToolCall("click_node", "click_node::{\"node_id\":\"1:2\"}", 20L),
+        )
+        val visible = emptyList<PriorToolCall>()
+        val merged = mergePriorCalls(ledger, visible)
+        assertEquals(2, merged.size)
+        assertEquals(ledger, merged)
+    }
+
+    @Test
+    fun mergePriorCalls_keepsCallsOnlyVisibleInHistory_andOrdersChronologically() {
+        val ledger = listOf(PriorToolCall("workspace_shell", "workspace_shell::{\"command\":\"ls\"}", 30L))
+        val visible = listOf(
+            PriorToolCall("read_window_tree", "read_window_tree::{}", 10L),
+            PriorToolCall("workspace_shell", "workspace_shell::{\"command\":\"ls\"}", 30L),
+        )
+        val merged = mergePriorCalls(ledger, visible)
+        assertEquals(listOf("read_window_tree", "workspace_shell"), merged.map { it.toolName })
     }
 }

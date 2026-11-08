@@ -499,6 +499,54 @@ private const val TAG_GH_LOOP = "GenHandlerLoop"
  */
 private const val LOOP_GUARD_REPEAT_THRESHOLD = 3
 
+/**
+ * `compact_context` takes free-form instructions, so a model that re-compacts every step
+ * emits a *different* fingerprint each time and slips past identical-args detection even
+ * though it is doing exactly the same thing. Every compact_context call in a turn is
+ * therefore treated as the same call, and one repeat is enough to block it: compacting
+ * twice in one turn can never be progress (the first call already moved the stored summary
+ * boundary as far as the retained tail allows).
+ */
+private const val COMPACT_CONTEXT_TOOL_NAME = "compact_context"
+internal const val COMPACT_CONTEXT_REPEAT_THRESHOLD = 1
+
+/**
+ * Canonical loop-guard fingerprint for a tool call. Kept in one place so the per-step
+ * re-scan and the amnesia-proof ledger below can never disagree about what "the same
+ * call" means.
+ */
+internal fun loopGuardSignature(toolName: String, input: String): String =
+    if (toolName == COMPACT_CONTEXT_TOOL_NAME) {
+        "$COMPACT_CONTEXT_TOOL_NAME::*"
+    } else {
+        toolName + "::" + input
+    }
+
+/**
+ * Union of the amnesia-proof ledger and whatever is still visible in the request history.
+ *
+ * While `messages` still holds this turn's calls both sources describe the same calls, so
+ * summing them would double-count and trip the guard on a single legitimate retry. Per
+ * signature keep the side that saw more calls — the ledger knows about everything it
+ * persisted, the scan knows about everything still in `messages`, and the true count is the
+ * larger of the two. Chronological order is restored afterwards for the search-loop rule.
+ */
+internal fun mergePriorCalls(
+    ledger: List<PriorToolCall>,
+    visible: List<PriorToolCall>,
+): List<PriorToolCall> {
+    if (ledger.isEmpty()) return visible
+    if (visible.isEmpty()) return ledger
+    val merged = mutableListOf<PriorToolCall>()
+    (ledger.map { it.signature } + visible.map { it.signature }).distinct().forEach { signature ->
+        val fromLedger = ledger.filter { it.signature == signature }
+        val fromVisible = visible.filter { it.signature == signature }
+        merged += if (fromLedger.size >= fromVisible.size) fromLedger else fromVisible
+    }
+    return merged.sortedBy { it.epochMs }
+}
+
+
 // The per-turn wall-clock budget was hardcoded here (most recently 10 min). It now lives in
 // ToolRuntimeLimits.turnBudgetMs (default 30 min), user-configurable via Settings -> Termux;
 // every read site below uses that holder directly.
@@ -873,6 +921,15 @@ class GenerationLoop(
 
         val turnStartMs = android.os.SystemClock.elapsedRealtime()
         var loopGuardTripCount = 0
+        // Amnesia-proof ledger of everything already executed in this turn.
+        //
+        // `onAfterToolExecution` may hand back a compacted request history, and the loop
+        // swaps `messages` for it. That list is [summary] + raw tail, so every call the
+        // model made earlier in this turn is gone from it — including the very calls the
+        // loop guard is supposed to count. Deriving prior calls from `messages` therefore
+        // makes the guard blind right after a compaction, and the model re-runs the same
+        // step until maxSteps. This ledger lives outside `messages` so it survives.
+        val executedThisTurn = mutableListOf<PriorToolCall>()
 
         for (stepIndex in 0 until maxSteps) {
             // Wall-clock cap: any single user turn that has been running longer than the
@@ -1390,7 +1447,7 @@ class GenerationLoop(
                         // tool with the same args multiple times in this turn. Refuse a
                         // repeat run and inject a "loop_detected" envelope so the model has
                         // to pivot to a different approach. Cost safety net.
-                        val signature = tool.toolName + "::" + tool.input
+                        val signature = loopGuardSignature(tool.toolName, tool.input)
                         // "This turn" = since the most recent user message. Earlier
                         // identical calls in PREVIOUS turns aren't the model flailing
                         // now — they're history, and counting them produces a confusing
@@ -1404,18 +1461,36 @@ class GenerationLoop(
                         // Flatten this turn's executed tool calls in chronological order. The
                         // epoch ms (for the freshness-TTL bypass) comes from the parent
                         // message's finish/create time, matching the prior inline behaviour.
-                        val priorCalls = turnSlice.flatMap { msg ->
+                        //
+                        // The ledger is authoritative: `messages` stops holding this turn's
+                        // earlier calls as soon as a mid-turn compaction replaces it with a
+                        // summary, which is exactly when the guard is needed most. Anything
+                        // still visible in `messages` but missing from the ledger (a resumed
+                        // tool call, a steer-injected message) is merged on top.
+                        val visibleCalls = turnSlice.flatMap { msg ->
                             val epochMs = (msg.finishedAt ?: msg.createdAt)
                                 .toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds()
                             msg.parts.filterIsInstance<UIMessagePart.Tool>()
                                 .filter { it.isExecuted }
-                                .map { PriorToolCall(it.toolName, it.toolName + "::" + it.input, epochMs) }
+                                .map {
+                                    PriorToolCall(
+                                        it.toolName,
+                                        loopGuardSignature(it.toolName, it.input),
+                                        epochMs,
+                                    )
+                                }
                         }
+                        val priorCalls = mergePriorCalls(executedThisTurn, visibleCalls)
                         val loopDecision = LoopGuard.evaluate(
                             priorCalls = priorCalls,
                             toolName = tool.toolName,
                             signature = signature,
                             nowMs = System.currentTimeMillis(),
+                            threshold = if (tool.toolName == COMPACT_CONTEXT_TOOL_NAME) {
+                                COMPACT_CONTEXT_REPEAT_THRESHOLD
+                            } else {
+                                LOOP_GUARD_REPEAT_THRESHOLD
+                            },
                         )
                         val priorOccurrences = loopDecision.priorOccurrences
                         if (loopDecision.block) {
@@ -1748,6 +1823,16 @@ class GenerationLoop(
             }
 
             // Update last message with executed tools (NOT create TOOL message)
+            // Recorded before `onAfterToolExecution` gets a chance to swap `messages` for a
+            // compacted history: from that point on the request no longer contains these
+            // calls, so the ledger is the loop guard's only memory of them.
+            executedTools.forEach { tool ->
+                executedThisTurn += PriorToolCall(
+                    toolName = tool.toolName,
+                    signature = loopGuardSignature(tool.toolName, tool.input),
+                    epochMs = System.currentTimeMillis(),
+                )
+            }
             val lastMessage = messages.last()
             val updatedParts = lastMessage.parts.map { part ->
                 if (part is UIMessagePart.Tool) {
