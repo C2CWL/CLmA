@@ -342,8 +342,12 @@ class FloatingBallService : Service(), KoinComponent {
             dpPx(EdgeBarLook.TOUCH_WIDTH_DP),
             height,
             type,
+            // FLAG_LAYOUT_NO_LIMITS is deliberately absent: on vivo (OriginOS) a window that
+            // carries it and extends past the layout frame is shrunk to the remaining height
+            // instead of clipped. A side bar below the fold crosses that line, so every
+            // position update flips it between full and squashed height and it flickers.
+            // The bar never leaves the screen, so the flag bought nothing.
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
-                or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
                 or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT,
         ).apply {
