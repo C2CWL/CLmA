@@ -504,13 +504,6 @@ internal fun DrawerMeCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Text(
-                    text = stringResource(R.string.drawer_me_hint_avatar),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
             }
             DrawerSquareButton(
                 icon = Lucide.LucideSettings,

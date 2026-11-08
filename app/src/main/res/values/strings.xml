@@ -1009,8 +1009,6 @@
   <string name="drawer_switch_assistant">Switch assistant</string>
   <string name="drawer_search_hint">Search chats</string>
   <string name="drawer_edit_profile">Edit profile</string>
-  <string name="drawer_me_hint_avatar">Tap avatar to change it · tap name to rename</string>
-  <string name="drawer_me_hint">Tap name to rename</string>
   <string name="setting_display_page_show_user_avatar_title">Show User Avatar</string>
   <string name="setting_display_page_skip_crop_image_desc">Skip crop interface after importing images or taking photos</string>
   <string name="setting_display_page_skip_crop_image_title">Skip Image Editing</string>
