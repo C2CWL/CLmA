@@ -87,6 +87,9 @@ fun buildCompactionTools(
             - you compacted very recently, or there is little history left. A compaction costs a
               full extra model call, so doing it twice in a row is pure waste;
             - the user explicitly asked you to work from the full history verbatim.
+
+            Hard limit: at most ONE call per turn. If the first call reports that it did not
+            shrink the context, calling it again cannot help — answer the user instead.
         """.trimIndent(),
         parameters = {
             InputSchema.Obj(
