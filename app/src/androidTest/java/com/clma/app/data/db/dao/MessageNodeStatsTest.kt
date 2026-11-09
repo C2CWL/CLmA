@@ -46,32 +46,53 @@ class MessageNodeStatsTest {
         database.close()
     }
 
+    /**
+     * A node's `messages` array holds the *branches of one message*, and `select_index` picks the
+     * one the user sees - so the statistics must count exactly one message per node. Counting the
+     * whole array made every regeneration add its discarded answer's tokens to the total.
+     */
     @Test
-    fun malformedRowsAreSkippedWhileValidMessagesAreAggregated() = runBlocking {
+    fun malformedRowsAreSkippedAndOnlyTheSelectedBranchIsCounted() = runBlocking {
         insertMessages("""[{"role":"user"""")
+
+        insertMessages("""[{"role":"user","createdAt":"2026-08-12T09:00:00"}]""")
+
+        // Three regenerated answers; only the third one is selected and only it may be counted.
         insertMessages(
             """[
-                {"role":"user","createdAt":"2026-08-12T09:00:00"},
                 {"role":"assistant","createdAt":"2026-08-12T09:01:00",
-                 "usage":{"promptTokens":100,"completionTokens":40,"cachedTokens":20}},
-                {"role":"user","createdAt":"2026-08-12T10:00:00"},
-                {"role":"user","createdAt":"2026-08-13T09:00:00"},
-                {"role":"user","createdAt":"2026-08-01T09:00:00"}
-            ]""".trimIndent()
+                 "usage":{"promptTokens":500,"completionTokens":100,"cachedTokens":50}},
+                {"role":"assistant","createdAt":"2026-08-12T09:02:00",
+                 "usage":{"promptTokens":600,"completionTokens":120,"cachedTokens":60}},
+                {"role":"assistant","createdAt":"2026-08-12T09:03:00",
+                 "usage":{"promptTokens":700,"completionTokens":140,"cachedTokens":70}}
+            ]""".trimIndent(),
+            selectIndex = 2,
         )
+
         insertMessages("not json")
-        insertMessages(
-            """[{"role":"assistant","createdAt":"2026-08-13T09:01:00",
-                 "usage":{"promptTokens":50,"completionTokens":10,"cachedTokens":5}}]"""
-        )
+
         insertMessages("[]")
 
-        assertEquals(MessageTokenStats(6, 150, 50, 25), dao.getTokenStats())
+        insertMessages("""[{"role":"user","createdAt":"2026-08-13T09:00:00"}]""")
+
+        // A corrupted select_index falls back to the first branch instead of dropping the node.
+        insertMessages(
+            """[
+                {"role":"assistant","createdAt":"2026-08-13T09:01:00",
+                 "usage":{"promptTokens":10,"completionTokens":1,"cachedTokens":0}},
+                {"role":"assistant","createdAt":"2026-08-13T09:02:00",
+                 "usage":{"promptTokens":20,"completionTokens":2,"cachedTokens":1}}
+            ]""".trimIndent(),
+            selectIndex = 5,
+        )
+
+        assertEquals(MessageTokenStats(4, 710, 141, 70), dao.getTokenStats())
         assertEquals(
-            mapOf("2026-08-12" to 2, "2026-08-13" to 1),
+            mapOf("2026-08-12" to 1, "2026-08-13" to 1),
             dao.getMessageCountPerDay("2026-08-12").associate { it.day to it.count },
         )
-        assertEquals(5, dao.getNodesOfConversation("stats-test").size)
+        assertEquals(8, dao.getNodesOfConversation("stats-test").size)
     }
 
     @Test
@@ -91,7 +112,7 @@ class MessageNodeStatsTest {
         assertEquals(emptyList<MessageDayCount>(), dao.getMessageCountPerDay("2026-08-12"))
     }
 
-    private suspend fun insertMessages(messages: String) {
+    private suspend fun insertMessages(messages: String, selectIndex: Int = 0) {
         val index = nodeIndex++
         dao.insert(
             MessageNodeEntity(
@@ -99,7 +120,7 @@ class MessageNodeStatsTest {
                 conversationId = "stats-test",
                 nodeIndex = index,
                 messages = messages,
-                selectIndex = 0,
+                selectIndex = selectIndex,
             )
         )
     }

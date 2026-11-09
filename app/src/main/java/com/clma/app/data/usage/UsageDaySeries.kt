@@ -36,7 +36,7 @@ object UsageDaySeries {
         today: LocalDate,
     ): List<UsageStatBucket> {
         val days = windowDays.coerceAtLeast(1)
-        val start = today.minusDays(days - 1L)
+        val start = UsageWindow.startDate(today, days)
 
         val active = HashMap<String, UsageStatBucket>(byDay.size)
         for (bucket in byDay) {
