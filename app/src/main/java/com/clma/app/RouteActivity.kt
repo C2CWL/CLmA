@@ -554,6 +554,17 @@ class RouteActivity : FragmentActivity() {
                                 )
                             }
 
+                            entry<Screen.BotInfo> { key ->
+                                com.clma.app.ui.pages.bot.BotInfoPage(
+                                    botId = key.botId,
+                                    conversationId = key.conversationId,
+                                )
+                            }
+
+                            entry<Screen.BotChannel> { key ->
+                                com.clma.app.ui.pages.bot.BotChannelPage(channelId = key.channelId)
+                            }
+
                             entry<Screen.Setting> {
                                 SettingPage()
                             }
@@ -909,6 +920,14 @@ sealed interface Screen : NavKey {
     /** One bot's conversation in Bot mode (its own chrome, no classic drawer). */
     @Serializable
     data class BotChat(val botId: String, val conversationId: String) : Screen
+
+    /** A bot's info page in Bot mode (model, prompt, memory, approvals, apps, displays...). */
+    @Serializable
+    data class BotInfo(val botId: String, val conversationId: String? = null) : Screen
+
+    /** One Bot-mode channel: its members and a message box that reaches them. */
+    @Serializable
+    data class BotChannel(val channelId: String) : Screen
 
     @Serializable
     data object SettingsSearch : Screen

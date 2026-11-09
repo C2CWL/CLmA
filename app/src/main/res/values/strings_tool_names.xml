@@ -546,4 +546,14 @@
   <string name="tool_display_desc_workspace_background_status">Shows background process status/output</string>
   <string name="tool_display_name_workspace_background_kill">Stop background</string>
   <string name="tool_display_desc_workspace_background_kill">Stops a background process</string>
+  <string name="tool_display_name_bot_list">List bots</string>
+  <string name="tool_display_desc_bot_list">Lists the Bot-mode bots, their memories and models</string>
+  <string name="tool_display_name_bot_create">Create bot</string>
+  <string name="tool_display_desc_bot_create">Creates a new bot in the Bot library</string>
+  <string name="tool_display_name_bot_update_prompt">Change bot prompt</string>
+  <string name="tool_display_desc_bot_update_prompt">Replaces a bot\'s system prompt</string>
+  <string name="tool_display_name_bot_memory_write">Write bot memory</string>
+  <string name="tool_display_desc_bot_memory_write">Adds a memory record to a bot</string>
+  <string name="tool_display_name_bot_memory_delete">Delete bot memory</string>
+  <string name="tool_display_desc_bot_memory_delete">Deletes one memory record of a bot</string>
 </resources>

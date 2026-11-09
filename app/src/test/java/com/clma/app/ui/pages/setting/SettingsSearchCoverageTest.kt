@@ -30,6 +30,8 @@ class SettingsSearchCoverageTest {
         "GettingStarted" to "first-run onboarding, opened from chat",
         "BotHome" to "Bot mode home (bot list / channels), not a settings page",
         "BotChat" to "one bot's conversation in Bot mode",
+        "BotInfo" to "one bot's info page in Bot mode, opened from its chat or the bot list",
+        "BotChannel" to "one Bot-mode channel, opened from the Channels tab",
     )
 
     /**

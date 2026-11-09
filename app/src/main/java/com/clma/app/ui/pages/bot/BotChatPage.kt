@@ -179,7 +179,7 @@ fun BotChatPage(botId: Uuid, conversationId: Uuid) {
                             }
                         }
                     }
-                    IconButton(onClick = { nav.navigate(Screen.AssistantDetail(id = bot.id.toString())) }) {
+                    IconButton(onClick = { nav.navigate(Screen.BotInfo(botId = bot.id.toString(), conversationId = conversation.id.toString())) }) {
                         Icon(Lucide.Info, contentDescription = stringResource(R.string.bot_chat_info))
                     }
                 }

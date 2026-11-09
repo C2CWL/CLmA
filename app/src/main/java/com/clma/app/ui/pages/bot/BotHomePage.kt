@@ -38,7 +38,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clma.app.R
 import com.clma.app.Screen
 import com.clma.app.ui.context.LocalNavController
-import com.clma.app.ui.pages.chat.botmode.BotChannelsCard
+import com.clma.app.data.botmode.botAssistants
+import com.clma.app.data.botmode.withBotChannelUpserted
 import com.composables.icons.lucide.Bot
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.Plus
@@ -61,6 +62,7 @@ fun BotHomePage(vm: BotHomeVM = koinViewModel()) {
     var tab by rememberSaveable { mutableStateOf(BotHomeTab.BOTS) }
     val assistantVm: AssistantVM = koinViewModel()
     var showNewBot by remember { mutableStateOf(false) }
+    var showNewChannel by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf<BotHomeItem?>(null) }
 
     Scaffold(
@@ -80,6 +82,10 @@ fun BotHomePage(vm: BotHomeVM = koinViewModel()) {
                     if (tab == BotHomeTab.BOTS) {
                         IconButton(onClick = { showNewBot = true }) {
                             Icon(Lucide.Plus, contentDescription = stringResource(R.string.bot_home_new_bot))
+                        }
+                    } else {
+                        IconButton(onClick = { showNewChannel = true }) {
+                            Icon(Lucide.Plus, contentDescription = stringResource(R.string.bot_channel_new))
                         }
                     }
                 },
@@ -121,34 +127,18 @@ fun BotHomePage(vm: BotHomeVM = koinViewModel()) {
                 onTogglePin = { vm.togglePin(it.bot) },
                 onToggleUnread = { vm.toggleUnread(it.row) },
                 onHide = { vm.hide(it.bot) },
-                onDetail = { nav.navigate(Screen.AssistantDetail(id = it.bot.id.toString())) },
+                onDetail = { nav.navigate(Screen.BotInfo(botId = it.bot.id.toString())) },
                 onSetMain = { vm.setMain(it.bot) },
                 onDelete = { deleting = it },
                 onManageHidden = { nav.navigate(Screen.SettingChatLayout) },
                 modifier = Modifier.padding(padding),
             )
 
-            BotHomeTab.CHANNELS -> Column(
-                modifier = Modifier
-                    .padding(padding)
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                // PR3 replaces this with a real channel list (member avatars in the top bar).
-                BotChannelsCard(
-                    settings = settings,
-                    displaySetting = settings.displaySetting,
-                    updateDisplaySetting = { vm.updateDisplaySetting(it) },
-                )
-                Text(
-                    text = stringResource(R.string.bot_home_channels_note),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 20.dp),
-                )
-            }
+            BotHomeTab.CHANNELS -> BotChannelsTab(
+                settings = settings,
+                onOpen = { channel -> nav.navigate(Screen.BotChannel(channel.id.toString())) },
+                modifier = Modifier.padding(padding),
+            )
         }
     }
 
@@ -158,9 +148,22 @@ fun BotHomePage(vm: BotHomeVM = koinViewModel()) {
             onCreate = { name, prompt, makeMain ->
                 showNewBot = false
                 vm.createBot(name, prompt, makeMain) { id ->
-                    // Avatar, model and the rest are set on the bot's detail page.
-                    nav.navigate(Screen.AssistantDetail(id = id.toString()))
+                    // Avatar, model and the rest are set on the bot's info page.
+                    nav.navigate(Screen.BotInfo(botId = id.toString()))
                 }
+            },
+        )
+    }
+
+    if (showNewChannel) {
+        BotChannelEditDialog(
+            initial = null,
+            bots = settings.botAssistants(),
+            onDismiss = { showNewChannel = false },
+            onSave = { channel ->
+                showNewChannel = false
+                vm.updateDisplaySetting(settings.displaySetting.withBotChannelUpserted(channel))
+                nav.navigate(Screen.BotChannel(channel.id.toString()))
             },
         )
     }

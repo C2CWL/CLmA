@@ -51,6 +51,22 @@ val viewModelModule = module {
     }
     viewModelOf(::ChatDrawerVM)
     viewModelOf(::BotHomeVM)
+    viewModel<com.clma.app.ui.pages.bot.BotInfoVM> {
+        com.clma.app.ui.pages.bot.BotInfoVM(
+            botId = it.get(),
+            settingsStore = get(),
+            conversationRepo = get(),
+            memoryRepository = get(),
+        )
+    }
+    viewModel<com.clma.app.ui.pages.bot.BotChannelVM> {
+        com.clma.app.ui.pages.bot.BotChannelVM(
+            channelId = it.get(),
+            settingsStore = get(),
+            conversationRepo = get(),
+            chatService = get(),
+        )
+    }
     viewModelOf(::SettingVM)
     viewModelOf(::DebugVM)
     viewModelOf(::DeveloperVM)

@@ -39,3 +39,29 @@ fun parseBotMentions(text: String, members: List<Assistant>): List<Uuid> {
     }
     return found.toList()
 }
+
+/** Channel members that are still in the Bot library (classic assistants never take part). */
+fun BotChannel.botMembers(settings: Settings): List<Assistant> =
+    memberAssistants(settings.botAssistants())
+
+/**
+ * Who a channel message goes to: the members @-mentioned in [text], or every member when the
+ * text mentions nobody.
+ */
+fun channelTargets(text: String, members: List<Assistant>): List<Uuid> {
+    val mentioned = parseBotMentions(text, members)
+    return mentioned.ifEmpty { members.map { it.id } }
+}
+
+/**
+ * The message a member receives: the channel's name and note first, so the bot knows it was
+ * addressed in a channel, then the user's text unchanged.
+ */
+fun channelMessageText(channel: BotChannel, memberNames: List<String>, text: String): String = buildString {
+    append("[Channel: ").append(channel.name.ifBlank { "Channel" }).append(']')
+    if (memberNames.isNotEmpty()) append(" Members: ").append(memberNames.joinToString(", "))
+    append('\n')
+    if (channel.description.isNotBlank()) append("Channel note: ").append(channel.description.trim()).append('\n')
+    append('\n')
+    append(text.trim())
+}
