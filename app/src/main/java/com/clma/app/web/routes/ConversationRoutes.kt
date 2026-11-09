@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import com.clma.app.data.ai.AssistantResolver
+import com.clma.app.data.botmode.activeLibraryScope
 import com.clma.app.data.datastore.SettingsStore
 import com.clma.app.data.repository.ConversationRepository
 import com.clma.app.data.repository.FolderRepository
@@ -128,7 +129,11 @@ fun Route.conversationRoutes(
                 call.respond(emptyList<MessageSearchResultDto>())
                 return@get
             }
-            val results = conversationRepo.searchMessages(query)
+            // Library isolation: only the active entry's library (classic vs Bot).
+            val results = conversationRepo.searchMessages(
+                query,
+                scope = settingsStore.settingsFlow.first().activeLibraryScope(),
+            )
             call.respond(results.map { result ->
                 MessageSearchResultDto(
                     nodeId = result.nodeId,

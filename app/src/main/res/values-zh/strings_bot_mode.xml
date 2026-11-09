@@ -172,4 +172,6 @@
   <string name="bot_info_advanced">此 Bot 的全部设置</string>
   <string name="bot_info_delete_main_blocked">主助手不能删除，请先把别的 Bot 设为主助手。</string>
   <string name="bot_info_rename">重命名 Bot</string>
+  <string name="bot_library_link_classic_conversation">该会话属于经典模式，请在设置中关闭 Bot 模式后查看</string>
+  <string name="bot_library_link_bot_conversation">该会话属于 Bot 模式，请在设置中开启 Bot 模式后查看</string>
 </resources>

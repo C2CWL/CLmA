@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import androidx.paging.filter
 import androidx.paging.insertSeparators
 import androidx.paging.map
 import kotlinx.coroutines.flow.Flow
@@ -20,9 +21,12 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import com.clma.app.R
+import com.clma.app.data.botmode.isBotAssistantId
+import com.clma.app.data.botmode.isInLibrary
 import com.clma.app.data.datastore.SettingsStore
 import com.clma.app.data.model.Conversation
 import com.clma.app.data.model.Folder
@@ -77,7 +81,16 @@ class ChatDrawerVM(
                 if (folderId == null) {
                     conversationRepo.getUnfiledConversationIdsFlow(assistantId)
                 } else {
-                    conversationRepo.getConversationIdsOfFolderFlow(folderId)
+                    // Same library guard as the folder list below, so "select all" can never
+                    // reach a row the user cannot see.
+                    conversationRepo.getConversationIdsOfFolderFlow(folderId).mapLatest { ids ->
+                        val settings = settingsStore.settingsFlow.value
+                        val bot = settings.isBotAssistantId(settings.assistantId)
+                        ids.filter { id ->
+                            val owner = conversationRepo.getAssistantIdOfConversation(id)
+                            owner == null || settings.isInLibrary(owner, bot)
+                        }
+                    }
                 }
             }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -90,7 +103,17 @@ class ChatDrawerVM(
                 if (folderId == null) {
                     conversationRepo.getUnfiledConversationsOfAssistantPaging(assistantId)
                 } else {
-                    conversationRepo.getConversationsOfFolderPaging(folderId)
+                    // Folders are keyed by assistant but their rows are not: keep the folder view
+                    // inside the current assistant's library (classic never lists Bot rows).
+                    conversationRepo.getConversationsOfFolderPaging(folderId).map { paging ->
+                        paging.filter { conversation ->
+                            val settings = settingsStore.settingsFlow.value
+                            settings.isInLibrary(
+                                conversation.assistantId,
+                                settings.isBotAssistantId(settings.assistantId),
+                            )
+                        }
+                    }
                 }
             }
             .map { pagingData ->

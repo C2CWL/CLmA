@@ -1,5 +1,6 @@
 package com.clma.app.data.repository
 
+import com.clma.app.data.botmode.AssistantScope
 import android.database.sqlite.SQLiteBlobTooBigException
 import android.util.Log
 import androidx.paging.Pager
@@ -412,7 +413,12 @@ class ConversationRepository(
         conversationId: Uuid? = null,
         limit: Int = 50,
         offset: Int = 0,
-    ) = messageFtsManager.search(keyword, sort, assistantId?.toString(), conversationId?.toString(), limit, offset)
+        scope: AssistantScope = AssistantScope.ALL,
+    ) = messageFtsManager.search(keyword, sort, assistantId?.toString(), conversationId?.toString(), limit, offset, scope)
+
+    /** Assistant a conversation is bound to, without loading its messages (null if it does not exist yet). */
+    suspend fun getAssistantIdOfConversation(conversationId: Uuid): Uuid? =
+        conversationDAO.getAssistantIdOf(conversationId.toString())?.let { runCatching { Uuid.parse(it) }.getOrNull() }
 
     suspend fun rebuildAllIndexes(onProgress: (current: Int, total: Int) -> Unit = { _, _ -> }) {
         messageFtsManager.deleteAll()

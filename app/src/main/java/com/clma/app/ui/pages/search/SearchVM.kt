@@ -1,5 +1,7 @@
 package com.clma.app.ui.pages.search
 
+import com.clma.app.data.botmode.AssistantScope
+import com.clma.app.data.botmode.activeLibraryScope
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -39,6 +41,8 @@ private data class SearchRequest(
     val assistantId: Uuid?,
     val debounce: Boolean,
     val offset: Int = 0,
+    // Library isolation: "all assistants" means all assistants of the active library only.
+    val libraryScope: AssistantScope = AssistantScope.ALL,
 )
 
 class SearchVM(
@@ -131,6 +135,7 @@ class SearchVM(
             scope = searchScope,
             assistantId = assistantId,
             debounce = debounce,
+            libraryScope = settingsStore.settingsFlow.value.activeLibraryScope(),
         )
         currentRequest = request
         isLoading = true
@@ -173,6 +178,7 @@ class SearchVM(
             val page = conversationRepo.searchMessages(
                 request.query, request.sort, request.assistantId,
                 limit = SearchPageSize + 1, offset = request.offset,
+                scope = request.libraryScope,
             )
             val loaded = page.take(SearchPageSize)
             results = if (request.offset == 0) loaded else

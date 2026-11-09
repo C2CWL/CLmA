@@ -1,5 +1,6 @@
 package com.clma.app.ui.pages.bot
 
+import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -50,6 +51,8 @@ import com.clma.app.ui.components.ui.AssistantAvatar
 import com.clma.app.ui.context.LocalNavController
 import com.clma.app.ui.pages.chat.ChatPageContent
 import com.clma.app.ui.pages.chat.ChatVM
+import com.clma.app.data.files.FilesManager
+import com.clma.app.ui.pages.chat.applyInitialChatInput
 import com.clma.app.ui.pages.chat.botmode.BotModelPickerButton
 import com.clma.app.ui.pages.chat.botmode.BotTaskProgressSheet
 import com.clma.app.ui.pages.chat.rememberVoiceModeStarter
@@ -75,8 +78,12 @@ private const val TaskChipLingerMs = 2_500L
  * approval cards in the flow. Sending, streaming and attachments are the shared chat surface.
  */
 @Composable
-fun BotChatPage(botId: Uuid, conversationId: Uuid) {
+fun BotChatPage(botId: Uuid, conversationId: Uuid, text: String? = null, files: List<Uri> = emptyList()) {
     val vm: ChatVM = koinViewModel(parameters = { parametersOf(conversationId.toString(), false) })
+    val filesManager: FilesManager = koinInject()
+    LaunchedEffect(files, text) {
+        applyInitialChatInput(vm.inputState, filesManager, files, text)
+    }
     val nav = LocalNavController.current
 
     val setting by vm.settings.collectAsStateWithLifecycle()

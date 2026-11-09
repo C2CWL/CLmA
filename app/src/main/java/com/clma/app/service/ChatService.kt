@@ -1,5 +1,6 @@
 package com.clma.app.service
 
+import com.clma.app.data.botmode.libraryScopeOf
 import com.clma.app.diagnostics.FunctionalDiagnostics
 import android.app.Application
 import android.content.Context
@@ -1931,7 +1932,9 @@ class ChatService(
             if (surfaceAssistant.enableRecentChatsReference) {
                 addAll(
                     ChatModeTools.filterTools(
-                        createConversationTools(conversationRepo, surfaceAssistant.id),
+                        createConversationTools(conversationRepo, surfaceAssistant.id) {
+                            settingsStore.settingsFlow.value.libraryScopeOf(surfaceAssistant.id)
+                        },
                     )
                 )
             }
@@ -2080,7 +2083,9 @@ class ChatService(
             }
             // Same gate as legacy ChatToolFactory: only when the assistant opted into recent-chat reference.
             if (surfaceAssistant.enableRecentChatsReference) {
-                addAll(createConversationTools(conversationRepo, surfaceAssistant.id))
+                addAll(createConversationTools(conversationRepo, surfaceAssistant.id) {
+                    settingsStore.settingsFlow.value.libraryScopeOf(surfaceAssistant.id)
+                })
             }
             addAll(
                 createWorkspaceToolsIfReady(
