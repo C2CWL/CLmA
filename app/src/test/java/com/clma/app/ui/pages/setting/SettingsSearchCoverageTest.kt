@@ -200,6 +200,7 @@ class SettingsSearchCoverageTest {
         "assistant_page_clone",
         "assistant_page_delete",
         "setting_page_notifications_recent_empty",
+        "bot_mode_hidden_empty",
         "setting_secrets_page_empty",
         "setting_secrets_page_copy",
         "setting_secrets_page_edit",
