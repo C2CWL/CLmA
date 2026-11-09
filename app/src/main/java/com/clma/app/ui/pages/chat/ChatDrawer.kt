@@ -1,5 +1,14 @@
 package com.clma.app.ui.pages.chat
 
+import com.clma.app.ui.motion.Motion
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.AnimatedContent
 import com.clma.app.diagnostics.FunctionalDiagnostics
 import android.os.Build
 import androidx.activity.ComponentActivity
@@ -633,65 +642,88 @@ fun ChatDrawerContent(
                 }
 
                 // Flat action grid stays above the gesture navigation area.
-                val bottomBarShape = RoundedCornerShape(if (selectionMode) 14.dp else 20.dp)
+                val bottomBarCorner by animateDpAsState(
+                    targetValue = if (selectionMode) 14.dp else 20.dp,
+                    animationSpec = Motion.enter(Motion.PAGE),
+                    label = "drawerBottomCorner",
+                )
+                val bottomBarShape = RoundedCornerShape(bottomBarCorner)
                 // 多选栏 / 助手行 + 五个动作：两条路径共用同一份内容，只是外壳不同。
                 val drawerBottomContent: @Composable () -> Unit = {
-                    if (selectionMode) {
-                        SelectionActionBar(
-                            capsule = drawerCapsules,
-                            count = selectedIds.size,
-                            isAllSelected = isAllSelected,
-                            onToggleSelectAll = { toggleSelectAll() },
-                            onCancel = { exitSelection() },
-                            onDelete = {
-                                if (selectedIds.isNotEmpty()) showDeleteSelectedDialog = true
-                            },
-                            onMove = {
-                                if (selectedIds.isNotEmpty()) {
-                                    batchMove = true
-                                    conversationToMoveFolder = null
-                                    showMoveToFolderSheet = true
-                                }
-                            },
-                            onCreateAndMove = {
-                                if (selectedIds.isNotEmpty()) {
-                                    batchMove = true
-                                    showCreateFolderDialog = true
-                                }
-                            },
-                            onMoveToAssistant = {
-                                if (selectedIds.isNotEmpty()) {
-                                    batchMove = true
-                                    conversationToMove = null
-                                    showMoveToAssistantSheet = true
-                                }
-                            },
-                        )
-                    } else {
-                        when (drawerStyle) {
-                            DrawerStyle.CARD -> {
-                                DrawerQuickChips(
-                                    onFavorite = openFavorite,
-                                    toolsMenu = toolsMenu,
-                                    moreMenu = moreMenu,
+                    // 多选栏 ⇄ 普通底栏：淡入 + 自下而上滑入（学 Kelivo 的 260ms），不再硬换。
+                    AnimatedContent(
+                        targetState = selectionMode,
+                        transitionSpec = {
+                            (slideInVertically(Motion.enter(Motion.PAGE)) { it / 2 } + fadeIn(Motion.enter(Motion.PAGE))) togetherWith
+                                (slideOutVertically(Motion.exit(Motion.FAST)) { it / 2 } + fadeOut(Motion.exit(Motion.FAST))) using
+                                SizeTransform(clip = false) { _, _ -> Motion.sizeSpec }
+                        },
+                        label = "DrawerBottomBar",
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { inSelection ->
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            if (inSelection) {
+                                SelectionActionBar(
+                                    capsule = drawerCapsules,
+                                    count = selectedIds.size,
+                                    isAllSelected = isAllSelected,
+                                    onToggleSelectAll = { toggleSelectAll() },
+                                    onCancel = { exitSelection() },
+                                    onDelete = {
+                                        if (selectedIds.isNotEmpty()) showDeleteSelectedDialog = true
+                                    },
+                                    onMove = {
+                                        if (selectedIds.isNotEmpty()) {
+                                            batchMove = true
+                                            conversationToMoveFolder = null
+                                            showMoveToFolderSheet = true
+                                        }
+                                    },
+                                    onCreateAndMove = {
+                                        if (selectedIds.isNotEmpty()) {
+                                            batchMove = true
+                                            showCreateFolderDialog = true
+                                        }
+                                    },
+                                    onMoveToAssistant = {
+                                        if (selectedIds.isNotEmpty()) {
+                                            batchMove = true
+                                            conversationToMove = null
+                                            showMoveToAssistantSheet = true
+                                        }
+                                    },
                                 )
-                                DrawerMeCard(
-                                    nickname = userNickname,
-                                    avatar = settings.displaySetting.userAvatar,
-                                    onAvatarUpdate = updateUserAvatar,
-                                    onEditNickname = openNicknameEdit,
-                                    onSettings = openSettings,
-                                )
+                            } else {
+                                when (drawerStyle) {
+                                    DrawerStyle.CARD -> {
+                                        DrawerQuickChips(
+                                            onFavorite = openFavorite,
+                                            toolsMenu = toolsMenu,
+                                            moreMenu = moreMenu,
+                                        )
+                                        DrawerMeCard(
+                                            nickname = userNickname,
+                                            avatar = settings.displaySetting.userAvatar,
+                                            onAvatarUpdate = updateUserAvatar,
+                                            onEditNickname = openNicknameEdit,
+                                            onSettings = openSettings,
+                                        )
+                                    }
+
+                                    DrawerStyle.RAIL -> {
+                                        DrawerProfileRow(
+                                            nickname = userNickname,
+                                            avatar = settings.displaySetting.userAvatar,
+                                            onAvatarUpdate = updateUserAvatar,
+                                            onEditNickname = openNicknameEdit,
+                                        )
+                                    }
+                                }
                             }
 
-                            DrawerStyle.RAIL -> {
-                                DrawerProfileRow(
-                                    nickname = userNickname,
-                                    avatar = settings.displaySetting.userAvatar,
-                                    onAvatarUpdate = updateUserAvatar,
-                                    onEditNickname = openNicknameEdit,
-                                )
-                            }
                         }
                     }
                 }
