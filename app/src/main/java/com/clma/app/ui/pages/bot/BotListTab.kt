@@ -66,6 +66,8 @@ internal fun BotListTab(
     onToggleUnread: (BotHomeItem) -> Unit,
     onHide: (BotHomeItem) -> Unit,
     onDetail: (BotHomeItem) -> Unit,
+    onSetMain: (BotHomeItem) -> Unit,
+    onDelete: (BotHomeItem) -> Unit,
     onManageHidden: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -113,6 +115,8 @@ internal fun BotListTab(
                 onToggleUnread = { onToggleUnread(item) },
                 onHide = { onHide(item) },
                 onDetail = { onDetail(item) },
+                onSetMain = { onSetMain(item) },
+                onDelete = { onDelete(item) },
             )
             HorizontalDivider(
                 modifier = Modifier.padding(start = 80.dp, end = 16.dp),
@@ -139,6 +143,8 @@ private fun BotListRow(
     onToggleUnread: () -> Unit,
     onHide: () -> Unit,
     onDetail: () -> Unit,
+    onSetMain: () -> Unit,
+    onDelete: () -> Unit,
 ) {
     val bot = item.bot
     val row = item.row
@@ -174,7 +180,18 @@ private fun BotListRow(
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false),
                     )
-                    if (row.pinned) {
+                    if (item.isMain) {
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            text = stringResource(R.string.bot_home_main_badge),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(MaterialTheme.colorScheme.primaryContainer)
+                                .padding(horizontal = 5.dp, vertical = 1.dp),
+                        )
+                    } else if (row.pinned) {
                         Spacer(Modifier.width(6.dp))
                         Icon(
                             Lucide.Pin,
@@ -210,10 +227,12 @@ private fun BotListRow(
             }
         }
         DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-            DropdownMenuItem(
-                text = { Text(stringResource(if (row.pinned) R.string.bot_mode_menu_unpin else R.string.bot_mode_menu_pin)) },
-                onClick = { menuOpen = false; onTogglePin() },
-            )
+            if (!item.isMain) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(if (row.pinned) R.string.bot_mode_menu_unpin else R.string.bot_mode_menu_pin)) },
+                    onClick = { menuOpen = false; onTogglePin() },
+                )
+            }
             DropdownMenuItem(
                 text = {
                     Text(stringResource(if (row.unread > 0) R.string.bot_home_menu_mark_read else R.string.bot_home_menu_mark_unread))
@@ -221,13 +240,30 @@ private fun BotListRow(
                 enabled = row.unread > 0 || row.latestConversationId != null,
                 onClick = { menuOpen = false; onToggleUnread() },
             )
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.bot_mode_menu_hide)) },
-                onClick = { menuOpen = false; onHide() },
-            )
+            if (!item.isMain) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.bot_home_menu_set_main)) },
+                    onClick = { menuOpen = false; onSetMain() },
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.bot_mode_menu_hide)) },
+                    onClick = { menuOpen = false; onHide() },
+                )
+            }
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.bot_mode_menu_detail)) },
                 onClick = { menuOpen = false; onDetail() },
+            )
+            // The current main bot cannot be deleted until another bot replaces it.
+            DropdownMenuItem(
+                text = {
+                    Text(
+                        stringResource(R.string.bot_home_menu_delete),
+                        color = if (item.isMain) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f) else MaterialTheme.colorScheme.error,
+                    )
+                },
+                enabled = !item.isMain,
+                onClick = { menuOpen = false; onDelete() },
             )
         }
     }

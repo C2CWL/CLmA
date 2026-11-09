@@ -175,7 +175,25 @@ data class Assistant(
     /** Saved SSH hosts available to this assistant; empty disables SSH access. */
     @EncodeDefault(EncodeDefault.Mode.NEVER)
     val enabledSshHosts: Set<String> = emptySet(),
+    /**
+     * Which assistant library this one lives in. Classic mode and Bot mode keep separate
+     * libraries: classic lists never show bots and the Bot list never shows classic assistants.
+     * Every assistant stored before this field existed decodes as CLASSIC, and NEVER-encoding
+     * keeps classic assistants byte-identical in the store.
+     * Appended last on purpose: a new field may never shift the position of an existing one.
+     */
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val library: AssistantLibrary = AssistantLibrary.CLASSIC,
 )
+
+/** Classic assistants vs Bot-mode bots; see [Assistant.library]. */
+@Serializable
+enum class AssistantLibrary {
+    @SerialName("classic") CLASSIC,
+    @SerialName("bot") BOT,
+}
+
+val Assistant.isBot: Boolean get() = library == AssistantLibrary.BOT
 
 @Serializable
 data class QuickMessage(

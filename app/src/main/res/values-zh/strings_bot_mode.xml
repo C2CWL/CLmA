@@ -91,4 +91,18 @@
   <string name="bot_home_menu_mark_unread">标为未读</string>
   <string name="bot_home_menu_mark_read">标为已读</string>
   <string name="bot_home_channels_note">完整的频道列表（带成员头像）下一步上线。</string>
+  <string name="bot_main_default_name">主助手</string>
+  <string name="bot_main_default_prompt">你是用户在 CLmA Bot 模式里的主助手。帮用户规划要做的事，能直接回答就直接回答；如果另一个 Bot 更合适，就建议交给它。替用户改任何东西之前，先说清楚要改什么。</string>
+  <string name="bot_home_main_badge">主</string>
+  <string name="bot_home_menu_set_main">设为主助手</string>
+  <string name="bot_home_menu_delete">删除</string>
+  <string name="bot_home_delete_title">删除这个 Bot？</string>
+  <string name="bot_home_delete_confirm">删除「%1$s」以及它的对话和记忆？删除后无法恢复。</string>
+  <string name="bot_home_cancel">取消</string>
+  <string name="bot_new_title">新建 Bot</string>
+  <string name="bot_new_name">名字</string>
+  <string name="bot_new_prompt">系统提示词（可不填）</string>
+  <string name="bot_new_set_main">设为主助手</string>
+  <string name="bot_new_hint">头像和模型在下一页设置。</string>
+  <string name="bot_new_create">创建</string>
 </resources>

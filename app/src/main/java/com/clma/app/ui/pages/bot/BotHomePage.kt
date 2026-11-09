@@ -6,7 +6,17 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import com.clma.app.data.botmode.botsHiddenForManage
+import com.clma.app.ui.pages.assistant.AssistantVM
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -49,6 +59,9 @@ fun BotHomePage(vm: BotHomeVM = koinViewModel()) {
     val settings by vm.settings.collectAsStateWithLifecycle()
     val items by vm.items.collectAsStateWithLifecycle()
     var tab by rememberSaveable { mutableStateOf(BotHomeTab.BOTS) }
+    val assistantVm: AssistantVM = koinViewModel()
+    var showNewBot by remember { mutableStateOf(false) }
+    var deleting by remember { mutableStateOf<BotHomeItem?>(null) }
 
     Scaffold(
         topBar = {
@@ -65,7 +78,7 @@ fun BotHomePage(vm: BotHomeVM = koinViewModel()) {
                 },
                 actions = {
                     if (tab == BotHomeTab.BOTS) {
-                        IconButton(onClick = { nav.navigate(Screen.Assistant) }) {
+                        IconButton(onClick = { showNewBot = true }) {
                             Icon(Lucide.Plus, contentDescription = stringResource(R.string.bot_home_new_bot))
                         }
                     }
@@ -99,9 +112,7 @@ fun BotHomePage(vm: BotHomeVM = koinViewModel()) {
         when (tab) {
             BotHomeTab.BOTS -> BotListTab(
                 items = items,
-                hiddenCount = settings.displaySetting.botHiddenAssistantIds.count { id ->
-                    settings.assistants.any { it.id == id }
-                },
+                hiddenCount = settings.botsHiddenForManage().size,
                 onOpen = { item ->
                     vm.open(item.row) { conversationId ->
                         nav.navigate(Screen.Chat(conversationId.toString()))
@@ -111,6 +122,8 @@ fun BotHomePage(vm: BotHomeVM = koinViewModel()) {
                 onToggleUnread = { vm.toggleUnread(it.row) },
                 onHide = { vm.hide(it.bot) },
                 onDetail = { nav.navigate(Screen.AssistantDetail(id = it.bot.id.toString())) },
+                onSetMain = { vm.setMain(it.bot) },
+                onDelete = { deleting = it },
                 onManageHidden = { nav.navigate(Screen.SettingChatLayout) },
                 modifier = Modifier.padding(padding),
             )
@@ -138,4 +151,87 @@ fun BotHomePage(vm: BotHomeVM = koinViewModel()) {
             }
         }
     }
+
+    if (showNewBot) {
+        NewBotDialog(
+            onDismiss = { showNewBot = false },
+            onCreate = { name, prompt, makeMain ->
+                showNewBot = false
+                vm.createBot(name, prompt, makeMain) { id ->
+                    // Avatar, model and the rest are set on the bot's detail page.
+                    nav.navigate(Screen.AssistantDetail(id = id.toString()))
+                }
+            },
+        )
+    }
+
+    deleting?.let { item ->
+        val name = item.bot.name.ifBlank { stringResource(R.string.assistant_page_default_assistant) }
+        AlertDialog(
+            onDismissRequest = { deleting = null },
+            title = { Text(stringResource(R.string.bot_home_delete_title)) },
+            text = { Text(stringResource(R.string.bot_home_delete_confirm, name)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    deleting = null
+                    assistantVm.removeAssistant(item.bot)
+                }) {
+                    Text(stringResource(R.string.bot_home_menu_delete), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { deleting = null }) { Text(stringResource(R.string.bot_home_cancel)) }
+            },
+        )
+    }
+}
+
+@Composable
+private fun NewBotDialog(
+    onDismiss: () -> Unit,
+    onCreate: (name: String, systemPrompt: String, makeMain: Boolean) -> Unit,
+) {
+    var name by rememberSaveable { mutableStateOf("") }
+    var prompt by rememberSaveable { mutableStateOf("") }
+    var makeMain by rememberSaveable { mutableStateOf(false) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.bot_new_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text(stringResource(R.string.bot_new_name)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = prompt,
+                    onValueChange = { prompt = it },
+                    label = { Text(stringResource(R.string.bot_new_prompt)) },
+                    minLines = 3,
+                    maxLines = 6,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(checked = makeMain, onCheckedChange = { makeMain = it })
+                    Text(stringResource(R.string.bot_new_set_main), style = MaterialTheme.typography.bodyMedium)
+                }
+                Text(
+                    stringResource(R.string.bot_new_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onCreate(name, prompt, makeMain) }, enabled = name.isNotBlank()) {
+                Text(stringResource(R.string.bot_new_create))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.bot_home_cancel)) }
+        },
+    )
 }

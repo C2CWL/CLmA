@@ -38,6 +38,7 @@ import com.clma.app.data.datastore.Settings
 import com.clma.app.data.preferences.ToolApprovalPreferences
 import com.clma.app.ui.components.ui.CardGroup
 import com.clma.app.ui.context.LocalNavController
+import com.clma.app.data.botmode.botAssistants
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -206,7 +207,7 @@ internal fun BotChannelsCard(
                         style = MaterialTheme.typography.labelMedium,
                     )
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        settings.assistants.forEach { bot ->
+                        settings.botAssistants().forEach { bot ->
                             val selected = bot.id in draftMembers
                             FilterChip(
                                 selected = selected,

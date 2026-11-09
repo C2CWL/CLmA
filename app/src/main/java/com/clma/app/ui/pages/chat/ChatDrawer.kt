@@ -1,5 +1,6 @@
 package com.clma.app.ui.pages.chat
 
+import com.clma.app.data.botmode.classicAssistants
 import com.clma.app.ui.motion.Motion
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.togetherWith
@@ -368,7 +369,7 @@ fun ChatDrawerContent(
             when (drawerStyle) {
                 DrawerStyle.CARD -> {
                     DrawerAssistantHero(
-                        assistants = settings.assistants,
+                        assistants = settings.classicAssistants(),
                         current = drawerAssistant,
                         modelName = drawerModelName,
                         onOpenPicker = { showAssistantSheet = true },
@@ -493,7 +494,7 @@ fun ChatDrawerContent(
         Row(modifier = Modifier.fillMaxSize()) {
             if (drawerStyle == DrawerStyle.RAIL) {
                 DrawerAssistantRail(
-                    assistants = settings.assistants,
+                    assistants = settings.classicAssistants(),
                     current = drawerAssistant,
                     onSelect = { switchAssistant(it) },
                     onOpenPicker = { showAssistantSheet = true },
@@ -1160,7 +1161,7 @@ fun ChatDrawerContent(
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    items(settings.assistants, key = { it.id }) { assistant ->
+                    items(settings.classicAssistants(), key = { it.id }) { assistant ->
                         AssistantItem(
                             assistant = assistant,
                             isCurrentAssistant = assistant.id == currentAssistantId,

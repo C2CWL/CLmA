@@ -63,6 +63,8 @@ import com.dokar.sonner.Toaster
 import com.dokar.sonner.rememberToasterState
 import kotlinx.serialization.Serializable
 import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.datastore.Settings
+import com.clma.app.data.model.Assistant
 import com.clma.app.data.datastore.DEFAULT_CODEX_PROVIDER_ID
 import com.clma.app.data.datastore.DEFAULT_GEMINI_OAUTH_PROVIDER_ID
 import com.clma.app.data.db.DatabaseMigrationTracker
@@ -160,6 +162,8 @@ import com.clma.app.utils.CrashHandler
 import com.clma.app.utils.openUsageAccessSettings
 import com.clma.app.utils.resolveInitialChatStack
 import com.clma.app.ui.pages.bot.BOT_MODE_ROOT_PREF_KEY
+import com.clma.app.data.botmode.ensureBotLibrary
+import com.clma.app.data.botmode.withAssistantInLibrary
 import com.clma.app.ui.pages.bot.BotHomePage
 import com.clma.app.ui.pages.bot.initialRootStack
 import com.clma.app.ui.pages.bot.isStackResetTo
@@ -355,6 +359,19 @@ class RouteActivity : FragmentActivity() {
         LaunchedEffect(settings.init, botModeEnabled) {
             if (settings.init) return@LaunchedEffect
             writeBooleanPreference(BOT_MODE_ROOT_PREF_KEY, botModeEnabled)
+            // Separate libraries: Bot mode sets up its own (with a main bot) on first use, and
+            // the current assistant always belongs to the active library.
+            val mainName = getString(R.string.bot_main_default_name)
+            val mainPrompt = getString(R.string.bot_main_default_prompt)
+            val fix: (Settings) -> Settings = { s ->
+                val withLibrary = if (botModeEnabled) {
+                    s.ensureBotLibrary { Assistant(name = mainName, systemPrompt = mainPrompt) }
+                } else {
+                    s
+                }
+                withLibrary.withAssistantInLibrary(botModeEnabled)
+            }
+            if (fix(settings) != settings) settingsStore.update(fix)
             reconcileRootStack(backStack, botModeEnabled) {
                 Screen.Chat(
                     if (readBooleanPreference("create_new_conversation_on_start", true)) {

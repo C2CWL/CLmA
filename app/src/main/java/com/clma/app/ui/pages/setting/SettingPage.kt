@@ -1,5 +1,6 @@
 package com.clma.app.ui.pages.setting
 
+import com.clma.app.data.botmode.classicAssistants
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.widget.Toast
@@ -464,7 +465,7 @@ private fun hubItemSummary(id: SettingsHubItemId, settings: Settings, status: Hu
         }
         SettingsHubItemId.MODELS -> settings.getCurrentChatModel()?.let { it.displayName.ifBlank { it.modelId } }
             ?: stringResource(R.string.setting_hub_summary_not_selected)
-        SettingsHubItemId.ASSISTANT -> count(settings.assistants.size)
+        SettingsHubItemId.ASSISTANT -> count(settings.classicAssistants().size)
         SettingsHubItemId.PROMPTS -> count(settings.modeInjections.size + settings.lorebooks.size)
         SettingsHubItemId.SEARCH -> count(settings.searchServices.size)
         SettingsHubItemId.SPEECH -> count(settings.ttsProviders.size + settings.asrProviders.size)

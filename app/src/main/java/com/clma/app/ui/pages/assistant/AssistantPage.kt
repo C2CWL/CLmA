@@ -1,5 +1,6 @@
 package com.clma.app.ui.pages.assistant
 
+import com.clma.app.data.botmode.classicAssistants
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Copy01
 import me.rerere.hugeicons.stroke.Add01
@@ -104,12 +105,12 @@ fun AssistantPage(vm: AssistantVM = koinViewModel()) {
     // onMove 必须在返回前换位。写设置要先落盘，列表随后才变，库会把拖着的行
     // 停在预测位移上再弹回，这就是抽搐。手势期间只改这份快照，松手再落盘。
     // 拖动中不跟设置回写，否则落盘那一帧会把行弹回旧顺序。
-    val assistants = remember { mutableStateListOf<Assistant>().apply { addAll(settings.assistants) } }
+    val assistants = remember { mutableStateListOf<Assistant>().apply { addAll(settings.classicAssistants()) } }
     var reordering by remember { mutableStateOf(false) }
-    LaunchedEffect(settings.assistants) {
-        if (!reordering && assistants.toList() != settings.assistants) {
+    LaunchedEffect(settings.classicAssistants()) {
+        if (!reordering && assistants.toList() != settings.classicAssistants()) {
             assistants.clear()
-            assistants.addAll(settings.assistants)
+            assistants.addAll(settings.classicAssistants())
         }
     }
     val isFiltering = selectedTagIds.isNotEmpty() || searchQuery.isNotBlank()
@@ -239,7 +240,7 @@ fun AssistantPage(vm: AssistantVM = koinViewModel()) {
                                                 haptic.performHapticFeedback(HapticFeedbackType.GestureEnd)
                                                 val orderedIds = assistants.map { it.id }
                                                 reordering = false
-                                                if (orderedIds != settings.assistants.map { it.id }) {
+                                                if (orderedIds != settings.classicAssistants().map { it.id }) {
                                                     vm.reorderAssistants(orderedIds)
                                                 }
                                             },

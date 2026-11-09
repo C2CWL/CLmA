@@ -1472,6 +1472,12 @@ data class DisplaySetting(
      * Classic mode ignores this list.
      */
     val botChannels: List<BotChannel> = emptyList(),
+    /**
+     * The Bot library's current main assistant (a pointer, not a fixed bot). It is pinned on
+     * top, carries the bot-management tools and cannot be deleted until another bot replaces it.
+     * Null until Bot mode first sets up its library.
+     */
+    val botMainAssistantId: Uuid? = null,
 )
 
 @Serializable

@@ -8,6 +8,7 @@ import com.clma.app.data.botmode.withBotPinned
 import com.clma.app.data.botmode.withBotUnreadClearedForAssistant
 import com.clma.app.data.botmode.withBotUnreadMarked
 import com.clma.app.data.model.Assistant
+import com.clma.app.data.model.AssistantLibrary
 import com.clma.app.utils.JsonInstant
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -42,9 +43,9 @@ class DisplaySettingBotModeTest {
 
     @Test
     fun `contact list pins first and skips hidden`() {
-        val a = Assistant(id = Uuid.parse("11111111-1111-1111-1111-111111111111"), name = "A")
-        val b = Assistant(id = Uuid.parse("22222222-2222-2222-2222-222222222222"), name = "B")
-        val c = Assistant(id = Uuid.parse("33333333-3333-3333-3333-333333333333"), name = "C")
+        val a = Assistant(id = Uuid.parse("11111111-1111-1111-1111-111111111111"), name = "A", library = AssistantLibrary.BOT)
+        val b = Assistant(id = Uuid.parse("22222222-2222-2222-2222-222222222222"), name = "B", library = AssistantLibrary.BOT)
+        val c = Assistant(id = Uuid.parse("33333333-3333-3333-3333-333333333333"), name = "C", library = AssistantLibrary.BOT)
         val settings = Settings(
             assistants = listOf(a, b, c),
             displaySetting = DisplaySetting(

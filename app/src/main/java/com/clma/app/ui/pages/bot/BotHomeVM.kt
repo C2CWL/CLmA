@@ -17,6 +17,10 @@ import com.clma.app.data.botmode.withBotUnreadMarked
 import com.clma.app.data.datastore.Settings
 import com.clma.app.data.datastore.SettingsStore
 import com.clma.app.data.model.Assistant
+import com.clma.app.data.model.AssistantLibrary
+import com.clma.app.data.botmode.isMainBot
+import com.clma.app.data.botmode.mainBot
+import com.clma.app.data.botmode.withMainBot
 import com.clma.app.data.model.Conversation
 import com.clma.app.data.repository.ConversationRepository
 import com.clma.app.service.ChatService
@@ -35,7 +39,7 @@ import kotlinx.coroutines.launch
 import kotlin.uuid.Uuid
 
 /** A bot list row plus the assistant it belongs to, ready for the Bot home list. */
-data class BotHomeItem(val bot: Assistant, val row: BotHomeRow)
+data class BotHomeItem(val bot: Assistant, val row: BotHomeRow, val isMain: Boolean = false)
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class BotHomeVM(
@@ -92,9 +96,10 @@ class BotHomeVM(
             )
         }
         val byId = bots.associateBy { it.id }
-        sortBotHomeRows(rows, ds.botPinnedAssistantIds).mapNotNull { row ->
-            byId[row.assistantId]?.let { BotHomeItem(it, row) }
-        }
+        val mainId = s.mainBot()?.id
+        // The main bot always leads, then pinned bots, then the rest by latest activity.
+        sortBotHomeRows(rows, listOfNotNull(mainId) + ds.botPinnedAssistantIds.filterNot { it == mainId })
+            .mapNotNull { row -> byId[row.assistantId]?.let { BotHomeItem(it, row, isMain = it.id == mainId) } }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun updateDisplaySetting(next: com.clma.app.data.datastore.DisplaySetting) = viewModelScope.launch {
@@ -109,8 +114,30 @@ class BotHomeVM(
     }
 
     fun hide(bot: Assistant) = viewModelScope.launch {
-        settingsStore.update { s -> s.copy(displaySetting = s.displaySetting.withBotHidden(bot.id, true)) }
+        settingsStore.update { s ->
+            if (s.isMainBot(bot.id)) s else s.copy(displaySetting = s.displaySetting.withBotHidden(bot.id, true))
+        }
     }
+
+    /** The previous main bot stays as a normal bot. */
+    fun setMain(bot: Assistant) = viewModelScope.launch {
+        settingsStore.update { s -> s.withMainBot(bot.id) }
+    }
+
+    /** New bot in the Bot library; returns its id once stored. */
+    fun createBot(name: String, systemPrompt: String, makeMain: Boolean, onCreated: (Uuid) -> Unit) =
+        viewModelScope.launch {
+            val bot = Assistant(
+                name = name.trim(),
+                systemPrompt = systemPrompt.trim(),
+                library = AssistantLibrary.BOT,
+            )
+            settingsStore.update { s ->
+                val added = s.copy(assistants = s.assistants + bot)
+                if (makeMain) added.withMainBot(bot.id) else added
+            }
+            onCreated(bot.id)
+        }
 
     /** Marks the bot unread (its latest conversation); clears it when it already is. */
     fun toggleUnread(row: BotHomeRow) = viewModelScope.launch {
