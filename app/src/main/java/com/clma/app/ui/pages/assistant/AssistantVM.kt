@@ -1,5 +1,6 @@
 package com.clma.app.ui.pages.assistant
 
+import com.clma.app.data.botmode.canDeleteAssistant
 import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -65,6 +66,8 @@ class AssistantVM(
     }
 
     fun removeAssistant(assistant: Assistant) {
+        // The current main bot cannot be deleted; another bot has to replace it first.
+        if (!settings.value.canDeleteAssistant(assistant.id)) return
         viewModelScope.launch {
             cleanupAssistantFiles(assistant)
 

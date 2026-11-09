@@ -1,6 +1,7 @@
 package com.clma.app.data.botmode
 
 import com.clma.app.data.model.Assistant
+import com.clma.app.data.model.AssistantLibrary
 
 /**
  * Minimal Markdown team-pack format (OpenMausBot-inspired, phone-side):
@@ -118,4 +119,5 @@ fun BotTeamMemberDraft.toAssistant(): Assistant =
     Assistant(
         name = name.trim().ifBlank { "Bot" },
         systemPrompt = systemPrompt,
+        library = AssistantLibrary.BOT,
     )

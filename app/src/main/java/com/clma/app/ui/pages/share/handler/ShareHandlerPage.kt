@@ -1,5 +1,6 @@
 package com.clma.app.ui.pages.share.handler
 
+import com.clma.app.data.botmode.classicAssistants
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -80,7 +81,7 @@ fun ShareHandlerPage(text: String, image: String?) {
                 }
             }
 
-            items(settings.assistants, key = { it.id }) { assistant ->
+            items(settings.classicAssistants(), key = { it.id }) { assistant ->
                 Surface(
                     onClick = {
                         scope.launch {

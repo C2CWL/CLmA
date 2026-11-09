@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
   <string name="bot_mode_setting_title">Bot mode</string>
-  <string name="bot_mode_setting_desc">Experimental: turn the sidebar into a contacts-style multi-bot list, show inline approval cards, and pick a model per bot. Classic layout stays when this is off.</string>
+  <string name="bot_mode_setting_desc">Experimental: switch to a separate Bot home — a chat-app style bot list with its own navigation (Bots / Channels / Settings), inline approval cards, and a model per bot. Turn it off to go back to the classic layout.</string>
   <string name="bot_mode_contact_title">Bots</string>
   <string name="bot_mode_pinned_badge">Pinned</string>
   <string name="bot_mode_model_inherit">Default model</string>
@@ -76,4 +76,33 @@
   <string name="bot_mode_team_confirm">Create bots</string>
   <string name="bot_mode_team_empty">No members parsed from that file.</string>
   <string name="bot_mode_team_created">Created %1$d bots</string>
+  <string name="bot_home_title">CLmA</string>
+  <string name="bot_home_tab_bots">Bots</string>
+  <string name="bot_home_tab_channels">Channels</string>
+  <string name="bot_home_tab_settings">Settings</string>
+  <string name="bot_home_new_bot">New bot</string>
+  <string name="bot_home_search_hint">Search bots</string>
+  <string name="bot_home_empty">No bots yet. Tap + to create one.</string>
+  <string name="bot_home_no_match">No bots match your search.</string>
+  <string name="bot_home_no_messages">No messages yet</string>
+  <string name="bot_home_time_yesterday">Yesterday</string>
+  <string name="bot_home_pending_approval">Needs approval</string>
+  <string name="bot_home_running">Running</string>
+  <string name="bot_home_menu_mark_unread">Mark as unread</string>
+  <string name="bot_home_menu_mark_read">Mark as read</string>
+  <string name="bot_home_channels_note">A full channel list with member avatars is coming next.</string>
+  <string name="bot_main_default_name">Main assistant</string>
+  <string name="bot_main_default_prompt">You are the user\'s main assistant in CLmA Bot mode. Help plan the work, answer directly when you can, and suggest which bot should take a task when another bot fits better. Before changing anything for the user, say clearly what you are about to change.</string>
+  <string name="bot_home_main_badge">Main</string>
+  <string name="bot_home_menu_set_main">Make main assistant</string>
+  <string name="bot_home_menu_delete">Delete</string>
+  <string name="bot_home_delete_title">Delete bot?</string>
+  <string name="bot_home_delete_confirm">Delete %1$s together with its chats and memories? This cannot be undone.</string>
+  <string name="bot_home_cancel">Cancel</string>
+  <string name="bot_new_title">New bot</string>
+  <string name="bot_new_name">Name</string>
+  <string name="bot_new_prompt">System prompt (optional)</string>
+  <string name="bot_new_set_main">Make it the main assistant</string>
+  <string name="bot_new_hint">Avatar and model can be set on the next page.</string>
+  <string name="bot_new_create">Create</string>
 </resources>

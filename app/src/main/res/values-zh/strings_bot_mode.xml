@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
   <string name="bot_mode_setting_title">Bot 模式</string>
-  <string name="bot_mode_setting_desc">实验功能：侧栏改成联系人式多 Bot 列表，对话里用审批卡片，并且每个 Bot 单独选模型。关掉后经典界面完全不变。</string>
+  <string name="bot_mode_setting_desc">实验功能：切换到独立的 Bot 首页——像聊天软件一样的 Bot 列表，自带底部导航（Bot / 频道 / 设置），审批以卡片显示在对话里，每个 Bot 可单独选模型。关掉即回到经典界面。</string>
   <string name="bot_mode_contact_title">Bot 列表</string>
   <string name="bot_mode_pinned_badge">已钉</string>
   <string name="bot_mode_model_inherit">沿用默认模型</string>
@@ -76,4 +76,33 @@
   <string name="bot_mode_team_confirm">确认创建</string>
   <string name="bot_mode_team_empty">文件里没有解析出成员。</string>
   <string name="bot_mode_team_created">已创建 %1$d 个 Bot</string>
+  <string name="bot_home_title">CLmA</string>
+  <string name="bot_home_tab_bots">Bot</string>
+  <string name="bot_home_tab_channels">频道</string>
+  <string name="bot_home_tab_settings">设置</string>
+  <string name="bot_home_new_bot">新建 Bot</string>
+  <string name="bot_home_search_hint">搜索 Bot</string>
+  <string name="bot_home_empty">还没有 Bot，点右上角 + 新建一个。</string>
+  <string name="bot_home_no_match">没有匹配的 Bot。</string>
+  <string name="bot_home_no_messages">还没有消息</string>
+  <string name="bot_home_time_yesterday">昨天</string>
+  <string name="bot_home_pending_approval">待审批</string>
+  <string name="bot_home_running">进行中</string>
+  <string name="bot_home_menu_mark_unread">标为未读</string>
+  <string name="bot_home_menu_mark_read">标为已读</string>
+  <string name="bot_home_channels_note">完整的频道列表（带成员头像）下一步上线。</string>
+  <string name="bot_main_default_name">主助手</string>
+  <string name="bot_main_default_prompt">你是用户在 CLmA Bot 模式里的主助手。帮用户规划要做的事，能直接回答就直接回答；如果另一个 Bot 更合适，就建议交给它。替用户改任何东西之前，先说清楚要改什么。</string>
+  <string name="bot_home_main_badge">主</string>
+  <string name="bot_home_menu_set_main">设为主助手</string>
+  <string name="bot_home_menu_delete">删除</string>
+  <string name="bot_home_delete_title">删除这个 Bot？</string>
+  <string name="bot_home_delete_confirm">删除「%1$s」以及它的对话和记忆？删除后无法恢复。</string>
+  <string name="bot_home_cancel">取消</string>
+  <string name="bot_new_title">新建 Bot</string>
+  <string name="bot_new_name">名字</string>
+  <string name="bot_new_prompt">系统提示词（可不填）</string>
+  <string name="bot_new_set_main">设为主助手</string>
+  <string name="bot_new_hint">头像和模型在下一页设置。</string>
+  <string name="bot_new_create">创建</string>
 </resources>
