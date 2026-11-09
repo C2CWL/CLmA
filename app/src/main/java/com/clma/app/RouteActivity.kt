@@ -12,11 +12,12 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import com.clma.app.ui.motion.Motion
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -400,25 +401,27 @@ class RouteActivity : FragmentActivity() {
                         ),
                         modifier = Modifier.fillMaxSize(),
                         onBack = { backStack.removeLastOrNull() },
+                        // 轻滑 + 淡入，进出对称（对齐 Kelivo 节拍，不再缩到 0.7）。
                         transitionSpec = {
-                            if (backStack.size == 1) fadeIn() togetherWith fadeOut()
-                            else {
-                                slideInHorizontally { it } togetherWith
-                                    slideOutHorizontally { -it / 2 } + scaleOut(targetScale = 0.7f) + fadeOut()
+                            if (backStack.size == 1) {
+                                fadeIn(Motion.enter(Motion.PAGE)) togetherWith fadeOut(Motion.exit(Motion.FAST))
+                            } else {
+                                pageForwardEnter() togetherWith pageForwardExit()
                             }
                         },
                         popTransitionSpec = {
-                            slideInHorizontally { -it / 2 } + scaleIn(initialScale = 0.7f) + fadeIn() togetherWith
-                                slideOutHorizontally { it }
+                            pageBackEnter() togetherWith pageBackExit()
                         },
                         predictivePopTransitionSpec = {
-                            slideInHorizontally { -it / 2 } + scaleIn(initialScale = 0.7f) + fadeIn() togetherWith
-                                slideOutHorizontally { it }
+                            pageBackEnter() togetherWith pageBackExit()
                         },
                         entryProvider = entryProvider {
                             entry<Screen.Chat>(
-                                metadata = NavDisplay.transitionSpec { fadeIn() togetherWith fadeOut() }
-                                        + NavDisplay.popTransitionSpec { fadeIn() togetherWith fadeOut() }
+                                metadata = NavDisplay.transitionSpec {
+                                    fadeIn(Motion.enter(Motion.PAGE)) togetherWith fadeOut(Motion.exit(Motion.FAST))
+                                } + NavDisplay.popTransitionSpec {
+                                    fadeIn(Motion.enter(Motion.PAGE)) togetherWith fadeOut(Motion.exit(Motion.FAST))
+                                }
                             ) { key ->
                                 ChatPage(
                                     id = Uuid.parse(key.id),
@@ -1012,3 +1015,18 @@ sealed interface Screen : NavKey {
     data object Stats : Screen
 
 }
+
+// ---- 页面转场（统一节拍，见 ui/motion/Motion.kt） ----
+// 前进：新页从右侧 1/4 处轻滑进来并淡入；旧页向左挪一点并淡出。
+// 返回：完全镜像，所以进出对称。
+private fun pageForwardEnter(): EnterTransition =
+    slideInHorizontally(Motion.enter(Motion.PAGE)) { it / 4 } + fadeIn(Motion.enter(Motion.PAGE))
+
+private fun pageForwardExit(): ExitTransition =
+    slideOutHorizontally(Motion.enter(Motion.PAGE)) { -it / 8 } + fadeOut(Motion.exit(Motion.FAST))
+
+private fun pageBackEnter(): EnterTransition =
+    slideInHorizontally(Motion.enter(Motion.PAGE)) { -it / 8 } + fadeIn(Motion.enter(Motion.PAGE))
+
+private fun pageBackExit(): ExitTransition =
+    slideOutHorizontally(Motion.enter(Motion.PAGE)) { it / 4 } + fadeOut(Motion.exit(Motion.FAST))
