@@ -91,6 +91,7 @@ import com.clma.app.data.ai.compaction.tomc.TomcSummaryLedger
 import com.clma.app.data.ai.compaction.tomc.TomcTurn
 import com.clma.app.data.ai.compaction.tomc.TomcAgentCompiler
 import com.clma.app.data.datastore.CompactionEngine
+import com.clma.app.data.botmode.withBotUnreadMarked
 import com.clma.app.data.ai.CompactedMessageView
 import com.clma.app.data.ai.ContextCompactionView
 import com.clma.app.data.ai.ToolSurfaceResolver
@@ -804,6 +805,28 @@ class ChatService(
                             message.parts.any { it is UIMessagePart.Tool && it.isPending }
                         } == true) {
                         session.messageQueue.failReplyWaiters(context.getString(R.string.chat_page_voice_tool_approval))
+                    }
+                    // Bot-mode unread: generation finished while no chat UI is holding this
+                    // conversation → badge that assistant until the user opens it.
+                    if (
+                        cause !is CancellationException &&
+                        session != null &&
+                        !session.hasUiReference
+                    ) {
+                        val conv = session.state.value
+                        appScope.launch {
+                            runCatching {
+                                settingsStore.update { settings ->
+                                    if (!settings.displaySetting.botModeEnabled) return@update settings
+                                    settings.copy(
+                                        displaySetting = settings.displaySetting.withBotUnreadMarked(
+                                            conversationId = conv.id,
+                                            assistantId = conv.assistantId,
+                                        )
+                                    )
+                                }
+                            }
+                        }
                     }
                     appScope.launch { dispatchNextQueuedMessage(id) }
                 },

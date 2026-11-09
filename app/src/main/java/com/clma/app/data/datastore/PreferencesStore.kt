@@ -1332,6 +1332,12 @@ enum class ChatFontFamily {
 const val DEFAULT_CLEAN_LAYOUT_OPACITY = 0.4f
 
 @Serializable
+data class BotUnreadEntry(
+    val conversationId: Uuid,
+    val assistantId: Uuid,
+)
+
+@Serializable
 data class DisplaySetting(
     /** Bypass UI token batching; Markdown parsing stays off the main thread. */
     val fastStreamingOutput: Boolean = false,
@@ -1448,6 +1454,11 @@ data class DisplaySetting(
     val botPinnedAssistantIds: List<Uuid> = emptyList(),
     /** Assistant ids hidden from the Bot-mode contact list (still editable elsewhere). */
     val botHiddenAssistantIds: List<Uuid> = emptyList(),
+    /**
+     * Bot-mode unread: conversations that finished (or need attention) while the user was
+     * looking at another chat. Cleared when that bot is selected. Classic mode ignores this.
+     */
+    val botUnreadEntries: List<BotUnreadEntry> = emptyList(),
 )
 
 @Serializable

@@ -22,25 +22,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.clma.app.R
+import com.clma.app.data.botmode.BotTaskStep
+import com.clma.app.data.botmode.BotTaskStepStatus
 import kotlinx.coroutines.launch
 
 /**
- * Phone-side stand-in for OpenMausBot's cloud computer: a task progress panel.
- * UI shell only — steps are stubbed until real tool progress is wired (TODO).
+ * Phone-side stand-in for OpenMausBot's cloud computer: a task progress panel wired to real
+ * tool / sub-agent steps. Pause stops the current generation; take-over stops it and closes
+ * so the user can send the next message themselves.
  */
-data class BotTaskStep(
-    val id: String,
-    val title: String,
-    val done: Boolean = false,
-    val active: Boolean = false,
-)
-
 @Composable
 fun BotTaskProgressSheet(
     visible: Boolean,
     botName: String,
     steps: List<BotTaskStep>,
     paused: Boolean,
+    isGenerating: Boolean,
     onDismiss: () -> Unit,
     onPauseToggle: () -> Unit,
     onTakeOver: () -> Unit,
@@ -66,14 +63,23 @@ fun BotTaskProgressSheet(
                 style = MaterialTheme.typography.titleLarge,
             )
             Text(
-                text = stringResource(R.string.bot_mode_task_stub_note),
+                text = stringResource(
+                    when {
+                        paused -> R.string.bot_mode_task_paused_note
+                        isGenerating -> R.string.bot_mode_task_live_note
+                        else -> R.string.bot_mode_task_idle_note
+                    }
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            val doneOrFailed = steps.count {
+                it.status == BotTaskStepStatus.DONE || it.status == BotTaskStepStatus.FAILED
+            }
             val progress = if (steps.isEmpty()) {
                 0f
             } else {
-                steps.count { it.done }.toFloat() / steps.size.toFloat()
+                doneOrFailed.toFloat() / steps.size.toFloat()
             }
             LinearProgressIndicator(
                 progress = { progress },
@@ -81,21 +87,31 @@ fun BotTaskProgressSheet(
             )
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(steps, key = { it.id }) { step ->
-                    val status = when {
-                        step.done -> stringResource(R.string.bot_mode_task_step_done)
-                        step.active -> stringResource(R.string.bot_mode_task_step_active)
-                        else -> stringResource(R.string.bot_mode_task_step_pending)
+                    val status = when (step.status) {
+                        BotTaskStepStatus.DONE -> stringResource(R.string.bot_mode_task_step_done)
+                        BotTaskStepStatus.ACTIVE -> stringResource(R.string.bot_mode_task_step_active)
+                        BotTaskStepStatus.PENDING -> stringResource(R.string.bot_mode_task_step_pending)
+                        BotTaskStepStatus.FAILED -> stringResource(R.string.bot_mode_task_step_failed)
+                    }
+                    val statusColor = when (step.status) {
+                        BotTaskStepStatus.FAILED -> MaterialTheme.colorScheme.error
+                        BotTaskStepStatus.ACTIVE -> MaterialTheme.colorScheme.primary
+                        else -> MaterialTheme.colorScheme.onSurfaceVariant
                     }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text(step.title, style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            step.title,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f),
+                        )
                         Text(
                             status,
                             style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = statusColor,
                         )
                     }
                 }
@@ -104,14 +120,22 @@ fun BotTaskProgressSheet(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                FilledTonalButton(onClick = onPauseToggle, modifier = Modifier.weight(1f)) {
+                FilledTonalButton(
+                    onClick = onPauseToggle,
+                    enabled = isGenerating || paused,
+                    modifier = Modifier.weight(1f),
+                ) {
                     Text(
                         stringResource(
                             if (paused) R.string.bot_mode_task_resume else R.string.bot_mode_task_pause
                         )
                     )
                 }
-                FilledTonalButton(onClick = onTakeOver, modifier = Modifier.weight(1f)) {
+                FilledTonalButton(
+                    onClick = onTakeOver,
+                    enabled = isGenerating || paused,
+                    modifier = Modifier.weight(1f),
+                ) {
                     Text(stringResource(R.string.bot_mode_task_takeover))
                 }
             }
@@ -129,10 +153,3 @@ fun BotTaskProgressSheet(
         }
     }
 }
-
-@Composable
-fun rememberLocalizedStubSteps(): List<BotTaskStep> = listOf(
-    BotTaskStep("1", stringResource(R.string.bot_mode_task_stub_prepare), done = true),
-    BotTaskStep("2", stringResource(R.string.bot_mode_task_stub_run), active = true),
-    BotTaskStep("3", stringResource(R.string.bot_mode_task_stub_summarize)),
-)
