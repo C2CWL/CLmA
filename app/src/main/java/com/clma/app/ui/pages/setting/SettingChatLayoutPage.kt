@@ -16,7 +16,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clma.app.R
+import com.clma.app.data.botmode.botsHiddenForManage
+import com.clma.app.data.botmode.withBotHidden
 import com.clma.app.data.datastore.ChatLayout
+import androidx.compose.material3.TextButton
 import com.clma.app.data.datastore.DisplaySetting
 import com.clma.app.data.datastore.DrawerStyle
 import com.clma.app.data.datastore.effectiveChatLayout
@@ -233,6 +236,38 @@ fun SettingChatLayoutPage(vm: SettingVM = koinViewModel()) {
                         )
                     },
                 )
+            }
+            if (displaySetting.botModeEnabled) {
+                val hiddenBots = settings.copy(displaySetting = displaySetting).botsHiddenForManage()
+                CardGroup(
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    title = { Text(stringResource(R.string.bot_mode_hidden_manage_title)) },
+                ) {
+                    if (hiddenBots.isEmpty()) {
+                        item(
+                            headlineContent = { Text(stringResource(R.string.bot_mode_hidden_empty)) },
+                            supportingContent = { Text(stringResource(R.string.bot_mode_hidden_manage_desc)) },
+                        )
+                    } else {
+                        hiddenBots.forEach { bot ->
+                            item(
+                                headlineContent = {
+                                    Text(bot.name.ifBlank { stringResource(R.string.assistant_page_default_assistant) })
+                                },
+                                supportingContent = { Text(stringResource(R.string.bot_mode_hidden_manage_desc)) },
+                                trailingContent = {
+                                    TextButton(
+                                        onClick = {
+                                            updateDisplaySetting(displaySetting.withBotHidden(bot.id, false))
+                                        }
+                                    ) {
+                                        Text(stringResource(R.string.bot_mode_hidden_unhide))
+                                    }
+                                },
+                            )
+                        }
+                    }
+                }
             }
         }
     }

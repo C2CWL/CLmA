@@ -120,7 +120,9 @@ import com.clma.app.ui.components.ai.ChatInput
 import com.clma.app.ui.components.ai.ChatConversationSettingsPanel
 import com.clma.app.ui.pages.chat.botmode.BotModelPickerButton
 import com.clma.app.ui.pages.chat.botmode.BotTaskProgressSheet
-import com.clma.app.ui.pages.chat.botmode.rememberLocalizedStubSteps
+import com.clma.app.data.botmode.buildBotTaskSteps
+import com.clma.app.data.botmode.withBotUnreadClearedConversation
+import com.clma.app.data.botmode.withBotUnreadClearedForAssistant
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.SlidersHorizontal
 import com.clma.app.ui.components.ui.KeepScreenOn
@@ -486,6 +488,23 @@ private fun ChatPageContent(
     var showConversationSettings by remember { mutableStateOf(false) }
     var showBotTaskSheet by remember { mutableStateOf(false) }
     var botTaskPaused by remember { mutableStateOf(false) }
+    // Clear Bot-mode unread for this conversation / assistant while the chat is open.
+    LaunchedEffect(conversation.id, setting.assistantId, setting.displaySetting.botModeEnabled) {
+        if (!setting.displaySetting.botModeEnabled) return@LaunchedEffect
+        val ds = setting.displaySetting
+        val cleared = ds
+            .withBotUnreadClearedConversation(conversation.id)
+            .withBotUnreadClearedForAssistant(setting.assistantId)
+        if (cleared != ds) {
+            vm.updateSettings(setting.copy(displaySetting = cleared))
+        }
+    }
+    // Auto-unpause when a new generation starts after resume/send.
+    LaunchedEffect(loadingJob != null) {
+        if (loadingJob != null && botTaskPaused) botTaskPaused = false
+    }
+    val subAgentRegistry: SubAgentRegistry = koinInject()
+    val subAgentRuns by subAgentRegistry.runs.collectAsStateWithLifecycle()
     val attachmentPickerActions = rememberChatAttachmentPickerActions(
         inputState = inputState,
         setting = setting,
@@ -605,6 +624,13 @@ private fun ChatPageContent(
                             // Settings.dummy() is still standing in for the real settings: nothing
                             // resolves yet, so do nothing (the draft stays) rather than misreport.
                             if (setting.init) return@ChatInput
+                            if (setting.displaySetting.botModeEnabled && botTaskPaused) {
+                                toaster.show(
+                                    context.getString(R.string.bot_mode_paused_send_blocked),
+                                    type = ToastType.Warning,
+                                )
+                                return@ChatInput
+                            }
                             if (currentChatModel == null) {
                                 toaster.show(
                                     context.getString(R.string.chat_select_model_first),
@@ -1010,19 +1036,63 @@ private fun ChatPageContent(
                                 Text(stringResource(R.string.bot_mode_open_tasks))
                             }
                         }
+                        if (botTaskPaused) {
+                            Text(
+                                text = stringResource(R.string.bot_mode_paused_banner),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier
+                                    .align(Alignment.TopCenter)
+                                    .padding(top = topBarHeight + 44.dp)
+                                    .padding(horizontal = 12.dp)
+                                    .fillMaxWidth(),
+                            )
+                        }
                     }
                 }
             }
         }
 
+        val generatingLabel = stringResource(R.string.bot_mode_task_generating)
+        val idleLabel = stringResource(R.string.bot_mode_task_idle)
+        val botTaskStepsLocalized = remember(
+            conversation.messageNodes,
+            conversation.id,
+            processingStatus,
+            subAgentRuns,
+            loadingJob != null,
+            generatingLabel,
+            idleLabel,
+        ) {
+            buildBotTaskSteps(
+                conversation = conversation,
+                processingStatus = processingStatus,
+                subAgentRuns = subAgentRuns.values,
+                isGenerating = loadingJob != null,
+                generatingLabel = generatingLabel,
+                idleLabel = idleLabel,
+            )
+        }
         BotTaskProgressSheet(
             visible = showBotTaskSheet,
             botName = assistant.name.ifBlank { stringResource(R.string.assistant_page_default_assistant) },
-            steps = rememberLocalizedStubSteps(),
+            steps = botTaskStepsLocalized,
             paused = botTaskPaused,
+            isGenerating = loadingJob != null,
             onDismiss = { showBotTaskSheet = false },
-            onPauseToggle = { botTaskPaused = !botTaskPaused },
-            onTakeOver = { showBotTaskSheet = false },
+            onPauseToggle = {
+                if (botTaskPaused) {
+                    botTaskPaused = false
+                } else {
+                    if (loadingJob != null) vm.stopGeneration()
+                    botTaskPaused = true
+                }
+            },
+            onTakeOver = {
+                if (loadingJob != null) vm.stopGeneration()
+                botTaskPaused = true
+                showBotTaskSheet = false
+            },
         )
 
         if (showFilesSheet) {

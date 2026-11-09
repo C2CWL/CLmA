@@ -51,6 +51,10 @@ class ConversationSession(
         get() = refCount.get() > 0 || _generationJob.value != null ||
                 messageQueue.state.value.messages.isNotEmpty()
 
+    /** True when a chat UI (ChatVM) currently holds a reference — used for Bot-mode unread. */
+    val hasUiReference: Boolean
+        get() = refCount.get() > 0
+
     // 空闲检查任务
     private var idleCheckJob: Job? = null
 
