@@ -1,5 +1,7 @@
 package com.clma.app.ui.pages.chat
 
+import androidx.compose.ui.graphics.graphicsLayer
+import com.clma.app.ui.motion.Motion
 import android.os.SystemClock
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -140,6 +142,8 @@ fun ChatList(
     onToggleFavorite: ((MessageNode) -> Unit)? = null,
     onConversationSystemPromptChange: ((String?) -> Unit)? = null,
     turnFooters: Map<String, TurnFooter> = emptyMap(),
+    /** 换会话时列表的显现透明度：落到底之前保持 0，避免露出半截列表再跳。 */
+    revealAlpha: () -> Float = { 1f },
 ) {
     ToolInteractionDialogHost(
         conversation,
@@ -151,7 +155,8 @@ fun ChatList(
             targetState = previewMode,
             label = "ChatListMode",
             transitionSpec = {
-                (fadeIn() + scaleIn(initialScale = 0.8f) togetherWith fadeOut() + scaleOut(targetScale = 0.8f))
+                (fadeIn(Motion.enter(Motion.NORMAL)) + scaleIn(Motion.enter(Motion.NORMAL), initialScale = 0.92f) togetherWith
+                    fadeOut(Motion.exit(Motion.FAST)) + scaleOut(Motion.exit(Motion.FAST), targetScale = 0.92f))
             }
         ) { target ->
             if (target) {
@@ -184,6 +189,7 @@ fun ChatList(
                     onTranslate = onTranslate,
                     onClearTranslation = onClearTranslation,
                     turnFooters = turnFooters,
+                    revealAlpha = revealAlpha,
                     animatedVisibilityScope = this@AnimatedContent,
                     onToolApproval = onToolApproval,
                     onToolAnswer = onToolAnswer,
@@ -223,6 +229,7 @@ private fun ChatListNormal(
     onToggleFavorite: ((MessageNode) -> Unit)? = null,
     onConversationSystemPromptChange: ((String?) -> Unit)? = null,
     turnFooters: Map<String, TurnFooter> = emptyMap(),
+    revealAlpha: () -> Float = { 1f },
 ) {
     val scope = rememberCoroutineScope()
     val loadingState by rememberUpdatedState(loading)
@@ -380,6 +387,8 @@ private fun ChatListNormal(
                     ),
                     modifier = Modifier
                         .fillMaxSize()
+                        // 只在绘制层改透明度，不触发重组；换会话落底前为 0。
+                        .graphicsLayer { alpha = revealAlpha() }
                         .bounceOverscroll(state, enabled = bounceEnabled)
                         .hazeSource(state = hazeState),
                 ) {
@@ -388,7 +397,14 @@ private fun ChatListNormal(
                 key = { it.id },
             ) { group ->
                 val node = group.terminalNode
-                Column(modifier = messageModifier) {
+                // 新消息淡入、删消息淡出、上方变高时下方平滑让位（统一节拍）。
+                Column(
+                    modifier = messageModifier.animateItem(
+                        fadeInSpec = Motion.enter(Motion.NORMAL),
+                        placementSpec = Motion.placementSpring,
+                        fadeOutSpec = Motion.exit(Motion.FAST),
+                    )
+                ) {
                     ListSelectableItem(
                         key = group.id,
                         onSelectChange = {
@@ -452,10 +468,18 @@ private fun ChatListNormal(
 
             if (!loading && assistant?.allowConversationSystemPrompt == true && onConversationSystemPromptChange != null) {
                 item(key = "ConversationSystemPrompt") {
-                    ConversationSystemPromptButton(
-                        customSystemPrompt = conversation.customSystemPrompt,
-                        onSystemPromptChange = onConversationSystemPromptChange,
-                    )
+                    Box(
+                        modifier = Modifier.animateItem(
+                            fadeInSpec = Motion.enter(Motion.NORMAL),
+                            placementSpec = null,
+                            fadeOutSpec = Motion.exit(Motion.FAST),
+                        )
+                    ) {
+                        ConversationSystemPromptButton(
+                            customSystemPrompt = conversation.customSystemPrompt,
+                            onSystemPromptChange = onConversationSystemPromptChange,
+                        )
+                    }
                 }
             }
 
@@ -478,7 +502,14 @@ private fun ChatListNormal(
                         lastNode?.messages?.getOrNull(lastNode.selectIndex)
                     )
                     // 思考行跟消息同宽、左对齐，不居中漂浮。
-                    Box(modifier = messageModifier) {
+                    // 只做淡入淡出，不做位移动画：流式时它每帧都在往下挪，位移动画会拖影。
+                    Box(
+                        modifier = messageModifier.animateItem(
+                            fadeInSpec = Motion.enter(Motion.FAST),
+                            placementSpec = null,
+                            fadeOutSpec = Motion.exit(Motion.FAST),
+                        )
+                    ) {
                         ChatLoadingIndicator(
                             processingStatus = processingStatus,
                             phase = generationPhase,
