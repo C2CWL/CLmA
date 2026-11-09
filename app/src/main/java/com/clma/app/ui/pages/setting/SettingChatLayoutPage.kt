@@ -101,10 +101,13 @@ fun SettingChatLayoutPage(vm: SettingVM = koinViewModel()) {
                 // the header height / composer inset (both still used) but drops the material
                 // knobs, because its header is bare text and its composer is a solid pill.
                 val layout = displaySetting.effectiveChatLayout
-                if (layout != ChatLayout.ORIGINAL) {
+                // 不再用 if 直接增删：传 visible，切换布局时这些子项平滑长出 / 收起。
+                val panelVisible = layout != ChatLayout.ORIGINAL
+                run {
                     // Glass applies to CLEAN and MODERN; GEMINI keeps a solid pill.
-                    if (layout == ChatLayout.CLEAN || layout == ChatLayout.MODERN) {
+                    run {
                         item(
+                            visible = panelVisible && (layout == ChatLayout.CLEAN || layout == ChatLayout.MODERN),
                             headlineContent = { Text(stringResource(R.string.setting_display_page_clean_layout_glass_title)) },
                             supportingContent = { Text(stringResource(R.string.setting_display_page_clean_layout_glass_desc)) },
                             trailingContent = {
@@ -117,7 +120,8 @@ fun SettingChatLayoutPage(vm: SettingVM = koinViewModel()) {
                             },
                         )
                     }
-                    if (layout != ChatLayout.GEMINI) item(
+                    item(
+                        visible = panelVisible && layout != ChatLayout.GEMINI,
                         headlineContent = { Text(stringResource(R.string.setting_display_page_clean_layout_top_opacity_title)) },
                         supportingContent = {
                             Column {
@@ -134,6 +138,7 @@ fun SettingChatLayoutPage(vm: SettingVM = koinViewModel()) {
                         },
                     )
                     item(
+                        visible = panelVisible,
                         headlineContent = { Text(stringResource(R.string.setting_display_page_clean_layout_top_height_title)) },
                         supportingContent = {
                             Column {
@@ -154,6 +159,7 @@ fun SettingChatLayoutPage(vm: SettingVM = koinViewModel()) {
                         },
                     )
                     item(
+                        visible = panelVisible,
                         headlineContent = { Text(stringResource(R.string.setting_display_page_clean_layout_bottom_padding_title)) },
                         supportingContent = {
                             Column {
@@ -173,7 +179,8 @@ fun SettingChatLayoutPage(vm: SettingVM = koinViewModel()) {
                             }
                         },
                     )
-                    if (layout != ChatLayout.GEMINI) item(
+                    item(
+                        visible = panelVisible && layout != ChatLayout.GEMINI,
                         headlineContent = { Text(stringResource(R.string.setting_display_page_clean_layout_bottom_opacity_title)) },
                         supportingContent = {
                             Column {

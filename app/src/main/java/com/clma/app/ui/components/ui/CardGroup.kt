@@ -1,6 +1,14 @@
 package com.clma.app.ui.components.ui
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.runtime.key
+import androidx.compose.ui.Alignment
+import com.clma.app.ui.motion.Motion
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -47,7 +55,11 @@ private data class CardGroupItem(
     val leadingContent: (@Composable () -> Unit)?,
     val trailingContent: (@Composable () -> Unit)?,
     val colors: ListItemColors?,
-)
+    /** null = 普通常驻项（不包动画，省开销）；true/false = 条件子项，带显隐动画。 */
+    val animatedVisible: Boolean?,
+) {
+    val visible: Boolean get() = animatedVisible != false
+}
 
 @DslMarker
 private annotation class CardGroupDsl
@@ -62,6 +74,11 @@ interface CardGroupScope {
         leadingContent: (@Composable () -> Unit)? = null,
         trailingContent: (@Composable () -> Unit)? = null,
         colors: ListItemColors? = null,
+        /**
+         * 由开关带出的子项：传条件而不是包 `if`，这样出现 / 消失时会平滑长高、收起，
+         * 而不是突然冒出来。不传（null）就是普通常驻项。
+         */
+        visible: Boolean? = null,
         headlineContent: @Composable () -> Unit,
     )
 }
@@ -77,6 +94,7 @@ private class CardGroupScopeImpl : CardGroupScope {
         leadingContent: (@Composable () -> Unit)?,
         trailingContent: (@Composable () -> Unit)?,
         colors: ListItemColors?,
+        visible: Boolean?,
         headlineContent: @Composable () -> Unit,
     ) {
         items.add(
@@ -89,6 +107,7 @@ private class CardGroupScopeImpl : CardGroupScope {
                 leadingContent = leadingContent,
                 trailingContent = trailingContent,
                 colors = colors,
+                animatedVisible = visible,
             )
         )
     }
@@ -171,17 +190,43 @@ fun CardGroup(
                 }
             }
         }
-        val count = scope.items.size
+        // 圆角 / 分隔线只按「可见」项计算；隐藏项仍留在列表里，好让它带着收起动画离场。
+        val count = scope.items.count { it.visible }
+        var visibleIndex = 0
         scope.items.fastForEachIndexed { index, item ->
-            CardGroupListItem(item = item, count = count, index = index)
-            if (index != count - 1) {
-                if (CardGroupItemSpacing > 0.dp) {
-                    Spacer(modifier = Modifier.height(CardGroupItemSpacing))
-                } else {
-                    HorizontalDivider(
-                        modifier = Modifier.padding(start = 44.dp),
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+            val itemVisibleIndex = if (item.visible) visibleIndex++ else visibleIndex
+            val row: @Composable () -> Unit = {
+                Column {
+                    if (itemVisibleIndex > 0) {
+                        if (CardGroupItemSpacing > 0.dp) {
+                            Spacer(modifier = Modifier.height(CardGroupItemSpacing))
+                        } else {
+                            HorizontalDivider(
+                                modifier = Modifier.padding(start = 44.dp),
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                            )
+                        }
+                    }
+                    CardGroupListItem(
+                        item = item,
+                        count = count.coerceAtLeast(1),
+                        index = itemVisibleIndex.coerceAtMost((count - 1).coerceAtLeast(0)),
                     )
+                }
+            }
+            key(index) {
+                if (item.animatedVisible == null) {
+                    row()
+                } else {
+                    AnimatedVisibility(
+                        visible = item.animatedVisible,
+                        enter = expandVertically(Motion.enter(Motion.NORMAL), expandFrom = Alignment.Top) +
+                            fadeIn(Motion.enter(Motion.NORMAL)),
+                        exit = shrinkVertically(Motion.exit(Motion.NORMAL), shrinkTowards = Alignment.Top) +
+                            fadeOut(Motion.exit(Motion.FAST)),
+                    ) {
+                        row()
+                    }
                 }
             }
         }

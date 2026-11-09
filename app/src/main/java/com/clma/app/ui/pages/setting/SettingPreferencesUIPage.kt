@@ -141,8 +141,10 @@ fun SettingPreferencesUIPage(vm: SettingVM = koinViewModel()) {
                         )
                     },
                 )
-                if (displaySetting.showDateTimeInMessage) {
+                // 子项随父开关平滑长出 / 收起（不再 if 硬增删）。
+                run {
                     item(
+                        visible = displaySetting.showDateTimeInMessage,
                         headlineContent = { Text(stringResource(R.string.setting_display_page_show_message_end_time_title)) },
                         supportingContent = { Text(stringResource(R.string.setting_display_page_show_message_end_time_desc)) },
                         trailingContent = {
