@@ -1164,16 +1164,15 @@ sealed interface Screen : NavKey {
 }
 
 // ---- 页面转场（统一节拍，见 ui/motion/Motion.kt） ----
-// 前进：新页从右侧 1/4 处轻滑进来并淡入；旧页向左挪一点并淡出。
-// 返回：完全镜像，所以进出对称。
+// 以短促淡入淡出为主；位移极小（约 1/16 屏）只给方向感，不拖、不飘。
 private fun pageForwardEnter(): EnterTransition =
-    slideInHorizontally(Motion.enter(Motion.PAGE)) { it / 4 } + fadeIn(Motion.enter(Motion.PAGE))
+    slideInHorizontally(Motion.enter(Motion.PAGE)) { it / 16 } + fadeIn(Motion.enter(Motion.PAGE))
 
 private fun pageForwardExit(): ExitTransition =
-    slideOutHorizontally(Motion.enter(Motion.PAGE)) { -it / 8 } + fadeOut(Motion.exit(Motion.FAST))
+    slideOutHorizontally(Motion.exit(Motion.FAST)) { -it / 24 } + fadeOut(Motion.exit(Motion.FAST))
 
 private fun pageBackEnter(): EnterTransition =
-    slideInHorizontally(Motion.enter(Motion.PAGE)) { -it / 8 } + fadeIn(Motion.enter(Motion.PAGE))
+    slideInHorizontally(Motion.enter(Motion.PAGE)) { -it / 24 } + fadeIn(Motion.enter(Motion.PAGE))
 
 private fun pageBackExit(): ExitTransition =
-    slideOutHorizontally(Motion.enter(Motion.PAGE)) { it / 4 } + fadeOut(Motion.exit(Motion.FAST))
+    slideOutHorizontally(Motion.exit(Motion.FAST)) { it / 16 } + fadeOut(Motion.exit(Motion.FAST))

@@ -159,8 +159,8 @@ fun SettingSpeechPage(initialTab: Int = 0, vm: SettingVM = koinViewModel()) {
             targetState = selectedPage,
             transitionSpec = {
                 val dir = if (targetState > initialState) 1 else -1
-                (slideInHorizontally(Motion.enter(Motion.NORMAL)) { dir * it / 8 } + fadeIn(Motion.enter(Motion.NORMAL))) togetherWith
-                    (slideOutHorizontally(Motion.enter(Motion.NORMAL)) { -dir * it / 8 } + fadeOut(Motion.exit(Motion.FAST)))
+                (fadeIn(Motion.enter(Motion.FAST)) + slideInHorizontally(Motion.enter(Motion.FAST)) { dir * it / 20 }) togetherWith
+                    (fadeOut(Motion.exit(Motion.FAST)) + slideOutHorizontally(Motion.exit(Motion.FAST)) { -dir * it / 20 })
             },
             label = "SpeechTab",
         ) { page ->

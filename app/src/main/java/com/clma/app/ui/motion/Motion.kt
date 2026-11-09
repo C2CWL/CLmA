@@ -11,44 +11,55 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 
 /**
- * 全站统一动效节拍（对齐 Kelivo：180 / 240 / 320ms + easeOutCubic）。
+ * 全站统一动效节拍：短、利落、有边界。
+ *
+ * 手感目标不是「软绵绵飘过去」，也不是硬切——是快进快出、起止清楚。
  * 新动效只用这里的时长、曲线和 spring，别再直接写裸 `fadeIn()` / `tween(xxx)`。
  */
 object Motion {
-    /** 小元素切换、换会话淡出淡入。 */
-    const val FAST = 180
+    /** 换会话淡入淡出、小元素切换。 */
+    const val FAST = 120
 
-    /** 默认：列表项进出、显隐、内容切换。 */
-    const val NORMAL = 240
+    /** 列表项显隐、内容交叉淡入。 */
+    const val NORMAL = 160
 
-    /** 页面转场。 */
-    const val PAGE = 260
+    /** 页面转场、侧栏底栏互换。 */
+    const val PAGE = 180
 
-    /** 大块面板 / 慢动作。 */
-    const val SLOW = 320
+    /** 大块面板；尽量少用，优先 NORMAL。 */
+    const val SLOW = 220
 
-    /** easeOutCubic：快起慢停，Kelivo 主曲线。 */
-    val EaseOutCubic: Easing = CubicBezierEasing(0.33f, 1f, 0.68f, 1f)
+    /**
+     * 锐利缓出：一开始就快走完大部分路程，尾部几乎不拖。
+     * （比 easeOutCubic 更有「顿点」。）
+     */
+    val EaseOutSharp: Easing = CubicBezierEasing(0.2f, 0f, 0f, 1f)
 
-    /** easeInCubic：用于退出。 */
-    val EaseInCubic: Easing = CubicBezierEasing(0.32f, 0f, 0.67f, 0f)
+    /**
+     * 锐利缓入：退出时迅速收掉，不拖尾。
+     */
+    val EaseInSharp: Easing = CubicBezierEasing(0.3f, 0f, 1f, 1f)
 
     fun <T> enter(durationMillis: Int = NORMAL, delayMillis: Int = 0): FiniteAnimationSpec<T> =
-        tween(durationMillis, delayMillis, EaseOutCubic)
+        tween(durationMillis, delayMillis, EaseOutSharp)
 
     fun <T> exit(durationMillis: Int = FAST, delayMillis: Int = 0): FiniteAnimationSpec<T> =
-        tween(durationMillis, delayMillis, EaseInCubic)
+        tween(durationMillis, delayMillis, EaseInSharp)
 
-    /** 位置类 spring：无回弹、跟手（指示条、滑块、列表项让位）。 */
+    /** 位置类 spring：无回弹、偏硬（指示条、列表项让位）。 */
     fun <T> springSnappy(): SpringSpec<T> =
-        spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow)
+        spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium)
 
-    /** 轻回弹 spring：分段开关滑块等。 */
+    /** 分段开关滑块：跟手、几乎不回弹。 */
     fun <T> springGentle(): SpringSpec<T> =
-        spring(dampingRatio = 0.85f, stiffness = 500f)
+        spring(dampingRatio = 0.9f, stiffness = 700f)
 
     val placementSpring: FiniteAnimationSpec<IntOffset> =
-        spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow, visibilityThreshold = IntOffset(1, 1))
+        spring(
+            dampingRatio = Spring.DampingRatioNoBouncy,
+            stiffness = Spring.StiffnessMedium,
+            visibilityThreshold = IntOffset(1, 1),
+        )
 
-    val sizeSpec: FiniteAnimationSpec<IntSize> = tween(NORMAL, easing = EaseOutCubic)
+    val sizeSpec: FiniteAnimationSpec<IntSize> = tween(NORMAL, easing = EaseOutSharp)
 }

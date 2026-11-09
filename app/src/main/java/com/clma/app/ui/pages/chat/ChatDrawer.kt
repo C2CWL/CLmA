@@ -588,12 +588,13 @@ fun ChatDrawerContent(
                 val bottomBarShape = RoundedCornerShape(bottomBarCorner)
                 // 多选栏 / 助手行 + 五个动作：两条路径共用同一份内容，只是外壳不同。
                 val drawerBottomContent: @Composable () -> Unit = {
-                    // 多选栏 ⇄ 普通底栏：淡入 + 自下而上滑入（学 Kelivo 的 260ms），不再硬换。
+                    // 多选栏 ⇄ 普通底栏：短促交叉淡入，极小位移只给边界感。
                     AnimatedContent(
                         targetState = selectionMode,
                         transitionSpec = {
-                            (slideInVertically(Motion.enter(Motion.PAGE)) { it / 2 } + fadeIn(Motion.enter(Motion.PAGE))) togetherWith
-                                (slideOutVertically(Motion.exit(Motion.FAST)) { it / 2 } + fadeOut(Motion.exit(Motion.FAST))) using
+                            // 交叉淡入为主；极小上移只给「换一层」的边界感，不拖尾。
+                            (fadeIn(Motion.enter(Motion.PAGE)) + slideInVertically(Motion.enter(Motion.PAGE)) { it / 12 }) togetherWith
+                                (fadeOut(Motion.exit(Motion.FAST)) + slideOutVertically(Motion.exit(Motion.FAST)) { it / 12 }) using
                                 SizeTransform(clip = false) { _, _ -> Motion.sizeSpec }
                         },
                         label = "DrawerBottomBar",
