@@ -783,6 +783,10 @@ fun ChatDrawerContent(
             botTasksPaused = true
             showBotTasks = false
         },
+        onOpenVirtualDisplayManage = {
+            showBotTasks = false
+            navController.navigate(Screen.VirtualDisplays)
+        },
     )
     if (showAssistantSheet) {
         AssistantPickerSheet(

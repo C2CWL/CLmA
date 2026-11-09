@@ -147,7 +147,10 @@ class SettingsSearchCoverageTest {
         "SettingTheme" to listOf("ui/pages/setting/SettingThemePage.kt"),
         "SettingColorMode" to listOf("ui/pages/setting/SettingColorModePage.kt"),
         "SettingFonts" to listOf("ui/pages/setting/SettingFontsPage.kt"),
-        "SettingChatLayout" to listOf("ui/pages/setting/SettingChatLayoutPage.kt"),
+        "SettingChatLayout" to listOf(
+            "ui/pages/setting/SettingChatLayoutPage.kt",
+            "ui/pages/chat/botmode/BotModeExtrasSection.kt",
+        ),
         "SettingPreferencesUI" to listOf("ui/pages/setting/SettingPreferencesUIPage.kt"),
         "SettingPreferencesGeneral" to listOf("ui/pages/setting/SettingPreferencesGeneralPage.kt"),
         "SettingPreferencesNotification" to listOf("ui/pages/setting/SettingPreferencesNotificationPage.kt"),

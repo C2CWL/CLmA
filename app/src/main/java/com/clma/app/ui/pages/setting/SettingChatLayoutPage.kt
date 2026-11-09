@@ -1,6 +1,7 @@
 package com.clma.app.ui.pages.setting
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -17,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clma.app.R
 import com.clma.app.data.botmode.botsHiddenForManage
+import com.clma.app.ui.pages.chat.botmode.BotModeExtrasSection
 import com.clma.app.data.botmode.withBotHidden
 import com.clma.app.data.datastore.ChatLayout
 import androidx.compose.material3.TextButton
@@ -238,6 +240,13 @@ fun SettingChatLayoutPage(vm: SettingVM = koinViewModel()) {
                 )
             }
             if (displaySetting.botModeEnabled) {
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                BotModeExtrasSection(
+                    settings = settings.copy(displaySetting = displaySetting),
+                    displaySetting = displaySetting,
+                    updateDisplaySetting = ::updateDisplaySetting,
+                    updateSettings = { vm.updateSettings(it) },
+                )
                 val hiddenBots = settings.copy(displaySetting = displaySetting).botsHiddenForManage()
                 CardGroup(
                     modifier = Modifier.padding(horizontal = 8.dp),
@@ -267,6 +276,7 @@ fun SettingChatLayoutPage(vm: SettingVM = koinViewModel()) {
                             )
                         }
                     }
+                }
                 }
             }
         }
