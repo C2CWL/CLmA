@@ -17,8 +17,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
@@ -155,8 +153,7 @@ fun ChatList(
             targetState = previewMode,
             label = "ChatListMode",
             transitionSpec = {
-                (fadeIn(Motion.enter(Motion.NORMAL)) + scaleIn(Motion.enter(Motion.NORMAL), initialScale = 0.92f) togetherWith
-                    fadeOut(Motion.exit(Motion.FAST)) + scaleOut(Motion.exit(Motion.FAST), targetScale = 0.92f))
+                (fadeIn(Motion.enter(Motion.FAST)) togetherWith fadeOut(Motion.exit(Motion.FAST)))
             }
         ) { target ->
             if (target) {
@@ -400,7 +397,7 @@ private fun ChatListNormal(
                 // 新消息淡入、删消息淡出、上方变高时下方平滑让位（统一节拍）。
                 Column(
                     modifier = messageModifier.animateItem(
-                        fadeInSpec = Motion.enter(Motion.NORMAL),
+                        fadeInSpec = Motion.enter(Motion.FAST),
                         placementSpec = Motion.placementSpring,
                         fadeOutSpec = Motion.exit(Motion.FAST),
                     )
@@ -470,7 +467,7 @@ private fun ChatListNormal(
                 item(key = "ConversationSystemPrompt") {
                     Box(
                         modifier = Modifier.animateItem(
-                            fadeInSpec = Motion.enter(Motion.NORMAL),
+                            fadeInSpec = Motion.enter(Motion.FAST),
                             placementSpec = null,
                             fadeOutSpec = Motion.exit(Motion.FAST),
                         )

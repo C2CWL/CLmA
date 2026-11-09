@@ -1344,7 +1344,7 @@ private fun TopBarSubtitleLine(
 }
 
 /** 换会话时等待列表落底的上限；空会话或加载慢时到点直接显现。 */
-private const val ChatRevealTimeoutMs = 260L
+private const val ChatRevealTimeoutMs = 180L
 
 /** Fills the composer with shared / prefilled [files] and base64 [text]; also used by the Bot chat page. */
 internal suspend fun applyInitialChatInput(
