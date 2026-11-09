@@ -546,4 +546,14 @@
   <string name="tool_display_desc_workspace_background_status">查看后台进程的状态和输出</string>
   <string name="tool_display_name_workspace_background_kill">停止后台进程</string>
   <string name="tool_display_desc_workspace_background_kill">结束一个后台进程</string>
+  <string name="tool_display_name_bot_list">列出 Bot</string>
+  <string name="tool_display_desc_bot_list">列出 Bot 模式的 Bot、记忆和可用模型</string>
+  <string name="tool_display_name_bot_create">创建 Bot</string>
+  <string name="tool_display_desc_bot_create">在 Bot 库里新建一个 Bot</string>
+  <string name="tool_display_name_bot_update_prompt">修改 Bot 提示词</string>
+  <string name="tool_display_desc_bot_update_prompt">替换某个 Bot 的系统提示词</string>
+  <string name="tool_display_name_bot_memory_write">写入 Bot 记忆</string>
+  <string name="tool_display_desc_bot_memory_write">给某个 Bot 添加一条记忆</string>
+  <string name="tool_display_name_bot_memory_delete">删除 Bot 记忆</string>
+  <string name="tool_display_desc_bot_memory_delete">删除某个 Bot 的一条记忆</string>
 </resources>

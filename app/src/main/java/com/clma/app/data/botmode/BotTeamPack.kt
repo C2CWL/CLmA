@@ -94,6 +94,11 @@ fun parseBotTeamPackMarkdown(raw: String): BotTeamPackPreview {
                 if (currentName != null && currentSystem.isNotEmpty()) flush()
                 currentName = stripQuotes(trimmed.substringAfter(':'))
             }
+            // Exported prompts: one "| line" per prompt line, kept verbatim (see toTeamPackMarkdown).
+            currentName != null && trimmed.startsWith("|") -> {
+                if (currentSystem.isNotEmpty()) currentSystem.append('\n')
+                currentSystem.append(line.substringAfter('|').removePrefix(" "))
+            }
             bulletOnly != null && !trimmed.contains(':') -> {
                 flush()
                 currentName = stripQuotes(bulletOnly.groupValues[1])
@@ -121,3 +126,21 @@ fun BotTeamMemberDraft.toAssistant(): Assistant =
         systemPrompt = systemPrompt,
         library = AssistantLibrary.BOT,
     )
+
+/**
+ * Team-pack Markdown for [bots] (the format [parseBotTeamPackMarkdown] reads back). Prompt lines
+ * are written as `| line` so bullets, `#` lines, `name:` lines and blank lines inside a prompt
+ * survive the round trip.
+ */
+fun toTeamPackMarkdown(teamName: String, bots: List<Assistant>): String = buildString {
+    append("---\n")
+    append("team: ").append(teamName.replace("\n", " ").trim().ifBlank { "Team" }).append('\n')
+    append("---\n")
+    bots.forEach { bot ->
+        append("- name: ").append(bot.name.replace("\n", " ").trim().ifBlank { "Bot" }).append('\n')
+        append("  system:\n")
+        bot.systemPrompt.trim().lines().forEach { line ->
+            append("  | ").append(line).append('\n')
+        }
+    }
+}

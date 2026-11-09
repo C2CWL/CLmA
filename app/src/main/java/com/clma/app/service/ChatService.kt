@@ -1069,6 +1069,29 @@ class ChatService(
         }
     }
 
+    /**
+     * Bot-mode channels: delivers [text] to one bot, in its latest top-level conversation (the
+     * same one its chat page opens), or in a new conversation bound to that bot when it has
+     * none. Only Bot-library assistants are reachable; returns null for anything else. The
+     * send itself is the ordinary [sendMessage] path (queue, approvals, compaction unchanged).
+     */
+    suspend fun sendToBotConversation(assistantId: Uuid, text: String): Uuid? {
+        if (text.isBlank()) return null
+        val settings = settingsStore.settingsFlow.value
+        val bot = settings.assistants.find { it.id == assistantId && it.isBot } ?: return null
+        val latest = com.clma.app.data.botmode.latestTopLevelConversation(
+            conversationRepo.getConversationsOfAssistant(bot.id).first()
+        )
+        val conversationId = latest?.id ?: Conversation.ofId(
+            id = Uuid.random(),
+            assistantId = bot.id,
+            newConversation = true,
+        ).updateCurrentMessages(bot.presetMessages).also { conversationRepo.insertConversation(it) }.id
+        initializeConversation(conversationId)
+        sendMessage(conversationId, listOf(UIMessagePart.Text(text)))
+        return conversationId
+    }
+
     // ---- 发送消息 ----
 
     fun getMessageQueueFlow(conversationId: Uuid): StateFlow<MessageQueueState> =
@@ -1839,6 +1862,38 @@ class ChatService(
     }
 
     /**
+     * Bot mode: the main assistant's bot-management tools, only for the Bot library's CURRENT
+     * main bot (empty for every other assistant, classic ones included). The tools re-check the
+     * main pointer and the user's one-call approval when they run.
+     */
+    private fun botMainToolsFor(
+        assistant: Assistant,
+        settings: Settings,
+        conversationId: Uuid,
+    ): List<com.clma.ai.core.Tool> {
+        if (!com.clma.app.data.botmode.BotMainTools.isMainAssistant(settings, assistant)) return emptyList()
+        // No approval channel (cron, sub-agent, automation): its writes could never be approved.
+        if (com.clma.app.data.ai.tools.HeadlessConversations.isHeadless(conversationId)) return emptyList()
+        return com.clma.app.data.botmode.BotMainTools.build(callerId = assistant.id, store = botMainToolStore)
+    }
+
+    private val botMainToolStore = object : com.clma.app.data.botmode.BotMainToolStore {
+        override suspend fun settings(): Settings = settingsStore.settingsFlow.value
+
+        override suspend fun updateSettings(transform: (Settings) -> Settings): Settings {
+            settingsStore.update(transform)
+            return settingsStore.settingsFlow.value
+        }
+
+        override suspend fun memories(botId: Uuid) = memoryRepository.getMemoriesOfAssistant(botId.toString())
+
+        override suspend fun addMemory(botId: Uuid, content: String) =
+            memoryRepository.addMemory(botId.toString(), content, source = "tool")
+
+        override suspend fun deleteMemory(memoryId: Int) = memoryRepository.deleteMemory(memoryId, source = "tool")
+    }
+
+    /**
      * Chat-mode surface: only [ChatModeTools.ALLOWED_TOOL_NAMES], each still gated by its
      * normal enable conditions. Always DIRECT (no progressive catalog / MCP / workspace /
      * cold memory / skills / tool_output_read).
@@ -1905,12 +1960,15 @@ class ChatService(
             }
         }
         // Final allowlist pass (belt-and-suspenders) so a future assembly addition cannot leak.
+        // The Bot-mode main assistant's bot-management tools are added after it on purpose:
+        // they exist only for the current main bot (see BotMainTools), in either chat mode.
         val allowed = ChatModeTools.filterTools(fixedTools)
+        val botMainTools = botMainToolsFor(surfaceAssistant, settings, conversationId)
         return ChatToolSurface(
             fixed = com.clma.app.subagent.SubAgentSurface.apply(
                 conversationId = conversationId,
                 tools = allowed,
-            ).let { ChatModeTools.filterTools(it) },
+            ).let { ChatModeTools.filterTools(it) } + botMainTools,
         )
     }
 
@@ -2033,6 +2091,8 @@ class ChatService(
             // T-06 / (7) - cold memory (Markdown knowledge base). Same on both build paths so a
             // regenerate sees the surface the first pass had.
             addAll(createColdMemoryToolsIfConfigured(surfaceAssistant))
+            // Bot mode: the current main bot manages the Bot library (approval per write).
+            addAll(botMainToolsFor(surfaceAssistant, settings, conversationId))
             // Fidelity Trio: spilled output reader & current conversation search (SQLite FTS5)
             add(com.clma.app.data.ai.tools.createToolOutputReadTool(context))
             add(

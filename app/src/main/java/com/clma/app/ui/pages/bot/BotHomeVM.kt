@@ -127,11 +127,7 @@ class BotHomeVM(
     /** New bot in the Bot library; returns its id once stored. */
     fun createBot(name: String, systemPrompt: String, makeMain: Boolean, onCreated: (Uuid) -> Unit) =
         viewModelScope.launch {
-            val bot = Assistant(
-                name = name.trim(),
-                systemPrompt = systemPrompt.trim(),
-                library = AssistantLibrary.BOT,
-            )
+            val bot = com.clma.app.data.botmode.BotMainTools.newBot(name = name, systemPrompt = systemPrompt)
             settingsStore.update { s ->
                 val added = s.copy(assistants = s.assistants + bot)
                 if (makeMain) added.withMainBot(bot.id) else added

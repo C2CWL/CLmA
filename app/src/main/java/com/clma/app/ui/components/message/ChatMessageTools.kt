@@ -1134,7 +1134,13 @@ private fun ToolApprovalForm(
         ToolDisplaySupporting(toolName = tool.toolName, mcpDescription = mcpDescription)
         if (com.clma.app.connectors.ConnectorWriteApproval.requiresApproval(tool.toolName)) {
             Text(
-                text = stringResource(R.string.connector_write_approval_warning),
+                text = stringResource(
+                    if (tool.toolName in com.clma.app.data.botmode.BotMainTools.WRITE_TOOL_NAMES) {
+                        R.string.bot_main_tool_approval_warning
+                    } else {
+                        R.string.connector_write_approval_warning
+                    },
+                ),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.error,
             )
