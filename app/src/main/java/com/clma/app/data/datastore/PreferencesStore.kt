@@ -1338,6 +1338,14 @@ data class BotUnreadEntry(
 )
 
 @Serializable
+data class BotChannel(
+    val id: Uuid = Uuid.random(),
+    val name: String = "",
+    val description: String = "",
+    val memberAssistantIds: List<Uuid> = emptyList(),
+)
+
+@Serializable
 data class DisplaySetting(
     /** Bypass UI token batching; Markdown parsing stays off the main thread. */
     val fastStreamingOutput: Boolean = false,
@@ -1459,6 +1467,11 @@ data class DisplaySetting(
      * looking at another chat. Cleared when that bot is selected. Classic mode ignores this.
      */
     val botUnreadEntries: List<BotUnreadEntry> = emptyList(),
+    /**
+     * Lightweight Bot-mode channels/groups: shared description + member assistant ids.
+     * Classic mode ignores this list.
+     */
+    val botChannels: List<BotChannel> = emptyList(),
 )
 
 @Serializable

@@ -1093,6 +1093,10 @@ private fun ChatPageContent(
                 botTaskPaused = true
                 showBotTaskSheet = false
             },
+            onOpenVirtualDisplayManage = {
+                showBotTaskSheet = false
+                navController.navigate(Screen.VirtualDisplays)
+            },
         )
 
         if (showFilesSheet) {
