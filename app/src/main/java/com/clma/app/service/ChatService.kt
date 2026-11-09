@@ -3337,7 +3337,7 @@ class ChatService(
             }
             // Auto compaction is off: still refuse a new turn that clearly cannot fit the
             // model's window, instead of sending a request that can only fail (and is billed).
-            val decision = preSendContextDecision(requestView, settings, model)
+            val decision = preSendContextDecision(requestView, settings, model, assistant)
             if (decision is PreSendContextDecision.OverHardLimit) {
                 throw IllegalStateException(
                     context.getString(
@@ -3368,7 +3368,7 @@ class ChatService(
 
         val preSend = !force
         if (preSend) {
-            val decision = preSendContextDecision(view, settings, model)
+            val decision = preSendContextDecision(view, settings, model, assistant)
             if (decision is PreSendContextDecision.MediaTooLarge) throwIfRequestTooLarge(decision)
             val hasOlderRawMessages =
                 conversation.currentMessages.lastIndex > view.rawTailStartIndex
@@ -3491,6 +3491,7 @@ class ChatService(
         view: CompactedMessageView,
         settings: Settings,
         model: Model,
+        assistant: Assistant,
     ): PreSendContextDecision = withContext(Dispatchers.IO) {
         runCatching {
             PreSendContextGuard.decide(
@@ -3504,6 +3505,9 @@ class ChatService(
                 hardLimitTokens = PreSendContextGuard.hardContextLimit(model),
                 compactedAt = view.compaction?.let { ContextCompactionView.summaryMessage(it).createdAt },
                 fileSize = ::localFileSize,
+                // Same image retention the generation loop applies to this assistant's request,
+                // so a Bot's batched ageing (up to batch-1 more images) is not underestimated.
+                imageAgingBatch = BotCostPolicy.imageAgingBatch(assistant),
             )
         }.getOrElse { error ->
             if (error is CancellationException) throw error

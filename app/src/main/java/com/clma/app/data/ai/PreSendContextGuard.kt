@@ -90,9 +90,27 @@ object PreSendContextGuard {
      * sizes x 4/3 (base64). Applies the same request-only image ageing the generation loop does
      * ([ageOldToolImages], [ageOldUserImages]) so aged-out images are not counted. [fileSize]
      * returns the size of a `file:` URL, or null when unknown.
+     *
+     * [imageAgingBatch] must be the batch the generation loop uses for this conversation
+     * ([com.clma.app.data.botmode.BotCostPolicy.imageAgingBatch]): a Bot keeps up to batch-1
+     * more old images than the classic sliding window, and counting with the classic window
+     * would underestimate them. 1 (the default) is the classic behaviour.
+     *
+     * Tool outputs are counted in full (before the observation mask and the tool-result budget),
+     * so the text side is an upper bound for every batch size.
      */
+    fun estimateRequestBytes(
+        messages: List<UIMessage>,
+        imageAgingBatch: Int = 1,
+        fileSize: (String) -> Long?,
+    ): Long = rawRequestBytes(
+        messages.ageOldToolImages(batch = imageAgingBatch).ageOldUserImages(batch = imageAgingBatch),
+        fileSize,
+    )
+
+    /** [estimateRequestBytes] of [messages] exactly as given, without any request-only ageing. */
     @Suppress("DEPRECATION")
-    fun estimateRequestBytes(messages: List<UIMessage>, fileSize: (String) -> Long?): Long {
+    fun rawRequestBytes(messages: List<UIMessage>, fileSize: (String) -> Long?): Long {
         fun base64(bytes: Long) = bytes / 3 * 4 + 4
         fun media(url: String, cap: Long = Long.MAX_VALUE): Long = when {
             url.startsWith("data:") || url.startsWith("http") -> url.length.toLong()
@@ -110,7 +128,7 @@ object PreSendContextGuard {
             is UIMessagePart.ToolResult -> part.content.toString().length.toLong()
             else -> 0L
         }
-        return messages.ageOldToolImages().ageOldUserImages().sumOf { message ->
+        return messages.sumOf { message ->
             message.parts.sumOf(::part)
         }
     }
@@ -169,12 +187,14 @@ object PreSendContextGuard {
         // Byte-size checks run only when a file-size lookup is supplied.
         fileSize: ((String) -> Long?)? = null,
         maxRequestBytes: Long = defaultMaxRequestBytes(),
+        // Request-only image ageing batch of this conversation (Bot cost-saving); 1 = classic.
+        imageAgingBatch: Int = 1,
     ): PreSendContextDecision {
         // Only a brand-new user turn; tool resumes / approvals keep the usage-driven path.
         if (messages.lastOrNull()?.role != MessageRole.USER) return PreSendContextDecision.Send
         if (fileSize != null) {
             oversizedMedia(messages, fileSize)?.let { return it }
-            val bytes = estimateRequestBytes(messages, fileSize)
+            val bytes = estimateRequestBytes(messages, imageAgingBatch, fileSize)
             if (bytes > maxRequestBytes) {
                 return PreSendContextDecision.OverByteLimit(
                     estimatedBytes = bytes,
