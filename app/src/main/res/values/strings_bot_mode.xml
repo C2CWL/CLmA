@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="bot_mode_setting_title">Bot mode</string>
+  <string name="bot_mode_setting_desc">Experimental: turn the sidebar into a contacts-style multi-bot list, show inline approval cards, and pick a model per bot. Classic layout stays when this is off.</string>
+  <string name="bot_mode_contact_title">Bots</string>
+  <string name="bot_mode_pinned_badge">Pinned</string>
+  <string name="bot_mode_model_inherit">Default model</string>
+  <string name="bot_mode_menu_pin">Pin</string>
+  <string name="bot_mode_menu_unpin">Unpin</string>
+  <string name="bot_mode_menu_hide">Hide from list</string>
+  <string name="bot_mode_menu_detail">Bot settings</string>
+  <string name="bot_mode_menu_tasks">Task progress</string>
+  <string name="bot_mode_pick_model">Choose model</string>
+  <string name="bot_mode_model_sheet_title">Model for this bot</string>
+  <string name="bot_mode_model_sheet_desc">Only changes the current bot. Other bots keep their own models.</string>
+  <string name="bot_mode_provider_all">All</string>
+  <string name="bot_mode_provider_unnamed">Provider</string>
+  <string name="bot_mode_provider_disabled">%1$s (unavailable)</string>
+  <string name="bot_mode_task_title">Tasks · %1$s</string>
+  <string name="bot_mode_task_stub_note">Placeholder panel (replaces cloud computer). Real tool progress will plug in later.</string>
+  <string name="bot_mode_task_step_done">Done</string>
+  <string name="bot_mode_task_step_active">Running</string>
+  <string name="bot_mode_task_step_pending">Waiting</string>
+  <string name="bot_mode_task_pause">Pause</string>
+  <string name="bot_mode_task_resume">Resume</string>
+  <string name="bot_mode_task_takeover">Take over</string>
+  <string name="bot_mode_task_close">Close</string>
+  <string name="bot_mode_task_stub_prepare">Prepare</string>
+  <string name="bot_mode_task_stub_run">Run steps</string>
+  <string name="bot_mode_task_stub_summarize">Summarize</string>
+  <string name="bot_mode_open_tasks">Tasks</string>
+  <string name="bot_mode_approval_inline_hint">Allow or deny this tool</string>
+</resources>

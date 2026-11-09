@@ -118,6 +118,9 @@ import com.clma.app.Screen
 import com.clma.app.data.datastore.KeepScreenOnMode
 import com.clma.app.ui.components.ai.ChatInput
 import com.clma.app.ui.components.ai.ChatConversationSettingsPanel
+import com.clma.app.ui.pages.chat.botmode.BotModelPickerButton
+import com.clma.app.ui.pages.chat.botmode.BotTaskProgressSheet
+import com.clma.app.ui.pages.chat.botmode.rememberLocalizedStubSteps
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.SlidersHorizontal
 import com.clma.app.ui.components.ui.KeepScreenOn
@@ -481,6 +484,8 @@ private fun ChatPageContent(
     val compressAndContinueLabel = stringResource(R.string.chat_suggestion_compress_continue)
     var showFilesSheet by remember { mutableStateOf(false) }
     var showConversationSettings by remember { mutableStateOf(false) }
+    var showBotTaskSheet by remember { mutableStateOf(false) }
+    var botTaskPaused by remember { mutableStateOf(false) }
     val attachmentPickerActions = rememberChatAttachmentPickerActions(
         inputState = inputState,
         setting = setting,
@@ -984,9 +989,41 @@ private fun ChatPageContent(
                         onOpenMessageOutline = { previewMode = true },
                         modifier = Modifier.padding(top = topBarHeight),
                     )
+                    if (setting.displaySetting.botModeEnabled) {
+                        Row(
+                            modifier = Modifier
+                                .align(Alignment.TopCenter)
+                                .padding(top = topBarHeight + 4.dp)
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            BotModelPickerButton(
+                                modelId = assistant.chatModelId,
+                                modelLabel = currentChatModel?.displayName,
+                                providers = setting.providers,
+                                onSelect = { model -> vm.setChatModel(assistant, model) },
+                                modifier = Modifier.weight(1f, fill = false),
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            androidx.compose.material3.TextButton(onClick = { showBotTaskSheet = true }) {
+                                Text(stringResource(R.string.bot_mode_open_tasks))
+                            }
+                        }
+                    }
                 }
             }
         }
+
+        BotTaskProgressSheet(
+            visible = showBotTaskSheet,
+            botName = assistant.name.ifBlank { stringResource(R.string.assistant_page_default_assistant) },
+            steps = rememberLocalizedStubSteps(),
+            paused = botTaskPaused,
+            onDismiss = { showBotTaskSheet = false },
+            onPauseToggle = { botTaskPaused = !botTaskPaused },
+            onTakeOver = { showBotTaskSheet = false },
+        )
 
         if (showFilesSheet) {
             ChatFilesPickerSheet(

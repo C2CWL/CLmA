@@ -83,6 +83,7 @@ import com.clma.app.data.ai.tools.ToolApprovalPolicy
 import com.clma.app.data.datastore.ToolCallStyle
 import com.clma.app.data.secrets.AgentSecretsStore
 import com.clma.app.ui.components.message.tools.ToolUIContext
+import com.clma.app.ui.pages.chat.botmode.LocalBotModeEnabled
 import com.clma.app.ui.components.message.tools.ToolUIRegistry
 import com.clma.app.ui.components.message.tools.ToolResultImage
 import com.clma.app.ui.components.ui.ChainOfThoughtScope
@@ -298,7 +299,18 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
         },
         extra = if (isPending && onToolApproval != null) {
             {
-                PendingToolButton(tool)
+                if (LocalBotModeEnabled.current) {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(
+                            text = stringResource(R.string.bot_mode_approval_inline_hint),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        ToolApprovalForm(tool, onToolApproval)
+                    }
+                } else {
+                    PendingToolButton(tool)
+                }
             }
         } else {
             null
@@ -1281,6 +1293,7 @@ fun ToolInteractionDialogHost(
     conversation: com.clma.app.data.model.Conversation,
     onToolApproval: ((String, Boolean, String, com.clma.app.service.ChatService.ApprovalScope, String) -> Unit)?,
     onToolAnswer: ((String, String) -> Unit)?,
+    botModeEnabled: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val pending = PendingToolInteractions.pendingTools(conversation.currentMessages).filter {
@@ -1291,11 +1304,15 @@ fun ToolInteractionDialogHost(
     var requested by remember(conversation.id) { mutableStateOf<String?>(null) }
     val active = pending.firstOrNull { it.toolCallId == requested }
         ?: pending.firstOrNull { dismissed[it.toolCallId] != true }
-    CompositionLocalProvider(LocalPendingToolDialog provides { id ->
-        dismissed.remove(id)
-        requested = id
-    }) { content() }
-    if (active != null) key(conversation.id, active.toolCallId) {
+    // Bot mode: approvals stay inline in the chat bubble; classic mode keeps the modal dialog.
+    CompositionLocalProvider(
+        LocalPendingToolDialog provides if (botModeEnabled) null else { id ->
+            dismissed.remove(id)
+            requested = id
+        },
+        LocalBotModeEnabled provides botModeEnabled,
+    ) { content() }
+    if (!botModeEnabled && active != null) key(conversation.id, active.toolCallId) {
         val close = {
             dismissed[active.toolCallId] = true
             requested = null

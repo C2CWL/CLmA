@@ -141,7 +141,12 @@ fun ChatList(
     onConversationSystemPromptChange: ((String?) -> Unit)? = null,
     turnFooters: Map<String, TurnFooter> = emptyMap(),
 ) {
-    ToolInteractionDialogHost(conversation, onToolApproval, onToolAnswer) {
+    ToolInteractionDialogHost(
+        conversation,
+        onToolApproval,
+        onToolAnswer,
+        botModeEnabled = settings.displaySetting.botModeEnabled,
+    ) {
         AnimatedContent(
             targetState = previewMode,
             label = "ChatListMode",

@@ -1438,6 +1438,16 @@ data class DisplaySetting(
     val enableVolumeKeyScroll: Boolean = false,
     val volumeKeyScrollRatio: Float = 1.0f,
     val enableBounceOverscroll: Boolean = true,
+    /**
+     * Bot mode (OpenMausBot-style contact shell). Off by default so classic drawer / chat
+     * paths stay unchanged. When on, the drawer becomes a contact-style multi-bot list and
+     * chat shows inline approval cards + per-bot model picking.
+     */
+    val botModeEnabled: Boolean = false,
+    /** Assistant ids pinned to the top of the Bot-mode contact list (order preserved). */
+    val botPinnedAssistantIds: List<Uuid> = emptyList(),
+    /** Assistant ids hidden from the Bot-mode contact list (still editable elsewhere). */
+    val botHiddenAssistantIds: List<Uuid> = emptyList(),
 )
 
 @Serializable
