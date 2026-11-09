@@ -88,17 +88,6 @@ import com.clma.app.ui.components.ui.AppDropdownMenu
 import com.clma.app.ui.components.ui.AppMenuEntry
 import com.clma.app.Screen
 import com.clma.app.data.datastore.DrawerStyle
-import com.clma.app.data.botmode.botsForContactList
-import com.clma.app.data.botmode.botsHiddenForManage
-import com.clma.app.data.botmode.withBotHidden
-import com.clma.app.data.botmode.withBotPinned
-import com.clma.app.data.botmode.isBotPinned
-import com.clma.app.ui.pages.chat.botmode.BotContactList
-import com.clma.app.ui.pages.chat.botmode.BotTaskProgressSheet
-import com.clma.app.data.botmode.botUnreadCount
-import com.clma.app.data.botmode.buildBotTaskSteps
-import com.clma.app.data.botmode.withBotUnreadClearedForAssistant
-import com.clma.app.subagent.SubAgentRegistry
 import com.clma.app.data.datastore.Settings
 import com.clma.app.data.datastore.getCurrentAssistant
 import com.clma.app.ui.theme.LocalDarkMode
@@ -325,9 +314,6 @@ fun ChatDrawerContent(
     val toolsMenu = drawerToolsMenu(navController)
     val moreMenu = drawerMoreMenu(navController)
     var showAssistantSheet by remember { mutableStateOf(false) }
-    var showBotTasks by remember { mutableStateOf(false) }
-    var botTasksPaused by remember { mutableStateOf(false) }
-    val botModeEnabled = settings.displaySetting.botModeEnabled
     val openNicknameEdit: () -> Unit = { nicknameEditState.open(settings.displaySetting.userNickname) }
     val updateUserAvatar: (Avatar) -> Unit = { newAvatar ->
         vm.updateSettings(
@@ -379,56 +365,7 @@ fun ChatDrawerContent(
             ),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            if (botModeEnabled) {
-                BotContactList(
-                    bots = settings.botsForContactList(),
-                    currentId = drawerAssistant.id,
-                    displaySetting = settings.displaySetting,
-                    modelNameOf = { settings.drawerModelName(it) },
-                    unreadOf = { bot -> settings.displaySetting.botUnreadCount(bot.id) },
-                    onSelect = { bot ->
-                        // Opening a bot clears its unread badge.
-                        val cleared = settings.displaySetting.withBotUnreadClearedForAssistant(bot.id)
-                        if (cleared != settings.displaySetting) {
-                            vm.updateSettings(settings.copy(displaySetting = cleared))
-                        }
-                        switchAssistant(bot)
-                    },
-                    onTogglePin = { bot ->
-                        val pinned = !settings.displaySetting.isBotPinned(bot.id)
-                        vm.updateSettings(
-                            settings.copy(
-                                displaySetting = settings.displaySetting.withBotPinned(bot.id, pinned)
-                            )
-                        )
-                    },
-                    onToggleHide = { bot ->
-                        vm.updateSettings(
-                            settings.copy(
-                                displaySetting = settings.displaySetting.withBotHidden(bot.id, true)
-                            )
-                        )
-                    },
-                    onOpenDetail = {
-                        navController.navigate(Screen.AssistantDetail(id = it.id.toString()))
-                    },
-                    onOpenTasks = { showBotTasks = true },
-                )
-                val hiddenCount = settings.botsHiddenForManage().size
-                if (hiddenCount > 0) {
-                    TextButton(
-                        onClick = { navController.navigate(Screen.SettingChatLayout) },
-                        modifier = Modifier.padding(horizontal = 4.dp),
-                    ) {
-                        Text(stringResource(R.string.bot_mode_hidden_count, hiddenCount))
-                    }
-                }
-                DrawerModeSegmented(
-                    agentMode = currentConversation.agentModeEnabled,
-                    onChange = { vm.setAgentModeEnabled(it) },
-                )
-                DrawerNewChatRow(onNewChat = startNewChat, onSearch = openSearch)
-            } else when (drawerStyle) {
+            when (drawerStyle) {
                 DrawerStyle.CARD -> {
                     DrawerAssistantHero(
                         assistants = settings.assistants,
@@ -554,7 +491,7 @@ fun ChatDrawerContent(
     ) {
         // 助手导轨样式：左边一条竖向导轨，右边是会话面板；助手卡片样式只有面板。
         Row(modifier = Modifier.fillMaxSize()) {
-            if (!botModeEnabled && drawerStyle == DrawerStyle.RAIL) {
+            if (drawerStyle == DrawerStyle.RAIL) {
                 DrawerAssistantRail(
                     assistants = settings.assistants,
                     current = drawerAssistant,
@@ -773,53 +710,6 @@ fun ChatDrawerContent(
     }
 
     // 助手选择面板：点助手名字 / 导轨里的当前助手打开。
-    val drawerGeneratingLabel = stringResource(R.string.bot_mode_task_generating)
-    val drawerIdleLabel = stringResource(R.string.bot_mode_task_idle)
-    val drawerSubAgentRegistry: SubAgentRegistry = koinInject()
-    val drawerSubAgentRuns by drawerSubAgentRegistry.runs.collectAsStateWithLifecycle()
-    val drawerJobActive = current.id in conversationJobs
-    val drawerTaskSteps = remember(
-        current.messageNodes,
-        current.id,
-        drawerSubAgentRuns,
-        drawerJobActive,
-        drawerGeneratingLabel,
-        drawerIdleLabel,
-    ) {
-        buildBotTaskSteps(
-            conversation = current,
-            processingStatus = null,
-            subAgentRuns = drawerSubAgentRuns.values,
-            isGenerating = drawerJobActive,
-            generatingLabel = drawerGeneratingLabel,
-            idleLabel = drawerIdleLabel,
-        )
-    }
-    BotTaskProgressSheet(
-        visible = showBotTasks,
-        botName = drawerAssistant.name.ifBlank { stringResource(R.string.assistant_page_default_assistant) },
-        steps = drawerTaskSteps,
-        paused = botTasksPaused,
-        isGenerating = drawerJobActive,
-        onDismiss = { showBotTasks = false },
-        onPauseToggle = {
-            if (botTasksPaused) {
-                botTasksPaused = false
-            } else {
-                if (drawerJobActive) vm.stopGeneration()
-                botTasksPaused = true
-            }
-        },
-        onTakeOver = {
-            if (drawerJobActive) vm.stopGeneration()
-            botTasksPaused = true
-            showBotTasks = false
-        },
-        onOpenVirtualDisplayManage = {
-            showBotTasks = false
-            navController.navigate(Screen.VirtualDisplays)
-        },
-    )
     if (showAssistantSheet) {
         AssistantPickerSheet(
             settings = settings,

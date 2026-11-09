@@ -28,6 +28,7 @@ class SettingsSearchCoverageTest {
         "MessageSearch" to "message search",
         "Stats" to "usage statistics",
         "GettingStarted" to "first-run onboarding, opened from chat",
+        "BotHome" to "Bot mode home (bot list / channels), not a settings page",
     )
 
     /**

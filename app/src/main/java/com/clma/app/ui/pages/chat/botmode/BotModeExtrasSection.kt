@@ -129,7 +129,7 @@ private fun FlowRowChips(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun BotChannelsCard(
+internal fun BotChannelsCard(
     settings: Settings,
     displaySetting: DisplaySetting,
     updateDisplaySetting: (DisplaySetting) -> Unit,

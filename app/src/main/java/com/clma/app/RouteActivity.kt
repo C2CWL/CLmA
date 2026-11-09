@@ -80,6 +80,7 @@ import com.clma.app.ui.context.LocalToaster
 import com.clma.app.ui.context.Navigator
 import com.clma.app.ui.hooks.readBooleanPreference
 import com.clma.app.ui.hooks.readStringPreference
+import com.clma.app.ui.hooks.writeBooleanPreference
 import com.clma.app.ui.hooks.rememberCustomTtsState
 import com.clma.app.ui.hooks.rememberCustomAsrState
 import com.clma.app.ui.hooks.rememberCurrentColorMode
@@ -158,6 +159,12 @@ import com.clma.app.ui.theme.syncSplashTheme
 import com.clma.app.utils.CrashHandler
 import com.clma.app.utils.openUsageAccessSettings
 import com.clma.app.utils.resolveInitialChatStack
+import com.clma.app.ui.pages.bot.BOT_MODE_ROOT_PREF_KEY
+import com.clma.app.ui.pages.bot.BotHomePage
+import com.clma.app.ui.pages.bot.initialRootStack
+import com.clma.app.ui.pages.bot.isStackResetTo
+import com.clma.app.ui.pages.bot.reconcileRootStack
+import com.clma.app.ui.pages.bot.resetStackTo
 import okhttp3.OkHttpClient
 import org.koin.android.ext.android.inject
 import org.koin.compose.koinInject
@@ -281,9 +288,8 @@ class RouteActivity : FragmentActivity() {
                 // stack — the same semantics as the drawer's clearAndNavigate — instead of
                 // stacking another Chat: repeated taps used to pile up Chat entries, so Back
                 // walked through stale conversations and the visible one looked wrong.
-                if (backStack.size != 1 || backStack.lastOrNull() != destination) {
-                    backStack.clear()
-                    backStack.add(destination)
+                if (!isStackResetTo(backStack, destination)) {
+                    resetStackTo(backStack, destination)
                 }
                 // One-shot: keep it out of the Intent so a config change / recomposition can't
                 // replay the navigation on top of wherever the user has since gone.
@@ -335,10 +341,29 @@ class RouteActivity : FragmentActivity() {
             )
         }
 
-        val backStack = if (initialChatIds.size > 1) {
-            rememberNavBackStack(Screen.Chat(initialChatIds[0]), Screen.Chat(initialChatIds[1]))
-        } else {
-            rememberNavBackStack(Screen.Chat(initialChatIds[0]))
+        // Bot mode has its own root (Bot home). The real settings load asynchronously, so the
+        // cold-start root comes from a synchronous pref mirror; the effect below corrects it.
+        val initialStack = remember {
+            initialRootStack(
+                botMode = readBooleanPreference(BOT_MODE_ROOT_PREF_KEY, false),
+                chatIds = initialChatIds,
+                deepLinkConversationId = deepLinkConversationId,
+            )
+        }
+        val backStack = rememberNavBackStack(*initialStack.toTypedArray())
+        val botModeEnabled = settings.displaySetting.botModeEnabled
+        LaunchedEffect(settings.init, botModeEnabled) {
+            if (settings.init) return@LaunchedEffect
+            writeBooleanPreference(BOT_MODE_ROOT_PREF_KEY, botModeEnabled)
+            reconcileRootStack(backStack, botModeEnabled) {
+                Screen.Chat(
+                    if (readBooleanPreference("create_new_conversation_on_start", true)) {
+                        Uuid.random().toString()
+                    } else {
+                        readStringPreference("lastConversationId", null) ?: Uuid.random().toString()
+                    }
+                )
+            }
         }
         val diagnosticFunctions by rememberSharedPreferenceBoolean(FunctionalDiagnostics.FUNCTION_KEY)
         LaunchedEffect(backStack, diagnosticFunctions) {
@@ -364,7 +389,8 @@ class RouteActivity : FragmentActivity() {
         val gettingStartedSeen = remember { readBooleanPreference(GETTING_STARTED_SEEN_KEY, false) }
         LaunchedEffect(settings.init) {
             if (!gettingStartedSeen && !settings.init && !settings.hasConfiguredModel() &&
-                backStack.size == 1 && backStack.firstOrNull() is Screen.Chat
+                backStack.size == 1 &&
+                (backStack.firstOrNull() is Screen.Chat || backStack.firstOrNull() == Screen.BotHome)
             ) {
                 backStack.add(Screen.GettingStarted)
             }
@@ -490,6 +516,10 @@ class RouteActivity : FragmentActivity() {
 
                             entry<Screen.Translator> {
                                 TranslatorPage()
+                            }
+
+                            entry<Screen.BotHome> {
+                                BotHomePage()
                             }
 
                             entry<Screen.Setting> {
@@ -839,6 +869,10 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data object Setting : Screen
+
+    /** Bot mode root: bot list / channels / settings tabs. Classic mode never shows it. */
+    @Serializable
+    data object BotHome : Screen
 
     @Serializable
     data object SettingsSearch : Screen
