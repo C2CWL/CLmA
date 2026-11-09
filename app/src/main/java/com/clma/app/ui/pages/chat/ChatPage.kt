@@ -1,5 +1,11 @@
 package com.clma.app.ui.pages.chat
 
+import com.clma.app.ui.motion.Motion
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.flow.first
+import androidx.compose.runtime.withFrameNanos
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.animation.core.Animatable
 import com.clma.app.diagnostics.FunctionalDiagnostics
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.Row
@@ -476,6 +482,21 @@ private fun ChatPageContent(
     onInputFocusChanged: (Boolean) -> Unit = {},
 ) {
     val scope = rememberCoroutineScope()
+    // 换会话「先藏 → 落到底 → 再露」（学 Kelivo）：旧会话随页面淡出，新会话的消息列表
+    // 在滚到底之前保持透明，落定后再用 180ms 淡入，避免先露半截列表再跳到底。
+    // 每个会话是独立的导航条目 / ViewModel，所以中途再切走也只是丢弃这个条目，不会串台。
+    val listReveal = remember { Animatable(if (vm.chatListInitialized) 1f else 0f) }
+    LaunchedEffect(Unit) {
+        if (listReveal.value >= 1f) return@LaunchedEffect
+        // 空会话永远不会 initialized，超时后直接显现。
+        withTimeoutOrNull(ChatRevealTimeoutMs) {
+            snapshotFlow { vm.chatListInitialized }.first { it }
+        }
+        // requestScrollToItem 在下一次布局才生效：等两帧确保已经落到底。
+        withFrameNanos { }
+        withFrameNanos { }
+        listReveal.animateTo(1f, Motion.enter(Motion.FAST))
+    }
     val toaster = LocalToaster.current
     val context = LocalContext.current
     val workspaceRepository: WorkspaceRepository = koinInject()
@@ -732,6 +753,7 @@ private fun ChatPageContent(
 
                 Box(modifier = Modifier.fillMaxSize()) {
                     ChatList(
+                        revealAlpha = { listReveal.value },
                         innerPadding = listInset,
                         conversation = conversation,
                         turnFooters = turnFooters,
@@ -1442,3 +1464,6 @@ private fun TopBarSubtitleLine(
         }
     }
 }
+
+/** 换会话时等待列表落底的上限；空会话或加载慢时到点直接显现。 */
+private const val ChatRevealTimeoutMs = 260L

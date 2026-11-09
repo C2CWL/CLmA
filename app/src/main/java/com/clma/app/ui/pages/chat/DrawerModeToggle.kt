@@ -2,7 +2,7 @@ package com.clma.app.ui.pages.chat
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.spring
+import com.clma.app.ui.motion.Motion
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -70,7 +70,7 @@ internal fun DrawerModeSegmented(
         val segW = maxWidth / 2
         val thumbX by animateDpAsState(
             targetValue = if (agentMode) segW else 0.dp,
-            animationSpec = spring(dampingRatio = 0.8f, stiffness = 500f),
+            animationSpec = Motion.springGentle(),
             label = "modeThumb",
         )
         Box(
@@ -98,6 +98,7 @@ private fun ModeSegment(
 ) {
     val color by animateColorAsState(
         if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+        animationSpec = Motion.enter(Motion.FAST),
         label = "modeSegColor",
     )
     Row(
@@ -132,7 +133,7 @@ internal fun DrawerModeRailToggle(
     val cell = 30.dp
     val thumbY by animateDpAsState(
         targetValue = if (agentMode) cell else 0.dp,
-        animationSpec = spring(dampingRatio = 0.8f, stiffness = 500f),
+        animationSpec = Motion.springGentle(),
         label = "railModeThumb",
     )
     Box(
@@ -171,6 +172,7 @@ private fun RailModeCell(
 ) {
     val color by animateColorAsState(
         if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+        animationSpec = Motion.enter(Motion.FAST),
         label = "railModeColor",
     )
     Box(

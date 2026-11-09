@@ -111,8 +111,10 @@ fun SettingPreferencesGeneralPage(vm: SettingVM = koinViewModel()) {
                         )
                     },
                 )
-                if (displaySetting.showMessageJumper) {
+                // 子项随父开关平滑长出 / 收起（不再 if 硬增删）。
+                run {
                     item(
+                        visible = displaySetting.showMessageJumper,
                         headlineContent = { Text(stringResource(R.string.setting_display_page_message_jumper_position_title)) },
                         supportingContent = { Text(stringResource(R.string.setting_display_page_message_jumper_position_desc)) },
                         trailingContent = {
@@ -149,8 +151,10 @@ fun SettingPreferencesGeneralPage(vm: SettingVM = koinViewModel()) {
                         )
                     },
                 )
-                if (displaySetting.enableVolumeKeyScroll) {
+                // 子项随父开关平滑长出 / 收起（不再 if 硬增删）。
+                run {
                     item(
+                        visible = displaySetting.enableVolumeKeyScroll,
                         headlineContent = { Text(stringResource(R.string.setting_display_page_volume_key_scroll_ratio)) },
                         supportingContent = {
                             PercentSlider(
@@ -263,8 +267,10 @@ fun SettingPreferencesGeneralPage(vm: SettingVM = koinViewModel()) {
                         )
                     },
                 )
-                if (displaySetting.pasteLongTextAsFile) {
+                // 子项随父开关平滑长出 / 收起（不再 if 硬增删）。
+                run {
                     item(
+                        visible = displaySetting.pasteLongTextAsFile,
                         headlineContent = { Text(stringResource(R.string.setting_display_page_paste_long_text_threshold_title)) },
                         supportingContent = {
                             // Local, IME-safe; only a change from elsewhere replaces the typed text.
