@@ -331,6 +331,49 @@ class ChatServiceTest {
         assertEquals(configured, resolveCompressionModel(settings))
     }
 
+    // --- resolveBotCompressionModel: bots never fall through to another provider ------------
+
+    @Test
+    fun `bot compression prefers the configured compression model`() {
+        val configured = Model(modelId = "cheap-summary")
+        val botModel = Model(modelId = "bot-model")
+        val provider = ProviderSetting.OpenAI(enabled = true, models = listOf(configured, botModel))
+        val settings = Settings(compressModelId = configured.id, providers = listOf(provider))
+
+        assertEquals(configured, resolveBotCompressionModel(settings, botModel))
+    }
+
+    @Test
+    fun `bot compression without a configured model uses the conversation model, not the global chat model`() {
+        val globalChat = Model(modelId = "global-chat")
+        val botModel = Model(modelId = "bot-model")
+        val autoModel = Model(id = DEFAULT_AUTO_MODEL_ID, modelId = "auto")
+        val provider = ProviderSetting.OpenAI(enabled = true, models = listOf(globalChat, botModel))
+        val settings = Settings(
+            compressModelId = autoModel.id,
+            chatModelId = globalChat.id,
+            providers = listOf(provider),
+        )
+
+        assertEquals(botModel, resolveBotCompressionModel(settings, botModel))
+        // The classic resolver would have picked the global chat model here.
+        assertEquals(globalChat, resolveCompressionModel(settings))
+    }
+
+    @Test
+    fun `bot compression never picks a model from some other enabled provider`() {
+        val botModel = Model(modelId = "bot-model")
+        val other = Model(modelId = "other-provider-model")
+        val autoModel = Model(id = DEFAULT_AUTO_MODEL_ID, modelId = "auto")
+        val disabled = ProviderSetting.OpenAI(enabled = false, models = listOf(botModel))
+        val enabledOther = ProviderSetting.OpenAI(enabled = true, name = "Other", models = listOf(other))
+        val settings = Settings(compressModelId = autoModel.id, providers = listOf(disabled, enabledOther))
+
+        assertNull(resolveBotCompressionModel(settings, botModel))
+        assertNull(resolveBotCompressionModel(settings, null))
+        assertEquals(other, resolveCompressionModel(settings))
+    }
+
     // --- automaticCompactionNoOpResult: a non-advancing boundary must not abort the turn -----
 
     @Test

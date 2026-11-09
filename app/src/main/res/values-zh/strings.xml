@@ -2959,6 +2959,9 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="assistant_page_tool_result_budget_placeholder">默认（仅 32 KB 溢出阈值）</string>
   <string name="assistant_page_tool_result_budget_active">限制：每条工具结果约 %d 个 token</string>
   <string name="assistant_page_tool_result_budget_off">使用默认上限（32 KB 字符，仅保留开头预览）</string>
+  <string name="assistant_page_tool_result_budget_bot_default">Bot 默认：每条工具结果约 %d 个 token（填数字可改）</string>
+  <string name="assistant_page_bot_cost_saving">Bot 省额度</string>
+  <string name="assistant_page_bot_cost_saving_desc">Bot 默认开启：自动压缩上下文（摘要用你设置的压缩模型，没设就用这个 Bot 自己的模型）、限制单条工具结果大小、老截图和老工具输出按批次省略以保住缓存，以及在下一句话本来就要压缩时提前在空闲时压好。关闭后与经典助手行为一致。</string>
   <string name="assistant_page_cold_memory">冷记忆（Markdown）</string>
   <string name="assistant_page_cold_memory_desc">冷记忆跟随当前助手，不依赖工作区。旧笔记只复制不删除；随「助手冷记忆」备份项备份和恢复。</string>
   <string name="assistant_page_cold_memory_no_workspace">未绑定工作区</string>

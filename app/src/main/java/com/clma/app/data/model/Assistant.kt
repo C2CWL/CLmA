@@ -184,6 +184,15 @@ data class Assistant(
      */
     @EncodeDefault(EncodeDefault.Mode.NEVER)
     val library: AssistantLibrary = AssistantLibrary.CLASSIC,
+    /**
+     * Bot mode only: the cost-saving defaults of [com.clma.app.data.botmode.BotCostPolicy]
+     * (automatic + precision compaction, a default tool-result budget, batched request ageing,
+     * idle pre-compaction). Null means "use the Bot default" (on); false turns them off so the
+     * bot behaves like a classic assistant. Ignored for classic assistants. Appended last and
+     * NEVER-encoded, so existing stored assistants are unchanged.
+     */
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val botCostSaving: Boolean? = null,
 )
 
 /** Classic assistants vs Bot-mode bots; see [Assistant.library]. */

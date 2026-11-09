@@ -129,6 +129,9 @@
   <string name="assistant_page_tool_result_budget_placeholder">Default (32 KB spill gate only)</string>
   <string name="assistant_page_tool_result_budget_active">Limit: about %d tokens per tool result</string>
   <string name="assistant_page_tool_result_budget_off">Using the default limit (32 KB characters, head preview only)</string>
+  <string name="assistant_page_tool_result_budget_bot_default">Bot default: about %d tokens per tool result (set a number to change it)</string>
+  <string name="assistant_page_bot_cost_saving">Bot cost saving</string>
+  <string name="assistant_page_bot_cost_saving_desc">On by default for bots: automatic context compaction (summaries use your compression model, otherwise this bot\'s own model), a tool-result budget, cache-friendly ageing of old screenshots and tool output, and compaction while idle when the next message would compact anyway. Turn off to behave like a classic assistant.</string>
   <string name="assistant_page_advanced_section">Advanced / experimental</string>
   <string name="assistant_page_advanced_section_desc">Protocol-level and experimental switches. All default to off; turn one on only if you understand how it changes the model tool surface.</string>
   <string name="assistant_page_compact_context">Model-initiated context compaction</string>
