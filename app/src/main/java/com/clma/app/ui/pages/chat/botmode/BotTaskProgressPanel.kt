@@ -40,8 +40,9 @@ import kotlinx.coroutines.withContext
 
 /**
  * Phone-side stand-in for OpenMausBot's cloud computer: task steps + the existing virtual-display
- * live preview. Take-over stops generation and shows [VirtualDisplayPreviewWindow] when a display
- * is already running; otherwise the panel keeps the step list and offers create / manage.
+ * live preview. Pause stops the current generation; take-over stops it and shows
+ * [VirtualDisplayPreviewWindow] when a display is already running; otherwise the panel keeps
+ * the step list and offers create / manage so the user can send the next message themselves.
  */
 @Composable
 fun BotTaskProgressSheet(
