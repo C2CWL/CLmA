@@ -29,6 +29,7 @@ class SettingsSearchCoverageTest {
         "Stats" to "usage statistics",
         "GettingStarted" to "first-run onboarding, opened from chat",
         "BotHome" to "Bot mode home (bot list / channels), not a settings page",
+        "BotChat" to "one bot's conversation in Bot mode",
     )
 
     /**

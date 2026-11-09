@@ -125,6 +125,7 @@ import com.clma.app.data.datastore.KeepScreenOnMode
 import com.clma.app.ui.components.ai.ChatInput
 import com.clma.app.ui.components.ai.ChatConversationSettingsPanel
 import com.clma.app.data.botmode.withBotUnreadClearedConversation
+import com.clma.app.ui.pages.bot.BotChatChrome
 import com.clma.app.data.botmode.withBotUnreadClearedForAssistant
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.SlidersHorizontal
@@ -427,7 +428,7 @@ private fun DrawerBackHandlers(
  * active, so the status line is exactly as before on an install that never dispatches.
  */
 @Composable
-private fun subAgentStatusLine(runs: Map<String, SubAgentRun>, conversationId: Uuid): String? {
+internal fun subAgentStatusLine(runs: Map<String, SubAgentRun>, conversationId: Uuid): String? {
     // Only THIS conversation's runs: the registry is process-wide and spans every assistant,
     // so an unfiltered read made an unrelated chat announce "N sub-agents running".
     val active = runs.values.filter {
@@ -457,8 +458,13 @@ private fun formatElapsed(seconds: Long): String {
     return "%d:%02d".format(minutes, remaining)
 }
 
+/**
+ * The chat surface itself (list, input, sheets). Classic [ChatPage] calls it with its own title
+ * bars; Bot mode's BotChatPage passes [botChrome] to swap only the chrome — no drawer, its own
+ * bar — while sending, streaming, approvals and attachments stay exactly the same code.
+ */
 @Composable
-private fun ChatPageContent(
+internal fun ChatPageContent(
     onStartVoiceMode: () -> Unit,
     inputState: ChatInputState,
     loadingJob: Job?,
@@ -477,6 +483,7 @@ private fun ChatPageContent(
     onDismissError: (Uuid) -> Unit,
     onClearAllErrors: () -> Unit,
     onInputFocusChanged: (Boolean) -> Unit = {},
+    botChrome: BotChatChrome? = null,
 ) {
     val scope = rememberCoroutineScope()
     // 换会话「先藏 → 落到底 → 再露」（学 Kelivo）：旧会话随页面淡出，新会话的消息列表
@@ -500,7 +507,7 @@ private fun ChatPageContent(
     val turnFooters by vm.turnFooters.collectAsStateWithLifecycle()
     var previewMode by rememberSaveable { mutableStateOf(false) }
     val assistant = setting.getCurrentAssistant()
-    val geminiLayout = setting.displaySetting.effectiveChatLayout == ChatLayout.GEMINI
+    val geminiLayout = botChrome == null && setting.displaySetting.effectiveChatLayout == ChatLayout.GEMINI
     val compressAndContinueLabel = stringResource(R.string.chat_suggestion_compress_continue)
     var showFilesSheet by remember { mutableStateOf(false) }
     var showConversationSettings by remember { mutableStateOf(false) }
@@ -743,7 +750,12 @@ private fun ChatPageContent(
                         loading = loadingJob != null,
                         processingStatus = processingStatus,
                         previewMode = previewMode,
-                        settings = setting,
+                        // Bot chat: user bubbles, plain-text replies.
+                        settings = if (botChrome == null) {
+                            setting
+                        } else {
+                            setting.copy(displaySetting = setting.displaySetting.copy(showAssistantBubble = false))
+                        },
                         hazeState = hazeState,
                         errors = errors,
                         onDismissError = onDismissError,
@@ -758,7 +770,11 @@ private fun ChatPageContent(
                         onForkMessage = {
                             scope.launch {
                                 val fork = vm.forkMessage(message = it)
-                                navigateToChatPage(navController, chatId = fork.id, isTemporary = fork.isTemporary)
+                                if (botChrome != null) {
+                                    botChrome.onOpenConversation(fork.id)
+                                } else {
+                                    navigateToChatPage(navController, chatId = fork.id, isTemporary = fork.isTemporary)
+                                }
                             }
                         },
                         onDelete = {
@@ -832,7 +848,8 @@ private fun ChatPageContent(
                     // CLEAN 与 MODERN 都走顶栏面板，不需要顶部溶解。
                     val chatLayout = setting.displaySetting.effectiveChatLayout
                     val cleanLayout = chatLayout != ChatLayout.ORIGINAL
-                    val topDissolve = !cleanLayout
+                    // Bot chat's bar is an opaque panel of its own, like the clean layouts.
+                    val topDissolve = !cleanLayout && botChrome == null
 
                     // Top dissolve: extends below the title bar so incoming/outgoing messages
                     // fade in/out smoothly instead of clipping abruptly at the bar's bottom edge.
@@ -847,7 +864,7 @@ private fun ChatPageContent(
                     }
                     // 现代的顶栏是一块悬浮卡片，和屏幕顶边之间留了状态栏那一条；
                     // 给那一条一层很短的淡出，免得消息文字滚到状态栏图标底下。
-                    if (chatLayout == ChatLayout.MODERN) {
+                    if (chatLayout == ChatLayout.MODERN && botChrome == null) {
                         val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
                         Box(
                             modifier = Modifier
@@ -905,7 +922,11 @@ private fun ChatPageContent(
                             .fillMaxWidth()
                             .onSizeChanged { topBarHeightPx = it.height },
                     ) {
-                        if (geminiLayout) {
+                        if (botChrome != null) {
+                            // Measured like every bar here, so whatever the bot bar shows under
+                            // itself (the task chip) pushes the list down instead of covering it.
+                            botChrome.topBar()
+                        } else if (geminiLayout) {
                             Row(
                                 modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically,

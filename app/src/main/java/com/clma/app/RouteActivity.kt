@@ -165,6 +165,7 @@ import com.clma.app.ui.pages.bot.BOT_MODE_ROOT_PREF_KEY
 import com.clma.app.data.botmode.ensureBotLibrary
 import com.clma.app.data.botmode.withAssistantInLibrary
 import com.clma.app.ui.pages.bot.BotHomePage
+import com.clma.app.ui.pages.bot.BotChatPage
 import com.clma.app.ui.pages.bot.initialRootStack
 import com.clma.app.ui.pages.bot.isStackResetTo
 import com.clma.app.ui.pages.bot.reconcileRootStack
@@ -284,10 +285,17 @@ class RouteActivity : FragmentActivity() {
             Intent.ACTION_PROCESS_TEXT -> Screen.ShareHandler(
                 text = intent.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT)?.toString().orEmpty(),
             )
-            else -> conversationId?.let { Screen.Chat(it) }
+            else -> conversationId?.let { id ->
+                // Bot mode opens conversations in its own chat page, never the classic one.
+                if (backStack.firstOrNull() == Screen.BotHome) {
+                    Screen.BotChat(settingsStore.settingsFlow.value.assistantId.toString(), id)
+                } else {
+                    Screen.Chat(id)
+                }
+            }
         }
         if (destination != null) {
-            if (destination is Screen.Chat && conversationId != null) {
+            if ((destination is Screen.Chat || destination is Screen.BotChat) && conversationId != null) {
                 // "Open this conversation" (edge bar tap, notification, shortcut) replaces the
                 // stack — the same semantics as the drawer's clearAndNavigate — instead of
                 // stacking another Chat: repeated taps used to pile up Chat entries, so Back
@@ -537,6 +545,13 @@ class RouteActivity : FragmentActivity() {
 
                             entry<Screen.BotHome> {
                                 BotHomePage()
+                            }
+
+                            entry<Screen.BotChat> { key ->
+                                BotChatPage(
+                                    botId = Uuid.parse(key.botId),
+                                    conversationId = Uuid.parse(key.conversationId),
+                                )
                             }
 
                             entry<Screen.Setting> {
@@ -890,6 +905,10 @@ sealed interface Screen : NavKey {
     /** Bot mode root: bot list / channels / settings tabs. Classic mode never shows it. */
     @Serializable
     data object BotHome : Screen
+
+    /** One bot's conversation in Bot mode (its own chrome, no classic drawer). */
+    @Serializable
+    data class BotChat(val botId: String, val conversationId: String) : Screen
 
     @Serializable
     data object SettingsSearch : Screen

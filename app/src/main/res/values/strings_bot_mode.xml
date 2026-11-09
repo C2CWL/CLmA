@@ -105,4 +105,13 @@
   <string name="bot_new_set_main">Make it the main assistant</string>
   <string name="bot_new_hint">Avatar and model can be set on the next page.</string>
   <string name="bot_new_create">Create</string>
+  <string name="bot_chat_switch_model">Switch model</string>
+  <string name="bot_chat_info">Bot info</string>
+  <string name="bot_chat_task_running">Working · step %1$d/%2$d: %3$s</string>
+  <string name="bot_chat_task_done">Task finished</string>
+  <string name="bot_chat_task_paused">Paused</string>
+  <string name="bot_chat_task_details">Details</string>
+  <string name="bot_approval_card_title">Needs your approval</string>
+  <string name="bot_approval_once">Just this once</string>
+  <string name="bot_approval_remember_chat">Remember for this chat</string>
 </resources>

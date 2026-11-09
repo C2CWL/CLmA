@@ -127,3 +127,30 @@ fun BotTaskStepStatus.toDoneActiveFlags(): Pair<Boolean, Boolean> = when (this) 
     BotTaskStepStatus.ACTIVE -> false to true
     BotTaskStepStatus.PENDING, BotTaskStepStatus.FAILED -> false to false
 }
+
+/** What the Bot chat's task chip shows: "step [current] of [total]: [title]". */
+data class BotTaskChipSummary(
+    val current: Int,
+    val total: Int,
+    val title: String,
+    val allDone: Boolean,
+)
+
+/**
+ * Summary for the task chip, or null when there is nothing to show (idle, no real steps).
+ * The current step is the first unfinished one; when every step is done it is the last one.
+ */
+fun botTaskChipSummary(steps: List<BotTaskStep>, isGenerating: Boolean): BotTaskChipSummary? {
+    val real = steps.filterNot { it.id == "idle" }
+    if (real.isEmpty()) return null
+    val firstOpen = real.indexOfFirst { it.status == BotTaskStepStatus.ACTIVE || it.status == BotTaskStepStatus.PENDING }
+    val allDone = firstOpen < 0 && !isGenerating
+    if (!isGenerating && firstOpen < 0 && real.none { it.status == BotTaskStepStatus.DONE }) return null
+    val index = if (firstOpen >= 0) firstOpen else real.lastIndex
+    return BotTaskChipSummary(
+        current = index + 1,
+        total = real.size,
+        title = real[index].title,
+        allDone = allDone,
+    )
+}

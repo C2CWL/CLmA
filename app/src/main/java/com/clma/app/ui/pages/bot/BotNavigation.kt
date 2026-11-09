@@ -35,7 +35,8 @@ fun reconcileRootStack(stack: MutableList<NavKey>, botMode: Boolean, newChat: ()
         stack.add(0, Screen.BotHome)
     } else {
         if (Screen.BotHome !in stack) return
-        stack.removeAll { it == Screen.BotHome }
+        // Bot chats belong to Bot mode too; classic opens conversations in its own page.
+        stack.removeAll { it == Screen.BotHome || it is Screen.BotChat }
         if (stack.firstOrNull() !is Screen.Chat) stack.add(0, newChat())
     }
 }

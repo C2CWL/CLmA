@@ -59,4 +59,11 @@ class BotNavigationTest {
         assertEquals(listOf(Screen.BotHome, Screen.Chat("b")), bot)
         assertTrue(isStackResetTo(bot, Screen.Chat("b")))
     }
+
+    @Test
+    fun `turning bot mode off drops bot chats with bot home`() {
+        val stack = mutableListOf<NavKey>(Screen.BotHome, Screen.BotChat("b", "c"), Screen.Setting)
+        reconcileRootStack(stack, botMode = false, newChat = newChat)
+        assertEquals(listOf(Screen.Chat("new"), Screen.Setting), stack)
+    }
 }
