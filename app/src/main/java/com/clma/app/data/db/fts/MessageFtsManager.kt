@@ -1,5 +1,6 @@
 package com.clma.app.data.db.fts
 
+import com.clma.app.data.botmode.AssistantScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.clma.ai.ui.UIMessage
@@ -107,9 +108,36 @@ class MessageFtsManager(private val database: AppDatabase) {
         conversationId: String? = null,
         limit: Int = 50,
         offset: Int = 0,
+        scope: AssistantScope = AssistantScope.ALL,
     ): List<MessageSearchResult> = withContext(Dispatchers.IO) {
         require(limit in 1..201 && offset >= 0)
         val results = mutableListOf<MessageSearchResult>()
+        if (scope.isEmpty) return@withContext results
+        // Library isolation (classic vs Bot): filtered in SQL so paging stays correct.
+        val includeIds = scope.include?.toList()
+        val excludeIds = scope.exclude.toList()
+        val includeFilter = if (includeIds != null) {
+            """
+            AND EXISTS (
+                SELECT 1 FROM conversationentity AS scoped
+                WHERE scoped.id = message_fts.conversation_id
+                  AND scoped.assistant_id IN (${includeIds.joinToString(",") { "?" }})
+            )
+            """.trimIndent()
+        } else {
+            ""
+        }
+        val excludeFilter = if (excludeIds.isNotEmpty()) {
+            """
+            AND NOT EXISTS (
+                SELECT 1 FROM conversationentity AS excluded
+                WHERE excluded.id = message_fts.conversation_id
+                  AND excluded.assistant_id IN (${excludeIds.joinToString(",") { "?" }})
+            )
+            """.trimIndent()
+        } else {
+            ""
+        }
         val assistantFilter = if (assistantId != null) {
             """
             AND EXISTS (
@@ -130,6 +158,8 @@ class MessageFtsManager(private val database: AppDatabase) {
             add(keyword)
             if (assistantId != null) add(assistantId)
             if (conversationId != null) add(conversationId)
+            includeIds?.let { addAll(it) }
+            addAll(excludeIds)
             add(limit)
             add(offset)
         }.toTypedArray()
@@ -141,6 +171,8 @@ class MessageFtsManager(private val database: AppDatabase) {
             WHERE text MATCH jieba_query(?)
             $assistantFilter
             $conversationFilter
+            $includeFilter
+            $excludeFilter
             ORDER BY ${sort.orderBy}, rowid
             LIMIT ? OFFSET ?
             """.trimIndent(),

@@ -172,4 +172,6 @@
   <string name="bot_info_advanced">All settings of this bot</string>
   <string name="bot_info_delete_main_blocked">The main assistant cannot be deleted. Make another bot main first.</string>
   <string name="bot_info_rename">Rename bot</string>
+  <string name="bot_library_link_classic_conversation">This conversation belongs to classic mode. Turn off Bot mode in settings to open it.</string>
+  <string name="bot_library_link_bot_conversation">This conversation belongs to Bot mode. Turn on Bot mode in settings to open it.</string>
 </resources>

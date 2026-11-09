@@ -230,52 +230,7 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null, is
 
     // 初始化输入状态（处理传入的 files 和 text 参数）
     LaunchedEffect(files, text) {
-        if (files.isNotEmpty()) {
-            // Pair each source URI with its copied local file. createChatFilesByContents may
-            // skip failures, so zip by successful copies in order rather than assuming 1:1.
-            val localFiles = filesManager.createChatFilesByContents(files)
-            val parts = buildList {
-                // Best-effort: walk sources and locals in parallel when counts match; otherwise
-                // classify each local file from its on-disk name.
-                if (localFiles.size == files.size) {
-                    localFiles.forEachIndexed { index, local ->
-                        val source = files[index]
-                        val fileName = filesManager.getFileNameFromUri(source)
-                            ?: local.lastPathSegment
-                            ?: "file"
-                        val mime = filesManager.getFileMimeType(source)
-                            ?: guessMimeFromFileName(fileName)
-                            ?: "application/octet-stream"
-                        add(
-                            classifyChatAttachment(fileName, mime).toMessagePart(
-                                localUri = local.toString(),
-                                fileName = fileName,
-                                mime = mime,
-                            )
-                        )
-                    }
-                } else {
-                    localFiles.forEach { local ->
-                        val fileName = local.lastPathSegment ?: "file"
-                        val mime = guessMimeFromFileName(fileName)
-                            ?: "application/octet-stream"
-                        add(
-                            classifyChatAttachment(fileName, mime).toMessagePart(
-                                localUri = local.toString(),
-                                fileName = fileName,
-                                mime = mime,
-                            )
-                        )
-                    }
-                }
-            }
-            inputState.messageContent = parts
-        }
-        text?.base64Decode()?.let { decodedText ->
-            if (decodedText.isNotEmpty()) {
-                inputState.setMessageText(decodedText)
-            }
-        }
+        applyInitialChatInput(inputState, filesManager, files, text)
     }
 
     val chatListState = rememberLazyListState()
@@ -1390,3 +1345,58 @@ private fun TopBarSubtitleLine(
 
 /** 换会话时等待列表落底的上限；空会话或加载慢时到点直接显现。 */
 private const val ChatRevealTimeoutMs = 260L
+
+/** Fills the composer with shared / prefilled [files] and base64 [text]; also used by the Bot chat page. */
+internal suspend fun applyInitialChatInput(
+    inputState: ChatInputState,
+    filesManager: FilesManager,
+    files: List<Uri>,
+    text: String?,
+) {
+    if (files.isNotEmpty()) {
+        // Pair each source URI with its copied local file. createChatFilesByContents may
+        // skip failures, so zip by successful copies in order rather than assuming 1:1.
+        val localFiles = filesManager.createChatFilesByContents(files)
+        val parts = buildList {
+            // Best-effort: walk sources and locals in parallel when counts match; otherwise
+            // classify each local file from its on-disk name.
+            if (localFiles.size == files.size) {
+                localFiles.forEachIndexed { index, local ->
+                    val source = files[index]
+                    val fileName = filesManager.getFileNameFromUri(source)
+                        ?: local.lastPathSegment
+                        ?: "file"
+                    val mime = filesManager.getFileMimeType(source)
+                        ?: guessMimeFromFileName(fileName)
+                        ?: "application/octet-stream"
+                    add(
+                        classifyChatAttachment(fileName, mime).toMessagePart(
+                            localUri = local.toString(),
+                            fileName = fileName,
+                            mime = mime,
+                        )
+                    )
+                }
+            } else {
+                localFiles.forEach { local ->
+                    val fileName = local.lastPathSegment ?: "file"
+                    val mime = guessMimeFromFileName(fileName)
+                        ?: "application/octet-stream"
+                    add(
+                        classifyChatAttachment(fileName, mime).toMessagePart(
+                            localUri = local.toString(),
+                            fileName = fileName,
+                            mime = mime,
+                        )
+                    )
+                }
+            }
+        }
+        inputState.messageContent = parts
+    }
+    text?.base64Decode()?.let { decodedText ->
+        if (decodedText.isNotEmpty()) {
+            inputState.setMessageText(decodedText)
+        }
+    }
+}

@@ -1,5 +1,8 @@
 package com.clma.app.ui.pages.history
 
+import com.clma.app.data.botmode.activeLibraryIsBot
+import com.clma.app.data.botmode.inLibrary
+import kotlinx.coroutines.flow.combine
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -51,8 +54,12 @@ class HistoryVM(
         }
     }
 
+    // Pinned spans assistants, but never libraries: classic pages never list Bot conversations
+    // and vice versa (filtered at read time, nothing is moved or deleted).
     fun getPinnedConversations(): Flow<List<Conversation>> =
-        conversationRepo.getPinnedConversations()
+        combine(conversationRepo.getPinnedConversations(), settingsStore.settingsFlow) { pinned, settings ->
+            pinned.inLibrary(settings, settings.activeLibraryIsBot()) { it.assistantId }
+        }
 
     fun restoreConversation(conversation: Conversation) {
         viewModelScope.launch {

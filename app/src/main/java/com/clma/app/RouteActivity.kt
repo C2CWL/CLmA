@@ -47,6 +47,10 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavKey
+import androidx.lifecycle.lifecycleScope
+import android.widget.Toast
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
@@ -64,6 +68,7 @@ import com.dokar.sonner.rememberToasterState
 import kotlinx.serialization.Serializable
 import com.clma.app.data.datastore.SettingsStore
 import com.clma.app.data.datastore.Settings
+import com.clma.app.data.repository.ConversationRepository
 import com.clma.app.data.model.Assistant
 import com.clma.app.data.datastore.DEFAULT_CODEX_PROVIDER_ID
 import com.clma.app.data.datastore.DEFAULT_GEMINI_OAUTH_PROVIDER_ID
@@ -166,7 +171,10 @@ import com.clma.app.data.botmode.ensureBotLibrary
 import com.clma.app.data.botmode.withAssistantInLibrary
 import com.clma.app.ui.pages.bot.BotHomePage
 import com.clma.app.ui.pages.bot.BotChatPage
+import com.clma.app.ui.pages.bot.conversationLinkTarget
 import com.clma.app.ui.pages.bot.initialRootStack
+import com.clma.app.ui.pages.bot.libraryGuardedStack
+import com.clma.app.ui.pages.bot.routeConversationId
 import com.clma.app.ui.pages.bot.isStackResetTo
 import com.clma.app.ui.pages.bot.reconcileRootStack
 import com.clma.app.ui.pages.bot.resetStackTo
@@ -186,6 +194,7 @@ class RouteActivity : FragmentActivity() {
 
     private val okHttpClient by inject<OkHttpClient>()
     private val settingsStore by inject<SettingsStore>()
+    private val conversationRepo by inject<ConversationRepository>()
     private var navStack: MutableList<NavKey>? = null
     private val pendingIntents = ArrayDeque<Intent>()
 
@@ -286,29 +295,67 @@ class RouteActivity : FragmentActivity() {
                 text = intent.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT)?.toString().orEmpty(),
             )
             else -> conversationId?.let { id ->
-                // Bot mode opens conversations in its own chat page, never the classic one.
-                if (backStack.firstOrNull() == Screen.BotHome) {
-                    Screen.BotChat(settingsStore.settingsFlow.value.assistantId.toString(), id)
-                } else {
-                    Screen.Chat(id)
-                }
+                // Library isolation: the target page depends on which library the stored
+                // conversation belongs to, which needs the real settings and a DB read.
+                // One-shot: keep it out of the Intent so a config change can't replay it.
+                intent.removeExtra("conversationId")
+                openConversationLink(backStack, id)
+                return
             }
         }
-        if (destination != null) {
-            if ((destination is Screen.Chat || destination is Screen.BotChat) && conversationId != null) {
-                // "Open this conversation" (edge bar tap, notification, shortcut) replaces the
-                // stack — the same semantics as the drawer's clearAndNavigate — instead of
-                // stacking another Chat: repeated taps used to pile up Chat entries, so Back
-                // walked through stale conversations and the visible one looked wrong.
-                if (!isStackResetTo(backStack, destination)) {
-                    resetStackTo(backStack, destination)
-                }
-                // One-shot: keep it out of the Intent so a config change / recomposition can't
-                // replay the navigation on top of wherever the user has since gone.
-                intent.removeExtra("conversationId")
-            } else if (backStack.lastOrNull() != destination) {
-                backStack.add(destination)
+        if (destination != null && backStack.lastOrNull() != destination) {
+            backStack.add(destination)
+        }
+    }
+
+    /**
+     * "Open this conversation" (edge bar tap, notification, shortcut): Bot mode opens Bot
+     * conversations in the Bot chat page, classic opens classic ones in the classic page, and a
+     * conversation of the other library is refused with a hint — the mode is never switched
+     * implicitly (the explicit Bot-mode switch is untouched).
+     */
+    private fun openConversationLink(backStack: MutableList<NavKey>, conversationId: String) {
+        lifecycleScope.launch {
+            val settings = settingsStore.settingsFlow.first { !it.init }
+            val owner = runCatching { Uuid.parse(conversationId) }.getOrNull()
+                ?.let { conversationRepo.getAssistantIdOfConversation(it) }
+            val destination = conversationLinkTarget(
+                botRoot = backStack.firstOrNull() == Screen.BotHome,
+                conversationId = conversationId,
+                owner = owner,
+                settings = settings,
+            )
+            if (destination == null) {
+                Toast.makeText(
+                    this@RouteActivity,
+                    if (settings.displaySetting.botModeEnabled) {
+                        R.string.bot_library_link_classic_conversation
+                    } else {
+                        R.string.bot_library_link_bot_conversation
+                    },
+                    Toast.LENGTH_SHORT,
+                ).show()
+                return@launch
             }
+            // Replaces the stack — the same semantics as the drawer's clearAndNavigate — instead
+            // of stacking another chat: repeated taps used to pile up chat entries.
+            if (!isStackResetTo(backStack, destination)) {
+                resetStackTo(backStack, destination)
+            }
+        }
+    }
+
+    /** Drops conversation pages of the other library from the stack (see [libraryGuardedStack]). */
+    private suspend fun guardStackLibrary(backStack: MutableList<NavKey>, settings: Settings, newChat: () -> Screen.Chat) {
+        val before = backStack.toList()
+        val owners = before.mapNotNull { it.routeConversationId() }.distinct().associateWith { id ->
+            runCatching { Uuid.parse(id) }.getOrNull()?.let { conversationRepo.getAssistantIdOfConversation(it) }
+        }
+        val guarded = libraryGuardedStack(before, settings, owners, newChat)
+        // Only apply if the user has not navigated meanwhile.
+        if (guarded !== before && backStack.toList() == before) {
+            backStack.clear()
+            backStack.addAll(guarded)
         }
     }
 
@@ -389,6 +436,9 @@ class RouteActivity : FragmentActivity() {
                     }
                 )
             }
+            // Library isolation: a restored / linked conversation page of the other library
+            // (e.g. the last Bot conversation restored into the classic chat) never shows.
+            guardStackLibrary(backStack, settings) { Screen.Chat(Uuid.random().toString()) }
         }
         val diagnosticFunctions by rememberSharedPreferenceBoolean(FunctionalDiagnostics.FUNCTION_KEY)
         LaunchedEffect(backStack, diagnosticFunctions) {
@@ -551,6 +601,8 @@ class RouteActivity : FragmentActivity() {
                                 BotChatPage(
                                     botId = Uuid.parse(key.botId),
                                     conversationId = Uuid.parse(key.conversationId),
+                                    text = key.text,
+                                    files = key.files.map { it.toUri() },
                                 )
                             }
 
@@ -919,7 +971,13 @@ sealed interface Screen : NavKey {
 
     /** One bot's conversation in Bot mode (its own chrome, no classic drawer). */
     @Serializable
-    data class BotChat(val botId: String, val conversationId: String) : Screen
+    data class BotChat(
+        val botId: String,
+        val conversationId: String,
+        // Composer prefill (share sheet in Bot mode), same encoding as [Chat.text] / [Chat.files].
+        val text: String? = null,
+        val files: List<String> = emptyList(),
+    ) : Screen
 
     /** A bot's info page in Bot mode (model, prompt, memory, approvals, apps, displays...). */
     @Serializable
