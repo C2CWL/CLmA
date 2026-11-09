@@ -115,7 +115,7 @@ fun BotHomePage(vm: BotHomeVM = koinViewModel()) {
                 hiddenCount = settings.botsHiddenForManage().size,
                 onOpen = { item ->
                     vm.open(item.row) { conversationId ->
-                        nav.navigate(Screen.Chat(conversationId.toString()))
+                        nav.navigate(Screen.BotChat(item.bot.id.toString(), conversationId.toString()))
                     }
                 },
                 onTogglePin = { vm.togglePin(it.bot) },

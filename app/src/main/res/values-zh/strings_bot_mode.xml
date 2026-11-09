@@ -105,4 +105,13 @@
   <string name="bot_new_set_main">设为主助手</string>
   <string name="bot_new_hint">头像和模型在下一页设置。</string>
   <string name="bot_new_create">创建</string>
+  <string name="bot_chat_switch_model">切换模型</string>
+  <string name="bot_chat_info">Bot 信息</string>
+  <string name="bot_chat_task_running">任务进行中 · 第 %1$d/%2$d 步：%3$s</string>
+  <string name="bot_chat_task_done">任务已完成</string>
+  <string name="bot_chat_task_paused">已暂停</string>
+  <string name="bot_chat_task_details">详情</string>
+  <string name="bot_approval_card_title">需要你批准</string>
+  <string name="bot_approval_once">仅此一次</string>
+  <string name="bot_approval_remember_chat">本会话记住</string>
 </resources>

@@ -39,6 +39,8 @@ fun BotModelPickerButton(
     providers: List<ProviderSetting>,
     onSelect: (Model) -> Unit,
     modifier: Modifier = Modifier,
+    /** Custom opener (e.g. the small model line in the Bot chat bar); defaults to a text button. */
+    trigger: (@Composable (label: String, open: () -> Unit) -> Unit)? = null,
 ) {
     var providerFilter by remember { mutableStateOf<Uuid?>(null) }
     val visibleProviders = remember(providers, providerFilter) {
@@ -50,13 +52,17 @@ fun BotModelPickerButton(
         providers = visibleProviders,
         type = ModelType.CHAT,
     )
-    TextButton(onClick = { state.open() }, modifier = modifier) {
-        Text(
-            text = modelLabel?.takeIf { it.isNotBlank() }
-                ?: stringResource(R.string.bot_mode_pick_model),
-            style = MaterialTheme.typography.labelLarge,
-            maxLines = 1,
-        )
+    val label = modelLabel?.takeIf { it.isNotBlank() } ?: stringResource(R.string.bot_mode_pick_model)
+    if (trigger != null) {
+        trigger(label) { state.open() }
+    } else {
+        TextButton(onClick = { state.open() }, modifier = modifier) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                maxLines = 1,
+            )
+        }
     }
     ModelListSheet(
         state = state,

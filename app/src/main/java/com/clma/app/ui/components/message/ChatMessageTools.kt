@@ -300,13 +300,26 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
         extra = if (isPending && onToolApproval != null) {
             {
                 if (LocalBotModeEnabled.current) {
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(
-                            text = stringResource(R.string.bot_mode_approval_inline_hint),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        ToolApprovalForm(tool, onToolApproval)
+                    // Bot mode: an approval card right in the conversation flow.
+                    androidx.compose.material3.Surface(
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.35f),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            MaterialTheme.colorScheme.tertiary.copy(alpha = 0.6f),
+                        ),
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(10.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            Text(
+                                text = stringResource(R.string.bot_approval_card_title),
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.tertiary,
+                            )
+                            ToolApprovalForm(tool, onToolApproval, botLabels = true)
+                        }
                     }
                 } else {
                     PendingToolButton(tool)
@@ -1089,6 +1102,8 @@ private fun ApprovalButton(
 private fun ToolApprovalForm(
     tool: UIMessagePart.Tool,
     onToolApproval: (String, Boolean, String, com.clma.app.service.ChatService.ApprovalScope, String) -> Unit,
+    /** Bot mode wording: "Just this once" / "Remember for this chat" (same scopes). */
+    botLabels: Boolean = false,
 ) {
     var showDenyDialog by remember(tool.toolCallId) { mutableStateOf(false) }
     // Per-form in-flight flag to debounce double-taps. Without this, two rapid
@@ -1219,7 +1234,9 @@ private fun ToolApprovalForm(
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             ApprovalButton(
-                label = stringResource(R.string.chat_message_tool_approve_once),
+                label = stringResource(
+                    if (botLabels) R.string.bot_approval_once else R.string.chat_message_tool_approve_once,
+                ),
                 icon = HugeIcons.Tick01,
                 enabled = !inFlight,
                 onClick = {
@@ -1235,7 +1252,9 @@ private fun ToolApprovalForm(
             )
             if (!com.clma.app.connectors.ConnectorWriteApproval.requiresApproval(tool.toolName)) {
                 ApprovalButton(
-                    label = stringResource(R.string.chat_message_tool_allow_chat),
+                    label = stringResource(
+                        if (botLabels) R.string.bot_approval_remember_chat else R.string.chat_message_tool_allow_chat,
+                    ),
                     emoji = "💬",
                     enabled = !inFlight,
                     onClick = {
