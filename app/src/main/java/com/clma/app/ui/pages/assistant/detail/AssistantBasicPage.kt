@@ -49,6 +49,8 @@ import com.clma.app.ui.components.ui.AppDropdownMenu
 import com.clma.app.ui.components.ui.AppDropdownMenuItem
 import com.clma.app.data.db.entity.WorkspaceEntity
 import com.clma.app.data.model.Assistant
+import com.clma.app.data.model.isBot
+import com.clma.app.data.botmode.BotCostPolicy
 import com.clma.app.data.datastore.AutoCompactionThresholdMode
 import com.clma.app.data.datastore.findModelById
 import com.clma.app.data.datastore.getEffectiveContextLength
@@ -571,6 +573,27 @@ internal fun AssistantBasicContent(
                     }
                 )
             }
+            if (assistant.isBot) {
+                HorizontalDivider()
+                FormItem(
+                    modifier = Modifier.padding(8.dp),
+                    label = {
+                        Text(stringResource(R.string.assistant_page_bot_cost_saving))
+                    },
+                    description = {
+                        Text(stringResource(R.string.assistant_page_bot_cost_saving_desc))
+                    },
+                    tail = {
+                        Switch(
+                            checked = BotCostPolicy.isActive(assistant),
+                            onCheckedChange = { enabled ->
+                                // null = the Bot default (on); only an explicit "off" is stored.
+                                vm.updateAssistant { it.copy(botCostSaving = if (enabled) null else false) }
+                            }
+                        )
+                    }
+                )
+            }
             HorizontalDivider()
             FormItem(
                 modifier = Modifier.padding(8.dp),
@@ -606,6 +629,13 @@ internal fun AssistantBasicContent(
                                 stringResource(
                                     R.string.assistant_page_tool_result_budget_active,
                                     assistant.toolResultMaxTokens,
+                                )
+                            )
+                        } else if (BotCostPolicy.isActive(assistant)) {
+                            Text(
+                                stringResource(
+                                    R.string.assistant_page_tool_result_budget_bot_default,
+                                    BotCostPolicy.DEFAULT_TOOL_RESULT_MAX_TOKENS,
                                 )
                             )
                         } else {

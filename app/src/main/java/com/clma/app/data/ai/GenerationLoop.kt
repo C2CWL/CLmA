@@ -71,6 +71,7 @@ import com.clma.app.data.datastore.NetworkSetting
 import com.clma.app.data.datastore.Settings
 import com.clma.app.data.datastore.findProvider
 import com.clma.app.data.model.Assistant
+import com.clma.app.data.botmode.BotCostPolicy
 import com.clma.app.data.model.AssistantMemory
 import com.clma.app.data.repository.MemoryRepository
 import java.io.File
@@ -454,16 +455,22 @@ private suspend fun <T> retryGenerationTransportRequest(
  * (model image-gen output) are also kept verbatim as those are visible product, not
  * intermediate reasoning state.
  */
-internal fun List<UIMessage>.ageOldToolImages(): List<UIMessage> {
+internal fun List<UIMessage>.ageOldToolImages(batch: Int = 1): List<UIMessage> {
+    fun UIMessage.hasToolImage(): Boolean = role != MessageRole.USER && parts.any { p ->
+        p is UIMessagePart.Tool && p.output.any { it is UIMessagePart.Image }
+    }
+    // [batch] > 1 (Bot cost-saving): age in steps so the request prefix only changes once per
+    // batch of new screenshots; 1 keeps the classic "newest N verbatim" sliding window.
+    val aged = BotCostPolicy.batchedAgedCount(
+        total = count { it.hasToolImage() },
+        keep = IMAGE_KEEP_LAST_N_TOOL_RESULTS,
+        batch = batch,
+    )
     var toolResultsWithImagesSeen = 0
-    return this.asReversed().map { msg ->
-        if (msg.role == MessageRole.USER) return@map msg
-        val hasImageInTool = msg.parts.any { p ->
-            p is UIMessagePart.Tool && p.output.any { it is UIMessagePart.Image }
-        }
-        if (!hasImageInTool) return@map msg
+    return this.map { msg ->
+        if (!msg.hasToolImage()) return@map msg
         toolResultsWithImagesSeen++
-        if (toolResultsWithImagesSeen <= IMAGE_KEEP_LAST_N_TOOL_RESULTS) return@map msg
+        if (toolResultsWithImagesSeen > aged) return@map msg
         val newParts = msg.parts.map { part ->
             if (part is UIMessagePart.Tool) {
                 val newOutput = part.output.map { o ->
@@ -477,7 +484,7 @@ internal fun List<UIMessage>.ageOldToolImages(): List<UIMessage> {
             } else part
         }
         msg.copy(parts = newParts)
-    }.asReversed()
+    }
 }
 
 @Serializable
@@ -1766,7 +1773,9 @@ class GenerationLoop(
                                     toolCallId = tool.toolCallId,
                                     output = adjustedResult,
                                     hasShellAccess = hasShellAccess,
-                                    maxTokens = assistant.toolResultMaxTokens,
+                                    // Bot cost-saving fills in a default budget when the
+                                    // bot has none; classic assistants keep their own value.
+                                    maxTokens = BotCostPolicy.effectiveAssistant(assistant).toolResultMaxTokens,
                                 )
                             )
                         }.onFailure {
@@ -2010,8 +2019,8 @@ class GenerationLoop(
             // 前置合成消息的版本, 只对尾部原文限流。
             addAll(
                 messages.limitContextPreservingLeadingSynthetic(assistant.contextMessageLimit)
-                    .ageOldToolImages()
-                    .ageOldUserImages()
+                    .ageOldToolImages(batch = BotCostPolicy.imageAgingBatch(assistant))
+                    .ageOldUserImages(batch = BotCostPolicy.imageAgingBatch(assistant))
             )
             // Cross-model continuation: when the previous model's generation failed
             // mid-stream and routing switched to this model, append a synthetic user
@@ -2078,6 +2087,13 @@ class GenerationLoop(
                         if (none { it.key == "service_tier" }) {
                             add(CustomBody("service_tier", JsonPrimitive(tier)))
                         }
+                    }
+                }
+                // Bot cost-saving: a stable per-conversation prompt_cache_key, official OpenAI
+                // host only (see BotCostPolicy.promptCacheKey). A user-supplied one wins.
+                BotCostPolicy.promptCacheKey(assistant, provider, conversationId)?.let { key ->
+                    if (none { it.key == BotCostPolicy.PROMPT_CACHE_KEY_FIELD }) {
+                        add(CustomBody(BotCostPolicy.PROMPT_CACHE_KEY_FIELD, JsonPrimitive(key)))
                     }
                 }
             },
