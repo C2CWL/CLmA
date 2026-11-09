@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="bot_mode_setting_title">Bot 模式</string>
+  <string name="bot_mode_setting_desc">实验功能：侧栏改成联系人式多 Bot 列表，对话里用审批卡片，并且每个 Bot 单独选模型。关掉后经典界面完全不变。</string>
+  <string name="bot_mode_contact_title">Bot 列表</string>
+  <string name="bot_mode_pinned_badge">已钉</string>
+  <string name="bot_mode_model_inherit">沿用默认模型</string>
+  <string name="bot_mode_menu_pin">钉选</string>
+  <string name="bot_mode_menu_unpin">取消钉选</string>
+  <string name="bot_mode_menu_hide">从列表隐藏</string>
+  <string name="bot_mode_menu_detail">Bot 设置</string>
+  <string name="bot_mode_menu_tasks">任务进度</string>
+  <string name="bot_mode_pick_model">选择模型</string>
+  <string name="bot_mode_model_sheet_title">这个 Bot 用的模型</string>
+  <string name="bot_mode_model_sheet_desc">只改当前 Bot，不会串到别的 Bot。</string>
+  <string name="bot_mode_provider_all">全部</string>
+  <string name="bot_mode_provider_unnamed">供应商</string>
+  <string name="bot_mode_provider_disabled">%1$s（不可用）</string>
+  <string name="bot_mode_task_title">任务进度 · %1$s</string>
+  <string name="bot_mode_task_stub_note">这是占位面板（用来替代云电脑）。真实工具进度以后再接。</string>
+  <string name="bot_mode_task_step_done">完成</string>
+  <string name="bot_mode_task_step_active">进行中</string>
+  <string name="bot_mode_task_step_pending">等待</string>
+  <string name="bot_mode_task_pause">暂停</string>
+  <string name="bot_mode_task_resume">继续</string>
+  <string name="bot_mode_task_takeover">接手</string>
+  <string name="bot_mode_task_close">关闭</string>
+  <string name="bot_mode_task_stub_prepare">准备</string>
+  <string name="bot_mode_task_stub_run">执行步骤</string>
+  <string name="bot_mode_task_stub_summarize">汇总</string>
+  <string name="bot_mode_open_tasks">任务</string>
+  <string name="bot_mode_approval_inline_hint">允许或拒绝这个工具</string>
+</resources>

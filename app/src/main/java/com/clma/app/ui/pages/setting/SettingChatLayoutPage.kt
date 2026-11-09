@@ -221,6 +221,18 @@ fun SettingChatLayoutPage(vm: SettingVM = koinViewModel()) {
                         )
                     },
                 )
+                item(
+                    headlineContent = { Text(stringResource(R.string.bot_mode_setting_title)) },
+                    supportingContent = { Text(stringResource(R.string.bot_mode_setting_desc)) },
+                    trailingContent = {
+                        Switch(
+                            checked = displaySetting.botModeEnabled,
+                            onCheckedChange = {
+                                updateDisplaySetting(displaySetting.copy(botModeEnabled = it))
+                            }
+                        )
+                    },
+                )
             }
         }
     }
