@@ -1004,10 +1004,11 @@ class LocalTools(
         }
         // Built-in update check: always on, never a user toggle and never listed in the
         // per-tool overrides (see [HIDDEN_TOOL_NAMES]) — it backs the app's own update
-        // path, not an optional capability. The Reliability group keeps only bug reports.
+        // path, not an optional capability. The Reliability group keeps diagnostic tools.
         tools.add(com.clma.app.reliability.checkAppUpdatesTool(gitHubReleaseChecker))
         if (options.contains(LocalToolOption.Reliability)) {
             tools.add(com.clma.app.reliability.generateBugReportTool(context, bugReportBuilder))
+            tools.add(com.clma.app.reliability.readAppLogsTool())
         }
         if (options.contains(LocalToolOption.SubAgents)) {
             // Pass the caller context so the recursion guard inside SubAgentEngine.dispatch

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="log_page_export_all">Export all logs</string>
+  <string name="setting_page_doctor_export_report">Export report</string>
+  <string name="diagnostic_export_saved">File saved</string>
+  <string name="diagnostic_export_failed">Export failed. Check the destination and try again.</string>
+  <string name="tool_display_name_read_app_logs">Read app logs</string>
+  <string name="tool_display_desc_read_app_logs">Filter and page through redacted application logs</string>
+</resources>

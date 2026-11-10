@@ -56,6 +56,7 @@ object ToolDisplayNames {
         "get_volume" to Res(R.string.tool_display_name_get_volume, R.string.tool_display_desc_get_volume),
         "get_location" to Res(R.string.tool_display_name_get_location, R.string.tool_display_desc_get_location),
         "check_app_updates" to Res(R.string.tool_display_name_check_app_updates, R.string.tool_display_desc_check_app_updates),
+        "read_app_logs" to Res(R.string.tool_display_name_read_app_logs, R.string.tool_display_desc_read_app_logs),
         "generate_bug_report" to Res(R.string.tool_display_name_generate_bug_report, R.string.tool_display_desc_generate_bug_report),
         "clipboard_tool" to Res(R.string.tool_display_name_clipboard_tool, R.string.tool_display_desc_clipboard_tool),
         "text_to_speech" to Res(R.string.tool_display_name_text_to_speech, R.string.tool_display_desc_text_to_speech),
