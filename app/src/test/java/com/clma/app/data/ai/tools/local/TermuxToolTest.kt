@@ -15,6 +15,25 @@ import org.junit.Test
 class TermuxToolTest {
 
     @Test
+    fun outputPreview_shortOutputIsUnchanged() {
+        assertEquals("你好", termuxOutputPreview("你好", 6))
+        assertEquals("", termuxOutputPreview("", 6))
+    }
+
+    @Test
+    fun outputPreview_keepsHeadAndFinalError() {
+        val result = termuxOutputPreview("HEAD" + "x".repeat(100) + "FAIL", 8)
+        assertEquals("HEAD\n…[100 bytes omitted; head and tail shown; omitted content unavailable]…\nFAIL", result)
+    }
+
+    @Test
+    fun outputPreview_utf8BoundariesAndOmittedByteCount() {
+        val result = termuxOutputPreview("😀" + "x".repeat(10) + "你好", 10)
+        assertEquals("😀x\n…[12 bytes omitted; head and tail shown; omitted content unavailable]…\n好", result)
+        assertFalse(result.contains('\uFFFD'))
+    }
+
+    @Test
     fun isTerminalResult_populatedAckWithoutMarker_isNotTerminal() {
         // err=-1, exitCode=0, empty stdout: exactly Termux's start-ACK shape.
         assertFalse(isTerminalResult(err = -1, exitCode = 0, stdout = "", marker = "M1"))

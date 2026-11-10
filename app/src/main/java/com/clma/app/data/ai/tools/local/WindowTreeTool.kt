@@ -27,6 +27,11 @@ private const val MAX_NODES_HARD_CEILING = 2000
 /** How many vanished-node identities a `diff` read reports before truncating. */
 private const val MAX_REMOVED_SIGNATURES = 50
 
+internal fun hasSemanticNodes(nodes: List<JsonObject>): Boolean =
+    nodes.any { node ->
+        listOf("text", "content_description", "clickable", "scrollable", "editable").any { it in node }
+    }
+
 /**
  * JSON for one node. [rect] must already hold the node's screen bounds — the caller fetches them
  * once per node so the tree walk and the tree hash share a single `getBoundsInScreen` IPC (that
@@ -251,6 +256,10 @@ fun readWindowTreeTool(
                 put("tree_hash", treeHash)
                 put("truncated", truncated)
                 put("total_seen", seen)
+                if (!truncated && !hasSemanticNodes(nodes)) {
+                    put("semantic_content", "unavailable")
+                    put("recovery", "This snapshot exposes no text or actionable nodes. It does not prove which UI framework is used. Do not repeatedly read an unchanged tree or guess node targets. If screen tools are available, inspect a screenshot on the same display before any coordinate action. Browser DOM tools apply only to browser-managed pages, not arbitrary app WebViews.")
+                }
             }
 
             val tree = when {

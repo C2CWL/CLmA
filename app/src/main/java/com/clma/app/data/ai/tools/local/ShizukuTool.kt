@@ -32,7 +32,11 @@ fun shizukuExecTool(context: Context): Tool = Tool(
     description = """
         Run a shell command with Shizuku's runtime privileges (shell UID 2000 or root UID 0,
         depending on how its service was started; do not assume root). Returns stdout, stderr,
-        and exit code. Requires the Shizuku app
+        and exit code. This is batch execution, not a TTY: stdin is closed (EOF), so it cannot
+        answer prompts. Use explicit noninteractive options only when authorized; never
+        auto-accept confirmations. For interactive commands in the Termux app identity,
+        use termux_session_start / send / read; those sessions do not inherit Shizuku's
+        runtime privileges. Requires the Shizuku app
         installed, its service running, and permission granted from Settings -> Shizuku.
     """.trimIndent().replace("\n", " "),
     parameters = {
