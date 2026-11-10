@@ -20,6 +20,10 @@
   <string name="tool_display_desc_request_secret">弹出安全输入框填写密码/令牌，明文不进对话</string>
   <string name="tool_display_name_secret_list">列出保密信息</string>
   <string name="tool_display_desc_secret_list">列出已存的密码/令牌名称，不返回内容</string>
+  <string name="tool_display_name_secret_generate">生成保密信息</string>
+  <string name="tool_display_desc_secret_generate">在本机随机生成密码或令牌并存入新条目，不返回明文</string>
+  <string name="tool_display_name_secret_show">展示安全结果</string>
+  <string name="tool_display_desc_secret_show">提供本机认证后查看或复制的卡片，内容不返回模型</string>
   <string name="tool_display_name_secret_delete">删除保密信息</string>
   <string name="tool_display_desc_secret_delete">按名称删除一条已存的密码/令牌，不可恢复</string>
   <string name="tool_display_name_recent_chats">查看最近对话</string>

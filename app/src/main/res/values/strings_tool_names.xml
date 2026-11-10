@@ -20,6 +20,10 @@
   <string name="tool_display_desc_request_secret">Secure input for a password or token; never shown in chat</string>
   <string name="tool_display_name_secret_list">List secrets</string>
   <string name="tool_display_desc_secret_list">Lists stored secret names, never their values</string>
+  <string name="tool_display_name_secret_generate">Generate secret</string>
+  <string name="tool_display_desc_secret_generate">Generates a random secret locally into a new vault entry; never returns plaintext</string>
+  <string name="tool_display_name_secret_show">Show secure result</string>
+  <string name="tool_display_desc_secret_show">Offers authenticated on-device viewing or copying; never returns the value to the model</string>
   <string name="tool_display_name_secret_delete">Delete secret</string>
   <string name="tool_display_desc_secret_delete">Deletes a stored secret by name; irreversible</string>
   <string name="tool_display_name_recent_chats">Recent chats</string>

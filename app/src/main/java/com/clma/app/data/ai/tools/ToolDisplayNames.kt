@@ -26,6 +26,8 @@ object ToolDisplayNames {
         "ask_user" to Res(R.string.tool_display_name_ask_user, R.string.tool_display_desc_ask_user),
         "request_secret" to Res(R.string.tool_display_name_request_secret, R.string.tool_display_desc_request_secret),
         "secret_list" to Res(R.string.tool_display_name_secret_list, R.string.tool_display_desc_secret_list),
+        "secret_generate" to Res(R.string.tool_display_name_secret_generate, R.string.tool_display_desc_secret_generate),
+        "secret_show" to Res(R.string.tool_display_name_secret_show, R.string.tool_display_desc_secret_show),
         "secret_delete" to Res(R.string.tool_display_name_secret_delete, R.string.tool_display_desc_secret_delete),
         "recent_chats" to Res(R.string.tool_display_name_recent_chats, R.string.tool_display_desc_recent_chats),
         "conversation_search" to Res(R.string.tool_display_name_conversation_search, R.string.tool_display_desc_conversation_search),
