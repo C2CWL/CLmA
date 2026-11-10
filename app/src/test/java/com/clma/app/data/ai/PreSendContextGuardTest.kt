@@ -178,7 +178,9 @@ class PreSendContextGuardTest {
         val bytes = PreSendContextGuard.estimateRequestBytes(turns) { mb }
         // Six older images became the short placeholder text.
         val expected = USER_IMAGE_KEEP_LAST_TURNS * (mb / 3 * 4 + 4) +
-            (10 - USER_IMAGE_KEEP_LAST_TURNS) * ELIDED_USER_IMAGE_TEXT.length
+            turns.ageOldUserImages().sumOf { message ->
+                message.parts.filterIsInstance<UIMessagePart.Text>().sumOf { it.text.length.toLong() }
+            }
         assertEquals(expected, bytes)
     }
 

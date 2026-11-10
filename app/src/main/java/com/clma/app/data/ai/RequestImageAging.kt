@@ -3,6 +3,7 @@ package com.clma.app.data.ai
 import com.clma.ai.core.MessageRole
 import com.clma.ai.ui.UIMessage
 import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.ai.tools.conversationImageRef
 import com.clma.app.data.botmode.BotCostPolicy
 
 /**
@@ -42,8 +43,13 @@ fun List<UIMessage>.ageOldUserImages(
         if (userTurnsSeen > aged) return@map message
         if (message.parts.none { it is UIMessagePart.Image }) return@map message
         message.copy(
-            parts = message.parts.map { part ->
-                if (part is UIMessagePart.Image) UIMessagePart.Text(ELIDED_USER_IMAGE_TEXT) else part
+            parts = message.parts.mapIndexed { index, part ->
+                if (part is UIMessagePart.Image) {
+                    UIMessagePart.Text(
+                        "$ELIDED_USER_IMAGE_TEXT image_ref=${conversationImageRef(message, index)}; " +
+                            "use conversation_image(image_ref) to view",
+                    )
+                } else part
             },
         )
     }

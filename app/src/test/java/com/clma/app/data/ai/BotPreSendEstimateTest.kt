@@ -85,8 +85,10 @@ class BotPreSendEstimateTest {
         val botEstimate = PreSendContextGuard.estimateRequestBytes(turns, botImageBatch, fileSize)
         val classicEstimate = PreSendContextGuard.estimateRequestBytes(turns, fileSize = fileSize)
         assertEquals(PreSendContextGuard.rawRequestBytes(sent, fileSize), botEstimate)
-        val elided = ELIDED_USER_IMAGE_TEXT.length
-        assertEquals(classicEstimate + 3 * (imageBytes - elided), botEstimate)
+        val extraPlaceholders = turns.ageOldUserImages().drop(4).take(3).sumOf { message ->
+            message.parts.filterIsInstance<UIMessagePart.Text>().last().text.length.toLong()
+        }
+        assertEquals(classicEstimate + 3 * imageBytes - extraPlaceholders, botEstimate)
     }
 
     @Test
