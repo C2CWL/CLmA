@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="log_page_export_all">导出全部日志</string>
+  <string name="setting_page_doctor_export_report">导出报告</string>
+  <string name="diagnostic_export_saved">文件已保存</string>
+  <string name="diagnostic_export_failed">导出失败，请检查目标位置后重试</string>
+  <string name="tool_display_name_read_app_logs">读取应用日志</string>
+  <string name="tool_display_desc_read_app_logs">按关键词筛选、分页读取脱敏应用日志</string>
+</resources>

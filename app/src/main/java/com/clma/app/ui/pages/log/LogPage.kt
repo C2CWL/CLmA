@@ -7,6 +7,8 @@ import androidx.compose.ui.platform.ClipEntry
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ArrowDown01
 import me.rerere.hugeicons.stroke.ArrowUp01
+import com.clma.app.ui.hooks.rememberTextFileExport
+import me.rerere.hugeicons.stroke.Download01
 import me.rerere.hugeicons.stroke.Copy01
 import me.rerere.hugeicons.stroke.Delete01
 import androidx.compose.foundation.clickable
@@ -92,7 +94,7 @@ fun LogPage() {
     val settingsStore = koinInject<SettingsStore>()
     val settings by settingsStore.settingsFlow.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
-    val clipboard = LocalClipboard.current
+    val exportLogs = rememberTextFileExport("CLmA-logs") { Logging.exportAsText() }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     Scaffold(
@@ -102,21 +104,11 @@ fun LogPage() {
                 navigationIcon = { BackButton() },
                 actions = {
                     IconButton(
-                        onClick = {
-                            // On-disk + in-memory, newest first: what a user is expected to paste
-                            // into a bug report. Redaction happens on the write path.
-                            scope.launch {
-                                clipboard.setClipEntry(
-                                    ClipEntry(
-                                        clipData = ClipData.newPlainText("Logs", Logging.exportAsText())
-                                    )
-                                )
-                            }
-                        }
+                        onClick = exportLogs,
                     ) {
                         Icon(
-                            HugeIcons.Copy01,
-                            contentDescription = stringResource(R.string.log_page_copy_all),
+                            HugeIcons.Download01,
+                            contentDescription = stringResource(R.string.log_page_export_all),
                         )
                     }
                     IconButton(

@@ -1,8 +1,5 @@
 package com.clma.app.ui.pages.setting.doctor
 
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -40,6 +37,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
+import com.clma.app.ui.hooks.rememberTextFileExport
+import com.clma.common.android.DiagnosticRedactor
 import com.clma.app.R
 import com.clma.app.Screen
 import com.clma.app.ui.components.nav.BackButton
@@ -54,6 +53,7 @@ fun DoctorScreen(vm: DoctorViewModel = koinViewModel()) {
     val state by vm.state.collectAsStateWithLifecycle()
     val nav = LocalNavController.current
     val ctx = LocalContext.current
+    val exportReport = rememberTextFileExport("CLmA-doctor") { DiagnosticRedactor.text(vm.buildReport()) }
     val scope = rememberCoroutineScope()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val snackbar = remember { SnackbarHostState() }
@@ -92,12 +92,7 @@ fun DoctorScreen(vm: DoctorViewModel = koinViewModel()) {
                     counts = severityCounts,
                     running = state.running,
                     onRunAgain = { vm.runAll() },
-                    onCopyReport = {
-                        copyToClipboard(ctx, vm.buildReport())
-                        scope.launch {
-                            snackbar.showSnackbar(ctx.getString(R.string.setting_page_doctor_report_copied))
-                        }
-                    },
+                    onExportReport = exportReport,
                 )
             }
 
@@ -159,7 +154,7 @@ private fun SummaryCard(
     counts: Map<Severity, Int>,
     running: Boolean,
     onRunAgain: () -> Unit,
-    onCopyReport: () -> Unit,
+    onExportReport: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -202,8 +197,8 @@ private fun SummaryCard(
                     Text(stringResource(R.string.setting_page_doctor_run_again))
                 }
             }
-            OutlinedButton(onClick = onCopyReport) {
-                Text(stringResource(R.string.setting_page_doctor_copy_report))
+            OutlinedButton(onClick = onExportReport) {
+                Text(stringResource(R.string.setting_page_doctor_export_report))
             }
         }
     }
@@ -274,9 +269,4 @@ private fun routeFor(key: AppRouteKey): Screen = when (key) {
     AppRouteKey.SettingSubAgents -> Screen.SettingSubAgents
     AppRouteKey.SettingMcp -> Screen.SettingMcp
     AppRouteKey.Skills -> Screen.Skills
-}
-
-private fun copyToClipboard(ctx: Context, text: String) {
-    val cm = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager ?: return
-    cm.setPrimaryClip(ClipData.newPlainText(ctx.getString(R.string.doctor_clipboard_label), text))
 }

@@ -239,18 +239,21 @@ object Logging {
         }
     }
 
-    /** Everything we have, newest first, formatted for the clipboard / bug reports. */
-    fun exportAsText(): String {
-        val builder = StringBuilder()
-        val file = logDir?.let { File(it, LOG_FILE_NAME) }
-        if (file != null && file.exists()) {
-            builder.appendLine("# On-disk log (oldest first)")
-            runCatching { builder.append(DiagnosticRedactor.text(file.readText())) }
+    /** All retained sessions plus memory-only entries. Call off the main thread. */
+    fun exportAsText(): String = buildString {
+        synchronized(writeLock) {
+            logDir?.let { dir ->
+                for (index in MAX_ROTATED_FILES downTo 0) {
+                    val file = logFile(dir, index)
+                    if (file.exists()) {
+                        appendLine("# ${file.name} (oldest first)")
+                        appendLine(DiagnosticRedactor.text(file.readText()))
+                    }
+                }
+            }
         }
-        builder.appendLine()
-        builder.appendLine("# In-memory log (newest first)")
-        getRecentLogs().forEach { builder.appendLine(format(it)) }
-        return builder.toString()
+        appendLine("# In-memory log (newest first; may overlap disk)")
+        getRecentLogs().forEach { appendLine(format(it)) }
     }
 
     /**
