@@ -7,6 +7,7 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withContext
+import com.clma.app.data.network.workspaceProxyEnvironment
 import com.clma.app.data.datastore.SettingsStore
 import com.clma.app.data.db.dao.WorkspaceDAO
 import com.clma.app.data.db.entity.WorkspaceEntity
@@ -345,6 +346,7 @@ class WorkspaceRepository(
                 workspace.root, command, cwd, timeoutMillis, stdin,
                 shellCompatibilityMode = workspace.shellCompatibilityMode,
                 progress = progress,
+                proxyEnvironment = settingsStore.settingsFlow.value.networkSetting.workspaceProxyEnvironment(),
             )
         }
     }
@@ -362,7 +364,10 @@ class WorkspaceRepository(
         // 不可被取消、结果不会被丢弃；Dispatchers.IO 仍然只是把阻塞的进程启动挪到后台线程。
         return withContext(NonCancellable + Dispatchers.IO) {
             manager.ensureWorkspace(workspace.root)
-            manager.startBackground(workspace.root, command, cwd)
+            manager.startBackground(
+                workspace.root, command, cwd,
+                proxyEnvironment = settingsStore.settingsFlow.value.networkSetting.workspaceProxyEnvironment(),
+            )
         }
     }
 

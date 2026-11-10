@@ -30,6 +30,7 @@ data class WorkspaceShellContext(
     val bindMounts: List<WorkspaceBindMount> = emptyList(),
     val shellCompatibilityMode: Boolean = false,
     val progress: ForegroundCommandProgress? = null,
+    val proxyEnvironment: Map<String, String> = emptyMap(),
 )
 
 class HostShellRunner : WorkspaceShellRunner {

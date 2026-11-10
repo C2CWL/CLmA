@@ -26,6 +26,7 @@ internal fun createWorkspaceTerminalSession(
     root: String,
     client: TerminalSessionClient,
     shellCompatibilityMode: Boolean,
+    proxyEnvironment: Map<String, String> = emptyMap(),
 ): TerminalSession {
     val appContext = context.applicationContext
     val workspaceDir = File(File(appContext.filesDir, "workspaces"), root)
@@ -67,8 +68,9 @@ internal fun createWorkspaceTerminalSession(
         "LC_ALL=C.UTF-8",
         "USER=root",
         "SHELL=$shell",
-        shell,
     )
+    args += proxyEnvironment.map { (key, value) -> "$key=$value" }
+    args += shell
 
     val env = mutableListOf(
         "PROOT_LOADER=${loader.absolutePath}",
