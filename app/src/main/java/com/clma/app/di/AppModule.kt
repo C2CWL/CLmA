@@ -224,7 +224,7 @@ val appModule = module {
     }
 
     single {
-        WorkspaceTerminalSessionManager(get(), get())
+        WorkspaceTerminalSessionManager(get(), get(), get())
     }
 
     // Phase 22A: Local-LLM on-device providers

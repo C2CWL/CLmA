@@ -442,6 +442,26 @@ fun SettingPreferencesNetworkPage(vm: SettingVM = koinViewModel()) {
                     )
                     item(
                         headlineContent = {
+                            Text(stringResource(R.string.workspace_follow_app_proxy))
+                        },
+                        supportingContent = {
+                            Text(stringResource(R.string.workspace_follow_app_proxy_desc))
+                        },
+                        trailingContent = {
+                            Switch(
+                                checked = settings.networkSetting.workspaceFollowAppProxy,
+                                onCheckedChange = { enabled ->
+                                    vm.updateSettings { current ->
+                                        current.copy(
+                                            networkSetting = current.networkSetting.copy(workspaceFollowAppProxy = enabled),
+                                        )
+                                    }
+                                },
+                            )
+                        },
+                    )
+                    item(
+                        headlineContent = {
                             Text(stringResource(R.string.setting_provider_page_test_connection))
                         },
                         trailingContent = {

@@ -235,6 +235,7 @@ class WorkspaceManager(
         stdin: ByteArray? = null,
         shellCompatibilityMode: Boolean = false,
         progress: ForegroundCommandProgress? = null,
+        proxyEnvironment: Map<String, String> = emptyMap(),
     ): WorkspaceCommandResult {
         require(command.isNotBlank()) { "Command is required" }
         val workingDir = resolveCommandWorkingDir(root, cwd)
@@ -253,6 +254,7 @@ class WorkspaceManager(
                 bindMounts = bindMounts,
                 shellCompatibilityMode = shellCompatibilityMode,
                 progress = progress,
+                proxyEnvironment = proxyEnvironment,
             )
         )
     }
@@ -263,7 +265,12 @@ class WorkspaceManager(
      * [backgroundStatus]/[killBackground]. Throws IllegalStateException if [root] is
      * already at the running-process cap.
      */
-    fun startBackground(root: String, command: String, cwd: String = ""): BackgroundStatus =
+    fun startBackground(
+        root: String,
+        command: String,
+        cwd: String = "",
+        proxyEnvironment: Map<String, String> = emptyMap(),
+    ): BackgroundStatus =
         synchronized(backgroundLifecycleLock) {
             require(command.isNotBlank()) { "Command is required" }
             val workingDir = resolveCommandWorkingDir(root, cwd)
@@ -278,6 +285,7 @@ class WorkspaceManager(
                     tempDir = tempDir(root),
                     workingDir = workingDir,
                     timeoutMillis = 0L,
+                    proxyEnvironment = proxyEnvironment,
                 )
             )
             background.start(root, process, command, cwd)

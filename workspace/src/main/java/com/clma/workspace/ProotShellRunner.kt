@@ -86,7 +86,7 @@ class ProotShellRunner(
                 environment()["TMPDIR"] = context.tempDir.absolutePath
             }
 
-    private fun buildCommand(
+    internal fun buildCommand(
         context: WorkspaceShellContext,
         proot: File,
     ): List<String> {
@@ -129,6 +129,9 @@ class ProotShellRunner(
             "CI=true",
             "NO_COLOR=1",
             "PAGER=cat",
+        )
+        command += context.proxyEnvironment.map { (key, value) -> "$key=$value" }
+        command += listOf(
             WorkspaceManager.rootfsShell(context.linuxDir),
             "-l",
             "-c",

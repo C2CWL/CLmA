@@ -2,6 +2,8 @@ package com.clma.app.ui.pages.extensions.workspace
 
 import android.content.Context
 import android.util.Log
+import android.widget.Toast
+import com.clma.app.R
 import com.termux.terminal.TerminalSession
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineStart
@@ -16,6 +18,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.network.workspaceProxyEnvironment
 import com.clma.app.AppScope
 import java.util.concurrent.atomic.AtomicLong
 
@@ -29,6 +33,7 @@ import java.util.concurrent.atomic.AtomicLong
 class WorkspaceTerminalSessionManager internal constructor(
     context: Context,
     private val appScope: AppScope,
+    private val settingsStore: SettingsStore,
 ) {
     private val appContext = context.applicationContext
     private val workspaceStates = MutableStateFlow<Map<String, WorkspaceTerminalTabsState>>(emptyMap())
@@ -163,9 +168,11 @@ class WorkspaceTerminalSessionManager internal constructor(
                 root = root,
                 client = client,
                 shellCompatibilityMode = shellCompatibilityMode,
+                proxyEnvironment = settingsStore.settingsFlow.value.networkSetting.workspaceProxyEnvironment(),
             )
         }.onFailure { error ->
             Log.e(TAG, "Failed to create terminal for workspace $root", error)
+            Toast.makeText(appContext, R.string.workspace_terminal_start_failed, Toast.LENGTH_LONG).show()
         }.getOrNull()
 
         if (session == null) {

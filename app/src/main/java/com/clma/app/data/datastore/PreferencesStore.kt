@@ -1286,6 +1286,7 @@ data class NetworkSetting(
     val proxyUrl: String = "",
     val proxyUsername: String = "",
     val proxyPassword: String = "",
+    val workspaceFollowAppProxy: Boolean = false,
     val enableAutoRetry: Boolean = true,
     /**
      * Seconds to wait for the first byte of a streamed model reply before treating the
