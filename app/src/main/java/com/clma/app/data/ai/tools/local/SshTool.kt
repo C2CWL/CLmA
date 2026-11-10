@@ -116,6 +116,8 @@ internal class BoundedOutputStream(private val cap: Int) : java.io.OutputStream(
      * remainder as (total bytes written minus bytes kept). When nothing exceeded [cap] there is no
      * marker, even for multibyte text whose byte count outruns its char count.
      */
+    val isTruncated: Boolean get() = total > cap.toLong()
+
     fun snapshot(): String {
         val bytes = buf.toByteArray()
         if (total <= cap.toLong()) return String(bytes, Charsets.UTF_8)
@@ -522,6 +524,7 @@ internal fun runOnSession(session: Session, command: String, timeoutMs: Int, std
             put("success", exitCode == 0)
             put("exit_code", exitCode)
             put("stdout", stdout.snapshot())
+            put("stdout_truncated", stdout.isTruncated)
             put("stderr", stderr.snapshot())
         }
     } finally {
@@ -542,9 +545,11 @@ fun sshExecTool(
     name = "ssh_exec",
     description = """
         Connect to a remote host via SSH and run a single shell command. Returns stdout, stderr,
-        and exit code. Prefer password_secret / private_key_secret / passphrase_secret /
-        stdin_secret (vault names from request_secret) over plaintext so secrets never enter
-        chat history. For hosts you'll use repeatedly, prefer save_ssh_host + ssh_exec_saved.
+        and exit code. Credentials require password_secret / private_key_secret /
+        passphrase_secret (vault names from request_secret); plaintext credentials are rejected.
+        Ordinary stdin remains supported; use stdin_secret for secrets. Use stdout_secret to
+        capture sensitive results without exposing them to the model, including errors.
+        For repeated hosts, prefer save_ssh_host + ssh_exec_saved.
         For destructive or system-level commands you should explicitly confirm with the user
         before invoking.
     """.trimIndent().replace("\n", " "),
@@ -556,27 +561,15 @@ fun sshExecTool(
                 put("user", buildJsonObject { put("type", "string"); put("description", "SSH username") })
                 put("password_secret", buildJsonObject {
                     put("type", "string")
-                    put("description", "Vault name for the password (from request_secret). Preferred over password.")
+                    put("description", "Vault name for the password (from request_secret). Required for password authentication.")
                 })
                 put("private_key_secret", buildJsonObject {
                     put("type", "string")
-                    put("description", "Vault name for the private key PEM. Preferred over private_key.")
+                    put("description", "Vault name for the private key PEM. Required for key authentication.")
                 })
                 put("passphrase_secret", buildJsonObject {
                     put("type", "string")
-                    put("description", "Vault name for the key passphrase. Preferred over passphrase.")
-                })
-                put("password", buildJsonObject {
-                    put("type", "string")
-                    put("description", "DEPRECATED plaintext password — use password_secret + request_secret")
-                })
-                put("private_key", buildJsonObject {
-                    put("type", "string")
-                    put("description", "DEPRECATED plaintext PEM — use private_key_secret")
-                })
-                put("passphrase", buildJsonObject {
-                    put("type", "string")
-                    put("description", "DEPRECATED plaintext passphrase — use passphrase_secret")
+                    put("description", "Vault name for the key passphrase. Use for encrypted keys.")
                 })
                 put("command", buildJsonObject { put("type", "string"); put("description", "Shell command to run on the remote host") })
                 put("stdin_secret", buildJsonObject {
@@ -586,6 +579,10 @@ fun sshExecTool(
                 put("stdin", buildJsonObject {
                     put("type", "string")
                     put("description", "Optional non-secret data piped to stdin. Prefer stdin_secret for passwords/tokens.")
+                })
+                put("stdout_secret", buildJsonObject {
+                    put("type", "string")
+                    put("description", "Capture complete successful stdout directly into a NEW vault entry; no stdout/stderr is returned, even on failure. No background or overwrite. Output only the secret, no labels. Bytes including trailing newlines are preserved. Use secret_show for the local result card.")
                 })
                 put("background", buildJsonObject {
                     put("type", "boolean")
@@ -644,7 +641,7 @@ fun sshExecTool(
                         put(
                             "detail",
                             "Provide password_secret or private_key_secret (call request_secret first), " +
-                                "or legacy password/private_key.",
+                                "Plaintext credential fields are not accepted.",
                         )
                     }.toString(),
                 ),
@@ -659,11 +656,14 @@ fun sshExecTool(
                 ),
             )
         }
+        val outputSecret = p["stdout_secret"]?.jsonPrimitive?.contentOrNull
+        validateSecretCapture(outputSecret, background, secrets::isValidName, secrets::has)
+            ?.let { return@Tool listOf(UIMessagePart.Text(it.toString())) }
         val effectiveCommand = if (background) wrapDetachedCommand(command) else command
         val payload = runCancellableSshOp(timeoutSec * 1000L) { sessionRef ->
             execOneShot(context, host, port, user, auth, effectiveCommand, timeoutSec * 1000, sessionRef, stdin)
         }
-        listOf(UIMessagePart.Text(payload.toString()))
+        listOf(UIMessagePart.Text(captureSecretOutput(payload, outputSecret, secrets::setIfAbsent).toString()))
     },
 )
 

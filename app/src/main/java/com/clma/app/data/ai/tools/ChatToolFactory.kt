@@ -1,5 +1,6 @@
 package com.clma.app.data.ai.tools
 
+import com.clma.app.data.botmode.libraryScopeOf
 import android.util.Log
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
@@ -64,7 +65,7 @@ class ChatToolFactory(
         }
         addAll(ToolSurfaceResolver.resolve(localTools, assistant, ToolSurfaceResolver.contextless))
         if (assistant.enableRecentChatsReference) {
-            addAll(createConversationTools(conversationRepository, assistant.id))
+            addAll(createConversationTools(conversationRepository, assistant.id) { settings.libraryScopeOf(assistant.id) })
         }
         addAll(createWorkspaceToolsIfReady(assistant.workspaceId?.toString(), workspaceCwd))
         if (assistant.enabledSkills.isNotEmpty()) {

@@ -1,5 +1,6 @@
 package com.clma.app.reliability
 
+import com.clma.common.android.Logging
 import android.content.Context
 import android.os.Build
 import android.util.Log
@@ -21,13 +22,9 @@ private const val TAG = "BugReportBuilder"
 /**
  * Builds a redacted bug-report ZIP suitable for sharing via the system share sheet.
  *
- * Contents (subject to availability):
- *   - meta.txt — version, device model, Android version, locale, timezone
- *   - logcat.txt — last 60 minutes of logcat, filtered to RikkaHub TAGs and ERROR level
- *                  for everything else, with secret redaction applied per
- *                  [SecretRedactor]
- *   - resolved-by-rules.txt — list of known issues this report should NOT include because
- *                              they're already documented (intentional empty stub for v1)
+ * Contents: meta.txt, app-logs.txt (retained application logs), logcat.txt (last
+ * ~5000 accessible logcat lines), and README.txt. Logs are redacted, not guaranteed
+ * free of every possible private value; review before sharing.
  *
  * NOT included (deliberate):
  *   - Conversation contents (PII-heavy)
@@ -49,6 +46,7 @@ class BugReportBuilder(private val context: Context) {
         ZipOutputStream(FileOutputStream(zipFile)).use { zip ->
             zip.putEntry("meta.txt", buildMeta())
             zip.putEntry("logcat.txt", captureLogcat())
+            zip.putEntry("app-logs.txt", Logging.exportAsText())
             zip.putEntry("README.txt", buildReadme())
         }
         Log.i(TAG, "build: wrote ${zipFile.length()} bytes to ${zipFile.absolutePath}")
@@ -80,7 +78,8 @@ class BugReportBuilder(private val context: Context) {
 
         This ZIP was generated locally on the device. It contains:
           * meta.txt   — app version + device + Android info
-          * logcat.txt — last ~60 minutes of system log, secrets redacted
+          * logcat.txt — last ~5000 accessible logcat lines, secrets redacted
+          * app-logs.txt — retained application logs, secrets redacted
 
         It does NOT contain:
           * Your conversations

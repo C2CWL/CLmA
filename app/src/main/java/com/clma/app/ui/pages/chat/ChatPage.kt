@@ -1,5 +1,11 @@
 package com.clma.app.ui.pages.chat
 
+import com.clma.app.ui.motion.Motion
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.flow.first
+import androidx.compose.runtime.withFrameNanos
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.animation.core.Animatable
 import com.clma.app.diagnostics.FunctionalDiagnostics
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.Row
@@ -118,6 +124,9 @@ import com.clma.app.Screen
 import com.clma.app.data.datastore.KeepScreenOnMode
 import com.clma.app.ui.components.ai.ChatInput
 import com.clma.app.ui.components.ai.ChatConversationSettingsPanel
+import com.clma.app.data.botmode.withBotUnreadClearedConversation
+import com.clma.app.ui.pages.bot.BotChatChrome
+import com.clma.app.data.botmode.withBotUnreadClearedForAssistant
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.SlidersHorizontal
 import com.clma.app.ui.components.ui.KeepScreenOn
@@ -221,52 +230,7 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null, is
 
     // 初始化输入状态（处理传入的 files 和 text 参数）
     LaunchedEffect(files, text) {
-        if (files.isNotEmpty()) {
-            // Pair each source URI with its copied local file. createChatFilesByContents may
-            // skip failures, so zip by successful copies in order rather than assuming 1:1.
-            val localFiles = filesManager.createChatFilesByContents(files)
-            val parts = buildList {
-                // Best-effort: walk sources and locals in parallel when counts match; otherwise
-                // classify each local file from its on-disk name.
-                if (localFiles.size == files.size) {
-                    localFiles.forEachIndexed { index, local ->
-                        val source = files[index]
-                        val fileName = filesManager.getFileNameFromUri(source)
-                            ?: local.lastPathSegment
-                            ?: "file"
-                        val mime = filesManager.getFileMimeType(source)
-                            ?: guessMimeFromFileName(fileName)
-                            ?: "application/octet-stream"
-                        add(
-                            classifyChatAttachment(fileName, mime).toMessagePart(
-                                localUri = local.toString(),
-                                fileName = fileName,
-                                mime = mime,
-                            )
-                        )
-                    }
-                } else {
-                    localFiles.forEach { local ->
-                        val fileName = local.lastPathSegment ?: "file"
-                        val mime = guessMimeFromFileName(fileName)
-                            ?: "application/octet-stream"
-                        add(
-                            classifyChatAttachment(fileName, mime).toMessagePart(
-                                localUri = local.toString(),
-                                fileName = fileName,
-                                mime = mime,
-                            )
-                        )
-                    }
-                }
-            }
-            inputState.messageContent = parts
-        }
-        text?.base64Decode()?.let { decodedText ->
-            if (decodedText.isNotEmpty()) {
-                inputState.setMessageText(decodedText)
-            }
-        }
+        applyInitialChatInput(inputState, filesManager, files, text)
     }
 
     val chatListState = rememberLazyListState()
@@ -419,7 +383,7 @@ private fun DrawerBackHandlers(
  * active, so the status line is exactly as before on an install that never dispatches.
  */
 @Composable
-private fun subAgentStatusLine(runs: Map<String, SubAgentRun>, conversationId: Uuid): String? {
+internal fun subAgentStatusLine(runs: Map<String, SubAgentRun>, conversationId: Uuid): String? {
     // Only THIS conversation's runs: the registry is process-wide and spans every assistant,
     // so an unfiltered read made an unrelated chat announce "N sub-agents running".
     val active = runs.values.filter {
@@ -449,8 +413,13 @@ private fun formatElapsed(seconds: Long): String {
     return "%d:%02d".format(minutes, remaining)
 }
 
+/**
+ * The chat surface itself (list, input, sheets). Classic [ChatPage] calls it with its own title
+ * bars; Bot mode's BotChatPage passes [botChrome] to swap only the chrome — no drawer, its own
+ * bar — while sending, streaming, approvals and attachments stay exactly the same code.
+ */
 @Composable
-private fun ChatPageContent(
+internal fun ChatPageContent(
     onStartVoiceMode: () -> Unit,
     inputState: ChatInputState,
     loadingJob: Job?,
@@ -469,18 +438,45 @@ private fun ChatPageContent(
     onDismissError: (Uuid) -> Unit,
     onClearAllErrors: () -> Unit,
     onInputFocusChanged: (Boolean) -> Unit = {},
+    botChrome: BotChatChrome? = null,
 ) {
     val scope = rememberCoroutineScope()
+    // 换会话「先藏 → 落到底 → 再露」（学 Kelivo）：旧会话随页面淡出，新会话的消息列表
+    // 在滚到底之前保持透明，落定后再用 180ms 淡入，避免先露半截列表再跳到底。
+    // 每个会话是独立的导航条目 / ViewModel，所以中途再切走也只是丢弃这个条目，不会串台。
+    val listReveal = remember { Animatable(if (vm.chatListInitialized) 1f else 0f) }
+    LaunchedEffect(Unit) {
+        if (listReveal.value >= 1f) return@LaunchedEffect
+        // 空会话永远不会 initialized，超时后直接显现。
+        withTimeoutOrNull(ChatRevealTimeoutMs) {
+            snapshotFlow { vm.chatListInitialized }.first { it }
+        }
+        // requestScrollToItem 在下一次布局才生效：等两帧确保已经落到底。
+        withFrameNanos { }
+        withFrameNanos { }
+        listReveal.animateTo(1f, Motion.enter(Motion.FAST))
+    }
     val toaster = LocalToaster.current
     val context = LocalContext.current
     val workspaceRepository: WorkspaceRepository = koinInject()
     val turnFooters by vm.turnFooters.collectAsStateWithLifecycle()
     var previewMode by rememberSaveable { mutableStateOf(false) }
     val assistant = setting.getCurrentAssistant()
-    val geminiLayout = setting.displaySetting.effectiveChatLayout == ChatLayout.GEMINI
+    val geminiLayout = botChrome == null && setting.displaySetting.effectiveChatLayout == ChatLayout.GEMINI
     val compressAndContinueLabel = stringResource(R.string.chat_suggestion_compress_continue)
     var showFilesSheet by remember { mutableStateOf(false) }
     var showConversationSettings by remember { mutableStateOf(false) }
+    // Clear Bot-mode unread for this conversation / assistant while the chat is open.
+    LaunchedEffect(conversation.id, setting.assistantId, setting.displaySetting.botModeEnabled) {
+        if (!setting.displaySetting.botModeEnabled) return@LaunchedEffect
+        val ds = setting.displaySetting
+        val cleared = ds
+            .withBotUnreadClearedConversation(conversation.id)
+            .withBotUnreadClearedForAssistant(setting.assistantId)
+        if (cleared != ds) {
+            vm.updateSettings(setting.copy(displaySetting = cleared))
+        }
+    }
     val attachmentPickerActions = rememberChatAttachmentPickerActions(
         inputState = inputState,
         setting = setting,
@@ -701,6 +697,7 @@ private fun ChatPageContent(
 
                 Box(modifier = Modifier.fillMaxSize()) {
                     ChatList(
+                        revealAlpha = { listReveal.value },
                         innerPadding = listInset,
                         conversation = conversation,
                         turnFooters = turnFooters,
@@ -708,7 +705,12 @@ private fun ChatPageContent(
                         loading = loadingJob != null,
                         processingStatus = processingStatus,
                         previewMode = previewMode,
-                        settings = setting,
+                        // Bot chat: user bubbles, plain-text replies.
+                        settings = if (botChrome == null) {
+                            setting
+                        } else {
+                            setting.copy(displaySetting = setting.displaySetting.copy(showAssistantBubble = false))
+                        },
                         hazeState = hazeState,
                         errors = errors,
                         onDismissError = onDismissError,
@@ -723,7 +725,11 @@ private fun ChatPageContent(
                         onForkMessage = {
                             scope.launch {
                                 val fork = vm.forkMessage(message = it)
-                                navigateToChatPage(navController, chatId = fork.id, isTemporary = fork.isTemporary)
+                                if (botChrome != null) {
+                                    botChrome.onOpenConversation(fork.id)
+                                } else {
+                                    navigateToChatPage(navController, chatId = fork.id, isTemporary = fork.isTemporary)
+                                }
                             }
                         },
                         onDelete = {
@@ -797,7 +803,8 @@ private fun ChatPageContent(
                     // CLEAN 与 MODERN 都走顶栏面板，不需要顶部溶解。
                     val chatLayout = setting.displaySetting.effectiveChatLayout
                     val cleanLayout = chatLayout != ChatLayout.ORIGINAL
-                    val topDissolve = !cleanLayout
+                    // Bot chat's bar is an opaque panel of its own, like the clean layouts.
+                    val topDissolve = !cleanLayout && botChrome == null
 
                     // Top dissolve: extends below the title bar so incoming/outgoing messages
                     // fade in/out smoothly instead of clipping abruptly at the bar's bottom edge.
@@ -812,7 +819,7 @@ private fun ChatPageContent(
                     }
                     // 现代的顶栏是一块悬浮卡片，和屏幕顶边之间留了状态栏那一条；
                     // 给那一条一层很短的淡出，免得消息文字滚到状态栏图标底下。
-                    if (chatLayout == ChatLayout.MODERN) {
+                    if (chatLayout == ChatLayout.MODERN && botChrome == null) {
                         val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
                         Box(
                             modifier = Modifier
@@ -870,7 +877,11 @@ private fun ChatPageContent(
                             .fillMaxWidth()
                             .onSizeChanged { topBarHeightPx = it.height },
                     ) {
-                        if (geminiLayout) {
+                        if (botChrome != null) {
+                            // Measured like every bar here, so whatever the bot bar shows under
+                            // itself (the task chip) pushes the list down instead of covering it.
+                            botChrome.topBar()
+                        } else if (geminiLayout) {
                             Row(
                                 modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically,
@@ -1328,6 +1339,64 @@ private fun TopBarSubtitleLine(
         layout(width, height) {
             name.placeRelative(0, (height - name.height) / 2)
             token.placeRelative(name.width, (height - token.height) / 2)
+        }
+    }
+}
+
+/** 换会话时等待列表落底的上限；空会话或加载慢时到点直接显现。 */
+private const val ChatRevealTimeoutMs = 180L
+
+/** Fills the composer with shared / prefilled [files] and base64 [text]; also used by the Bot chat page. */
+internal suspend fun applyInitialChatInput(
+    inputState: ChatInputState,
+    filesManager: FilesManager,
+    files: List<Uri>,
+    text: String?,
+) {
+    if (files.isNotEmpty()) {
+        // Pair each source URI with its copied local file. createChatFilesByContents may
+        // skip failures, so zip by successful copies in order rather than assuming 1:1.
+        val localFiles = filesManager.createChatFilesByContents(files)
+        val parts = buildList {
+            // Best-effort: walk sources and locals in parallel when counts match; otherwise
+            // classify each local file from its on-disk name.
+            if (localFiles.size == files.size) {
+                localFiles.forEachIndexed { index, local ->
+                    val source = files[index]
+                    val fileName = filesManager.getFileNameFromUri(source)
+                        ?: local.lastPathSegment
+                        ?: "file"
+                    val mime = filesManager.getFileMimeType(source)
+                        ?: guessMimeFromFileName(fileName)
+                        ?: "application/octet-stream"
+                    add(
+                        classifyChatAttachment(fileName, mime).toMessagePart(
+                            localUri = local.toString(),
+                            fileName = fileName,
+                            mime = mime,
+                        )
+                    )
+                }
+            } else {
+                localFiles.forEach { local ->
+                    val fileName = local.lastPathSegment ?: "file"
+                    val mime = guessMimeFromFileName(fileName)
+                        ?: "application/octet-stream"
+                    add(
+                        classifyChatAttachment(fileName, mime).toMessagePart(
+                            localUri = local.toString(),
+                            fileName = fileName,
+                            mime = mime,
+                        )
+                    )
+                }
+            }
+        }
+        inputState.messageContent = parts
+    }
+    text?.base64Decode()?.let { decodedText ->
+        if (decodedText.isNotEmpty()) {
+            inputState.setMessageText(decodedText)
         }
     }
 }

@@ -1,5 +1,8 @@
 package com.clma.app.ui.pages.share.handler
 
+import com.clma.app.data.botmode.activeLibraryAssistants
+import com.clma.app.Screen
+import kotlin.uuid.Uuid
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -80,16 +83,28 @@ fun ShareHandlerPage(text: String, image: String?) {
                 }
             }
 
-            items(settings.assistants, key = { it.id }) { assistant ->
+            // Library isolation: Bot mode shares to a bot (its own chat page), classic to classic.
+            items(settings.activeLibraryAssistants(), key = { it.id }) { assistant ->
                 Surface(
                     onClick = {
                         scope.launch {
                             vm.updateAssistant(assistant.id)
-                            navigateToChatPage(
-                                navigator = navController,
-                                initText = vm.shareText.base64Encode(),
-                                initFiles = image?.let { listOf(it.toUri()) } ?: emptyList()
-                            )
+                            if (settings.displaySetting.botModeEnabled) {
+                                navController.clearAndNavigate(
+                                    Screen.BotChat(
+                                        botId = assistant.id.toString(),
+                                        conversationId = Uuid.random().toString(),
+                                        text = vm.shareText.base64Encode(),
+                                        files = listOfNotNull(image),
+                                    )
+                                )
+                            } else {
+                                navigateToChatPage(
+                                    navigator = navController,
+                                    initText = vm.shareText.base64Encode(),
+                                    initFiles = image?.let { listOf(it.toUri()) } ?: emptyList()
+                                )
+                            }
                         }
                     },
                     tonalElevation = 4.dp,

@@ -1,5 +1,10 @@
 package com.clma.app.ui.pages.setting.components
 
+import com.clma.app.ui.motion.Motion
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.expandVertically
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ArrowDown01
 import me.rerere.hugeicons.stroke.ArrowUp01
@@ -87,7 +92,11 @@ fun SettingProviderBalanceOption(
                 onCheckedChange = { onEdit(balanceOption.copy(enabled = it)) }
             )
         }
-        AnimatedVisibility(visible = expand) {
+        AnimatedVisibility(
+            visible = expand,
+            enter = expandVertically(Motion.enter(Motion.NORMAL), expandFrom = Alignment.Top) + fadeIn(Motion.enter(Motion.NORMAL)),
+            exit = shrinkVertically(Motion.exit(Motion.NORMAL), shrinkTowards = Alignment.Top) + fadeOut(Motion.exit(Motion.FAST)),
+        ) {
             Column(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {

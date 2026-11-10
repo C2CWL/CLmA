@@ -179,3 +179,52 @@ fun resolveSecretRef(store: AgentSecretsStore, refName: String?): Result<String?
         ?: return Result.failure(IllegalStateException("secret_not_found: '$refName' is not in the vault — call request_secret first"))
     return Result.success(value)
 }
+
+/** Generation is local: neither randomness nor the value is supplied by the model. */
+fun secretGenerateTool(store: AgentSecretsStore): Tool = Tool(
+    name = "secret_generate",
+    description = "Generate a cryptographically random password/token locally into a NEW vault entry. Returns only the name, never plaintext. Use secret_show to offer authenticated local viewing/copying. Does not configure any remote service. Never put model-generated passwords in chat.",
+    parameters = {
+        InputSchema.Obj(
+            properties = buildJsonObject {
+                put("name", buildJsonObject { put("type", "string"); put("description", "New vault name, [A-Za-z0-9_]{1,64}") })
+            },
+            required = listOf("name"),
+        )
+    },
+    execute = { input ->
+        val name = input.jsonObject["name"]?.jsonPrimitive?.contentOrNull.orEmpty()
+        val error = validateSecretCapture(name, false, store::isValidName, store::has)
+        val result = error ?: run {
+            val bytes = ByteArray(32).also { java.security.SecureRandom().nextBytes(it) }
+            val value = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(bytes)
+            captureSecretOutput(buildJsonObject { put("exit_code", 0); put("stdout", value) }, name, store::setIfAbsent)
+        }
+        listOf(UIMessagePart.Text(result.toString()))
+    },
+)
+
+fun secretShowTool(store: AgentSecretsStore): Tool = Tool(
+    name = "secret_show",
+    description = "Offer a local secure result card for a vault entry. The human can authenticate to view or copy on-device. Returns only metadata, NEVER the value. Main chat UI only; headless calls cannot reveal or copy. This is not a way for the model to read secrets.",
+    parameters = {
+        InputSchema.Obj(
+            properties = buildJsonObject {
+                put("name", buildJsonObject { put("type", "string"); put("description", "Existing vault name") })
+            },
+            required = listOf("name"),
+        )
+    },
+    execute = { input ->
+        val name = input.jsonObject["name"]?.jsonPrimitive?.contentOrNull.orEmpty()
+        val result = buildJsonObject {
+            if (!store.isValidName(name) || !store.has(name)) {
+                put("error", "secret_not_found")
+            } else {
+                put("secret_name", name)
+                put("detail", "Local viewing only; plaintext never enters the tool result. Open the main chat card or Settings > Secure secrets.")
+            }
+        }
+        listOf(UIMessagePart.Text(result.toString()))
+    },
+)

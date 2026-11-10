@@ -3,6 +3,7 @@ package com.clma.app.data.ai.compaction
 import com.clma.ai.ui.UIMessage
 import com.clma.ai.ui.UIMessagePart
 import com.clma.app.data.ai.ContextCompactionPresentation
+import com.clma.app.data.botmode.BotCostPolicy
 import com.clma.app.data.ai.tools.ToolExecutionRetryPolicy
 import com.clma.app.data.ai.transformers.InputMessageTransformer
 import com.clma.app.data.ai.transformers.TransformerContext
@@ -25,7 +26,11 @@ internal object PrecisionObservationMask {
     private const val TAIL_CHARS = 160
     private const val INPUT_CHARS = 360
 
-    fun apply(messages: List<UIMessage>, enabled: Boolean): List<UIMessage> {
+    /**
+     * [batch] > 1 (Bot cost-saving) masks in steps of [batch] calls instead of one call per new
+     * call, so the earlier request prefix stays byte-identical (and cacheable) between steps.
+     */
+    fun apply(messages: List<UIMessage>, enabled: Boolean, batch: Int = 1): List<UIMessage> {
         if (!enabled) return messages
         val completed = mutableListOf<LocatedTool>()
         messages.forEachIndexed { messageIndex, message ->
@@ -42,7 +47,7 @@ internal object PrecisionObservationMask {
         if (completed.size <= KEEP_RECENT) return messages
 
         val replacements = HashMap<Pair<Int, Int>, UIMessagePart.Tool>()
-        val oldestKept = completed.size - KEEP_RECENT
+        val oldestKept = BotCostPolicy.batchedAgedCount(completed.size, KEEP_RECENT, batch)
         for (index in 0 until oldestKept) {
             val located = completed[index]
             val masked = mask(located.tool) ?: continue
@@ -120,5 +125,6 @@ object PrecisionObservationMaskTransformer : InputMessageTransformer {
     ): List<UIMessage> = PrecisionObservationMask.apply(
         messages = messages,
         enabled = ctx.settings.enablePrecisionCompaction,
+        batch = BotCostPolicy.observationMaskBatch(ctx.assistant),
     )
 }

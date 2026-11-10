@@ -1,5 +1,6 @@
 package com.clma.app.service
 
+import com.clma.app.data.botmode.libraryScopeOf
 import com.clma.app.diagnostics.FunctionalDiagnostics
 import android.app.Application
 import android.content.Context
@@ -14,6 +15,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.completeWith
@@ -91,6 +93,7 @@ import com.clma.app.data.ai.compaction.tomc.TomcSummaryLedger
 import com.clma.app.data.ai.compaction.tomc.TomcTurn
 import com.clma.app.data.ai.compaction.tomc.TomcAgentCompiler
 import com.clma.app.data.datastore.CompactionEngine
+import com.clma.app.data.botmode.withBotUnreadMarked
 import com.clma.app.data.ai.CompactedMessageView
 import com.clma.app.data.ai.ContextCompactionView
 import com.clma.app.data.ai.ToolSurfaceResolver
@@ -158,6 +161,8 @@ import com.clma.app.data.datastore.getEffectiveContextLength
 import com.clma.app.data.datastore.resolveChatModel
 import com.clma.app.data.files.FilesManager
 import com.clma.app.data.model.Assistant
+import com.clma.app.data.model.isBot
+import com.clma.app.data.botmode.BotCostPolicy
 import com.clma.app.data.model.Conversation
 import com.clma.app.data.model.ConversationCompaction
 import com.clma.app.data.model.MessageNode
@@ -280,6 +285,23 @@ internal fun resolveCompressionModel(settings: Settings): Model? {
         .filter { it.enabled }
         .flatMap { it.models }
         .firstNotNullOfOrNull { it.takeIfUsable() }
+}
+
+/**
+ * Compression model for a Bot-mode conversation. Unlike [resolveCompressionModel] it never falls
+ * through to the global chat model or to "the first model of any enabled provider": a bot's
+ * summary goes to the compression model the user chose, otherwise to the model this conversation
+ * already talks to, so compaction never sends the conversation to a provider the user did not pick
+ * for it. Null when neither is usable.
+ */
+internal fun resolveBotCompressionModel(settings: Settings, conversationModel: Model?): Model? {
+    fun Model.takeIfUsable(): Model? {
+        if (id == DEFAULT_AUTO_MODEL_ID) return null
+        val provider = findProvider(settings.providers) ?: return null
+        return if (provider.enabled) this else null
+    }
+    settings.findModelById(settings.compressModelId)?.takeIfUsable()?.let { return it }
+    return conversationModel?.takeIfUsable()
 }
 
 /**
@@ -429,7 +451,7 @@ private val outputTransformers by lazy {
 }
 
 /** Aux-generation kind tracked by [AuxJobRegistry]. */
-internal enum class AuxJobKind { TITLE, SUGGESTION }
+internal enum class AuxJobKind { TITLE, SUGGESTION, IDLE_COMPACTION }
 
 /**
  * Tracks the in-flight title/suggestion job per (conversation, kind) so a burst of aux
@@ -805,6 +827,28 @@ class ChatService(
                         } == true) {
                         session.messageQueue.failReplyWaiters(context.getString(R.string.chat_page_voice_tool_approval))
                     }
+                    // Bot-mode unread: generation finished while no chat UI is holding this
+                    // conversation → badge that assistant until the user opens it.
+                    if (
+                        cause !is CancellationException &&
+                        session != null &&
+                        !session.hasUiReference
+                    ) {
+                        val conv = session.state.value
+                        appScope.launch {
+                            runCatching {
+                                settingsStore.update { settings ->
+                                    if (!settings.displaySetting.botModeEnabled) return@update settings
+                                    settings.copy(
+                                        displaySetting = settings.displaySetting.withBotUnreadMarked(
+                                            conversationId = conv.id,
+                                            assistantId = conv.assistantId,
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                    }
                     appScope.launch { dispatchNextQueuedMessage(id) }
                 },
             )
@@ -1024,6 +1068,29 @@ class ChatService(
             ).updateCurrentMessages(assistant.presetMessages)
             updateConversation(conversationId, newConversation)
         }
+    }
+
+    /**
+     * Bot-mode channels: delivers [text] to one bot, in its latest top-level conversation (the
+     * same one its chat page opens), or in a new conversation bound to that bot when it has
+     * none. Only Bot-library assistants are reachable; returns null for anything else. The
+     * send itself is the ordinary [sendMessage] path (queue, approvals, compaction unchanged).
+     */
+    suspend fun sendToBotConversation(assistantId: Uuid, text: String): Uuid? {
+        if (text.isBlank()) return null
+        val settings = settingsStore.settingsFlow.value
+        val bot = settings.assistants.find { it.id == assistantId && it.isBot } ?: return null
+        val latest = com.clma.app.data.botmode.latestTopLevelConversation(
+            conversationRepo.getConversationsOfAssistant(bot.id).first()
+        )
+        val conversationId = latest?.id ?: Conversation.ofId(
+            id = Uuid.random(),
+            assistantId = bot.id,
+            newConversation = true,
+        ).updateCurrentMessages(bot.presetMessages).also { conversationRepo.insertConversation(it) }.id
+        initializeConversation(conversationId)
+        sendMessage(conversationId, listOf(UIMessagePart.Text(text)))
+        return conversationId
     }
 
     // ---- 发送消息 ----
@@ -1796,6 +1863,38 @@ class ChatService(
     }
 
     /**
+     * Bot mode: the main assistant's bot-management tools, only for the Bot library's CURRENT
+     * main bot (empty for every other assistant, classic ones included). The tools re-check the
+     * main pointer and the user's one-call approval when they run.
+     */
+    private fun botMainToolsFor(
+        assistant: Assistant,
+        settings: Settings,
+        conversationId: Uuid,
+    ): List<com.clma.ai.core.Tool> {
+        if (!com.clma.app.data.botmode.BotMainTools.isMainAssistant(settings, assistant)) return emptyList()
+        // No approval channel (cron, sub-agent, automation): its writes could never be approved.
+        if (com.clma.app.data.ai.tools.HeadlessConversations.isHeadless(conversationId)) return emptyList()
+        return com.clma.app.data.botmode.BotMainTools.build(callerId = assistant.id, store = botMainToolStore)
+    }
+
+    private val botMainToolStore = object : com.clma.app.data.botmode.BotMainToolStore {
+        override suspend fun settings(): Settings = settingsStore.settingsFlow.value
+
+        override suspend fun updateSettings(transform: (Settings) -> Settings): Settings {
+            settingsStore.update(transform)
+            return settingsStore.settingsFlow.value
+        }
+
+        override suspend fun memories(botId: Uuid) = memoryRepository.getMemoriesOfAssistant(botId.toString())
+
+        override suspend fun addMemory(botId: Uuid, content: String) =
+            memoryRepository.addMemory(botId.toString(), content, source = "tool")
+
+        override suspend fun deleteMemory(memoryId: Int) = memoryRepository.deleteMemory(memoryId, source = "tool")
+    }
+
+    /**
      * Chat-mode surface: only [ChatModeTools.ALLOWED_TOOL_NAMES], each still gated by its
      * normal enable conditions. Always DIRECT (no progressive catalog / MCP / workspace /
      * cold memory / skills / tool_output_read).
@@ -1833,7 +1932,9 @@ class ChatService(
             if (surfaceAssistant.enableRecentChatsReference) {
                 addAll(
                     ChatModeTools.filterTools(
-                        createConversationTools(conversationRepo, surfaceAssistant.id),
+                        createConversationTools(conversationRepo, surfaceAssistant.id) {
+                            settingsStore.settingsFlow.value.libraryScopeOf(surfaceAssistant.id)
+                        },
                     )
                 )
             }
@@ -1862,12 +1963,15 @@ class ChatService(
             }
         }
         // Final allowlist pass (belt-and-suspenders) so a future assembly addition cannot leak.
+        // The Bot-mode main assistant's bot-management tools are added after it on purpose:
+        // they exist only for the current main bot (see BotMainTools), in either chat mode.
         val allowed = ChatModeTools.filterTools(fixedTools)
+        val botMainTools = botMainToolsFor(surfaceAssistant, settings, conversationId)
         return ChatToolSurface(
             fixed = com.clma.app.subagent.SubAgentSurface.apply(
                 conversationId = conversationId,
                 tools = allowed,
-            ).let { ChatModeTools.filterTools(it) },
+            ).let { ChatModeTools.filterTools(it) } + botMainTools,
         )
     }
 
@@ -1979,7 +2083,9 @@ class ChatService(
             }
             // Same gate as legacy ChatToolFactory: only when the assistant opted into recent-chat reference.
             if (surfaceAssistant.enableRecentChatsReference) {
-                addAll(createConversationTools(conversationRepo, surfaceAssistant.id))
+                addAll(createConversationTools(conversationRepo, surfaceAssistant.id) {
+                    settingsStore.settingsFlow.value.libraryScopeOf(surfaceAssistant.id)
+                })
             }
             addAll(
                 createWorkspaceToolsIfReady(
@@ -1990,6 +2096,8 @@ class ChatService(
             // T-06 / (7) - cold memory (Markdown knowledge base). Same on both build paths so a
             // regenerate sees the surface the first pass had.
             addAll(createColdMemoryToolsIfConfigured(surfaceAssistant))
+            // Bot mode: the current main bot manages the Bot library (approval per write).
+            addAll(botMainToolsFor(surfaceAssistant, settings, conversationId))
             // Fidelity Trio: spilled output reader & current conversation search (SQLite FTS5)
             add(com.clma.app.data.ai.tools.createToolOutputReadTool(context))
             add(
@@ -2156,17 +2264,20 @@ class ChatService(
         // answered with "unchanged" or a delta, but a diff never spans two turns — so a model
         // coming back to a screen (possibly after a compaction) always gets the whole tree.
         com.clma.app.data.ai.tools.local.TreeSnapshotCache.clear()
-        val settings = settingsStore.settingsFlow.first()
+        val storedSettings = settingsStore.settingsFlow.first()
         // Resolve the assistant from this conversation's own assistantId — the global
         // current-assistant pointer can have moved if the user switched assistants while
         // this generation was queued (multi-assistant crosstalk). Everything downstream
         // (model, memories, tools, sender name) keys off this resolved assistant.
         val initialConversation = getConversationFlow(conversationId).value
         val assistant = AssistantResolver.forConversation(
-            assistants = settings.assistants,
+            assistants = storedSettings.assistants,
             conversationAssistantId = initialConversation.assistantId,
-            currentAssistantId = settings.assistantId,
+            currentAssistantId = storedSettings.assistantId,
         ).assistant
+        // Bot cost-saving defaults (automatic + precision compaction). Request-scoped only: this
+        // copy is never written back. Classic assistants get storedSettings unchanged.
+        val settings = BotCostPolicy.effectiveSettings(storedSettings, assistant)
         val model = resolveGenerationModel(settings, initialConversation, overrideModelId)
             ?: throw IllegalStateException(
                 "No chat model selected. Pick one in Settings → Default models, or send /model in Telegram."
@@ -2747,6 +2858,88 @@ class ChatService(
             launchAuxJob(conversationId, AuxJobKind.TITLE) {
                 generateTitle(conversationId, finalConversation)
             }
+
+            if (
+                BotCostPolicy.shouldArmIdleCompaction(
+                    assistant = assistant,
+                    autoCompactionEnabled = settings.enableAutoCompaction,
+                    regeneratingRange = messageRange != null,
+                    temporaryConversation = finalConversation.isTemporary,
+                )
+            ) {
+                val armedAtMessageId = finalConversation.currentMessages.lastOrNull()?.id
+                // One job per conversation (a newer turn replaces it) and any new generation in
+                // this conversation cancels it (AuxJobRegistry.cancelAll) - see runIdleCompaction.
+                launchAuxJob(conversationId, AuxJobKind.IDLE_COMPACTION) {
+                    delay(BotCostPolicy.IDLE_COMPACTION_DELAY_MS)
+                    runIdleCompaction(conversationId, armedAtMessageId)
+                }
+            }
+        }
+    }
+
+    /**
+     * Bot cost-saving: run, while the conversation is idle, the automatic compaction that its next
+     * send would run anyway, so the user does not wait for it. Exactly one attempt per finished
+     * turn, never retried or re-armed from here. It does nothing unless every guard holds:
+     * - the conversation still ends with the message the turn ended with (nothing new or edited),
+     *   and no generation is running (a new generation also cancels this job);
+     * - the bot still has the cost-saving defaults and automatic compaction on, and the auto
+     *   compaction circuit breaker is not tripped;
+     * - the request as it stands already reaches the automatic trigger
+     *   ([BotCostPolicy.idleCompactionDue]), so it never adds a summary the next send would not.
+     * The compaction itself is the regular automatic one, under the conversation's compaction
+     * mutex, with its "conversation changed while compressing" boundary check; it records only a
+     * boundary, so any message that arrives later stays raw after the summary.
+     */
+    private suspend fun runIdleCompaction(conversationId: Uuid, armedAtMessageId: Uuid?) {
+        val session = sessions[conversationId] ?: return
+        if (session.getJob()?.isActive == true) return
+        val conversation = getConversationFlow(conversationId).value
+        if (conversation.isTemporary || conversation.currentMessages.lastOrNull()?.id != armedAtMessageId) return
+        if (conversation.currentMessages.lastOrNull()?.role != MessageRole.ASSISTANT) return
+        if (isAutoCompactionCircuitBroken(conversationId)) return
+        val storedSettings = settingsStore.settingsFlow.first()
+        val assistant = storedSettings.assistants.find { it.id == conversation.assistantId } ?: return
+        val settings = BotCostPolicy.effectiveSettings(storedSettings, assistant)
+        if (!BotCostPolicy.isActive(assistant) || !settings.enableAutoCompaction) return
+        val model = resolveGenerationModel(settings, conversation) ?: return
+        if (model.findProvider(settings.providers)?.enabled != true) return
+        val view = loadCompactedMessageView(conversation)
+        val estimated = PreSendContextGuard.estimateTokens(
+            view.messages,
+            view.compaction?.let { ContextCompactionView.summaryMessage(it).createdAt },
+        )
+        if (!BotCostPolicy.idleCompactionDue(estimated, automaticCompactionTriggerTokens(settings, model))) return
+        Log.i(TAG, "Idle pre-compaction for bot conversation $conversationId: ~$estimated tokens")
+        val result = runCatching {
+            prepareMessagesForGeneration(
+                conversation = conversation,
+                settings = settings,
+                assistant = assistant,
+                model = model,
+                // Not the session's status: the chat is idle, nothing should look busy.
+                processingStatus = MutableStateFlow(null),
+                force = true,
+            )
+        }.onFailure { error ->
+            if (error is CancellationException) throw error
+            // prepareMessagesForGeneration already counted the failure for the circuit breaker;
+            // the next send's own compaction path still applies.
+            Log.w(TAG, "Idle pre-compaction failed for $conversationId", error)
+        }.getOrNull() ?: return
+        val compaction = result.newlyCreatedAutoCompaction ?: return
+        getConversationFlow(conversationId).value.currentMessages
+            .lastOrNull { it.role == MessageRole.ASSISTANT }
+            ?.let { sourceMessage ->
+                attachAutomaticCompactionPresentation(
+                    conversationId = conversationId,
+                    messageId = sourceMessage.id,
+                    compaction = compaction,
+                )
+            }
+        if (session.getJob()?.isActive != true) {
+            saveConversation(conversationId, getConversationFlow(conversationId).value)
         }
     }
 
@@ -3209,7 +3402,7 @@ class ChatService(
             }
             // Auto compaction is off: still refuse a new turn that clearly cannot fit the
             // model's window, instead of sending a request that can only fail (and is billed).
-            val decision = preSendContextDecision(requestView, settings, model)
+            val decision = preSendContextDecision(requestView, settings, model, assistant)
             if (decision is PreSendContextDecision.OverHardLimit) {
                 throw IllegalStateException(
                     context.getString(
@@ -3240,7 +3433,7 @@ class ChatService(
 
         val preSend = !force
         if (preSend) {
-            val decision = preSendContextDecision(view, settings, model)
+            val decision = preSendContextDecision(view, settings, model, assistant)
             if (decision is PreSendContextDecision.MediaTooLarge) throwIfRequestTooLarge(decision)
             val hasOlderRawMessages =
                 conversation.currentMessages.lastIndex > view.rawTailStartIndex
@@ -3363,6 +3556,7 @@ class ChatService(
         view: CompactedMessageView,
         settings: Settings,
         model: Model,
+        assistant: Assistant,
     ): PreSendContextDecision = withContext(Dispatchers.IO) {
         runCatching {
             PreSendContextGuard.decide(
@@ -3376,6 +3570,9 @@ class ChatService(
                 hardLimitTokens = PreSendContextGuard.hardContextLimit(model),
                 compactedAt = view.compaction?.let { ContextCompactionView.summaryMessage(it).createdAt },
                 fileSize = ::localFileSize,
+                // Same image retention the generation loop applies to this assistant's request,
+                // so a Bot's batched ageing (up to batch-1 more images) is not underestimated.
+                imageAgingBatch = BotCostPolicy.imageAgingBatch(assistant),
             )
         }.getOrElse { error ->
             if (error is CancellationException) throw error
@@ -3836,6 +4033,10 @@ class ChatService(
         targetTokens: Int,
         isAuto: Boolean,
     ): ConversationCompaction = withTimeout(COMPACTION_TOTAL_TIMEOUT_MS) {
+        // Manual and tool-driven compaction read the stored settings; apply the same bot
+        // cost-saving view the automatic path uses (idempotent, a no-op for classic assistants).
+        val compactionAssistant = settings.assistants.find { it.id == conversation.assistantId }
+        val settings = BotCostPolicy.effectiveSettings(settings, compactionAssistant)
         require(messagesToCompress.isNotEmpty()) { "No messages selected for compression" }
         require(rawTailStartIndex in 1..conversation.messageNodes.size) {
             "Invalid compaction boundary"
@@ -3885,8 +4086,13 @@ class ChatService(
             if (!conversation.isTemporary) conversationRepo.upsertCompaction(result)
             return@withTimeout result
         }
-        val model = resolveCompressionModel(settings)
-            ?: throw IllegalStateException(compressionModelUnavailableMessage())
+        val model = if (compactionAssistant?.isBot == true) {
+            // Bots: the chosen compression model, else this conversation's own model - never
+            // another provider picked on the user's behalf.
+            resolveBotCompressionModel(settings, resolveGenerationModel(settings, conversation))
+        } else {
+            resolveCompressionModel(settings)
+        } ?: throw IllegalStateException(compressionModelUnavailableMessage())
         val provider = model.findProvider(settings.providers)
             ?: throw IllegalStateException("Provider not found")
         // Same defence as handleLlmTurn — refuse to compress against a disabled provider.

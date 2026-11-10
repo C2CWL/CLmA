@@ -100,18 +100,19 @@ data class Assistant(
     // from the next turn; the turn that triggered it keeps its raw history.
     // Appended last on purpose: a new field may never shift the position of an existing one.
     val enableCompactContextTool: Boolean = false,
-    // Phase 17 (①) — Progressive tool exposure. PROGRESSIVE_CATALOG is the default since V7
-    // (PreferenceStoreV7Migration rewrites the value on every assistant that already exists);
-    // DIRECT turns it off and keeps the historical behaviour:
-    // every enabled local + MCP tool's schema is injected on every request. PROGRESSIVE_CATALOG
-    // replaces the catalogue-able part of the surface (every enabled local tool group except the
+    // Phase 17 (①) — Progressive tool exposure. DIRECT is the default again since V11
+    // (PreferenceStoreV11Migration rewrites the value on every assistant that already exists);
+    // it injects every enabled local + MCP tool's schema on every request so the tool list stays
+    // stable across turns and prompt-cache hits are preserved. PROGRESSIVE_CATALOG replaces the
+    // catalogue-able part of the surface (every enabled local tool group except the
     // always-attached core, plus every MCP tool) with the small `tool_search` / `tool_open` pair,
     // and only activated schemas get injected — from the next request onwards, which the
     // generation loop re-reads per step, so a tool opened mid-turn is callable later in the SAME
     // turn. Memory / workspace / skill / cold-memory / compaction tools and `ask_user` are never
-    // catalogued: they are needed before any planning can happen.
+    // catalogued: they are needed before any planning can happen. Users who want the progressive
+    // catalog can turn the switch back on; V7's one-off rewrite to PROGRESSIVE stays historical.
     // Appended last on purpose: a new field may never shift the position of an existing one.
-    val toolSurfaceMode: ToolSurfaceMode = ToolSurfaceMode.PROGRESSIVE_CATALOG,
+    val toolSurfaceMode: ToolSurfaceMode = ToolSurfaceMode.DIRECT,
     // T-04 / (4) - let `subagent_dispatch` carry a slice of THIS conversation to the
     // sub-agent. Off by default, and the flag gates the tool SCHEMA as well as the
     // behaviour: with it off, the subagent_dispatch definition is byte-identical to the
@@ -174,7 +175,34 @@ data class Assistant(
     /** Saved SSH hosts available to this assistant; empty disables SSH access. */
     @EncodeDefault(EncodeDefault.Mode.NEVER)
     val enabledSshHosts: Set<String> = emptySet(),
+    /**
+     * Which assistant library this one lives in. Classic mode and Bot mode keep separate
+     * libraries: classic lists never show bots and the Bot list never shows classic assistants.
+     * Every assistant stored before this field existed decodes as CLASSIC, and NEVER-encoding
+     * keeps classic assistants byte-identical in the store.
+     * Appended last on purpose: a new field may never shift the position of an existing one.
+     */
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val library: AssistantLibrary = AssistantLibrary.CLASSIC,
+    /**
+     * Bot mode only: the cost-saving defaults of [com.clma.app.data.botmode.BotCostPolicy]
+     * (automatic + precision compaction, a default tool-result budget, batched request ageing,
+     * idle pre-compaction). Null means "use the Bot default" (on); false turns them off so the
+     * bot behaves like a classic assistant. Ignored for classic assistants. Appended last and
+     * NEVER-encoded, so existing stored assistants are unchanged.
+     */
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val botCostSaving: Boolean? = null,
 )
+
+/** Classic assistants vs Bot-mode bots; see [Assistant.library]. */
+@Serializable
+enum class AssistantLibrary {
+    @SerialName("classic") CLASSIC,
+    @SerialName("bot") BOT,
+}
+
+val Assistant.isBot: Boolean get() = library == AssistantLibrary.BOT
 
 @Serializable
 data class QuickMessage(

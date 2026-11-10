@@ -4,6 +4,7 @@ import com.clma.app.ui.pages.assistant.AssistantVM
 import com.clma.app.ui.pages.assistant.detail.AssistantDetailVM
 import com.clma.app.ui.pages.backup.BackupVM
 import com.clma.app.ui.pages.chat.ChatDrawerVM
+import com.clma.app.ui.pages.bot.BotHomeVM
 import com.clma.app.ui.pages.chat.ChatVM
 import com.clma.app.ui.pages.debug.DebugVM
 import com.clma.app.ui.pages.developer.DeveloperVM
@@ -49,6 +50,23 @@ val viewModelModule = module {
         )
     }
     viewModelOf(::ChatDrawerVM)
+    viewModelOf(::BotHomeVM)
+    viewModel<com.clma.app.ui.pages.bot.BotInfoVM> {
+        com.clma.app.ui.pages.bot.BotInfoVM(
+            botId = it.get(),
+            settingsStore = get(),
+            conversationRepo = get(),
+            memoryRepository = get(),
+        )
+    }
+    viewModel<com.clma.app.ui.pages.bot.BotChannelVM> {
+        com.clma.app.ui.pages.bot.BotChannelVM(
+            channelId = it.get(),
+            settingsStore = get(),
+            conversationRepo = get(),
+            chatService = get(),
+        )
+    }
     viewModelOf(::SettingVM)
     viewModelOf(::DebugVM)
     viewModelOf(::DeveloperVM)

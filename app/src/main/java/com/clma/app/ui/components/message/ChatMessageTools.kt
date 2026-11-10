@@ -86,6 +86,7 @@ import com.clma.app.data.ai.tools.ToolApprovalPolicy
 import com.clma.app.data.datastore.ToolCallStyle
 import com.clma.app.data.secrets.AgentSecretsStore
 import com.clma.app.ui.components.message.tools.ToolUIContext
+import com.clma.app.ui.pages.chat.botmode.LocalBotModeEnabled
 import com.clma.app.ui.components.message.tools.ToolUIRegistry
 import com.clma.app.ui.components.message.tools.ToolResultImage
 import com.clma.app.ui.components.ui.ChainOfThoughtScope
@@ -130,6 +131,7 @@ fun InteractiveToolCard(
             onToolApproval = onToolApproval,
             onToolAnswer = onToolAnswer,
         )
+        else -> SecretResultCard(tool)
     }
 }
 
@@ -302,7 +304,31 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
         },
         extra = if (isPending && onToolApproval != null) {
             {
-                PendingToolButton(tool)
+                if (LocalBotModeEnabled.current) {
+                    // Bot mode: an approval card right in the conversation flow.
+                    androidx.compose.material3.Surface(
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.35f),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            MaterialTheme.colorScheme.tertiary.copy(alpha = 0.6f),
+                        ),
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(10.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            Text(
+                                text = stringResource(R.string.bot_approval_card_title),
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.tertiary,
+                            )
+                            ToolApprovalForm(tool, onToolApproval, botLabels = true)
+                        }
+                    }
+                } else {
+                    PendingToolButton(tool)
+                }
             }
         } else {
             null
@@ -1139,6 +1165,8 @@ private fun ApprovalButton(
 private fun ToolApprovalForm(
     tool: UIMessagePart.Tool,
     onToolApproval: (String, Boolean, String, com.clma.app.service.ChatService.ApprovalScope, String) -> Unit,
+    /** Bot mode wording: "Just this once" / "Remember for this chat" (same scopes). */
+    botLabels: Boolean = false,
 ) {
     var showDenyDialog by remember(tool.toolCallId) { mutableStateOf(false) }
     // Per-form in-flight flag to debounce double-taps. Without this, two rapid
@@ -1169,7 +1197,13 @@ private fun ToolApprovalForm(
         ToolDisplaySupporting(toolName = tool.toolName, mcpDescription = mcpDescription)
         if (com.clma.app.connectors.ConnectorWriteApproval.requiresApproval(tool.toolName)) {
             Text(
-                text = stringResource(R.string.connector_write_approval_warning),
+                text = stringResource(
+                    if (tool.toolName in com.clma.app.data.botmode.BotMainTools.WRITE_TOOL_NAMES) {
+                        R.string.bot_main_tool_approval_warning
+                    } else {
+                        R.string.connector_write_approval_warning
+                    },
+                ),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.error,
             )
@@ -1269,7 +1303,9 @@ private fun ToolApprovalForm(
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             ApprovalButton(
-                label = stringResource(R.string.chat_message_tool_approve_once),
+                label = stringResource(
+                    if (botLabels) R.string.bot_approval_once else R.string.chat_message_tool_approve_once,
+                ),
                 icon = HugeIcons.Tick01,
                 enabled = !inFlight,
                 onClick = {
@@ -1285,7 +1321,9 @@ private fun ToolApprovalForm(
             )
             if (!com.clma.app.connectors.ConnectorWriteApproval.requiresApproval(tool.toolName)) {
                 ApprovalButton(
-                    label = stringResource(R.string.chat_message_tool_allow_chat),
+                    label = stringResource(
+                        if (botLabels) R.string.bot_approval_remember_chat else R.string.chat_message_tool_allow_chat,
+                    ),
                     emoji = "💬",
                     enabled = !inFlight,
                     onClick = {
@@ -1343,6 +1381,7 @@ fun ToolInteractionDialogHost(
     conversation: com.clma.app.data.model.Conversation,
     onToolApproval: ((String, Boolean, String, com.clma.app.service.ChatService.ApprovalScope, String) -> Unit)?,
     onToolAnswer: ((String, String) -> Unit)?,
+    botModeEnabled: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val pending = PendingToolInteractions.pendingTools(conversation.currentMessages).filter {
@@ -1353,11 +1392,15 @@ fun ToolInteractionDialogHost(
     var requested by remember(conversation.id) { mutableStateOf<String?>(null) }
     val active = pending.firstOrNull { it.toolCallId == requested }
         ?: pending.firstOrNull { dismissed[it.toolCallId] != true }
-    CompositionLocalProvider(LocalPendingToolDialog provides { id ->
-        dismissed.remove(id)
-        requested = id
-    }) { content() }
-    if (active != null) key(conversation.id, active.toolCallId) {
+    // Bot mode: approvals stay inline in the chat bubble; classic mode keeps the modal dialog.
+    CompositionLocalProvider(
+        LocalPendingToolDialog provides if (botModeEnabled) null else { id ->
+            dismissed.remove(id)
+            requested = id
+        },
+        LocalBotModeEnabled provides botModeEnabled,
+    ) { content() }
+    if (!botModeEnabled && active != null) key(conversation.id, active.toolCallId) {
         val close = {
             dismissed[active.toolCallId] = true
             requested = null

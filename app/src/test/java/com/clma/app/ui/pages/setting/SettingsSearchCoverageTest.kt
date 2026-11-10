@@ -28,6 +28,10 @@ class SettingsSearchCoverageTest {
         "MessageSearch" to "message search",
         "Stats" to "usage statistics",
         "GettingStarted" to "first-run onboarding, opened from chat",
+        "BotHome" to "Bot mode home (bot list / channels), not a settings page",
+        "BotChat" to "one bot's conversation in Bot mode",
+        "BotInfo" to "one bot's info page in Bot mode, opened from its chat or the bot list",
+        "BotChannel" to "one Bot-mode channel, opened from the Channels tab",
     )
 
     /**
@@ -147,7 +151,10 @@ class SettingsSearchCoverageTest {
         "SettingTheme" to listOf("ui/pages/setting/SettingThemePage.kt"),
         "SettingColorMode" to listOf("ui/pages/setting/SettingColorModePage.kt"),
         "SettingFonts" to listOf("ui/pages/setting/SettingFontsPage.kt"),
-        "SettingChatLayout" to listOf("ui/pages/setting/SettingChatLayoutPage.kt"),
+        "SettingChatLayout" to listOf(
+            "ui/pages/setting/SettingChatLayoutPage.kt",
+            "ui/pages/chat/botmode/BotModeExtrasSection.kt",
+        ),
         "SettingPreferencesUI" to listOf("ui/pages/setting/SettingPreferencesUIPage.kt"),
         "SettingPreferencesGeneral" to listOf("ui/pages/setting/SettingPreferencesGeneralPage.kt"),
         "SettingPreferencesNotification" to listOf("ui/pages/setting/SettingPreferencesNotificationPage.kt"),
@@ -200,6 +207,7 @@ class SettingsSearchCoverageTest {
         "assistant_page_clone",
         "assistant_page_delete",
         "setting_page_notifications_recent_empty",
+        "bot_mode_hidden_empty",
         "setting_secrets_page_empty",
         "setting_secrets_page_copy",
         "setting_secrets_page_edit",

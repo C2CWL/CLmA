@@ -12,11 +12,12 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import com.clma.app.ui.motion.Motion
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -46,6 +47,10 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavKey
+import androidx.lifecycle.lifecycleScope
+import android.widget.Toast
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
@@ -62,6 +67,9 @@ import com.dokar.sonner.Toaster
 import com.dokar.sonner.rememberToasterState
 import kotlinx.serialization.Serializable
 import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.datastore.Settings
+import com.clma.app.data.repository.ConversationRepository
+import com.clma.app.data.model.Assistant
 import com.clma.app.data.datastore.DEFAULT_CODEX_PROVIDER_ID
 import com.clma.app.data.datastore.DEFAULT_GEMINI_OAUTH_PROVIDER_ID
 import com.clma.app.data.db.DatabaseMigrationTracker
@@ -79,6 +87,7 @@ import com.clma.app.ui.context.LocalToaster
 import com.clma.app.ui.context.Navigator
 import com.clma.app.ui.hooks.readBooleanPreference
 import com.clma.app.ui.hooks.readStringPreference
+import com.clma.app.ui.hooks.writeBooleanPreference
 import com.clma.app.ui.hooks.rememberCustomTtsState
 import com.clma.app.ui.hooks.rememberCustomAsrState
 import com.clma.app.ui.hooks.rememberCurrentColorMode
@@ -157,6 +166,18 @@ import com.clma.app.ui.theme.syncSplashTheme
 import com.clma.app.utils.CrashHandler
 import com.clma.app.utils.openUsageAccessSettings
 import com.clma.app.utils.resolveInitialChatStack
+import com.clma.app.ui.pages.bot.BOT_MODE_ROOT_PREF_KEY
+import com.clma.app.data.botmode.ensureBotLibrary
+import com.clma.app.data.botmode.withAssistantInLibrary
+import com.clma.app.ui.pages.bot.BotHomePage
+import com.clma.app.ui.pages.bot.BotChatPage
+import com.clma.app.ui.pages.bot.conversationLinkTarget
+import com.clma.app.ui.pages.bot.initialRootStack
+import com.clma.app.ui.pages.bot.libraryGuardedStack
+import com.clma.app.ui.pages.bot.routeConversationId
+import com.clma.app.ui.pages.bot.isStackResetTo
+import com.clma.app.ui.pages.bot.reconcileRootStack
+import com.clma.app.ui.pages.bot.resetStackTo
 import okhttp3.OkHttpClient
 import org.koin.android.ext.android.inject
 import org.koin.compose.koinInject
@@ -173,6 +194,7 @@ class RouteActivity : FragmentActivity() {
 
     private val okHttpClient by inject<OkHttpClient>()
     private val settingsStore by inject<SettingsStore>()
+    private val conversationRepo by inject<ConversationRepository>()
     private var navStack: MutableList<NavKey>? = null
     private val pendingIntents = ArrayDeque<Intent>()
 
@@ -272,24 +294,68 @@ class RouteActivity : FragmentActivity() {
             Intent.ACTION_PROCESS_TEXT -> Screen.ShareHandler(
                 text = intent.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT)?.toString().orEmpty(),
             )
-            else -> conversationId?.let { Screen.Chat(it) }
-        }
-        if (destination != null) {
-            if (destination is Screen.Chat && conversationId != null) {
-                // "Open this conversation" (edge bar tap, notification, shortcut) replaces the
-                // stack — the same semantics as the drawer's clearAndNavigate — instead of
-                // stacking another Chat: repeated taps used to pile up Chat entries, so Back
-                // walked through stale conversations and the visible one looked wrong.
-                if (backStack.size != 1 || backStack.lastOrNull() != destination) {
-                    backStack.clear()
-                    backStack.add(destination)
-                }
-                // One-shot: keep it out of the Intent so a config change / recomposition can't
-                // replay the navigation on top of wherever the user has since gone.
+            else -> conversationId?.let { id ->
+                // Library isolation: the target page depends on which library the stored
+                // conversation belongs to, which needs the real settings and a DB read.
+                // One-shot: keep it out of the Intent so a config change can't replay it.
                 intent.removeExtra("conversationId")
-            } else if (backStack.lastOrNull() != destination) {
-                backStack.add(destination)
+                openConversationLink(backStack, id)
+                return
             }
+        }
+        if (destination != null && backStack.lastOrNull() != destination) {
+            backStack.add(destination)
+        }
+    }
+
+    /**
+     * "Open this conversation" (edge bar tap, notification, shortcut): Bot mode opens Bot
+     * conversations in the Bot chat page, classic opens classic ones in the classic page, and a
+     * conversation of the other library is refused with a hint — the mode is never switched
+     * implicitly (the explicit Bot-mode switch is untouched).
+     */
+    private fun openConversationLink(backStack: MutableList<NavKey>, conversationId: String) {
+        lifecycleScope.launch {
+            val settings = settingsStore.settingsFlow.first { !it.init }
+            val owner = runCatching { Uuid.parse(conversationId) }.getOrNull()
+                ?.let { conversationRepo.getAssistantIdOfConversation(it) }
+            val destination = conversationLinkTarget(
+                botRoot = backStack.firstOrNull() == Screen.BotHome,
+                conversationId = conversationId,
+                owner = owner,
+                settings = settings,
+            )
+            if (destination == null) {
+                Toast.makeText(
+                    this@RouteActivity,
+                    if (settings.displaySetting.botModeEnabled) {
+                        R.string.bot_library_link_classic_conversation
+                    } else {
+                        R.string.bot_library_link_bot_conversation
+                    },
+                    Toast.LENGTH_SHORT,
+                ).show()
+                return@launch
+            }
+            // Replaces the stack — the same semantics as the drawer's clearAndNavigate — instead
+            // of stacking another chat: repeated taps used to pile up chat entries.
+            if (!isStackResetTo(backStack, destination)) {
+                resetStackTo(backStack, destination)
+            }
+        }
+    }
+
+    /** Drops conversation pages of the other library from the stack (see [libraryGuardedStack]). */
+    private suspend fun guardStackLibrary(backStack: MutableList<NavKey>, settings: Settings, newChat: () -> Screen.Chat) {
+        val before = backStack.toList()
+        val owners = before.mapNotNull { it.routeConversationId() }.distinct().associateWith { id ->
+            runCatching { Uuid.parse(id) }.getOrNull()?.let { conversationRepo.getAssistantIdOfConversation(it) }
+        }
+        val guarded = libraryGuardedStack(before, settings, owners, newChat)
+        // Only apply if the user has not navigated meanwhile.
+        if (guarded !== before && backStack.toList() == before) {
+            backStack.clear()
+            backStack.addAll(guarded)
         }
     }
 
@@ -334,10 +400,45 @@ class RouteActivity : FragmentActivity() {
             )
         }
 
-        val backStack = if (initialChatIds.size > 1) {
-            rememberNavBackStack(Screen.Chat(initialChatIds[0]), Screen.Chat(initialChatIds[1]))
-        } else {
-            rememberNavBackStack(Screen.Chat(initialChatIds[0]))
+        // Bot mode has its own root (Bot home). The real settings load asynchronously, so the
+        // cold-start root comes from a synchronous pref mirror; the effect below corrects it.
+        val initialStack = remember {
+            initialRootStack(
+                botMode = readBooleanPreference(BOT_MODE_ROOT_PREF_KEY, false),
+                chatIds = initialChatIds,
+                deepLinkConversationId = deepLinkConversationId,
+            )
+        }
+        val backStack = rememberNavBackStack(*initialStack.toTypedArray())
+        val botModeEnabled = settings.displaySetting.botModeEnabled
+        LaunchedEffect(settings.init, botModeEnabled) {
+            if (settings.init) return@LaunchedEffect
+            writeBooleanPreference(BOT_MODE_ROOT_PREF_KEY, botModeEnabled)
+            // Separate libraries: Bot mode sets up its own (with a main bot) on first use, and
+            // the current assistant always belongs to the active library.
+            val mainName = getString(R.string.bot_main_default_name)
+            val mainPrompt = getString(R.string.bot_main_default_prompt)
+            val fix: (Settings) -> Settings = { s ->
+                val withLibrary = if (botModeEnabled) {
+                    s.ensureBotLibrary { Assistant(name = mainName, systemPrompt = mainPrompt) }
+                } else {
+                    s
+                }
+                withLibrary.withAssistantInLibrary(botModeEnabled)
+            }
+            if (fix(settings) != settings) settingsStore.update(fix)
+            reconcileRootStack(backStack, botModeEnabled) {
+                Screen.Chat(
+                    if (readBooleanPreference("create_new_conversation_on_start", true)) {
+                        Uuid.random().toString()
+                    } else {
+                        readStringPreference("lastConversationId", null) ?: Uuid.random().toString()
+                    }
+                )
+            }
+            // Library isolation: a restored / linked conversation page of the other library
+            // (e.g. the last Bot conversation restored into the classic chat) never shows.
+            guardStackLibrary(backStack, settings) { Screen.Chat(Uuid.random().toString()) }
         }
         val diagnosticFunctions by rememberSharedPreferenceBoolean(FunctionalDiagnostics.FUNCTION_KEY)
         LaunchedEffect(backStack, diagnosticFunctions) {
@@ -363,7 +464,8 @@ class RouteActivity : FragmentActivity() {
         val gettingStartedSeen = remember { readBooleanPreference(GETTING_STARTED_SEEN_KEY, false) }
         LaunchedEffect(settings.init) {
             if (!gettingStartedSeen && !settings.init && !settings.hasConfiguredModel() &&
-                backStack.size == 1 && backStack.firstOrNull() is Screen.Chat
+                backStack.size == 1 &&
+                (backStack.firstOrNull() is Screen.Chat || backStack.firstOrNull() == Screen.BotHome)
             ) {
                 backStack.add(Screen.GettingStarted)
             }
@@ -400,25 +502,27 @@ class RouteActivity : FragmentActivity() {
                         ),
                         modifier = Modifier.fillMaxSize(),
                         onBack = { backStack.removeLastOrNull() },
+                        // 轻滑 + 淡入，进出对称（对齐 Kelivo 节拍，不再缩到 0.7）。
                         transitionSpec = {
-                            if (backStack.size == 1) fadeIn() togetherWith fadeOut()
-                            else {
-                                slideInHorizontally { it } togetherWith
-                                    slideOutHorizontally { -it / 2 } + scaleOut(targetScale = 0.7f) + fadeOut()
+                            if (backStack.size == 1) {
+                                fadeIn(Motion.enter(Motion.PAGE)) togetherWith fadeOut(Motion.exit(Motion.FAST))
+                            } else {
+                                pageForwardEnter() togetherWith pageForwardExit()
                             }
                         },
                         popTransitionSpec = {
-                            slideInHorizontally { -it / 2 } + scaleIn(initialScale = 0.7f) + fadeIn() togetherWith
-                                slideOutHorizontally { it }
+                            pageBackEnter() togetherWith pageBackExit()
                         },
                         predictivePopTransitionSpec = {
-                            slideInHorizontally { -it / 2 } + scaleIn(initialScale = 0.7f) + fadeIn() togetherWith
-                                slideOutHorizontally { it }
+                            pageBackEnter() togetherWith pageBackExit()
                         },
                         entryProvider = entryProvider {
                             entry<Screen.Chat>(
-                                metadata = NavDisplay.transitionSpec { fadeIn() togetherWith fadeOut() }
-                                        + NavDisplay.popTransitionSpec { fadeIn() togetherWith fadeOut() }
+                                metadata = NavDisplay.transitionSpec {
+                                    fadeIn(Motion.enter(Motion.PAGE)) togetherWith fadeOut(Motion.exit(Motion.FAST))
+                                } + NavDisplay.popTransitionSpec {
+                                    fadeIn(Motion.enter(Motion.PAGE)) togetherWith fadeOut(Motion.exit(Motion.FAST))
+                                }
                             ) { key ->
                                 ChatPage(
                                     id = Uuid.parse(key.id),
@@ -487,6 +591,30 @@ class RouteActivity : FragmentActivity() {
 
                             entry<Screen.Translator> {
                                 TranslatorPage()
+                            }
+
+                            entry<Screen.BotHome> {
+                                BotHomePage()
+                            }
+
+                            entry<Screen.BotChat> { key ->
+                                BotChatPage(
+                                    botId = Uuid.parse(key.botId),
+                                    conversationId = Uuid.parse(key.conversationId),
+                                    text = key.text,
+                                    files = key.files.map { it.toUri() },
+                                )
+                            }
+
+                            entry<Screen.BotInfo> { key ->
+                                com.clma.app.ui.pages.bot.BotInfoPage(
+                                    botId = key.botId,
+                                    conversationId = key.conversationId,
+                                )
+                            }
+
+                            entry<Screen.BotChannel> { key ->
+                                com.clma.app.ui.pages.bot.BotChannelPage(channelId = key.channelId)
                             }
 
                             entry<Screen.Setting> {
@@ -837,6 +965,28 @@ sealed interface Screen : NavKey {
     @Serializable
     data object Setting : Screen
 
+    /** Bot mode root: bot list / channels / settings tabs. Classic mode never shows it. */
+    @Serializable
+    data object BotHome : Screen
+
+    /** One bot's conversation in Bot mode (its own chrome, no classic drawer). */
+    @Serializable
+    data class BotChat(
+        val botId: String,
+        val conversationId: String,
+        // Composer prefill (share sheet in Bot mode), same encoding as [Chat.text] / [Chat.files].
+        val text: String? = null,
+        val files: List<String> = emptyList(),
+    ) : Screen
+
+    /** A bot's info page in Bot mode (model, prompt, memory, approvals, apps, displays...). */
+    @Serializable
+    data class BotInfo(val botId: String, val conversationId: String? = null) : Screen
+
+    /** One Bot-mode channel: its members and a message box that reaches them. */
+    @Serializable
+    data class BotChannel(val channelId: String) : Screen
+
     @Serializable
     data object SettingsSearch : Screen
 
@@ -1012,3 +1162,17 @@ sealed interface Screen : NavKey {
     data object Stats : Screen
 
 }
+
+// ---- 页面转场（统一节拍，见 ui/motion/Motion.kt） ----
+// 以短促淡入淡出为主；位移极小（约 1/16 屏）只给方向感，不拖、不飘。
+private fun pageForwardEnter(): EnterTransition =
+    slideInHorizontally(Motion.enter(Motion.PAGE)) { it / 16 } + fadeIn(Motion.enter(Motion.PAGE))
+
+private fun pageForwardExit(): ExitTransition =
+    slideOutHorizontally(Motion.exit(Motion.FAST)) { -it / 24 } + fadeOut(Motion.exit(Motion.FAST))
+
+private fun pageBackEnter(): EnterTransition =
+    slideInHorizontally(Motion.enter(Motion.PAGE)) { -it / 24 } + fadeIn(Motion.enter(Motion.PAGE))
+
+private fun pageBackExit(): ExitTransition =
+    slideOutHorizontally(Motion.exit(Motion.FAST)) { it / 16 } + fadeOut(Motion.exit(Motion.FAST))

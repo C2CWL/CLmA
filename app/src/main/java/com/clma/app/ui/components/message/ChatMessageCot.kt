@@ -57,7 +57,11 @@ sealed interface MessagePartBlock {
 /** 向用户要输入的工具：独立卡片，不当成思考步骤。 */
 fun UIMessagePart.Tool.isInteractiveInputTool(): Boolean =
     toolName == ToolApprovalPolicy.ASK_USER_TOOL_NAME ||
-        toolName == ToolApprovalPolicy.REQUEST_SECRET_TOOL_NAME
+        toolName == ToolApprovalPolicy.REQUEST_SECRET_TOOL_NAME ||
+        (isExecuted && toolName in setOf("secret_show", "secret_generate", "ssh_exec", "ssh_exec_saved") &&
+            parseToolOutputContent(this)?.let {
+                (it as? kotlinx.serialization.json.JsonObject)?.containsKey("secret_name")
+            } == true)
 
 /**
  * 将 parts 分组成 ThinkingBlock、InteractiveToolBlock 和 ContentBlock。

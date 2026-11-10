@@ -1,5 +1,6 @@
 package com.clma.app.data.ai.tools
 
+import com.clma.app.data.botmode.AssistantScope
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
@@ -28,6 +29,8 @@ import kotlin.uuid.Uuid
 fun createConversationTools(
     conversationRepo: ConversationRepository,
     assistantId: Uuid,
+    // Library isolation: cross-conversation search only sees the caller's library (classic vs Bot).
+    searchScope: suspend () -> AssistantScope = { AssistantScope.ALL },
 ): List<Tool> = listOf(
     Tool(
         name = "recent_chats",
@@ -110,7 +113,7 @@ fun createConversationTools(
             val limit = (it.jsonObject["limit"]?.jsonPrimitive?.intOrNull ?: DEFAULT_MESSAGE_LIMIT)
                 .coerceIn(1, MAX_MESSAGE_LIMIT)
             val results = conversationRepo
-                .searchMessages(query, MessageSearchSort.RELEVANCE)
+                .searchMessages(query, MessageSearchSort.RELEVANCE, scope = searchScope())
                 .take(limit)
             val payload = buildJsonObject {
                 put("mode", "fts_keyword")

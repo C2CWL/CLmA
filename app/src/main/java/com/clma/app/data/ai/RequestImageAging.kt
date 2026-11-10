@@ -3,6 +3,7 @@ package com.clma.app.data.ai
 import com.clma.ai.core.MessageRole
 import com.clma.ai.ui.UIMessage
 import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.botmode.BotCostPolicy
 
 /**
  * Images in this many of the most recent user turns (the one being sent plus the three before
@@ -22,17 +23,28 @@ const val ELIDED_USER_IMAGE_TEXT = "【这里原来有一张图片，为节省�
  *
  * Synthetic user messages (continuation instructions, injected notices) do not count as turns.
  */
-fun List<UIMessage>.ageOldUserImages(keepLastTurns: Int = USER_IMAGE_KEEP_LAST_TURNS): List<UIMessage> {
+fun List<UIMessage>.ageOldUserImages(
+    keepLastTurns: Int = USER_IMAGE_KEEP_LAST_TURNS,
+    // > 1 (Bot cost-saving): age user turns in steps of [batch], so an earlier message is only
+    // rewritten once per batch of new turns and the cached request prefix survives in between.
+    batch: Int = 1,
+): List<UIMessage> {
+    fun UIMessage.isUserTurn() = role == MessageRole.USER && !isSynthetic
+    val aged = BotCostPolicy.batchedAgedCount(
+        total = count { it.isUserTurn() },
+        keep = keepLastTurns,
+        batch = batch,
+    )
     var userTurnsSeen = 0
-    return asReversed().map { message ->
-        if (message.role != MessageRole.USER || message.isSynthetic) return@map message
+    return map { message ->
+        if (!message.isUserTurn()) return@map message
         userTurnsSeen++
-        if (userTurnsSeen <= keepLastTurns) return@map message
+        if (userTurnsSeen > aged) return@map message
         if (message.parts.none { it is UIMessagePart.Image }) return@map message
         message.copy(
             parts = message.parts.map { part ->
                 if (part is UIMessagePart.Image) UIMessagePart.Text(ELIDED_USER_IMAGE_TEXT) else part
             },
         )
-    }.asReversed()
+    }
 }

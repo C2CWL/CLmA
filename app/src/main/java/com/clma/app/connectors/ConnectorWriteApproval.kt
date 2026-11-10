@@ -12,9 +12,14 @@ import kotlinx.serialization.json.JsonElement
 
 /** In-memory, single-use consent. Persisted Approved states are not capabilities. */
 object ConnectorWriteApproval {
+    /**
+     * Connector writes plus the Bot-mode main assistant's bot-management writes
+     * ([com.clma.app.data.botmode.BotMainTools.WRITE_TOOL_NAMES]): both must be approved by the
+     * user one call at a time, never by Auto mode, a chat-wide grant or an unattended run.
+     */
     val WRITE_TOOL_NAMES: Set<String> = setOf(
         "github_issue_create", "github_comment_create",
-    )
+    ) + com.clma.app.data.botmode.BotMainTools.WRITE_TOOL_NAMES
     private data class Call(val conversationId: String, val toolCallId: String)
     private data class Consent(val name: String, val args: JsonElement)
     private val consents = ConcurrentHashMap<Call, Consent>()

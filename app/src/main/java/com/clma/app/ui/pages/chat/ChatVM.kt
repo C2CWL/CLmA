@@ -1,5 +1,7 @@
 package com.clma.app.ui.pages.chat
 
+import kotlinx.coroutines.flow.first
+import com.clma.app.data.botmode.isBotAssistantId
 import android.app.Application
 import android.content.Context
 import androidx.compose.runtime.Composable
@@ -183,11 +185,16 @@ class ChatVM(
         // 初始化对话
         viewModelScope.launch {
             chatService.initializeConversation(_conversationId, isTemporary = isTemporary)
+            if (!isTemporary) {
+                // 记住对话ID, 方便下次启动恢复。库隔离：只记经典会话，Bot 会话不会被恢复到经典聊天页。
+                val settings = settingsStore.settingsFlow.first { !it.init }
+                if (!settings.isBotAssistantId(chatService.getConversationFlow(_conversationId).value.assistantId)) {
+                    context.writeStringPreference("lastConversationId", _conversationId.toString())
+                }
+            }
         }
 
         if (!isTemporary) {
-            // 记住对话ID, 方便下次启动恢复
-            context.writeStringPreference("lastConversationId", _conversationId.toString())
 
             // 恢复上次未发送的草稿 (只恢复文本; 附件不猜)
             drafts.get(_conversationId).takeIf { it.isNotBlank() }?.let(inputState::setMessageText)

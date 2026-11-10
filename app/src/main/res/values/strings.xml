@@ -129,6 +129,9 @@
   <string name="assistant_page_tool_result_budget_placeholder">Default (32 KB spill gate only)</string>
   <string name="assistant_page_tool_result_budget_active">Limit: about %d tokens per tool result</string>
   <string name="assistant_page_tool_result_budget_off">Using the default limit (32 KB characters, head preview only)</string>
+  <string name="assistant_page_tool_result_budget_bot_default">Bot default: about %d tokens per tool result (set a number to change it)</string>
+  <string name="assistant_page_bot_cost_saving">Bot cost saving</string>
+  <string name="assistant_page_bot_cost_saving_desc">On by default for bots: automatic context compaction (summaries use your compression model, otherwise this bot\'s own model), a tool-result budget, cache-friendly ageing of old screenshots and tool output, and compaction while idle when the next message would compact anyway. Turn off to behave like a classic assistant.</string>
   <string name="assistant_page_advanced_section">Advanced / experimental</string>
   <string name="assistant_page_advanced_section_desc">Protocol-level and experimental switches. All default to off; turn one on only if you understand how it changes the model tool surface.</string>
   <string name="assistant_page_compact_context">Model-initiated context compaction</string>
@@ -146,7 +149,7 @@
   <string name="assistant_page_cold_memory_dir">Knowledge base folder</string>
   <string name="assistant_page_cold_memory_dir_unset">Not selected</string>
   <string name="assistant_page_tool_surface_mode">Progressive tool catalog</string>
-  <string name="assistant_page_tool_surface_mode_desc">Replaces the enabled local tools and MCP tools in each request with a tool_search / tool_open pair, so only the schemas the model opens are sent. Status, memory, workspace, skill and ask_user tools stay attached, and an opened tool is callable on the next step of the same turn. Cuts the first-turn tool tokens, but the tool list changes between turns, which can cost prompt-cache hits. On by default.</string>
+  <string name="assistant_page_tool_surface_mode_desc">Replaces the enabled local tools and MCP tools in each request with a tool_search / tool_open pair, so only the schemas the model opens are sent. Status, memory, workspace, skill and ask_user tools stay attached, and an opened tool is callable on the next step of the same turn. Cuts the first-turn tool tokens, but the tool list changes between turns, which can cost prompt-cache hits. Off by default.</string>
   <string name="assistant_page_subagent_context_refs">Sub-agent context references</string>
   <string name="assistant_page_subagent_context_refs_desc">Lets subagent_dispatch also send the last N turns of this conversation to the sub-agent, verbatim, so a task that refers to what you were just discussing no longer has to be retyped. The turns travel as plain text — the sub-agent still cannot read this conversation. Off by default, and while it is off the tool schema is identical to before, so existing chats send exactly the same request.</string>
   <string name="assistant_page_subagent_tool_surface">Freeze sub-agent tool surface</string>
@@ -3427,4 +3430,5 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="chat_conversation_settings_hint_agent">Sidebar is in Agent mode. Approval, dispatch, and tool grants mainly apply here; Chat mode keeps a lighter allowlist (search, hot memory, time, ask-user, TTS, clipboard, image/video generation, chat history search, context compaction, token usage).</string>
   <string name="chat_conversation_settings_hint_chat">Sidebar is in Chat mode. Only the light allowlist is available: search, hot memory, time, ask-user, TTS, clipboard, image/video generation, chat history search, context compaction, and token usage checks.</string>
 
+  <string name="secret_result_title">Secure result</string>
 </resources>

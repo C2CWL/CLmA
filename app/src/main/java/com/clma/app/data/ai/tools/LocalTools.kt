@@ -82,6 +82,8 @@ import com.clma.app.data.ai.tools.local.listSshHostsTool
 import com.clma.app.data.ai.tools.local.requestSecretTool
 import com.clma.app.data.ai.tools.local.secretDeleteTool
 import com.clma.app.data.ai.tools.local.secretListTool
+import com.clma.app.data.ai.tools.local.secretGenerateTool
+import com.clma.app.data.ai.tools.local.secretShowTool
 import com.clma.app.data.ai.tools.local.sshDownloadTool
 import com.clma.app.data.ai.tools.local.sshExecSavedTool
 import com.clma.app.data.ai.tools.local.sshUploadTool
@@ -805,6 +807,8 @@ class LocalTools(
         if (options.contains(LocalToolOption.Secrets)) {
             tools.add(requestSecretTool())
             tools.add(secretListTool(agentSecretsStore))
+            tools.add(secretGenerateTool(agentSecretsStore))
+            tools.add(secretShowTool(agentSecretsStore))
             tools.add(secretDeleteTool(agentSecretsStore))
         }
         if (options.contains(LocalToolOption.Battery)) {
@@ -1007,10 +1011,11 @@ class LocalTools(
         }
         // Built-in update check: always on, never a user toggle and never listed in the
         // per-tool overrides (see [HIDDEN_TOOL_NAMES]) — it backs the app's own update
-        // path, not an optional capability. The Reliability group keeps only bug reports.
+        // path, not an optional capability. The Reliability group keeps diagnostic tools.
         tools.add(com.clma.app.reliability.checkAppUpdatesTool(gitHubReleaseChecker))
         if (options.contains(LocalToolOption.Reliability)) {
             tools.add(com.clma.app.reliability.generateBugReportTool(context, bugReportBuilder))
+            tools.add(com.clma.app.reliability.readAppLogsTool())
         }
         if (options.contains(LocalToolOption.SubAgents)) {
             // Pass the caller context so the recursion guard inside SubAgentEngine.dispatch

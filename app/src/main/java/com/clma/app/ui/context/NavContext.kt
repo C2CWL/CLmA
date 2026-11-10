@@ -3,6 +3,7 @@ package com.clma.app.ui.context
 import androidx.compose.runtime.compositionLocalOf
 import androidx.navigation3.runtime.NavKey
 import com.clma.app.Screen
+import com.clma.app.ui.pages.bot.resetStackTo
 
 class Navigator(private val backStack: MutableList<NavKey>) {
     fun navigate(screen: Screen, builder: NavigateOptionsBuilder.() -> Unit = {}) {
@@ -26,8 +27,8 @@ class Navigator(private val backStack: MutableList<NavKey>) {
     }
 
     fun clearAndNavigate(screen: Screen) {
-        backStack.clear()
-        backStack.add(screen)
+        // Bot mode keeps its home underneath; classic stacks never hold it (plain clear + add).
+        resetStackTo(backStack, screen)
     }
 
     fun popBackStack() {

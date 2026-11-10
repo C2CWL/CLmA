@@ -61,6 +61,7 @@ import com.clma.app.data.datastore.migration.PreferenceStoreV7Migration
 import com.clma.app.data.datastore.migration.PreferenceStoreV8Migration
 import com.clma.app.data.datastore.migration.PreferenceStoreV9Migration
 import com.clma.app.data.datastore.migration.PreferenceStoreV10Migration
+import com.clma.app.data.datastore.migration.PreferenceStoreV11Migration
 import com.clma.app.data.model.Assistant
 import com.clma.app.data.model.Avatar
 import com.clma.app.data.model.InjectionPosition
@@ -190,6 +191,7 @@ private fun createSettingsDataStore(context: Context): DataStore<Preferences> {
             PreferenceStoreV8Migration(),
             PreferenceStoreV9Migration(),
             PreferenceStoreV10Migration(),
+            PreferenceStoreV11Migration(),
         ),
         produceFile = { file },
     )
@@ -1330,6 +1332,20 @@ enum class ChatFontFamily {
 const val DEFAULT_CLEAN_LAYOUT_OPACITY = 0.4f
 
 @Serializable
+data class BotUnreadEntry(
+    val conversationId: Uuid,
+    val assistantId: Uuid,
+)
+
+@Serializable
+data class BotChannel(
+    val id: Uuid = Uuid.random(),
+    val name: String = "",
+    val description: String = "",
+    val memberAssistantIds: List<Uuid> = emptyList(),
+)
+
+@Serializable
 data class DisplaySetting(
     /** Bypass UI token batching; Markdown parsing stays off the main thread. */
     val fastStreamingOutput: Boolean = false,
@@ -1436,6 +1452,32 @@ data class DisplaySetting(
     val enableVolumeKeyScroll: Boolean = false,
     val volumeKeyScrollRatio: Float = 1.0f,
     val enableBounceOverscroll: Boolean = true,
+    /**
+     * Bot mode (OpenMausBot-style contact shell). Off by default so classic drawer / chat
+     * paths stay unchanged. When on, the drawer becomes a contact-style multi-bot list and
+     * chat shows inline approval cards + per-bot model picking.
+     */
+    val botModeEnabled: Boolean = false,
+    /** Assistant ids pinned to the top of the Bot-mode contact list (order preserved). */
+    val botPinnedAssistantIds: List<Uuid> = emptyList(),
+    /** Assistant ids hidden from the Bot-mode contact list (still editable elsewhere). */
+    val botHiddenAssistantIds: List<Uuid> = emptyList(),
+    /**
+     * Bot-mode unread: conversations that finished (or need attention) while the user was
+     * looking at another chat. Cleared when that bot is selected. Classic mode ignores this.
+     */
+    val botUnreadEntries: List<BotUnreadEntry> = emptyList(),
+    /**
+     * Lightweight Bot-mode channels/groups: shared description + member assistant ids.
+     * Classic mode ignores this list.
+     */
+    val botChannels: List<BotChannel> = emptyList(),
+    /**
+     * The Bot library's current main assistant (a pointer, not a fixed bot). It is pinned on
+     * top, carries the bot-management tools and cannot be deleted until another bot replaces it.
+     * Null until Bot mode first sets up its library.
+     */
+    val botMainAssistantId: Uuid? = null,
 )
 
 @Serializable

@@ -24,6 +24,27 @@ class LoggingTest {
     val tempFolder = TemporaryFolder()
 
     @Test
+    fun `export includes rotated files in order and redacts older secrets`() {
+        val dir = tempFolder.newFolder("export")
+        try {
+            Logging.init(dir)
+            Logging.clear()
+            File(dir, "app.log.2").writeText("oldest password=older-secret\n")
+            File(dir, "app.log.1").writeText("middle\n")
+            File(dir, "app.log").writeText("newest\n")
+            Logging.log("ExportTest", "memory entry")
+            val text = Logging.exportAsText()
+            assertTrue(text.indexOf("oldest") < text.indexOf("middle"))
+            assertTrue(text.indexOf("middle") < text.indexOf("newest"))
+            assertTrue(text.contains("memory entry"))
+            assertFalse(text.contains("older-secret"))
+        } finally {
+            Logging.clear()
+            Logging.resetFileLogForTest()
+        }
+    }
+
+    @Test
     fun `setDebugLoggingEnabled toggles what isDebugLoggingEnabled reports`() {
         Logging.setDebugLoggingEnabled(false)
         assertFalse(Logging.isDebugLoggingEnabled())

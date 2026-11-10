@@ -1,5 +1,12 @@
 package com.clma.app.ui.pages.setting
 
+import com.clma.app.ui.motion.Motion
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.AnimatedContent
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Tick01
 import me.rerere.hugeicons.stroke.StopCircle
@@ -147,22 +154,33 @@ fun SettingSpeechPage(initialTab: Int = 0, vm: SettingVM = koinViewModel()) {
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = CustomColors.topBarColors.containerColor,
     ) { innerPadding ->
-        when (selectedPage) {
-            0 -> Column(modifier = Modifier.padding(innerPadding)) {
-                TTSProviderList(
+        // 切换 TTS / ASR 时内容交叉淡入并朝点击方向轻滑，不再硬切。
+        AnimatedContent(
+            targetState = selectedPage,
+            transitionSpec = {
+                val dir = if (targetState > initialState) 1 else -1
+                (fadeIn(Motion.enter(Motion.FAST)) + slideInHorizontally(Motion.enter(Motion.FAST)) { dir * it / 20 }) togetherWith
+                    (fadeOut(Motion.exit(Motion.FAST)) + slideOutHorizontally(Motion.exit(Motion.FAST)) { -dir * it / 20 })
+            },
+            label = "SpeechTab",
+        ) { page ->
+            when (page) {
+                0 -> Column(modifier = Modifier.padding(innerPadding)) {
+                    TTSProviderList(
+                        settings = settings,
+                        onUpdateSettings = vm::updateSettings,
+                        onEdit = { editingTTSProvider = it },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+
+                else -> ASRProviderList(
                     settings = settings,
                     onUpdateSettings = vm::updateSettings,
-                    onEdit = { editingTTSProvider = it },
-                    modifier = Modifier.weight(1f),
+                    onEdit = { editingASRProvider = it },
+                    modifier = Modifier.padding(innerPadding)
                 )
             }
-
-            1 -> ASRProviderList(
-                settings = settings,
-                onUpdateSettings = vm::updateSettings,
-                onEdit = { editingASRProvider = it },
-                modifier = Modifier.padding(innerPadding)
-            )
         }
     }
 

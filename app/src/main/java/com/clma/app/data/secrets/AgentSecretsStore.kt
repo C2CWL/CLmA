@@ -46,6 +46,7 @@ class AgentSecretsStore(context: Context) {
 
     fun isValidName(name: String): Boolean = NAME_PATTERN.matches(name)
 
+    @Synchronized
     fun set(name: String, value: String): Boolean {
         if (!isValidName(name)) return false
         val (encrypted, iv) = try {
@@ -65,6 +66,10 @@ class AgentSecretsStore(context: Context) {
         }
         return true
     }
+
+    /** Atomic against other model captures; never replace an existing entry. */
+    @Synchronized
+    fun setIfAbsent(name: String, value: String): Boolean = !has(name) && set(name, value)
 
     fun get(name: String): String? {
         val encrypted = prefs.getString(secretKey(name), null) ?: return null

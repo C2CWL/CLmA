@@ -91,8 +91,10 @@ fun SettingPreferencesNotificationPage(vm: SettingVM = koinViewModel()) {
                             )
                         },
                     )
-                    if (displaySetting.enableNotificationOnMessageGeneration) {
+                    // 子开关随父开关平滑长出 / 收起（不再 if 硬增删）。
+                    run {
                         item(
+                            visible = displaySetting.enableNotificationOnMessageGeneration,
                             headlineContent = { Text(stringResource(R.string.setting_display_page_live_update_notification)) },
                             supportingContent = { Text(stringResource(R.string.setting_display_page_live_update_notification_desc)) },
                             trailingContent = {

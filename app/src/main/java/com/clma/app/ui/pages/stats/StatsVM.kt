@@ -20,6 +20,7 @@ import com.clma.app.data.usage.OrchestrationTreeFactory
 import com.clma.app.data.usage.UsageLedger
 import com.clma.app.data.usage.UsageLedgerDefaults
 import com.clma.app.data.usage.UsageStatsFactory
+import com.clma.app.data.usage.UsageWindow
 
 data class AppStats(
     val isLoading: Boolean = true,
@@ -123,8 +124,9 @@ class StatsVM(
             .associate { it.id.toString() to it.name }
 
         runCatching {
-            val sinceMs = System.currentTimeMillis() -
-                _range.value.days * 24L * 60L * 60L * 1000L
+            // Aligned to local midnight (see [UsageWindow]): the rows read are exactly the days
+            // the charts plot, so "窗口总计" and "区间合计" cannot disagree by a partial day.
+            val sinceMs = UsageWindow.startEpochMillis(_range.value.days)
             val rows = usageLedger.recordsSince(sinceMs)
             val conversationToAssistant = withContext(Dispatchers.IO) {
                 conversationDAO.getAll().first().associate { it.id to it.assistantId }

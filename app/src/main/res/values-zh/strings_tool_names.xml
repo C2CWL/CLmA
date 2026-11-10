@@ -20,6 +20,10 @@
   <string name="tool_display_desc_request_secret">弹出安全输入框填写密码/令牌，明文不进对话</string>
   <string name="tool_display_name_secret_list">列出保密信息</string>
   <string name="tool_display_desc_secret_list">列出已存的密码/令牌名称，不返回内容</string>
+  <string name="tool_display_name_secret_generate">生成保密信息</string>
+  <string name="tool_display_desc_secret_generate">在本机随机生成密码或令牌并存入新条目，不返回明文</string>
+  <string name="tool_display_name_secret_show">展示安全结果</string>
+  <string name="tool_display_desc_secret_show">提供本机认证后查看或复制的卡片，内容不返回模型</string>
   <string name="tool_display_name_secret_delete">删除保密信息</string>
   <string name="tool_display_desc_secret_delete">按名称删除一条已存的密码/令牌，不可恢复</string>
   <string name="tool_display_name_recent_chats">查看最近对话</string>
@@ -546,6 +550,16 @@
   <string name="tool_display_desc_workspace_background_status">查看后台进程的状态和输出</string>
   <string name="tool_display_name_workspace_background_kill">停止后台进程</string>
   <string name="tool_display_desc_workspace_background_kill">结束一个后台进程</string>
+  <string name="tool_display_name_bot_list">列出 Bot</string>
+  <string name="tool_display_desc_bot_list">列出 Bot 模式的 Bot、记忆和可用模型</string>
+  <string name="tool_display_name_bot_create">创建 Bot</string>
+  <string name="tool_display_desc_bot_create">在 Bot 库里新建一个 Bot</string>
+  <string name="tool_display_name_bot_update_prompt">修改 Bot 提示词</string>
+  <string name="tool_display_desc_bot_update_prompt">替换某个 Bot 的系统提示词</string>
+  <string name="tool_display_name_bot_memory_write">写入 Bot 记忆</string>
+  <string name="tool_display_desc_bot_memory_write">给某个 Bot 添加一条记忆</string>
+  <string name="tool_display_name_bot_memory_delete">删除 Bot 记忆</string>
+  <string name="tool_display_desc_bot_memory_delete">删除某个 Bot 的一条记忆</string>
   <string name="tool_display_name_read_attachment">读取附件</string>
   <string name="tool_display_desc_read_attachment">分片读取上传附件的文本或二进制内容</string>
   <string name="tool_display_name_deliver_file">交付文件</string>

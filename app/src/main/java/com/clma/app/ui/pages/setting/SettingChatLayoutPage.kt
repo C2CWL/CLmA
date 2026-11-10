@@ -1,6 +1,7 @@
 package com.clma.app.ui.pages.setting
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -16,7 +17,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clma.app.R
+import com.clma.app.data.botmode.botsHiddenForManage
+import com.clma.app.ui.pages.chat.botmode.BotModeExtrasSection
+import com.clma.app.data.botmode.withBotHidden
 import com.clma.app.data.datastore.ChatLayout
+import androidx.compose.material3.TextButton
 import com.clma.app.data.datastore.DisplaySetting
 import com.clma.app.data.datastore.DrawerStyle
 import com.clma.app.data.datastore.effectiveChatLayout
@@ -96,10 +101,13 @@ fun SettingChatLayoutPage(vm: SettingVM = koinViewModel()) {
                 // the header height / composer inset (both still used) but drops the material
                 // knobs, because its header is bare text and its composer is a solid pill.
                 val layout = displaySetting.effectiveChatLayout
-                if (layout != ChatLayout.ORIGINAL) {
+                // 不再用 if 直接增删：传 visible，切换布局时这些子项平滑长出 / 收起。
+                val panelVisible = layout != ChatLayout.ORIGINAL
+                run {
                     // Glass applies to CLEAN and MODERN; GEMINI keeps a solid pill.
-                    if (layout == ChatLayout.CLEAN || layout == ChatLayout.MODERN) {
+                    run {
                         item(
+                            visible = panelVisible && (layout == ChatLayout.CLEAN || layout == ChatLayout.MODERN),
                             headlineContent = { Text(stringResource(R.string.setting_display_page_clean_layout_glass_title)) },
                             supportingContent = { Text(stringResource(R.string.setting_display_page_clean_layout_glass_desc)) },
                             trailingContent = {
@@ -112,7 +120,8 @@ fun SettingChatLayoutPage(vm: SettingVM = koinViewModel()) {
                             },
                         )
                     }
-                    if (layout != ChatLayout.GEMINI) item(
+                    item(
+                        visible = panelVisible && layout != ChatLayout.GEMINI,
                         headlineContent = { Text(stringResource(R.string.setting_display_page_clean_layout_top_opacity_title)) },
                         supportingContent = {
                             Column {
@@ -129,6 +138,7 @@ fun SettingChatLayoutPage(vm: SettingVM = koinViewModel()) {
                         },
                     )
                     item(
+                        visible = panelVisible,
                         headlineContent = { Text(stringResource(R.string.setting_display_page_clean_layout_top_height_title)) },
                         supportingContent = {
                             Column {
@@ -149,6 +159,7 @@ fun SettingChatLayoutPage(vm: SettingVM = koinViewModel()) {
                         },
                     )
                     item(
+                        visible = panelVisible,
                         headlineContent = { Text(stringResource(R.string.setting_display_page_clean_layout_bottom_padding_title)) },
                         supportingContent = {
                             Column {
@@ -168,7 +179,8 @@ fun SettingChatLayoutPage(vm: SettingVM = koinViewModel()) {
                             }
                         },
                     )
-                    if (layout != ChatLayout.GEMINI) item(
+                    item(
+                        visible = panelVisible && layout != ChatLayout.GEMINI,
                         headlineContent = { Text(stringResource(R.string.setting_display_page_clean_layout_bottom_opacity_title)) },
                         supportingContent = {
                             Column {
@@ -221,6 +233,58 @@ fun SettingChatLayoutPage(vm: SettingVM = koinViewModel()) {
                         )
                     },
                 )
+                item(
+                    headlineContent = { Text(stringResource(R.string.bot_mode_setting_title)) },
+                    supportingContent = { Text(stringResource(R.string.bot_mode_setting_desc)) },
+                    trailingContent = {
+                        Switch(
+                            checked = displaySetting.botModeEnabled,
+                            onCheckedChange = {
+                                updateDisplaySetting(displaySetting.copy(botModeEnabled = it))
+                            }
+                        )
+                    },
+                )
+            }
+            if (displaySetting.botModeEnabled) {
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                BotModeExtrasSection(
+                    settings = settings.copy(displaySetting = displaySetting),
+                    displaySetting = displaySetting,
+                    updateDisplaySetting = ::updateDisplaySetting,
+                    updateSettings = { vm.updateSettings(it) },
+                )
+                val hiddenBots = settings.copy(displaySetting = displaySetting).botsHiddenForManage()
+                CardGroup(
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    title = { Text(stringResource(R.string.bot_mode_hidden_manage_title)) },
+                ) {
+                    if (hiddenBots.isEmpty()) {
+                        item(
+                            headlineContent = { Text(stringResource(R.string.bot_mode_hidden_empty)) },
+                            supportingContent = { Text(stringResource(R.string.bot_mode_hidden_manage_desc)) },
+                        )
+                    } else {
+                        hiddenBots.forEach { bot ->
+                            item(
+                                headlineContent = {
+                                    Text(bot.name.ifBlank { stringResource(R.string.assistant_page_default_assistant) })
+                                },
+                                supportingContent = { Text(stringResource(R.string.bot_mode_hidden_manage_desc)) },
+                                trailingContent = {
+                                    TextButton(
+                                        onClick = {
+                                            updateDisplaySetting(displaySetting.withBotHidden(bot.id, false))
+                                        }
+                                    ) {
+                                        Text(stringResource(R.string.bot_mode_hidden_unhide))
+                                    }
+                                },
+                            )
+                        }
+                    }
+                }
+                }
             }
         }
     }

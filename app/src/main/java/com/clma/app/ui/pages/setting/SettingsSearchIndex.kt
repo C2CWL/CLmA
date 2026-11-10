@@ -149,6 +149,12 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
             row(R.string.setting_display_page_clean_layout_bottom_opacity_title),
             row(R.string.setting_display_page_drawer_style_title, R.string.setting_display_page_drawer_style_desc),
             row(R.string.setting_display_page_drawer_capsules_title, R.string.setting_display_page_drawer_capsules_desc),
+            row(R.string.bot_mode_setting_title, R.string.bot_mode_setting_desc),
+            row(R.string.bot_mode_approval_tier_title, R.string.bot_mode_approval_tier_desc),
+            row(R.string.bot_mode_channels_title, R.string.bot_mode_channels_desc),
+            row(R.string.bot_mode_apps_title, R.string.bot_mode_apps_desc),
+            row(R.string.bot_mode_team_title, R.string.bot_mode_team_desc),
+            row(R.string.bot_mode_hidden_manage_title, R.string.bot_mode_hidden_manage_desc),
         ),
     ),
     SettingsSearchPageSpec(

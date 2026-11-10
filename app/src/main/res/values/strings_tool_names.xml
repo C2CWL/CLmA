@@ -20,6 +20,10 @@
   <string name="tool_display_desc_request_secret">Secure input for a password or token; never shown in chat</string>
   <string name="tool_display_name_secret_list">List secrets</string>
   <string name="tool_display_desc_secret_list">Lists stored secret names, never their values</string>
+  <string name="tool_display_name_secret_generate">Generate secret</string>
+  <string name="tool_display_desc_secret_generate">Generates a random secret locally into a new vault entry; never returns plaintext</string>
+  <string name="tool_display_name_secret_show">Show secure result</string>
+  <string name="tool_display_desc_secret_show">Offers authenticated on-device viewing or copying; never returns the value to the model</string>
   <string name="tool_display_name_secret_delete">Delete secret</string>
   <string name="tool_display_desc_secret_delete">Deletes a stored secret by name; irreversible</string>
   <string name="tool_display_name_recent_chats">Recent chats</string>
@@ -546,6 +550,16 @@
   <string name="tool_display_desc_workspace_background_status">Shows background process status/output</string>
   <string name="tool_display_name_workspace_background_kill">Stop background</string>
   <string name="tool_display_desc_workspace_background_kill">Stops a background process</string>
+  <string name="tool_display_name_bot_list">List bots</string>
+  <string name="tool_display_desc_bot_list">Lists the Bot-mode bots, their memories and models</string>
+  <string name="tool_display_name_bot_create">Create bot</string>
+  <string name="tool_display_desc_bot_create">Creates a new bot in the Bot library</string>
+  <string name="tool_display_name_bot_update_prompt">Change bot prompt</string>
+  <string name="tool_display_desc_bot_update_prompt">Replaces a bot\'s system prompt</string>
+  <string name="tool_display_name_bot_memory_write">Write bot memory</string>
+  <string name="tool_display_desc_bot_memory_write">Adds a memory record to a bot</string>
+  <string name="tool_display_name_bot_memory_delete">Delete bot memory</string>
+  <string name="tool_display_desc_bot_memory_delete">Deletes one memory record of a bot</string>
   <string name="tool_display_name_read_attachment">Read attachment</string>
   <string name="tool_display_desc_read_attachment">Reads uploaded text or binary data in bounded pages</string>
   <string name="tool_display_name_deliver_file">Deliver file</string>

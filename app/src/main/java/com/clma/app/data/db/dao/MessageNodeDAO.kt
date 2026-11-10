@@ -74,25 +74,41 @@ data class MessageDayCount(val day: String, val count: Int)
 // 使用 CASE 而非依赖 WHERE 条件的求值顺序，无效 JSON 按空数组处理。
 private const val VALID_MESSAGES_JSON = "CASE WHEN json_valid(mn.messages) THEN mn.messages ELSE '[]' END"
 
+// 只统计用户可见的那一个分支。
+//
+// 一个 node 的 messages 数组同时保存着同一条消息的所有分支（重新生成、编辑都会往同一个
+// 数组里追加），select_index 指向当前选中、也就是真正呈现在界面上并计入上下文的那一条。
+// 不过滤的话，每次"重新生成"都会把被丢弃的旧回答的 usage 一并累加，统计数字随重新生成
+// 次数线性虚高（例如一条消息三个助手分支，会按 3 倍 promptTokens 计入）。
+//
+// select_index 越界（历史数据损坏）时退回 0，与 ChatService 载入时的修复口径一致，而不是
+// 让该节点整体掉出统计。
+private const val SELECTED_BRANCH = "CAST(j.key AS INTEGER) = " +
+    "CASE WHEN mn.select_index >= 0 AND mn.select_index < json_array_length($VALID_MESSAGES_JSON) " +
+    "THEN mn.select_index ELSE 0 END"
+
 // SQLite json_each() 展开 messages JSON 数组，json_extract() 提取 Token 字段并聚合
 private val TOKEN_STATS_SQL = SimpleSQLiteQuery(
     "SELECT COUNT(*) AS totalMessages, " +
         "COALESCE(SUM(CAST(json_extract(j.value, '$.usage.promptTokens') AS INTEGER)), 0) AS promptTokens, " +
         "COALESCE(SUM(CAST(json_extract(j.value, '$.usage.completionTokens') AS INTEGER)), 0) AS completionTokens, " +
         "COALESCE(SUM(CAST(json_extract(j.value, '$.usage.cachedTokens') AS INTEGER)), 0) AS cachedTokens " +
-        "FROM message_node mn, json_each($VALID_MESSAGES_JSON) j"
+        "FROM message_node mn, json_each($VALID_MESSAGES_JSON) j " +
+        "WHERE $SELECTED_BRANCH"
 )
 
 suspend fun MessageNodeDAO.getTokenStats(): MessageTokenStats = getTokenStatsRaw(TOKEN_STATS_SQL)
 
 // 按用户消息的 createdAt 字段（LocalDateTime ISO 字符串前10位即日期）统计每日消息数
+// 同样只算选中分支：编辑一条用户消息会在同一个 node 里留下旧版本，那不是"这一天多了一条消息"
 suspend fun MessageNodeDAO.getMessageCountPerDay(startDate: String): List<MessageDayCount> =
     getMessageCountPerDayRaw(
         SimpleSQLiteQuery(
             "SELECT substr(json_extract(j.value, '$.createdAt'), 1, 10) AS day, " +
                 "COUNT(*) AS count " +
                 "FROM message_node mn, json_each($VALID_MESSAGES_JSON) j " +
-                "WHERE json_extract(j.value, '$.role') = 'user' " +
+                "WHERE $SELECTED_BRANCH " +
+                "AND json_extract(j.value, '$.role') = 'user' " +
                 "AND json_extract(j.value, '$.createdAt') >= ? " +
                 "GROUP BY day",
             arrayOf(startDate)

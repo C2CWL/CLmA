@@ -1,5 +1,6 @@
 package com.clma.app.ui.pages.setting
 
+import com.clma.app.data.botmode.classicAssistants
 import android.content.Context
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.Box
@@ -217,7 +218,7 @@ private fun userContentOf(
     mcpServers = settings.mcpServers.map { SettingsSearchUserItem(it.id.toString(), it.commonOptions.name) },
     providers = settings.providers.map { SettingsSearchUserItem(it.id.toString(), it.name) },
     searchServices = settings.searchServices.map { SettingsSearchUserItem(it.id.toString(), it.displayName) },
-    assistants = settings.assistants.map { SettingsSearchUserItem(it.id.toString(), it.name) },
+    assistants = settings.classicAssistants().map { SettingsSearchUserItem(it.id.toString(), it.name) },
     ttsProviders = settings.ttsProviders.map { SettingsSearchUserItem(it.id.toString(), it.name) },
     asrProviders = settings.asrProviders.map { SettingsSearchUserItem(it.id.toString(), it.name) },
 )

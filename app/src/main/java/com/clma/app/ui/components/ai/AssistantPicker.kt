@@ -1,5 +1,6 @@
 package com.clma.app.ui.components.ai
 
+import com.clma.app.data.botmode.classicAssistants
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -123,11 +124,11 @@ internal fun AssistantPickerSheet(
     var selectedTagIds by remember { mutableStateOf(emptySet<Uuid>()) }
 
     // 根据选中的标签过滤助手
-    val filteredAssistants = remember(settings.assistants, selectedTagIds) {
+    val filteredAssistants = remember(settings.classicAssistants(), selectedTagIds) {
         if (selectedTagIds.isEmpty()) {
-            settings.assistants
+            settings.classicAssistants()
         } else {
-            settings.assistants.filter { assistant ->
+            settings.classicAssistants().filter { assistant ->
                 assistant.tags.any { tagId -> tagId in selectedTagIds }
             }
         }
