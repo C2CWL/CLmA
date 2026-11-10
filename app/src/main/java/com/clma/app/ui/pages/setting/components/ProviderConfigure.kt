@@ -368,6 +368,7 @@ private fun ProviderConfigureOpenAI(
         value = provider.name,
         onValueChange = { onEdit(provider.copy(name = it)) },
         label = stringResource(R.string.setting_provider_page_name),
+        maxLines = Int.MAX_VALUE,
     )
 
     var keyVisible by remember { mutableStateOf(false) }
@@ -375,7 +376,7 @@ private fun ProviderConfigureOpenAI(
         value = provider.apiKey,
         onValueChange = { onEdit(provider.copy(apiKey = it.trim())) },
         label = stringResource(R.string.setting_provider_page_api_key),
-        maxLines = 3,
+        maxLines = Int.MAX_VALUE,
         visualTransformation = if (keyVisible) VisualTransformation.None else PasswordVisualTransformation(),
         trailingIcon = {
             IconButton(onClick = { keyVisible = !keyVisible }) {
@@ -388,6 +389,7 @@ private fun ProviderConfigureOpenAI(
         value = provider.baseUrl,
         onValueChange = { onEdit(provider.copy(baseUrl = it.trim())) },
         label = stringResource(R.string.setting_provider_page_api_base_url),
+        maxLines = Int.MAX_VALUE,
         isError = provider.baseUrl.isNotBlank() && !provider.baseUrl.isValidBaseUrl(),
     )
 
@@ -403,6 +405,7 @@ private fun ProviderConfigureOpenAI(
             )
         },
         label = stringResource(R.string.setting_provider_page_api_path),
+        maxLines = Int.MAX_VALUE,
         enabled = !provider.builtIn,
     )
 
@@ -635,7 +638,7 @@ private fun ProviderConfigureClaude(
         value = provider.name,
         onValueChange = { onEdit(provider.copy(name = it)) },
         label = stringResource(R.string.setting_provider_page_name),
-        maxLines = 3,
+        maxLines = Int.MAX_VALUE,
     )
 
     var keyVisible by remember { mutableStateOf(false) }
@@ -643,7 +646,7 @@ private fun ProviderConfigureClaude(
         value = provider.apiKey,
         onValueChange = { onEdit(provider.copy(apiKey = it.trim())) },
         label = stringResource(R.string.setting_provider_page_api_key),
-        maxLines = 3,
+        maxLines = Int.MAX_VALUE,
         visualTransformation = if (keyVisible) VisualTransformation.None else PasswordVisualTransformation(),
         trailingIcon = {
             IconButton(onClick = { keyVisible = !keyVisible }) {
@@ -656,6 +659,7 @@ private fun ProviderConfigureClaude(
         value = provider.baseUrl,
         onValueChange = { onEdit(provider.copy(baseUrl = it.trim())) },
         label = stringResource(R.string.setting_provider_page_api_base_url),
+        maxLines = Int.MAX_VALUE,
         isError = provider.baseUrl.isNotBlank() && !provider.baseUrl.isValidBaseUrl(),
     )
 
@@ -744,6 +748,7 @@ private fun ProviderConfigureGoogle(
         value = provider.name,
         onValueChange = { onEdit(provider.copy(name = it)) },
         label = { Text(stringResource(R.string.setting_provider_page_name)) },
+        maxLines = Int.MAX_VALUE,
         modifier = Modifier.fillMaxWidth(),
     )
 
@@ -753,8 +758,8 @@ private fun ProviderConfigureGoogle(
             value = provider.apiKey,
             onValueChange = { onEdit(provider.copy(apiKey = it.trim())) },
             label = { Text(stringResource(R.string.setting_provider_page_api_key)) },
+            maxLines = Int.MAX_VALUE,
             modifier = Modifier.fillMaxWidth(),
-            maxLines = 3,
             visualTransformation = if (keyVisible) VisualTransformation.None else PasswordVisualTransformation(),
             trailingIcon = {
                 IconButton(onClick = { keyVisible = !keyVisible }) {
@@ -769,6 +774,7 @@ private fun ProviderConfigureGoogle(
             value = provider.baseUrl,
             onValueChange = { onEdit(provider.copy(baseUrl = it.trim())) },
             label = { Text(stringResource(R.string.setting_provider_page_api_base_url)) },
+            maxLines = Int.MAX_VALUE,
             modifier = Modifier.fillMaxWidth(),
             isError = provider.baseUrl.isNotBlank() && (
                 !provider.baseUrl.isValidBaseUrl() || !provider.baseUrl.endsWith("/v1beta")
