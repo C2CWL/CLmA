@@ -63,6 +63,29 @@ object FileOpenUtil {
         }
     }
 
+    /** Share a chat attachment only after the user taps its share action. */
+    fun shareUri(context: Context, uri: Uri, mime: String): Result<Unit> = runCatching {
+        val shareUri = if (uri.scheme == "file") {
+            FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                File(uri.path ?: error("无效的文件路径")),
+            )
+        } else {
+            require(uri.scheme == "content") { "Only local attachments can be shared" }
+            uri
+        }
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = mime
+            putExtra(Intent.EXTRA_STREAM, shareUri)
+            clipData = android.content.ClipData.newRawUri("attachment", shareUri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(Intent.createChooser(intent, null).apply {
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        })
+    }
+
     private fun launch(context: Context, uri: Uri, mime: String) {
         val intent = Intent(Intent.ACTION_VIEW).apply {
             setDataAndType(uri, mime)

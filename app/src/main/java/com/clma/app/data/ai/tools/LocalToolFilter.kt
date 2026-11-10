@@ -30,6 +30,7 @@ object LocalToolFilter {
 
     /**
      * Names [LocalTools.getTools] appends no matter which group was requested.
+     * Attachment reading is built-in; delivery is built-in for interactive chats only.
      *
      * `check_app_updates` is the app's own update check. `web_fetch` and `web_extract` are
      * gated by Search settings (`enableWebFetchTools`), not by a [LocalToolOption] — the old
@@ -38,6 +39,8 @@ object LocalToolFilter {
      * two web tools.
      */
     val UNGROUPED_TOOL_NAMES: Set<String> = setOf(
+        "read_attachment",
+        "deliver_file",
         "check_app_updates",
         "web_fetch",
         "web_extract",

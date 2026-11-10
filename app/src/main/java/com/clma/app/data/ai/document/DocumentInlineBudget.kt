@@ -145,10 +145,11 @@ object DocumentInlineBudget {
         if (fullTextPath != null) {
             append("\nThe full extracted text is saved at $fullTextPath ($totalLines lines; ")
             append("the part above ends at line ${head.lastLine}). ")
-            append("To read the rest, call workspace_read_file on that path with offset/limit ")
+            append("To read the rest, call read_attachment (no Workspace needed) ")
+            append("or workspace_read_file on that path with offset/limit ")
             append("(e.g. offset=${head.nextLine}, limit=500) and continue chunk by chunk; ")
             append("never read the whole file at once. ")
-            append("If you do not have the workspace_read_file tool, tell the user that you could only see ")
+            append("If neither read_attachment nor workspace_read_file is available, tell the user that you could only see ")
             append("the first $percent% of the document.")
         } else {
             append("\nThe rest of the document is not available in this conversation. ")

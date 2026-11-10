@@ -1944,6 +1944,13 @@ class ChatService(
                     conversationId = conversationId,
                 )
             )
+            add(
+                com.clma.app.data.ai.tools.createConversationImageTool(
+                    context = context,
+                    modelCanSeeImages = localContext.modelCanSeeImages,
+                    messages = { conversationRepo.getConversationById(conversationId)?.currentMessages.orEmpty() },
+                )
+            )
             if (includeCompactionTools && surfaceAssistant.enableCompactContextTool) {
                 addAll(
                     ChatModeTools.filterTools(
@@ -2116,6 +2123,13 @@ class ChatService(
                     )
                 )
             }
+            add(
+                com.clma.app.data.ai.tools.createConversationImageTool(
+                    context = context,
+                    modelCanSeeImages = localContext.modelCanSeeImages,
+                    messages = { conversationRepo.getConversationById(conversationId)?.currentMessages.orEmpty() },
+                )
+            )
             if (includeCompactionTools && surfaceAssistant.enableCompactContextTool) {
                 // T-02 / ② - model-initiated compaction. Reuses the manual compress pipeline
                 // end-to-end (see compactConversationFromTool) instead of re-implementing

@@ -476,7 +476,7 @@ internal fun List<UIMessage>.ageOldToolImages(batch: Int = 1): List<UIMessage> {
                 val newOutput = part.output.map { o ->
                     if (o is UIMessagePart.Image) {
                         UIMessagePart.Text(
-                            "[image elided — original at ${o.url}; superseded by newer screenshots]"
+                            "[image elided — original at ${if (o.url.startsWith("data:")) "inline image" else o.url}; superseded by newer screenshots]"
                         )
                     } else o
                 }

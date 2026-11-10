@@ -3,8 +3,10 @@ package com.clma.app.data.ai
 import com.clma.ai.core.MessageRole
 import com.clma.ai.ui.UIMessage
 import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.ai.tools.conversationImageRef
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class RequestImageAgingTest {
@@ -25,9 +27,13 @@ class RequestImageAgingTest {
         assertEquals(listOf(0, 0, 1, 1, 1, 1), users.map(::imagesOf))
         // The elided image becomes the placeholder text, in place; the text part stays.
         assertEquals(
-            listOf(UIMessagePart.Text("turn 1"), UIMessagePart.Text(ELIDED_USER_IMAGE_TEXT)),
-            users.first().parts,
+            listOf(UIMessagePart.Text("turn 1")),
+            users.first().parts.take(1),
         )
+        val placeholder = (users.first().parts[1] as UIMessagePart.Text).text
+        assertTrue(placeholder.contains(ELIDED_USER_IMAGE_TEXT))
+        assertTrue(placeholder.contains(conversationImageRef(history.first(), 1)))
+        assertTrue(placeholder.contains("conversation_image"))
     }
 
     @Test
