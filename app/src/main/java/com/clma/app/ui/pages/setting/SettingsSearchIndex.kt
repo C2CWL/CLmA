@@ -300,6 +300,7 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
         altTitles = listOf(R.string.setting_page_preferences_network),
         items = listOf(
             row(R.string.setting_page_preferences_network_proxy),
+            row(R.string.workspace_follow_app_proxy, R.string.workspace_follow_app_proxy_desc),
             row(R.string.setting_page_preferences_network_user_agent),
             row(R.string.setting_page_preferences_network_first_output_timeout, R.string.setting_page_preferences_network_first_output_timeout_desc),
             row(R.string.setting_page_preferences_network_stall_timeout, R.string.setting_page_preferences_network_stall_timeout_desc),
