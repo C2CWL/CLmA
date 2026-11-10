@@ -32,6 +32,7 @@ object ToolDisplayNames {
         "recent_chats" to Res(R.string.tool_display_name_recent_chats, R.string.tool_display_desc_recent_chats),
         "conversation_search" to Res(R.string.tool_display_name_conversation_search, R.string.tool_display_desc_conversation_search),
         "current_conversation_search" to Res(R.string.tool_display_name_current_conversation_search, R.string.tool_display_desc_current_conversation_search),
+        "conversation_image" to Res(R.string.tool_display_name_conversation_image, R.string.tool_display_desc_conversation_image),
         "compact_context" to Res(R.string.tool_display_name_compact_context, R.string.tool_display_desc_compact_context),
         "bot_list" to Res(R.string.tool_display_name_bot_list, R.string.tool_display_desc_bot_list),
         "bot_create" to Res(R.string.tool_display_name_bot_create, R.string.tool_display_desc_bot_create),

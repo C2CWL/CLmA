@@ -32,6 +32,8 @@
   <string name="tool_display_desc_conversation_search">Full-text search across your past chats</string>
   <string name="tool_display_name_current_conversation_search">Search this chat</string>
   <string name="tool_display_desc_current_conversation_search">Full-text search across messages in the current conversation</string>
+  <string name="tool_display_name_conversation_image">Recall chat image</string>
+  <string name="tool_display_desc_conversation_image">Lists and views user images in the current conversation</string>
   <string name="tool_display_name_compact_context">Compact context</string>
   <string name="tool_display_desc_compact_context">Summarises earlier parts of this chat in place</string>
   <string name="tool_display_name_check_token_usage">Token usage</string>
@@ -41,7 +43,7 @@
   <string name="tool_display_name_tool_browse">Browse tools</string>
   <string name="tool_display_desc_tool_browse">Page through catalog tools by category</string>
   <string name="tool_display_name_tool_open">Activate tools</string>
-  <string name="tool_display_desc_tool_open">Activates tools by name from the next turn</string>
+  <string name="tool_display_desc_tool_open">Activates tools by name for the next step in this same turn</string>
   <string name="tool_display_name_tool_close">Deactivate tools</string>
   <string name="tool_display_desc_tool_close">Releases activated tools to free catalog slots and prompt tokens</string>
   <string name="tool_display_name_tool_output_read">Read tool output</string>

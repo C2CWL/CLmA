@@ -164,7 +164,7 @@ fun createCurrentConversationSearchTool(
 
         NOTE: This tool only matches text and code logs. If the user previously sent an image/screenshot,
         its visual contents CANNOT be found via text search. Do not continuously repeat or vary search
-        keywords if no matches are found; ask the user or proceed with available information.
+        keywords if no matches are found; use conversation_image to list and view earlier user images.
     """.trimIndent(),
     parameters = {
         InputSchema.Obj(
@@ -212,7 +212,7 @@ fun createCurrentConversationSearchTool(
                 put(
                     "hint",
                     "未在当前会话文本中找到匹配结果。请注意：若用户指的是图片、截图或未记录的外部信息，" +
-                        "文本检索无法获取其视觉内容；请勿连续更换关键词盲搜，应直接向用户提问或结合现有上下文回答。"
+                        "文本检索无法获取其视觉内容；请使用 conversation_image 列出并查看历史图片，不要连续盲搜。"
                 )
             }
         }
