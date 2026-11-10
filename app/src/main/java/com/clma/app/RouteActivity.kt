@@ -136,6 +136,7 @@ import com.clma.app.ui.pages.setting.SettingPreferencesNetworkPage
 import com.clma.app.ui.pages.setting.SettingPreferencesUIPage
 import com.clma.app.ui.pages.setting.SettingColorModePage
 import com.clma.app.ui.pages.setting.SettingFontsPage
+import com.clma.app.ui.pages.setting.SettingBotModePage
 import com.clma.app.ui.pages.setting.SettingChatLayoutPage
 import com.clma.app.ui.pages.setting.SettingRuntimePage
 import com.clma.app.ui.pages.setting.SettingThemePage
@@ -673,6 +674,10 @@ class RouteActivity : FragmentActivity() {
                                 SettingFontsPage()
                             }
 
+                            entry<Screen.SettingBotMode> {
+                                SettingBotModePage()
+                            }
+
                             entry<Screen.SettingChatLayout> {
                                 SettingChatLayoutPage()
                             }
@@ -1025,6 +1030,9 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data object SettingFonts : Screen
+
+    @Serializable
+    data object SettingBotMode : Screen
 
     @Serializable
     data object SettingChatLayout : Screen

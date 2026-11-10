@@ -8,8 +8,15 @@ import org.junit.Test
 
 class SettingsHubCatalogTest {
     @Test
+    fun `bot mode is directly accessible from settings home and search`() {
+        assertEquals(listOf(SettingsHubItemId.BOT_MODE), settingsHubHomeItems)
+        assertEquals(Screen.SettingBotMode, settingsHubItems.getValue(SettingsHubItemId.BOT_MODE).route)
+        assertEquals(1, settingsHubSearchRows().count { it.first.id == SettingsHubItemId.BOT_MODE })
+    }
+
+    @Test
     fun `every setting appears exactly once in the hub`() {
-        val ids = settingsHubSections.flatMap { it.items }
+        val ids = settingsHubHomeItems + settingsHubSections.flatMap { it.items }
         assertEquals(SettingsHubItemId.entries.toSet(), ids.toSet())
         assertEquals(ids.size, ids.distinct().size)
         assertEquals(ids.toSet(), settingsHubItems.keys)
