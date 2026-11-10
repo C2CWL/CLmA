@@ -2499,7 +2499,7 @@ class GenerationLoop(
         Log.i(TAG, "maybeTruncateToolOutput: truncating tool $toolCallId output ($totalChars chars)")
 
         val fullText = textParts.joinToString("\n") { it.text }
-        val preview = fullText.take(TOOL_OUTPUT_PREVIEW_CHARS)
+        val preview = com.clma.app.data.ai.tools.toolOutputPreview(fullText, TOOL_OUTPUT_PREVIEW_CHARS)
 
         val fileName = spillToolOutput(toolCallId, fullText) ?: run {
             // 落盘失败时仍返回脱敏后的预览, 绝不能把原文塞回模型。

@@ -357,6 +357,20 @@ internal suspend fun runCommandCapture(
     }
 }
 
+/** Byte-bounded content with both ends retained; omitted bytes are not recoverable here. */
+internal fun termuxOutputPreview(
+    text: String,
+    maxBytes: Int,
+): String {
+    require(maxBytes > 0)
+    val totalBytes = text.toByteArray(Charsets.UTF_8).size
+    if (totalBytes <= maxBytes) return text
+    val head = takeFirstUtf8Bytes(text, maxBytes / 2)
+    val tail = takeLastUtf8Bytes(text, maxBytes - maxBytes / 2)
+    val omitted = totalBytes - head.toByteArray(Charsets.UTF_8).size - tail.toByteArray(Charsets.UTF_8).size
+    return head + "\n…[$omitted bytes omitted; head and tail shown; omitted content unavailable]…\n" + tail
+}
+
 /**
  * LLM-callable termux command tool. Defaults to capture mode (background command, output
  * returned in the JSON envelope so the model can reason about it). Pass `interactive=true`
@@ -370,8 +384,11 @@ fun termuxRunCommandTool(context: Context): Tool = Tool(
         its stdout / stderr / exit_code are returned to you so you can reason on the output
         (e.g. check if a package is installed, read a file, run a script). Pass
         interactive=true to instead open a visible Termux session - useful when the user
-        explicitly wants to watch output live or when the command needs an interactive prompt;
-        in that mode no output is returned. Termux must have allow-external-apps=true set in
+        explicitly wants to watch output live;
+        in that mode no output is returned. For prompts, confirmations, SSH or REPLs, use
+        termux_session_start / termux_session_send / termux_session_read (real PTY) instead.
+        A capture timeout only stops waiting; the command may still be running. Inspect its
+        state before retrying, especially for commands with side effects. Termux must have allow-external-apps=true set in
         ~/.termux/termux.properties (one-time setup). In command mode, apt/apt-get are
         automatically wrapped with DEBIAN_FRONTEND=noninteractive and safe dpkg defaults;
         do not add extra -y flags unless the user specifically asked for unattended upgrades.
@@ -561,22 +578,10 @@ fun termuxRunCommandTool(context: Context): Tool = Tool(
                 val maxOut = TermuxRuntime.maxStdoutBytes
                 val maxErr = TermuxRuntime.maxStderrBytes
                 // maxStdoutBytes/maxStderrBytes are UTF-8 byte budgets. Measure and cut on bytes
-                // (boundary-aligned via takeFirstUtf8Bytes) so multibyte output isn't mis-sized
-                // and the "bytes more" count is honest rather than a char-count delta.
-                put(
-                    "stdout",
-                    res.stdout.let {
-                        val outBytes = it.toByteArray(Charsets.UTF_8).size
-                        if (outBytes > maxOut) takeFirstUtf8Bytes(it, maxOut) + "\n…[truncated; ${outBytes - maxOut} bytes more]" else it
-                    }
-                )
+                // (boundary-aligned head + tail) so final errors survive without splitting code points.
+                put("stdout", termuxOutputPreview(res.stdout, maxOut))
                 if (res.stderr.isNotBlank()) {
-                    put(
-                        "stderr",
-                        res.stderr.let {
-                            if (it.toByteArray(Charsets.UTF_8).size > maxErr) takeFirstUtf8Bytes(it, maxErr) + "\n…[truncated]" else it
-                        }
-                    )
+                    put("stderr", termuxOutputPreview(res.stderr, maxErr))
                 }
                 if (res.exitCode != 0) {
                     put("note", "Non-zero exit code; check stderr.")
@@ -584,7 +589,9 @@ fun termuxRunCommandTool(context: Context): Tool = Tool(
             }
             is CaptureResult.Timeout -> buildJsonObject {
                 put("error", "timeout")
-                put("recovery", "Command did not return within ${timeoutMs / 1000}s. Either bump timeout_seconds or, if Termux gave no result at all, the user likely has not set allow-external-apps=true in ~/.termux/termux.properties (or did not restart Termux after editing it).")
+                put("command_state", "unknown")
+                put("command_cancelled", false)
+                put("recovery", "No completion result within ${timeoutMs / 1000}s. This tool stopped waiting; it did not cancel the command. Inspect the existing process or its output before retrying to avoid duplicate side effects. For commands needing input, use termux_session_start / termux_session_send / termux_session_read. If even a harmless probe returns no result, check Termux integration and Android background restrictions; timeout alone does not identify the cause.")
             }
             is CaptureResult.Denied -> buildJsonObject {
                 put("error", "termux_permission_denied")

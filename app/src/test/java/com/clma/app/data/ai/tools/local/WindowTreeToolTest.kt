@@ -1,9 +1,26 @@
 package com.clma.app.data.ai.tools.local
 
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class WindowTreeToolTest {
+
+    @Test
+    fun `structural nodes alone do not imply semantic content`() {
+        assertFalse(hasSemanticNodes(emptyList()))
+        assertFalse(hasSemanticNodes(listOf(Json.parseToJsonElement("""{"class":"SurfaceView","bounds":[0,0,100,100]}""").jsonObject)))
+    }
+
+    @Test
+    fun `text and actionable nodes expose semantic content`() {
+        for (field in listOf("text", "content_description", "clickable", "scrollable", "editable")) {
+            val value = if (field == "text" || field == "content_description") "\"label\"" else "true"
+            assertTrue(hasSemanticNodes(listOf(Json.parseToJsonElement("""{"$field":$value}""").jsonObject)))
+        }
+    }
 
     @Test
     fun `read_window_tree returns service-not-active when offline`() {

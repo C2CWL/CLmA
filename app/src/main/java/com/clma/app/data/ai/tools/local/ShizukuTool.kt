@@ -31,7 +31,11 @@ fun shizukuExecTool(context: Context): Tool = Tool(
     name = "shizuku_exec",
     description = """
         Run a shell command with Shizuku's privileges (the shell UID - the same level `adb
-        shell` gets, no root). Returns stdout, stderr, and exit code. Requires the Shizuku app
+        shell` gets, no root). Returns stdout, stderr, and exit code. This is batch execution,
+        not a TTY: stdin is closed (EOF), so it cannot answer prompts. Use explicit
+        noninteractive options only when authorized; never auto-accept confirmations.
+        For interactive commands in the Termux app identity, use termux_session_start / send / read;
+        those sessions do not inherit Shizuku's shell UID. Requires the Shizuku app
         installed, its service running, and permission granted from Settings -> Shizuku.
     """.trimIndent().replace("\n", " "),
     parameters = {
