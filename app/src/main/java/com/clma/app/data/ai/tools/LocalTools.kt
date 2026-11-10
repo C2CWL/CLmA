@@ -780,6 +780,13 @@ class LocalTools(
         enabledSshHosts: Set<String> = emptySet(),
     ): List<Tool> {
         val tools = mutableListOf<Tool>()
+        tools.add(com.clma.app.data.ai.tools.local.readAttachmentTool(context))
+        if (!invocationContext.isHeadless) {
+            val callerWorkspaceId = invocationContext.callerAssistantId?.let { callerId ->
+                settingsStore.settingsFlow.value.assistants.find { it.id.toString() == callerId }?.workspaceId?.toString()
+            }
+            tools.add(com.clma.app.data.ai.tools.local.deliverFileTool(context, invocationContext, callerWorkspaceId))
+        }
         if (options.contains(LocalToolOption.JavascriptEngine)) {
             tools.add(javascriptTool)
         }

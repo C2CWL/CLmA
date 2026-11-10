@@ -80,6 +80,7 @@ object ToolApprovalDefaults {
         "usage_set_prices",  // replaces the whole model price table; every later cost depends on it
 
         // Filesystem / network writes
+        "deliver_file",
         "write_text_file",
         "download_file",
         "scan_media",
@@ -316,6 +317,7 @@ object ToolApprovalDefaults {
      * unconditionally.
      */
     val NO_ALWAYS_ALLOW: Set<String> = setOf(
+        "deliver_file", // Attaches local data to chat and optionally publishes a Downloads entry.
         "mcp_add",
         "mcp_update",
         // eval_javascript runs arbitrary code in the QuickJS engine. Even with a wall-clock

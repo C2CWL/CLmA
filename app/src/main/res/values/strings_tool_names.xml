@@ -546,4 +546,8 @@
   <string name="tool_display_desc_workspace_background_status">Shows background process status/output</string>
   <string name="tool_display_name_workspace_background_kill">Stop background</string>
   <string name="tool_display_desc_workspace_background_kill">Stops a background process</string>
+  <string name="tool_display_name_read_attachment">Read attachment</string>
+  <string name="tool_display_desc_read_attachment">Reads uploaded text or binary data in bounded pages</string>
+  <string name="tool_display_name_deliver_file">Deliver file</string>
+  <string name="tool_display_desc_deliver_file">Attaches a shareable file to chat and optionally exports to Downloads</string>
 </resources>

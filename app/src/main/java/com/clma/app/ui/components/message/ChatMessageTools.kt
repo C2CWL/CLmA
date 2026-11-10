@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -33,6 +34,7 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -72,6 +74,7 @@ import com.clma.common.http.jsonObjectOrNull
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.BubbleChatQuestion
 import me.rerere.hugeicons.stroke.Cancel01
+import me.rerere.hugeicons.stroke.File02
 import me.rerere.hugeicons.stroke.Lock
 import me.rerere.hugeicons.stroke.Refresh03
 import me.rerere.hugeicons.stroke.Tick01
@@ -237,6 +240,7 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
     val isPending = tool.isPending
     val isDenied = tool.approvalState is ToolApprovalState.Denied
     val images = tool.output.filterIsInstance<UIMessagePart.Image>()
+    val documents = tool.output.filterIsInstance<UIMessagePart.Document>()
     // Text parts nested in tool.output (e.g. run_js's webview payload) that carry
     // rikkahub.webview metadata never reach the top-level Text rendering branch in
     // ChatMessage.kt, since tool output is always folded into this step. Surface them
@@ -245,7 +249,7 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
         .filter { it.hasSkillWebviewMeta() }
     val toolCallStyle = LocalToolCallStyle.current
     val capsule = toolCallStyle == ToolCallStyle.CAPSULE
-    val capsuleForceOpen = isPending || isDenied || images.isNotEmpty() || webviewParts.isNotEmpty()
+    val capsuleForceOpen = isPending || isDenied || images.isNotEmpty() || documents.isNotEmpty() || webviewParts.isNotEmpty()
     val expanded = userExpanded ?: when {
         capsule && capsuleForceOpen -> true
         capsule -> false
@@ -254,7 +258,7 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
 
     // Summary detection is delegated to the registered renderer; image output, webview
     // cards, and denial reasons are common to all tools.
-    val hasExtraContent = renderer.hasSummary(context) || isDenied || images.isNotEmpty() || webviewParts.isNotEmpty()
+    val hasExtraContent = renderer.hasSummary(context) || isDenied || images.isNotEmpty() || documents.isNotEmpty() || webviewParts.isNotEmpty()
 
     ControlledChainOfThoughtStep(
         expanded = expanded,
@@ -327,6 +331,64 @@ fun ChainOfThoughtScope.ChatMessageToolStep(
                                         .height(64.dp)
                                         .wrapContentWidth(),
                                 )
+                            }
+                        }
+                    }
+                    if (documents.isNotEmpty()) {
+                        val hostContext = androidx.compose.ui.platform.LocalContext.current
+                        val toastHost = LocalToaster.current
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            documents.forEach { doc ->
+                                Surface(
+                                    tonalElevation = 2.dp,
+                                    onClick = {
+                                        com.clma.app.utils.FileOpenUtil.openUri(
+                                            hostContext, android.net.Uri.parse(doc.url), doc.mime,
+                                        ).onFailure {
+                                            toastHost.show(
+                                                message = hostContext.getString(com.clma.app.R.string.attachment_open_failed),
+                                                type = ToastType.Error,
+                                            )
+                                        }
+                                    },
+                                    shape = RoundedCornerShape(50),
+                                    color = MaterialTheme.colorScheme.tertiaryContainer,
+                                ) {
+                                    ProvideTextStyle(MaterialTheme.typography.labelSmall) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                        ) {
+                                            Icon(
+                                                imageVector = HugeIcons.File02,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(16.dp),
+                                            )
+                                            Text(
+                                                text = doc.fileName,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis,
+                                                modifier = Modifier.widthIn(max = 200.dp),
+                                            )
+                                            TextButton(onClick = {
+                                                com.clma.app.utils.FileOpenUtil.shareUri(
+                                                    hostContext, android.net.Uri.parse(doc.url), doc.mime,
+                                                ).onFailure {
+                                                    toastHost.show(
+                                                        message = hostContext.getString(R.string.setting_page_no_share_app),
+                                                        type = ToastType.Error,
+                                                    )
+                                                }
+                                            }) {
+                                                Text(stringResource(R.string.export_share))
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
