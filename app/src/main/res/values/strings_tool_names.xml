@@ -560,4 +560,8 @@
   <string name="tool_display_desc_bot_memory_write">Adds a memory record to a bot</string>
   <string name="tool_display_name_bot_memory_delete">Delete bot memory</string>
   <string name="tool_display_desc_bot_memory_delete">Deletes one memory record of a bot</string>
+  <string name="tool_display_name_read_attachment">Read attachment</string>
+  <string name="tool_display_desc_read_attachment">Reads uploaded text or binary data in bounded pages</string>
+  <string name="tool_display_name_deliver_file">Deliver file</string>
+  <string name="tool_display_desc_deliver_file">Attaches a shareable file to chat and optionally exports to Downloads</string>
 </resources>

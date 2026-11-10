@@ -124,6 +124,7 @@ class DocumentInlineBudgetTest {
         assertTrue(notice.contains("~400 tokens"))
         assertTrue(notice.contains("/upload/.extracted/a.docx.1-2.txt (40 lines"))
         assertTrue(notice.contains("offset=11"))
+        assertTrue(notice.contains("read_attachment"))
         assertTrue(notice.contains("workspace_read_file"))
     }
 

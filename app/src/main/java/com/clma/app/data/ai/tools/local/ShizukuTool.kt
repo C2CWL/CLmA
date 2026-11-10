@@ -18,8 +18,8 @@ private const val MIN_TIMEOUT_MS = 1_000
 private const val MAX_TIMEOUT_MS = 300_000
 
 /**
- * Run a shell command with Shizuku's privileges (the shell UID, the same level `adb shell`
- * gets, no root, no su). Requires the Shizuku app installed, its service running, and
+ * Run a shell command with Shizuku's runtime privileges (shell UID 2000 or root UID 0,
+ * depending on how its service was started). Requires the Shizuku app installed, its service running, and
  * permission granted from Settings -> Shizuku; the permission is never requested from this
  * tool or automatically, only from an explicit tap on that settings screen.
  *
@@ -30,8 +30,9 @@ private const val MAX_TIMEOUT_MS = 300_000
 fun shizukuExecTool(context: Context): Tool = Tool(
     name = "shizuku_exec",
     description = """
-        Run a shell command with Shizuku's privileges (the shell UID - the same level `adb
-        shell` gets, no root). Returns stdout, stderr, and exit code. Requires the Shizuku app
+        Run a shell command with Shizuku's runtime privileges (shell UID 2000 or root UID 0,
+        depending on how its service was started; do not assume root). Returns stdout, stderr,
+        and exit code. Requires the Shizuku app
         installed, its service running, and permission granted from Settings -> Shizuku.
     """.trimIndent().replace("\n", " "),
     parameters = {
