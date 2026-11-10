@@ -225,10 +225,7 @@ internal fun rememberChatAttachmentPickerActions(
             }
             Log.d(TAG, "File picker: selected ${uris.size} uri(s)")
             scope.launch {
-                val images = mutableListOf<Uri>()
-                val videos = mutableListOf<Uri>()
-                val audios = mutableListOf<Uri>()
-                val documents = mutableListOf<UIMessagePart.Document>()
+                val attachments = mutableListOf<UIMessagePart>()
 
                 uris.forEach { uri ->
                     val fileName = filesManager.getFileNameFromUri(uri)
@@ -265,11 +262,11 @@ internal fun rememberChatAttachmentPickerActions(
                         }
 
                     when (kind) {
-                        ChatAttachmentKind.IMAGE -> images.add(localUri)
-                        ChatAttachmentKind.VIDEO -> videos.add(localUri)
-                        ChatAttachmentKind.AUDIO -> audios.add(localUri)
+                        ChatAttachmentKind.IMAGE -> attachments.add(UIMessagePart.Image(localUri.toString()))
+                        ChatAttachmentKind.VIDEO -> attachments.add(UIMessagePart.Video(localUri.toString()))
+                        ChatAttachmentKind.AUDIO -> attachments.add(UIMessagePart.Audio(localUri.toString()))
                         ChatAttachmentKind.DOCUMENT -> {
-                            documents.add(
+                            attachments.add(
                                 UIMessagePart.Document(
                                     url = localUri.toString(),
                                     fileName = fileName,
@@ -280,11 +277,8 @@ internal fun rememberChatAttachmentPickerActions(
                     }
                 }
 
-                if (images.isNotEmpty()) inputState.addImages(images)
-                if (videos.isNotEmpty()) inputState.addVideos(videos)
-                if (audios.isNotEmpty()) inputState.addAudios(audios)
-                if (documents.isNotEmpty()) inputState.addFiles(documents)
-                if (images.isNotEmpty() || videos.isNotEmpty() || audios.isNotEmpty() || documents.isNotEmpty()) {
+                if (attachments.isNotEmpty()) {
+                    inputState.messageContent = inputState.messageContent + attachments
                     onAttachmentAdded()
                 }
             }

@@ -13,6 +13,7 @@ class ChatInputState {
     val textContent = TextFieldState()
     var messageContent by mutableStateOf(listOf<UIMessagePart>())
     var editingMessage by mutableStateOf<Uuid?>(null)
+    private var attachmentsReordered = false
     private var editingParts: List<UIMessagePart>? = null
     private var editingAttachmentUrls: Set<String> = emptySet()
 
@@ -20,6 +21,7 @@ class ChatInputState {
         textContent.setTextAndPlaceCursorAtEnd("")
         messageContent = emptyList()
         editingMessage = null
+        attachmentsReordered = false
         editingParts = null
         editingAttachmentUrls = emptySet()
     }
@@ -43,6 +45,7 @@ class ChatInputState {
         }
         textContent.setTextAndPlaceCursorAtEnd(text)
         messageContent = contents.filter { it !is UIMessagePart.Text }
+        attachmentsReordered = false
         editingParts = contents
         editingAttachmentUrls = contents.mapNotNull { it.attachmentUrlOrNull() }.toSet()
     }
@@ -71,7 +74,11 @@ class ChatInputState {
                         }
 
                         else -> {
-                            val currentIndex = remainingAttachments.indexOf(part)
+                            val currentIndex = if (attachmentsReordered) {
+                                if (remainingAttachments.isEmpty()) -1 else 0
+                            } else {
+                                remainingAttachments.indexOf(part)
+                            }
                             if (currentIndex >= 0) {
                                 merged.add(remainingAttachments.removeAt(currentIndex))
                             }
@@ -88,6 +95,14 @@ class ChatInputState {
             return if (text.isBlank()) messageContent else listOf(UIMessagePart.Text(text)) + messageContent
         }
         return if (text.isBlank()) messageContent else listOf(UIMessagePart.Text(text)) + messageContent
+    }
+
+    fun moveAttachment(fromIndex: Int, toIndex: Int) {
+        if (fromIndex !in messageContent.indices || toIndex !in messageContent.indices) return
+        attachmentsReordered = true
+        messageContent = messageContent.toMutableList().apply {
+            add(toIndex, removeAt(fromIndex))
+        }
     }
 
     fun isEmpty(): Boolean {
