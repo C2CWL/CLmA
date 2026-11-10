@@ -522,7 +522,7 @@ private fun formatSecretTime(millis: Long): String =
     SECRET_TIME_FORMATTER.format(Instant.ofEpochMilli(millis))
 
 /** Compose's LocalContext is usually a ContextThemeWrapper, so walk the wrapper chain. */
-private fun Context.findFragmentActivity(): FragmentActivity? {
+internal fun Context.findFragmentActivity(): FragmentActivity? {
     var current: Context? = this
     while (current != null) {
         if (current is FragmentActivity) return current
@@ -531,14 +531,14 @@ private fun Context.findFragmentActivity(): FragmentActivity? {
     return null
 }
 
-private fun FragmentActivity.canAuthenticateForSecrets(): Boolean =
+internal fun FragmentActivity.canAuthenticateForSecrets(): Boolean =
     BiometricManager.from(this).canAuthenticate(
         BiometricManager.Authenticators.BIOMETRIC_WEAK or
             BiometricManager.Authenticators.DEVICE_CREDENTIAL
     ) == BiometricManager.BIOMETRIC_SUCCESS
 
 /** Screen-lock prompt: fingerprint / face when enrolled, PIN-pattern-password otherwise. */
-private suspend fun authenticateForSecrets(
+internal suspend fun authenticateForSecrets(
     activity: FragmentActivity,
     title: String,
     subtitle: String,

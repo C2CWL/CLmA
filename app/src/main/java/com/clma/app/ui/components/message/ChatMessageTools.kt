@@ -127,6 +127,7 @@ fun InteractiveToolCard(
             onToolApproval = onToolApproval,
             onToolAnswer = onToolAnswer,
         )
+        else -> SecretResultCard(tool)
     }
 }
 

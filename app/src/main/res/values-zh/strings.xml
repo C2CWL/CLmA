@@ -3415,4 +3415,5 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="chat_conversation_settings_hint_agent">侧边栏当前为 Agent 模式。审批、派发与工具授权主要在 Agent 下生效；聊天模式仅保留轻量白名单：搜索、热记忆、时间、向用户提问、语音播报、剪贴板、图/视频生成、会话检索、上下文压缩、token 用量查询。</string>
   <string name="chat_conversation_settings_hint_chat">侧边栏当前为聊天模式。仅保留轻量白名单：搜索、热记忆、时间、向用户提问、语音播报、剪贴板、图/视频生成、会话检索、上下文压缩、token 用量查询。</string>
 
+  <string name="secret_result_title">安全结果</string>
 </resources>

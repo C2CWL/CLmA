@@ -21,10 +21,8 @@ import com.clma.app.data.secrets.AgentSecretsStore
  * Save an SSH host so it can be referenced by name in subsequent calls instead of passing
  * credentials every time. Replaces any existing host with the same name.
  *
- * Prefer `password_secret` / `private_key_secret` / `passphrase_secret` (vault names from
- * `request_secret`) so plaintext never enters chat history or the LLM cloud. Raw
- * password/private_key still work for backwards compatibility but are redacted on persist
- * and when re-sent to the model.
+ * Credentials must use vault references. Manually configured hosts remain supported;
+ * the model-facing API no longer accepts legacy plaintext credentials.
  */
 fun saveSshHostTool(
     repo: SshHostRepository,
@@ -34,10 +32,9 @@ fun saveSshHostTool(
     description = """
         Persist an SSH host (host, port, user, credentials) under a short name so the LLM can
         reference it later via ssh_exec_saved / ssh_upload / ssh_download without re-typing
-        credentials. Replaces any existing host with the same name. Prefer password_secret /
-        private_key_secret (vault names from request_secret) over plaintext password /
-        private_key so secrets never enter chat history. Pass either password(+_secret) OR
-        private_key(+_secret) for authentication.
+        credentials. Replaces any existing host with the same name. Authentication requires
+        password_secret or private_key_secret (vault names from request_secret).
+        Plaintext password / private_key / passphrase fields are rejected.
     """.trimIndent().replace("\n", " "),
     parameters = {
         InputSchema.Obj(
@@ -48,27 +45,15 @@ fun saveSshHostTool(
                 put("user", buildJsonObject { put("type", "string"); put("description", "SSH username") })
                 put("password_secret", buildJsonObject {
                     put("type", "string")
-                    put("description", "Vault name for the password (from request_secret). Preferred over password.")
+                    put("description", "Vault name for the password (from request_secret). Required for password authentication.")
                 })
                 put("private_key_secret", buildJsonObject {
                     put("type", "string")
-                    put("description", "Vault name for the private key PEM (from request_secret). Preferred over private_key.")
+                    put("description", "Vault name for the private key PEM (from request_secret). Required for key authentication.")
                 })
                 put("passphrase_secret", buildJsonObject {
                     put("type", "string")
-                    put("description", "Vault name for the key passphrase (from request_secret). Preferred over passphrase.")
-                })
-                put("password", buildJsonObject {
-                    put("type", "string")
-                    put("description", "DEPRECATED plaintext password — use password_secret + request_secret instead")
-                })
-                put("private_key", buildJsonObject {
-                    put("type", "string")
-                    put("description", "DEPRECATED plaintext PEM — use private_key_secret + request_secret instead")
-                })
-                put("passphrase", buildJsonObject {
-                    put("type", "string")
-                    put("description", "DEPRECATED plaintext passphrase — use passphrase_secret instead")
+                    put("description", "Vault name for the key passphrase (from request_secret). Use for encrypted keys.")
                 })
             },
             required = listOf("name", "host", "user"),
@@ -108,7 +93,7 @@ fun saveSshHostTool(
                         put(
                             "detail",
                             "Provide password_secret or private_key_secret (call request_secret first), " +
-                                "or legacy password/private_key. Prefer vault refs so secrets never enter chat.",
+                                "Plaintext credential fields are not accepted.",
                         )
                     }.toString(),
                 ),
@@ -245,6 +230,8 @@ fun sshExecSavedTool(
         Run a shell command on a previously-saved SSH host (looked up by name). Returns
         stdout, stderr, exit_code. For secrets on stdin (sudo password, etc.) use
         stdin_secret with a vault name from request_secret — never put the password in stdin.
+        Use stdout_secret to capture sensitive stdout into a NEW vault entry without exposing
+        stdout/stderr to the model, including on failure. Ordinary output is unchanged.
         For destructive or system-level commands you should explicitly confirm with the user
         before invoking.
     """.trimIndent().replace("\n", " "),
@@ -260,6 +247,10 @@ fun sshExecSavedTool(
                 put("stdin", buildJsonObject {
                     put("type", "string")
                     put("description", "Optional non-secret data piped to stdin. Prefer stdin_secret for passwords/tokens.")
+                })
+                put("stdout_secret", buildJsonObject {
+                    put("type", "string")
+                    put("description", "Capture complete successful stdout directly into a NEW vault entry; no stdout/stderr is returned, even on failure. No background or overwrite. Output only the secret, no labels. Bytes including trailing newlines are preserved. Use secret_show for the local result card.")
                 })
                 put("background", buildJsonObject {
                     put("type", "boolean")
@@ -311,29 +302,16 @@ fun sshExecSavedTool(
                 ),
             )
         }
+        val outputSecret = p["stdout_secret"]?.jsonPrimitive?.contentOrNull
+        validateSecretCapture(outputSecret, background, secrets::isValidName, secrets::has)
+            ?.let { return@Tool listOf(UIMessagePart.Text(it.toString())) }
         val effectiveCommand = if (background) wrapDetachedCommand(command) else command
         val payload = runCancellableSshOp(timeoutSec * 1000L) { sessionRef ->
             execOneShot(context, h.host, h.port, h.user, auth, effectiveCommand, timeoutSec * 1000, sessionRef, stdin)
         }
-        listOf(UIMessagePart.Text(payload.toString()))
+        listOf(UIMessagePart.Text(captureSecretOutput(payload, outputSecret, secrets::setIfAbsent).toString()))
     },
 )
-
-/**
- * Prefer vault ref when present; otherwise use plaintext. Vault wins if both are set so a
- * model that still echoes a placeholder password cannot override a real secret ref.
- */
-internal fun resolveSecretOrPlain(
-    secrets: AgentSecretsStore,
-    refName: String?,
-    plain: String?,
-    field: String,
-): Result<String?> {
-    if (!refName.isNullOrBlank()) {
-        return resolveSecretRef(secrets, refName).map { it }
-    }
-    return Result.success(plain)
-}
 
 internal fun secretError(t: Throwable): List<UIMessagePart> = listOf(
     UIMessagePart.Text(

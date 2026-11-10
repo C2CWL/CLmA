@@ -3427,4 +3427,5 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="chat_conversation_settings_hint_agent">Sidebar is in Agent mode. Approval, dispatch, and tool grants mainly apply here; Chat mode keeps a lighter allowlist (search, hot memory, time, ask-user, TTS, clipboard, image/video generation, chat history search, context compaction, token usage).</string>
   <string name="chat_conversation_settings_hint_chat">Sidebar is in Chat mode. Only the light allowlist is available: search, hot memory, time, ask-user, TTS, clipboard, image/video generation, chat history search, context compaction, and token usage checks.</string>
 
+  <string name="secret_result_title">Secure result</string>
 </resources>

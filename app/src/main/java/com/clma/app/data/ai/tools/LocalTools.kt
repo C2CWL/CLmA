@@ -82,6 +82,8 @@ import com.clma.app.data.ai.tools.local.listSshHostsTool
 import com.clma.app.data.ai.tools.local.requestSecretTool
 import com.clma.app.data.ai.tools.local.secretDeleteTool
 import com.clma.app.data.ai.tools.local.secretListTool
+import com.clma.app.data.ai.tools.local.secretGenerateTool
+import com.clma.app.data.ai.tools.local.secretShowTool
 import com.clma.app.data.ai.tools.local.sshDownloadTool
 import com.clma.app.data.ai.tools.local.sshExecSavedTool
 import com.clma.app.data.ai.tools.local.sshUploadTool
@@ -798,6 +800,8 @@ class LocalTools(
         if (options.contains(LocalToolOption.Secrets)) {
             tools.add(requestSecretTool())
             tools.add(secretListTool(agentSecretsStore))
+            tools.add(secretGenerateTool(agentSecretsStore))
+            tools.add(secretShowTool(agentSecretsStore))
             tools.add(secretDeleteTool(agentSecretsStore))
         }
         if (options.contains(LocalToolOption.Battery)) {
