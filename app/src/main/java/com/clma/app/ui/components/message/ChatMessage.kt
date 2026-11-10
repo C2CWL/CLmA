@@ -7,6 +7,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -82,6 +84,10 @@ import com.clma.ai.ui.isEmptyUIMessage
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ArrowDown01
 import me.rerere.hugeicons.stroke.ArrowUp01
+import me.rerere.hugeicons.stroke.Copy01
+import me.rerere.hugeicons.stroke.TextSelection
+import me.rerere.hugeicons.stroke.Edit01
+import me.rerere.hugeicons.stroke.Delete01
 import me.rerere.hugeicons.stroke.File02
 import me.rerere.hugeicons.stroke.MusicNote03
 import me.rerere.hugeicons.stroke.Video01
@@ -106,6 +112,8 @@ import com.clma.app.ui.components.richtext.ProvideWorkspaceImageResolver
 import com.clma.app.ui.components.richtext.ZoomableAsyncImage
 import com.clma.app.ui.components.richtext.buildMarkdownPreviewHtml
 import com.clma.app.ui.components.webview.WebViewContentCache
+import com.clma.app.ui.components.ui.AppDropdownMenu
+import com.clma.app.ui.components.ui.AppMenuEntry
 import com.clma.app.ui.components.ui.ChainOfThought
 import com.clma.app.ui.components.ui.Favicon
 import com.clma.app.ui.context.LocalNavController
@@ -120,6 +128,7 @@ import com.clma.app.ui.theme.LocalChatFontFamily
 import com.clma.app.ui.theme.LocalDarkMode
 import com.clma.app.ui.theme.rememberChatFontFamily
 import com.clma.app.ui.theme.extendColors
+import com.clma.app.utils.copyMessageToClipboard
 import com.clma.app.utils.FileOpenUtil
 import com.clma.app.utils.JsonInstant
 import com.clma.app.utils.openUrl
@@ -251,7 +260,34 @@ fun ChatMessage(
                     onToolApproval = onToolApproval,
                     onToolAnswer = onToolAnswer,
                     onRerunTool = onRerunTool,
-                    onUserMessageClick = if (message.role == MessageRole.USER) onEdit else null,
+                    userMessageMenuItems =
+                        if (message.role == MessageRole.USER) {
+                            listOf(
+                                AppMenuEntry(
+                                    text = stringResource(R.string.copy),
+                                    icon = HugeIcons.Copy01,
+                                    onClick = { context.copyMessageToClipboard(actionMessage) },
+                                ),
+                                AppMenuEntry(
+                                    text = stringResource(R.string.select_and_copy),
+                                    icon = HugeIcons.TextSelection,
+                                    onClick = { showSelectCopySheet = true },
+                                ),
+                                AppMenuEntry(
+                                    text = stringResource(R.string.edit),
+                                    icon = HugeIcons.Edit01,
+                                    onClick = onEdit,
+                                ),
+                                AppMenuEntry(
+                                    text = stringResource(R.string.delete),
+                                    icon = HugeIcons.Delete01,
+                                    destructive = true,
+                                    onClick = onDelete,
+                                ),
+                            )
+                        } else {
+                            emptyList()
+                        },
                 )
             }
 
@@ -415,7 +451,7 @@ private fun MessagePartsBlock(
     onToolApproval: ((toolCallId: String, approved: Boolean, reason: String, scope: com.clma.app.service.ChatService.ApprovalScope, toolName: String) -> Unit)? = null,
     onToolAnswer: ((toolCallId: String, answer: String) -> Unit)? = null,
     onRerunTool: (suspend (toolCallId: String) -> com.clma.app.service.ChatService.RerunToolResult)? = null,
-    onUserMessageClick: (() -> Unit)? = null,
+    userMessageMenuItems: List<AppMenuEntry> = emptyList(),
 ) {
     val context = LocalContext.current
     val toaster = LocalToaster.current
@@ -609,7 +645,7 @@ private fun MessagePartsBlock(
                         val textContent = @Composable {
                             if (role == MessageRole.USER) {
                                 // Long pasted prompts collapse to a preview. The chevron
-                                // expands in place; tapping the bubble still edits.
+                                // expands in place; long-press opens the message menu.
                                 UserMessageBubble(
                                     text = part.text.replaceRegexes(
                                         assistant = assistant,
@@ -626,7 +662,7 @@ private fun MessagePartsBlock(
                                     ).copy(alpha = settings.displaySetting.bubbleOpacity),
                                     capsule = settings.displaySetting.usesGeminiChatUi,
                                     modern = modern,
-                                    onClick = { onUserMessageClick?.invoke() },
+                                    menuItems = userMessageMenuItems,
                                     onClickCitation = handleClickCitation,
                                 )
                             } else {
@@ -692,7 +728,8 @@ private fun MessagePartsBlock(
                         // 对 selectable 列表的排序产生并发修改，导致 ConcurrentModificationException。
                         // 生成结束后内容稳定，再启用文本选择。
                         if (!renderedAsWebviewCard && !renderedAsInterjection) {
-                            if (loading) {
+                            // User text uses the long-press menu; selection lives in its copy sheet.
+                            if (loading || role == MessageRole.USER) {
                                 textContent()
                             } else {
                                 SelectionContainer {
@@ -906,10 +943,10 @@ private fun MessagePartsBlock(
 }
 
 @Composable
-private fun UserMessageBubble(
+internal fun UserMessageBubble(
     text: String,
     bubbleColor: Color,
-    onClick: () -> Unit,
+    menuItems: List<AppMenuEntry>,
     onClickCitation: (String) -> Unit,
     // Gemini 风格：更大的圆角胶囊，右下角收一点，读起来像一语气泡而不是卡片。
     capsule: Boolean = false,
@@ -920,100 +957,117 @@ private fun UserMessageBubble(
     var showToggle by remember(text) { mutableStateOf(UserMessageCollapse.likelyOverflows(text)) }
     val limitPx = with(LocalDensity.current) { UserMessageCollapse.LIMIT_DP.dp.roundToPx() }
     val collapsed = showToggle && !expanded
-    Surface(
-        modifier = Modifier.animateContentSize(),
-        shape = if (capsule) {
+    var menuExpanded by remember { mutableStateOf(false) }
+    val bubbleShape =
+        if (capsule) {
             RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp, bottomEnd = 6.dp, bottomStart = 22.dp)
         } else if (modern) {
             ModernUserBubbleShape
         } else {
             RoundedCornerShape(16.dp)
-        },
-        color = bubbleColor,
-        onClick = onClick,
-    ) {
-        Column(
-            modifier = if (modern) {
-                Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
-            } else {
-                Modifier.padding(if (capsule) 12.dp else 8.dp)
-            }
+        }
+    Box {
+        Surface(
+            modifier = Modifier
+                .animateContentSize()
+                .clip(bubbleShape)
+                .combinedClickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = {},
+                    onLongClick = { menuExpanded = true },
+                ),
+            shape = bubbleShape,
+            color = bubbleColor,
         ) {
-            Box(
-                modifier = Modifier
-                    .clipToBounds()
-                    .then(
-                        if (collapsed) {
-                            Modifier
-                                // Offscreen, or DstIn punches through the bubble color.
-                                .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-                                .drawWithContent {
-                                    drawContent()
-                                    val fade = 28.dp.toPx()
-                                    if (size.height > fade) {
-                                        val stop = (size.height - fade) / size.height
-                                        drawRect(
-                                            brush = Brush.verticalGradient(
-                                                0f to Color.Black,
-                                                stop to Color.Black,
-                                                1f to Color.Transparent,
-                                            ),
-                                            blendMode = BlendMode.DstIn,
-                                        )
-                                    }
-                                }
-                        } else {
-                            Modifier
-                        }
-                    )
-                    .layout { measurable, constraints ->
-                        val placeable = measurable.measure(
-                            constraints.copy(maxHeight = Constraints.Infinity),
-                        )
-                        val decision = UserMessageCollapse.layout(
-                            fullHeightPx = placeable.height,
-                            limitPx = limitPx,
-                            expanded = expanded,
-                        )
-                        if (showToggle != decision.showToggle) showToggle = decision.showToggle
-                        layout(placeable.width, decision.heightPx) {
-                            placeable.place(0, 0)
-                        }
-                    },
+            Column(
+                modifier = if (modern) {
+                    Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
+                } else {
+                    Modifier.padding(if (capsule) 12.dp else 8.dp)
+                }
             ) {
-                MarkdownBlock(
-                    content = text,
-                    onClickCitation = onClickCitation,
-                )
-            }
-            if (showToggle) {
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 4.dp),
-                    contentAlignment = Alignment.CenterEnd,
-                ) {
-                    Surface(
-                        onClick = { expanded = !expanded },
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.surface,
-                        shadowElevation = 1.dp,
-                        modifier = Modifier.size(30.dp),
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = if (expanded) HugeIcons.ArrowUp01 else HugeIcons.ArrowDown01,
-                                contentDescription = stringResource(
-                                    if (expanded) R.string.chat_message_collapse else R.string.chat_message_expand,
-                                ),
-                                modifier = Modifier.size(18.dp),
-                                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f),
+                        .clipToBounds()
+                        .then(
+                            if (collapsed) {
+                                Modifier
+                                    // Offscreen, or DstIn punches through the bubble color.
+                                    .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+                                    .drawWithContent {
+                                        drawContent()
+                                        val fade = 28.dp.toPx()
+                                        if (size.height > fade) {
+                                            val stop = (size.height - fade) / size.height
+                                            drawRect(
+                                                brush = Brush.verticalGradient(
+                                                    0f to Color.Black,
+                                                    stop to Color.Black,
+                                                    1f to Color.Transparent,
+                                                ),
+                                                blendMode = BlendMode.DstIn,
+                                            )
+                                        }
+                                    }
+                            } else {
+                                Modifier
+                            }
+                        )
+                        .layout { measurable, constraints ->
+                            val placeable = measurable.measure(
+                                constraints.copy(maxHeight = Constraints.Infinity),
                             )
+                            val decision = UserMessageCollapse.layout(
+                                fullHeightPx = placeable.height,
+                                limitPx = limitPx,
+                                expanded = expanded,
+                            )
+                            if (showToggle != decision.showToggle) showToggle = decision.showToggle
+                            layout(placeable.width, decision.heightPx) {
+                                placeable.place(0, 0)
+                            }
+                        },
+                ) {
+                    MarkdownBlock(
+                        content = text,
+                        onClickCitation = onClickCitation,
+                    )
+                }
+                if (showToggle) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp),
+                        contentAlignment = Alignment.CenterEnd,
+                    ) {
+                        Surface(
+                            onClick = { expanded = !expanded },
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.surface,
+                            shadowElevation = 1.dp,
+                            modifier = Modifier.size(30.dp),
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = if (expanded) HugeIcons.ArrowUp01 else HugeIcons.ArrowDown01,
+                                    contentDescription = stringResource(
+                                        if (expanded) R.string.chat_message_collapse else R.string.chat_message_expand,
+                                    ),
+                                    modifier = Modifier.size(18.dp),
+                                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f),
+                                )
+                            }
                         }
                     }
                 }
             }
         }
+        AppDropdownMenu(
+            expanded = menuExpanded,
+            onDismissRequest = { menuExpanded = false },
+            items = menuItems,
+        )
     }
 }
 
