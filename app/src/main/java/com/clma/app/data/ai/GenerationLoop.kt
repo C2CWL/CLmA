@@ -1243,7 +1243,14 @@ class GenerationLoop(
                     // envelope to the model without executing.
                     val hardlineReason = com.clma.app.data.ai.tools
                         .HardlineCommandGuard.checkTool(tool.toolName, tool.input, allowSshPower = true)
+                    val peerDenied = conversationId?.let {
+                        com.clma.app.data.botmode.BotPeerToolPolicy.isPeer(it)
+                    } == true && (!com.clma.app.data.botmode.BotPeerToolPolicy.allows(tool.toolName) ||
+                        toolDef?.needsApproval(tool.inputAsJson()) == true && !isToolAutoApproved(tool.toolName))
                     val transformed = when {
+                        peerDenied -> tool.copy(approvalState = ToolApprovalState.Denied(
+                            "peer_tool_denied: not read-only or requires human approval"
+                        ))
                         hardlineReason != null && tool.approvalState is ToolApprovalState.Auto -> {
                             Log.w(TAG, "hardline-blocked ${tool.toolName}: $hardlineReason")
                             tool.copy(approvalState = ToolApprovalState.Denied(
@@ -1367,6 +1374,14 @@ class GenerationLoop(
                             )
                         )
                     )
+                    return@forEach
+                }
+                if (conversationId?.let { com.clma.app.data.botmode.BotPeerToolPolicy.isPeer(it) } == true &&
+                    !com.clma.app.data.botmode.BotPeerToolPolicy.allows(tool.toolName)
+                ) {
+                    executedTools += tool.copy(output = listOf(UIMessagePart.Text(
+                        "{\"error\":\"peer_tool_denied\"}"
+                    )))
                     return@forEach
                 }
                 when (tool.approvalState) {
