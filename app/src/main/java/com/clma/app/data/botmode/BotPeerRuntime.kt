@@ -3,10 +3,13 @@ package com.clma.app.data.botmode
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -82,6 +85,7 @@ class BotPeerRuntime(private val scope: CoroutineScope, private val store: PeerS
 
     fun context(conversationId: String): PeerTask? = active[conversationId]
 
+    @OptIn(DelicateCoroutinesApi::class)
     suspend fun submit(requester: String, sourceBot: String, botId: String, brief: String,
                        delivery: String, threadId: String? = null, unattended: Boolean = false, rootKey: String = Uuid.random().toString()): PeerTask {
         require(brief.isNotBlank() && brief.length <= 20_000) { "invalid_brief" }
@@ -114,7 +118,9 @@ class BotPeerRuntime(private val scope: CoroutineScope, private val store: PeerS
             )
             store.save(next)
             snapshot = next
-            val job = scope.launch(start = CoroutineStart.UNDISPATCHED) { execute(task, thread) }
+            // ATOMIC: the body always runs, even if cancelled before dispatch, so the
+            // finally block in execute() settles the task instead of leaving it QUEUED.
+            val job = scope.launch(start = CoroutineStart.ATOMIC) { execute(task, thread) }
             jobs[task.id] = job
             task
         }
@@ -167,6 +173,8 @@ class BotPeerRuntime(private val scope: CoroutineScope, private val store: PeerS
         var result = ""
         var detail = ""
         try {
+            // Cancelled before dispatch: settle as CANCELLED without ever calling the host.
+            currentCoroutineContext().ensureActive()
             change(task.id, PeerStatus.RUNNING)
             active[thread.conversationId] = task
             result = withTimeout(TIMEOUT_MS) {
