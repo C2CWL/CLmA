@@ -3434,6 +3434,8 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="workspace_follow_app_proxy">Workspace follows app proxy</string>
   <string name="workspace_follow_app_proxy_desc">Off by default: preserves system routing and VPN split-tunneling rules. When enabled, new workspace commands, background tasks and terminal tabs use the configured app proxy; existing processes are unchanged. This is not a VPN switch and does not force VPN use or bypass. A blank proxy preserves existing behavior. Authenticated proxies are not supported. Commands must support proxy environment variables. Does not affect Termux or SSH.</string>
   <string name="workspace_terminal_start_failed">Could not start terminal. If following the app proxy, check its address and remove proxy authentication, or turn off following.</string>
+  <string name="attachment_move_earlier">Move earlier</string>
+  <string name="attachment_move_later">Move later</string>
   <string name="context_compaction_success">Context compression succeeded</string>
   <string name="context_compaction_failure">Context compression failed</string>
   <string name="context_compaction_cancelled">Context compression cancelled</string>

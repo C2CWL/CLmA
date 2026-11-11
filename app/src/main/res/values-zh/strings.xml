@@ -3422,6 +3422,8 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="workspace_follow_app_proxy">工作区跟随应用代理</string>
   <string name="workspace_follow_app_proxy_desc">默认关闭，保持现有行为，由系统及 VPN 分流规则决定联网路径。开启后，新启动的工作区命令、后台任务和终端标签页使用应用中配置的代理；已有进程不变。这不是 VPN 开关，不会强制绕过或启用 VPN。代理留空时保持现状，暂不支持认证代理。需命令支持代理环境变量，不影响 Termux 或 SSH。</string>
   <string name="workspace_terminal_start_failed">无法启动终端。若已开启跟随应用代理，请检查代理地址并移除代理认证，或关闭跟随。</string>
+  <string name="attachment_move_earlier">前移</string>
+  <string name="attachment_move_later">后移</string>
   <string name="context_compaction_success">上下文压缩成功</string>
   <string name="context_compaction_failure">上下文压缩失败</string>
   <string name="context_compaction_cancelled">上下文压缩已取消</string>
