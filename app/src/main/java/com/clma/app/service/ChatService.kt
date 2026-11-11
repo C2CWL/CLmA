@@ -51,6 +51,8 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import com.clma.ai.core.MessageRole
 import com.clma.ai.core.ReasoningLevel
 import com.clma.ai.core.Tool
@@ -77,6 +79,7 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import com.clma.app.CHAT_COMPLETED_NOTIFICATION_CHANNEL_ID
 import com.clma.app.CHAT_LIVE_UPDATE_NOTIFICATION_CHANNEL_ID
 import com.clma.app.RouteActivity
+import com.clma.app.utils.JsonInstant
 import com.clma.app.utils.cancelNotification
 import com.clma.app.utils.sendNotification
 import com.clma.app.R
