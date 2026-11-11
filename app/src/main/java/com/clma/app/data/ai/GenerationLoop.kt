@@ -53,7 +53,8 @@ import com.clma.ai.util.redactSecrets
 import com.clma.app.data.secrets.SecretVaultRegistry
 import com.clma.app.data.repository.ConversationRepository
 import com.clma.app.data.ai.limits.ConversationReasoningOverrides
-import com.clma.app.data.ai.tools.ConversationInjections
+import com.clma.app.subagent.SubAgentRegistry
+import com.clma.app.subagent.SubAgentCompletionNotice
 import com.clma.app.data.ai.transformers.InputMessageTransformer
 import com.clma.app.data.ai.transformers.MessageTransformer
 import com.clma.app.data.ai.transformers.OutputMessageTransformer
@@ -836,6 +837,7 @@ class GenerationLoop(
     private val conversationRepo: ConversationRepository,
     private val aiLoggingManager: AILoggingManager,
     private val systemPromptBuilder: SystemPromptBuilder,
+    private val subAgentRegistry: SubAgentRegistry,
 ) {
     fun generateText(
         settings: Settings,
@@ -1026,6 +1028,7 @@ class GenerationLoop(
             if (pendingTools.isEmpty()) {
                 // 本 step 是否被用户插话打断：决定收尾后继续下一 step 还是走工具分支。
                 var steered = false
+                var delivery: SubAgentRegistry.Delivery? = null
                 try {
                     onBeforeModelRequest()
                     // 用户插话：并入当前回合。位置必须在 pendingTools 判定之后 ——
@@ -1046,17 +1049,14 @@ class GenerationLoop(
                             )
                         )
                     }
-                    // System injections (e.g. a background sub-agent's completion notice)
-                    // are drained here — once per loop step, so an in-flight turn sees a
-                    // notice on its very next request without waiting for the turn to end —
-                    // and handed to generateInternal, which appends them to the request-only
-                    // `internalMessages` (alongside the system prompt and the continuation
-                    // instruction). They must NOT be added to the loop's `messages` var:
-                    // generateInternal writes that list back via onUpdateMessages, and
-                    // anything in it ends up rendered and persisted in the chat page.
-                    val injections = conversationId
-                        ?.let { ConversationInjections.drain(it) }
-                        .orEmpty()
+                    // Claim without removing: failure, steer and cancellation keep the inbox.
+                    // Exact conversation + assistant ownership prevents automatic cross-assistant delivery.
+                    delivery = conversationId?.takeUnless {
+                        com.clma.app.data.ai.tools.HeadlessConversations.isHeadless(it)
+                    }?.let { subAgentRegistry.claim(it.toString(), assistant.id.toString()) }
+                    val injections = delivery?.runs.orEmpty().map {
+                        SubAgentCompletionNotice.format(it, null)
+                    }
                     steered = generateInternal(
                         assistant = assistant,
                         settings = settings,
@@ -1103,6 +1103,7 @@ class GenerationLoop(
                         workspaceCwd = workspaceCwd,
                         continuationFromPartial = continuationFromPartial && stepIndex == 0,
                     )
+                    if (!steered) delivery?.let { subAgentRegistry.acknowledge(it) }
                 } catch (t: Throwable) {
                     // CancellationException is honoured verbatim — stopGeneration has its
                     // own cancelToolByUser path that marks tools cancelled. We only need
@@ -1168,6 +1169,8 @@ class GenerationLoop(
                         }
                     }
                     throw t
+                } finally {
+                    delivery?.let { subAgentRegistry.release(it) }
                 }
                 if (steered) {
                     // 插话打断：最后一条 assistant 若没有任何内容就丢掉，避免空气泡；

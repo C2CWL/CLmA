@@ -72,7 +72,11 @@ val appModule = module {
     single { com.clma.app.reliability.BugReportBuilder(get()) }
 
     // Phase 11: Sub-agents
-    single { com.clma.app.subagent.SubAgentRegistry() }
+    single {
+        com.clma.app.subagent.SubAgentRegistry(com.clma.app.subagent.SubAgentStore(
+            java.io.File(get<android.content.Context>().noBackupFilesDir, "subagent-runs.json")
+        ))
+    }
     single {
         com.clma.app.subagent.SubAgentEngine(
             registry = get(),
