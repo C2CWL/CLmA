@@ -66,8 +66,9 @@ fun subagentDispatchTool(
                 ${SubAgentDefaults.SLOT_WAIT_TIMEOUT_MS / 1000}s and only fails if the wait expires, so a burst of
                 parallel dispatches no longer loses the runs past the cap — but keep batches sensibly sized.
 
-                Approval-required: every dispatch needs explicit confirmation. Eligible for
-                Always Allow if the user trusts the assistant to delegate freely.
+                Approval follows the current app policy. Submit the tool call directly;
+                the app requests confirmation when required. Do not ask for a separate
+                conversational permission before calling.
             """.trimIndent()
         )
         appendLine()
@@ -77,6 +78,11 @@ fun subagentDispatchTool(
                 "newest user message's audio/video attachments are copied into the sub-agent's " +
                 "first message. Images are never carried."
         )
+        appendLine()
+        appendLine()
+        append(SubAgentDispatchProfileRules.dispatchGuidance(
+            SubAgentDispatchProfileRules.getLiveDispatchProfile()
+        ))
         if (enabledDefinitions.isNotEmpty()) {
             appendLine()
             appendLine()

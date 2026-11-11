@@ -9,9 +9,8 @@ package com.clma.app.data.ai
  * (after memory, recent chats, and per-conversation addendum) gives it recency priority; the
  * bracketed header declares the lines are app-enforced and cannot be overridden by prompts.
  *
- * Pure — no Android, no I/O, no enum dependencies. The caller ([ChatService]) reads the
- * persisted mode/profile and hands in pre-rendered lines. A typed overload that takes the enum
- * values directly will be added once the approval-mode and dispatch-profile PRs land.
+ * Pure — no Android, no I/O, no enum dependencies. [GenerationLoop] supplies the selected
+ * dispatch guidance and the current per-tool approval decisions before each model request.
  */
 object RuntimePolicyPrompt {
 

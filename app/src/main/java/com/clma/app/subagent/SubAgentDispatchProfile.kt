@@ -72,6 +72,34 @@ object SubAgentDispatchProfileRules {
         SubAgentDispatchProfile.UNLEASHED -> DispatchCaps(64, 16, 120_000L, 60, 3600, DescriptionTone.UNLEASHED)
     }
 
+    /** Shared by the runtime policy and both dispatch schemas. */
+    fun dispatchGuidance(profile: SubAgentDispatchProfile): String {
+        val posture = when (caps(profile).descriptionTone) {
+            DescriptionTone.NEVER -> return "Sub-agent dispatch: NEVER — disabled; do all work inline."
+            DescriptionTone.ASSIST ->
+                "ASSIST — work inline by default; delegate a focused lookup or review when it " +
+                    "materially reduces context load or needs specialist work."
+            DescriptionTone.NORMAL ->
+                "NORMAL — proactively delegate useful independent research, lookup, or review " +
+                    "subtasks; do not wait for the user to request delegation."
+            DescriptionTone.BURST ->
+                "BURST — prefer parallel delegation: split independent work into focused tasks " +
+                    "and use mission_dispatch for a batch, or background subagent_dispatch " +
+                    "while you do complementary work."
+            DescriptionTone.UNLEASHED ->
+                "UNLEASHED — delegation-first: for every substantive task, identify delegable " +
+                    "parts and dispatch them before doing the remaining work inline. Delegate " +
+                    "even one useful independent subtask; dispatch independent parts in parallel. " +
+                    "Keep planning, integration, and final verification in the parent."
+        }
+        return "Sub-agent dispatch: $posture " +
+            "Act on this selection, not merely describe a delegation plan. Trivial replies and " +
+            "inseparable tasks may stay inline. Do not duplicate a child's work, create busywork, " +
+            "or run concurrent edits to the same files. Respect tool availability, budgets, " +
+            "approval policy, and safety constraints; delegation does not grant extra authority. " +
+            "If useful delegation is blocked, state the concrete blocker and continue unblocked work."
+    }
+
     /**
      * The effective per-assistant cap, combining the profile ceiling with the assistant's own
      * [com.clma.app.data.model.Assistant.maxConcurrentSubAgents] field as a further tighten.
