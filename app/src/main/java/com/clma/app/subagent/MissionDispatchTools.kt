@@ -212,10 +212,16 @@ fun missionDispatchTool(
                 ${MissionLimits.RESULT_EXCERPT_CHARS} characters and carries its run id:
                 subagent_get reads the full text when an excerpt is not enough.
 
-                Approval-required: one confirmation covers the whole batch, so the user sees every
-                task before any of them runs.
+                Approval follows the current app policy. Submit the tool call directly;
+                if confirmation is required, the app presents one card for the whole batch.
+                Do not ask for a separate conversational permission before calling.
             """.trimIndent()
         )
+        appendLine()
+        appendLine()
+        append(SubAgentDispatchProfileRules.dispatchGuidance(
+            SubAgentDispatchProfileRules.getLiveDispatchProfile()
+        ))
         if (enabledDefinitions.isNotEmpty()) {
             appendLine()
             appendLine()

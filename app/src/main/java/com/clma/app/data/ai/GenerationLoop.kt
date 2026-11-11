@@ -1090,6 +1090,9 @@ class GenerationLoop(
                         stepIndex = stepIndex,
                         provider = provider,
                         tools = toolsInternal,
+                        maxToolSteps = maxSteps,
+                        isToolAutoApproved = isToolAutoApproved,
+                        unloadedToolSchema = unloadedToolSchema,
                         memories = memories ?: emptyList(),
                         stream = assistant.streamOutput,
                         processingStatus = processingStatus,
@@ -1975,6 +1978,9 @@ class GenerationLoop(
         providerImpl: Provider<ProviderSetting>,
         provider: ProviderSetting,
         tools: List<Tool>,
+        maxToolSteps: Int,
+        isToolAutoApproved: suspend (String) -> Boolean,
+        unloadedToolSchema: (suspend (String) -> String?)?,
         memories: List<AssistantMemory>,
         stream: Boolean,
         processingStatus: MutableStateFlow<String?> = MutableStateFlow(null),
@@ -2000,6 +2006,31 @@ class GenerationLoop(
         // 本 step 是否被用户插话打断（SteerInterrupt）。调用方据此决定是否继续下一 step。
         var steered = false
         var inspectionMemoryPrompt = ""
+        val dispatchNames = listOf("subagent_dispatch", "mission_dispatch")
+        val availableDispatchNames = mutableListOf<String>()
+        for (name in dispatchNames) {
+            if (tools.any { it.name == name } || unloadedToolSchema?.invoke(name) != null) {
+                availableDispatchNames += name
+            }
+        }
+        val dispatchProfile = if (availableDispatchNames.isNotEmpty()) settings.subAgentDispatchProfile
+            else com.clma.app.subagent.SubAgentDispatchProfile.NEVER
+        val dispatchLine = com.clma.app.subagent.SubAgentDispatchProfileRules.dispatchGuidance(dispatchProfile) +
+            if (tools.any { it.name == "tool_search" } &&
+                dispatchProfile != com.clma.app.subagent.SubAgentDispatchProfile.NEVER
+            ) " Discover and open the dispatch tools with tool_search/tool_open if not attached yet."
+            else ""
+        val approvalLines = mutableListOf<String>()
+        if (dispatchProfile != com.clma.app.subagent.SubAgentDispatchProfile.NEVER) {
+            for (name in availableDispatchNames) {
+                val approval = if (isToolAutoApproved(name)) "auto-approved by current policy"
+                    else "app confirmation required on submission"
+                approvalLines += "$name: $approval"
+            }
+        }
+        val approvalLine = if (approvalLines.isEmpty()) "" else approvalLines.joinToString("; ") +
+            ". Call directly; do not request an extra conversational confirmation. Safety constraints still apply."
+        val runtimePolicy = RuntimePolicyPrompt.render(approvalLine, dispatchLine, maxToolSteps)
         val internalMessages = buildList {
             // Conversation-level system prompt override (upstream): when the assistant
             // allows it and the conversation supplies one, it replaces the assistant prompt.
@@ -2026,6 +2057,7 @@ class GenerationLoop(
                 recentChatsPrompt = recentChatsPrompt,
                 toolPrompts = toolPrompts,
                 systemAddendum = systemAddendum,
+                policyPrompt = runtimePolicy,
             )
             val systemParts = buildList {
                 if (stableSystem.isNotBlank()) add(UIMessagePart.Text(stableSystem))

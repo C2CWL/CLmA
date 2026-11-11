@@ -8,6 +8,21 @@ import org.junit.Test
 class RuntimePolicyPromptTest {
 
     @Test
+    fun `selected posture reaches volatile system section`() {
+        val profile = com.clma.app.subagent.SubAgentDispatchProfile.UNLEASHED
+        val guidance = com.clma.app.subagent.SubAgentDispatchProfileRules.dispatchGuidance(profile)
+        val policy = RuntimePolicyPrompt.render("subagent_dispatch: auto-approved", guidance, 60)
+        val (stable, volatile) = SystemPromptBuilder().buildSections(
+            assistantPrompt = "assistant",
+            policyPrompt = policy,
+        )
+        assertFalse(stable.contains("delegation-first"))
+        assertTrue(volatile.contains("delegation-first"))
+        assertTrue(volatile.contains("auto-approved"))
+        assertTrue(volatile.contains("60 tool steps"))
+    }
+
+    @Test
     fun `both lines blank returns blank`() {
         assertEquals("", RuntimePolicyPrompt.render("", "", 90))
     }
