@@ -22,11 +22,18 @@ internal object ContextCompactionPresentation {
     const val TOOL_NAME = "context_compaction"
     private const val DISPLAY_ONLY_METADATA_KEY = "rikkahub_display_only_context_compaction"
 
-    fun createTool(compaction: ConversationCompaction): UIMessagePart.Tool = UIMessagePart.Tool(
+    fun createTool(
+        compaction: ConversationCompaction,
+        tokensBefore: Int? = null,
+        tokensAfter: Int? = null,
+    ): UIMessagePart.Tool = UIMessagePart.Tool(
         toolCallId = "context_compaction_${compaction.createdAt.toEpochMilli()}_${compaction.sourceEndNodeId}",
         toolName = TOOL_NAME,
         input = buildJsonObject {
-            put("mode", JsonPrimitive("automatic"))
+            put("mode", JsonPrimitive(if (compaction.isAuto) "automatic" else "manual"))
+            put("status", JsonPrimitive("success"))
+            tokensBefore?.let { put("tokensBefore", JsonPrimitive(it)) }
+            tokensAfter?.let { put("tokensAfter", JsonPrimitive(it)) }
             put("source_token_estimate", JsonPrimitive(compaction.sourceTokenEstimate))
             put("summary_model_id", JsonPrimitive(compaction.summaryModelId.toString()))
             put(
@@ -39,6 +46,19 @@ internal object ContextCompactionPresentation {
             put(DISPLAY_ONLY_METADATA_KEY, JsonPrimitive(true))
         },
     )
+
+    fun createFailureTool(automatic: Boolean, tokensBefore: Int, cancelled: Boolean): UIMessagePart.Tool =
+        UIMessagePart.Tool(
+            toolCallId = "context_compaction_failure_${Uuid.random()}",
+            toolName = TOOL_NAME,
+            input = buildJsonObject {
+                put("mode", JsonPrimitive(if (automatic) "automatic" else "manual"))
+                put("status", JsonPrimitive(if (cancelled) "cancelled" else "failure"))
+                put("tokensBefore", JsonPrimitive(tokensBefore))
+            }.toString(),
+            output = listOf(UIMessagePart.Text("Context compaction did not complete.")),
+            metadata = buildJsonObject { put(DISPLAY_ONLY_METADATA_KEY, JsonPrimitive(true)) },
+        )
 
     fun isDisplayTool(part: UIMessagePart): Boolean =
         part is UIMessagePart.Tool &&

@@ -3424,4 +3424,9 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="workspace_terminal_start_failed">无法启动终端。若已开启跟随应用代理，请检查代理地址并移除代理认证，或关闭跟随。</string>
   <string name="attachment_move_earlier">前移</string>
   <string name="attachment_move_later">后移</string>
+  <string name="context_compaction_success">上下文压缩成功</string>
+  <string name="context_compaction_failure">上下文压缩失败</string>
+  <string name="context_compaction_cancelled">上下文压缩已取消</string>
+  <string name="context_compaction_tokens">预估 Token：%1$d → %2$d</string>
+  <string name="context_compaction_unchanged">压缩未完成，保留原上下文（约 %1$d Token）</string>
 </resources>
