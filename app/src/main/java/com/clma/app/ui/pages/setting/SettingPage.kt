@@ -190,6 +190,14 @@ fun SettingPage(
                         ProviderConfigWarningCard(navController)
                     }
                 }
+                item("home_settings") {
+                    HubLeafGroup(
+                        itemIds = settingsHubHomeItems,
+                        settings = settings,
+                        status = statusSource,
+                        onOpen = ::openItem,
+                    )
+                }
                 item("categories_title") {
                     Text(
                         text = stringResource(R.string.setting_hub_categories),
@@ -221,7 +229,7 @@ fun SettingPage(
                         HubLeafGroup(
                             itemIds = itemIds,
                             settings = settings,
-                            status = statusSource!!,
+                            status = statusSource,
                             onOpen = ::openItem,
                         )
                     }
@@ -311,12 +319,20 @@ private fun HubCategoryCard(section: SettingsHubSectionDef, onClick: () -> Unit)
 private fun HubLeafGroup(
     itemIds: List<SettingsHubItemId>,
     settings: Settings,
-    status: HubStatusSource,
+    status: HubStatusSource?,
     onOpen: (SettingsHubItemId) -> Unit,
 ) {
     // Resolve composable summaries before entering CardGroup's non-@Composable DSL builder.
     val rows = itemIds.map { itemId ->
-        Triple(itemId, settingsHubItems.getValue(itemId), hubItemSummary(itemId, settings, status))
+        val summary = if (itemId == SettingsHubItemId.BOT_MODE) {
+            stringResource(
+                if (settings.displaySetting.botModeEnabled) R.string.setting_hub_summary_on
+                else R.string.setting_hub_summary_off,
+            )
+        } else {
+            hubItemSummary(itemId, settings, requireNotNull(status))
+        }
+        Triple(itemId, settingsHubItems.getValue(itemId), summary)
     }
     CardGroup {
         rows.forEach { (itemId, def, summary) ->
@@ -458,6 +474,7 @@ private fun hubItemSummary(id: SettingsHubItemId, settings: Settings, status: Hu
 
     val display = settings.displaySetting
     return when (id) {
+        SettingsHubItemId.BOT_MODE -> onOff(display.botModeEnabled)
         SettingsHubItemId.PROVIDERS -> {
             val enabled = settings.providers.count { it.enabled }
             if (enabled == 0) stringResource(R.string.setting_hub_summary_none)
@@ -554,6 +571,7 @@ private fun hubItemSummary(id: SettingsHubItemId, settings: Settings, status: Hu
 }
 
 private fun hubItemIcon(id: SettingsHubItemId): ImageVector = when (id) {
+    SettingsHubItemId.BOT_MODE -> HugeIcons.Robot01
     SettingsHubItemId.PROVIDERS -> HugeIcons.IdCard
     SettingsHubItemId.MODELS -> HugeIcons.Star
     SettingsHubItemId.ASSISTANT -> HugeIcons.Robot01
