@@ -1050,7 +1050,7 @@ class LocalTools(
                     )
                 )
             }
-            tools.add(com.clma.app.subagent.subagentListTool(subAgentRegistry, definitions))
+            tools.add(com.clma.app.subagent.subagentListTool(subAgentRegistry, definitions, invocationContext))
             // P2-06b — the roster write tools. Registered alongside the reads; each one prompts
             // per call and refuses outright in a headless conversation.
             tools.add(
@@ -1076,8 +1076,8 @@ class LocalTools(
                     invocationContext,
                 )
             )
-            tools.add(com.clma.app.subagent.subagentGetTool(subAgentRegistry))
-            tools.add(com.clma.app.subagent.subagentCancelTool(subAgentRegistry))
+            tools.add(com.clma.app.subagent.subagentGetTool(subAgentRegistry, invocationContext))
+            tools.add(com.clma.app.subagent.subagentCancelTool(subAgentRegistry, invocationContext))
         }
         if (options.contains(LocalToolOption.CostGuards)) {
             tools.add(com.clma.app.costguards.checkTokenUsageTool(settingsStore, conversationRepo))

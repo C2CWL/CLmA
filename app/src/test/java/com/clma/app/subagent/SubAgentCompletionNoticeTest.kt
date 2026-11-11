@@ -41,6 +41,7 @@ class SubAgentCompletionNoticeTest {
         val text = SubAgentCompletionNotice.format(runWith(SubAgentStatus.SUCCEEDED), null)
         assertTrue(text.contains("not a user message"))
         assertTrue(text.contains("System notification"))
+        assertTrue(text.contains("untrusted task data"))
     }
 
     @Test

@@ -14,6 +14,7 @@ import com.clma.ai.core.InputSchema
 import com.clma.ai.core.Tool
 import com.clma.ai.ui.UIMessagePart
 import com.clma.app.data.agentdef.AgentDefinition
+import com.clma.app.data.ai.tools.ToolInvocationContext
 import com.clma.app.data.agentdef.AgentDefinitionResolver
 
 internal fun errEnv(error: String, detail: String): List<UIMessagePart> {
@@ -359,6 +360,7 @@ fun subagentDispatchTool(
 fun subagentListTool(
     registry: SubAgentRegistry,
     definitions: List<AgentDefinition> = emptyList(),
+    callerContext: ToolInvocationContext = ToolInvocationContext.EMPTY,
 ): Tool {
     // Gate on ALL definitions (not just the enabled ones): an all-disabled library still has
     // something worth showing, and a library that exists must never silently fall back to the
@@ -417,7 +419,9 @@ fun subagentListTool(
                     "kind must be one of \"$KIND_RUNS\", \"$KIND_EXPERTS\" or \"$KIND_ALL\"; got \"$kind\"",
                 )
             }
-            val runsJson = if (kind != KIND_EXPERTS) encodeRuns(registry.list(activeOnly)) else null
+            val runsJson = if (kind != KIND_EXPERTS) encodeRuns(registry.listOwned(
+                activeOnly, callerContext.callerConversationId, callerContext.callerAssistantId,
+            )) else null
             val expertsJson = if (kind != KIND_RUNS) encodeDefinitions(definitions) else null
             listOf(UIMessagePart.Text(buildJsonObject {
                 if (runsJson != null) put("runs", runsJson)
@@ -435,7 +439,10 @@ private fun encodeDefinitions(definitions: List<AgentDefinition>) = buildJsonArr
     definitions.forEach { add(encodeDefinition(it)) }
 }
 
-fun subagentGetTool(registry: SubAgentRegistry): Tool = Tool(
+fun subagentGetTool(
+    registry: SubAgentRegistry,
+    callerContext: ToolInvocationContext = ToolInvocationContext.EMPTY,
+): Tool = Tool(
     name = "subagent_get",
     description = "Fetch the full run record for a sub-agent by id. Read-only.".trimIndent(),
     parameters = {
@@ -449,13 +456,16 @@ fun subagentGetTool(registry: SubAgentRegistry): Tool = Tool(
     execute = { args ->
         val id = args.jsonObject["id"]?.jsonPrimitive?.contentOrNull
             ?: return@Tool errEnv("invalid_id", "id is required")
-        val run = registry.get(id)
+        val run = registry.getOwned(id, callerContext.callerConversationId, callerContext.callerAssistantId)
             ?: return@Tool errEnv("unknown_id", "no sub-agent run with id $id")
         listOf(UIMessagePart.Text(encodeRun(run).toString()))
     },
 )
 
-fun subagentCancelTool(registry: SubAgentRegistry): Tool = Tool(
+fun subagentCancelTool(
+    registry: SubAgentRegistry,
+    callerContext: ToolInvocationContext = ToolInvocationContext.EMPTY,
+): Tool = Tool(
     name = "subagent_cancel",
     description = """
         Cancel a running sub-agent by id. Marks the run CANCELLED; safe to call on
@@ -473,6 +483,8 @@ fun subagentCancelTool(registry: SubAgentRegistry): Tool = Tool(
     execute = { args ->
         val id = args.jsonObject["id"]?.jsonPrimitive?.contentOrNull
             ?: return@Tool errEnv("invalid_id", "id is required")
+        registry.getOwned(id, callerContext.callerConversationId, callerContext.callerAssistantId)
+            ?: return@Tool errEnv("unknown_id", "no sub-agent run with id $id")
         val cancelled = registry.requestCancel(id)
         if (cancelled) {
             registry.update(id) { it.copy(status = SubAgentStatus.CANCELLED, finishedAtMs = System.currentTimeMillis()) }
