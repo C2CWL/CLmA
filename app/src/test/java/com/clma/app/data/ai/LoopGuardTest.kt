@@ -236,4 +236,57 @@ class LoopGuardTest {
         val merged = mergePriorCalls(ledger, visible)
         assertEquals(listOf("read_window_tree", "workspace_shell"), merged.map { it.toolName })
     }
+    @Test
+    fun repeatedExecutionWithSameResult_doesNotResetSearches() {
+        val execution = call("ssh_exec_saved", "same command").copy(resultFingerprint = "same result")
+        val prior = listOf(execution) + (1..5).flatMap {
+            listOf(call("search_web", "query $it"), execution)
+        }
+        val decision = evaluate(prior, "search_web", "next query")
+        assertTrue(decision.block)
+        assertEquals(LoopBlockReason.CONSECUTIVE_SEARCH_EXHAUSTED, decision.blockReason)
+    }
+
+    @Test
+    fun changedExecutionResult_resetsSearches() {
+        val execution = call("ssh_exec_saved", "same command").copy(resultFingerprint = "old result")
+        val prior = listOf(execution) + (1..5).map { call("search_web", "query $it") } +
+            execution.copy(resultFingerprint = "new result")
+        val decision = evaluate(prior, "search_web", "next query")
+        assertFalse(decision.block)
+        assertEquals(null, decision.softNudge)
+    }
+
+    @Test
+    fun newCommandWithSameResult_isStillProgress() {
+        val execution = call("ssh_exec_saved", "command one").copy(resultFingerprint = "same result")
+        val prior = listOf(execution) + (1..5).map { call("search_web", "query $it") } +
+            call("ssh_exec_saved", "command two").copy(resultFingerprint = "same result")
+        assertFalse(evaluate(prior, "search_web", "next query").block)
+    }
+
+    @Test
+    fun blockedExecution_doesNotResetSearches() {
+        val prior = (1..5).flatMap {
+            listOf(call("search_web", "query $it"), call("ssh_exec_saved").copy(executed = false))
+        }
+        assertTrue(evaluate(prior, "search_web", "next query").block)
+    }
+
+    @Test
+    fun resultFingerprint_dependsOnOutputAndPartBoundaries() {
+        fun text(value: String) = com.clma.ai.ui.UIMessagePart.Text(value)
+        assertEquals(toolResultFingerprint(listOf(text("ok"))), toolResultFingerprint(listOf(text("ok"))))
+        assertFalse(toolResultFingerprint(listOf(text("ok"))) == toolResultFingerprint(listOf(text("changed"))))
+        assertFalse(toolResultFingerprint(listOf(text("a"), text("b"))) == toolResultFingerprint(listOf(text("ab"))))
+    }
+
+    @Test
+    fun executionResultReturningToEarlierValue_isStillProgress() {
+        val execution = call("ssh_exec_saved", "same command").copy(resultFingerprint = "first")
+        val prior = listOf(execution, execution.copy(resultFingerprint = "second")) +
+            (1..5).map { call("search_web", "query $it") } + execution
+        assertFalse(evaluate(prior, "search_web", "next query").block)
+    }
+
 }

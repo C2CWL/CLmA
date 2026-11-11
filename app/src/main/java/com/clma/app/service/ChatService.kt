@@ -8,6 +8,7 @@ import android.os.SystemClock
 import android.util.Log
 import androidx.core.net.toUri
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -87,6 +88,9 @@ import com.clma.ai.util.MediaTooLargeException
 import com.clma.ai.util.RequestTooLargeException
 import com.clma.ai.util.isRequestTooLarge
 import com.clma.app.data.ai.ContextCompactionPlanner
+import com.clma.app.data.ai.GenerationDiagnostics
+import com.clma.app.data.ai.GenerationDiagnosticStep
+import kotlinx.coroutines.currentCoroutineContext
 import com.clma.app.data.ai.ContextCompactionPresentation
 import com.clma.app.data.ai.compaction.PrecisionObservationMaskTransformer
 import com.clma.app.data.ai.compaction.tomc.TomcSummaryLedger
@@ -4038,6 +4042,68 @@ class ChatService(
     }
 
     private suspend fun generateAndStoreCompaction(
+        conversation: Conversation,
+        settings: Settings,
+        messagesToCompress: List<UIMessage>,
+        previousCompaction: ConversationCompaction? = null,
+        rawTailStartIndex: Int,
+        additionalPrompt: String,
+        targetTokens: Int,
+        isAuto: Boolean,
+    ): ConversationCompaction {
+        val link = currentCoroutineContext()[GenerationDiagnosticStep]
+        val started = SystemClock.elapsedRealtime()
+        val before = ContextBudgetPlanner.estimateContextTokens(
+            ContextCompactionView.build(conversation, previousCompaction).messages,
+        )
+        GenerationDiagnostics.compaction(link, isAuto, before, null, 0, "start")
+        val result = try {
+            generateAndStoreCompactionImpl(
+                conversation, settings, messagesToCompress, previousCompaction,
+                rawTailStartIndex, additionalPrompt, targetTokens, isAuto,
+            )
+        } catch (e: Exception) {
+            val cancelled = e is CancellationException && e !is TimeoutCancellationException
+            GenerationDiagnostics.compaction(
+                link, isAuto, before, null, SystemClock.elapsedRealtime() - started,
+                if (cancelled) "cancelled" else "failure",
+            )
+            attachCompactionStatus(
+                conversation.id,
+                ContextCompactionPresentation.createFailureTool(isAuto, before, cancelled),
+            )
+            throw e
+        }
+        val after = ContextBudgetPlanner.estimateContextTokens(
+            ContextCompactionView.build(conversation, result).messages,
+        )
+        GenerationDiagnostics.compaction(
+            link, isAuto, before, after, SystemClock.elapsedRealtime() - started, "success",
+        )
+        attachCompactionStatus(conversation.id, ContextCompactionPresentation.createTool(result, before, after))
+        return result
+    }
+
+    private suspend fun attachCompactionStatus(conversationId: Uuid, tool: UIMessagePart.Tool) {
+        updateConversationState(conversationId) { current ->
+            val source = current.currentMessages.lastOrNull { it.role == MessageRole.ASSISTANT }
+            if (source != null) {
+                ContextCompactionPresentation.attachToMessage(current, source.id, tool)
+            } else {
+                current.copy(messageNodes = current.messageNodes + UIMessage(
+                    role = MessageRole.ASSISTANT,
+                    parts = listOf(tool),
+                ).toMessageNode())
+            }
+        }
+        markStreamingPersistence(conversationId)
+        // Manual, idle and cancelled compactions do not necessarily emit another stream chunk.
+        withContext(NonCancellable) {
+            persistStreamingStateNow(conversationId)
+        }
+    }
+
+    private suspend fun generateAndStoreCompactionImpl(
         conversation: Conversation,
         settings: Settings,
         messagesToCompress: List<UIMessage>,
