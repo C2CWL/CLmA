@@ -3429,4 +3429,6 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="context_compaction_cancelled">上下文压缩已取消</string>
   <string name="context_compaction_tokens">预估 Token：%1$d → %2$d</string>
   <string name="context_compaction_unchanged">压缩未完成，保留原上下文（约 %1$d Token）</string>
+  <string name="chat_box_no_recent_conversations">暂无最近对话</string>
+  <string name="chat_box_conversation_working">%1$s · 正在回复</string>
 </resources>

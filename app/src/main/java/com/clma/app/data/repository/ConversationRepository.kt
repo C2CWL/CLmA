@@ -71,6 +71,11 @@ class ConversationRepository(
             }
     }
 
+    fun observeOverlayConversations(includedIds: Set<Uuid>, limit: Int = 30): Flow<List<Conversation>> =
+        conversationDAO.observeOverlayConversations(includedIds.map { it.toString() }, limit).map { rows ->
+            rows.map { conversationSummaryToConversation(it) }
+        }
+
     fun observeSubAgentConversations(assistantId: Uuid): Flow<List<Conversation>> =
         conversationDAO.observeSubAgentConversations(assistantId.toString()).map { rows ->
             rows.map { conversationSummaryToConversation(it) }

@@ -507,7 +507,7 @@ internal class EdgeBarChatBoxView(
 
     private fun showConversationMenu(anchorView: View) {
         conversationMenu?.dismiss()
-        val conversations = state?.conversations.orEmpty().filter { it.working }
+        val conversations = state?.conversations.orEmpty().sortedByDescending { it.working }
         // A popup has no cross-window blur: use the chat box's opaque fallback palette.
         val p = ChatBoxPalette.of(dark, glass = false)
         val rows = LinearLayout(context).apply {
@@ -533,7 +533,7 @@ internal class EdgeBarChatBoxView(
         }
         if (conversations.isEmpty()) {
             rows.addView(TextView(context).apply {
-                text = context.getString(R.string.chat_box_no_generating_conversations)
+                text = context.getString(R.string.chat_box_no_recent_conversations)
                 setTextColor(p.subtitle)
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
                 setPadding(dp(16), dp(20), dp(16), dp(20))
@@ -552,13 +552,29 @@ internal class EdgeBarChatBoxView(
                     rounded(if (conversation.selected) p.statusBg else android.graphics.Color.TRANSPARENT, dp(16).toFloat()),
                     rounded(android.graphics.Color.WHITE, dp(16).toFloat()),
                 )
-                addView(TextView(context).apply {
-                    text = conversation.title.ifBlank { context.getString(R.string.chat_box_untitled) }
-                    setTextColor(if (conversation.selected) p.accent else p.title)
-                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
-                    typeface = if (conversation.selected) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
-                    maxLines = 2
-                    ellipsize = TextUtils.TruncateAt.END
+                addView(LinearLayout(context).apply {
+                    orientation = LinearLayout.VERTICAL
+                    addView(TextView(context).apply {
+                        text = conversation.title.ifBlank { context.getString(R.string.chat_box_untitled) }
+                        setTextColor(if (conversation.selected) p.accent else p.title)
+                        setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+                        typeface = if (conversation.selected) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
+                        maxLines = 2
+                        ellipsize = TextUtils.TruncateAt.END
+                    })
+                    addView(TextView(context).apply {
+                        text = if (conversation.working) {
+                            context.getString(R.string.chat_box_conversation_working, conversation.assistantName)
+                        } else {
+                            conversation.assistantName
+                        }
+                        setTextColor(p.subtitle)
+                        setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+                        setSingleLine(true)
+                        ellipsize = TextUtils.TruncateAt.END
+                    }, LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ).apply { topMargin = dp(3) })
                 }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
                 if (conversation.selected) {
                     addView(IconView(context, IconView.Kind.CHECK, p.accent),
