@@ -322,15 +322,18 @@ internal fun resolveBotCompressionModel(settings: Settings, conversationModel: M
 /**
  * The model a generation runs on: a routed fallback ([overrideModelId]) wins for that single
  * attempt, otherwise [Settings.resolveChatModel] - the same chain the chat page's top bar, model
- * chip and send guard read, so what they show is what gets called.
+ * chip and send guard read, so what they show is what gets called. Peer turns alone may
+ * inherit the requester model when the entire target chain is unresolved.
  */
 internal fun resolveGenerationModel(
     settings: Settings,
     conversation: Conversation,
     overrideModelId: Uuid? = null,
+    peerFallbackModelId: Uuid? = null,
 ): Model? =
     overrideModelId?.let { settings.findModelById(it) }
         ?: settings.resolveChatModel(conversation.chatModelId, conversation.assistantId)
+        ?: peerFallbackModelId?.let { settings.findModelById(it) }
 
 /** Message for the compression failure thrown when [resolveCompressionModel] finds nothing
  *  usable, naming the setting so the resulting error card is actionable. */
@@ -535,6 +538,8 @@ class ChatService(
 
     // 统一会话管理
     private val sessions = ConcurrentHashMap<Uuid, ConversationSession>()
+    // Per-peer-turn fallback only; never persist it as a target conversation override.
+    private val peerFallbackModels = ConcurrentHashMap<Uuid, Uuid>()
     private val _sessionsVersion = MutableStateFlow(0L)
 
     // Title/suggestion aux-generation jobs, keyed per conversation - see AuxJobRegistry.
@@ -1930,6 +1935,17 @@ class ChatService(
                 val conversation = conversationRepo.getConversationById(id) ?: error("peer_conversation_missing")
                 require(conversation.assistantId.toString() == task.botId) { "peer_target_changed" }
                 updateConversation(id, conversation)
+                val requesterId = Uuid.parse(task.requester)
+                val requester = sessions[requesterId]?.state?.value
+                    ?: conversationRepo.getConversationById(requesterId)
+                val settings = settingsStore.settingsFlow.value
+                val fallback = requester?.let {
+                    resolveGenerationModel(settings, it, peerFallbackModelId = peerFallbackModels[requesterId])
+                }
+                // Respect disabled providers: do not silently route around an explicit selection.
+                if (fallback?.findProvider(settings.providers)?.enabled == true) {
+                    peerFallbackModels[id] = fallback.id
+                }
                 // Browser-headless only: peer data must never enable blanket auto-approval.
                 com.clma.app.data.ai.tools.HeadlessConversations.markBrowserHeadless(id)
                 BotPeerToolPolicy.mark(id)
@@ -1965,6 +1981,7 @@ class ChatService(
                             com.clma.app.data.ai.tools.ConversationSystemAddendum.clear(id)
                             com.clma.app.data.ai.limits.ConversationToolStepLimits.clear(id)
                             com.clma.app.subagent.SubAgentSurface.release(id)
+                            peerFallbackModels.remove(id)
                             BotPeerToolPolicy.clear(id)
                             com.clma.app.data.ai.tools.HeadlessConversations.unmark(id)
                         }
@@ -2428,7 +2445,9 @@ class ChatService(
         // Bot cost-saving defaults (automatic + precision compaction). Request-scoped only: this
         // copy is never written back. Classic assistants get storedSettings unchanged.
         val settings = BotCostPolicy.effectiveSettings(storedSettings, assistant)
-        val model = resolveGenerationModel(settings, initialConversation, overrideModelId)
+        val model = resolveGenerationModel(
+            settings, initialConversation, overrideModelId, peerFallbackModels[conversationId],
+        )
             ?: throw IllegalStateException(
                 "No chat model selected. Pick one in Settings → Default models, or send /model in Telegram."
             )
