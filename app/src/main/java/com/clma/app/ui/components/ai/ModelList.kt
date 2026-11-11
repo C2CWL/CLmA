@@ -664,23 +664,19 @@ private fun ColumnScope.ModelList(
 
     // 供应商Badge行
     val providerBadgeListState = rememberLazyListState()
-    LaunchedEffect(lazyListState) {
+    LaunchedEffect(lazyListState, providerPositions) {
         // 当LazyColumn滚动时，LazyRow也跟随滚动
         @OptIn(kotlinx.coroutines.FlowPreview::class)
         snapshotFlow { lazyListState.firstVisibleItemIndex }
             .distinctUntilChanged()
             .debounce(100) // 防抖处理
             .collect { index ->
-                if (index > 0) {
-                    val currentProvider = providerPositions.entries.findLast {
-                        index > it.value
-                    }
-                    val index = providers.indexOfFirst { it.id == currentProvider?.key }
-                    if (index >= 0) {
-                        providerBadgeListState.animateScrollToItem(index)
-                    } else {
-                        providerBadgeListState.requestScrollToItem(0)
-                    }
+                val currentProvider = providerPositions.entries.findLast {
+                    index >= it.value
+                }
+                val providerIndex = providers.indexOfFirst { it.id == currentProvider?.key }
+                if (providerIndex >= 0) {
+                    providerBadgeListState.animateScrollToItem(providerIndex)
                 } else {
                     providerBadgeListState.requestScrollToItem(0)
                 }
@@ -696,7 +692,7 @@ private fun ColumnScope.ModelList(
             items(providers, key = { it.id }) { provider ->
                 val selected = remember(lazyListState.firstVisibleItemIndex, providerPositions, provider.id) {
                     val index = lazyListState.firstVisibleItemIndex
-                    val current = providerPositions.entries.findLast { index > it.value }
+                    val current = providerPositions.entries.findLast { index >= it.value }
                     current?.key == provider.id
                 }
                 Surface(

@@ -1,5 +1,7 @@
 package com.clma.app.data.botmode
 
+import com.clma.app.data.datastore.BotChannel
+import com.clma.app.data.datastore.Settings
 import com.clma.app.data.model.Assistant
 import com.clma.app.data.model.AssistantLibrary
 
@@ -126,6 +128,24 @@ fun BotTeamMemberDraft.toAssistant(): Assistant =
         systemPrompt = systemPrompt,
         library = AssistantLibrary.BOT,
     )
+
+/** Build one settings snapshot so saving the channel cannot overwrite the imported bots. */
+fun Settings.withImportedBotTeam(pack: BotTeamPackPreview): Settings {
+    val created = pack.members.map { it.toAssistant() }
+    val display =
+        if (pack.teamName.isNotBlank() && created.isNotEmpty()) {
+            displaySetting.withBotChannelUpserted(
+                BotChannel(
+                    name = pack.teamName,
+                    description = pack.rawNotes,
+                    memberAssistantIds = created.map { it.id },
+                ),
+            )
+        } else {
+            displaySetting
+        }
+    return copy(assistants = assistants + created, displaySetting = display)
+}
 
 /**
  * Team-pack Markdown for [bots] (the format [parseBotTeamPackMarkdown] reads back). Prompt lines

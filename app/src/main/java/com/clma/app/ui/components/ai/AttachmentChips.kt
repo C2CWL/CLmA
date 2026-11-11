@@ -5,6 +5,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,6 +21,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -34,7 +36,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.util.fastForEach
 import androidx.core.content.FileProvider
 import androidx.core.net.toFile
 import androidx.core.net.toUri
@@ -106,78 +107,97 @@ internal fun MediaFileInputRow(
             .padding(horizontal = 6.dp, vertical = 6.dp)
             .horizontalScroll(rememberScrollState())
     ) {
-        state.messageContent.fastForEach { part ->
-            when (part) {
-                is UIMessagePart.Image -> {
-                    AttachmentChip(
-                        title = attachmentNameFromUrl(
-                            url = part.url,
-                            fallback = "image",
-                            displayNameByRelativePath = displayNameByRelativePath,
-                            displayNameByFileName = displayNameByFileName
-                        ),
-                        leading = {
-                            Surface(
-                                modifier = Modifier.size(34.dp),
-                                shape = RoundedCornerShape(10.dp),
-                                color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                            ) {
-                                AsyncImage(
-                                    model = part.url,
-                                    contentDescription = null,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier.fillMaxSize()
-                                )
-                            }
-                        },
-                        onRemove = { removePart(part, part.url) },
-                        onClick = { previewImageIndex = imageUrls.indexOf(part.url).coerceAtLeast(0) }
-                    )
-                }
+        state.messageContent.forEachIndexed { index, part ->
+            Column {
+                when (part) {
+                    is UIMessagePart.Image -> {
+                        AttachmentChip(
+                            title = attachmentNameFromUrl(
+                                url = part.url,
+                                fallback = "image",
+                                displayNameByRelativePath = displayNameByRelativePath,
+                                displayNameByFileName = displayNameByFileName
+                            ),
+                            leading = {
+                                Surface(
+                                    modifier = Modifier.size(34.dp),
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                ) {
+                                    AsyncImage(
+                                        model = part.url,
+                                        contentDescription = null,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier.fillMaxSize()
+                                    )
+                                }
+                            },
+                            onRemove = { removePart(part, part.url) },
+                            onClick = { previewImageIndex = imageUrls.indexOf(part.url).coerceAtLeast(0) }
+                        )
+                    }
 
-                is UIMessagePart.Video -> {
-                    AttachmentChip(
-                        title = attachmentNameFromUrl(
-                            url = part.url,
-                            fallback = "video",
-                            displayNameByRelativePath = displayNameByRelativePath,
-                            displayNameByFileName = displayNameByFileName
-                        ),
-                        leading = { AttachmentLeadingIcon(icon = HugeIcons.Video01) },
-                        onRemove = { removePart(part, part.url) },
-                        onClick = { openWithSystemChooser(part.url) }
-                    )
-                }
+                    is UIMessagePart.Video -> {
+                        AttachmentChip(
+                            title = attachmentNameFromUrl(
+                                url = part.url,
+                                fallback = "video",
+                                displayNameByRelativePath = displayNameByRelativePath,
+                                displayNameByFileName = displayNameByFileName
+                            ),
+                            leading = { AttachmentLeadingIcon(icon = HugeIcons.Video01) },
+                            onRemove = { removePart(part, part.url) },
+                            onClick = { openWithSystemChooser(part.url) }
+                        )
+                    }
 
-                is UIMessagePart.Audio -> {
-                    AttachmentChip(
-                        title = attachmentNameFromUrl(
-                            url = part.url,
-                            fallback = "audio",
-                            displayNameByRelativePath = displayNameByRelativePath,
-                            displayNameByFileName = displayNameByFileName
-                        ),
-                        leading = { AttachmentLeadingIcon(icon = HugeIcons.MusicNote03) },
-                        onRemove = { removePart(part, part.url) },
-                        onClick = { openWithSystemChooser(part.url) }
-                    )
-                }
+                    is UIMessagePart.Audio -> {
+                        AttachmentChip(
+                            title = attachmentNameFromUrl(
+                                url = part.url,
+                                fallback = "audio",
+                                displayNameByRelativePath = displayNameByRelativePath,
+                                displayNameByFileName = displayNameByFileName
+                            ),
+                            leading = { AttachmentLeadingIcon(icon = HugeIcons.MusicNote03) },
+                            onRemove = { removePart(part, part.url) },
+                            onClick = { openWithSystemChooser(part.url) }
+                        )
+                    }
 
-                is UIMessagePart.Document -> {
-                    AttachmentChip(
-                        title = attachmentNameFromUrl(
-                            url = part.url,
-                            fallback = part.fileName,
-                            displayNameByRelativePath = displayNameByRelativePath,
-                            displayNameByFileName = displayNameByFileName
-                        ),
-                        leading = { AttachmentLeadingIcon(icon = HugeIcons.Files02) },
-                        onRemove = { removePart(part, part.url) },
-                        onClick = { openWithSystemChooser(part.url) }
-                    )
-                }
+                    is UIMessagePart.Document -> {
+                        AttachmentChip(
+                            title = attachmentNameFromUrl(
+                                url = part.url,
+                                fallback = part.fileName,
+                                displayNameByRelativePath = displayNameByRelativePath,
+                                displayNameByFileName = displayNameByFileName
+                            ),
+                            leading = { AttachmentLeadingIcon(icon = HugeIcons.Files02) },
+                            onRemove = { removePart(part, part.url) },
+                            onClick = { openWithSystemChooser(part.url) }
+                        )
+                    }
 
-                else -> Unit
+                    else -> Unit
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "${index + 1}",
+                        style = MaterialTheme.typography.labelMedium,
+                        modifier = Modifier.padding(horizontal = 8.dp),
+                    )
+                    if (state.messageContent.size > 1) {
+                        TextButton(
+                            onClick = { state.moveAttachment(index, index - 1) },
+                            enabled = index > 0,
+                        ) { Text(stringResource(R.string.attachment_move_earlier)) }
+                        TextButton(
+                            onClick = { state.moveAttachment(index, index + 1) },
+                            enabled = index < state.messageContent.lastIndex,
+                        ) { Text(stringResource(R.string.attachment_move_later)) }
+                    }
+                }
             }
         }
     }

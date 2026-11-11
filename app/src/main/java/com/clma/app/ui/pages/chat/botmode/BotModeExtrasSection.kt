@@ -29,9 +29,9 @@ import com.clma.app.R
 import com.clma.app.Screen
 import com.clma.app.data.ai.tools.ApprovalMode
 import com.clma.app.data.botmode.parseBotTeamPackMarkdown
-import com.clma.app.data.botmode.toAssistant
 import com.clma.app.data.botmode.withBotChannelRemoved
 import com.clma.app.data.botmode.withBotChannelUpserted
+import com.clma.app.data.botmode.withImportedBotTeam
 import com.clma.app.data.datastore.BotChannel
 import com.clma.app.data.datastore.DisplaySetting
 import com.clma.app.data.datastore.Settings
@@ -97,8 +97,6 @@ fun BotModeExtrasSection(
     BotTeamPackImportCard(
         settings = settings,
         updateSettings = updateSettings,
-        updateDisplaySetting = updateDisplaySetting,
-        displaySetting = displaySetting,
     )
     }
 }
@@ -301,8 +299,6 @@ private fun BotAppsConnectionsCard(
 private fun BotTeamPackImportCard(
     settings: Settings,
     updateSettings: (Settings) -> Unit,
-    updateDisplaySetting: (DisplaySetting) -> Unit,
-    displaySetting: DisplaySetting,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -363,20 +359,7 @@ private fun BotTeamPackImportCard(
                             }
                             TextButton(
                                 onClick = {
-                                    val created = pack.members.map { it.toAssistant() }
-                                    updateSettings(
-                                        settings.copy(assistants = settings.assistants + created),
-                                    )
-                                    if (pack.teamName.isNotBlank() && created.isNotEmpty()) {
-                                        val channel = BotChannel(
-                                            name = pack.teamName,
-                                            description = pack.rawNotes,
-                                            memberAssistantIds = created.map { it.id },
-                                        )
-                                        updateDisplaySetting(
-                                            displaySetting.withBotChannelUpserted(channel),
-                                        )
-                                    }
+                                    updateSettings(settings.withImportedBotTeam(pack))
                                     previewText = null
                                 },
                             ) {

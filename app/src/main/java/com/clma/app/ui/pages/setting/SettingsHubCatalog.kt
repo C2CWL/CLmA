@@ -11,6 +11,8 @@ import kotlinx.serialization.Serializable
  * cannot drift apart.
  */
 enum class SettingsHubItemId {
+    BOT_MODE,
+
     // 模型
     PROVIDERS,
     MODELS,
@@ -123,6 +125,7 @@ private fun hubItem(
 
 /** All hub rows keyed by id. */
 val settingsHubItems: Map<SettingsHubItemId, SettingsHubItemDef> = listOf(
+    hubItem(SettingsHubItemId.BOT_MODE, Screen.SettingBotMode, R.string.bot_mode_setting_title, R.string.bot_mode_setting_desc),
     hubItem(SettingsHubItemId.PROVIDERS, Screen.SettingProvider, R.string.setting_hub_providers, R.string.setting_page_providers_desc),
     hubItem(SettingsHubItemId.MODELS, Screen.SettingModels(), R.string.setting_hub_default_model, R.string.setting_page_default_model_desc),
     hubItem(SettingsHubItemId.ASSISTANT, Screen.Assistant, R.string.setting_hub_assistant, R.string.setting_page_assistant_desc),
@@ -173,9 +176,12 @@ val settingsHubItems: Map<SettingsHubItemId, SettingsHubItemDef> = listOf(
     hubItem(SettingsHubItemId.SHARE, null, R.string.setting_page_share, R.string.setting_page_share_desc),
 ).associateBy { it.id }
 
+/** Standalone entries shown directly on the settings home. */
+val settingsHubHomeItems: List<SettingsHubItemId> = listOf(SettingsHubItemId.BOT_MODE)
+
 /**
  * The hub, top to bottom — six category cards that drill into leaf lists.
- * Every [SettingsHubItemId] appears exactly once. IA matches the #226 grouping.
+ * Together with [settingsHubHomeItems], every [SettingsHubItemId] appears exactly once.
  */
 val settingsHubSections: List<SettingsHubSectionDef> = listOf(
     SettingsHubSectionDef(
@@ -284,6 +290,7 @@ fun SettingsHubSectionDef.itemGroups(): List<Pair<Int?, List<SettingsHubItemId>>
 
 /** Hub rows for the search index, with the title of the group they sit in (SHARE omitted). */
 fun settingsHubSearchRows(): List<Pair<SettingsHubItemDef, Int>> =
+    settingsHubHomeItems.map { settingsHubItems.getValue(it) to R.string.settings } +
     settingsHubSections.flatMap { section ->
         section.items.mapNotNull { id ->
             val def = settingsHubItems.getValue(id)

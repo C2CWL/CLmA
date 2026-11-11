@@ -6,7 +6,6 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.widget.Toast
-import com.clma.app.BuildConfig
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
@@ -629,6 +628,10 @@ internal val SEARCH_READONLY_TOOLS: Set<String> = setOf(
     "memory_search",
 )
 
+private val EXECUTION_PROGRESS_TOOLS = setOf(
+    "ssh_exec_saved", "workspace_shell", "termux_run_command", "shizuku_exec",
+)
+
 internal const val SEARCH_SOFT_NUDGE_THRESHOLD = 3
 internal const val SEARCH_EXHAUSTION_THRESHOLD = 5
 
@@ -642,6 +645,8 @@ internal data class PriorToolCall(
     val toolName: String,
     val signature: String,
     val epochMs: Long,
+    val resultFingerprint: String? = null,
+    val executed: Boolean = true,
 )
 
 internal data class LoopGuardDecision(
@@ -668,16 +673,21 @@ internal object LoopGuard {
         searchSoftNudgeThreshold: Int = SEARCH_SOFT_NUDGE_THRESHOLD,
         searchExhaustionThreshold: Int = SEARCH_EXHAUSTION_THRESHOLD,
     ): LoopGuardDecision {
-        // 1. Check for runaway consecutive searches without operational progress.
-        // A model stuck in a search loop changes search keywords each time, evading identical-signature
-        // detection. Here, we track consecutive search calls since the last non-search tool call.
+        // An execution tool is not automatically progress: repeating the same request and
+        // result must not reset searches. A new command or changed result still resets them.
         if (toolName in searchTools) {
-            val lastNonSearchIdx = priorCalls.indexOfLast { it.toolName !in searchTools }
-            val consecutiveSearches = if (lastNonSearchIdx >= 0) {
-                priorCalls.size - 1 - lastNonSearchIdx
-            } else {
-                priorCalls.size
-            }
+            val lastProgressIdx = priorCalls.indices.lastOrNull { index ->
+                val call = priorCalls[index]
+                call.toolName !in searchTools && call.executed && (
+                    call.toolName !in EXECUTION_PROGRESS_TOOLS ||
+                        call.resultFingerprint == null ||
+                        priorCalls.take(index).lastOrNull {
+                            it.executed && it.signature == call.signature
+                        }?.resultFingerprint != call.resultFingerprint
+                    )
+            } ?: -1
+            val consecutiveSearches = priorCalls.drop(lastProgressIdx + 1)
+                .count { it.toolName in searchTools }
             if (consecutiveSearches >= searchExhaustionThreshold) {
                 return LoopGuardDecision(
                     block = true,
@@ -926,6 +936,7 @@ class GenerationLoop(
             if (newParts == msg.parts) msg else msg.copy(parts = newParts)
         }
 
+        val diagnosticRun = GenerationDiagnostics.nextRun()
         val turnStartMs = android.os.SystemClock.elapsedRealtime()
         var loopGuardTripCount = 0
         // Amnesia-proof ledger of everything already executed in this turn.
@@ -958,6 +969,7 @@ class GenerationLoop(
                 break
             }
 
+            GenerationDiagnostics.step(diagnosticRun, stepIndex, messages.size, loopGuardTripCount)
             Log.i(TAG, "streamText: start step #$stepIndex (${model.id})")
 
             val toolsInternal = buildList {
@@ -1322,6 +1334,7 @@ class GenerationLoop(
 
             // Handle tools (execute approved tools, handle denied tools)
             val executedTools = arrayListOf<UIMessagePart.Tool>()
+            val resultFingerprints = mutableMapOf<String, String>()
             // 工具执行期同样要能被打断：一个工具跑几十秒时，chunk 驱动的检查根本不会触发。
             // 命中插话后本轮剩余工具一律不再执行，但都必须落下一条结果 —— 没有结果的
             // tool_call 是 dangling call，provider 会拒绝下一次请求。
@@ -1487,6 +1500,8 @@ class GenerationLoop(
                                         it.toolName,
                                         loopGuardSignature(it.toolName, it.input),
                                         epochMs,
+                                        toolResultFingerprint(it.output),
+                                        it.executionStartedAt != null,
                                     )
                                 }
                         }
@@ -1523,7 +1538,8 @@ class GenerationLoop(
                                         "tasks use termux_run_command instead of typing into Termux."
                                 )
                             }
-                            Log.w(TAG, "generateText: loop-guard tripped on $signature ($errorType, $priorOccurrences occurrences, trip #$loopGuardTripCount this turn); injecting bail-out envelope")
+                            GenerationDiagnostics.guard(diagnosticRun, stepIndex, loopGuardTripCount, priorOccurrences)
+                            Log.w(TAG, "generateText: loop-guard tripped ($errorType, $priorOccurrences occurrences, trip #$loopGuardTripCount this turn)")
                             executedTools += tool.copy(
                                 output = listOf(
                                     UIMessagePart.Text(
@@ -1645,9 +1661,6 @@ class GenerationLoop(
                         }
                         runCatching {
                             val args = parsedArgs.getOrThrow()
-                            if (BuildConfig.DEBUG) {
-                                Log.i(TAG, "generateText: executing tool ${toolDef.name} with args: ${redactSecrets(args)}")
-                            }
                             // Mark the tool as "execution started" BEFORE actually running.
                             // ChatService persists this when it sees the chunk so a process
                             // kill between mark-and-output leaves a clear breadcrumb on disk:
@@ -1674,7 +1687,10 @@ class GenerationLoop(
                             // wall-clock envelope instead of even attempting.
                             val remainingMs = ToolRuntimeLimits.turnBudgetMs -
                                 (android.os.SystemClock.elapsedRealtime() - turnStartMs)
-                            val result = kotlinx.coroutines.withContext(com.clma.app.data.ai.tools.ToolCallId(tool.toolCallId)) {
+                            val result = kotlinx.coroutines.withContext(
+                                com.clma.app.data.ai.tools.ToolCallId(tool.toolCallId) +
+                                    GenerationDiagnosticStep(diagnosticRun, stepIndex)
+                            ) {
                                 val running = kotlinx.coroutines.CompletableDeferred<List<UIMessagePart>>()
                                 val worker = launch {
                                     try {
@@ -1748,6 +1764,7 @@ class GenerationLoop(
                                     worker.cancel()
                                 }
                             }
+                            resultFingerprints[tool.toolCallId] = toolResultFingerprint(result)
                             val adjustedResult = if (loopDecision.softNudge != null) {
                                 result + UIMessagePart.Text(
                                     json.encodeToString(
@@ -1843,7 +1860,11 @@ class GenerationLoop(
                     toolName = tool.toolName,
                     signature = loopGuardSignature(tool.toolName, tool.input),
                     epochMs = System.currentTimeMillis(),
+                    resultFingerprint = resultFingerprints[tool.toolCallId]
+                        ?: toolResultFingerprint(tool.output),
+                    executed = tool.executionStartedAt != null,
                 )
+                GenerationDiagnostics.tool(diagnosticRun, stepIndex, tool.executionStartedAt != null)
             }
             val lastMessage = messages.last()
             val updatedParts = lastMessage.parts.map { part ->
@@ -1864,7 +1885,9 @@ class GenerationLoop(
                 )
             )
 
-            onAfterToolExecution(messages)?.let { compactedMessages ->
+            withContext(GenerationDiagnosticStep(diagnosticRun, stepIndex)) {
+                onAfterToolExecution(messages)
+            }?.let { compactedMessages ->
                 Log.i(TAG, "generateText: replacing request history after tool execution")
                 messages = compactedMessages
             }

@@ -1,7 +1,6 @@
 package com.clma.app.ui.pages.setting
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -17,11 +16,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clma.app.R
-import com.clma.app.data.botmode.botsHiddenForManage
-import com.clma.app.ui.pages.chat.botmode.BotModeExtrasSection
-import com.clma.app.data.botmode.withBotHidden
 import com.clma.app.data.datastore.ChatLayout
-import androidx.compose.material3.TextButton
 import com.clma.app.data.datastore.DisplaySetting
 import com.clma.app.data.datastore.DrawerStyle
 import com.clma.app.data.datastore.effectiveChatLayout
@@ -233,58 +228,6 @@ fun SettingChatLayoutPage(vm: SettingVM = koinViewModel()) {
                         )
                     },
                 )
-                item(
-                    headlineContent = { Text(stringResource(R.string.bot_mode_setting_title)) },
-                    supportingContent = { Text(stringResource(R.string.bot_mode_setting_desc)) },
-                    trailingContent = {
-                        Switch(
-                            checked = displaySetting.botModeEnabled,
-                            onCheckedChange = {
-                                updateDisplaySetting(displaySetting.copy(botModeEnabled = it))
-                            }
-                        )
-                    },
-                )
-            }
-            if (displaySetting.botModeEnabled) {
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                BotModeExtrasSection(
-                    settings = settings.copy(displaySetting = displaySetting),
-                    displaySetting = displaySetting,
-                    updateDisplaySetting = ::updateDisplaySetting,
-                    updateSettings = { vm.updateSettings(it) },
-                )
-                val hiddenBots = settings.copy(displaySetting = displaySetting).botsHiddenForManage()
-                CardGroup(
-                    modifier = Modifier.padding(horizontal = 8.dp),
-                    title = { Text(stringResource(R.string.bot_mode_hidden_manage_title)) },
-                ) {
-                    if (hiddenBots.isEmpty()) {
-                        item(
-                            headlineContent = { Text(stringResource(R.string.bot_mode_hidden_empty)) },
-                            supportingContent = { Text(stringResource(R.string.bot_mode_hidden_manage_desc)) },
-                        )
-                    } else {
-                        hiddenBots.forEach { bot ->
-                            item(
-                                headlineContent = {
-                                    Text(bot.name.ifBlank { stringResource(R.string.assistant_page_default_assistant) })
-                                },
-                                supportingContent = { Text(stringResource(R.string.bot_mode_hidden_manage_desc)) },
-                                trailingContent = {
-                                    TextButton(
-                                        onClick = {
-                                            updateDisplaySetting(displaySetting.withBotHidden(bot.id, false))
-                                        }
-                                    ) {
-                                        Text(stringResource(R.string.bot_mode_hidden_unhide))
-                                    }
-                                },
-                            )
-                        }
-                    }
-                }
-                }
             }
         }
     }

@@ -102,6 +102,9 @@ class SettingsSearchIndexTest {
         assertEquals(Screen.SettingColorMode, routeOf(R.string.setting_display_page_amoled_dark_mode_title))
         assertEquals(Screen.SettingFonts, routeOf(R.string.setting_display_page_ui_font_scale_title))
         assertEquals(Screen.SettingChatLayout, routeOf(R.string.setting_display_page_clean_layout_title))
+        assertEquals(Screen.SettingBotMode, routeOf(R.string.bot_mode_setting_title))
+        assertEquals(Screen.SettingBotMode, routeOf(R.string.bot_mode_channels_title))
+        assertEquals(Screen.SettingBotMode, routeOf(R.string.bot_mode_team_title))
         assertEquals(Screen.SettingPreferencesGeneral, routeOf(R.string.error_auto_dismiss_title))
         assertEquals(Screen.SettingRuntime, routeOf(R.string.setting_model_page_turn_budget))
         assertEquals(Screen.SettingRuntime, routeOf(R.string.setting_model_page_max_tool_steps))
@@ -115,16 +118,14 @@ class SettingsSearchIndexTest {
             .filter { it.parentTitleRes == null }
             .map { it.route }
             .toSet()
-        val catalogRoutes = settingsHubSections.flatMap { section ->
-            section.items.mapNotNull { settingsHubItems.getValue(it).route }
-        }.toSet()
+        val catalogRoutes = settingsHubSearchRows().mapNotNull { it.first.route }.toSet()
         assertEquals(catalogRoutes, hubRoutes)
     }
 
     @Test
-    fun `six hub groups own every setting exactly once`() {
+    fun `home entries and six hub groups own every setting exactly once`() {
         assertEquals(6, settingsHubSections.size)
-        val items = settingsHubSections.flatMap { it.items }
+        val items = settingsHubHomeItems + settingsHubSections.flatMap { it.items }
         assertEquals(SettingsHubItemId.entries.toSet(), items.toSet())
         assertEquals(items.size, items.distinct().size)
     }

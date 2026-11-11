@@ -8,6 +8,9 @@ import com.clma.app.data.model.MessageNode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.intOrNull
 import org.junit.Test
 import java.time.Instant
 import kotlin.uuid.Uuid
@@ -144,6 +147,37 @@ class ContextCompactionPresentationTest {
 
         assertTrue(tool.input.contains("\"retained_raw_tool_calls\":55"))
         assertTrue((tool.output.single() as UIMessagePart.Text).text.contains("completed_tool_calls=55"))
+    }
+
+    @Test
+    fun `success card includes before and after estimates`() {
+        val conversation = Conversation(
+            assistantId = Uuid.random(),
+            messageNodes = listOf(MessageNode(messages = listOf(UIMessage.assistant("done")))),
+        )
+        val tool = ContextCompactionPresentation.createTool(sampleCompaction(conversation), 1000, 400)
+        val args = kotlinx.serialization.json.Json.parseToJsonElement(tool.input).jsonObject
+        assertEquals("success", args["status"]?.jsonPrimitive?.content)
+        assertEquals(1000, args["tokensBefore"]?.jsonPrimitive?.intOrNull)
+        assertEquals(400, args["tokensAfter"]?.jsonPrimitive?.intOrNull)
+        assertTrue(ContextCompactionPresentation.isDisplayTool(tool))
+    }
+
+    @Test
+    fun `failure and cancellation cards are display only and contain no exception text`() {
+        for (cancelled in listOf(false, true)) {
+            val tool = ContextCompactionPresentation.createFailureTool(false, 1000, cancelled)
+            val args = kotlinx.serialization.json.Json.parseToJsonElement(tool.input).jsonObject
+            assertEquals(if (cancelled) "cancelled" else "failure", args["status"]?.jsonPrimitive?.content)
+            assertEquals("manual", args["mode"]?.jsonPrimitive?.content)
+            assertEquals(1000, args["tokensBefore"]?.jsonPrimitive?.intOrNull)
+            assertFalse(args.containsKey("tokensAfter"))
+            val message = UIMessage.assistant("unchanged").copy(parts = listOf(UIMessagePart.Text("unchanged"), tool))
+            val stripped = ContextCompactionPresentation.stripDisplayTools(listOf(message)).single()
+            assertEquals("unchanged", stripped.toText())
+            assertFalse(ContextCompactionPresentation.hasDisplayTool(stripped))
+            assertEquals("Context compaction did not complete.", (tool.output.single() as UIMessagePart.Text).text)
+        }
     }
 
     private fun sampleCompaction(conversation: Conversation) = ConversationCompaction(
