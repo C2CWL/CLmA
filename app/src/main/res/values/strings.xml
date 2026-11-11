@@ -3441,4 +3441,6 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="context_compaction_cancelled">Context compression cancelled</string>
   <string name="context_compaction_tokens">Estimated tokens: %1$d → %2$d</string>
   <string name="context_compaction_unchanged">Compression not completed; previous context retained (~%1$d tokens)</string>
+  <string name="chat_box_no_recent_conversations">No recent conversations</string>
+  <string name="chat_box_conversation_working">%1$s · Replying</string>
 </resources>

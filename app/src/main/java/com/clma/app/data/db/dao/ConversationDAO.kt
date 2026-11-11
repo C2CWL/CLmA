@@ -18,6 +18,9 @@ interface ConversationDAO {
     @Query("SELECT * FROM conversationentity ORDER BY is_pinned DESC, update_at DESC")
     fun getAllPaging(): PagingSource<Int, ConversationEntity>
 
+    @Query("SELECT id, assistant_id as assistantId, title, is_pinned as isPinned, create_at as createAt, update_at as updateAt, folder_id as folderId, parent_conversation_id as parentConversationId FROM conversationentity WHERE id IN (:includedIds) OR id IN (SELECT id FROM conversationentity ORDER BY update_at DESC LIMIT :limit) ORDER BY update_at DESC")
+    fun observeOverlayConversations(includedIds: List<String>, limit: Int): Flow<List<LightConversationEntity>>
+
     @Query("SELECT * FROM conversationentity WHERE assistant_id = :assistantId ORDER BY is_pinned DESC, update_at DESC")
     fun getConversationsOfAssistant(assistantId: String): Flow<List<ConversationEntity>>
 
