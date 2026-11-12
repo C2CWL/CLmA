@@ -718,7 +718,6 @@ class SubAgentEngine(
             val deadlineMs = System.currentTimeMillis() + request.timeoutSeconds * 1000L
             val maxAttempts = 1 + request.retryOnFailure.coerceIn(0, SubAgentDefaults.MAX_RETRY_ON_FAILURE)
             var attempt = 0
-            var generationFailed = false
             var failureDetail: String? = null
 
             while (true) {
@@ -754,10 +753,12 @@ class SubAgentEngine(
                 val newErrors = chatService.errors.value.filter {
                     it.conversationId == conv.id && it.id !in errorIdsBefore
                 }
-                if (newErrors.isEmpty()) break // success
+                if (newErrors.isEmpty()) {
+                    failureDetail = null
+                    break
+                }
 
                 // Generation failed
-                generationFailed = true
                 failureDetail = newErrors.firstOrNull()?.error?.message ?: "generation failed"
                 if (attempt >= maxAttempts - 1) break // no more retries
 
@@ -776,24 +777,18 @@ class SubAgentEngine(
                 chatService.regenerateAtMessage(conv.id, userMessage)
             }
 
-            if (generationFailed) {
-                // All retries exhausted — mark FAILED (not SUCCEEDED with empty text).
-                val partialText = harvestFinalText(conv.id)
+            val finalText = harvestFinalText(conv.id)
+            val completionError = subAgentCompletionError(finalText, failureDetail, attempt)
+            if (completionError != null) {
                 attachRunUsage(runId, conv.id.toString())
-                markTerminal(
-                    runId,
-                    SubAgentStatus.FAILED,
-                    "$failureDetail (after $attempt retry attempt(s))",
-                )
+                // Keep any available text as partial evidence, never as a successful result.
+                val partialText = harvestFinalText(conv.id, allowPartial = true)
+                registry.update(runId) { it.copy(result = partialText) }
+                markTerminal(runId, SubAgentStatus.FAILED, completionError)
                 notifyParentIfBackground(parentChatId, registry.get(runId))
                 return
             }
 
-            // Harvest the assistant's final text from the conversation. Best-effort —
-            // we read the latest persisted state of the conversation and concatenate any
-            // text parts from the last assistant message. This mirrors how the
-            // CronJobWorker treats LLM-mode jobs.
-            val finalText = harvestFinalText(conv.id)
             attachRunUsage(runId, conv.id.toString())
             registry.update(runId) {
                 it.copy(
@@ -933,40 +928,12 @@ class SubAgentEngine(
         }.getOrElse { emptyList() }
     }
 
-    private suspend fun harvestFinalText(conversationId: Uuid): String {
-        // The Conversation persisted by the generation pipeline contains the full message
-        // history (messageNodes). Each MessageNode holds parallel branches in
-        // `messages: List<UIMessage>` keyed by `selectIndex`. Walk the currently-selected
-        // branch and pull text from the last assistant message — that's the sub-agent's
-        // final summary.
-        //
-        // Robustness: if the last assistant message has NO Text part (some models stop
-        // after a tool call and emit no closing text), walk back through previous assistant
-        // messages and concatenate their Text parts so we don't return empty. Better to
-        // surface partial intermediate text than to return "" and lose the sub-agent's
-        // work entirely.
-        return runCatching {
+    private suspend fun harvestFinalText(conversationId: Uuid, allowPartial: Boolean = false): String =
+        runCatching {
             val conv = conversationRepo.getConversationById(conversationId) ?: return@runCatching ""
             val selectedMessages = conv.messageNodes.mapNotNull { node ->
                 node.messages.getOrNull(node.selectIndex)
             }
-            val assistantMessages = selectedMessages.filter { msg ->
-                msg.role.name.equals("assistant", ignoreCase = true)
-            }
-            if (assistantMessages.isEmpty()) return@runCatching ""
-
-            // Try the last assistant message's text first.
-            val lastTexts = assistantMessages.last().parts
-                .filterIsInstance<UIMessagePart.Text>()
-                .joinToString("\n") { it.text }
-                .trim()
-            if (lastTexts.isNotBlank()) return@runCatching lastTexts
-
-            // Fallback: collect text from all assistant messages (preserve order).
-            assistantMessages
-                .flatMap { it.parts.filterIsInstance<UIMessagePart.Text>() }
-                .joinToString("\n") { it.text }
-                .trim()
+            subAgentResultText(selectedMessages, allowPartial)
         }.getOrDefault("")
-    }
 }

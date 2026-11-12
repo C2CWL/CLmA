@@ -62,6 +62,7 @@ import com.clma.app.data.files.FileFolders
 import com.clma.app.data.ai.transformers.onGenerationFinish
 import com.clma.app.data.ai.transformers.transforms
 import com.clma.app.data.ai.transformers.visualTransforms
+import com.clma.app.data.ai.limits.SubAgentFinalStepPolicy
 import com.clma.app.data.ai.limits.ToolRuntimeLimits
 import com.clma.app.data.ai.tools.ToolExecutionRetryPolicy
 import com.clma.app.data.ai.tools.ToolOutputNames
@@ -974,7 +975,12 @@ class GenerationLoop(
             GenerationDiagnostics.step(diagnosticRun, stepIndex, messages.size, loopGuardTripCount)
             Log.i(TAG, "streamText: start step #$stepIndex (${model.id})")
 
-            val toolsInternal = buildList {
+            val finalSummaryStep = SubAgentFinalStepPolicy.isFinalStep(
+                UsageRunContexts.get(conversationId?.toString())?.purpose,
+                stepIndex,
+                maxSteps,
+            )
+            val toolsInternal = if (finalSummaryStep) emptyList() else buildList {
                 Log.i(TAG, "generateInternal: build tools($assistant)")
                 if (assistant.enableMemory) {
                     val memoryAssistantId = if (assistant.useGlobalMemory) {
@@ -1060,7 +1066,10 @@ class GenerationLoop(
                     steered = generateInternal(
                         assistant = assistant,
                         settings = settings,
-                        systemAddendum = systemAddendum,
+                        systemAddendum = if (finalSummaryStep) {
+                            listOfNotNull(systemAddendum, SubAgentFinalStepPolicy.INSTRUCTION)
+                                .joinToString("\n\n")
+                        } else systemAddendum,
                         messages = messages,
                         injectedNotices = injections,
                         hasPendingSteer = hasPendingSteer,
@@ -1092,7 +1101,7 @@ class GenerationLoop(
                         tools = toolsInternal,
                         maxToolSteps = maxSteps,
                         isToolAutoApproved = isToolAutoApproved,
-                        unloadedToolSchema = unloadedToolSchema,
+                        unloadedToolSchema = if (finalSummaryStep) null else unloadedToolSchema,
                         memories = memories ?: emptyList(),
                         stream = assistant.streamOutput,
                         processingStatus = processingStatus,
@@ -1248,6 +1257,9 @@ class GenerationLoop(
                     } == true && (!com.clma.app.data.botmode.BotPeerToolPolicy.allows(tool.toolName) ||
                         toolDef?.needsApproval(tool.inputAsJson()) == true && !isToolAutoApproved(tool.toolName))
                     val transformed = when {
+                        finalSummaryStep -> tool.copy(approvalState = ToolApprovalState.Denied(
+                            "subagent_final_summary: tool budget reserved for the final text reply"
+                        ))
                         peerDenied -> tool.copy(approvalState = ToolApprovalState.Denied(
                             "peer_tool_denied: not read-only or requires human approval"
                         ))
@@ -1350,6 +1362,14 @@ class GenerationLoop(
             // tool_call 是 dangling call，provider 会拒绝下一次请求。
             var steerAbortedTools = false
             toolsToProcess.forEach { tool ->
+                // Also covers resumed calls: no tool body may run in the summary step.
+                if (finalSummaryStep) {
+                    executedTools += tool.copy(
+                        approvalState = ToolApprovalState.Denied("subagent_final_summary"),
+                        output = listOf(UIMessagePart.Text("{\"error\":\"subagent_final_summary\"}")),
+                    )
+                    return@forEach
+                }
                 if (!steerAbortedTools && hasPendingSteer()) {
                     steerAbortedTools = true
                     Log.i(TAG, "generateText: user steer during tool execution, skipping the remaining tools")
@@ -1903,6 +1923,7 @@ class GenerationLoop(
                 )
             )
 
+            if (finalSummaryStep) break
             withContext(GenerationDiagnosticStep(diagnosticRun, stepIndex)) {
                 onAfterToolExecution(messages)
             }?.let { compactedMessages ->
