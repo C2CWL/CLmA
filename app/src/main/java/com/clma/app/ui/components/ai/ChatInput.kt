@@ -112,6 +112,7 @@ import com.clma.app.data.datastore.Settings
 import com.clma.app.data.datastore.findProvider
 import com.clma.app.data.datastore.supportsSpeedTier
 import com.clma.app.data.datastore.effectiveChatLayout
+import com.clma.app.data.datastore.usesLiquidGlassChrome
 import com.clma.app.data.datastore.getCurrentAssistant
 import com.clma.app.data.datastore.resolveChatModel
 import com.clma.app.data.datastore.getQuickMessagesOfAssistant
@@ -142,6 +143,7 @@ import com.clma.app.ui.components.ui.modernAccentSoft
 import com.clma.app.ui.components.ui.modernDivider
 import com.clma.app.ui.components.ui.modernPanelBase
 import com.clma.app.ui.components.ui.modernPanelAlpha
+import com.clma.app.ui.components.ui.modernGlassFillAlpha
 import com.clma.app.ui.components.ui.modernPillRim
 import com.clma.app.ui.components.ui.modernShadowColor
 import com.clma.app.ui.context.LocalASRState
@@ -289,14 +291,10 @@ fun ChatInput(
     val geminiLayout = chatLayout == ChatLayout.GEMINI
     // 现代：20dp 悬浮卡片、无描边、柔和阴影；底部工具栏方形按钮 + 圆形模型胶囊。
     val modernLayout = chatLayout == ChatLayout.MODERN
-    // 「模糊效果」(DisplaySetting.enableBlurEffect) 只负责这一条输入条（见设置页文案）。
-    // 之前这里无视该开关、永远走玻璃，开关等于摆设；现在关掉即退回实心卡片，
-    // 这同时是一条性能逃生阀：玻璃要每帧抓背景 + 做 RenderEffect，在有壁纸时很贵。
-    val useGlass = settings.displaySetting.enableBlurEffect && when (chatLayout) {
-        ChatLayout.ORIGINAL -> true
-        ChatLayout.CLEAN, ChatLayout.MODERN -> settings.displaySetting.cleanLayoutGlass
-        ChatLayout.GEMINI -> false
-    }
+    // 液态玻璃由 DisplaySetting.cleanLayoutGlass 单独控制，输入条和顶栏同一把开关
+    // （见 usesLiquidGlassChrome）。不要再和「模糊效果」(enableBlurEffect) 取与：
+    // 那个开关在另一页、默认关闭，取与之后这里永远是实心卡片，液态玻璃看起来像没生效。
+    val useGlass = settings.displaySetting.usesLiquidGlassChrome
     // Only boolean draft changes affect the surrounding composer.
     val hasDraftContent by remember(state) {
         derivedStateOf { !state.isEmpty() }
@@ -359,10 +357,8 @@ fun ChatInput(
                 onFinishEdit = onFinishEditQueuedMessage,
                 onResume = onResumeMessageQueue,
             )
-            // Fixed glass — the bar is the app's primary control surface; the glass recipe
-            // follows the blur preference (see useGlass above).
-            // Clean layout keeps its 14dp flat card geometry, and can toggle between liquid
-            // glass and a flat solid card via DisplaySetting.cleanLayoutGlass.
+            // Clean and modern toggle between liquid glass and a flat solid card via
+            // DisplaySetting.cleanLayoutGlass (see useGlass / usesLiquidGlassChrome above).
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -409,7 +405,10 @@ fun ChatInput(
                 // Glass in the clean layout also gets the panel fill over the backdrop, so the
                 // opacity slider is visible (see CleanGlassFillFactor). ORIGINAL keeps clear glass.
                 color = when {
-                    useGlass && modernLayout -> modernBase.copy(alpha = modernPanelAlpha(cleanOpacity) * 0.9f)
+                    // Modern glass uses the same clear-to-near-solid scale as clean, not
+                    // modernPanelAlpha (that 55% floor is for the flat card and would cover
+                    // the glass — at the default 40% slider the fill was already 66% opaque).
+                    useGlass && modernLayout -> modernBase.copy(alpha = modernGlassFillAlpha(cleanOpacity))
                     useGlass && cleanLayout -> cleanGlassFill(cleanOpacity)
                     useGlass -> Color.Transparent
                     else -> cleanCardColor
