@@ -3443,4 +3443,7 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="context_compaction_unchanged">Compression not completed; previous context retained (~%1$d tokens)</string>
   <string name="chat_box_no_recent_conversations">No recent conversations</string>
   <string name="chat_box_conversation_working">%1$s · Replying</string>
+  <string name="chat_page_panel_title">Conversation</string>
+  <string name="chat_page_panel_usage">Total usage · %1$s</string>
+  <string name="chat_page_new_temporary_chat">New temporary chat</string>
 </resources>

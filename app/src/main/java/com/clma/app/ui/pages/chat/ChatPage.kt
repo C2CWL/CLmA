@@ -127,6 +127,9 @@ import com.clma.app.ui.components.ai.ChatConversationSettingsPanel
 import com.clma.app.data.botmode.withBotUnreadClearedConversation
 import com.clma.app.ui.pages.bot.BotChatChrome
 import com.clma.app.data.botmode.withBotUnreadClearedForAssistant
+import com.composables.icons.lucide.MessageSquare
+import com.composables.icons.lucide.EllipsisVertical
+import com.composables.icons.lucide.X
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.SlidersHorizontal
 import com.clma.app.ui.components.ui.KeepScreenOn
@@ -888,7 +891,7 @@ internal fun ChatPageContent(
                             ) {
                                 if (!bigScreen) {
                                     IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                                        Icon(HugeIcons.LeftToRightListBullet, stringResource(R.string.menu))
+                                        Icon(Lucide.MessageSquare, stringResource(R.string.menu), Modifier.size(24.dp))
                                     }
                                 }
                                 Spacer(Modifier.weight(1f))
@@ -902,7 +905,7 @@ internal fun ChatPageContent(
                                     },
                                 ) {
                                     Icon(
-                                        if (previewMode) HugeIcons.Cancel01 else Lucide.SlidersHorizontal,
+                                        if (previewMode) Lucide.X else Lucide.SlidersHorizontal,
                                         stringResource(
                                             if (previewMode) R.string.chat_conversation_settings_exit_preview
                                             else R.string.chat_conversation_settings_a11y,
@@ -910,7 +913,7 @@ internal fun ChatPageContent(
                                     )
                                 }
                                 IconButton(onClick = openChatDrawer) {
-                                    Icon(HugeIcons.LeftToRightListBullet, stringResource(R.string.accessibility_chat_options))
+                                    Icon(Lucide.EllipsisVertical, stringResource(R.string.accessibility_chat_options), Modifier.size(24.dp))
                                 }
                             }
                         } else if (chatLayout != ChatLayout.ORIGINAL) {

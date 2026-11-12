@@ -3431,4 +3431,7 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="context_compaction_unchanged">压缩未完成，保留原上下文（约 %1$d Token）</string>
   <string name="chat_box_no_recent_conversations">暂无最近对话</string>
   <string name="chat_box_conversation_working">%1$s · 正在回复</string>
+  <string name="chat_page_panel_title">会话</string>
+  <string name="chat_page_panel_usage">累计用量 · %1$s</string>
+  <string name="chat_page_new_temporary_chat">新建临时对话</string>
 </resources>
