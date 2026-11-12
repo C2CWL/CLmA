@@ -88,4 +88,48 @@ class ChatModelResolutionParityTest {
 
         assertNull(resolveGenerationModel(s, conversation(owner.id, danglingId)))
     }
+    @Test
+    fun `peer can inherit requester model when target defaults are absent or deleted`() {
+        for (targetModel in listOf(null, danglingId)) {
+            val owner = Assistant(chatModelId = targetModel)
+            val s = settings(owner, globalModelId = danglingId)
+            val conv = conversation(owner.id, null)
+
+            assertNull(resolveGenerationModel(s, conv))
+            assertEquals(grok, resolveGenerationModel(s, conv, peerFallbackModelId = grok.id))
+            assertNull(conv.chatModelId)
+            assertEquals(targetModel, owner.chatModelId)
+        }
+    }
+
+    @Test
+    fun `peer fallback never replaces target conversation assistant global or routed models`() {
+        val owner = Assistant(chatModelId = opus.id)
+        val s = settings(owner, globalModelId = haiku.id)
+        assertEquals(opus, resolveGenerationModel(s, conversation(owner.id, null), peerFallbackModelId = grok.id))
+        assertEquals(haiku, resolveGenerationModel(s, conversation(owner.id, haiku.id), peerFallbackModelId = grok.id))
+        assertEquals(haiku, resolveGenerationModel(s.copy(assistants = listOf(owner.copy(chatModelId = null))),
+            conversation(owner.id, null), peerFallbackModelId = grok.id))
+        assertEquals(haiku, resolveGenerationModel(s, conversation(owner.id, null),
+            overrideModelId = haiku.id, peerFallbackModelId = grok.id))
+    }
+
+    @Test
+    fun `peer fallback is resolved anew and missing fallback still fails closed`() {
+        val owner = Assistant()
+        val s = settings(owner, globalModelId = danglingId)
+        val conv = conversation(owner.id, null)
+        assertEquals(grok, resolveGenerationModel(s, conv, peerFallbackModelId = grok.id))
+        assertEquals(opus, resolveGenerationModel(s, conv, peerFallbackModelId = opus.id))
+        assertNull(resolveGenerationModel(s, conv, peerFallbackModelId = danglingId))
+        assertNull(resolveGenerationModel(s, conv))
+    }
+
+    @Test
+    fun `explicit disabled target is not replaced by peer fallback`() {
+        val owner = Assistant(chatModelId = opus.id)
+        val s = settings(owner, globalModelId = danglingId).copy(providers = listOf(provider.copy(enabled = false)))
+        assertEquals(opus, resolveGenerationModel(s, conversation(owner.id, null), peerFallbackModelId = grok.id))
+    }
+
 }
