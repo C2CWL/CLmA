@@ -93,5 +93,17 @@ fun modernStatusGreen(): Color =
  * Panel alpha for the modern top bar / composer from the user's opacity slider (0..1).
  * Even at 0 the panel keeps a floor, so it still reads as a floating card and the messages
  * scrolling underneath don't show through its text.
+ *
+ * This floor is for the flat (non-glass) card only. Glass fill uses [modernGlassFillAlpha].
  */
 fun modernPanelAlpha(opacity: Float): Float = 0.55f + 0.45f * opacity.coerceIn(0f, 1f)
+
+/**
+ * Alpha of the fill laid over modern liquid glass.
+ *
+ * Same scale as [cleanGlassFillAlpha]: 0 is clear glass, full strength is [CleanGlassFillFactor]
+ * so a hint of the backdrop still shows. [modernPanelAlpha]'s 55% floor must not be used here —
+ * at the default 40% slider it produced a 66% opaque slab that hid the glass material.
+ */
+fun modernGlassFillAlpha(opacity: Float): Float =
+    opacity.coerceIn(0f, 1f) * CleanGlassFillFactor

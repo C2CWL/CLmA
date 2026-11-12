@@ -63,6 +63,7 @@ import com.clma.app.R
 import com.clma.app.data.datastore.ChatLayout
 import com.clma.app.data.datastore.Settings
 import com.clma.app.data.datastore.effectiveChatLayout
+import com.clma.app.data.datastore.usesLiquidGlassChrome
 import com.clma.app.data.datastore.resolveChatModel
 import com.clma.app.data.model.Conversation
 import com.clma.app.data.usage.TurnFooter
@@ -85,6 +86,7 @@ import com.clma.app.ui.components.ui.ModernTopBarCorner
 import com.clma.app.ui.components.ui.ModernTopButtonCorner
 import com.clma.app.ui.components.ui.modernPanelBase
 import com.clma.app.ui.components.ui.modernPanelAlpha
+import com.clma.app.ui.components.ui.modernGlassFillAlpha
 import com.clma.app.ui.components.ui.modernShadowColor
 import com.clma.app.ui.components.ui.modernStatusGreen
 import com.clma.app.ui.components.ui.modernAccentSoft
@@ -432,8 +434,7 @@ internal fun CleanTopBarPanel(
         return
     }
     // Glass here is CLEAN-only (MODERN draws its own floating panel above).
-    val glass = settings.displaySetting.effectiveChatLayout == ChatLayout.CLEAN &&
-        settings.displaySetting.cleanLayoutGlass
+    val glass = settings.displaySetting.usesLiquidGlassChrome
     // Gemini (默认) 的顶栏是纯文字：没有面板填充、没有描边、也不切圆角，标题直接浮在内容之上。
     val gemini = settings.displaySetting.effectiveChatLayout == ChatLayout.GEMINI
     val opacity = settings.displaySetting.cleanLayoutTopOpacity
@@ -483,7 +484,7 @@ private fun ModernTopBarPanel(
     hazeState: HazeState,
     content: @Composable () -> Unit,
 ) {
-    val glass = settings.displaySetting.cleanLayoutGlass
+    val glass = settings.displaySetting.usesLiquidGlassChrome
     val alpha = modernPanelAlpha(settings.displaySetting.cleanLayoutTopOpacity)
     val opacity = settings.displaySetting.cleanLayoutTopOpacity.coerceIn(0f, 1f)
     val shape = RoundedCornerShape(ModernTopBarCorner)
@@ -530,7 +531,9 @@ private fun ModernTopBarPanel(
                 ),
             shape = shape,
             tonalElevation = 0.dp,
-            color = base.copy(alpha = if (glass) alpha * 0.9f else alpha),
+            // Glass fill must not use modernPanelAlpha's 55% floor, or the material looks
+            // like a solid card. Same clear-to-near-solid scale as the clean panels.
+            color = base.copy(alpha = if (glass) modernGlassFillAlpha(opacity) else alpha),
             content = content,
         )
     }

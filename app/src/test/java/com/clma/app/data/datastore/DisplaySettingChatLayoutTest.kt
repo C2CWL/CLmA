@@ -127,4 +127,44 @@ class DisplaySettingChatLayoutTest {
         assertTrue(decoded.usesModernChatUi)
         assertTrue(JsonInstant.encodeToString(DisplaySetting(chatLayout = ChatLayout.MODERN)).contains("\"claude\""))
     }
+
+    @Test
+    fun `liquid glass chrome follows the layout toggle and ignores blur effect`() {
+        // Default: glass is on, blur effect is off. Clean and modern must still get glass —
+        // the composer used to AND the two, which made 液态玻璃 look dead on the input bar.
+        val clean = DisplaySetting(chatLayout = ChatLayout.CLEAN)
+        assertTrue(clean.cleanLayoutGlass)
+        assertFalse(clean.enableBlurEffect)
+        assertTrue(clean.usesLiquidGlassChrome)
+
+        val modern = DisplaySetting(chatLayout = ChatLayout.MODERN)
+        assertTrue(modern.cleanLayoutGlass)
+        assertFalse(modern.enableBlurEffect)
+        assertTrue(modern.usesLiquidGlassChrome)
+
+        assertFalse(
+            DisplaySetting(chatLayout = ChatLayout.CLEAN, cleanLayoutGlass = false)
+                .usesLiquidGlassChrome,
+        )
+        assertFalse(
+            DisplaySetting(chatLayout = ChatLayout.MODERN, cleanLayoutGlass = false)
+                .usesLiquidGlassChrome,
+        )
+        // Gemini and the retired original (resolves to Gemini) never use this material,
+        // even if both leftover switches are on.
+        assertFalse(
+            DisplaySetting(
+                chatLayout = ChatLayout.GEMINI,
+                cleanLayoutGlass = true,
+                enableBlurEffect = true,
+            ).usesLiquidGlassChrome,
+        )
+        assertFalse(
+            DisplaySetting(
+                chatLayout = ChatLayout.ORIGINAL,
+                cleanLayoutGlass = true,
+                enableBlurEffect = true,
+            ).usesLiquidGlassChrome,
+        )
+    }
 }

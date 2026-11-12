@@ -60,6 +60,22 @@ val DisplaySetting.usesGeminiChatUi: Boolean
     get() = effectiveChatLayout == ChatLayout.GEMINI
 
 /**
+ * True when the header panel and composer card should use liquid glass.
+ *
+ * Only [ChatLayout.CLEAN] and [ChatLayout.MODERN] have this material, and the only switch
+ * they expose is [DisplaySetting.cleanLayoutGlass] (「液态玻璃」), which the settings page
+ * says applies to both the input bar and the top bar. This property follows that contract
+ * and does not consult [DisplaySetting.enableBlurEffect]: that leftover switch lives on a
+ * different page, is off by default, and is what made the 液态玻璃 toggle look dead on the
+ * composer (the top bar already honoured [cleanLayoutGlass] alone).
+ */
+val DisplaySetting.usesLiquidGlassChrome: Boolean
+    get() = when (effectiveChatLayout) {
+        ChatLayout.CLEAN, ChatLayout.MODERN -> cleanLayoutGlass
+        else -> false
+    }
+
+/**
  * True when the 「现代」 chat chrome applies ([ChatLayout.MODERN], stored as "claude"): floating
  * rounded header, tonal surfaces instead of hairlines, a floating 20dp composer card.
  */
