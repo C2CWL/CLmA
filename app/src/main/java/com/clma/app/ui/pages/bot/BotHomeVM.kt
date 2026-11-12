@@ -4,11 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clma.app.data.botmode.BotHomeRow
 import com.clma.app.data.botmode.botPreviewLine
+import com.clma.app.data.botmode.botUnreadConversationId
 import com.clma.app.data.botmode.botUnreadCount
 import com.clma.app.data.botmode.botsForContactList
 import com.clma.app.data.botmode.hasPendingApproval
 import com.clma.app.data.botmode.isBotPinned
 import com.clma.app.data.botmode.latestTopLevelConversation
+import com.clma.app.data.botmode.resolveBotOpenConversationId
 import com.clma.app.data.botmode.sortBotHomeRows
 import com.clma.app.data.botmode.withBotHidden
 import com.clma.app.data.botmode.withBotPinned
@@ -151,15 +153,21 @@ class BotHomeVM(
 
     /**
      * Opening a bot: make it the current assistant and clear its unread, then hand back the
-     * conversation to show (its latest, or a fresh one when it has none).
+     * conversation to show. Prefer the conversation that produced the unread badge (often a
+     * Peer thread), then the home-row latest top-level chat, else a fresh id.
      */
     fun open(row: BotHomeRow, onReady: (conversationId: Uuid) -> Unit) = viewModelScope.launch {
+        var openId: Uuid? = null
         settingsStore.update { s ->
+            openId = resolveBotOpenConversationId(
+                unreadConversationId = s.displaySetting.botUnreadConversationId(row.assistantId),
+                latestConversationId = row.latestConversationId,
+            )
             s.copy(
                 assistantId = row.assistantId,
                 displaySetting = s.displaySetting.withBotUnreadClearedForAssistant(row.assistantId),
             )
         }
-        onReady(row.latestConversationId ?: Uuid.random())
+        onReady(openId ?: resolveBotOpenConversationId(null, row.latestConversationId))
     }
 }

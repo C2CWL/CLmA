@@ -30,6 +30,24 @@ fun latestTopLevelConversation(conversations: List<Conversation>): Conversation?
         .maxByOrNull { it.updateAt }
 
 /**
+ * Topics shown on a bot's info page: ordinary top-level chats, plus Peer threads titled
+ * `[Peer] …`. Generic sub-agent runs also set [Conversation.parentConversationId], so title
+ * prefix is what keeps Peer visible without pulling those runs in.
+ */
+fun isBotVisibleTopic(conversation: Conversation): Boolean =
+    conversation.parentConversationId == null || conversation.title.startsWith("[Peer]")
+
+/**
+ * Prefer the unread peer/thread conversation when present, else the home-row latest, else a
+ * fresh id. Pure so open-path tests do not need a ViewModel.
+ */
+fun resolveBotOpenConversationId(
+    unreadConversationId: Uuid?,
+    latestConversationId: Uuid?,
+    newId: () -> Uuid = { Uuid.random() },
+): Uuid = unreadConversationId ?: latestConversationId ?: newId()
+
+/**
  * One short line for the list: the last message's text with whitespace collapsed, or the
  * conversation title when the last message has no text (tool-only turns, images).
  */

@@ -1,12 +1,29 @@
 package com.clma.app.data.botmode
 
 import com.clma.ai.core.InputSchema
+import com.clma.ai.core.MessageRole
 import com.clma.ai.core.Tool
+import com.clma.ai.ui.UIMessage
 import com.clma.ai.ui.UIMessagePart
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
 import com.clma.app.utils.JsonInstant
+
+/**
+ * Prefer the deferred peer reply. When the generation only stored tool parts,
+ * [UIMessage.toText] on the deferred answer is blank — recover the last non-blank
+ * assistant text already on the peer conversation. Never invents content.
+ */
+fun peerTurnAnswerText(answer: String?, messages: List<UIMessage>): String =
+    answer.orEmpty().ifBlank {
+        messages.asReversed()
+            .asSequence()
+            .filter { it.role == MessageRole.ASSISTANT }
+            .map { it.toText() }
+            .firstOrNull { it.isNotBlank() }
+            .orEmpty()
+    }
 
 /** Peer text is data, never an approval or a replacement for the person's instructions. */
 object BotPeerTools {

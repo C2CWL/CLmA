@@ -1,5 +1,6 @@
 package com.clma.app.data.datastore
 
+import com.clma.app.data.botmode.botUnreadConversationId
 import com.clma.app.data.botmode.botUnreadCount
 import com.clma.app.data.botmode.botsForContactList
 import com.clma.app.data.botmode.botsHiddenForManage
@@ -12,6 +13,7 @@ import com.clma.app.data.model.AssistantLibrary
 import com.clma.app.utils.JsonInstant
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import kotlin.uuid.Uuid
@@ -90,5 +92,23 @@ class DisplaySettingBotModeTest {
         ds = ds.withBotUnreadClearedForAssistant(a)
         assertEquals(0, ds.botUnreadCount(a))
         assertEquals(1, ds.botUnreadCount(b))
+    }
+
+    @Test
+    fun `unread conversation id is the newest mark for that assistant`() {
+        val a = Uuid.parse("11111111-1111-1111-1111-111111111111")
+        val b = Uuid.parse("22222222-2222-2222-2222-222222222222")
+        val c1 = Uuid.parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+        val c2 = Uuid.parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
+        val c3 = Uuid.parse("cccccccc-cccc-cccc-cccc-cccccccccccc")
+        assertNull(DisplaySetting().botUnreadConversationId(a))
+        val ds = DisplaySetting()
+            .withBotUnreadMarked(c1, a)
+            .withBotUnreadMarked(c2, a)
+            .withBotUnreadMarked(c3, b)
+        // Marks append; last match for a is c2 even though b was marked after.
+        assertEquals(c2, ds.botUnreadConversationId(a))
+        assertEquals(c3, ds.botUnreadConversationId(b))
+        assertNull(ds.withBotUnreadClearedForAssistant(a).botUnreadConversationId(a))
     }
 }

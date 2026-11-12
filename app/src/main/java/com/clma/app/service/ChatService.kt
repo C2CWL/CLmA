@@ -9,6 +9,7 @@ import com.clma.app.data.botmode.PeerStore
 import com.clma.app.data.botmode.PeerTask
 import com.clma.app.data.botmode.PeerThread
 import com.clma.app.data.botmode.libraryScopeOf
+import com.clma.app.data.botmode.peerTurnAnswerText
 import com.clma.app.diagnostics.FunctionalDiagnostics
 import android.app.Application
 import android.content.Context
@@ -1973,7 +1974,8 @@ class ChatService(
                     require(messages.none { message -> message.parts.any { it is UIMessagePart.Tool && it.isPending } }) {
                         "peer_approval_unavailable"
                     }
-                    return answer.orEmpty()
+                    // Tool-only assistant turns make reply.await() return ""; recover stored text.
+                    return peerTurnAnswerText(answer, messages)
                 } finally {
                     // Stop/join the generation before removing the safety scope, including timeout/cancellation.
                     withContext(kotlinx.coroutines.NonCancellable) {
