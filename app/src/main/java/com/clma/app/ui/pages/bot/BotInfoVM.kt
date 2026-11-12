@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clma.app.data.botmode.isBotHidden
 import com.clma.app.data.botmode.isBotPinned
+import com.clma.app.data.botmode.isBotVisibleTopic
 import com.clma.app.data.botmode.isMainBot
 import com.clma.app.data.botmode.toTeamPackMarkdown
 import com.clma.app.data.botmode.withBotHidden
@@ -34,9 +35,12 @@ class BotInfoVM(
 
     val settings: StateFlow<Settings> = settingsStore.settingsFlow
 
-    /** This bot's own top-level conversations, newest first (sub-agent runs left out). */
+    /**
+     * This bot's visible topics, newest first: top-level chats plus `[Peer]` threads.
+     * Generic sub-agent runs stay filtered out via [isBotVisibleTopic].
+     */
     val conversations: StateFlow<List<Conversation>> = conversationRepo.getConversationsOfAssistant(id)
-        .map { list -> list.filter { it.parentConversationId == null }.sortedByDescending { it.updateAt } }
+        .map { list -> list.filter(::isBotVisibleTopic).sortedByDescending { it.updateAt } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val memoryCount: StateFlow<Int> = memoryRepository.getMemoriesOfAssistantFlow(id.toString())

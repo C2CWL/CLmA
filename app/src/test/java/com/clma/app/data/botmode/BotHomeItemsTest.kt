@@ -70,6 +70,26 @@ class BotHomeItemsTest {
     }
 
     @Test
+    fun `visible topics keep peer threads and drop generic sub-agent runs`() {
+        val top = conversation(title = "top")
+        val peer = conversation(title = "[Peer] 小墨").copy(parentConversationId = Uuid.random())
+        val sub = conversation(title = "lookup weather").copy(parentConversationId = Uuid.random())
+        assertTrue(isBotVisibleTopic(top))
+        assertTrue(isBotVisibleTopic(peer))
+        assertFalse(isBotVisibleTopic(sub))
+    }
+
+    @Test
+    fun `open prefers unread conversation then latest then a fresh id`() {
+        val unread = Uuid.parse("11111111-1111-1111-1111-111111111111")
+        val latest = Uuid.parse("22222222-2222-2222-2222-222222222222")
+        val fresh = Uuid.parse("33333333-3333-3333-3333-333333333333")
+        assertEquals(unread, resolveBotOpenConversationId(unread, latest) { fresh })
+        assertEquals(latest, resolveBotOpenConversationId(null, latest) { fresh })
+        assertEquals(fresh, resolveBotOpenConversationId(null, null) { fresh })
+    }
+
+    @Test
     fun `pinned rows first in pin order, then newest`() {
         val a = row(Uuid.random(), 100)
         val b = row(Uuid.random(), 300)

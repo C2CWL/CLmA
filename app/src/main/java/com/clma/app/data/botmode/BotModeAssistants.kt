@@ -119,6 +119,13 @@ fun DisplaySetting.isBotHidden(assistantId: Uuid): Boolean =
 fun DisplaySetting.botUnreadCount(assistantId: Uuid): Int =
     botUnreadEntries.count { it.assistantId == assistantId }
 
+/**
+ * Conversation that produced the newest unread badge for this assistant.
+ * Marks append to the end of [botUnreadEntries], so the last match is the latest.
+ */
+fun DisplaySetting.botUnreadConversationId(assistantId: Uuid): Uuid? =
+    botUnreadEntries.lastOrNull { it.assistantId == assistantId }?.conversationId
+
 fun DisplaySetting.withBotUnreadMarked(
     conversationId: Uuid,
     assistantId: Uuid,

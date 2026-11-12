@@ -1,5 +1,8 @@
 package com.clma.app.data.botmode
 
+import com.clma.ai.core.MessageRole
+import com.clma.ai.ui.ToolApprovalState
+import com.clma.ai.ui.UIMessage
 import com.clma.ai.ui.UIMessagePart
 import com.clma.app.utils.JsonInstant
 import kotlinx.coroutines.test.runTest
@@ -9,6 +12,26 @@ import org.junit.Test
 import kotlin.uuid.Uuid
 
 class BotPeerToolsTest {
+    @Test fun `blank deferred reply falls back to last non-blank assistant text`() {
+        val toolOnly = UIMessage(
+            role = MessageRole.ASSISTANT,
+            parts = listOf(
+                UIMessagePart.Tool(
+                    toolCallId = "t",
+                    toolName = "search_web",
+                    input = "{}",
+                    output = emptyList(),
+                    approvalState = ToolApprovalState.Auto,
+                ),
+            ),
+        )
+        val withText = UIMessage.assistant("stored peer answer")
+        assertEquals("stored peer answer", peerTurnAnswerText("", listOf(withText, toolOnly)))
+        assertEquals("live", peerTurnAnswerText("live", listOf(withText)))
+        assertEquals("", peerTurnAnswerText(null, listOf(toolOnly)))
+        assertEquals("", peerTurnAnswerText("   ", emptyList()))
+    }
+
     @Test fun `peer policy is deny by default including MCP shell and generic recursion`() {
         listOf("get_time_info", "search_web", "scrape_web", "web_extract").forEach {
             assertTrue(BotPeerToolPolicy.allows(it))
