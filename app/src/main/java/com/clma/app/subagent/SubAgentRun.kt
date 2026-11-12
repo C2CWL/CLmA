@@ -111,6 +111,10 @@ object SubAgentDefaults {
         - Use tools to gather facts before answering when accuracy matters.
         - Return a clear, structured final summary as your last message — that summary is
           what the parent will see. Aim for 100-500 words unless the task asks otherwise.
+        - Reuse supplied evidence; do not repeat completed lookups without a concrete reason.
+        - Include the evidence sources (paths, symbols, URLs or commands), what was actually
+          checked, and any unresolved gaps. Distinguish verified facts from inference so the
+          parent can reuse the result without repeating your investigation.
         - If the task is impossible, return a single short paragraph explaining why.
         - Do not ask the parent for clarification — make the best judgment call you can
           and proceed.

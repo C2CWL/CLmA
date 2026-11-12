@@ -24,6 +24,15 @@ class SubAgentPromptsTest {
     }
 
     @Test
+    fun `default asks for reusable evidence and unresolved gaps`() {
+        val out = composeSubAgentSystemPrompt("", null, null)
+        assertTrue(out.contains("Reuse supplied evidence"))
+        assertTrue(out.contains("evidence sources"))
+        assertTrue(out.contains("unresolved gaps"))
+        assertTrue(out.contains("Distinguish verified facts from inference"))
+    }
+
+    @Test
     fun `assistant prompt replaces the default when set`() {
         val out = composeSubAgentSystemPrompt(
             assistantPrompt = "Assistant rules.",

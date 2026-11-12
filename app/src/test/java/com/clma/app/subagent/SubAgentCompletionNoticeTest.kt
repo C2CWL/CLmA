@@ -50,6 +50,7 @@ class SubAgentCompletionNoticeTest {
             runWith(SubAgentStatus.SUCCEEDED),
             "Usage: 3 model calls, 100 input / 50 output tokens.",
         )
+        assertTrue(text.contains("Run ID: r1"))
         assertTrue(text.contains("research-42"))
         assertTrue(text.contains("SUCCEEDED"))
         assertTrue(text.contains("3 model calls"))
