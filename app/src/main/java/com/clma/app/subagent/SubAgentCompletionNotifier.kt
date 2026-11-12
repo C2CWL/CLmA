@@ -13,10 +13,10 @@ import com.clma.app.RouteActivity
 /**
  * Option C — surface a finished BACKGROUND sub-agent to the user without waking the parent up.
  *
- * [SubAgentEngine.notifyParentIfBackground] only queues a notice in
- * [com.clma.app.data.ai.tools.ConversationInjections], and GenerationLoop drains that queue
- * immediately before the parent's NEXT model request. A parent that is idle never makes one,
- * so before this the completion stayed invisible until the user happened to speak again.
+ * [SubAgentEngine.notifyParentIfBackground] leaves the durable registry inbox as the
+ * sole delivery source; GenerationLoop claims pending notices on the parent's NEXT model
+ * request. A parent that is idle never makes one, so without this notification the
+ * completion would stay invisible until the user happened to speak again.
  *
  * The notification is the whole fix on purpose: it starts no generation, writes no message and
  * spends no tokens. Whether the parent should carry on is the user's call — they tap through to

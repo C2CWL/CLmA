@@ -53,7 +53,8 @@ import com.clma.ai.util.redactSecrets
 import com.clma.app.data.secrets.SecretVaultRegistry
 import com.clma.app.data.repository.ConversationRepository
 import com.clma.app.data.ai.limits.ConversationReasoningOverrides
-import com.clma.app.data.ai.tools.ConversationInjections
+import com.clma.app.subagent.SubAgentRegistry
+import com.clma.app.subagent.SubAgentCompletionNotice
 import com.clma.app.data.ai.transformers.InputMessageTransformer
 import com.clma.app.data.ai.transformers.MessageTransformer
 import com.clma.app.data.ai.transformers.OutputMessageTransformer
@@ -836,6 +837,7 @@ class GenerationLoop(
     private val conversationRepo: ConversationRepository,
     private val aiLoggingManager: AILoggingManager,
     private val systemPromptBuilder: SystemPromptBuilder,
+    private val subAgentRegistry: SubAgentRegistry,
 ) {
     fun generateText(
         settings: Settings,
@@ -1026,6 +1028,7 @@ class GenerationLoop(
             if (pendingTools.isEmpty()) {
                 // 本 step 是否被用户插话打断：决定收尾后继续下一 step 还是走工具分支。
                 var steered = false
+                var delivery: SubAgentRegistry.Delivery? = null
                 try {
                     onBeforeModelRequest()
                     // 用户插话：并入当前回合。位置必须在 pendingTools 判定之后 ——
@@ -1046,17 +1049,14 @@ class GenerationLoop(
                             )
                         )
                     }
-                    // System injections (e.g. a background sub-agent's completion notice)
-                    // are drained here — once per loop step, so an in-flight turn sees a
-                    // notice on its very next request without waiting for the turn to end —
-                    // and handed to generateInternal, which appends them to the request-only
-                    // `internalMessages` (alongside the system prompt and the continuation
-                    // instruction). They must NOT be added to the loop's `messages` var:
-                    // generateInternal writes that list back via onUpdateMessages, and
-                    // anything in it ends up rendered and persisted in the chat page.
-                    val injections = conversationId
-                        ?.let { ConversationInjections.drain(it) }
-                        .orEmpty()
+                    // Claim without removing: failure, steer and cancellation keep the inbox.
+                    // Exact conversation + assistant ownership prevents automatic cross-assistant delivery.
+                    delivery = conversationId?.takeUnless {
+                        com.clma.app.data.ai.tools.HeadlessConversations.isHeadless(it)
+                    }?.let { subAgentRegistry.claim(it.toString(), assistant.id.toString()) }
+                    val injections = delivery?.runs.orEmpty().map {
+                        SubAgentCompletionNotice.format(it, null)
+                    }
                     steered = generateInternal(
                         assistant = assistant,
                         settings = settings,
@@ -1090,6 +1090,9 @@ class GenerationLoop(
                         stepIndex = stepIndex,
                         provider = provider,
                         tools = toolsInternal,
+                        maxToolSteps = maxSteps,
+                        isToolAutoApproved = isToolAutoApproved,
+                        unloadedToolSchema = unloadedToolSchema,
                         memories = memories ?: emptyList(),
                         stream = assistant.streamOutput,
                         processingStatus = processingStatus,
@@ -1100,6 +1103,7 @@ class GenerationLoop(
                         workspaceCwd = workspaceCwd,
                         continuationFromPartial = continuationFromPartial && stepIndex == 0,
                     )
+                    if (!steered) delivery?.let { subAgentRegistry.acknowledge(it) }
                 } catch (t: Throwable) {
                     // CancellationException is honoured verbatim — stopGeneration has its
                     // own cancelToolByUser path that marks tools cancelled. We only need
@@ -1165,6 +1169,8 @@ class GenerationLoop(
                         }
                     }
                     throw t
+                } finally {
+                    delivery?.let { subAgentRegistry.release(it) }
                 }
                 if (steered) {
                     // 插话打断：最后一条 assistant 若没有任何内容就丢掉，避免空气泡；
@@ -1237,7 +1243,14 @@ class GenerationLoop(
                     // envelope to the model without executing.
                     val hardlineReason = com.clma.app.data.ai.tools
                         .HardlineCommandGuard.checkTool(tool.toolName, tool.input, allowSshPower = true)
+                    val peerDenied = conversationId?.let {
+                        com.clma.app.data.botmode.BotPeerToolPolicy.isPeer(it)
+                    } == true && (!com.clma.app.data.botmode.BotPeerToolPolicy.allows(tool.toolName) ||
+                        toolDef?.needsApproval(tool.inputAsJson()) == true && !isToolAutoApproved(tool.toolName))
                     val transformed = when {
+                        peerDenied -> tool.copy(approvalState = ToolApprovalState.Denied(
+                            "peer_tool_denied: not read-only or requires human approval"
+                        ))
                         hardlineReason != null && tool.approvalState is ToolApprovalState.Auto -> {
                             Log.w(TAG, "hardline-blocked ${tool.toolName}: $hardlineReason")
                             tool.copy(approvalState = ToolApprovalState.Denied(
@@ -1361,6 +1374,14 @@ class GenerationLoop(
                             )
                         )
                     )
+                    return@forEach
+                }
+                if (conversationId?.let { com.clma.app.data.botmode.BotPeerToolPolicy.isPeer(it) } == true &&
+                    !com.clma.app.data.botmode.BotPeerToolPolicy.allows(tool.toolName)
+                ) {
+                    executedTools += tool.copy(output = listOf(UIMessagePart.Text(
+                        "{\"error\":\"peer_tool_denied\"}"
+                    )))
                     return@forEach
                 }
                 when (tool.approvalState) {
@@ -1975,6 +1996,9 @@ class GenerationLoop(
         providerImpl: Provider<ProviderSetting>,
         provider: ProviderSetting,
         tools: List<Tool>,
+        maxToolSteps: Int,
+        isToolAutoApproved: suspend (String) -> Boolean,
+        unloadedToolSchema: (suspend (String) -> String?)?,
         memories: List<AssistantMemory>,
         stream: Boolean,
         processingStatus: MutableStateFlow<String?> = MutableStateFlow(null),
@@ -2000,6 +2024,31 @@ class GenerationLoop(
         // 本 step 是否被用户插话打断（SteerInterrupt）。调用方据此决定是否继续下一 step。
         var steered = false
         var inspectionMemoryPrompt = ""
+        val dispatchNames = listOf("subagent_dispatch", "mission_dispatch")
+        val availableDispatchNames = mutableListOf<String>()
+        for (name in dispatchNames) {
+            if (tools.any { it.name == name } || unloadedToolSchema?.invoke(name) != null) {
+                availableDispatchNames += name
+            }
+        }
+        val dispatchProfile = if (availableDispatchNames.isNotEmpty()) settings.subAgentDispatchProfile
+            else com.clma.app.subagent.SubAgentDispatchProfile.NEVER
+        val dispatchLine = com.clma.app.subagent.SubAgentDispatchProfileRules.dispatchGuidance(dispatchProfile) +
+            if (tools.any { it.name == "tool_search" } &&
+                dispatchProfile != com.clma.app.subagent.SubAgentDispatchProfile.NEVER
+            ) " Discover and open the dispatch tools with tool_search/tool_open if not attached yet."
+            else ""
+        val approvalLines = mutableListOf<String>()
+        if (dispatchProfile != com.clma.app.subagent.SubAgentDispatchProfile.NEVER) {
+            for (name in availableDispatchNames) {
+                val approval = if (isToolAutoApproved(name)) "auto-approved by current policy"
+                    else "app confirmation required on submission"
+                approvalLines += "$name: $approval"
+            }
+        }
+        val approvalLine = if (approvalLines.isEmpty()) "" else approvalLines.joinToString("; ") +
+            ". Call directly; do not request an extra conversational confirmation. Safety constraints still apply."
+        val runtimePolicy = RuntimePolicyPrompt.render(approvalLine, dispatchLine, maxToolSteps)
         val internalMessages = buildList {
             // Conversation-level system prompt override (upstream): when the assistant
             // allows it and the conversation supplies one, it replaces the assistant prompt.
@@ -2026,6 +2075,7 @@ class GenerationLoop(
                 recentChatsPrompt = recentChatsPrompt,
                 toolPrompts = toolPrompts,
                 systemAddendum = systemAddendum,
+                policyPrompt = runtimePolicy,
             )
             val systemParts = buildList {
                 if (stableSystem.isNotBlank()) add(UIMessagePart.Text(stableSystem))

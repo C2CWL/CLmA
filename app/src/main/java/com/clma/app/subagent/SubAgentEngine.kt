@@ -21,7 +21,6 @@ import com.clma.app.data.agentrun.AgentRunKind
 import com.clma.app.data.agentrun.AgentRunRepository
 import com.clma.app.data.agentrun.AgentRunStatus
 import com.clma.app.data.ai.tools.HeadlessConversations
-import com.clma.app.data.ai.tools.ConversationInjections
 import com.clma.app.data.ai.tools.ConversationSystemAddendum
 import com.clma.app.data.ai.limits.ConversationReasoningOverrides
 import com.clma.app.data.ai.limits.ConversationToolStepLimits
@@ -251,6 +250,8 @@ class SubAgentEngine(
             maxTrips = cleaned.maxTrips ?: resolvedMaxTrips,
             reasoningLevel = cleaned.reasoningLevel,
             status = SubAgentStatus.PENDING,
+            completionDeliveryEnabled = cleaned.runInBackground && parentChatId != null &&
+                runCatching { !HeadlessConversations.isHeadless(Uuid.parse(parentChatId)) }.getOrDefault(false),
             startedAtMs = now,
         )
 
@@ -863,47 +864,21 @@ class SubAgentEngine(
         else -> AgentRunStatus.failed
     }
 
-    /**
-     * Deliver a finished BACKGROUND run's outcome to the parent conversation as a system
-     * notification, via [ConversationInjections].
-     *
-     * This used to post a real user message through [ChatService.sendMessage] — visible in the
-     * chat page as a "[Sub-agent …]" bubble, gated by up to a minute of idle waiting, and
-     * costing a whole extra LLM turn just to say "done" (or worse, cancelling the user's
-     * in-flight turn when the wait expired). The injection path instead rides the parent's
-     * NEXT model request: GenerationLoop drains the queue before every request, so a parent
-     * mid-turn sees the notice on its very next loop step — the turn does not have to end
-     * first — and an idle parent carries it along whenever the user next speaks. Nothing is
-     * persisted, rendered, or embedded.
-     *
-     * Skip rules:
-     *  - Foreground runs: dispatch is synchronous (executionJob.join() in dispatch()), so the
-     *    tool result already carries the final state. No notice needed.
-     *  - CANCELLED runs and `noResult` successes: silent on purpose — see shouldNotifyParent.
-     *  - Parents in headless mode: would loop / fork weirdly with cron + sub-agent + workflow
-     *    runs, and a headless parent has no user turn to carry the injection anyway.
-     *  - parentChatId / runs missing: defensive.
+    /** Terminal registry writes own durable delivery. This callback only posts an optional
+     * idle-parent Android notification, never starts a new generation or enqueues a copy.
      */
     private fun notifyParentIfBackground(parentChatId: String?, run: SubAgentRun?) {
-        if (parentChatId == null || run == null || !run.runInBackground) return
+        if (parentChatId == null || run == null || !run.completionDeliveryEnabled) return
         // CANCELLED and noResult successes stay silent on purpose — see shouldNotifyParent.
         if (!shouldNotifyParent(run)) return
         val parentUuid = runCatching { Uuid.parse(parentChatId) }.getOrNull() ?: return
         if (HeadlessConversations.isHeadless(parentUuid)) return
 
-        val usageLine = RunUsageSummaryFactory.line(
-            RunUsageSummary(
-                calls = run.usageCalls,
-                inputTokens = run.tokensIn,
-                outputTokens = run.tokensOut,
-            )
-        )
-        ConversationInjections.push(parentUuid, SubAgentCompletionNotice.format(run, usageLine))
+        // The terminal registry write atomically made the durable inbox entry available.
+        // No second enqueue/write: a crash between completion and this callback loses nothing.
         Log.i(TAG, "queued completion notice for sub-agent ${run.id} (${run.status}) into parent $parentChatId")
-        // Option C — an idle parent never issues the next request, so the injection above would
-        // sit in the queue unseen. Tell the user with a notification instead of starting a
-        // generation: no extra turn, no extra tokens, and the decision stays theirs. A parent
-        // that is generating already drains the queue on its next loop step, so it is skipped.
+        // Idle parents keep the durable notice until their next turn. An Android notification
+        // tells the user work finished without generating another model request.
         // Guarded: a missing notification grant (or an unmocked Context in a JVM test) must
         // never turn a finished run into a failed one.
         runCatching {

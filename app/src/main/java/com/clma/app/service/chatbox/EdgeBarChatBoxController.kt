@@ -21,7 +21,11 @@ import com.clma.app.ui.hooks.readStringPreference
 import com.clma.app.ui.hooks.writeStringPreference
 import com.clma.app.ui.theme.resolveChatTypeface
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
 import kotlin.uuid.Uuid
 
@@ -65,6 +69,7 @@ internal class EdgeBarChatBoxController(
     private var bindJob: Job? = null
     private var openJob: Job? = null
     private var conversationsJob: Job? = null
+    private val includedConversationIds = MutableStateFlow<Set<Uuid>>(emptySet())
     private var conversation: Conversation? = null
     private var conversations = emptyList<EdgeBarChatBoxView.ConversationOption>()
 
@@ -139,6 +144,7 @@ internal class EdgeBarChatBoxController(
         if (boundId == id && bindJob != null) return
         unbind()
         boundId = id
+        includedConversationIds.value = generating.keys + id
         conversation = null
         chatService.addConversationReference(id)
         // Load it from the database (or set up a new one) unless it is generating right now,
@@ -164,11 +170,12 @@ internal class EdgeBarChatBoxController(
         boundId?.let { chatService.removeConversationReference(it) }
         boundId = null
         conversation = null
+        includedConversationIds.value = generating.keys.toSet()
     }
 
     private fun onJobs(jobs: Map<Uuid, Job?>) {
         val now = SystemClock.elapsedRealtime()
-        val active = jobs.mapNotNull { (id, job) -> job?.let { id to it } }.toMap()
+        val active = jobs.mapNotNull { (id, job) -> job?.takeUnless { it.isCompleted }?.let { id to it } }.toMap()
         for ((id, entry) in generating) {
             if (id !in active) recentlyEnded[id] = now - entry.second
         }
@@ -178,7 +185,7 @@ internal class EdgeBarChatBoxController(
             val previous = generating[id]
             if (previous == null || previous.first !== job) generating[id] = job to now
         }
-        val isGenerating = boundId?.let { isGeneratingNow(it) } ?: false
+        includedConversationIds.value = generating.keys + listOfNotNull(boundId)
         conversations = conversations.map {
             it.copy(working = isGeneratingNow(Uuid.parse(it.id)))
         }
@@ -211,11 +218,16 @@ internal class EdgeBarChatBoxController(
         if (!v.isShowing) unbind() else render()
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     private fun observeConversations() {
         conversationsJob = scope.launch {
-            val assistantId = settingsStore.settingsFlow.value.assistantId
-            conversationRepo.getConversationsOfAssistant(assistantId).collect { recent ->
-                conversations = recent.take(30).map(::conversationOption)
+            combine(
+                includedConversationIds.flatMapLatest { ids ->
+                    conversationRepo.observeOverlayConversations(ids)
+                },
+                settingsStore.settingsFlow,
+            ) { recent, _ -> recent }.collect { recent ->
+                conversations = recent.map(::conversationOption)
                 if (isShowing) render()
             }
         }
@@ -265,11 +277,16 @@ internal class EdgeBarChatBoxController(
                 updatedAtMs = c?.updateAt?.toEpochMilli() ?: 0L,
             )
         }
+        // A live conversation may not have reached the database yet.
+        val liveOptions = generating.keys.map { liveId ->
+            conversationOption(chatService.getConversationFlow(liveId).value)
+        } + listOfNotNull(c?.let(::conversationOption))
+        val options = (liveOptions + conversations).distinctBy { it.id }
         return EdgeBarChatBoxView.State(
             title = c?.title.orEmpty(),
             mode = mode,
             items = ChatBoxItems.build(messages),
-            conversations = conversations.map { it.copy(selected = it.id == id?.toString()) },
+            conversations = options.map { it.copy(selected = it.id == id?.toString()) },
         )
     }
 

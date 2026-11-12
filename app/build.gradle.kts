@@ -29,8 +29,8 @@ android {
         applicationId = "com.clma.app"
         minSdk = 26
         targetSdk = 37
-        versionCode = 58
-        versionName = "2.4.7"
+        versionCode = 59
+        versionName = "2.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -395,6 +395,7 @@ dependencies {
 
     // tests
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))

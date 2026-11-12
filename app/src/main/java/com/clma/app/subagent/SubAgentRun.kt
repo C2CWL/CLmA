@@ -2,15 +2,7 @@ package com.clma.app.subagent
 
 import kotlinx.serialization.Serializable
 
-/**
- * Phase 11 — sub-agent run record. Lives in [SubAgentRegistry]'s in-memory map for the
- * lifetime of the app process. Persistence intentionally out of scope for v1: spec says
- * "Background sub-agents survive only as long as the parent process is alive" and
- * documents that user-visibly. WorkManager-backed persistence is a v2 concern.
- *
- * The run is FROZEN once it reaches a terminal status. Mutations are done by replacing
- * the entry in the registry's StateFlow rather than mutating in place.
- */
+/** Durable run details; live coroutine execution is never restored after process loss. */
 @Serializable
 data class SubAgentRun(
     val id: String,
@@ -45,6 +37,8 @@ data class SubAgentRun(
      * so the dispatcher can see whether retries were needed.
      */
     val retryCount: Int = 0,
+    /** Frozen at dispatch: headless/foreground parents must never receive replay notices. */
+    val completionDeliveryEnabled: Boolean = false,
 )
 
 @Serializable

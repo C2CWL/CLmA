@@ -8,6 +8,27 @@ import org.junit.Test
 class SubAgentDispatchProfileTest {
 
     @Test
+    fun `each profile gives a distinct delegation instruction`() {
+        val guidance = SubAgentDispatchProfile.entries.map(SubAgentDispatchProfileRules::dispatchGuidance)
+        assertEquals(5, guidance.toSet().size)
+        assertTrue(guidance[0].contains("disabled; do all work inline"))
+        assertTrue(guidance[1].contains("work inline by default"))
+        assertTrue(guidance[2].contains("proactively delegate"))
+        assertTrue(guidance[3].contains("prefer parallel delegation"))
+        assertTrue(guidance[4].contains("dispatch them before"))
+    }
+
+    @Test
+    fun `enabled profiles preserve safety and avoid pointless delegation`() {
+        SubAgentDispatchProfile.entries.filter { it != SubAgentDispatchProfile.NEVER }.forEach {
+            val guidance = SubAgentDispatchProfileRules.dispatchGuidance(it)
+            assertTrue(guidance.contains("Trivial replies and inseparable tasks may stay inline"))
+            assertTrue(guidance.contains("approval policy, and safety constraints"))
+            assertTrue(guidance.contains("state the concrete blocker"))
+        }
+    }
+
+    @Test
     fun `NEVER disables dispatch`() {
         assertFalse(SubAgentDispatchProfileRules.isDispatchEnabled(SubAgentDispatchProfile.NEVER))
     }
