@@ -29,6 +29,21 @@ class SubAgentDispatchProfileTest {
     }
 
     @Test
+    fun `enabled profiles require non-overlapping work and evidence reuse`() {
+        SubAgentDispatchProfile.entries.filter { it != SubAgentDispatchProfile.NEVER }.forEach {
+            val guidance = SubAgentDispatchProfileRules.dispatchGuidance(it)
+            assertTrue(guidance.contains("assign a non-overlapping scope"))
+            assertTrue(guidance.contains("pass facts already gathered"))
+            assertTrue(guidance.contains("do not repeat its searches or reads"))
+            assertTrue(guidance.contains("Read and reuse its returned evidence"))
+            assertTrue(guidance.contains("fetch the full run with subagent_get"))
+            assertTrue(guidance.contains("named gap, conflicting evidence, changed state"))
+            assertTrue(guidance.contains("required safety check"))
+            assertTrue(guidance.contains("inspect the failure before taking over"))
+        }
+    }
+
+    @Test
     fun `NEVER disables dispatch`() {
         assertFalse(SubAgentDispatchProfileRules.isDispatchEnabled(SubAgentDispatchProfile.NEVER))
     }

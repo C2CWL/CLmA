@@ -95,7 +95,14 @@ object SubAgentDispatchProfileRules {
         return "Sub-agent dispatch: $posture " +
             "Act on this selection, not merely describe a delegation plan. Trivial replies and " +
             "inseparable tasks may stay inline. Do not duplicate a child's work, create busywork, " +
-            "or run concurrent edits to the same files. Respect tool availability, budgets, " +
+            "or run concurrent edits to the same files. Before dispatch, assign a non-overlapping " +
+            "scope and pass facts already gathered so the child does not rediscover them. " +
+            "While it runs, do only complementary work; do not repeat its searches or reads. " +
+            "Read and reuse its returned evidence before issuing follow-up calls. If the result " +
+            "is truncated, fetch the full run with subagent_get instead of repeating research. " +
+            "Follow up only on a named gap, conflicting evidence, changed state, or a required " +
+            "safety check; state that reason and check only that part. If it fails, inspect the " +
+            "failure before taking over the unfinished scope. Respect tool availability, budgets, " +
             "approval policy, and safety constraints; delegation does not grant extra authority. " +
             "If useful delegation is blocked, state the concrete blocker and continue unblocked work."
     }
