@@ -38,6 +38,7 @@ class ConversationSession(
 
     // 原子引用计数
     private val refCount = AtomicInteger(0)
+    private val persistenceRefs = AtomicInteger(0)
 
     // 处理状态（如 OCR 识别中）
     val processingStatus = MutableStateFlow<String?>(null)
@@ -48,7 +49,7 @@ class ConversationSession(
     val generationJob: StateFlow<Job?> = _generationJob.asStateFlow()
     val isGenerating: Boolean get() = _generationJob.value?.isActive == true
     val isInUse: Boolean
-        get() = refCount.get() > 0 || _generationJob.value != null ||
+        get() = refCount.get() > 0 || persistenceRefs.get() > 0 || _generationJob.value != null ||
                 messageQueue.state.value.messages.isNotEmpty()
 
     /** True when a chat UI (ChatVM) currently holds a reference — used for Bot-mode unread. */
@@ -66,6 +67,16 @@ class ConversationSession(
     fun release(): Int = refCount.decrementAndGet().also {
         Log.d(TAG, "release $id (refs=$it)")
         if (it <= 0) scheduleIdleCheck()
+    }
+
+    // Persistence keeps the session alive without counting as a visible chat UI.
+    internal fun acquirePersistence() {
+        persistenceRefs.incrementAndGet()
+        cancelIdleCheck()
+    }
+
+    internal fun releasePersistence() {
+        if (persistenceRefs.decrementAndGet() == 0) scheduleIdleCheck()
     }
 
     // 作用域 API - 短请求（REST）

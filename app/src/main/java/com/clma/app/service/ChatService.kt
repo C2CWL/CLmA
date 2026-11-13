@@ -2780,7 +2780,12 @@ class ChatService(
                 markStreamingPersistence(conversationId)
                 // onCompletion also runs for cancellation. Keep this final write alive after a
                 // user presses Stop so a cancelled job cannot discard its last partial chunk.
-                withContext(NonCancellable) {
+                val persistenceSession = getOrCreateSession(conversationId)
+                persistenceSession.acquirePersistence()
+                persistGenerationCompletion(
+                    scope = appScope,
+                    onFinished = { persistenceSession.releasePersistence() },
+                ) {
                     persistStreamingStateNow(conversationId, updateSearchIndex = true)
                 }
 
@@ -5072,6 +5077,7 @@ class ChatService(
                 )
             }
         }.onFailure {
+            if (it is CancellationException) throw it
             Log.w(TAG, "persistStreamingStateNow failed for $conversationId", it)
         }.getOrDefault(false)
 
