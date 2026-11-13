@@ -11,6 +11,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -20,6 +21,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.sp
 import androidx.compose.material3.Text
+import kotlinx.coroutines.flow.first
 import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
@@ -90,8 +92,13 @@ fun EmojiBurstHost(
             val restitution = 0.75f
             val lifetimeSeconds = 4f
             val damping = 0.99f
-            var lastTime = withFrameNanos { it }
+            var lastTime = 0L
             while (true) {
+                if (pendingBursts.isEmpty() && particles.isEmpty()) {
+                    // No frame callbacks while the about page is just sitting idle.
+                    snapshotFlow { pendingBursts.isNotEmpty() }.first { it }
+                    lastTime = withFrameNanos { it }
+                }
                 val now = withFrameNanos { it }
                 val dt = ((now - lastTime) / 1_000_000_000f).coerceIn(0.001f, 0.05f)
                 lastTime = now
