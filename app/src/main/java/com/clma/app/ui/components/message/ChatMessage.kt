@@ -577,6 +577,7 @@ private fun MessagePartsBlock(
                                 key(step.reasoning.createdAt) {
                                     ChatMessageReasoningStep(
                                         reasoning = step.reasoning,
+                                        generationActive = loading,
                                         model = model,
                                         assistant = assistant,
                                         collapsedAdaptiveWidth = isReasoningOnlyBlock,
