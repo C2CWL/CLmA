@@ -64,6 +64,11 @@ object FunctionalDiagnostics {
         if (functionsEnabled) emit("$name instance=$instance value=$value", LogLevel.INFO)
     }
 
+    /** Aggregated numeric render samples only; never one log entry per frame. */
+    fun renderSample(message: String) {
+        if (functionsEnabled) emit(message, LogLevel.INFO, "RenderDiag")
+    }
+
     fun failure(name: String) {
         if (functionsEnabled) emit(name, LogLevel.WARN)
     }

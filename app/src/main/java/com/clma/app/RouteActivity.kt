@@ -1,5 +1,6 @@
 package com.clma.app
 
+import com.clma.app.diagnostics.ObserveRenderDiagnostics
 import com.clma.app.diagnostics.FunctionalDiagnostics
 import android.annotation.SuppressLint
 import android.content.Intent
@@ -442,6 +443,7 @@ class RouteActivity : FragmentActivity() {
             guardStackLibrary(backStack, settings) { Screen.Chat(Uuid.random().toString()) }
         }
         val diagnosticFunctions by rememberSharedPreferenceBoolean(FunctionalDiagnostics.FUNCTION_KEY)
+        ObserveRenderDiagnostics(window, diagnosticFunctions)
         LaunchedEffect(backStack, diagnosticFunctions) {
             if (!diagnosticFunctions) return@LaunchedEffect
             snapshotFlow { backStack.toList() }.collect { stack ->
