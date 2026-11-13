@@ -88,9 +88,13 @@ private class ReasoningState(
 }
 
 @Composable
-private fun rememberReasoningState(reasoning: UIMessagePart.Reasoning): Pair<ReasoningState, Boolean> {
+private fun rememberReasoningState(
+    reasoning: UIMessagePart.Reasoning,
+    generationActive: Boolean,
+): Pair<ReasoningState, Boolean> {
     val settings = LocalSettings.current
-    val loading = reasoning.finishedAt == null
+    // An interrupted part may remain open after this message stops generating.
+    val loading = generationActive && reasoning.finishedAt == null
     val scrollState = rememberScrollState()
 
     val state = remember(reasoning.createdAt) {
@@ -119,7 +123,7 @@ private fun rememberReasoningState(reasoning: UIMessagePart.Reasoning): Pair<Rea
         }
     }
 
-    LaunchedEffect(loading) {
+    LaunchedEffect(loading, reasoning.createdAt, reasoning.finishedAt) {
         if (loading) {
             while (isActive) {
                 state.duration = (reasoning.finishedAt ?: Clock.System.now()) - reasoning.createdAt
@@ -127,6 +131,8 @@ private fun rememberReasoningState(reasoning: UIMessagePart.Reasoning): Pair<Rea
                 // 无谓重组，而秒表本身只显示到 0.1s 精度，200ms 已经足够顺滑。
                 delay(200)
             }
+        } else {
+            reasoning.finishedAt?.let { state.duration = it - reasoning.createdAt }
         }
     }
 
@@ -206,12 +212,13 @@ private fun ReasoningContent(
 @Composable
 fun ChainOfThoughtScope.ChatMessageReasoningStep(
     reasoning: UIMessagePart.Reasoning,
+    generationActive: Boolean,
     model: Model?,
     assistant: Assistant?,
     fadeHeight: Float = 64f,
     collapsedAdaptiveWidth: Boolean = false,
 ) {
-    val (state, loading) = rememberReasoningState(reasoning)
+    val (state, loading) = rememberReasoningState(reasoning, generationActive)
     val thinkingTitle = reasoning.reasoning.extractThinkingTitle()
     val showThinkingTitle = loading && thinkingTitle != null
     val chatFontFamily = LocalTextStyle.current.fontFamily
@@ -242,7 +249,7 @@ fun ChainOfThoughtScope.ChatMessageReasoningStep(
         },
         label = {
             if (showThinkingTitle) {
-                ReasoningTitle(title = thinkingTitle)
+                ReasoningTitle(title = thinkingTitle, loading = loading)
             } else {
                 Text(
                     text = stringResource(
@@ -282,7 +289,7 @@ fun ChainOfThoughtScope.ChatMessageReasoningStep(
 
 
 @Composable
-private fun ReasoningTitle(title: String) {
+private fun ReasoningTitle(title: String, loading: Boolean) {
     val chatFontFamily = LocalTextStyle.current.fontFamily
     AnimatedContent(
         targetState = title,
@@ -298,7 +305,7 @@ private fun ReasoningTitle(title: String) {
             color = MaterialTheme.colorScheme.secondary,
             modifier = Modifier
                 .padding(horizontal = 4.dp)
-                .shimmer(true),
+                .shimmer(isLoading = loading),
         )
     }
 }
