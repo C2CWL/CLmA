@@ -44,6 +44,8 @@ data class ConversationEntity(
     val folderId: String = "",
     @ColumnInfo("parent_conversation_id", defaultValue = "")
     val parentConversationId: String = "",
+    @ColumnInfo("is_delegated_conversation", defaultValue = "0")
+    val isDelegatedConversation: Boolean = false,
     @ColumnInfo("chat_model_id", defaultValue = "")
     val chatModelId: String = "",
     // 1 = Agent 模式（默认，与历史行为一致）；0 = 聊天模式（仅白名单工具）

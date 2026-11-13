@@ -296,11 +296,10 @@ fun missionDispatchTool(
             // Same Fork Bomb guard as subagent_dispatch, and for the same reason: a headless
             // caller (cron / workflow / another sub-agent) has no conversation to answer to, so
             // fanning out from there multiplies runs nobody is watching.
-            if (callerContext.isHeadless) {
+            if (callerContext.isHeadless || callerContext.isDelegatedConversation) {
                 return@Tool errEnv(
                     "no_recursion",
-                    "mission_dispatch is not allowed from inside a headless run (cron / workflow / " +
-                        "sub-agent / external automation). Do the work inline instead.",
+                    "mission_dispatch is not allowed from a headless run or delegated conversation. Do the work inline instead.",
                 )
             }
             val params = args.jsonObject

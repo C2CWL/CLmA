@@ -191,10 +191,13 @@ class SubAgentEngine(
         // workflow / another sub-agent), reject. v1 does not allow nested sub-agents.
         if (parentChatId != null) {
             val parentUuid = runCatching { Uuid.parse(parentChatId) }.getOrNull()
-            if (parentUuid != null && HeadlessConversations.isHeadless(parentUuid)) {
+            if (parentUuid != null &&
+                (HeadlessConversations.isHeadless(parentUuid) ||
+                    conversationRepo.getConversationById(parentUuid)?.isDelegatedConversation == true)
+            ) {
                 return@withContext DispatchResult.Reject(
                     "no_recursion",
-                    "sub-agent dispatch is not allowed from inside another headless run"
+                    "sub-agent dispatch is not allowed from a headless run or delegated conversation"
                 )
             }
         }
@@ -632,6 +635,7 @@ class SubAgentEngine(
             chatModelId = resolvedChatModelId,
             folderId = archiveFolder,
             parentConversationId = parentChatId?.let { runCatching { Uuid.parse(it) }.getOrNull() },
+            isDelegatedConversation = true,
         )
         conversationRepo.insertConversation(conv)
         chatService.initializeConversation(conv.id)
@@ -644,34 +648,16 @@ class SubAgentEngine(
             runId = runId,
             parentRunId = parentChatId,
         )
-        // T-09 / (8) + P2-04 — freeze this run's tool surface for as long as it lives; ChatService
-        // applies the filter at every tool-assembly site. A record is written when EITHER knob is
-        // on: the parent assistant's `enableSubAgentToolSurface` (which also narrows the surface to
-        // the dispatcher's `tools` allow-list), or the child's own surface (P2-04). With neither,
-        // no record is written at all, so `apply` stays an identity and the child's schemas are
-        // byte-for-byte what they were.
-        if (freezeToolSurface || childAssistant != null) {
-            // Belt and braces: subagent_dispatch already REJECTS a blocked name outright, but the
-            // engine is the layer that actually owns the surface, and a future caller (a workflow
-            // step, an external automation, a test) could hand us a SubAgentRequest directly.
-            // Running the requested names through the policy here means a blocked name can never
-            // reach a frozen surface no matter who asked for it. An empty result means "no
-            // narrowing", which is exactly what `request.tools == null` means.
-            //
-            // P2-04 — `assistant` is the child's own surface when its profile defined one. The
-            // `tools` allow-list stays gated by the parent's `enableSubAgentToolSurface`: its
-            // schema is only described when that flag is on, so a profile-supplied surface alone
-            // never honours a parameter the model was never told about.
-            SubAgentSurface.freeze(
-                conversationId = conv.id,
-                assistant = childAssistant,
-                requested = if (freezeToolSurface) {
-                    SubAgentToolSurface.safeNames(request.tools.orEmpty())
-                } else {
-                    null
-                },
-            )
-        }
+        // The safety floor is unconditional; only the optional allow-list is feature-gated.
+        SubAgentSurface.freeze(
+            conversationId = conv.id,
+            assistant = childAssistant,
+            requested = if (freezeToolSurface) {
+                SubAgentToolSurface.safeNames(request.tools.orEmpty())
+            } else {
+                null
+            },
+        )
         try {
             // Prepend a wrap-up instruction. Some models naturally write a summary paragraph
             // after their tool-call sequence; others stop after the last tool result and emit

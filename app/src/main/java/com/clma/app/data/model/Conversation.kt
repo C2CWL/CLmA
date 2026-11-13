@@ -36,6 +36,7 @@ data class Conversation(
     // 所属文件夹（助手内分组），null 表示未归入任何文件夹
     val folderId: Uuid? = null,
     val parentConversationId: Uuid? = null,
+    val isDelegatedConversation: Boolean = false,
     // true = Agent 模式（带工具，默认）；false = 聊天模式（不向模型发送任何工具定义，省 token）
     val agentModeEnabled: Boolean = true,
     @Transient

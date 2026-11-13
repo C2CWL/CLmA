@@ -114,11 +114,13 @@ object ToolSurfaceResolver {
         conversationId: Uuid,
         model: Model,
         isHeadless: Boolean,
+        isDelegatedConversation: Boolean = false,
         appPlaybook: (suspend (fileName: String) -> String?)? = null,
     ): ToolInvocationContext = ToolInvocationContexts.chat(
         assistantId = assistant.id.toString(),
         conversationId = conversationId.toString(),
         isHeadless = isHeadless,
+        isDelegatedConversation = isDelegatedConversation,
         // show_image keys its result envelope off this — a text-only model gets told it
         // cannot see the image instead of confabulating one.
         modelCanSeeImages = Modality.IMAGE in model.inputModalities,
@@ -138,7 +140,9 @@ object ToolSurfaceResolver {
     fun fastPathContext(
         assistant: Assistant,
         conversationId: Uuid,
+        isDelegatedConversation: Boolean = false,
     ): ToolInvocationContext = ToolInvocationContexts.fastPath(
+        isDelegatedConversation = isDelegatedConversation,
         assistantId = assistant.id.toString(),
         conversationId = conversationId.toString(),
         subAgentToolSurfaceEnabled = assistant.enableSubAgentToolSurface,
