@@ -23,6 +23,23 @@ import kotlin.uuid.Uuid
 
 class ConversationSessionTest {
     @Test
+    fun `persistence ownership keeps session alive without marking UI visible`() {
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+        val id = Uuid.random()
+        val session = ConversationSession(id, Conversation.ofId(id), scope, {})
+        try {
+            session.acquirePersistence()
+            assertTrue(session.isInUse)
+            assertFalse(session.hasUiReference)
+            session.releasePersistence()
+            assertFalse(session.isInUse)
+        } finally {
+            session.cleanup()
+            scope.cancel()
+        }
+    }
+
+    @Test
     fun `stop does not resume queued approval when predecessor cancels immediately`() = runBlocking {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
         val id = Uuid.random()

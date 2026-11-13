@@ -9,9 +9,13 @@ import androidx.paging.PagingData
 import androidx.paging.PagingSource
 import androidx.paging.map
 import androidx.room.withTransaction
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import com.clma.ai.ui.UIMessage
 import com.clma.common.android.Logging
 import com.clma.app.data.db.AppDatabase
@@ -362,11 +366,12 @@ class ConversationRepository(
         conversation: Conversation,
         updateSearchIndex: Boolean = true,
     ) {
+        val entities = encodeMessageNodes(conversation.id.toString(), conversation.messageNodes)
         database.withTransaction {
             conversationDAO.insert(
                 conversationToConversationEntity(conversation)
             )
-            saveMessageNodes(conversation.id.toString(), conversation.messageNodes)
+            messageNodeDAO.insertAll(entities)
         }
         if (updateSearchIndex) {
             messageFtsManager.indexConversation(conversation)
@@ -377,13 +382,14 @@ class ConversationRepository(
         conversation: Conversation,
         updateSearchIndex: Boolean = true,
     ) {
+        val entities = encodeMessageNodes(conversation.id.toString(), conversation.messageNodes)
         database.withTransaction {
             conversationDAO.update(
                 conversationToConversationEntity(conversation)
             )
             // 删除旧的节点，插入新的节点
             messageNodeDAO.deleteByConversation(conversation.id.toString())
-            saveMessageNodes(conversation.id.toString(), conversation.messageNodes)
+            messageNodeDAO.insertAll(entities)
         }
         if (updateSearchIndex) {
             messageFtsManager.indexConversation(conversation)
@@ -579,19 +585,9 @@ class ConversationRepository(
             .mapNotNull { runCatching { Uuid.parse(it) }.getOrNull() }
             .toSet()
 
-        return database.withTransaction {
-            val nodes = mutableListOf<MessageNode>()
-
-            fun toMessageNode(entity: MessageNodeEntity): MessageNode {
-                val messages = JsonInstant.decodeFromString<List<UIMessage>>(entity.messages)
-                val nodeId = Uuid.parse(entity.id)
-                return MessageNode(
-                    id = nodeId,
-                    messages = messages,
-                    selectIndex = entity.selectIndex,
-                    isFavorite = favoriteNodeIds.contains(nodeId)
-                )
-            }
+        // Keep pagination consistent, but release Room's transaction before decoding JSON.
+        val entities = database.withTransaction {
+            val rows = mutableListOf<MessageNodeEntity>()
 
             // Fallback for when a whole pageSize-row page fails to decode (a corrupt blob or
             // bad cursor state somewhere in the window): retry one row at a time so only the
@@ -600,7 +596,7 @@ class ConversationRepository(
             // number of node_index positions consumed, always pageSize unless the
             // conversation's data ends inside the window, which the caller MUST use to
             // advance its OFFSET-based pagination; advancing by the recovered count instead
-            // would re-read rows already added to `nodes` on the next iteration.
+            // would re-read rows already added to `rows` on the next iteration.
             suspend fun recoverPageRowByRow(offset: Int, pageSize: Int): Int {
                 for (i in 0 until pageSize) {
                     val rowOffset = offset + i
@@ -614,7 +610,7 @@ class ConversationRepository(
                         continue
                     }
                     if (row.isEmpty()) return i
-                    nodes.add(toMessageNode(row.single()))
+                    rows.add(row.single())
                 }
                 return pageSize
             }
@@ -636,15 +632,31 @@ class ConversationRepository(
                     if (consumed < pageSize) break else continue
                 }
                 if (page.isEmpty()) break
-                page.forEach { entity -> nodes.add(toMessageNode(entity)) }
+                rows.addAll(page)
                 offset += page.size
             }
-            nodes
+            rows
+        }
+        return withContext(Dispatchers.Default) {
+            entities.map { entity ->
+                currentCoroutineContext().ensureActive()
+                val nodeId = Uuid.parse(entity.id)
+                MessageNode(
+                    id = nodeId,
+                    messages = JsonInstant.decodeFromString<List<UIMessage>>(entity.messages),
+                    selectIndex = entity.selectIndex,
+                    isFavorite = favoriteNodeIds.contains(nodeId),
+                )
+            }
         }
     }
 
-    private suspend fun saveMessageNodes(conversationId: String, nodes: List<MessageNode>) {
-        val entities = nodes.mapIndexed { index, node ->
+    private suspend fun encodeMessageNodes(
+        conversationId: String,
+        nodes: List<MessageNode>,
+    ): List<MessageNodeEntity> = withContext(Dispatchers.Default) {
+        nodes.mapIndexed { index, node ->
+            currentCoroutineContext().ensureActive()
             MessageNodeEntity(
                 id = node.id.toString(),
                 conversationId = conversationId,
@@ -653,7 +665,6 @@ class ConversationRepository(
                 selectIndex = node.selectIndex
             )
         }
-        messageNodeDAO.insertAll(entities)
     }
 }
 
