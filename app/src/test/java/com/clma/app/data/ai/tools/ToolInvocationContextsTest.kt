@@ -78,6 +78,22 @@ class ToolInvocationContextsTest {
         assertTrue(ctx.isHeadless)
     }
 
+    @Test
+    fun `archived delegated chat blocks delegation without becoming headless`() {
+        val ctx = ToolInvocationContexts.chat(
+            assistantId = "asst-1",
+            conversationId = "archived-sub-conv",
+            isHeadless = false,
+            modelCanSeeImages = true,
+            modelCanSeeVideos = true,
+            subAgentContextRefsEnabled = false,
+            subAgentToolSurfaceEnabled = false,
+            isDelegatedConversation = true,
+        )
+        assertTrue(ctx.isDelegatedConversation)
+        assertFalse(ctx.isHeadless)
+    }
+
     // 4. Phase 16 fast-path router — tools are executed, never shown to a model, so the
     //    model-derived fields must keep their data-class defaults.
     @Test

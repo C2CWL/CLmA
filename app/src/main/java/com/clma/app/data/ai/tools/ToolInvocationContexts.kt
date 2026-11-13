@@ -48,11 +48,13 @@ object ToolInvocationContexts {
         modelCanSeeVideos: Boolean,
         subAgentContextRefsEnabled: Boolean,
         subAgentToolSurfaceEnabled: Boolean,
+        isDelegatedConversation: Boolean = false,
         appPlaybook: (suspend (fileName: String) -> String?)? = null,
     ): ToolInvocationContext = ToolInvocationContext(
         callerAssistantId = assistantId,
         callerConversationId = conversationId,
         isHeadless = isHeadless,
+        isDelegatedConversation = isDelegatedConversation,
         modelCanSeeImages = modelCanSeeImages,
         modelCanSeeVideos = modelCanSeeVideos,
         subAgentContextRefsEnabled = subAgentContextRefsEnabled,
@@ -70,10 +72,12 @@ object ToolInvocationContexts {
         assistantId: String,
         conversationId: String,
         subAgentToolSurfaceEnabled: Boolean,
+        isDelegatedConversation: Boolean = false,
     ): ToolInvocationContext = ToolInvocationContext(
         callerAssistantId = assistantId,
         callerConversationId = conversationId,
         isHeadless = false,
+        isDelegatedConversation = isDelegatedConversation,
         subAgentToolSurfaceEnabled = subAgentToolSurfaceEnabled,
     )
 

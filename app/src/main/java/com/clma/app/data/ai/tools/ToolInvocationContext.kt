@@ -32,6 +32,8 @@ data class ToolInvocationContext(
     val callerAssistantId: String? = null,
     val callerConversationId: String? = null,
     val isHeadless: Boolean = false,
+    /** Persisted delegation identity blocks further delegation even after a run has finished. */
+    val isDelegatedConversation: Boolean = false,
     val modelCanSeeImages: Boolean = true,
     /**
      * P2-33b — true iff the model handling this turn has video input in its modalities.

@@ -263,10 +263,10 @@ fun subagentDispatchTool(
             // run (cron / workflow / external-automation / another sub-agent). The engine's
             // own guard relies on a registered conversation id; cron / workflow direct-mode
             // paths have no conversation so the engine guard wouldn't fire there. Catch it here.
-            if (callerContext.isHeadless) {
+            if (callerContext.isHeadless || callerContext.isDelegatedConversation) {
                 return@Tool errEnv(
                     "no_recursion",
-                    "sub-agent dispatch is not allowed from inside a headless run (cron / workflow / sub-agent / external automation). Run the work inline instead.",
+                    "sub-agent dispatch is not allowed from a headless run or delegated conversation. Run the work inline instead.",
                 )
             }
             val params = args.jsonObject

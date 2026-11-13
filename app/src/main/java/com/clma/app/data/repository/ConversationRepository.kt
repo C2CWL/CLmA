@@ -482,6 +482,7 @@ class ConversationRepository(
             folderId = conversation.folderId?.toString() ?: "",
             chatModelId = encodeChatModelId(conversation.chatModelId),
             parentConversationId = conversation.parentConversationId?.toString() ?: "",
+            isDelegatedConversation = conversation.isDelegatedConversation,
             agentModeEnabled = conversation.agentModeEnabled,
         )
     }
@@ -506,6 +507,7 @@ class ConversationRepository(
             folderId = conversationEntity.folderId.ifEmpty { null }?.let { Uuid.parse(it) },
             chatModelId = decodeChatModelId(conversationEntity.chatModelId),
             parentConversationId = conversationEntity.parentConversationId.ifEmpty { null }?.let { runCatching { Uuid.parse(it) }.getOrNull() },
+            isDelegatedConversation = conversationEntity.isDelegatedConversation,
             agentModeEnabled = conversationEntity.agentModeEnabled,
         )
     }
@@ -570,6 +572,7 @@ class ConversationRepository(
             messageNodes = emptyList(),
             folderId = entity.folderId.ifEmpty { null }?.let { Uuid.parse(it) },
             parentConversationId = entity.parentConversationId.ifEmpty { null }?.let { runCatching { Uuid.parse(it) }.getOrNull() },
+            isDelegatedConversation = entity.isDelegatedConversation,
         )
     }
 
@@ -695,6 +698,7 @@ data class LightConversationEntity(
     val updateAt: Long,
     val folderId: String = "",
     val parentConversationId: String = "",
+    val isDelegatedConversation: Boolean = false,
 )
 
 data class ConversationPageResult(

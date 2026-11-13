@@ -1017,7 +1017,9 @@ class LocalTools(
             tools.add(com.clma.app.reliability.generateBugReportTool(context, bugReportBuilder))
             tools.add(com.clma.app.reliability.readAppLogsTool())
         }
-        if (options.contains(LocalToolOption.SubAgents)) {
+        if (options.contains(LocalToolOption.SubAgents) &&
+            !invocationContext.isHeadless && !invocationContext.isDelegatedConversation
+        ) {
             // Pass the caller context so the recursion guard inside SubAgentEngine.dispatch
             // can fire — the dispatch tool itself can't read its own coroutine context, but
             // ChatService / cron / workflow / external-automation know who's calling at the

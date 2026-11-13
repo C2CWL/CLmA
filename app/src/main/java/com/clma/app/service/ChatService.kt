@@ -1391,7 +1391,9 @@ class ChatService(
         val tools = ToolSurfaceResolver.resolve(
             localTools = localTools,
             assistant = assistant,
-            context = ToolSurfaceResolver.fastPathContext(assistant, conversationId),
+            context = ToolSurfaceResolver.fastPathContext(
+                assistant, conversationId, isDelegatedConversation = afterUserSave.isDelegatedConversation,
+            ),
         )
         val tool = tools.firstOrNull { it.name == match.toolName } ?: run {
             android.util.Log.d("FastPathRouter", "matched intent=${match.intent} but tool=${match.toolName} not registered for assistant; falling through")
@@ -2057,6 +2059,7 @@ class ChatService(
             conversationId = conversationId,
             model = model,
             isHeadless = com.clma.app.data.ai.tools.HeadlessConversations.isHeadless(conversationId),
+            isDelegatedConversation = getConversationFlow(conversationId).value.isDelegatedConversation,
             appPlaybook = coldMemoryPlaybookReader(surfaceAssistant),
         )
         val localToolsFull = ToolSurfaceResolver.resolve(
@@ -2205,6 +2208,7 @@ class ChatService(
             conversationId = conversationId,
             model = model,
             isHeadless = com.clma.app.data.ai.tools.HeadlessConversations.isHeadless(conversationId),
+            isDelegatedConversation = getConversationFlow(conversationId).value.isDelegatedConversation,
             appPlaybook = coldMemoryPlaybookReader(surfaceAssistant),
         )
         // The tool objects the model will actually receive.

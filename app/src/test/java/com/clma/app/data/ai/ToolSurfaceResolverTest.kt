@@ -78,6 +78,26 @@ class ToolSurfaceResolverTest {
     }
 
     @Test
+    fun `delegated identity survives chat and fast path context resolution`() {
+        val chat = ToolSurfaceResolver.chatContext(
+            assistant = assistant(),
+            conversationId = conversationId,
+            model = model(Modality.TEXT),
+            isHeadless = false,
+            isDelegatedConversation = true,
+        )
+        val fastPath = ToolSurfaceResolver.fastPathContext(
+            assistant = assistant(),
+            conversationId = conversationId,
+            isDelegatedConversation = true,
+        )
+        assertTrue(chat.isDelegatedConversation)
+        assertTrue(fastPath.isDelegatedConversation)
+        assertFalse(chat.isHeadless)
+        assertFalse(fastPath.isHeadless)
+    }
+
+    @Test
     fun `headless context is headless with no conversation`() {
         val ctx = ToolSurfaceResolver.headlessContext(assistantId)
 

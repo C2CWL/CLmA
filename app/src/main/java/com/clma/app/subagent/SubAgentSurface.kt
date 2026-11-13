@@ -41,12 +41,9 @@ import kotlin.uuid.Uuid
  * namespace still gets a derived child assistant, and every tool on it still passes through the
  * headless floor in [apply].
  *
- * ## Off by default, byte-identical when off
- *
- * No record is written unless the definition defines a surface ([resolveChildAssistant] returns
- * non-null) or the parent assistant has `enableSubAgentToolSurface` on ([SubAgentEngine]). With no
- * record, [apply] returns the **same `List<Tool>` instance** and [assistantFor] returns null, so an
- * install that configures neither sends exactly the tool schemas it sent before P2-04.
+ * Every active sub-agent gets a record so the safety floor is unconditional. The parent's
+ * `enableSubAgentToolSurface` only controls the optional requested-tool allow-list. Ordinary
+ * conversations have no record and retain the same tool-list instance.
  */
 object SubAgentSurface {
 
@@ -156,8 +153,7 @@ object SubAgentSurface {
      * alike. A [`requested`][FrozenSurface.requested] allow-list narrows further, and a denial
      * always beats it.
      *
-     * **Identity contract:** with no freeze record — i.e. every conversation in an install that
-     * turns neither knob on, and every non-sub-agent conversation in one that does — the same
+     * **Identity contract:** with no freeze record — including every ordinary conversation — the same
      * `List<Tool>` instance is returned, so the schemas handed to the model are byte-for-byte what
      * they were.
      */
