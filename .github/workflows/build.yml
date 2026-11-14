@@ -174,6 +174,9 @@ jobs:
       # them. :ai was the first one wired in (provider request-shape tests); the
       # rest followed with the com.clma package rename so every moved test runs
       # at least once in CI. They are plain JVM tests, seconds not minutes.
+      - name: Test frame waiter bytecode transformer
+        run: ./gradlew -p build-logic test --stacktrace
+
       - name: Assemble CLmA APK + unit tests
         env:
           # Fast lane: a push to a feature branch (feat/**) skips the release
@@ -193,6 +196,9 @@ jobs:
           # --continue: one failing module must not hide the results of the others.
           ./gradlew :app:assembleClma :app:testClmaUnitTest $LIB_TESTS --continue $FLAGS --stacktrace
 
+      - name: Verify actual optimized frame waiter entry and source tags
+        run: python3 scripts/verify_frame_waiter_apk.py
+
       - name: Show CLmA APK sizes
         run: ls -la app/build/outputs/apk/clma/*.apk || true
 
@@ -200,11 +206,24 @@ jobs:
         if: always()
         run: ccache -s -v || true
 
+      - name: Require matching mapping
+        run: test -s app/build/outputs/mapping/clma/mapping.txt
+
       - name: Upload CLmA APK
         uses: actions/upload-artifact@v4
         with:
           name: apk-clma
           path: app/build/outputs/apk/clma/*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload matching R8 mapping and frame-probe verification
+        uses: actions/upload-artifact@v4
+        with:
+          name: mapping-and-frame-probe-clma
+          path: |
+            app/build/outputs/mapping/clma/mapping.txt
+            app/build/reports/frame-waiter-probe.json
           if-no-files-found: error
           retention-days: 14
 

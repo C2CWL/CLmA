@@ -122,6 +122,7 @@ internal fun ObserveDrawerDiagnostics(
 ) {
     val functions by rememberSharedPreferenceBoolean(FunctionalDiagnostics.FUNCTION_KEY)
     val animation by rememberSharedPreferenceBoolean(FunctionalDiagnostics.ANIMATION_KEY)
+    com.clma.app.diagnostics.ObserveFrameWaiterDiagnostics(functions)
     DisposableEffect(updateCounters, functions) {
         if (functions) DrawerUpdateDiagnostics.register(updateCounters)
         onDispose { DrawerUpdateDiagnostics.unregister(updateCounters) }

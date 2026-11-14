@@ -34,6 +34,7 @@ object FunctionalDiagnostics {
     fun init(context: Context) {
         functionsEnabled = context.readBooleanPreference(FUNCTION_KEY)
         animationEnabled = context.readBooleanPreference(ANIMATION_KEY)
+        FrameWaiterProbe.configure(functionsEnabled)
         scope.launch {
             for ((tag, message, level) in queue) {
                 val lost = dropped.getAndSet(0)
@@ -53,6 +54,7 @@ object FunctionalDiagnostics {
     ) {
         functionsEnabled = functions
         animationEnabled = animation
+        FrameWaiterProbe.configure(functions)
         emit("config functions=$functions animation=$animation", LogLevel.INFO)
     }
 
@@ -67,6 +69,11 @@ object FunctionalDiagnostics {
     /** Aggregated numeric render samples only; never one log entry per frame. */
     fun renderSample(message: String) {
         if (functionsEnabled) emit(message, LogLevel.INFO, "RenderDiag")
+    }
+
+    /** Only armed captures call this, including the one final report when disabled. */
+    internal fun frameWaiterReport(message: String) {
+        emit(message, LogLevel.INFO, "FrameWaiterDiag")
     }
 
     fun failure(name: String) {

@@ -11,6 +11,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
+    id("clma.frame-waiter-probe")
 }
 
 // `checkReleaseBuilds` (a.k.a. the lintVital pass) drags a
@@ -31,6 +32,8 @@ android {
         targetSdk = 37
         versionCode = 67
         versionName = "3.2"
+
+        buildConfigField("boolean", "FRAME_WAITER_PROBE_ENABLED", "false")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -109,6 +112,7 @@ android {
         // still live in src/main/keepRules/rikkahub.keep. applicationId is
         // com.clma.app with no suffix so it coexists with upstream packages.
         create("clma") {
+            buildConfigField("boolean", "FRAME_WAITER_PROBE_ENABLED", "true")
             // The library subprojects (:ai, :local-llm, :llama-cpp, …) only
             // publish debug/release variants, so "clma" resolves to their
             // release variant.

@@ -1,0 +1,10 @@
+# Diagnostic branch only: keep the actual observed entry and no-throw bridges inspectable in DEX.
+# Other UI/animation code retains the normal optimizations. Retain mapping for caller stacks.
+-keep class androidx.compose.runtime.BroadcastFrameClock {
+    public java.lang.Object withFrameNanos(kotlin.jvm.functions.Function1, kotlin.coroutines.Continuation);
+}
+-keep class com.clma.app.diagnostics.FrameWaiterProbe {
+    public static void onAwait(java.lang.Object);
+    public static void onRequestSite(java.lang.Object, java.lang.String, java.lang.String);
+}
+-keepattributes SourceFile,LineNumberTable
