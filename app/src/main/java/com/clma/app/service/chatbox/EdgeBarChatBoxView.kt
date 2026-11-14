@@ -17,6 +17,9 @@ import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.RippleDrawable
 import android.os.Build
+import com.clma.app.diagnostics.FunctionalDiagnostics
+import com.clma.app.service.cleanupOverlayResources
+import com.clma.app.service.releaseOverlayResource
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
@@ -157,6 +160,8 @@ internal class EdgeBarChatBoxView(
      * always spans the keyboard, so its inset is the real height, both coming up and going away.
      */
     private var imeProbe: View? = null
+    private var dismissNotified = true
+    private var pendingDialog: Dialog? = null
     private var blurListener: Consumer<Boolean>? = null
 
     // Views, (re)built by [buildContent] for the current palette.
@@ -203,6 +208,9 @@ internal class EdgeBarChatBoxView(
             place()
             return
         }
+        // Retry partial cleanup before allocating another window.
+        dismiss()
+        if (imeProbe != null || pendingDialog != null || conversationMenu != null) return
         dark = darkMode
         glass = blurAvailable()
         imeBottom = 0
@@ -239,17 +247,19 @@ internal class EdgeBarChatBoxView(
                 }
         )
         dialog = d
+        dismissNotified = false
         state = newState
-        render(newState)
-        applyBackground()
-        place()
-        // Before the dialog, so this window ends up below it in the z-order.
-        addImeProbe()
         try {
+            render(newState)
+            applyBackground()
+            place()
+            // Before the dialog, so this window ends up below it in the z-order.
+            addImeProbe()
             d.show()
         } catch (t: Throwable) {
+            FunctionalDiagnostics.failure("edgebar.popup.show_failed")
             Log.w(TAG, "show failed", t)
-            dialog = null
+            dismiss() // Also releases the IME probe if Dialog.show never succeeded.
             return
         }
         // Fallback only: the box sits above the keyboard, so the size this window reports drops
@@ -295,10 +305,7 @@ internal class EdgeBarChatBoxView(
 
     /** Closes the box ([Callbacks.onDismissed] is still called once). */
     fun dismiss() {
-        val d = dialog ?: return
-        runCatching { d.dismiss() }.onFailure { Log.w(TAG, "dismiss failed", it) }
-        // onDismissListener does the cleanup; make sure it ran even if dismiss threw.
-        if (dialog != null) onDismissInternal()
+        onDismissInternal() // Resource cleanup is required even with no dialog.
     }
 
     /** Clears the field after a successful send and drops the keyboard. */
@@ -309,15 +316,37 @@ internal class EdgeBarChatBoxView(
     }
 
     private fun onDismissInternal() {
-        if (dialog == null) return
-        conversationMenu?.dismiss()
-        conversationMenu = null
-        handler.removeCallbacks(ticker)
-        removeImeProbe()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) unregisterBlurListener()
+        val oldDialog = dialog ?: pendingDialog
+        pendingDialog = oldDialog
+        val menu = conversationMenu
+        val notify = !dismissNotified
+        // Clear identity before Dialog posts its listener; cleanup and callback are idempotent.
         dialog = null
         state = null
-        callbacks.onDismissed()
+        dismissNotified = true
+        cleanupOverlayResources(
+            { Log.w(TAG, "window cleanup failed", it) },
+            { handler.removeCallbacksAndMessages(null) },
+            { menu?.dismiss(); if (conversationMenu === menu) conversationMenu = null },
+            {
+                val released = releaseOverlayResource(
+                    resource = oldDialog,
+                    quiesce = { it.window?.decorView?.visibility = View.GONE },
+                    remove = { d ->
+                        d.dismiss()
+                        // Cover partially successful show() before Dialog marks itself showing.
+                        d.window?.peekDecorView()?.let { decor ->
+                            if (decor.parent != null) wm.removeViewImmediate(decor)
+                        }
+                    },
+                    onFailure = { Log.w(TAG, "dialog removal failed (reference retained)", it) },
+                )
+                if (released) pendingDialog = null
+            },
+            { removeImeProbe() },
+            { if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) unregisterBlurListener() },
+            { if (notify) callbacks.onDismissed() },
+        )
     }
 
     // ---- Content ----
@@ -1312,7 +1341,7 @@ internal class EdgeBarChatBoxView(
     @RequiresApi(Build.VERSION_CODES.S)
     private fun registerBlurListener() {
         val listener = Consumer<Boolean> { enabled ->
-            handler.post {
+            if (dialog != null) handler.post {
                 if (dialog == null || enabled == glass) return@post
                 glass = enabled
                 rebuild()
@@ -1326,8 +1355,9 @@ internal class EdgeBarChatBoxView(
     @RequiresApi(Build.VERSION_CODES.S)
     private fun unregisterBlurListener() {
         val listener = blurListener ?: return
-        blurListener = null
         runCatching { wm.removeCrossWindowBlurEnabledListener(listener) }
+            .onSuccess { blurListener = null }
+            .onFailure { Log.w(TAG, "blur listener removal failed (reference retained)", it) }
     }
 
     private fun applyBackground() {
@@ -1485,18 +1515,33 @@ internal class EdgeBarChatBoxView(
             }
             insets
         }
+        imeProbe = probe // Retain ownership even if addView only partly succeeds.
         if (!runCatching { wm.addView(probe, lp) }.isSuccess) {
             Log.w(TAG, "ime probe add failed")
-            return
+            removeImeProbe()
         }
-        imeProbe = probe
     }
 
     private fun removeImeProbe() {
-        val probe = imeProbe ?: return
-        imeProbe = null
-        runCatching { wm.removeViewImmediate(probe) }
-            .onFailure { Log.w(TAG, "ime probe remove failed", it) }
+        val released = releaseOverlayResource(
+            resource = imeProbe,
+            quiesce = { probe ->
+                ViewCompat.setOnApplyWindowInsetsListener(probe, null)
+                probe.visibility = View.GONE
+            },
+            remove = { probe ->
+                try {
+                    wm.removeViewImmediate(probe)
+                } catch (e: IllegalArgumentException) {
+                    if (probe.isAttachedToWindow || probe.parent != null) throw e
+                }
+            },
+            onFailure = {
+                FunctionalDiagnostics.failure("edgebar.ime.remove_failed")
+                Log.w(TAG, "ime probe remove failed (reference retained)", it)
+            },
+        )
+        if (released) imeProbe = null
     }
 
     private fun collapseKind(): IconView.Kind = when (anchor?.edge) {
