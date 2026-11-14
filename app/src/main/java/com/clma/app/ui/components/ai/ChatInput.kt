@@ -69,7 +69,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.LookaheadScope
+import androidx.compose.ui.layout.approachLayout
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -80,7 +89,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.util.lerp
 import androidx.compose.ui.window.DialogProperties
 import com.dokar.sonner.ToastType
 import dev.chrisbanes.haze.HazeInput
@@ -720,63 +728,90 @@ private fun ModelReasoningChip(
  * so tapping the bar made it flash open and immediately close again.
  */
 @Composable
-private fun ChatInputBar(
+internal fun ChatInputBar(
     expanded: Boolean,
     modifier: Modifier = Modifier,
     left: @Composable () -> Unit,
     center: @Composable () -> Unit,
     right: @Composable () -> Unit,
 ) {
-    // The two arrangements differ in exactly two things: how wide the field is, and which row the
-    // button pair sits on. Animating between them means interpolating just those, and every child
-    // stays in the same composition slot, so the focus that triggered the switch survives it (an
-    // AnimatedContent / AnimatedVisibility wrapper would recreate the field and drop the focus —
-    // the bug this layout exists to avoid).
     val progress by animateFloatAsState(
         targetValue = if (expanded) 1f else 0f,
         animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
         label = "chatInputBarExpanded",
     )
-    Layout(modifier = modifier, content = { left(); center(); right() }) { measurables, constraints ->
-        val gap = 4.dp.roundToPx()
-        val width = constraints.maxWidth
-        val loose = constraints.copy(minWidth = 0, maxWidth = width)
-        val leftPlaceable = measurables[0].measure(loose)
-        val rightPlaceable = measurables[2].measure(loose)
-
-        val p = progress.coerceIn(0f, 1f)
-        val collapsedCenterWidth =
-            (width - leftPlaceable.width - rightPlaceable.width - gap * 2).coerceAtLeast(0)
-        val centerWidth = lerp(collapsedCenterWidth.toFloat(), width.toFloat(), p).roundToInt()
-        val centerPlaceable = measurables[1].measure(
-            constraints.copy(minWidth = centerWidth, maxWidth = centerWidth)
-        )
-
-        val actionHeight = maxOf(leftPlaceable.height, rightPlaceable.height)
-        val collapsedHeight =
-            maxOf(leftPlaceable.height, centerPlaceable.height, rightPlaceable.height)
-        val expandedHeight = centerPlaceable.height + gap + actionHeight
-        val height = lerp(collapsedHeight.toFloat(), expandedHeight.toFloat(), p).roundToInt()
-
-        layout(width, height) {
-            // Collapsed: one row, everything centred on it. Expanded: the field owns the top row
-            // and the pair drops to the row below, each centred on that row's height.
-            val centerY = lerp((collapsedHeight - centerPlaceable.height) / 2f, 0f, p)
-            val leftY = lerp(
-                (collapsedHeight - leftPlaceable.height) / 2f,
-                (centerPlaceable.height + gap + (actionHeight - leftPlaceable.height) / 2f).toFloat(),
-                p,
+    val geometry = remember { InputBarGeometry() }
+    LookaheadScope {
+        Layout(
+            modifier = modifier.approachLayout(
+                isMeasurementApproachInProgress = { progress != (if (expanded) 1f else 0f) },
+            ) { measurable, constraints ->
+                val placeable = measurable.measure(constraints)
+                layout(placeable.width, placeable.height) { placeable.place(0, 0) }
+            },
+            content = { left(); center(); right() },
+        ) { measurables, constraints ->
+            val width = constraints.maxWidth
+            val gap = 4.dp.roundToPx().coerceAtMost(width / 2)
+            val actionBudget = inputBarActionBudget(expanded, width, gap, 64.dp.roundToPx())
+            val rightPlaceable = measurables[2].measure(constraints.copy(minWidth = 0, maxWidth = actionBudget))
+            val leftPlaceable = measurables[0].measure(
+                constraints.copy(minWidth = 0, maxWidth = (actionBudget - rightPlaceable.width).coerceAtLeast(0))
             )
-            val rightY = lerp(
-                (collapsedHeight - rightPlaceable.height) / 2f,
-                (centerPlaceable.height + gap + (actionHeight - rightPlaceable.height) / 2f).toFloat(),
-                p,
-            )
-            val centerX = lerp((leftPlaceable.width + gap).toFloat(), 0f, p)
-            centerPlaceable.place(centerX.roundToInt(), centerY.roundToInt())
-            leftPlaceable.place(0, leftY.roundToInt())
-            rightPlaceable.place(width - rightPlaceable.width, rightY.roundToInt())
+            val centerPlaceable: Placeable
+            val frame: InputBarEndpoint
+            if (isLookingAhead) {
+                // Predict the real endpoint independently of intermediate text wrapping. This
+                // is the SAME field in a predictive measure pass, not a duplicate composition.
+                val fieldWidth = inputBarFieldWidth(expanded, width, leftPlaceable.width, rightPlaceable.width, gap)
+                centerPlaceable = measurables[1].measure(constraints.copy(minWidth = fieldWidth, maxWidth = fieldWidth))
+                frame = inputBarEndpoint(
+                    expanded, width, leftPlaceable.width, rightPlaceable.width,
+                    leftPlaceable.height, rightPlaceable.height, centerPlaceable.height, gap,
+                )
+                geometry.update(expanded, frame)
+            } else {
+                frame = geometry.frame(progress)
+                // The real field sees its ACTUAL animated viewport constraints. Do not draw a
+                // full-width field through a narrower clip: that leaves the caret, selection,
+                // accessibility bounds and IME bring-into-view using an invisible wider area.
+                centerPlaceable = measurables[1].measure(constraints.copy(
+                    minWidth = frame.centerWidth, maxWidth = frame.centerWidth,
+                    minHeight = 0, maxHeight = minOf(frame.centerHeight, constraints.maxHeight),
+                ))
+            }
+            layout(width, frame.height) {
+                centerPlaceable.place(frame.centerX, frame.centerY)
+                // Only action labels/buttons are revealed; the text field has no extra clip,
+                // graphics transform, scaling or manual input-session/selection manipulation.
+                leftPlaceable.placeWithLayer(0, frame.leftY) {
+                    clip = true
+                    shape = InputBarActionViewport(frame.leftWidth, leftPlaceable.height)
+                }
+                rightPlaceable.placeWithLayer(width - rightPlaceable.width, frame.rightY) {
+                    clip = true
+                    shape = InputBarActionViewport(frame.rightWidth, rightPlaceable.height, alignEnd = true)
+                }
+            }
         }
+    }
+}
+
+/** Action bounds reveal only; never used to clip the editable text field. */
+private data class InputBarActionViewport(
+    val width: Int,
+    val height: Int,
+    val alignEnd: Boolean = false,
+) : Shape {
+    override fun createOutline(
+        size: Size,
+        layoutDirection: LayoutDirection,
+        density: Density,
+    ): Outline {
+        val w = width.toFloat().coerceIn(0f, size.width)
+        val h = height.toFloat().coerceIn(0f, size.height)
+        val left = if (alignEnd) size.width - w else 0f
+        return Outline.Rectangle(Rect(left, 0f, left + w, h))
     }
 }
 

@@ -1,6 +1,5 @@
 package com.clma.app.ui.pages.chat
 
-import com.clma.app.diagnostics.FunctionalDiagnostics
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Spacer
@@ -21,7 +20,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.DrawerState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalMinimumInteractiveComponentSize
@@ -33,7 +31,6 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,7 +49,6 @@ import com.dokar.sonner.ToastType
 import dev.chrisbanes.haze.HazeInput
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.glass.hazeGlass
-import kotlinx.coroutines.launch
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Cancel01
 import com.composables.icons.lucide.Lucide
@@ -110,7 +106,7 @@ internal fun CleanTopBar(
     settings: Settings,
     conversation: Conversation,
     turnFooters: Map<String, TurnFooter>,
-    drawerState: DrawerState,
+    onOpenDrawer: () -> Unit,
     bigScreen: Boolean,
     previewMode: Boolean,
     onOpenConversationSettings: () -> Unit,
@@ -118,7 +114,6 @@ internal fun CleanTopBar(
     onNewChat: () -> Unit,
     onNewTemporaryChat: () -> Unit = {},
 ) {
-    val scope = rememberCoroutineScope()
     val toaster = LocalToaster.current
     var showNewChatMenu by remember { mutableStateOf(false) }
     // Same rename dialog state as the regular bar and the drawer's Rename item.
@@ -153,18 +148,12 @@ internal fun CleanTopBar(
                     icon = HugeIcons.LeftToRightListBullet,
                     contentDescription = stringResource(R.string.menu),
                     modifier = Modifier.padding(start = 6.dp),
-                    onClick = {
-                        FunctionalDiagnostics.event("drawer.open.request", System.identityHashCode(drawerState))
-                        scope.launch { drawerState.open() }
-                    },
+                    onClick = onOpenDrawer,
                 )
             } else if (!bigScreen) {
                 CleanTopBarButtonSize {
                     IconButton(
-                        onClick = {
-                            FunctionalDiagnostics.event("drawer.open.request", System.identityHashCode(drawerState))
-                            scope.launch { drawerState.open() }
-                        },
+                        onClick = onOpenDrawer,
                         modifier = Modifier.size(CLEAN_TOP_BAR_BUTTON_DP.dp),
                     ) {
                         Icon(
