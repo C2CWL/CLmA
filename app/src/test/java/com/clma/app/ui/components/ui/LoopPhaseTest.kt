@@ -6,6 +6,16 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class LoopPhaseTest {
+    @Test
+    fun `dot pulse reverses continuously within alpha bounds`() {
+        assertEquals(0.3f, dotLoadingAlpha(0f), 1e-6f)
+        assertEquals(1f, dotLoadingAlpha(0.5f), 1e-6f)
+        assertEquals(0.3f, dotLoadingAlpha(1f), 1e-6f)
+        for (step in 0..100) {
+            assertTrue(dotLoadingAlpha(step / 100f) in 0.3f..1f)
+        }
+    }
+
 
     @Test
     fun `loops run unless the animator scale is zero`() {
