@@ -45,6 +45,9 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.PermanentNavigationDrawer
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
@@ -443,6 +446,11 @@ internal fun ChatPageContent(
     onInputFocusChanged: (Boolean) -> Unit = {},
     botChrome: BotChatChrome? = null,
 ) {
+    var diagnosticOpen by remember { mutableStateOf(false) }
+    var showTopLayer by rememberSaveable { mutableStateOf(true) }
+    var showInputLayer by rememberSaveable { mutableStateOf(true) }
+    var showMessageLayer by rememberSaveable { mutableStateOf(true) }
+    var showBackgroundLayer by rememberSaveable { mutableStateOf(true) }
     val scope = rememberCoroutineScope()
     // 换会话「先藏 → 落到底 → 再露」（学 Kelivo）：旧会话随页面淡出，新会话的消息列表
     // 在滚到底之前保持透明，落定后再用 180ms 淡入，避免先露半截列表再跳到底。
@@ -553,12 +561,14 @@ internal fun ChatPageContent(
         color = MaterialTheme.colorScheme.background,
         modifier = Modifier.fillMaxSize()
     ) {
+        if (showBackgroundLayer) {
         AssistantBackground(
             setting = setting,
             emptyConversation = conversation.messageNodes.isEmpty(),
             // Keyed so the usage line under replies can blur the wallpaper alone.
             modifier = Modifier.hazeSource(hazeState, key = CHAT_WALLPAPER_HAZE_KEY),
         )
+        }
         GeminiChatDrawer(
             enabled = geminiLayout,
             settings = setting,
@@ -575,6 +585,7 @@ internal fun ChatPageContent(
                 // title and fade out behind it.
                 topBar = {},
                 bottomBar = {
+                    if (showInputLayer) {
                     val messageQueue by vm.messageQueue.collectAsStateWithLifecycle()
                     val voiceState by vm.voiceSession.state.collectAsStateWithLifecycle()
                     ChatInput(
@@ -678,6 +689,7 @@ internal fun ChatPageContent(
                             showFilesSheet = true
                         },
                     )
+                    }
                 },
                 containerColor = Color.Transparent,
             ) { innerPadding ->
@@ -689,7 +701,9 @@ internal fun ChatPageContent(
                 val layoutDirection = LocalLayoutDirection.current
                 val listInset = PaddingValues(
                     start = innerPadding.calculateLeftPadding(layoutDirection),
-                    top = if (topBarHeightPx > 0) {
+                    top = if (!showTopLayer) {
+                        0.dp
+                    } else if (topBarHeightPx > 0) {
                         topBarHeight
                     } else {
                         innerPadding.calculateTopPadding() + 64.dp
@@ -699,6 +713,7 @@ internal fun ChatPageContent(
                 )
 
                 Box(modifier = Modifier.fillMaxSize()) {
+                    if (showMessageLayer) {
                     ChatList(
                         revealAlpha = { listReveal.value },
                         innerPadding = listInset,
@@ -783,6 +798,7 @@ internal fun ChatPageContent(
                             vm.saveConversationAsync()
                         },
                     )
+                    }
                     val darkTheme = LocalDarkMode.current
                     // Fade scrims over the list: content dissolves as it slides under the top bar
                     // (top dissolve) and down into the floating input bar (bottom dissolve), while
@@ -822,7 +838,7 @@ internal fun ChatPageContent(
                     }
                     // 现代的顶栏是一块悬浮卡片，和屏幕顶边之间留了状态栏那一条；
                     // 给那一条一层很短的淡出，免得消息文字滚到状态栏图标底下。
-                    if (chatLayout == ChatLayout.MODERN && botChrome == null) {
+                    if (showTopLayer && chatLayout == ChatLayout.MODERN && botChrome == null) {
                         val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
                         Box(
                             modifier = Modifier
@@ -838,7 +854,7 @@ internal fun ChatPageContent(
                                 )
                         )
                     }
-                    if (topDissolve) {
+                    if (showTopLayer && topDissolve) {
                         Box(
                             modifier = Modifier
                                 .align(Alignment.TopCenter)
@@ -859,6 +875,7 @@ internal fun ChatPageContent(
                     val bottomBarHeight = innerPadding.calculateBottomPadding()
                     val bottomFadeExtension = 48.dp
                     val bottomFadeHeight = bottomBarHeight + bottomFadeExtension
+                    if (showInputLayer) {
                     Box(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
@@ -874,6 +891,8 @@ internal fun ChatPageContent(
                             )
                     )
 
+                    }
+                    if (showTopLayer) {
                     Box(
                         modifier = Modifier
                             .align(Alignment.TopCenter)
@@ -950,6 +969,7 @@ internal fun ChatPageContent(
                         )
                     }
 
+                    }
                     ChatConversationSettingsPanel(
                         visible = showConversationSettings,
                         onDismiss = { showConversationSettings = false },
@@ -1000,6 +1020,53 @@ internal fun ChatPageContent(
                     )
                 }
             }
+        }
+
+        // Diagnostic build only: keep this static control outside all four removable layers.
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.CenterEnd) {
+            TextButton(onClick = { diagnosticOpen = true }) { Text("分层诊断") }
+        }
+        if (diagnosticOpen) {
+            AlertDialog(
+                onDismissRequest = { diagnosticOpen = false },
+                title = { Text("空闲重绘二分 · 诊断构建") },
+                text = {
+                    Column {
+                        Text("勾选=挂载。关闭面板后等待 10 秒再测；不生成内容。背景仅指聊天壁纸，根容器和抽屉保留。")
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(showTopLayer, { showTopLayer = it })
+                            Text("顶栏")
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(showInputLayer, { showInputLayer = it })
+                            Text("输入栏")
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(showMessageLayer, { showMessageLayer = it })
+                            Text("消息列表")
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(showBackgroundLayer, { showBackgroundLayer = it })
+                            Text("聊天背景")
+                        }
+                        TextButton(onClick = {
+                            showTopLayer = false
+                            showInputLayer = false
+                            showMessageLayer = false
+                            showBackgroundLayer = false
+                        }) { Text("全隐藏") }
+                        TextButton(onClick = {
+                            showTopLayer = true
+                            showInputLayer = true
+                            showMessageLayer = true
+                            showBackgroundLayer = true
+                        }) { Text("恢复全部") }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { diagnosticOpen = false }) { Text("关闭并测量") }
+                },
+            )
         }
 
         if (showFilesSheet) {
