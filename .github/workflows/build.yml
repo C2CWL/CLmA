@@ -208,6 +208,16 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+      # Keep the exact optimized build's deobfuscation map alongside the diagnostic APK.
+      - name: Upload CLmA R8 mapping (if generated)
+        if: ${{ always() && hashFiles('app/build/outputs/mapping/clma/mapping.txt') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: mapping-clma
+          path: app/build/outputs/mapping/clma/mapping.txt
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Upload unit test report
         if: always()
         uses: actions/upload-artifact@v4
