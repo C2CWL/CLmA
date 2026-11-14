@@ -184,6 +184,11 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null, is
         .ifBlank { null }
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val drawerCommands = rememberDrawerCommands(drawerState)
+    val requestDrawerOpen = {
+        FunctionalDiagnostics.event("drawer.open.request", System.identityHashCode(drawerState))
+        drawerCommands.open()
+    }
     ObserveDrawerDiagnostics(drawerState, vm, setting.assistantId)
     // 与抽屉共享同一个 activity 级 ChatDrawerVM，返回键才能先退出多选而不是关掉抽屉。
     val activity = LocalContext.current as ComponentActivity
@@ -223,7 +228,7 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null, is
     // 避免从横屏旋转回竖屏后，模态抽屉残留为打开状态且无法关闭（#1304）
     LaunchedEffect(isBigScreen) {
         if (isBigScreen && drawerState.isOpen) {
-            drawerState.close()
+            drawerCommands.close()
         }
     }
 
@@ -287,6 +292,7 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null, is
                     errors = errors,
                     onDismissError = { vm.dismissError(it) },
                     onClearAllErrors = { vm.clearAllErrors() },
+                    onOpenDrawer = requestDrawerOpen,
                     onInputFocusChanged = { isTextInputFocused = it },
                 )
             }
@@ -337,6 +343,7 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null, is
                                     errors = errors,
                                     onDismissError = { vm.dismissError(it) },
                                     onClearAllErrors = { vm.clearAllErrors() },
+                                    onOpenDrawer = requestDrawerOpen,
                                     onInputFocusChanged = { isTextInputFocused = it },
                                 )
                             }
@@ -350,7 +357,7 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null, is
                 onExitMultiSelect = { drawerVm.requestExitMultiSelect() },
                 onCloseDrawer = {
                     FunctionalDiagnostics.event("drawer.close.back", System.identityHashCode(drawerState))
-                    scope.launch { drawerState.close() }
+                    drawerCommands.close()
                 },
             )
         }
@@ -359,8 +366,8 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null, is
 
 /**
  * Back handling while the modal drawer is open: first leave multi-select, otherwise close the
- * drawer. drawerState.isOpen is read only here, so the drawer settling open recomposes this small
- * scope instead of the whole ChatPage.
+ * drawer. State is read only here; Back can also cancel opening, and repeated Back during
+ * closing is consumed rather than navigating away underneath the animation.
  */
 @Composable
 private fun DrawerBackHandlers(
@@ -369,7 +376,7 @@ private fun DrawerBackHandlers(
     onExitMultiSelect: () -> Unit,
     onCloseDrawer: () -> Unit,
 ) {
-    val drawerOpen = drawerState.isOpen
+    val drawerOpen = drawerBackEnabled(drawerState.currentValue, drawerState.targetValue, drawerState.isAnimationRunning)
     BackHandler(enabled = drawerOpen && multiSelectActive) {
         onExitMultiSelect()
     }
@@ -442,6 +449,7 @@ internal fun ChatPageContent(
     onClearAllErrors: () -> Unit,
     onInputFocusChanged: (Boolean) -> Unit = {},
     botChrome: BotChatChrome? = null,
+    onOpenDrawer: () -> Unit = {}, // Bot chat intentionally has no left drawer.
 ) {
     val scope = rememberCoroutineScope()
     // 换会话「先藏 → 落到底 → 再露」（学 Kelivo）：旧会话随页面淡出，新会话的消息列表
@@ -890,7 +898,7 @@ internal fun ChatPageContent(
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 if (!bigScreen) {
-                                    IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                                    IconButton(onClick = onOpenDrawer) {
                                         Icon(Lucide.MessageSquare, stringResource(R.string.menu), Modifier.size(24.dp))
                                     }
                                 }
@@ -922,7 +930,7 @@ internal fun ChatPageContent(
                                     settings = setting,
                                     conversation = conversation,
                                     turnFooters = turnFooters,
-                                    drawerState = drawerState,
+                                    onOpenDrawer = onOpenDrawer,
                                     bigScreen = bigScreen,
                                     previewMode = previewMode,
                                     onOpenConversationSettings = { showConversationSettings = true },
@@ -936,7 +944,7 @@ internal fun ChatPageContent(
                             conversation = conversation,
                             turnFooters = turnFooters,
                             bigScreen = bigScreen,
-                            drawerState = drawerState,
+                            onOpenDrawer = onOpenDrawer,
                             hazeState = hazeState,
                             previewMode = previewMode,
                             onNewChat = {
@@ -1070,7 +1078,7 @@ private fun TopBar(
     settings: Settings,
     conversation: Conversation,
     turnFooters: Map<String, TurnFooter>,
-    drawerState: DrawerState,
+    onOpenDrawer: () -> Unit,
     hazeState: HazeState,
     bigScreen: Boolean,
     previewMode: Boolean,
@@ -1079,7 +1087,6 @@ private fun TopBar(
     onNewChat: () -> Unit,
     onNewTemporaryChat: () -> Unit = {},
 ) {
-    val scope = rememberCoroutineScope()
     val toaster = LocalToaster.current
     // 与抽屉的 Rename 菜单项共享同一个重命名对话框状态，见 ChatDrawerVM.conversationToRename
     val activity = LocalContext.current as ComponentActivity
@@ -1091,10 +1098,7 @@ private fun TopBar(
         navigationIcon = {
             if (!bigScreen) {
                 GlassTopBarButton(
-                    onClick = {
-                        FunctionalDiagnostics.event("drawer.open.request", System.identityHashCode(drawerState))
-                        scope.launch { drawerState.open() }
-                    },
+                    onClick = onOpenDrawer,
                     hazeState = hazeState,
                     glass = settings.displaySetting.effectiveChatLayout.let { it != ChatLayout.CLEAN && it != ChatLayout.MODERN },
                 ) {
