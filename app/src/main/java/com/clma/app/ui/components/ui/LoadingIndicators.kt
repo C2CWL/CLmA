@@ -1,5 +1,12 @@
 package com.clma.app.ui.components.ui
 
+import android.content.Context
+import android.graphics.drawable.AnimatedVectorDrawable
+import android.view.View
+import android.widget.ImageView
+import androidx.appcompat.content.res.AppCompatResources
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -7,14 +14,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.clma.app.R
 import com.clma.app.data.datastore.LoadingIndicatorStyle
@@ -66,9 +70,7 @@ fun ChatLoadingIndicator(
     photoShown: Boolean = false,
     hazeState: HazeState? = null,
 ) {
-    // 思考/工作阶段也可能长时间等待子代理；逐帧装饰动画仍会和输入法争抢渲染资源。
-    // 所有阶段统一约 15fps，避免等待期间继续按屏幕刷新率重绘。
-    val frameIntervalMs = 66L
+    // All mounted work styles use their original display-frame animation, without a 66ms cap.
     when (LocalSettings.current.displaySetting.effectiveLoadingIndicatorStyle) {
         LoadingIndicatorStyle.APP_ICON -> Row(
             modifier = Modifier.padding(8.dp),
@@ -92,21 +94,18 @@ fun ChatLoadingIndicator(
         LoadingIndicatorStyle.ATOM_DOTS -> ThinkingRowSlot(photoShown, hazeState) { rowModifier ->
             AtomDotsThinkingRow(
                 phase = phase, processingStatus = processingStatus, modifier = rowModifier,
-                frameIntervalMs = frameIntervalMs,
             )
         }
 
         LoadingIndicatorStyle.BREATHING_ORB -> ThinkingRowSlot(photoShown, hazeState) { rowModifier ->
             BreathingOrbThinkingRow(
                 phase = phase, processingStatus = processingStatus, modifier = rowModifier,
-                frameIntervalMs = frameIntervalMs,
             )
         }
 
         LoadingIndicatorStyle.TWIN_ORBIT -> ThinkingRowSlot(photoShown, hazeState) { rowModifier ->
             TwinOrbitThinkingRow(
                 phase = phase, processingStatus = processingStatus, modifier = rowModifier,
-                frameIntervalMs = frameIntervalMs,
             )
         }
     }
@@ -145,18 +144,63 @@ private fun ThinkingRowSlot(
 
 @Composable
 private fun AppIconLoadingIndicator(modifier: Modifier) {
-    // Use the same coarse clock as the other chat styles, not an Android drawable's
-    // independent infinite animator (which bypassed the chat cadence entirely).
-    val phase = rememberLoopPhase(
-        durationMillis = 1400,
-        staticPhase = 0f,
-        label = "app-icon-loading",
-        frameIntervalMs = 66L,
+    val primaryColor = MaterialTheme.colorScheme.primary.toArgb()
+    val active = rememberWorkAnimationsEnabled()
+    AndroidView(
+        modifier = modifier,
+        factory = { context -> WorkLoadingIconView(context) },
+        onReset = null,
+        onRelease = { it.releaseAnimation() },
+        update = { it.updateAnimation(active, primaryColor) },
     )
-    Icon(
-        painter = painterResource(R.drawable.ic_clma_mark),
-        contentDescription = null,
-        tint = MaterialTheme.colorScheme.primary,
-        modifier = modifier.graphicsLayer { rotationZ = phase() * 360f },
-    )
+}
+
+/** Restores ic_clma_loading's rotating ring and fixed centre, not a new whole-mark spin. */
+private class WorkLoadingIconView(context: Context) : ImageView(context) {
+    private var controller: WorkAnimationController? = null
+    private var active = false
+
+    init {
+        val animation = AppCompatResources.getDrawable(context, R.drawable.ic_clma_loading)
+            as? AnimatedVectorDrawable
+        setImageDrawable(animation)
+        controller = WorkAnimationController(
+            start = { animation?.start() },
+            stop = { animation?.stop() },
+        )
+    }
+
+    fun updateAnimation(enabled: Boolean, color: Int) {
+        active = enabled
+        drawable?.setTint(color)
+        refreshAnimation()
+    }
+
+    private fun refreshAnimation() {
+        controller?.update(active, isAttachedToWindow && isShown && windowVisibility == View.VISIBLE)
+    }
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        refreshAnimation()
+    }
+
+    override fun onDetachedFromWindow() {
+        controller?.update(false, false)
+        super.onDetachedFromWindow()
+    }
+
+    override fun onWindowVisibilityChanged(visibility: Int) {
+        super.onWindowVisibilityChanged(visibility)
+        refreshAnimation()
+    }
+
+    override fun onVisibilityAggregated(isVisible: Boolean) {
+        super.onVisibilityAggregated(isVisible)
+        refreshAnimation()
+    }
+
+    fun releaseAnimation() {
+        try { controller?.release() } finally { setImageDrawable(null) }
+    }
 }

@@ -1,5 +1,6 @@
 package com.clma.app.ui.components.ui
 
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
@@ -25,7 +26,6 @@ fun DotLoading(
         durationMillis = animationDuration * 2,
         staticPhase = 0.5f,
         label = "dot_loading",
-        frameIntervalMs = 66L,
     )
 
     Box(
@@ -37,6 +37,6 @@ fun DotLoading(
     )
 }
 
-/** A triangular pulse keeps the back-and-forth fade without a vsync clock. */
+/** Original tween(600), Reverse pulse: preserve the easing as well as the alpha bounds. */
 internal fun dotLoadingAlpha(phase: Float): Float =
-    0.3f + 0.7f * (1f - kotlin.math.abs(2f * phase - 1f))
+    0.3f + 0.7f * FastOutSlowInEasing.transform(1f - kotlin.math.abs(2f * phase - 1f))

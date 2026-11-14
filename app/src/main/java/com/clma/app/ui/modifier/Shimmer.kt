@@ -43,12 +43,11 @@ fun Modifier.shimmer(
     } else {
         // 记住组件的尺寸，以便计算渐变
         var size by remember { mutableStateOf(IntSize.Zero) }
-        // Read the coarse phase only while drawing, never during composition/layout.
+        // Restore the original linear, display-frame sweep; read only during drawing.
         val phase = rememberLoopPhase(
             durationMillis = durationMillis,
             staticPhase = 0.5f,
             label = "shimmer",
-            frameIntervalMs = 66L,
         )
         // 将角度转换为弧度
         val angleRad = Math.toRadians(angle.toDouble()).toFloat()
