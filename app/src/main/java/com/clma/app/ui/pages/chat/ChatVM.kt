@@ -82,13 +82,8 @@ class ChatVM(
 ) : ViewModel() {
     private val _conversationId: Uuid = Uuid.parse(id)
     val conversation: StateFlow<Conversation> = chatService.getConversationFlow(_conversationId)
-    val conversationForUi: StateFlow<Conversation> = settingsStore.settingsFlow
-        .map { it.displaySetting.fastStreamingOutput }
-        .distinctUntilChanged()
-        .flatMapLatest { fast ->
-            conversation.throttleAppendOnlyStreaming(windowMs = if (fast) 0 else 32)
-        }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), conversation.value)
+    // Original direct state subscription: display the latest chunk without a second 32ms gate.
+    val conversationForUi: StateFlow<Conversation> = conversation
 
     var chatListInitialized by mutableStateOf(false) // 聊天列表是否已经滚动到底部
 

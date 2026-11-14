@@ -10,6 +10,13 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
@@ -33,6 +40,23 @@ internal fun rememberLoopAnimationsEnabled(): Boolean {
         }.getOrDefault(1f)
         loopAnimationsEnabled(scale)
     }
+}
+
+/** Work indicators have no active transition while their page is paused or disposed. */
+@Composable
+internal fun rememberWorkAnimationsEnabled(): Boolean {
+    val owner = LocalLifecycleOwner.current
+    var resumed by remember(owner) {
+        mutableStateOf(owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED))
+    }
+    DisposableEffect(owner) {
+        val observer = LifecycleEventObserver { _, _ ->
+            resumed = owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)
+        }
+        owner.lifecycle.addObserver(observer)
+        onDispose { owner.lifecycle.removeObserver(observer) }
+    }
+    return rememberLoopAnimationsEnabled() && resumed
 }
 
 /**
@@ -61,12 +85,11 @@ internal fun rememberLoopPhase(
     easing: Easing = LinearEasing,
     frameIntervalMs: Long = 0L,
 ): () -> Float {
-    if (!rememberLoopAnimationsEnabled()) {
+    if (!rememberWorkAnimationsEnabled()) {
         return remember(staticPhase) { { staticPhase } }
     }
-    // 粗节拍：infiniteTransition 每帧都会让读取者重绘，回复流式增长时那段重绘只会和
-    // 文字、滚动、玻璃合成抢 RenderThread，打字时的输入法候选框就跟着掉帧。这里改成按
-    // frameIntervalMs 只写几次状态（约 15fps），动画看起来仍是连续的。
+    // Explicit coarse cadence remains available to opt-in callers. Reply/thinking effects use
+    // the default display-frame transition; do not globally retime unrelated animation clocks.
     if (frameIntervalMs > 0L) {
         val phase = produceState(staticPhase, durationMillis, frameIntervalMs) {
             val start = SystemClock.uptimeMillis()
