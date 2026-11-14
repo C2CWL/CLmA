@@ -27,6 +27,10 @@ import android.view.WindowManager
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
+import com.clma.app.AppScope
+import com.clma.app.diagnostics.FunctionalDiagnostics
+import kotlinx.coroutines.flow.first
+import org.koin.core.context.GlobalContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -110,25 +114,53 @@ class FloatingBallService : Service(), KoinComponent {
         /** The app's SharedPreferences file (see ui/hooks/SharedPreferences.kt). */
         private const val PREFS_NAME = "rikkahub.preferences"
 
-        /** Starts (or re-starts) the bar. Idempotent — a running service just re-shows its view. */
-        fun start(context: Context) {
-            val intent = Intent(context, FloatingBallService::class.java).apply {
-                action = ACTION_START
+        private val enableCoordinator = EdgeBarEnableCoordinator()
+
+        /** Persist first, then reconcile. The application scope survives leaving settings. */
+        fun setEnabled(context: Context, enabled: Boolean) {
+            val app = context.applicationContext
+            val koin = GlobalContext.get()
+            val store = koin.get<SettingsStore>()
+            koin.get<AppScope>().launch(Dispatchers.Main.immediate) {
+                runCatching {
+                    enableCoordinator.setEnabled(
+                        enabled,
+                        persist = { value -> store.update { it.copy(floatingBallEnabled = value) } },
+                        readEnabled = { store.settingsFlow.first { !it.init }.floatingBallEnabled },
+                        apply = {
+                            FunctionalDiagnostics.event("edgebar.enabled", value = if (it) 1L else 0L)
+                            applyEnabledService(app, it)
+                        },
+                    )
+                }.onFailure { Log.w(TAG, "enabled setting/command failed", it) }
             }
-            runCatching { ContextCompat.startForegroundService(context, intent) }
-                .onFailure { Log.w(TAG, "start failed", it) }
         }
 
-        /**
-         * Stops the bar. Uses startService (not stopService) so the running instance handles
-         * ACTION_STOP on its own looper and tears its overlay view down first.
-         */
-        fun stop(context: Context) {
-            val intent = Intent(context, FloatingBallService::class.java).apply {
-                action = ACTION_STOP
+        /** Resume and boot only reconcile current persisted intent; never cache an old true. */
+        fun start(context: Context) {
+            val app = context.applicationContext
+            val koin = GlobalContext.get()
+            val store = koin.get<SettingsStore>()
+            koin.get<AppScope>().launch(Dispatchers.Main.immediate) {
+                runCatching {
+                    enableCoordinator.reconcile(
+                        readEnabled = { store.settingsFlow.first { !it.init }.floatingBallEnabled },
+                        apply = { applyEnabledService(app, it) },
+                    )
+                }.onFailure { Log.w(TAG, "restore/reconcile failed", it) }
             }
-            runCatching { context.startService(intent) }
-                .onFailure { Log.w(TAG, "stop failed", it) }
+        }
+
+        fun stop(context: Context) = setEnabled(context, false)
+
+        private fun applyEnabledService(context: Context, enabled: Boolean) {
+            val intent = Intent(context, FloatingBallService::class.java).apply { action = ACTION_START }
+            if (enabled && Settings.canDrawOverlays(context)) {
+                ContextCompat.startForegroundService(context, intent)
+            } else {
+                // Do not create a new service just to stop it.
+                context.stopService(intent)
+            }
         }
 
         /**
@@ -159,6 +191,8 @@ class FloatingBallService : Service(), KoinComponent {
     private val mainHandler = Handler(Looper.getMainLooper())
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
+    private var destroyed = false
+    private var startRequest = 0L
     private var barView: EdgeBarView? = null
     private var barParams: WindowManager.LayoutParams? = null
 
@@ -191,7 +225,9 @@ class FloatingBallService : Service(), KoinComponent {
      * Held in a field because SharedPreferences only keeps a weak reference to its listeners.
      */
     private val colorModeListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-        if (key == COLOR_MODE_KEY) mainHandler.post { applyDarkMode(resources.configuration) }
+        if (!destroyed && key == COLOR_MODE_KEY) mainHandler.post {
+            if (!destroyed) applyDarkMode(resources.configuration)
+        }
     }
 
     /** Set by the long-press timer; from then on the gesture moves the bar instead of tapping. */
@@ -215,6 +251,7 @@ class FloatingBallService : Service(), KoinComponent {
 
     override fun onCreate() {
         super.onCreate()
+        FunctionalDiagnostics.event("edgebar.service.create")
         // Colour changes from the settings page repaint the running bar live.
         scope.launch {
             settingsStore.settingsFlow.collect { settings ->
@@ -226,6 +263,17 @@ class FloatingBallService : Service(), KoinComponent {
         // Same preferences file the app's theme reads its colour mode from (see ui/hooks).
         getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .registerOnSharedPreferenceChangeListener(colorModeListener)
+        scope.launch {
+            settingsStore.settingsFlow.collect { settings ->
+                if (!settings.init && !settings.floatingBallEnabled) {
+                    // Also handles a late explicit START and edits made outside this page.
+                    startRequest++
+                    FunctionalDiagnostics.event("edgebar.service.disabled")
+                    teardownOverlays()
+                    stopSelf()
+                }
+            }
+        }
     }
 
     /** Light / dark look of the bar, decided like the app's own theme; see [EdgeBarLook.isDarkMode]. */
@@ -242,9 +290,20 @@ class FloatingBallService : Service(), KoinComponent {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (destroyed) return START_NOT_STICKY
+        if (intent?.action == ACTION_WORKING_ON || intent?.action == ACTION_WORKING_OFF ||
+            intent?.action == ACTION_INTERACTION_CHANGED) {
+            val settings = settingsStore.settingsFlow.value
+            if (!settings.init && !settings.floatingBallEnabled) {
+                teardownOverlays()
+                stopSelfResult(startId)
+                return START_NOT_STICKY
+            }
+        }
         when (intent?.action) {
             ACTION_STOP -> {
-                stopSelf()
+                // Notification/user stop is durable, not merely a temporarily hidden window.
+                setEnabled(this, false)
                 return START_NOT_STICKY
             }
 
@@ -271,16 +330,24 @@ class FloatingBallService : Service(), KoinComponent {
             }
 
             else -> {
-                if (!Settings.canDrawOverlays(this)) {
-                    Log.w(TAG, "SYSTEM_ALERT_WINDOW not granted — stopping")
-                    stopSelf()
-                    return START_NOT_STICKY
+                val request = ++startRequest
+                scope.launch {
+                    val settings = settingsStore.settingsFlow.first { !it.init }
+                    if (request != startRequest || destroyed) return@launch
+                    if (!edgeBarMayStart(settings.floatingBallEnabled, destroyed) ||
+                        !Settings.canDrawOverlays(this@FloatingBallService)) {
+                        FunctionalDiagnostics.event("edgebar.start.rejected")
+                        teardownOverlays()
+                        stopSelfResult(startId)
+                        return@launch
+                    }
+                    if (!startForegroundCompat()) {
+                        teardownOverlays()
+                        stopSelfResult(startId)
+                        return@launch
+                    }
+                    showBar()
                 }
-                if (!startForegroundCompat()) {
-                    stopSelf()
-                    return START_NOT_STICKY
-                }
-                showBar()
             }
         }
         // NOT sticky: if the user turned the bar off we must not resurrect it after a kill.
@@ -304,13 +371,27 @@ class FloatingBallService : Service(), KoinComponent {
         }
     }
 
+    private fun teardownOverlays() {
+        cleanupOverlayResources(
+            { Log.w(TAG, "overlay cleanup failed", it) },
+            { mainHandler.removeCallbacksAndMessages(null) },
+            { hideBar() },
+            { chatBox.close() },
+        )
+    }
+
     override fun onDestroy() {
-        getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .unregisterOnSharedPreferenceChangeListener(colorModeListener)
-        scope.cancel()
-        chatBox.close()
-        hideBar()
-        runCatching { ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE) }
+        destroyed = true
+        FunctionalDiagnostics.event("edgebar.service.destroy")
+        startRequest++
+        cleanupOverlayResources(
+            { Log.w(TAG, "service cleanup failed", it) },
+            { getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                .unregisterOnSharedPreferenceChangeListener(colorModeListener) },
+            { scope.cancel() },
+            { teardownOverlays() },
+            { ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE) },
+        )
         super.onDestroy()
     }
 
@@ -318,7 +399,11 @@ class FloatingBallService : Service(), KoinComponent {
 
     @SuppressLint("RtlHardcoded")
     private fun showBar() {
-        if (barView != null) return
+        if (barView != null) {
+            if (isShowing) return
+            hideBar() // Retry ownership retained after a previous failed removal.
+            if (barView != null) return
+        }
         val wm = windowManager() ?: return
         val height = dpPx(EdgeBarLook.TOUCH_HEIGHT_DP)
         val screen = screenSize()
@@ -371,14 +456,15 @@ class FloatingBallService : Service(), KoinComponent {
         // Side bars are placed by gravity, so they stay flush with their edge across rotations.
         edge = savedEdge
         applyEdge(view, params, savedEdge, centerX = savedCenterX, sideTop = savedTop)
+        barView = view
+        barParams = params
         try {
             wm.addView(view, params)
         } catch (t: Throwable) {
             Log.w(TAG, "addView failed", t)
+            hideBar() // Includes partially attached views.
             return
         }
-        barView = view
-        barParams = params
         isShowing = true
         attachTouch(view, params)
         // Touches are handled in attachTouch; this is what TalkBack / switch access trigger.
@@ -390,19 +476,39 @@ class FloatingBallService : Service(), KoinComponent {
     }
 
     private fun hideBar() {
-        // Hiding the bar does not end live turns; re-show adopts the live state.
         working = false
         unseenDone = false
-        val view = barView ?: return
-        mainHandler.removeCallbacks(longPressRunnable)
-        clearGestureExclusion(view)
-        barView = null
-        barParams = null
-        isShowing = false
+        isShowing = false // Block queued status commands before removing anything.
         dragArmed = false
-        val wm = windowManager() ?: return
-        runCatching { wm.removeViewImmediate(view) }
-            .onFailure { Log.w(TAG, "removeView failed", it) }
+        mainHandler.removeCallbacks(longPressRunnable)
+        val released = releaseOverlayResource(
+            resource = barView,
+            quiesce = { view ->
+                view.stopFrameLoop()
+                view.visibility = View.GONE
+                view.setOnTouchListener(null)
+                view.setOnClickListener(null)
+                clearGestureExclusion(view)
+            },
+            remove = { view ->
+                // A registered window may not have reached its first traversal/attachment yet.
+                try {
+                    checkNotNull(windowManager()) { "WindowManager unavailable" }.removeViewImmediate(view)
+                } catch (e: IllegalArgumentException) {
+                    if (view.isAttachedToWindow || view.parent != null) throw e
+                    // Already absent from WindowManager, including failed addView.
+                }
+            },
+            onFailure = {
+                FunctionalDiagnostics.failure("edgebar.bar.remove_failed")
+                Log.w(TAG, "bar removal failed (view quiesced; reference retained)", it)
+            },
+        )
+        if (released) {
+            if (barView != null) FunctionalDiagnostics.event("edgebar.bar.released")
+            barView = null
+            barParams = null
+        }
     }
 
     /** Pushes the current status onto the bar. */

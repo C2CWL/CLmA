@@ -20,6 +20,7 @@ import com.clma.app.service.taskcard.TaskCardStatusResolver
 import com.clma.app.ui.hooks.readStringPreference
 import com.clma.app.ui.hooks.writeStringPreference
 import com.clma.app.ui.theme.resolveChatTypeface
+import com.clma.app.service.cleanupOverlayResources
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
@@ -111,9 +112,18 @@ internal class EdgeBarChatBoxController(
     }
 
     fun close() {
-        openJob?.cancel()
-        view?.dismiss()
-        unbind()
+        cleanupOverlayResources(
+            { Log.w(TAG, "controller cleanup failed", it) },
+            { openJob?.cancel(); openJob = null },
+            { stopObservingConversations() },
+            { view?.dismiss() },
+            { unbind() },
+        )
+    }
+
+    private fun stopObservingConversations() {
+        conversationsJob?.cancel()
+        conversationsJob = null
     }
 
     fun onThemeChanged() {
@@ -385,7 +395,11 @@ internal class EdgeBarChatBoxController(
     }
 
     override fun onDismissed() {
-        unbind()
+        cleanupOverlayResources(
+            { Log.w(TAG, "dismiss cleanup failed", it) },
+            { stopObservingConversations() },
+            { unbind() },
+        )
     }
 
     private fun toast(res: Int) {

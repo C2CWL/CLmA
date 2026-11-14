@@ -106,6 +106,23 @@ internal class EdgeBarView(context: Context) : View(context) {
             invalidate()
         }
 
+    private val frameGate = EdgeBarFrameGate()
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        frameGate.attach()
+    }
+
+    override fun onDetachedFromWindow() {
+        frameGate.detach()
+        super.onDetachedFromWindow()
+    }
+
+    internal fun stopFrameLoop() {
+        frameGate.stop()
+        signal = Signal.IDLE
+    }
+
     override fun onDraw(canvas: Canvas) {
         val w = width.toFloat()
         val h = height.toFloat()
@@ -145,7 +162,7 @@ internal class EdgeBarView(context: Context) : View(context) {
             Signal.WORKING -> {
                 val animate = ValueAnimator.areAnimatorsEnabled()
                 drawRing(canvas, radius, animate)
-                if (animate) postInvalidateOnAnimation()
+                if (frameGate.canRequestFrame(true, animate)) postInvalidateOnAnimation()
             }
             Signal.DONE -> drawCheck(canvas)
             Signal.APPROVAL, Signal.INPUT -> {

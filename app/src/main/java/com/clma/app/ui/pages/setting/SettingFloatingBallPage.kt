@@ -84,14 +84,8 @@ fun SettingFloatingBallPage(vm: SettingVM = koinViewModel()) {
         }
 
     fun applyEnabled(enabled: Boolean) {
-        vm.updateSettings { it.copy(floatingBallEnabled = enabled) }
-        if (!enabled) {
-            FloatingBallService.stop(context)
-            return
-        }
-        if (Settings.canDrawOverlays(context)) {
-            FloatingBallService.start(context)
-        } else {
+        FloatingBallService.setEnabled(context, enabled)
+        if (enabled && !Settings.canDrawOverlays(context)) {
             // Can't show anything without the grant: send the user straight to it. Returning to
             // this page re-checks and starts the bar (see the resume observer below).
             context.startActivity(overlaySettingsIntent())
