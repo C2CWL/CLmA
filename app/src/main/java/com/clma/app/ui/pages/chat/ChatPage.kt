@@ -1096,6 +1096,7 @@ private fun TopBar(
                         scope.launch { drawerState.open() }
                     },
                     hazeState = hazeState,
+                    glass = settings.displaySetting.effectiveChatLayout.let { it != ChatLayout.CLEAN && it != ChatLayout.MODERN },
                 ) {
                     Icon(HugeIcons.LeftToRightListBullet, stringResource(R.string.menu))
                 }
@@ -1201,6 +1202,7 @@ private fun TopBar(
                     if (previewMode) onExitPreview() else onOpenConversationSettings()
                 },
                 hazeState = hazeState,
+                glass = settings.displaySetting.effectiveChatLayout.let { it != ChatLayout.CLEAN && it != ChatLayout.MODERN },
             ) {
                 Icon(
                     if (previewMode) HugeIcons.Cancel01 else Lucide.SlidersHorizontal,
@@ -1217,6 +1219,7 @@ private fun TopBar(
                         showNewChatMenu = true
                     },
                     hazeState = hazeState,
+                    glass = settings.displaySetting.effectiveChatLayout.let { it != ChatLayout.CLEAN && it != ChatLayout.MODERN },
                 ) {
                     Icon(HugeIcons.PlusSign, stringResource(R.string.chat_page_new_message))
                 }
@@ -1258,21 +1261,31 @@ private fun TopBar(
 private fun GlassTopBarButton(
     onClick: () -> Unit,
     hazeState: HazeState,
+    glass: Boolean = false,
     content: @Composable () -> Unit,
 ) {
-    val glassStyle = rikkaGlassStyle(CircleShape, blurRadius = 12.dp, depth = 0.4f)
+    // 液态玻璃是动态折射材质:每个挂载点都在每个 vsync 重新捕获源层并重算折射。
+    // 干净/现代布局的顶栏本身已经是一块玻璃面板,再给每个按钮各叠一块,等于把同一次
+    // 重算做三遍——聊天页完全静止也会持续出帧。只有顶栏没有面板兜底的布局(Gemini)
+    // 才保留按钮玻璃,其余退回静态半透明圆盘,视觉差异很小但不再逐帧重算。
     Surface(
         onClick = onClick,
         modifier = Modifier
             .padding(horizontal = 4.dp)
             .size(40.dp)
             .clip(CircleShape)
-            .hazeGlass(
-                input = HazeInput.Sources(hazeState, selection = WallpaperOnlySelection),
-                style = glassStyle,
+            .then(
+                if (glass) {
+                    Modifier.hazeGlass(
+                        input = HazeInput.Sources(hazeState, selection = WallpaperOnlySelection),
+                        style = rikkaGlassStyle(CircleShape, blurRadius = 12.dp, depth = 0.4f),
+                    )
+                } else {
+                    Modifier
+                }
             ),
         shape = CircleShape,
-        color = Color.Transparent,
+        color = if (glass) Color.Transparent else MaterialTheme.colorScheme.surface.copy(alpha = 0.72f),
         tonalElevation = 0.dp,
     ) {
         Box(
