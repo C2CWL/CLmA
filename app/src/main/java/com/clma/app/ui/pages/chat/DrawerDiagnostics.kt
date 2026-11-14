@@ -29,6 +29,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.clma.app.diagnostics.FunctionalDiagnostics
+import com.clma.app.data.datastore.DrawerStyle
 import com.clma.app.ui.hooks.rememberSharedPreferenceBoolean
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -116,9 +117,23 @@ internal fun ObserveDrawerDiagnostics(
     drawer: DrawerState,
     vm: ChatVM,
     assistantId: Uuid,
+    drawerStyle: DrawerStyle,
+    updateCounters: DrawerUpdateCounters,
 ) {
     val functions by rememberSharedPreferenceBoolean(FunctionalDiagnostics.FUNCTION_KEY)
     val animation by rememberSharedPreferenceBoolean(FunctionalDiagnostics.ANIMATION_KEY)
+    DisposableEffect(updateCounters, functions) {
+        if (functions) DrawerUpdateDiagnostics.register(updateCounters)
+        onDispose { DrawerUpdateDiagnostics.unregister(updateCounters) }
+    }
+    LaunchedEffect(drawer, drawerStyle, functions, updateCounters) {
+        if (!functions) return@LaunchedEffect
+        // Only discrete state, not offset: no per-frame observation or writes to Compose state.
+        snapshotFlow { Triple(drawer.currentValue, drawer.targetValue, drawer.isAnimationRunning) }
+            .collect { (current, target, running) ->
+                updateCounters.recordDrawerState(drawerStyle.name, current.name, target.name, running)
+            }
+    }
     val lifecycleOwner = LocalLifecycleOwner.current
     val activity = LocalContext.current as? ComponentActivity
     val instance = remember(drawer) { System.identityHashCode(drawer) }
@@ -140,10 +155,11 @@ internal fun ObserveDrawerDiagnostics(
             }
         }
     }
-    DisposableEffect(lifecycleOwner, functions) {
+    DisposableEffect(lifecycleOwner, functions, updateCounters) {
         val observer =
             LifecycleEventObserver { _, event ->
                 FunctionalDiagnostics.event("chat.lifecycle.${event.name}", instance)
+                updateCounters.recordResumed(lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED))
             }
         if (functions) lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
@@ -151,10 +167,11 @@ internal fun ObserveDrawerDiagnostics(
     LaunchedEffect(assistantId, functions) {
         FunctionalDiagnostics.event("chat.assistantObserved", instance)
     }
-    LaunchedEffect(vm, functions) {
+    LaunchedEffect(vm, functions, updateCounters) {
         if (functions) {
             vm.conversationJob.collect { job ->
                 FunctionalDiagnostics.event("chat.busy", instance, if (job == null) 0 else 1)
+                updateCounters.recordBusy(job != null)
             }
         }
     }

@@ -16,6 +16,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clma.app.R
+import com.clma.app.diagnostics.FunctionalDiagnostics
 import com.clma.app.data.datastore.ChatLayout
 import com.clma.app.data.datastore.DisplaySetting
 import com.clma.app.data.datastore.DrawerStyle
@@ -200,6 +201,7 @@ fun SettingChatLayoutPage(vm: SettingVM = koinViewModel()) {
                             options = DrawerStyle.entries,
                             selectedOption = displaySetting.drawerStyle,
                             onOptionSelected = {
+                                FunctionalDiagnostics.event("drawer.style.select", value = it.ordinal.toLong())
                                 updateDisplaySetting(displaySetting.copy(drawerStyle = it))
                             },
                             optionToString = {

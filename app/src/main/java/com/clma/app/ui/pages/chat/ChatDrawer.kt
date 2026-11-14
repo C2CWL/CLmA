@@ -54,6 +54,7 @@ import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -131,13 +132,17 @@ import com.composables.icons.lucide.Lucide
 import kotlin.uuid.Uuid
 
 @Composable
-fun ChatDrawerContent(
+internal fun ChatDrawerContent(
     navController: Navigator,
     vm: ChatVM,
     settings: Settings,
-    current: Conversation,
     hazeState: HazeState,
+    updateCounters: DrawerUpdateCounters,
 ) {
+    val current by vm.drawerMetadata.collectAsStateWithLifecycle()
+    val classicAssistants = remember(settings.assistants) { settings.classicAssistants() }
+    // Counts this restart scope committing, not drawing or every descendant recomposition.
+    SideEffect { updateCounters.recordCommit(current) }
     val scope = rememberCoroutineScope()
     val diagnosticInstance = remember { System.identityHashCode(scope) }
     // Diagnostic build: per-frame drawer flicker probe, off unless the switch is on.
@@ -355,8 +360,6 @@ fun ChatDrawerContent(
         }
     }
 
-    val currentConversation by vm.conversation.collectAsStateWithLifecycle()
-
     // 顶部功能区：助手（卡片或导轨标题）、新聊天 + 搜索、分段文件夹。
     val drawerChrome: @Composable () -> Unit = {
         Column(
@@ -369,16 +372,17 @@ fun ChatDrawerContent(
             when (drawerStyle) {
                 DrawerStyle.CARD -> {
                     DrawerAssistantHero(
-                        assistants = settings.classicAssistants(),
+                        assistants = classicAssistants,
                         current = drawerAssistant,
                         modelName = drawerModelName,
                         onOpenPicker = { showAssistantSheet = true },
                         onOpenDetail = openAssistantDetail,
                         onSelect = { switchAssistant(it) },
                         onManage = openAssistantManage,
+                        updateCounters = updateCounters,
                     )
                     DrawerModeSegmented(
-                        agentMode = currentConversation.agentModeEnabled,
+                        agentMode = current.agentModeEnabled,
                         onChange = { vm.setAgentModeEnabled(it) },
                     )
                     DrawerNewChatRow(onNewChat = startNewChat, onSearch = openSearch)
@@ -494,7 +498,7 @@ fun ChatDrawerContent(
         Row(modifier = Modifier.fillMaxSize()) {
             if (drawerStyle == DrawerStyle.RAIL) {
                 DrawerAssistantRail(
-                    assistants = settings.classicAssistants(),
+                    assistants = classicAssistants,
                     current = drawerAssistant,
                     onSelect = { switchAssistant(it) },
                     onOpenPicker = { showAssistantSheet = true },
@@ -503,8 +507,9 @@ fun ChatDrawerContent(
                     toolsMenu = toolsMenu,
                     moreMenu = moreMenu,
                     onSettings = openSettings,
-                    agentMode = currentConversation.agentModeEnabled,
+                    agentMode = current.agentModeEnabled,
                     onAgentModeChange = { vm.setAgentModeEnabled(it) },
+                    updateCounters = updateCounters,
                 )
             }
             // 列表铺满整块，从上下玻璃卡片下方滚过；上方功能区固定悬浮，底部功能区浮在列表之上。
@@ -514,7 +519,7 @@ fun ChatDrawerContent(
                     .fillMaxHeight()
             ) {
                 ConversationList(
-                    current = current,
+                    currentConversationId = current.conversationId,
                     conversations = conversations,
                     subAgentConversations = subAgentConversations,
                     conversationJobs = conversationJobs.keys,
@@ -542,7 +547,7 @@ fun ChatDrawerContent(
                     },
                     onDelete = {
                         scope.launch {
-                            val deletingCurrent = it.id == current.id
+                            val deletingCurrent = it.id == current.conversationId
                             if (deletingCurrent) {
                                 navigateToChatPage(navController)
                             }
@@ -1064,7 +1069,7 @@ fun ChatDrawerContent(
                         if (submitting || selectedIds.isEmpty()) return@TextButton
                         submitting = true
                         val ids = selectedIds.toList()
-                        val deletingCurrent = current.id in ids
+                        val deletingCurrent = current.conversationId in ids
                         scope.launch {
                             try {
                                 drawerVm.deleteConversations(ids).join()
@@ -1162,7 +1167,7 @@ fun ChatDrawerContent(
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    items(settings.classicAssistants(), key = { it.id }) { assistant ->
+                    items(classicAssistants, key = { it.id }) { assistant ->
                         AssistantItem(
                             assistant = assistant,
                             isCurrentAssistant = assistant.id == currentAssistantId,
@@ -1170,7 +1175,7 @@ fun ChatDrawerContent(
                                 if (batchMove) {
                                     val ids = selectedIds.toList()
                                     if (ids.isNotEmpty()) {
-                                        val movedCurrent = current.id in ids
+                                        val movedCurrent = current.conversationId in ids
                                         scope.launch {
                                             drawerVm.moveConversationsToAssistant(ids, assistant.id).join()
                                             // 当前会话被移走时切到目标助手，和单条移动一致

@@ -82,6 +82,10 @@ class ChatVM(
 ) : ViewModel() {
     private val _conversationId: Uuid = Uuid.parse(id)
     val conversation: StateFlow<Conversation> = chatService.getConversationFlow(_conversationId)
+    // A hidden drawer must not subscribe to each streamed message-body update.
+    internal val drawerMetadata: StateFlow<DrawerConversationMetadata> = conversation.drawerMetadataFlow()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), conversation.value.toDrawerMetadata())
+
     val conversationForUi: StateFlow<Conversation> = settingsStore.settingsFlow
         .map { it.displaySetting.fastStreamingOutput }
         .distinctUntilChanged()

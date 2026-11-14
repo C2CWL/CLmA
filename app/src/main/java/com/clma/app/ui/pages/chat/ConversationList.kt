@@ -78,7 +78,7 @@ sealed class ConversationListItem {
 
 @Composable
 fun ConversationList(
-    current: Conversation,
+    currentConversationId: Uuid,
     conversations: LazyPagingItems<ConversationListItem>,
     subAgentConversations: List<Conversation>,
     conversationJobs: Collection<Uuid>,
@@ -98,14 +98,14 @@ fun ConversationList(
 ) {
     val expandedParents = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateMapOf<Uuid, Boolean>() }
     val childrenByParent = remember(subAgentConversations) { subAgentConversations.groupBy { it.parentConversationId } }
-    var hasScrolledToCurrent by remember(current.id) { mutableStateOf(false) }
+    var hasScrolledToCurrent by remember(currentConversationId) { mutableStateOf(false) }
 
-    LaunchedEffect(current.id, conversations.itemCount, subAgentConversations, hasScrolledToCurrent) {
+    LaunchedEffect(currentConversationId, conversations.itemCount, subAgentConversations, hasScrolledToCurrent) {
         if (hasScrolledToCurrent) return@LaunchedEffect
-        val parentId = subAgentConversations.firstOrNull { it.id == current.id }?.parentConversationId
+        val parentId = subAgentConversations.firstOrNull { it.id == currentConversationId }?.parentConversationId
         if (parentId != null) expandedParents[parentId] = true
         val currentIndex = conversations.itemSnapshotList.items.indexOfFirst {
-            (it as? ConversationListItem.Item)?.conversation?.id.let { it == current.id || (parentId != null && it == parentId) }
+            (it as? ConversationListItem.Item)?.conversation?.id.let { it == currentConversationId || (parentId != null && it == parentId) }
         }
         if (currentIndex >= 0) {
             val isVisible = listState.layoutInfo.visibleItemsInfo.any { it.index == currentIndex }
@@ -169,7 +169,7 @@ fun ConversationList(
                     Column(modifier = Modifier.animateItem()) {
                         ConversationItem(
                             conversation = item.conversation,
-                            selected = item.conversation.id == current.id,
+                            selected = item.conversation.id == currentConversationId,
                             loading = item.conversation.id in conversationJobs,
                             selectionMode = selectionMode,
                             checked = item.conversation.id in selectedIds,
@@ -198,7 +198,7 @@ fun ConversationList(
                             if (expanded) children.forEach { child ->
                                 key(child.id) {
                                     ConversationItem(
-                                        conversation = child, selected = child.id == current.id,
+                                        conversation = child, selected = child.id == currentConversationId,
                                         loading = child.id in conversationJobs, selectionMode = selectionMode,
                                         checked = child.id in selectedIds, onClick = onClick, onDelete = onDelete,
                                         onRename = onRename, onPin = onPin, onMoveToAssistant = onMoveToAssistant,

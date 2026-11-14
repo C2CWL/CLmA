@@ -13,6 +13,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.delay
+import com.clma.app.ui.pages.chat.DrawerUpdateDiagnostics
 
 /** Observes completed frames; never schedules a frame or writes a per-frame log. */
 @Suppress("ktlint:standard:function-naming")
@@ -55,7 +56,8 @@ internal fun ObserveRenderDiagnostics(
                         "window_ms=$elapsed cpu_ms=${cpu - previousCpu} " +
                             "main_cpu_ms=${(mainCpu - previousMainCpu) / 1_000_000} " +
                             "frames=$frames slow_frames=$slowFrames max_frame_ms=${maxFrameNs / 1_000_000} " +
-                            "dropped_reports=$droppedReports refresh_hz=$refreshRate",
+                            "dropped_reports=$droppedReports refresh_hz=$refreshRate " +
+                            DrawerUpdateDiagnostics.takeWindowSummary(),
                     )
                     previousTime = now
                     previousCpu = cpu

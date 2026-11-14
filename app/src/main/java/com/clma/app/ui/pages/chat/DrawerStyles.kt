@@ -26,6 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -216,7 +217,9 @@ internal fun DrawerAssistantHero(
     onSelect: (Assistant) -> Unit,
     onManage: () -> Unit,
     modifier: Modifier = Modifier,
+    updateCounters: DrawerUpdateCounters? = null,
 ) {
+    SideEffect { updateCounters?.recordCardCommit() }
     val defaultName = stringResource(R.string.assistant_page_default_assistant)
     val currentName = current.name.ifBlank { defaultName }
     val others = remember(assistants, current.id) { assistants.filter { it.id != current.id } }
@@ -538,7 +541,9 @@ internal fun DrawerAssistantRail(
     agentMode: Boolean,
     onAgentModeChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
+    updateCounters: DrawerUpdateCounters? = null,
 ) {
+    SideEffect { updateCounters?.recordRailCommit() }
     val defaultName = stringResource(R.string.assistant_page_default_assistant)
     var showTools by remember { mutableStateOf(false) }
     var showMore by remember { mutableStateOf(false) }

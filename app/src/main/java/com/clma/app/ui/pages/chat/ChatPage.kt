@@ -184,7 +184,10 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null, is
         .ifBlank { null }
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    ObserveDrawerDiagnostics(drawerState, vm, setting.assistantId)
+    val drawerUpdateCounters = remember(drawerState) { DrawerUpdateCounters() }
+    ObserveDrawerDiagnostics(
+        drawerState, vm, setting.assistantId, setting.displaySetting.drawerStyle, drawerUpdateCounters,
+    )
     // 与抽屉共享同一个 activity 级 ChatDrawerVM，返回键才能先退出多选而不是关掉抽屉。
     val activity = LocalContext.current as ComponentActivity
     val drawerVm: ChatDrawerVM = koinViewModel(viewModelStoreOwner = activity)
@@ -262,10 +265,10 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null, is
                 drawerContent = {
                     ChatDrawerContent(
                         navController = navController,
-                        current = conversation,
                         vm = vm,
                         settings = setting,
                         hazeState = hazeState,
+                        updateCounters = drawerUpdateCounters,
                     )
                 }
             ) {
@@ -308,10 +311,10 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null, is
                                 MaterialTheme(motionScheme = parentMotionScheme) {
                                     ChatDrawerContent(
                                         navController = navController,
-                                        current = conversation,
                                         vm = vm,
                                         settings = setting,
                                         hazeState = hazeState,
+                                        updateCounters = drawerUpdateCounters,
                                     )
                                 }
                             }
