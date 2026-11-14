@@ -1,11 +1,6 @@
 package com.clma.app.ui.modifier
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
+import com.clma.app.ui.components.ui.rememberLoopPhase
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -48,16 +43,12 @@ fun Modifier.shimmer(
     } else {
         // 记住组件的尺寸，以便计算渐变
         var size by remember { mutableStateOf(IntSize.Zero) }
-        // 创建无限循环动画
-        val transition = rememberInfiniteTransition(label = "ShimmerTransition")
-        val translateAnimation = transition.animateFloat(
-            initialValue = 0f,
-            targetValue = 1f, // 动画值从 0 到 1
-            animationSpec = infiniteRepeatable(
-                animation = tween(durationMillis = durationMillis, easing = LinearEasing),
-                repeatMode = RepeatMode.Restart // 每次都从头开始
-            ),
-            label = "ShimmerTranslate"
+        // Read the coarse phase only while drawing, never during composition/layout.
+        val phase = rememberLoopPhase(
+            durationMillis = durationMillis,
+            staticPhase = 0.5f,
+            label = "shimmer",
+            frameIntervalMs = 66L,
         )
         // 将角度转换为弧度
         val angleRad = Math.toRadians(angle.toDouble()).toFloat()
@@ -93,7 +84,7 @@ fun Modifier.shimmer(
                 // 总移动距离需要覆盖组件加上渐变宽度，确保完全扫过
                 // 我们让它从完全在组件左/上侧开始，移动到完全在右/下侧结束
                 val totalDistance = diagonal + gradientWidth
-                val currentOffset = translateAnimation.value * totalDistance - gradientWidth
+                val currentOffset = phase() * totalDistance - gradientWidth
                 // 计算渐变的起始点和结束点，考虑角度
                 val startX = currentOffset * kotlin.math.cos(angleRad)
                 val startY = currentOffset * kotlin.math.sin(angleRad)

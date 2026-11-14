@@ -1,19 +1,13 @@
 package com.clma.app.ui.components.ui
 
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -27,22 +21,22 @@ fun DotLoading(
     animationDuration: Int = 600,
     size: Dp = 16.dp,
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "dot_loading")
-    val alpha by infiniteTransition.animateFloat(
-        initialValue = 0.3f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = animationDuration),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "dot_alpha"
+    val phase = rememberLoopPhase(
+        durationMillis = animationDuration * 2,
+        staticPhase = 0.5f,
+        label = "dot_loading",
+        frameIntervalMs = 66L,
     )
 
     Box(
         modifier = Modifier
             .size(size)
             .then(modifier)
-            .alpha(alpha)
+            .graphicsLayer { alpha = dotLoadingAlpha(phase()) }
             .background(color = color, shape = CircleShape)
     )
 }
+
+/** A triangular pulse keeps the back-and-forth fade without a vsync clock. */
+internal fun dotLoadingAlpha(phase: Float): Float =
+    0.3f + 0.7f * (1f - kotlin.math.abs(2f * phase - 1f))

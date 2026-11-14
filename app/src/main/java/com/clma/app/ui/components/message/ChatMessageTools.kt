@@ -137,8 +137,13 @@ fun InteractiveToolCard(
 
 
 @Composable
-fun ChainOfThoughtScope.ChatMessageServerToolStep(tool: UIMessagePart.ServerTool) {
-    val loading = !tool.isFinished
+fun ChainOfThoughtScope.ChatMessageServerToolStep(
+    tool: UIMessagePart.ServerTool,
+    generationActive: Boolean = false,
+) {
+    // Interrupted/history parts can retain IN_PROGRESS indefinitely. Persisted status alone
+    // must not keep a loading animation alive after this message stops generating.
+    val loading = serverToolLoading(generationActive, tool.isFinished)
     val capsule = LocalToolCallStyle.current == ToolCallStyle.CAPSULE
     ChainOfThoughtStep(
         icon = {

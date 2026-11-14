@@ -601,7 +601,7 @@ private fun MessagePartsBlock(
 
                             is ThinkingStep.ServerToolStep -> {
                                 key(step.tool.toolCallId.ifBlank { step.hashCode().toString() }) {
-                                    ChatMessageServerToolStep(tool = step.tool)
+                                    ChatMessageServerToolStep(tool = step.tool, generationActive = loading)
                                 }
                             }
 
@@ -804,7 +804,7 @@ private fun MessagePartsBlock(
                                     .size(72.dp)
                                     .clip(MaterialTheme.shapes.medium)
                                     .background(MaterialTheme.colorScheme.surfaceVariant)
-                                    .shimmer(isLoading = true)
+                                    .shimmer(isLoading = loading)
                             )
                         } else {
                             ZoomableAsyncImage(
