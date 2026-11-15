@@ -16,6 +16,9 @@ import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.OutlinedButton
+import com.clma.app.Screen
+import com.clma.app.ui.context.LocalNavController
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
@@ -108,6 +111,7 @@ fun SettingModelPage(initialTab: Int = 0, vm: SettingVM = koinViewModel()) {
 
 @Composable
 private fun ModelSettingsPage(settings: Settings, vm: SettingVM, contentPadding: PaddingValues) {
+    val navController = LocalNavController.current
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = contentPadding + PaddingValues(horizontal = 16.dp),
@@ -166,7 +170,7 @@ private fun ModelSettingsPage(settings: Settings, vm: SettingVM, contentPadding:
             )
         }
         item {
-            CardGroup(title = { Text(stringResource(R.string.setting_model_page_image_recognition_mode)) }) {
+            CardGroup(title = { Text(stringResource(R.string.media_recognition_title)) }) {
                 item(
                     headlineContent = { Text(stringResource(R.string.setting_model_page_image_recognition_mode)) },
                     supportingContent = {
@@ -205,6 +209,20 @@ private fun ModelSettingsPage(settings: Settings, vm: SettingVM, contentPadding:
             )
         }
         item {
+            CardGroup {
+                item(
+                    headlineContent = { Text(stringResource(R.string.media_local_ocr_title)) },
+                    supportingContent = { Text(stringResource(R.string.media_local_ocr_desc)) },
+                    trailingContent = {
+                        Switch(
+                            checked = settings.useLocalOcr,
+                            onCheckedChange = { enabled -> vm.updateSettings { it.copy(useLocalOcr = enabled) } },
+                        )
+                    },
+                )
+            }
+        }
+        if (!settings.useLocalOcr) item {
             ModelSettingItem(
                 title = stringResource(R.string.setting_model_page_ocr_model),
                 description = stringResource(R.string.setting_model_page_ocr_model_desc),
@@ -212,6 +230,21 @@ private fun ModelSettingsPage(settings: Settings, vm: SettingVM, contentPadding:
                 providers = settings.providers,
                 onSelect = { vm.updateSettings(settings.copy(ocrModelId = it.id)) },
             )
+        }
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.media_tools_desc), style = MaterialTheme.typography.bodySmall)
+                OutlinedButton(onClick = { navController.navigate(Screen.Assistant) }) {
+                    Text(stringResource(R.string.media_tools_manage))
+                }
+                OutlinedButton(onClick = {
+                    vm.openLocalLlamaProvider {
+                        navController.navigate(Screen.SettingProviderDetail(
+                            providerId = com.clma.ai.provider.LLAMACPP_PROVIDER_ID.toString(),
+                        ))
+                    }
+                }) { Text(stringResource(R.string.local_llama_open_or_restore)) }
+            }
         }
     }
 }

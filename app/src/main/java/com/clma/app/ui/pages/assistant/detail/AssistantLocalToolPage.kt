@@ -141,6 +141,9 @@ private fun AssistantLocalToolContent(
     fun setGroupEnabled(option: LocalToolOption, enabled: Boolean) {
         onUpdateAssistant { current ->
             current.copy(
+                disabledLocalTools = if (enabled && option == LocalToolOption.LocalVision) {
+                    current.disabledLocalTools - "recognize_local_media"
+                } else current.disabledLocalTools,
                 localTools = if (enabled) {
                     (current.localTools + option).distinct()
                 } else {
@@ -211,12 +214,13 @@ private fun AssistantLocalToolContent(
             )
         } else CardGroup {
             visibleGroups.forEach { option ->
-                val enabled = option in enabledGroups
+                val enabled = option in enabledGroups &&
+                    (option != LocalToolOption.LocalVision || "recognize_local_media" !in disabledTools)
                 val available = option != LocalToolOption.Nfc || hasNfc
                 val tools = groupTools[option].orEmpty()
                 val offCount = tools.count { it in disabledTools }
                 // A search opens what it found; otherwise the user's own taps decide.
-                val opened = enabled && (searching || option in openedGroups)
+                val opened = option != LocalToolOption.LocalVision && enabled && (searching || option in openedGroups)
 
                 item(
                     onClick = { if (enabled) toggleOpen(option) },
@@ -225,6 +229,8 @@ private fun AssistantLocalToolContent(
                         Text(
                             text = if (!available) {
                                 stringResource(R.string.assistant_page_local_tools_nfc_unavailable)
+                            } else if (option == LocalToolOption.LocalVision) {
+                                stringResource(R.string.local_vision_switch_desc)
                             } else if (offCount > 0) {
                                 stringResource(
                                     R.string.assistant_page_local_tools_group_count_off,
@@ -238,7 +244,7 @@ private fun AssistantLocalToolContent(
                     },
                     trailingContent = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            if (enabled) {
+                            if (enabled && option != LocalToolOption.LocalVision) {
                                 IconButton(onClick = { toggleOpen(option) }) {
                                     Icon(
                                         imageVector = if (opened) HugeIcons.ArrowUp01 else HugeIcons.ArrowDown01,

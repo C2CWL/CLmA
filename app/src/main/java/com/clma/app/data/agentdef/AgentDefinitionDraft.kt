@@ -279,6 +279,7 @@ fun AgentDefinition.surfaceSummary(): SurfaceSummary = SurfaceSummary(
  */
 object LocalToolGroups {
     val all: List<LocalToolOption> = listOf(
+        LocalToolOption.LocalVision,
         LocalToolOption.JavascriptEngine,
         LocalToolOption.TimeInfo,
         LocalToolOption.Clipboard,

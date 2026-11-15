@@ -79,4 +79,11 @@ class LenientLocalToolListSerializerTest {
 
         assertEquals(emptyList<LocalToolOption>(), decoded)
     }
+    @Test
+    fun `local vision is an independently persisted tool group`() {
+        val tools = listOf(LocalToolOption.LocalVision)
+        val encoded = json.encodeToString(LenientLocalToolListSerializer, tools)
+        assertEquals("""[{"type":"local_vision"}]""", encoded)
+        assertEquals(tools, json.decodeFromString(LenientLocalToolListSerializer, encoded))
+    }
 }

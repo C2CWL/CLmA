@@ -1,0 +1,11 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="local_vision_switch_title">Offline image / video understanding</string>
+    <string name="local_llama_open_or_restore">Local GGUF models · open / restore llama.cpp</string>
+    <string name="local_vision_switch_desc">Independent per-assistant tool. Install Qwen3-VL and its projector under Local GGUF models. Loads on demand and releases after each call; automatic OCR is configured separately.</string>
+    <string name="media_recognition_title">Image and video recognition</string>
+    <string name="media_local_ocr_title">OCR model · local Qwen3-VL</string>
+    <string name="media_local_ocr_desc">Use the installed local visual model instead of a provider OCR model. Only runs when automatic image processing needs OCR; off by default. Download both weights and projector first. Failure preserves the original image; there is no cloud OCR fallback. The original image may still be sent to the main chat model.</string>
+    <string name="media_tools_desc">Automatic OCR extracts text when sending images. The offline image / video tool is separate and controlled per assistant; enabling either does not enable the other. Video uses sparse keyframes up to 60 seconds, without audio.</string>
+    <string name="media_tools_manage">Assistants · configure offline recognition tool</string>
+</resources>
