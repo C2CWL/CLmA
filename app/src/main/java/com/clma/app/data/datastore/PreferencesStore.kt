@@ -239,6 +239,7 @@ class SettingsStore(
         val SUGGESTION_PROMPT = stringPreferencesKey("suggestion_prompt")
         val IMAGE_RECOGNITION_MODE = stringPreferencesKey("image_recognition_mode")
         val OCR_MODEL = stringPreferencesKey("ocr_model")
+        val LOCAL_OCR = booleanPreferencesKey("local_ocr")
         val OCR_PROMPT = stringPreferencesKey("ocr_prompt")
         val COMPRESS_MODEL = stringPreferencesKey("compress_model")
         val COMPACTION_ENGINE = stringPreferencesKey("compaction_engine")
@@ -384,6 +385,7 @@ class SettingsStore(
                 preferences[SUGGESTION_PROMPT] = settings.suggestionPrompt
                 preferences[IMAGE_RECOGNITION_MODE] = settings.imageRecognitionMode.name
                 preferences[OCR_MODEL] = settings.ocrModelId.toString()
+                preferences[LOCAL_OCR] = settings.useLocalOcr
                 preferences[OCR_PROMPT] = settings.ocrPrompt
                 preferences[COMPRESS_MODEL] = settings.compressModelId.toString()
                 preferences[COMPACTION_ENGINE] = settings.compactionEngine.name
@@ -516,6 +518,7 @@ class SettingsStore(
                     ?.let { value -> runCatching { ImageRecognitionMode.valueOf(value) }.getOrNull() }
                     ?: ImageRecognitionMode.AUTO,
                 ocrModelId = preferences[OCR_MODEL]?.let { runCatching { Uuid.parse(it) }.getOrNull() } ?: Uuid.random(),
+                useLocalOcr = preferences[LOCAL_OCR] ?: false,
                 ocrPrompt = preferences[OCR_PROMPT] ?: DEFAULT_OCR_PROMPT,
                 compressModelId = preferences[COMPRESS_MODEL]?.let { runCatching { Uuid.parse(it) }.getOrNull() } ?: DEFAULT_AUTO_MODEL_ID,
                 compactionEngine = runCatching {
@@ -1128,6 +1131,7 @@ data class Settings(
     val suggestionPrompt: String = DEFAULT_SUGGESTION_PROMPT,
     val imageRecognitionMode: ImageRecognitionMode = ImageRecognitionMode.AUTO,
     val ocrModelId: Uuid = Uuid.random(),
+    val useLocalOcr: Boolean = false,
     val ocrPrompt: String = DEFAULT_OCR_PROMPT,
     val compressModelId: Uuid = Uuid.random(),
     val compactionEngine: CompactionEngine = CompactionEngine.MODEL,

@@ -1,6 +1,11 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="local_vision_switch_title">离线图片 / 视频识别（OCR）</string>
+    <string name="local_vision_switch_title">离线图片 / 视频理解</string>
     <string name="local_llama_open_or_restore">本地 GGUF 模型 · 打开 / 恢复 llama.cpp</string>
-    <string name="local_vision_switch_desc">独立于文件工具。请先在本地 GGUF 模型中安装 Qwen3-VL 和视觉编码器。仅识别时加载，结束后释放；此开关不修改自动 OCR 模型。</string>
+    <string name="local_vision_switch_desc">独立的助手工具。请先在本地 GGUF 模型中安装 Qwen3-VL 和视觉编码器。按需加载，调用结束后释放；自动 OCR 另行设置。</string>
+    <string name="media_recognition_title">图片与视频识别</string>
+    <string name="media_local_ocr_title">OCR 模型 · 本地 Qwen3-VL</string>
+    <string name="media_local_ocr_desc">使用已安装的本地视觉模型替代提供商 OCR 模型。仅在自动图片处理需要 OCR 时运行，默认关闭；请先下载模型与视觉编码器。失败时保留原图，不回退到云端 OCR；原图仍可能发送给主聊天模型。</string>
+    <string name="media_tools_desc">自动 OCR 在发送图片时提取文字；离线图片 / 视频理解由各助手独立控制，按需调用，两个设置不会互相开启。视频仅支持最长 60 秒的稀疏关键帧，不含音轨。</string>
+    <string name="media_tools_manage">前往助手 · 配置离线识别工具</string>
 </resources>

@@ -46,3 +46,22 @@ own model. Visual requests are never silently history-trimmed to fit the context
 This is an explicit tool, not automatic attachment routing. The calling model needs the
 absolute on-device media path; workspace `/upload` aliases are not device paths. Files in
 protected app-private directories remain subject to the existing file safety policy.
+
+
+## Unified image and video settings
+
+Settings → Default models → Image and video recognition groups the automatic image
+processing mode, OCR backend, assistant-tool entry and local GGUF model management.
+The per-assistant tool is named **Offline image / video understanding**, not OCR.
+
+Automatic OCR keeps its existing AUTO / ALWAYS_VISION / ALWAYS_OCR behavior.
+The new **OCR model · local Qwen3-VL** switch is opt-in (false for existing installs),
+uses the same installed visual weights/projector and request-scoped runtime as the
+recognition tool, and does not register the visual model as a chat model.
+With it off, the existing provider OCR selection is preserved. With it on, local
+recognition failure/timeout retains the original image without cloud OCR fallback.
+This does not promise the original image stays offline: the main chat provider can
+still receive it when OCR fails or when automatic OCR is bypassed.
+The global OCR preference and per-assistant tool permission never enable each other.
+OCR cache keys include backend, provider model, prompt and image URL so switching
+backends cannot reuse a result from another backend. Video remains tool-only.

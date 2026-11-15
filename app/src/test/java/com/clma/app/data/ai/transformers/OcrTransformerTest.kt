@@ -3,6 +3,10 @@ package com.clma.app.data.ai.transformers
 import com.clma.ai.core.MessageRole
 import com.clma.ai.ui.UIMessage
 import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.datastore.Settings
+import kotlin.uuid.Uuid
+import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -61,5 +65,26 @@ class OcrTransformerTest {
     fun `empty message list returns empty`() {
         val result = selectUncachedImageUrls(emptyList()) { false }
         assertTrue(result.isEmpty())
+    }
+    @Test
+    fun `local OCR is opt in and survives settings serialization`() {
+        val settings = Settings()
+        assertFalse(settings.useLocalOcr)
+        val json = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+        val encoded = json.encodeToString(Settings.serializer(), settings.copy(useLocalOcr = true))
+        assertTrue(json.decodeFromString(Settings.serializer(), encoded).useLocalOcr)
+        assertFalse(json.decodeFromString(Settings.serializer(), "{}").useLocalOcr)
+    }
+
+    @Test
+    fun `OCR cache is isolated by backend model prompt and image`() {
+        val settings = Settings()
+        val url = "file:///image.png"
+        val key = ocrCacheKey(url, settings)
+        assertEquals(key, ocrCacheKey(url, settings.copy()))
+        assertNotEquals(key, ocrCacheKey(url, settings.copy(useLocalOcr = true)))
+        assertNotEquals(key, ocrCacheKey(url, settings.copy(ocrModelId = Uuid.random())))
+        assertNotEquals(key, ocrCacheKey(url, settings.copy(ocrPrompt = "other prompt")))
+        assertNotEquals(key, ocrCacheKey("file:///other.png", settings))
     }
 }
