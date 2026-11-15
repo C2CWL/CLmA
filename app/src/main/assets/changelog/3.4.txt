@@ -1,0 +1,14 @@
+## CLmA 3.4
+
+- 新增离线图片识别工具，支持按需加载 Qwen3-VL，调用后释放模型。
+- 新增本地视频关键帧识别，支持最长 60 秒视频，不含音轨理解。
+- 新增启动更新日志和“本版本不再提醒”，可在关于页点击版本重新查看。
+- 改进发版日志同步，应用内日志与发布页使用同一份内容。
+- 修复悬浮侧栏空闲时持续重绘，并跟随实际生成任务更新状态。
+
+## Changes
+- Add offline image recognition with on-demand Qwen3-VL loading and per-call unloading.
+- Add sparse keyframe recognition for local videos up to 60 seconds, without audio.
+- Show version notes at startup with a per-version opt-out and access from About.
+- Bundle the same release notes in the app and on the release page.
+- Stop idle edge-bar redraws and track live generation jobs.
