@@ -224,6 +224,7 @@ class LlamaCppProvider(
         }
         require(!bytes.isNullOrEmpty()) { "Cannot open local image" }
         val source = android.graphics.ImageDecoder.createSource(java.nio.ByteBuffer.wrap(bytes))
+        val bitmap = android.graphics.ImageDecoder.decodeBitmap(source) { decoder, _, _ ->
             decoder.allocator = android.graphics.ImageDecoder.ALLOCATOR_SOFTWARE
         }
         val target = File.createTempFile("vision-", ".png", context.cacheDir)
