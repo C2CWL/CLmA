@@ -490,6 +490,12 @@ class RouteActivity : FragmentActivity() {
                     alignment = Alignment.TopCenter,
                     showCloseButton = true,
                 )
+                com.clma.app.ui.components.update.VersionChangelogPrompt(
+                    eligible = !settings.init &&
+                        (gettingStartedSeen || settings.hasConfiguredModel()) &&
+                        backStack.size == 1 &&
+                        (backStack.firstOrNull() is Screen.Chat || backStack.firstOrNull() == Screen.BotHome),
+                )
                 TTSController()
                 Box(
                     modifier = Modifier

@@ -1,0 +1,8 @@
+<resources>
+    <string name="changelog_title">What’s new · %1$s</string>
+    <string name="changelog_unavailable">No bundled notes for this version. View the release page for details.</string>
+    <string name="changelog_loading">Loading…</string>
+    <string name="changelog_suppress">Don’t remind me again for this version</string>
+    <string name="changelog_confirm">Got it</string>
+    <string name="changelog_release_page">Release page</string>
+</resources>

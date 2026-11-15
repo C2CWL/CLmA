@@ -1,0 +1,8 @@
+<resources>
+    <string name="changelog_title">更新日志 · %1$s</string>
+    <string name="changelog_unavailable">此版本未附带离线日志，请查看发布页了解详情。</string>
+    <string name="changelog_loading">正在加载…</string>
+    <string name="changelog_suppress">本版本不再提醒</string>
+    <string name="changelog_confirm">知道了</string>
+    <string name="changelog_release_page">发布详情</string>
+</resources>
