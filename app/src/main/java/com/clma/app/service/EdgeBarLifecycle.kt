@@ -1,5 +1,6 @@
 package com.clma.app.service
 
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -50,3 +51,7 @@ internal fun <T : Any> releaseOverlayResource(
     runCatching { quiesce(resource) }.onFailure(onFailure)
     return runCatching { remove(resource) }.onFailure(onFailure).isSuccess
 }
+
+/** Include LAZY jobs before start(), but never retain a cancelled/completed turn. */
+internal fun edgeBarHasWork(jobs: Collection<Job?>): Boolean =
+    jobs.any { it != null && !it.isCancelled && !it.isCompleted }
