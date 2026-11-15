@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="local_vision_switch_title">Offline image / video recognition (OCR)</string>
+    <string name="local_llama_open_or_restore">Local GGUF models · open / restore llama.cpp</string>
+    <string name="local_vision_switch_desc">Independent of file tools. Install Qwen3-VL and its projector under Local GGUF models first. Loaded only for recognition; released after each call. This does not configure the automatic OCR model.</string>
+</resources>

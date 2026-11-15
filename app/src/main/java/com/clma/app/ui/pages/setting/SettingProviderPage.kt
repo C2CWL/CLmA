@@ -168,6 +168,19 @@ fun SettingProviderPage(vm: SettingVM = koinViewModel()) {
                 .fillMaxSize()
                 .padding(top = innerPadding.calculateTopPadding())
         ) {
+            OutlinedButton(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                onClick = {
+                    vm.openLocalLlamaProvider {
+                        navController.navigate(Screen.SettingProviderDetail(
+                            providerId = com.clma.ai.provider.LLAMACPP_PROVIDER_ID.toString(),
+                        ))
+                    }
+                },
+            ) {
+                Text(stringResource(R.string.local_llama_open_or_restore))
+            }
+
             // Search bar
             OutlinedTextField(
                 value = searchQuery,

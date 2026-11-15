@@ -34,4 +34,21 @@ class DefaultProvidersTest {
             uncategorized.isEmpty(),
         )
     }
+    @Test
+    fun `restore local provider removes tombstone and does not duplicate existing provider`() {
+        val id = com.clma.ai.provider.LLAMACPP_PROVIDER_ID
+        val missing = Settings(providers = emptyList(), deletedBuiltInProviderIds = setOf(id))
+        val restored = missing.restoreLocalLlamaProvider()
+        assertEquals(1, restored.providers.count { it.id == id })
+        assertFalse(id in restored.deletedBuiltInProviderIds)
+        assertFalse(restored.providers.single().enabled)
+        assertEquals(restored, restored.restoreLocalLlamaProvider())
+    }
+
+    @Test
+    fun `restore local provider preserves configured models and enabled state`() {
+        val configured = ProviderSetting.LlamaCppLocal(enabled = true, name = "My GGUF")
+        val original = Settings(providers = listOf(configured))
+        assertEquals(original, original.restoreLocalLlamaProvider())
+    }
 }

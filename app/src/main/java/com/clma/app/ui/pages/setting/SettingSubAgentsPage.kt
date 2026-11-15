@@ -829,6 +829,7 @@ internal fun localToolTitleRes(option: LocalToolOption): Int = when (option) {
         LocalToolOption.MediaScanner -> R.string.assistant_page_local_tools_media_scanner_title
         LocalToolOption.Download -> R.string.assistant_page_local_tools_download_title
         LocalToolOption.CronJobs -> R.string.assistant_page_local_tools_cron_jobs_title
+        LocalToolOption.LocalVision -> R.string.local_vision_switch_title
         LocalToolOption.Files -> R.string.assistant_page_local_tools_files_title
         LocalToolOption.Ssh -> R.string.assistant_page_local_tools_ssh_title
         LocalToolOption.McpControl -> R.string.assistant_page_local_tools_mcp_control_title

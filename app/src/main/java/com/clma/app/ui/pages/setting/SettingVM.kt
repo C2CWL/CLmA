@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import com.clma.app.AppScope
 import com.clma.app.data.datastore.Settings
+import com.clma.app.data.datastore.restoreLocalLlamaProvider
 import com.clma.app.data.datastore.SettingsStore
 import com.clma.app.data.ai.mcp.McpManager
 
@@ -29,6 +30,12 @@ class SettingVM(
     fun updateSettings(transform: (Settings) -> Settings) {
         appScope.launch(Dispatchers.IO) {
             settingsStore.update(transform)
+        }
+    }
+    fun openLocalLlamaProvider(onReady: () -> Unit) {
+        appScope.launch(Dispatchers.IO) {
+            settingsStore.update { it.restoreLocalLlamaProvider() }
+            kotlinx.coroutines.withContext(Dispatchers.Main) { onReady() }
         }
     }
 }

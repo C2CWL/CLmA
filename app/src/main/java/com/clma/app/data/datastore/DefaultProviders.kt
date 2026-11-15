@@ -231,3 +231,10 @@ val DEFAULT_PROVIDERS = listOf(
         promptCaching = false,
     ),
 )
+
+/** Explicit user action: recover a deleted local singleton without replacing an existing setup. */
+internal fun Settings.restoreLocalLlamaProvider(): Settings = copy(
+    providers = if (providers.any { it.id == com.clma.ai.provider.LLAMACPP_PROVIDER_ID }) providers else
+        listOf(DEFAULT_PROVIDERS.single { it is ProviderSetting.LlamaCppLocal }.copyProvider()) + providers,
+    deletedBuiltInProviderIds = deletedBuiltInProviderIds - com.clma.ai.provider.LLAMACPP_PROVIDER_ID,
+)

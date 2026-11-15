@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="local_vision_switch_title">离线图片 / 视频识别（OCR）</string>
+    <string name="local_llama_open_or_restore">本地 GGUF 模型 · 打开 / 恢复 llama.cpp</string>
+    <string name="local_vision_switch_desc">独立于文件工具。请先在本地 GGUF 模型中安装 Qwen3-VL 和视觉编码器。仅识别时加载，结束后释放；此开关不修改自动 OCR 模型。</string>
+</resources>

@@ -184,6 +184,7 @@ sealed class LocalToolOption {
     @Serializable @SerialName("app_launcher")      data object AppLauncher       : LocalToolOption()
     @Serializable @SerialName("termux")            data object Termux            : LocalToolOption()
     @Serializable @SerialName("notification_listener") data object NotificationListener : LocalToolOption()
+    @Serializable @SerialName("local_vision") data object LocalVision : LocalToolOption()
     @Serializable @SerialName("files")               data object Files              : LocalToolOption()
     @Serializable @SerialName("mcp_control")         data object McpControl         : LocalToolOption()
     @Serializable @SerialName("external_automation") data object ExternalAutomation : LocalToolOption()
@@ -976,6 +977,9 @@ class LocalTools(
             tools.add(notificationReplyTool())
             tools.add(notificationStatusTool())
         }
+        if (options.contains(LocalToolOption.LocalVision)) {
+            tools.add(com.clma.app.data.ai.tools.local.recognizeLocalMediaTool(localVisionProvider, localRuntimePreferences))
+        }
         if (options.contains(LocalToolOption.Files)) {
             tools.add(listFilesTool())
             tools.add(readFileTool())
@@ -986,7 +990,6 @@ class LocalTools(
             tools.add(createDirectoryTool())
             tools.add(fileInfoTool())
             tools.add(findFilesTool())
-            tools.add(com.clma.app.data.ai.tools.local.recognizeLocalMediaTool(localVisionProvider, localRuntimePreferences))
             tools.add(showImageTool(context, invocationContext.modelCanSeeImages))  // inline image display; no separate auto-stream needed
             tools.add(openFileTool(context, invocationContext, interactiveToolStreamer))
             // Batch ops (item 5.5) — list-or-glob copy / move / delete. Same toggle group
