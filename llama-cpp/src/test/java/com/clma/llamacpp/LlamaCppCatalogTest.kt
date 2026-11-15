@@ -11,6 +11,18 @@ import org.junit.Test
 class LlamaCppCatalogTest {
 
     @Test
+    fun `vision picks include a separate high precision projector`() {
+        val entries = LlamaCppCatalog.ENTRIES.filter { "vision" in it.tags }
+        assertTrue(entries.isNotEmpty())
+        entries.forEach { entry ->
+            assertTrue(entry.file.endsWith("Q8_0.gguf"))
+            assertTrue(requireNotNull(entry.projectorFile).endsWith("F16.gguf"))
+            assertTrue(entry.projectorSizeBytes > 0)
+            assertTrue(requireNotNull(entry.projectorUrl()).startsWith("https://huggingface.co/"))
+        }
+    }
+
+    @Test
     fun `every entry points at a gguf file`() {
         LlamaCppCatalog.ENTRIES.forEach { entry ->
             assertTrue(

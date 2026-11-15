@@ -201,6 +201,8 @@ val appModule = module {
             filesManager = get(),
             genMediaRepository = get(),
             gitHubConnector = get(),
+            localVisionProvider = get(),
+            localRuntimePreferences = get(),
         )
     }
 
@@ -234,6 +236,7 @@ val appModule = module {
     // Phase 22A: Local-LLM on-device providers
     single { com.clma.locallm.LocalRuntimePreferences(get()) }
     single { com.clma.llamacpp.LlamaCppRuntime() }
+    single { com.clma.llamacpp.LlamaCppProvider(context = get(), runtime = get(), prefs = get()) }
 
     single {
         ChatToolFactory(

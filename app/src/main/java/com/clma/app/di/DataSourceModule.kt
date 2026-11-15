@@ -372,11 +372,7 @@ val dataSourceModule = module {
             pm.providerDecorator = { provider -> decorateForUsage(provider, usageLedger) }
             pm.registerProvider(
                 "local_llamacpp",
-                com.clma.llamacpp.LlamaCppProvider(
-                    context = get(),
-                    runtime = get(),
-                    prefs = get(),
-                ),
+                get<com.clma.llamacpp.LlamaCppProvider>(),
             )
             pm.registerProvider(
                 "codex",

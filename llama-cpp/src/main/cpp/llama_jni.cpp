@@ -11,6 +11,8 @@
 #include "jni_util.h"
 #include "chat.h"
 #include "sampling.h"
+#include "mtmd.h"
+#include "mtmd-helper.h"
 #include <nlohmann/json.hpp>
 
 extern "C" JNIEXPORT jstring JNICALL
@@ -278,8 +280,11 @@ static ggml_type cacheTypeFromId(const std::string &id) {
 struct GenerationContext {
     llama_context    *ctx = nullptr;
     std::atomic<bool> cancelled{false};
+    mtmd::context_ptr vision;
+    std::string projector;
 
     ~GenerationContext() {
+        vision.reset();
         if (ctx != nullptr) {
             llama_free(ctx);
         }
@@ -485,10 +490,9 @@ static common_params_sampling samplingFromApplied(const nlohmann::ordered_json &
 // extra macro argument.
 using SamplerPtr = std::unique_ptr<common_sampler, void (*)(common_sampler *)>;
 
-extern "C" JNIEXPORT void JNICALL
-Java_com_clma_llamacpp_LlamaCppJni_nativeGenerate(
-        JNIEnv *env, jobject, jlong ctxHandle, jlong modelHandle, jbyteArray appliedIn,
-        jint maxTokens, jobject sink) {
+static void generate(
+        JNIEnv *env, jlong ctxHandle, jlong modelHandle, jbyteArray appliedIn,
+        jint maxTokens, jobject sink, jstring projectorIn, jobjectArray imagesIn) {
     JNI_GUARD_VOID(env, {
         auto *gen   = reinterpret_cast<GenerationContext *>(ctxHandle);
         auto *model = reinterpret_cast<llama_model *>(modelHandle);
@@ -525,22 +529,71 @@ Java_com_clma_llamacpp_LlamaCppJni_nativeGenerate(
         // must not silently kill the next one.
         gen->cancelled.store(false, std::memory_order_relaxed);
 
-        std::vector<llama_token> tokens(prompt.size() + 64);
-        int32_t nPrompt = llama_tokenize(
-                vocab, prompt.c_str(), static_cast<int32_t>(prompt.size()),
-                tokens.data(), static_cast<int32_t>(tokens.size()),
-                /*add_special*/ true, /*parse_special*/ true);
-        if (nPrompt < 0) {
-            tokens.resize(static_cast<size_t>(-nPrompt));
-            nPrompt = llama_tokenize(
-                    vocab, prompt.c_str(), static_cast<int32_t>(prompt.size()),
+        const bool hasImages = imagesIn != nullptr && env->GetArrayLength(imagesIn) > 0;
+        std::vector<llama_token> tokens;
+        mtmd::input_chunks_ptr chunks;
+        std::vector<mtmd::bitmap_ptr> bitmaps;
+        llama_pos nextPos = 0;
+        if (hasImages) {
+            const std::string projector = jstringToUtf8(env, projectorIn);
+            if (projector.empty()) throw std::runtime_error("Missing vision projector");
+            if (!gen->vision || gen->projector != projector) {
+                gen->vision.reset();
+                gen->projector.clear();
+                auto params = mtmd_context_params_default();
+                params.use_gpu = false;
+                params.n_threads = llama_n_threads(ctx);
+                params.warmup = false;
+                params.progress_callback = [](float, void * data) { return !abortIfCancelled(data); };
+                params.progress_callback_user_data = gen;
+                gen->vision.reset(mtmd_init_from_file(projector.c_str(), model, params));
+                if (gen->cancelled.load(std::memory_order_relaxed)) return;
+                if (!gen->vision || !mtmd_support_vision(gen->vision.get())) {
+                    gen->vision.reset();
+                    throw std::runtime_error("Cannot load matching vision projector for this model");
+                }
+                gen->projector = projector;
+            }
+            std::vector<const mtmd_bitmap *> pointers;
+            for (jsize i = 0; i < env->GetArrayLength(imagesIn); ++i) {
+                if (gen->cancelled.load(std::memory_order_relaxed)) return;
+                auto pathIn = static_cast<jstring>(env->GetObjectArrayElement(imagesIn, i));
+                const std::string path = jstringToUtf8(env, pathIn);
+                env->DeleteLocalRef(pathIn);
+                auto wrapper = mtmd_helper_bitmap_init_from_file(gen->vision.get(), path.c_str(), false);
+                mtmd::bitmap_ptr bitmap(wrapper.bitmap);
+                if (!bitmap || wrapper.video_ctx != nullptr) throw std::runtime_error("Cannot decode local vision image");
+                pointers.push_back(bitmap.get());
+                bitmaps.push_back(std::move(bitmap));
+            }
+            chunks.reset(mtmd_input_chunks_init());
+            mtmd_input_text text{};
+            text.text = prompt.c_str();
+            text.text_len = prompt.size();
+            text.add_special = true;
+            text.parse_special = true;
+            if (mtmd_tokenize(gen->vision.get(), chunks.get(), &text, pointers.data(), pointers.size()) != 0) {
+                throw std::runtime_error("Vision markers do not match images, or image preprocessing failed");
+            }
+            // Count actual visual tokens, not the short media marker's text length. Never
+            // silently lower resolution to fit: precision mode fails with an actionable error.
+            const auto count = mtmd_helper_get_n_tokens(chunks.get());
+            if (count + static_cast<size_t>(maxTokens) > llama_n_ctx(ctx)) {
+                throw std::runtime_error("High-resolution images plus text exceed the context; send fewer images, shorten history or reduce output tokens");
+            }
+        } else {
+            tokens.resize(prompt.size() + 64);
+            int32_t count = llama_tokenize(vocab, prompt.c_str(), static_cast<int32_t>(prompt.size()),
+                tokens.data(), static_cast<int32_t>(tokens.size()), true, true);
+            if (count < 0) {
+                tokens.resize(static_cast<size_t>(-count));
+                count = llama_tokenize(vocab, prompt.c_str(), static_cast<int32_t>(prompt.size()),
                     tokens.data(), static_cast<int32_t>(tokens.size()), true, true);
+            }
+            if (count <= 0) throw std::runtime_error("prompt tokenization failed");
+            tokens.resize(static_cast<size_t>(count));
         }
-        if (nPrompt <= 0) {
-            throwJava(env, "prompt tokenization failed");
-            return;
-        }
-        tokens.resize(static_cast<size_t>(nPrompt));
+        const int32_t nPrompt = static_cast<int32_t>(tokens.size());
 
         // Built before the prefill, not after, so an unusable grammar costs nothing: the check
         // that a lazy grammar has triggers is cheap and the prefill it would otherwise follow
@@ -565,6 +618,15 @@ Java_com_clma_llamacpp_LlamaCppJni_nativeGenerate(
         // piece of work; it is not what happens by default.
         llama_memory_clear(llama_get_memory(ctx), /*data*/ true);
 
+        if (hasImages) {
+            const int32_t rc = mtmd_helper_eval_chunks(gen->vision.get(), ctx, chunks.get(),
+                0, 0, static_cast<int32_t>(llama_n_batch(ctx)), true, &nextPos);
+            if (gen->cancelled.load(std::memory_order_relaxed)) return;
+            if (rc != 0) throw std::runtime_error("Failed to encode/evaluate high-resolution image input");
+            // Decoded embeddings are now in the KV cache; release image-sized buffers.
+            chunks.reset();
+            bitmaps.clear();
+        } else {
         // Prefill in n_batch-sized slices. Handing llama_decode more tokens than n_batch is not
         // an error return, it is GGML_ASSERT(n_tokens_all <= cparams.n_batch) in
         // llama_context::decode, which aborts the process; and any real chat prompt carrying a
@@ -598,6 +660,8 @@ Java_com_clma_llamacpp_LlamaCppJni_nativeGenerate(
                 }
                 return;
             }
+        }
+
         }
 
         std::string pending;  // bytes held back because they are mid-character
@@ -644,7 +708,14 @@ Java_com_clma_llamacpp_LlamaCppJni_nativeGenerate(
             }
 
             llama_token next = id;
-            const int32_t rc = llama_decode(ctx, llama_batch_get_one(&next, 1));
+            auto batch = llama_batch_get_one(&next, 1);
+            // mtmd returns the next M-RoPE position, which is not necessarily the number
+            // of tokens consumed. Do not let automatic positions guess after image prefill.
+            llama_pos positions[4];
+            std::fill_n(positions, 4, nextPos);
+            if (hasImages) batch.pos = positions;
+            const int32_t rc = llama_decode(ctx, batch);
+            if (hasImages) ++nextPos;
             if (rc != 0) {
                 if (gen->cancelled.load(std::memory_order_relaxed)) {
                     stopped = true;
@@ -670,6 +741,20 @@ Java_com_clma_llamacpp_LlamaCppJni_nativeGenerate(
             }
         }
     })
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_clma_llamacpp_LlamaCppJni_nativeGenerate(
+        JNIEnv *env, jobject, jlong ctx, jlong model, jbyteArray applied,
+        jint maxTokens, jobject sink) {
+    generate(env, ctx, model, applied, maxTokens, sink, nullptr, nullptr);
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_clma_llamacpp_LlamaCppJni_nativeGenerateVision(
+        JNIEnv *env, jobject, jlong ctx, jlong model, jbyteArray applied,
+        jint maxTokens, jstring projector, jobjectArray images, jobject sink) {
+    generate(env, ctx, model, applied, maxTokens, sink, projector, images);
 }
 
 // The reverse of common_chat_format_name, derived from that function rather than hand-written,

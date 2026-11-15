@@ -80,6 +80,7 @@ object ToolDisplayNames {
         "open_file" to Res(R.string.tool_display_name_open_file, R.string.tool_display_desc_open_file),
         "read_attachment" to Res(R.string.tool_display_name_read_attachment, R.string.tool_display_desc_read_attachment),
         "deliver_file" to Res(R.string.tool_display_name_deliver_file, R.string.tool_display_desc_deliver_file),
+        "recognize_local_media" to Res(R.string.tool_display_name_recognize_local_media, R.string.tool_display_desc_recognize_local_media),
         "show_image" to Res(R.string.tool_display_name_show_image, R.string.tool_display_desc_show_image),
         "show_location_on_map" to Res(R.string.tool_display_name_show_location_on_map, R.string.tool_display_desc_show_location_on_map),
         "create_calendar_event" to Res(R.string.tool_display_name_create_calendar_event, R.string.tool_display_desc_create_calendar_event),

@@ -10,9 +10,13 @@ data class LlamaCppCatalogEntry(
     val sizeBytes: Long,
     val minMemGb: Int,
     val tags: List<String> = emptyList(),
+    val projectorFile: String? = null,
+    val projectorSizeBytes: Long = 0,
 ) {
     /** Pre-built download URL on HuggingFace's `resolve` path. Same format `ModelInstall`
      *  already normalises and validates. */
+    fun projectorUrl(): String? = projectorFile?.let { "https://huggingface.co/$repo/resolve/main/$it" }
+
     fun resolveUrl(): String = "https://huggingface.co/$repo/resolve/main/$file"
 }
 
@@ -65,6 +69,17 @@ object LlamaCppCatalog {
             sizeBytes = 2497280256L,
             minMemGb = 8,
             tags = listOf("thinking", "tools"),
+        ),
+        // Official file names and sizes verified via HF API on 2026-11-15.
+        LlamaCppCatalogEntry(
+            displayName = "Qwen3-VL 2B · Q8 + F16 vision / video keyframes",
+            repo = "Qwen/Qwen3-VL-2B-Instruct-GGUF",
+            file = "Qwen3VL-2B-Instruct-Q8_0.gguf",
+            sizeBytes = 1834427424L,
+            minMemGb = 8,
+            tags = listOf("vision", "tools"),
+            projectorFile = "mmproj-Qwen3VL-2B-Instruct-F16.gguf",
+            projectorSizeBytes = 819394848L,
         ),
     )
 }

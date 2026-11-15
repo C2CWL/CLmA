@@ -401,6 +401,8 @@ class LocalTools(
     private val filesManager: com.clma.app.data.files.FilesManager,
     private val genMediaRepository: com.clma.app.data.repository.GenMediaRepository,
     private val gitHubConnector: com.clma.app.connectors.GitHubConnector,
+    private val localVisionProvider: com.clma.llamacpp.LlamaCppProvider,
+    private val localRuntimePreferences: com.clma.locallm.LocalRuntimePreferences,
 ) {
     val javascriptTool by lazy {
         Tool(
@@ -984,6 +986,7 @@ class LocalTools(
             tools.add(createDirectoryTool())
             tools.add(fileInfoTool())
             tools.add(findFilesTool())
+            tools.add(com.clma.app.data.ai.tools.local.recognizeLocalMediaTool(localVisionProvider, localRuntimePreferences))
             tools.add(showImageTool(context, invocationContext.modelCanSeeImages))  // inline image display; no separate auto-stream needed
             tools.add(openFileTool(context, invocationContext, interactiveToolStreamer))
             // Batch ops (item 5.5) — list-or-glob copy / move / delete. Same toggle group
