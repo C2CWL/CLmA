@@ -234,7 +234,7 @@ class SettingLocalLlmViewModel(
         val currentProvider = settingsStore.settingsFlow.value.providers.firstOrNull { it.id == targetId }
         if (currentProvider != null) {
             val knownModelIds = currentProvider.models.map { it.modelId }.toSet()
-            val missing = finalInstalled.keys.filter { it !in knownModelIds }
+            val missing = finalInstalled.keys.filter { it !in knownModelIds && !it.startsWith("mmproj-", ignoreCase = true) }
             for (fileName in missing) {
                 val caps = deriveLocalModelCapabilities(fileName)
                 val model = Model(
@@ -420,6 +420,28 @@ class SettingLocalLlmViewModel(
         // propagate through .collect{} to this Main-context coroutine and crash the
         // process. Treat any non-cancellation throw as a download failure.
         try {
+            val entry = if (runtime == LocalRuntime.LlamaCpp)
+                LlamaCppCatalog.ENTRIES.firstOrNull { it.file == fileName } else null
+            // Download both files before registering an image-capable model.
+            val projectorUrl = entry?.projectorUrl()
+            if (projectorUrl != null) {
+                val projector = ModelInstall.targetFile(baseDir, runtime, requireNotNull(entry.projectorFile))
+                var ready = false
+                ModelInstall.download(httpClient, projectorUrl, projector).collect { p ->
+                    when (p) {
+                        is ModelInstall.Progress.Started -> _downloadProgress.value = Progress(0, 0L, p.totalBytes)
+                        is ModelInstall.Progress.Tick -> {
+                            val total = p.totalBytes
+                            _downloadProgress.value = Progress(
+                                if (total != null && total > 0) ((p.bytesRead * 100) / total).toInt() else 0,
+                                p.bytesRead, total)
+                        }
+                        is ModelInstall.Progress.Done -> ready = true
+                        is ModelInstall.Progress.Failed -> throw p.cause
+                    }
+                }
+                check(ready) { "Vision projector download did not complete" }
+            }
             collectDownloadProgress(url, fileName, target)
         } catch (cancel: kotlinx.coroutines.CancellationException) {
             // Cancellation is normal — user navigated away or hit Cancel. Don't surface.
@@ -458,6 +480,10 @@ class SettingLocalLlmViewModel(
                     _downloadProgress.value = null
                     prefs.addInstalledModel(runtime, fileName, p.file.absolutePath)
                     val caps = deriveLocalModelCapabilities(fileName)
+                    if (fileName.startsWith("mmproj-", ignoreCase = true)) {
+                        refreshFromDisk()
+                        return@collect
+                    }
                     val model = Model(
                         modelId = fileName,
                         displayName = fileName,
@@ -603,8 +629,7 @@ internal fun registerInstalledModel(provider: ProviderSetting, model: Model): Pr
  * Runtime-aware capability derivation for a just-installed or freshly-reconciled model
  * file, shared by [SettingLocalLlmViewModel.migrateExistingModelMetadata],
  * [SettingLocalLlmViewModel.refreshFromDisk]'s reconcile step, and the post-download
- * registration path. llama.cpp has no vision support in this build, so it always reports
- * TEXT-only input; TOOL and REASONING come from a matching [LlamaCppCatalog] entry's tags
+ * registration path. IMAGE, TOOL and REASONING come from a matching [LlamaCppCatalog] entry's tags
  * when the file is a catalog pick. A file that isn't in the catalog (e.g. a manually
  * installed GGUF) still gets TOOL.
  */
@@ -616,7 +641,7 @@ internal data class LocalModelCapabilities(
 internal fun deriveLocalModelCapabilities(fileName: String): LocalModelCapabilities {
     val tags = LlamaCppCatalog.ENTRIES.firstOrNull { it.file == fileName }?.tags.orEmpty()
     return LocalModelCapabilities(
-        inputModalities = listOf(Modality.TEXT),
+        inputModalities = if ("vision" in tags) listOf(Modality.TEXT, Modality.IMAGE, Modality.VIDEO) else listOf(Modality.TEXT),
         abilities = buildList {
             add(ModelAbility.TOOL)
             if ("thinking" in tags) add(ModelAbility.REASONING)

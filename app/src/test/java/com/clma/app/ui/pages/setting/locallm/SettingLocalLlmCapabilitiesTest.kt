@@ -12,9 +12,15 @@ import org.junit.Test
 
 /**
  * Pins llama.cpp capability derivation: catalog files take TOOL and REASONING from their
- * tags, anything else still gets TOOL, and input is always TEXT (no vision in this build).
+ * tags, anything else still gets TOOL, and only vision catalog entries accept IMAGE and sparse VIDEO previews.
  */
 class SettingLocalLlmCapabilitiesTest {
+
+    @Test
+    fun `vision catalog entry advertises image and video preview`() {
+        val caps = deriveLocalModelCapabilities("Qwen3VL-2B-Instruct-Q8_0.gguf")
+        assertEquals(listOf(Modality.TEXT, Modality.IMAGE, Modality.VIDEO), caps.inputModalities)
+    }
 
     @Test
     fun `llama cpp catalog file gets TOOL and REASONING from its tags`() {
@@ -33,7 +39,7 @@ class SettingLocalLlmCapabilitiesTest {
     }
 
     @Test
-    fun `llama cpp never derives IMAGE input`() {
+    fun `text-only llama cpp does not derive IMAGE input`() {
         val caps = deriveLocalModelCapabilities("Qwen3-0.6B-Q8_0.gguf")
 
         assertFalse(Modality.IMAGE in caps.inputModalities)

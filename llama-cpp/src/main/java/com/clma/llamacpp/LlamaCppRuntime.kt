@@ -46,6 +46,10 @@ interface LlamaCppNative {
         onPiece: (String) -> Boolean,
     )
 
+    fun generateVision(ctxHandle: Long, modelHandle: Long, appliedTemplateJson: String,
+        maxTokens: Int, projector: String, images: Array<String>, onPiece: (String) -> Boolean,
+    ) { error("This native backend does not support vision") }
+
     fun parseChat(text: String, isPartial: Boolean, appliedTemplateJson: String): String
 }
 
@@ -78,6 +82,13 @@ object RealLlamaCppNative : LlamaCppNative {
         maxTokens: Int,
         onPiece: (String) -> Boolean,
     ) = LlamaCppJni.generate(ctxHandle, modelHandle, appliedTemplateJson, maxTokens, onPiece)
+
+    override fun generateVision(ctxHandle: Long, modelHandle: Long, appliedTemplateJson: String,
+        maxTokens: Int, projector: String, images: Array<String>, onPiece: (String) -> Boolean,
+    ) = LlamaCppJni.nativeGenerateVision(ctxHandle, modelHandle, appliedTemplateJson.toByteArray(Charsets.UTF_8),
+        maxTokens, projector, images, object : LlamaCppJni.TokenSink {
+            override fun onToken(pieceUtf8: ByteArray) = onPiece(String(pieceUtf8, Charsets.UTF_8))
+        })
 
     override fun parseChat(text: String, isPartial: Boolean, appliedTemplateJson: String) =
         LlamaCppJni.parseChat(text, isPartial, appliedTemplateJson)
@@ -276,6 +287,8 @@ class LlamaCppRuntime(private val native: LlamaCppNative = RealLlamaCppNative) {
     fun generate(
         appliedTemplateJson: String,
         maxTokens: Int,
+        projector: String? = null,
+        images: Array<String> = emptyArray(),
         onPiece: (String) -> Boolean,
     ) {
         if (!mutex.tryLock()) {
@@ -285,7 +298,9 @@ class LlamaCppRuntime(private val native: LlamaCppNative = RealLlamaCppNative) {
             val model = modelHandle
             val ctx = contextHandle
             check(model != 0L && ctx != 0L) { "no model is loaded" }
-            native.generate(ctx, model, appliedTemplateJson, maxTokens, onPiece)
+            if (images.isEmpty()) native.generate(ctx, model, appliedTemplateJson, maxTokens, onPiece)
+            else native.generateVision(ctx, model, appliedTemplateJson, maxTokens,
+                requireNotNull(projector) { "Install the matching vision projector first" }, images, onPiece)
         } finally {
             mutex.unlock()
         }

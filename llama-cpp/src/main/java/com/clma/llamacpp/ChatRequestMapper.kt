@@ -81,6 +81,46 @@ object ChatRequestMapper {
         return array
     }
 
+    private fun content(parts: List<UIMessagePart>): Any {
+        if (parts.none { it is UIMessagePart.Image }) {
+            return parts.filterIsInstance<UIMessagePart.Text>().joinToString("") { it.text }
+        }
+        return JSONArray().apply {
+            parts.forEach { part ->
+                when (part) {
+                    is UIMessagePart.Text -> put(JSONObject().put("type", "text").put("text", part.text))
+                    is UIMessagePart.Image -> put(JSONObject().put("type", "media_marker").put("text", "<__media__>"))
+                    else -> Unit
+                }
+            }
+        }
+    }
+
+    /** Exactly the media traversal order used by messagesArray, including screenshot tools. */
+    fun imageUrls(messages: List<UIMessage>): List<String> = buildList {
+        messages.forEach { message ->
+            message.parts.forEach { part ->
+                when (part) {
+                    is UIMessagePart.Image -> {
+                        require(message.role != MessageRole.ASSISTANT) { "Local vision does not support assistant image history" }
+                        add(part.url)
+                    }
+                    is UIMessagePart.Tool -> if (message.role == MessageRole.ASSISTANT && part.isExecuted) {
+                        part.output.forEach { output ->
+                            when (output) {
+                                is UIMessagePart.Image -> add(output.url)
+                                is UIMessagePart.Video, is UIMessagePart.Audio -> error("Local vision accepts images only")
+                                else -> Unit
+                            }
+                        }
+                    }
+                    is UIMessagePart.Video, is UIMessagePart.Audio -> error("Local vision currently accepts images only; extract video frames or transcribe audio first")
+                    else -> Unit
+                }
+            }
+        }
+    }
+
     private fun addPlainMessage(array: JSONArray, message: UIMessage) {
         val role = when (message.role) {
             MessageRole.USER -> "user"
@@ -88,10 +128,7 @@ object ChatRequestMapper {
             MessageRole.TOOL -> "tool"
             MessageRole.ASSISTANT -> "assistant" // handled by addAssistantMessages
         }
-        val text = message.parts
-            .filterIsInstance<UIMessagePart.Text>()
-            .joinToString("") { it.text }
-        array.put(JSONObject().put("role", role).put("content", text))
+        array.put(JSONObject().put("role", role).put("content", content(message.parts)))
     }
 
     /**
@@ -166,7 +203,7 @@ object ChatRequestMapper {
             .put("role", "tool")
             .put("name", tool.toolName)
             .put("tool_call_id", tool.toolCallId)
-            .put("content", output)
+            .put("content", content(tool.output))
     }
 
     private fun toolsArray(tools: List<Tool>): JSONArray {

@@ -1219,7 +1219,7 @@ private fun LlamaCppCatalogEntryCard(
                 text = String.format(
                     java.util.Locale.US,
                     stringResource(R.string.local_llm_catalog_size_format),
-                    entry.sizeBytes / 1_000_000_000.0,
+                    (entry.sizeBytes + entry.projectorSizeBytes) / 1_000_000_000.0,
                     entry.minMemGb,
                 ),
                 style = MaterialTheme.typography.labelSmall,

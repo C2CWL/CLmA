@@ -161,6 +161,11 @@ object LlamaCppJni {
             Charsets.UTF_8,
         )
 
+    external fun nativeGenerateVision(
+        ctxHandle: Long, modelHandle: Long, appliedTemplateJson: ByteArray,
+        maxTokens: Int, projector: String, images: Array<String>, sink: TokenSink,
+    )
+
     // -----------------------------------------------------------------------
     // Embeddings
     // -----------------------------------------------------------------------

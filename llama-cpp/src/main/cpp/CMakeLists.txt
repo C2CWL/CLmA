@@ -12,6 +12,8 @@ set(LLAMA_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../../../native/llama.cpp)
 set(LLAMA_BUILD_TESTS    OFF CACHE BOOL "" FORCE)
 set(LLAMA_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(LLAMA_BUILD_SERVER   OFF CACHE BOOL "" FORCE)
+set(LLAMA_BUILD_MTMD     ON CACHE BOOL "" FORCE)
+set(MTMD_VIDEO           OFF CACHE BOOL "" FORCE)
 set(LLAMA_BUILD_TOOLS    OFF CACHE BOOL "" FORCE)
 set(LLAMA_CURL           OFF CACHE BOOL "" FORCE)
 # common carries chat templates, grammar-constrained tool calling and parsing.
@@ -36,4 +38,4 @@ target_include_directories(llamajni PRIVATE
 
 find_library(ANDROID_LOG_LIB log)
 
-target_link_libraries(llamajni PRIVATE llama llama-common ${ANDROID_LOG_LIB})
+target_link_libraries(llamajni PRIVATE llama llama-common mtmd ${ANDROID_LOG_LIB})

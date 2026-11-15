@@ -12,6 +12,26 @@ import org.junit.Test
 class ChatRequestMapperTest {
 
     @Test
+    fun `images preserve their position and attachment order`() {
+        val message = UIMessage(role = MessageRole.USER, parts = listOf(
+            UIMessagePart.Text("read"), UIMessagePart.Image("file:///first.png"),
+            UIMessagePart.Text("compare"), UIMessagePart.Image("content://second"),
+        ))
+        val request = JSONObject(ChatRequestMapper.toRequestJson(listOf(message), emptyList()))
+        val content = request.getJSONArray("messages").getJSONObject(0).getJSONArray("content")
+        assertEquals(4, content.length())
+        assertEquals("media_marker", content.getJSONObject(1).getString("type"))
+        assertEquals("<__media__>", content.getJSONObject(3).getString("text"))
+        assertEquals(listOf("file:///first.png", "content://second"), ChatRequestMapper.imageUrls(listOf(message)))
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `assistant images fail rather than silently losing markers`() {
+        ChatRequestMapper.imageUrls(listOf(UIMessage(role = MessageRole.ASSISTANT,
+            parts = listOf(UIMessagePart.Image("file:///image.png")))))
+    }
+
+    @Test
     fun `a user message becomes an openai shaped message`() {
         val json = JSONObject(
             ChatRequestMapper.toRequestJson(listOf(UIMessage.user("hello")), emptyList())

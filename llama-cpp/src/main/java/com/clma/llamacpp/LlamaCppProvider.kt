@@ -115,8 +115,14 @@ class LlamaCppProvider(
         messages: List<UIMessage>,
         params: TextGenerationParams,
     ): TextGenerationResult = loadMutex.withLock {
-        ensureModelReady(messages, params)
-        generateFromLoadedModel(runtime, messages, params)
+        val temporary = mutableListOf<File>()
+        try {
+            val expanded = withContext(Dispatchers.IO) { LocalVideoFrames.expand(context, messages, temporary) }
+            ensureModelReady(expanded, params)
+            generateFromLoadedModel(runtime, expanded, params, visionProjector(params), ::materializeImage)
+        } finally {
+            temporary.forEach { it.delete() }
+        }
     }
 
     override suspend fun streamText(
@@ -127,10 +133,52 @@ class LlamaCppProvider(
         // loadMutex is held across the whole load-then-generate sequence, not just the load -
         // see the mutex's doc comment for why the generation itself must stay inside the lock.
         loadMutex.withLock {
-            ensureModelReady(messages, params)
-            emitAll(streamFromLoadedModel(runtime, messages, params))
+            val temporary = mutableListOf<File>()
+            try {
+                val expanded = withContext(Dispatchers.IO) { LocalVideoFrames.expand(context, messages, temporary) }
+                ensureModelReady(expanded, params)
+                emitAll(streamFromLoadedModel(runtime, expanded, params, visionProjector(params), ::materializeImage))
+            } finally {
+                temporary.forEach { it.delete() }
+            }
         }
     }
+
+    private fun visionProjector(params: TextGenerationParams): String? {
+        val entry = LlamaCppCatalog.ENTRIES.firstOrNull { it.file == params.model.modelId }
+        val name = entry?.projectorFile ?: return null
+        val model = prefs.installedModels(LocalRuntime.LlamaCpp)[params.model.modelId] ?: return null
+        return File(File(model).parentFile, name).takeIf { it.isFile }?.absolutePath
+    }
+
+    /** Preserve original pixels and normalize EXIF, using a lossless temporary PNG for mtmd. */
+    private fun materializeImage(url: String): File {
+        val uri = android.net.Uri.parse(url)
+        require(uri.scheme == "content" || uri.scheme == "file" || uri.scheme == null) {
+            "Local vision requires a local attachment; download remote images first"
+        }
+        require(android.os.Build.VERSION.SDK_INT >= 28) { "Local image decoding requires Android 9 or newer" }
+        val source = if (uri.scheme == null) android.graphics.ImageDecoder.createSource(File(url))
+            else android.graphics.ImageDecoder.createSource(context.contentResolver, uri)
+        val bitmap = android.graphics.ImageDecoder.decodeBitmap(source) { decoder, _, _ ->
+            decoder.allocator = android.graphics.ImageDecoder.ALLOCATOR_SOFTWARE
+        }
+        val target = File.createTempFile("vision-", ".png", context.cacheDir)
+        try {
+            target.outputStream().use { check(bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it)) }
+            return target
+        } catch (t: Throwable) {
+            target.delete()
+            throw t
+        } finally {
+            bitmap.recycle()
+        }
+    }
+
+    // The catalog's projector size is an additional residency cost, outside the LLM's
+    // KV-cache planner. Image encoder scratch buffers still require device validation.
+    private fun visionReserveBytes(params: TextGenerationParams): Long =
+        LlamaCppCatalog.ENTRIES.firstOrNull { it.file == params.model.modelId }?.projectorSizeBytes ?: 0L
 
     /** Resolves [TextGenerationParams.model]'s modelId to a path and loads it into [runtime]
      *  (a no-op when it is already loaded - see [ensureLoaded]). Shared by [generateText] and
@@ -151,7 +199,7 @@ class LlamaCppProvider(
                 path = modelPath,
                 tools = ChatRequestMapper.toolDeclarations(params.tools),
                 systemPromptBytes = systemPromptBytesOf(messages),
-                availableRamBytes = readAvailableRamBytes(),
+                availableRamBytes = (readAvailableRamBytes() - visionReserveBytes(params)).coerceAtLeast(0L),
             )
         }
     }
@@ -254,10 +302,12 @@ class LlamaCppProvider(
             runtime: LlamaCppRuntime,
             messages: List<UIMessage>,
             params: TextGenerationParams,
+            projector: String? = null,
+            imageResolver: ((String) -> File)? = null,
         ): TextGenerationResult {
             var collected = listOf(UIMessage(role = MessageRole.ASSISTANT, parts = emptyList()))
             val handler = StreamChunkHandler(params.model)
-            streamFromLoadedModel(runtime, messages, params).collect { chunk ->
+            streamFromLoadedModel(runtime, messages, params, projector, imageResolver).collect { chunk ->
                 collected = handler.handle(collected, chunk)
             }
             return TextGenerationResult(
@@ -278,6 +328,8 @@ class LlamaCppProvider(
             runtime: LlamaCppRuntime,
             messages: List<UIMessage>,
             params: TextGenerationParams,
+            projector: String? = null,
+            imageResolver: ((String) -> File)? = null,
         ): Flow<StreamChunk> = callbackFlow {
             val streamId = "llamacpp-${System.currentTimeMillis()}"
             // One stable id per channel for the whole turn, so StreamChunkHandler appends
@@ -288,6 +340,7 @@ class LlamaCppProvider(
             // Trim history to the input half of the planned context before templating, so a
             // long conversation drops its oldest turns instead of overflowing the prompt.
             val trimmedMessages = ChatRequestMapper.trimToBudget(messages, runtime.inputBudgetBytes())
+            ChatRequestMapper.imageUrls(trimmedMessages)
             val appliedTemplateJson = runtime.applyTemplate(
                 ChatRequestMapper.toRequestJson(trimmedMessages, params.tools)
             )
@@ -337,8 +390,16 @@ class LlamaCppProvider(
             }
 
             val worker = launch(Dispatchers.IO) {
+                val imageFiles = mutableListOf<File>()
                 try {
-                    runtime.generate(appliedTemplateJson, params.maxTokens ?: DEFAULT_MAX_TOKENS) { piece ->
+                    val urls = ChatRequestMapper.imageUrls(trimmedMessages)
+                    if (urls.isNotEmpty()) {
+                        requireNotNull(projector) { "Install the catalog model and matching vision projector first" }
+                        val resolve = requireNotNull(imageResolver) { "Local image resolver is unavailable" }
+                        urls.forEach { imageFiles += resolve(it) }
+                    }
+                    runtime.generate(appliedTemplateJson, params.maxTokens ?: DEFAULT_MAX_TOKENS,
+                        projector, imageFiles.map { it.absolutePath }.toTypedArray()) { piece ->
                         accumulated.append(piece)
                         val parsed = runtime.parse(accumulated.toString(), true, appliedTemplateJson)
                         sendDelta(tracker.consume(parsed, isPartial = true), false)
@@ -349,7 +410,10 @@ class LlamaCppProvider(
                     val finalParsed = runtime.parse(accumulated.toString(), false, appliedTemplateJson)
                     sendDelta(tracker.consume(finalParsed, isPartial = false), true)
                     trySend(StreamChunk.Finish())
+                } catch (t: Throwable) {
+                    close(t)
                 } finally {
+                    imageFiles.forEach { it.delete() }
                     finished.set(true)
                     close()
                 }
