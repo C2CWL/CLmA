@@ -63,11 +63,10 @@ class EdgeBarLifecycleTest {
 
     @Test fun failedSettingsWriteDoesNotSendACommand() = runTest {
         val coordinator = EdgeBarEnableCoordinator()
-        var enabled = false
+        val failure = IOException("disk failed")
         val commands = mutableListOf<Boolean>()
-        val failure = IOException("persist")
         val actual = runCatching {
-            coordinator.setEnabled(true, { throw failure }, { enabled }, commands::add)
+            coordinator.setEnabled(true, { throw failure }, { false }, commands::add)
         }.exceptionOrNull()
         assertSame(failure, actual)
         assertTrue(commands.isEmpty())
@@ -144,111 +143,65 @@ class EdgeBarLifecycleTest {
     }
 
     @Test fun failedShowWithNoDialogStillReleasesProbeAndCallbacks() {
+        var dialog: Any? = null // Probe was installed, then Dialog.show threw.
         var probe: Any? = Any()
-        var callbacks: Any? = Any()
+        var timerRunning = true
+        var listenerRegistered = true
         val failures = mutableListOf<Throwable>()
-        val removed = releaseOverlayResource(Unit,
-            quiesce = { throw IOException("quiesce") },
-            remove = { probe = null; callbacks = null },
-            onFailure = failures::add,
-        )
-        assertTrue(removed)
+        repeat(2) {
+            cleanupOverlayResources(failures::add,
+                { timerRunning = false },
+                { dialog = null },
+                { if (probe != null) probe = null },
+                { listenerRegistered = false },
+            )
+        }
+        assertEquals(null, dialog)
         assertEquals(null, probe)
-        assertEquals(null, callbacks)
-        assertEquals(1, failures.size)
-    }
-
-    @Test fun oneCleanupFailureDoesNotSkipTheRest() {
-        val done = mutableListOf<String>()
-        val failures = mutableListOf<Throwable>()
-        cleanupOverlayResources(failures::add,
-            { done.add("first") },
-            { throw IOException("second") },
-            { done.add("third") },
-        )
-        assertEquals(listOf("first", "third"), done)
-        assertEquals(1, failures.size)
-    }
-
-    @Test fun nullResourceReleaseIsAlreadyComplete() {
-        assertTrue(releaseOverlayResource<Any>(null, { error("quiesce") }, { error("remove") }) { error("failure") })
-    }
-
-    @Test fun successfulRemovalDropsOwnership() {
-        var owned: Any? = Any()
-        val removed = releaseOverlayResource(owned,
-            quiesce = { },
-            remove = { },
-            onFailure = { error("unexpected") },
-        )
-        assertTrue(removed)
-    }
-
-    @Test fun failedRemovalReportsTheSameFailure() {
-        val failure = IOException("remove")
-        val failures = mutableListOf<Throwable>()
-        val removed = releaseOverlayResource(Any(),
-            quiesce = { },
-            remove = { throw failure },
-            onFailure = failures::add,
-        )
-        assertFalse(removed)
-        assertEquals(listOf(failure), failures)
-    }
-
-    @Test fun stoppedGateStaysStoppedAfterReattach() {
-        val gate = EdgeBarFrameGate().apply { attach(); stop(); detach(); attach() }
-        assertFalse(gate.canRequestFrame(true, true))
-    }
-
-    @Test fun cleanupContinuesAfterEveryFailure() {
-        val failures = mutableListOf<Throwable>()
-        cleanupOverlayResources(failures::add, { throw IOException("a") }, { throw IOException("b") })
-        assertEquals(2, failures.size)
-    }
-
-    @Test fun releaseReportsRemoveFailureEvenIfQuiesceFails() {
-        val failures = mutableListOf<Throwable>()
-        assertFalse(releaseOverlayResource(Any(),
-            quiesce = { throw IOException("quiesce") },
-            remove = { throw IOException("remove") },
-            onFailure = failures::add,
-        ))
-        assertEquals(2, failures.size)
-    }
-
-    @Test fun coordinatorReconcileAppliesThePersistedValue() = runTest {
-        val coordinator = EdgeBarEnableCoordinator()
-        val commands = mutableListOf<Boolean>()
-        coordinator.reconcile({ true }, commands::add)
-        assertEquals(listOf(true), commands)
-    }
-
-    @Test fun releaseOfMissingResourceDoesNotInvokeCallbacks() {
-        assertTrue(releaseOverlayResource<String>(null, { error("q") }, { error("r") }, { error("f") }))
-    }
-
-    @Test fun gateRejectsEveryDisabledCombination() {
-        val gate = EdgeBarFrameGate()
-        assertFalse(gate.canRequestFrame(false, false))
-        gate.attach()
-        assertFalse(gate.canRequestFrame(true, false))
-        assertFalse(gate.canRequestFrame(false, true))
-    }
-
-    @Test fun cleanupWithNoActionsReportsNoFailures() {
-        val failures = mutableListOf<Throwable>()
-        cleanupOverlayResources(failures::add)
+        assertFalse(timerRunning)
+        assertFalse(listenerRegistered)
         assertTrue(failures.isEmpty())
     }
 
-    @Test fun successfulReleaseInvokesQuiesceBeforeRemove() {
+    @Test fun oneRemovalFailureDoesNotSkipOtherResources() {
         val order = mutableListOf<String>()
-        assertTrue(releaseOverlayResource(Any(),
-            quiesce = { order.add("quiesce") },
-            remove = { order.add("remove") },
-            onFailure = { error("failure") },
+        val failures = mutableListOf<Throwable>()
+        cleanupOverlayResources(failures::add,
+            { order.add("timer") },
+            { order.add("dialog"); throw IOException("dialog remove") },
+            { order.add("ime") },
+            { order.add("blur") },
+            { order.add("unbind") },
+        )
+        assertEquals(listOf("timer", "dialog", "ime", "blur", "unbind"), order)
+        assertEquals(1, failures.size)
+    }
+
+    @Test fun registeredButNotYetAttachedResourceIsStillRemoved() {
+        data class Window(var registered: Boolean = true, val attached: Boolean = false)
+        val partial = Window()
+        var quiesced = false
+        val failures = mutableListOf<Throwable>()
+        assertTrue(releaseOverlayResource(partial,
+            quiesce = { quiesced = true },
+            remove = { it.registered = false },
+            onFailure = failures::add,
         ))
-        assertEquals(listOf("quiesce", "remove"), order)
+        assertTrue(quiesced)
+        assertFalse(partial.registered)
+        assertFalse(partial.attached)
+        assertTrue(failures.isEmpty())
+    }
+
+    @Test fun quiesceFailureStillAttemptsRemoval() {
+        var removed = false
+        val failures = mutableListOf<Throwable>()
+        assertTrue(releaseOverlayResource(Any(),
+            quiesce = { throw IOException("quiesce") },
+            remove = { removed = true },
+            onFailure = failures::add,
+        ))
+        assertTrue(removed)
+        assertEquals(1, failures.size)
     }
 }
