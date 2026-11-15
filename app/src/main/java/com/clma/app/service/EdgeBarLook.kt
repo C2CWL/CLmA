@@ -34,6 +34,8 @@ internal object EdgeBarLook {
 
     /** One clockwise lap of the "AI is replying" rainbow streak around the pill's outline. */
     const val RING_LOOP_MS = 1440L
+    /** Time from one end of the pill to the other (the return takes the same time). */
+    const val SHEEN_LOOP_MS = 1400L
 
     /** Stroke of the streak; its centre line is inset by half of it, so it stays inside the pill. */
     const val RING_STROKE_DP = 2f
@@ -102,6 +104,16 @@ internal object EdgeBarLook {
         working -> Signal.WORKING
         unseenDone -> Signal.DONE
         else -> Signal.IDLE
+    }
+
+    /**
+     * Pixel shift of the pale band along a travel distance. It moves one way over [SHEEN_LOOP_MS],
+     * then back over the next loop, without rebuilding the gradient.
+     */
+    fun sheenShift(nowMs: Long, travelPx: Float): Float {
+        val cycle = nowMs.mod(SHEEN_LOOP_MS * 2).toFloat() / SHEEN_LOOP_MS
+        val phase = if (cycle <= 1f) cycle else 2f - cycle
+        return -travelPx * phase
     }
 
     /**

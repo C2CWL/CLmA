@@ -1353,7 +1353,7 @@ data class BotChannel(
 @Serializable
 data class DisplaySetting(
     /** Bypass UI token batching; Markdown parsing stays off the main thread. */
-    val fastStreamingOutput: Boolean = false,
+    val fastStreamingOutput: Boolean = true,
     val userAvatar: Avatar = Avatar.Dummy,
     val userNickname: String = "",
     val useAppIconStyleLoadingIndicator: Boolean = true,
