@@ -24,6 +24,8 @@ android {
                     "-DANDROID_STL=c++_shared",
                     "-DLLAMAJNI_ENABLE_OPENCL=OFF",
                     "-DLLAMAJNI_ENABLE_VULKAN=ON",
+                    // SPIRV-Headers lives on the host, not in the NDK sysroot.
+                    "-DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=BOTH",
                 )
             }
         }

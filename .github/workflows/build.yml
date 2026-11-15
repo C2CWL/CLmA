@@ -76,15 +76,14 @@ jobs:
       - name: Install Vulkan shader compiler
         run: |
           # llama.cpp compiles Vulkan shaders on the host during the Android cross
-          # build. The APK only links the NDK libvulkan.so stub.
-          wget -qO- https://packages.lunarg.com/lunarg-signing-key-pub.asc \
-            | sudo gpg --dearmor -o /usr/share/keyrings/lunarg-vulkan-archive-keyring.gpg
-          echo "deb [signed-by=/usr/share/keyrings/lunarg-vulkan-archive-keyring.gpg] https://packages.lunarg.com/vulkan noble main" \
-            | sudo tee /etc/apt/sources.list.d/lunarg-vulkan.list > /dev/null
+          # build; the APK only links the NDK libvulkan.so stub. Use the distro
+          # packages: the LunarG vulkan-sdk conflicts with Ubuntu's libvulkan-dev.
           sudo apt-get update -qq
-          sudo apt-get install -y -qq vulkan-sdk
+          sudo apt-get install -y -qq glslc spirv-headers
           command -v glslc
           glslc --version
+          # ggml's ggml-vulkan needs SPIRV-Headers in config mode.
+          test -f /usr/share/cmake/SPIRV-Headers/SPIRV-HeadersConfig.cmake
 
       - name: Install ccache
         run: |
