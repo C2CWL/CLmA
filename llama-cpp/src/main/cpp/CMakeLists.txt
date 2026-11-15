@@ -59,11 +59,13 @@ if(TARGET ggml-vulkan)
         NO_CMAKE_FIND_ROOT_PATH)
     if(LLAMAJNI_VULKAN_HPP_DIR)
         set(_llamajni_vk_stage "${CMAKE_CURRENT_BINARY_DIR}/host-vulkan-include")
-        file(MAKE_DIRECTORY "${_llamajni_vk_stage}/vulkan")
-        file(GLOB _llamajni_vk_headers
-            "${LLAMAJNI_VULKAN_HPP_DIR}/vulkan/*.h"
-            "${LLAMAJNI_VULKAN_HPP_DIR}/vulkan/*.hpp")
-        file(COPY ${_llamajni_vk_headers} DESTINATION "${_llamajni_vk_stage}/vulkan")
+        # vulkan_core.h pulls in <vk_video/...>, so both directories are needed.
+        foreach(_llamajni_vk_dir vulkan vk_video)
+            if(EXISTS "${LLAMAJNI_VULKAN_HPP_DIR}/${_llamajni_vk_dir}")
+                file(COPY "${LLAMAJNI_VULKAN_HPP_DIR}/${_llamajni_vk_dir}"
+                    DESTINATION "${_llamajni_vk_stage}")
+            endif()
+        endforeach()
         target_include_directories(ggml-vulkan PRIVATE "${_llamajni_vk_stage}")
     else()
         message(WARNING "vulkan/vulkan.hpp not found; Vulkan backend will not compile")

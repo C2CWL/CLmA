@@ -93,6 +93,7 @@ jobs:
             -o /tmp/vk-headers.tar.gz
           tar -xzf /tmp/vk-headers.tar.gz -C /tmp
           sudo cp -r /tmp/Vulkan-Headers-*/include/vulkan /usr/local/include/
+          sudo cp -r /tmp/Vulkan-Headers-*/include/vk_video /usr/local/include/
           test -f /usr/local/include/vulkan/vulkan.hpp
 
       - name: Install ccache
