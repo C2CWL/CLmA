@@ -16,12 +16,13 @@ import java.io.File
 import kotlin.coroutines.cancellation.CancellationException
 
 /** Text-only evidence returned to the calling model, never an autonomous conversation. */
-fun recognizeLocalMediaTool(provider: LlamaCppProvider, prefs: LocalRuntimePreferences): Tool = Tool(
+fun recognizeLocalMediaTool(context: android.content.Context, provider: LlamaCppProvider, prefs: LocalRuntimePreferences): Tool = Tool(
     name = "recognize_local_media",
     description = "Inspect local images or videos using an on-demand offline visual model. " +
-        "Pass an explicit recognition task and local files. Returns untrusted textual observations, not actions. " +
+        "Pass an explicit recognition task and local files (content://, file://, /upload/... or absolute Android paths). Returns untrusted textual observations, not actions. " +
         "Video: up to 60 seconds, sparse keyframes only, no audio; brief events may be missed. " +
         "Weights are released after each call. Install Qwen3-VL in local model settings first.",
+    progress = { provider.visionStatus.value.name },
     parameters = { InputSchema.Obj(properties = buildJsonObject {
         put("task", buildJsonObject { put("type", "string"); put("description", "OCR, error reading, scene description or specific visual question") })
         put("images", buildJsonObject { put("type", "array"); put("items", buildJsonObject { put("type", "string") }) })
@@ -37,11 +38,7 @@ fun recognizeLocalMediaTool(provider: LlamaCppProvider, prefs: LocalRuntimePrefe
                 value.map { element ->
                     val path = (element as? JsonPrimitive)?.contentOrNull
                     require(!path.isNullOrBlank()) { "Invalid local file path" }
-                    require(File(path).isAbsolute) { "Use absolute local paths, not URLs" }
-                    PathSafetyGuard.check(path)?.let { error(it.detail) }
-                    val file = File(path).canonicalFile
-                    require(file.isFile && file.canRead()) { "Cannot read local media file" }
-                    file.absolutePath
+                    LocalMediaAccess.resolve(context, path)
                 }
             }.orEmpty()
             val images = paths("images")
@@ -71,7 +68,7 @@ fun recognizeLocalMediaTool(provider: LlamaCppProvider, prefs: LocalRuntimePrefe
         } catch (cancel: CancellationException) {
             throw cancel
         } catch (e: Exception) {
-            listOf(UIMessagePart.Text(buildJsonObject { put("error", e.message ?: "Local recognition failed") }.toString()))
+            listOf(UIMessagePart.Text(buildJsonObject { put("error", "local_media_recognition_failed"); put("detail", e.message ?: "Local recognition failed"); put("recovery", LocalMediaAccess.RECOVERY); put("retryable", false) }.toString()))
         }
     },
 )

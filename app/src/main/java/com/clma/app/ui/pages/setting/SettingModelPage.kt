@@ -112,6 +112,8 @@ fun SettingModelPage(initialTab: Int = 0, vm: SettingVM = koinViewModel()) {
 @Composable
 private fun ModelSettingsPage(settings: Settings, vm: SettingVM, contentPadding: PaddingValues) {
     val navController = LocalNavController.current
+    val visionProvider = org.koin.compose.koinInject<com.clma.llamacpp.LlamaCppProvider>()
+    val visionStatus by visionProvider.visionStatus.collectAsStateWithLifecycle()
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = contentPadding + PaddingValues(horizontal = 16.dp),
@@ -233,6 +235,13 @@ private fun ModelSettingsPage(settings: Settings, vm: SettingVM, contentPadding:
         }
         item {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(when (visionStatus) {
+                    com.clma.llamacpp.LocalVisionStatus.Unloaded -> R.string.media_status_unloaded
+                    com.clma.llamacpp.LocalVisionStatus.Loading -> R.string.media_status_loading
+                    com.clma.llamacpp.LocalVisionStatus.Recognizing -> R.string.media_status_recognizing
+                    com.clma.llamacpp.LocalVisionStatus.Releasing -> R.string.media_status_releasing
+                    com.clma.llamacpp.LocalVisionStatus.ReleaseFailed -> R.string.media_status_release_failed
+                }))
                 Text(stringResource(R.string.media_tools_desc), style = MaterialTheme.typography.bodySmall)
                 OutlinedButton(onClick = { navController.navigate(Screen.Assistant) }) {
                     Text(stringResource(R.string.media_tools_manage))

@@ -63,6 +63,18 @@ class ShowImageEnvelopeTest {
         val note = env["note"]?.jsonPrimitive?.contentOrNull ?: ""
         assertTrue("note should say the model cannot see it", note.contains("cannot see"))
         assertTrue("note should forbid guessing", note.contains("Do not describe or guess"))
-        assertTrue("note should point at OCR", note.contains("tesseract"))
+        assertTrue("note should point at OCR", note.contains("recognize_local_media"))
+    }
+    @Test(expected = IllegalArgumentException::class)
+    fun `decode failure cannot produce a successful envelope`() {
+        buildShowImageEnvelope("/upload/bad.jpg", "image/jpeg", 10, -1, -1, true)
+    }
+
+    @Test
+    fun `text-only model is not directed to copy files or run tesseract`() {
+        val note = parse(buildShowImageEnvelope("/upload/a.jpg", "image/jpeg", 10, 1, 1, false))
+            ["note"]!!.jsonPrimitive.content
+        assertTrue(note.contains("Repeating show_image does not let you see"))
+        assertTrue(!note.contains("tesseract"))
     }
 }

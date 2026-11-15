@@ -546,6 +546,12 @@ static void generate(
                 params.warmup = false;
                 params.progress_callback = [](float, void * data) { return !abortIfCancelled(data); };
                 params.progress_callback_user_data = gen;
+                // Loading progress is not enough: image encode and eval run after load.
+                // This node callback lets the same cancellation flag stop that work.
+                params.cb_eval = [](ggml_tensor *, bool, void * data) {
+                    return !abortIfCancelled(data);
+                };
+                params.cb_eval_user_data = gen;
                 gen->vision.reset(mtmd_init_from_file(projector.c_str(), model, params));
                 if (gen->cancelled.load(std::memory_order_relaxed)) return;
                 if (!gen->vision || !mtmd_support_vision(gen->vision.get())) {
@@ -572,7 +578,9 @@ static void generate(
             text.text_len = prompt.size();
             text.add_special = true;
             text.parse_special = true;
+            if (gen->cancelled.load(std::memory_order_relaxed)) return;
             if (mtmd_tokenize(gen->vision.get(), chunks.get(), &text, pointers.data(), pointers.size()) != 0) {
+                if (gen->cancelled.load(std::memory_order_relaxed)) return;
                 throw std::runtime_error("Vision markers do not match images, or image preprocessing failed");
             }
             // Count actual visual tokens, not the short media marker's text length. Never

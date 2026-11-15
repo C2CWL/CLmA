@@ -29,4 +29,12 @@ class LocalVisionLifecycleTest {
     @Test fun `text models keep their normal text behavior`() {
         LocalVisionLifecycle.validateRequest("Qwen3-0.6B-Q8_0.gguf", listOf(UIMessage.user("hello")))
     }
+
+    @Test fun `vision graph callback uses the same cancellation flag`() {
+        val source = java.io.File("src/main/cpp/llama_jni.cpp").readText()
+        val start = source.indexOf("params.cb_eval")
+        assertTrue(start >= 0)
+        val callback = source.substring(start, start + 180)
+        assertTrue(callback.contains("return !abortIfCancelled(data)"))
+    }
 }

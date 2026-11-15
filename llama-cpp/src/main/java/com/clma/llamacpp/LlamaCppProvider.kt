@@ -5,6 +5,7 @@ import android.content.Context
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.emitAll
@@ -13,6 +14,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import com.clma.ai.core.MessageRole
 import com.clma.ai.provider.ImageGenerationParams
 import com.clma.ai.provider.Model
@@ -107,6 +109,10 @@ class LlamaCppProvider(
      *  which holds its own mutex for the whole inference so concurrent callers queue up rather
      *  than racing the loaded model. */
     private val loadMutex = Mutex()
+    private val mutableVisionStatus = kotlinx.coroutines.flow.MutableStateFlow(LocalVisionStatus.Unloaded)
+    val visionStatus: kotlinx.coroutines.flow.StateFlow<LocalVisionStatus> =
+        mutableVisionStatus.asStateFlow()
+
 
     override suspend fun listModels(providerSetting: ProviderSetting.LlamaCppLocal): List<Model> =
         providerSetting.models
@@ -138,15 +144,35 @@ class LlamaCppProvider(
         try {
             // Free a resident text model before decoding media or measuring available RAM.
             if (visionOnly) releaseVisionModel()
+            if (visionOnly) mutableVisionStatus.value = LocalVisionStatus.Loading
             val expanded = withContext(Dispatchers.IO) { LocalVideoFrames.expand(context, messages, temporary) }
             require(ChatRequestMapper.imageUrls(expanded).size <= 12) { "At most 12 images/keyframes per request" }
             val projector = visionProjector(params)
             if (visionOnly) requireNotNull(projector) { "Install the matching vision projector first" }
             ensureModelReady(expanded, params)
-            generateFromLoadedModel(runtime, expanded, params, projector, ::materializeImage)
+            if (visionOnly) mutableVisionStatus.value = LocalVisionStatus.Recognizing
+            // Bound the whole recognition, including native encode. Cancellation also sets the
+            // native flag; release below still waits for that native work to leave safely.
+            try {
+                withTimeout(10 * 60 * 1000L) {
+                    generateFromLoadedModel(runtime, expanded, params, projector, ::materializeImage)
+                }
+            } catch (timeout: kotlinx.coroutines.TimeoutCancellationException) {
+                runtime.cancelGeneration()
+                throw IllegalStateException("Local recognition exceeded 10 minutes and was stopped", timeout)
+            }
         } finally {
             try {
-                if (visionOnly) releaseVisionModel()
+                if (visionOnly) {
+                    mutableVisionStatus.value = LocalVisionStatus.Releasing
+                    try {
+                        releaseVisionModel()
+                        mutableVisionStatus.value = LocalVisionStatus.Unloaded
+                    } catch (t: Throwable) {
+                        mutableVisionStatus.value = LocalVisionStatus.ReleaseFailed
+                        throw t
+                    }
+                }
             } finally {
                 temporary.forEach { it.delete() }
             }
