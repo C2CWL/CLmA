@@ -196,7 +196,7 @@ class FloatingBallService : Service(), KoinComponent {
     private var barView: EdgeBarView? = null
     private var barParams: WindowManager.LayoutParams? = null
 
-    /** True between ACTION_WORKING_ON and ACTION_WORKING_OFF. */
+    /** Whether the current session jobs contain unfinished, non-cancelled work. */
     private var working = false
 
     /** A turn finished and the user has not tapped the bar (opened the app) since. */
@@ -258,6 +258,19 @@ class FloatingBallService : Service(), KoinComponent {
                 barView?.barColor = settings.floatingBallBarColor
             }
         }
+        // Generation jobs are authoritative. Overlay commands may arrive late, or the
+        // GenerationLoop indicator may finish before/after the session's actual job.
+        scope.launch {
+            chatService.getConversationJobs().collect { jobs ->
+                val next = edgeBarHasWork(jobs.values)
+                if (working != next) {
+                    val finished = working && !next
+                    working = next
+                    unseenDone = finished && AgentOverlay.waitingConversation == null && !chatBox.isShowing
+                    syncBar()
+                }
+            }
+        }
         // Which conversations are generating / just finished: the chat box follows them.
         chatBox.start()
         // Same preferences file the app's theme reads its colour mode from (see ui/hooks).
@@ -313,18 +326,8 @@ class FloatingBallService : Service(), KoinComponent {
                 return START_NOT_STICKY
             }
 
-            ACTION_WORKING_ON -> {
-                working = true
-                unseenDone = false
-                if (barView == null) stopSelf() else syncBar()
-                return START_NOT_STICKY
-            }
-
-            ACTION_WORKING_OFF -> {
-                working = false
-                // The bar turns green until the user taps it, unless the chat box is open (the
-                // finished reply is right there).
-                unseenDone = AgentOverlay.waitingConversation == null && !chatBox.isShowing
+            ACTION_WORKING_ON, ACTION_WORKING_OFF -> {
+                // Wake-up hints only: never replay a stale Boolean from an intent.
                 if (barView == null) stopSelf() else syncBar()
                 return START_NOT_STICKY
             }
@@ -469,9 +472,7 @@ class FloatingBallService : Service(), KoinComponent {
         attachTouch(view, params)
         // Touches are handled in attachTouch; this is what TalkBack / switch access trigger.
         view.setOnClickListener { onBarTap() }
-        // The bar can also appear mid-reply (service restarted / re-enabled while a turn runs).
-        // Adopt the live state so it starts sweeping instead of looking idle until the next turn.
-        working = AgentOverlay.isWorking
+        // The jobs collector also covers replies already running when this service starts.
         syncBar()
     }
 

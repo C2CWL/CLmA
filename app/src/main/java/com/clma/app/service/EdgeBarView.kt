@@ -25,9 +25,8 @@ import com.clma.app.service.EdgeBarLook.Signal
  *    inside of the pill's outline, over a faint track and a soft inner glow;
  *  - [Signal.DONE]: the pill turns green with a white check mark.
  *
- * The streak is the only animation, and it only runs while [Signal.WORKING] (the next frame is
- * requested from onDraw, so it stops by itself in any other state, and while the view is not
- * drawn). With animations switched off system-wide the streak rests in one place.
+ * The streak is the only animation. A single cancellable callback drives it only while
+ * working and visible; onDraw itself never schedules work. With system animations off it rests.
  */
 internal class EdgeBarView(context: Context) : View(context) {
 
@@ -84,6 +83,7 @@ internal class EdgeBarView(context: Context) : View(context) {
         set(value) {
             if (field == value) return
             field = value
+            updateFrameLoop()
             invalidate()
         }
 
@@ -108,18 +108,49 @@ internal class EdgeBarView(context: Context) : View(context) {
 
     private val frameGate = EdgeBarFrameGate()
 
+    private val animationFrame = object : Runnable {
+        override fun run() {
+            if (!canAnimate()) return
+            invalidate()
+            postOnAnimation(this)
+        }
+    }
+
+    private fun canAnimate(): Boolean =
+        frameGate.canRequestFrame(signal == Signal.WORKING, ValueAnimator.areAnimatorsEnabled()) &&
+            isShown && windowVisibility == VISIBLE
+
+    private fun updateFrameLoop() {
+        removeCallbacks(animationFrame)
+        if (canAnimate()) postOnAnimation(animationFrame)
+    }
+
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         frameGate.attach()
+        updateFrameLoop()
+    }
+
+    override fun onWindowVisibilityChanged(visibility: Int) {
+        super.onWindowVisibilityChanged(visibility)
+        if (isAttachedToWindow) updateFrameLoop()
+    }
+
+    override fun onVisibilityChanged(changedView: View, visibility: Int) {
+        super.onVisibilityChanged(changedView, visibility)
+        // View's constructor may dispatch this before our fields are initialized.
+        if (isAttachedToWindow) updateFrameLoop()
     }
 
     override fun onDetachedFromWindow() {
         frameGate.detach()
+        removeCallbacks(animationFrame)
         super.onDetachedFromWindow()
     }
 
     internal fun stopFrameLoop() {
         frameGate.stop()
+        removeCallbacks(animationFrame)
         signal = Signal.IDLE
     }
 
@@ -162,7 +193,6 @@ internal class EdgeBarView(context: Context) : View(context) {
             Signal.WORKING -> {
                 val animate = ValueAnimator.areAnimatorsEnabled()
                 drawRing(canvas, radius, animate)
-                if (frameGate.canRequestFrame(true, animate)) postInvalidateOnAnimation()
             }
             Signal.DONE -> drawCheck(canvas)
             Signal.APPROVAL, Signal.INPUT -> {
