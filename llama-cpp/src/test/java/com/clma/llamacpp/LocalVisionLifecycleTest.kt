@@ -30,6 +30,16 @@ class LocalVisionLifecycleTest {
         LocalVisionLifecycle.validateRequest("Qwen3-0.6B-Q8_0.gguf", listOf(UIMessage.user("hello")))
     }
 
+    @Test fun `file video opens by absolute path`() {
+        val source = java.io.File("src/main/java/com/clma/llamacpp/LocalVideoFrames.kt").readText()
+        val start = source.indexOf("val path = when (uri.scheme)")
+        assertTrue(start >= 0)
+        val block = source.substring(start, start + 420)
+        assertTrue(block.contains("\"file\" -> requireNotNull(uri.path)"))
+        assertTrue(block.contains("retriever.setDataSource(path)"))
+        assertTrue(block.contains("extractor.setDataSource(path)"))
+    }
+
     @Test fun `vision graph callback uses the same cancellation flag`() {
         val source = java.io.File("src/main/cpp/llama_jni.cpp").readText()
         val start = source.indexOf("params.cb_eval")
