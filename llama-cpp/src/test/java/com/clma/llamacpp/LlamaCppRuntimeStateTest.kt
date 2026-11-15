@@ -74,6 +74,20 @@ class LlamaCppRuntimeStateTest {
     }
 
     @Test
+    fun `unsupported visual backend fails and still permits unloading`() = runBlocking {
+        val native = FakeNative()
+        val runtime = LlamaCppRuntime(native)
+        runtime.load("/tmp/m.gguf", emptyList(), 0, 12_000_000_000L)
+        val failure = runCatching {
+            runtime.generate("{}", 8, "/tmp/mmproj.gguf", arrayOf("/tmp/image.png")) { true }
+        }.exceptionOrNull()
+        assertTrue(failure is IllegalStateException)
+        runtime.unload()
+        assertTrue(native.freedContext)
+        assertTrue(native.freedModel)
+    }
+
+    @Test
     fun `generating without a loaded model fails loudly`() {
         val runtime = LlamaCppRuntime(FakeNative())
         val error = runCatching {

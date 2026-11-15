@@ -116,13 +116,9 @@ class SettingLocalLlmViewModel(
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
-    /** File names of every model currently registered on the provider. The catalog UI
-     *  uses this to render an "Installed" badge instead of an Install button when the
-     *  catalog entry's file already lives in `provider.models` (modelId == file name). */
-    val installedModelFiles: StateFlow<Set<String>> = settingsStore.settingsFlow
-        .map { settings ->
-            settings.providers.firstOrNull { it.id == providerIdForRuntime() }?.models?.map { it.modelId }?.toSet() ?: emptySet()
-        }
+    /** Includes auxiliary visual weights, which are installed but not chat models. */
+    val installedModelFiles: StateFlow<Set<String>> = prefs.installedModelsFlow(runtime)
+        .map { it.keys.toSet() }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
 
     /** The llama.cpp catalog entry `startDefaultDownload()` fetches: the smallest entry,
@@ -233,8 +229,13 @@ class SettingLocalLlmViewModel(
         val targetId = providerIdForRuntime()
         val currentProvider = settingsStore.settingsFlow.value.providers.firstOrNull { it.id == targetId }
         if (currentProvider != null) {
+            updateMyProvider { provider ->
+                var cleaned = provider
+                provider.models.filter { isVisionToolFile(it.modelId) }.forEach { cleaned = cleaned.delModel(it) }
+                cleaned
+            }
             val knownModelIds = currentProvider.models.map { it.modelId }.toSet()
-            val missing = finalInstalled.keys.filter { it !in knownModelIds && !it.startsWith("mmproj-", ignoreCase = true) }
+            val missing = finalInstalled.keys.filter { it !in knownModelIds && !isVisionToolFile(it) }
             for (fileName in missing) {
                 val caps = deriveLocalModelCapabilities(fileName)
                 val model = Model(
@@ -480,7 +481,7 @@ class SettingLocalLlmViewModel(
                     _downloadProgress.value = null
                     prefs.addInstalledModel(runtime, fileName, p.file.absolutePath)
                     val caps = deriveLocalModelCapabilities(fileName)
-                    if (fileName.startsWith("mmproj-", ignoreCase = true)) {
+                    if (isVisionToolFile(fileName)) {
                         refreshFromDisk()
                         return@collect
                     }
@@ -617,6 +618,7 @@ internal fun enableAfterFirstDownload(provider: ProviderSetting): ProviderSettin
  * of appending a second one.
  */
 internal fun registerInstalledModel(provider: ProviderSetting, model: Model): ProviderSetting {
+    if (isVisionToolFile(model.modelId)) return provider
     val existing = provider.models.firstOrNull { it.modelId == model.modelId }
     return if (existing != null) {
         provider.editModel(model.copy(id = existing.id))
@@ -648,3 +650,8 @@ internal fun deriveLocalModelCapabilities(fileName: String): LocalModelCapabilit
         },
     )
 }
+
+/** Auxiliary visual weights must never be offered as a conversational model. */
+private fun isVisionToolFile(fileName: String): Boolean =
+    fileName.startsWith("mmproj-", ignoreCase = true) ||
+        LlamaCppCatalog.ENTRIES.any { it.file == fileName && it.projectorFile != null }

@@ -17,6 +17,15 @@ import org.junit.Test
 class SettingLocalLlmCapabilitiesTest {
 
     @Test
+    fun `visual weights and projectors never register as chat models`() {
+        val provider = ProviderSetting.LlamaCppLocal()
+        listOf("Qwen3VL-2B-Instruct-Q8_0.gguf", "mmproj-Qwen3VL-2B-Instruct-F16.gguf").forEach { name ->
+            val result = registerInstalledModel(provider, Model(modelId = name))
+            assertTrue(result.models.isEmpty())
+        }
+    }
+
+    @Test
     fun `vision catalog entry advertises image and video preview`() {
         val caps = deriveLocalModelCapabilities("Qwen3VL-2B-Instruct-Q8_0.gguf")
         assertEquals(listOf(Modality.TEXT, Modality.IMAGE, Modality.VIDEO), caps.inputModalities)

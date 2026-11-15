@@ -2,6 +2,7 @@ package com.clma.llamacpp
 
 import android.app.ActivityManager
 import android.content.Context
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -114,14 +115,41 @@ class LlamaCppProvider(
         providerSetting: ProviderSetting.LlamaCppLocal,
         messages: List<UIMessage>,
         params: TextGenerationParams,
+    ): TextGenerationResult {
+        require(!LocalVisionLifecycle.requiresMedia(params.model.modelId)) {
+            "Visual models are recognition tools, not chat models; use recognize_local_media"
+        }
+        require(ChatRequestMapper.imageUrls(messages).isEmpty()) { "Use recognize_local_media for media recognition" }
+        return generateRequest(messages, params)
+    }
+
+    /** Tool-only entry point, sharing the chat provider's load/generate lock and runtime. */
+    suspend fun recognizeMedia(messages: List<UIMessage>, params: TextGenerationParams): TextGenerationResult {
+        require(LocalVisionLifecycle.requiresMedia(params.model.modelId)) { "Choose an installed visual catalog model" }
+        return generateRequest(messages, params.copy(tools = emptyList()))
+    }
+
+    private suspend fun generateRequest(
+        messages: List<UIMessage>, params: TextGenerationParams,
     ): TextGenerationResult = loadMutex.withLock {
+        val visionOnly = LocalVisionLifecycle.requiresMedia(params.model.modelId)
+        LocalVisionLifecycle.validateRequest(params.model.modelId, messages)
         val temporary = mutableListOf<File>()
         try {
+            // Free a resident text model before decoding media or measuring available RAM.
+            if (visionOnly) releaseVisionModel()
             val expanded = withContext(Dispatchers.IO) { LocalVideoFrames.expand(context, messages, temporary) }
+            require(ChatRequestMapper.imageUrls(expanded).size <= 12) { "At most 12 images/keyframes per request" }
+            val projector = visionProjector(params)
+            if (visionOnly) requireNotNull(projector) { "Install the matching vision projector first" }
             ensureModelReady(expanded, params)
-            generateFromLoadedModel(runtime, expanded, params, visionProjector(params), ::materializeImage)
+            generateFromLoadedModel(runtime, expanded, params, projector, ::materializeImage)
         } finally {
-            temporary.forEach { it.delete() }
+            try {
+                if (visionOnly) releaseVisionModel()
+            } finally {
+                temporary.forEach { it.delete() }
+            }
         }
     }
 
@@ -130,21 +158,26 @@ class LlamaCppProvider(
         messages: List<UIMessage>,
         params: TextGenerationParams,
     ): Flow<StreamChunk> = flow {
+        require(!LocalVisionLifecycle.requiresMedia(params.model.modelId)) {
+            "Visual models are recognition tools, not chat models; use recognize_local_media"
+        }
         // loadMutex is held across the whole load-then-generate sequence, not just the load -
         // see the mutex's doc comment for why the generation itself must stay inside the lock.
         loadMutex.withLock {
-            val temporary = mutableListOf<File>()
-            try {
-                val expanded = withContext(Dispatchers.IO) { LocalVideoFrames.expand(context, messages, temporary) }
-                ensureModelReady(expanded, params)
-                emitAll(streamFromLoadedModel(runtime, expanded, params, visionProjector(params), ::materializeImage))
-            } finally {
-                temporary.forEach { it.delete() }
-            }
+            require(ChatRequestMapper.imageUrls(messages).isEmpty()) { "Use recognize_local_media for media recognition" }
+            ensureModelReady(messages, params)
+            emitAll(streamFromLoadedModel(runtime, messages, params))
         }
     }
 
-    private fun visionProjector(params: TextGenerationParams): String? {
+    /** Waits for native generation to stop before freeing its context/projector/model.
+     * NonCancellable is essential: a cancelled collector must still release residency. */
+    private suspend fun releaseVisionModel() = withContext(NonCancellable + Dispatchers.IO) {
+        loadedPath.set(null)
+        runtime.unload()
+    }
+
+    private suspend fun visionProjector(params: TextGenerationParams): String? {
         val entry = LlamaCppCatalog.ENTRIES.firstOrNull { it.file == params.model.modelId }
         val name = entry?.projectorFile ?: return null
         val model = prefs.installedModels(LocalRuntime.LlamaCpp)[params.model.modelId] ?: return null
@@ -339,7 +372,8 @@ class LlamaCppProvider(
             val reasoningId = "$streamId-reasoning"
             // Trim history to the input half of the planned context before templating, so a
             // long conversation drops its oldest turns instead of overflowing the prompt.
-            val trimmedMessages = ChatRequestMapper.trimToBudget(messages, runtime.inputBudgetBytes())
+            val trimmedMessages = if (projector != null) messages else
+                ChatRequestMapper.trimToBudget(messages, runtime.inputBudgetBytes())
             ChatRequestMapper.imageUrls(trimmedMessages)
             val appliedTemplateJson = runtime.applyTemplate(
                 ChatRequestMapper.toRequestJson(trimmedMessages, params.tools)
