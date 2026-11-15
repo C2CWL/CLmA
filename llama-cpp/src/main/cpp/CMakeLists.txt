@@ -37,10 +37,10 @@ if(LLAMAJNI_ENABLE_VULKAN)
         set(LLAMAJNI_ENABLE_VULKAN OFF)
     else()
         set(GGML_VULKAN ON CACHE BOOL "" FORCE)
-        if(ANDROID)
-            set(_llamajni_vulkan_lib
-                "${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/${CMAKE_LIBRARY_ARCHITECTURE}/libvulkan.so")
-            if(EXISTS "${_llamajni_vulkan_lib}")
+        if(ANDROID AND NOT Vulkan_LIBRARY)
+            # Link the NDK stub; the device driver is loaded at runtime.
+            find_library(_llamajni_vulkan_lib vulkan)
+            if(_llamajni_vulkan_lib)
                 set(Vulkan_LIBRARY "${_llamajni_vulkan_lib}" CACHE FILEPATH "" FORCE)
             endif()
         endif()
@@ -48,6 +48,27 @@ if(LLAMAJNI_ENABLE_VULKAN)
 endif()
 
 add_subdirectory(${LLAMA_ROOT} ${CMAKE_CURRENT_BINARY_DIR}/llama.cpp)
+
+if(TARGET ggml-vulkan)
+    # The NDK ships vulkan.h but not the C++ bindings (vulkan.hpp). Stage the
+    # host SDK's Vulkan headers into the build dir: they are platform-neutral
+    # declarations, and copying only that subdirectory keeps the Android
+    # sysroot headers first for everything else.
+    find_path(LLAMAJNI_VULKAN_HPP_DIR vulkan/vulkan.hpp
+        PATHS /usr/local/include /usr/include
+        NO_CMAKE_FIND_ROOT_PATH)
+    if(LLAMAJNI_VULKAN_HPP_DIR)
+        set(_llamajni_vk_stage "${CMAKE_CURRENT_BINARY_DIR}/host-vulkan-include")
+        file(MAKE_DIRECTORY "${_llamajni_vk_stage}/vulkan")
+        file(GLOB _llamajni_vk_headers
+            "${LLAMAJNI_VULKAN_HPP_DIR}/vulkan/*.h"
+            "${LLAMAJNI_VULKAN_HPP_DIR}/vulkan/*.hpp")
+        file(COPY ${_llamajni_vk_headers} DESTINATION "${_llamajni_vk_stage}/vulkan")
+        target_include_directories(ggml-vulkan PRIVATE "${_llamajni_vk_stage}")
+    else()
+        message(WARNING "vulkan/vulkan.hpp not found; Vulkan backend will not compile")
+    endif()
+endif()
 
 add_library(llamajni SHARED llama_jni.cpp)
 

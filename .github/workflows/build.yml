@@ -84,6 +84,16 @@ jobs:
           glslc --version
           # ggml's ggml-vulkan needs SPIRV-Headers in config mode.
           test -f /usr/share/cmake/SPIRV-Headers/SPIRV-HeadersConfig.cmake
+          # The NDK ships vulkan.h but not the C++ bindings, and Ubuntu's
+          # libvulkan-dev is older than this llama.cpp expects. Stage the
+          # official headers instead.
+          VK_HEADERS_TAG=vulkan-sdk-1.4.363.0
+          curl -fsSL --retry 3 --retry-delay 5 \
+            "https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/${VK_HEADERS_TAG}.tar.gz" \
+            -o /tmp/vk-headers.tar.gz
+          tar -xzf /tmp/vk-headers.tar.gz -C /tmp
+          sudo cp -r /tmp/Vulkan-Headers-*/include/vulkan /usr/local/include/
+          test -f /usr/local/include/vulkan/vulkan.hpp
 
       - name: Install ccache
         run: |
