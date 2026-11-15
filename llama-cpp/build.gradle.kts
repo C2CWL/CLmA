@@ -23,6 +23,7 @@ android {
                 arguments += listOf(
                     "-DANDROID_STL=c++_shared",
                     "-DLLAMAJNI_ENABLE_OPENCL=OFF",
+                    "-DLLAMAJNI_ENABLE_VULKAN=ON",
                 )
             }
         }

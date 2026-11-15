@@ -541,7 +541,12 @@ static void generate(
                 gen->vision.reset();
                 gen->projector.clear();
                 auto params = mtmd_context_params_default();
+#ifdef GGML_USE_VULKAN
+                // Adreno and Mali share this backend. mtmd falls back to CPU if it cannot initialize.
+                params.use_gpu = true;
+#else
                 params.use_gpu = false;
+#endif
                 params.n_threads = llama_n_threads(ctx);
                 params.warmup = false;
                 params.progress_callback = [](float, void * data) { return !abortIfCancelled(data); };

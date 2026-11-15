@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(LLAMAJNI_ENABLE_OPENCL "Build the OpenCL backend for Adreno GPUs" OFF)
+option(LLAMAJNI_ENABLE_VULKAN "Build the Vulkan backend for Adreno and Mali GPUs" ON)
 
 set(LLAMA_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../../../native/llama.cpp)
 
@@ -24,6 +25,26 @@ set(GGML_LLAMAFILE OFF CACHE BOOL "" FORCE)
 
 if(LLAMAJNI_ENABLE_OPENCL)
     set(GGML_OPENCL ON CACHE BOOL "" FORCE)
+endif()
+
+if(LLAMAJNI_ENABLE_VULKAN)
+    # Shaders are compiled on the CI host. The APK links the NDK Vulkan stub and
+    # loads the device driver at runtime. If the host SDK is missing, keep a
+    # working CPU build instead of failing configuration.
+    find_program(LLAMAJNI_GLSLC glslc)
+    if(NOT LLAMAJNI_GLSLC)
+        message(WARNING "glslc not found; building llama.cpp without Vulkan")
+        set(LLAMAJNI_ENABLE_VULKAN OFF)
+    else()
+        set(GGML_VULKAN ON CACHE BOOL "" FORCE)
+        if(ANDROID)
+            set(_llamajni_vulkan_lib
+                "${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/${CMAKE_LIBRARY_ARCHITECTURE}/libvulkan.so")
+            if(EXISTS "${_llamajni_vulkan_lib}")
+                set(Vulkan_LIBRARY "${_llamajni_vulkan_lib}" CACHE FILEPATH "" FORCE)
+            endif()
+        endif()
+    endif()
 endif()
 
 add_subdirectory(${LLAMA_ROOT} ${CMAKE_CURRENT_BINARY_DIR}/llama.cpp)

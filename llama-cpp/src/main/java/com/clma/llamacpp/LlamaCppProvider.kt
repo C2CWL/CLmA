@@ -205,9 +205,11 @@ class LlamaCppProvider(
 
     private suspend fun visionProjector(params: TextGenerationParams): String? {
         val entry = LlamaCppCatalog.ENTRIES.firstOrNull { it.file == params.model.modelId }
-        val name = entry?.projectorFile ?: return null
+        val preferred = entry?.projectorFile ?: return null
         val model = prefs.installedModels(LocalRuntime.LlamaCpp)[params.model.modelId] ?: return null
-        return File(File(model).parentFile, name).takeIf { it.isFile }?.absolutePath
+        val directory = File(model).parentFile
+        return listOf(preferred, "mmproj-Qwen3VL-2B-Instruct-F16.gguf")
+            .firstNotNullOfOrNull { name -> File(directory, name).takeIf { it.isFile }?.absolutePath }
     }
 
     /** Preserve original pixels and normalize EXIF, using a lossless temporary PNG for mtmd. */

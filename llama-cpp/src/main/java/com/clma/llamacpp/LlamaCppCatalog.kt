@@ -72,14 +72,14 @@ object LlamaCppCatalog {
         ),
         // Official file names and sizes verified via HF API on 2026-11-15.
         LlamaCppCatalogEntry(
-            displayName = "Qwen3-VL 2B · Q8 + F16 vision / video keyframes",
+            displayName = "Qwen3-VL 2B · Q8 + Q8 vision / video keyframes",
             repo = "Qwen/Qwen3-VL-2B-Instruct-GGUF",
             file = "Qwen3VL-2B-Instruct-Q8_0.gguf",
             sizeBytes = 1834427424L,
             minMemGb = 8,
             tags = listOf("vision", "tools"),
-            projectorFile = "mmproj-Qwen3VL-2B-Instruct-F16.gguf",
-            projectorSizeBytes = 819394848L,
+            projectorFile = "mmproj-Qwen3VL-2B-Instruct-Q8_0.gguf",
+            projectorSizeBytes = 445053216L,
         ),
     )
 }
