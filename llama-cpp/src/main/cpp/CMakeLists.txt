@@ -66,6 +66,13 @@ if(TARGET ggml-vulkan)
                     DESTINATION "${_llamajni_vk_stage}")
             endif()
         endforeach()
+        # ggml-vulkan also needs the SPIR-V headers, which only exist on the host.
+        find_path(LLAMAJNI_SPIRV_DIR spirv/unified1/spirv.hpp
+            PATHS /usr/include /usr/local/include
+            NO_CMAKE_FIND_ROOT_PATH)
+        if(LLAMAJNI_SPIRV_DIR)
+            file(COPY "${LLAMAJNI_SPIRV_DIR}/spirv" DESTINATION "${_llamajni_vk_stage}")
+        endif()
         target_include_directories(ggml-vulkan PRIVATE "${_llamajni_vk_stage}")
     else()
         message(WARNING "vulkan/vulkan.hpp not found; Vulkan backend will not compile")
