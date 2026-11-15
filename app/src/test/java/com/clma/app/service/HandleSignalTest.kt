@@ -18,6 +18,16 @@ class HandleSignalTest {
     }
 
     @Test
+    fun `the pale sheen travels to one end and returns`() {
+        val loop = EdgeBarLook.SHEEN_LOOP_MS
+        assertEquals(0f, EdgeBarLook.sheenShift(0L, 100f), 1e-4f)
+        assertEquals(-50f, EdgeBarLook.sheenShift(loop / 2, 100f), 1e-4f)
+        assertEquals(-100f, EdgeBarLook.sheenShift(loop, 100f), 1e-4f)
+        assertEquals(-50f, EdgeBarLook.sheenShift(loop + loop / 2, 100f), 1e-4f)
+        assertEquals(0f, EdgeBarLook.sheenShift(loop * 2, 100f), 1e-4f)
+    }
+
+    @Test
     fun `the streak laps the outline once per loop, and rests in place with reduced motion`() {
         val loop = EdgeBarLook.RING_LOOP_MS
         assertEquals(1440L, loop)

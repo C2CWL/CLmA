@@ -189,7 +189,6 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null, is
         FunctionalDiagnostics.event("drawer.open.request", System.identityHashCode(drawerState))
         drawerCommands.open()
     }
-    ObserveDrawerDiagnostics(drawerState, vm, setting.assistantId)
     // 与抽屉共享同一个 activity 级 ChatDrawerVM，返回键才能先退出多选而不是关掉抽屉。
     val activity = LocalContext.current as ComponentActivity
     val drawerVm: ChatDrawerVM = koinViewModel(viewModelStoreOwner = activity)

@@ -3,7 +3,6 @@ package com.clma.app.diagnostics
 import android.content.Context
 import android.os.SystemClock
 import android.util.Log
-import com.clma.app.ui.hooks.readBooleanPreference
 import com.clma.common.android.LogLevel
 import com.clma.common.android.Logging
 import kotlinx.coroutines.CoroutineScope
@@ -32,8 +31,9 @@ object FunctionalDiagnostics {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     fun init(context: Context) {
-        functionsEnabled = context.readBooleanPreference(FUNCTION_KEY)
-        animationEnabled = context.readBooleanPreference(ANIMATION_KEY)
+        // Retired diagnostic UI: ignore persisted switches from diagnostic builds.
+        functionsEnabled = false
+        animationEnabled = false
         scope.launch {
             for ((tag, message, level) in queue) {
                 val lost = dropped.getAndSet(0)

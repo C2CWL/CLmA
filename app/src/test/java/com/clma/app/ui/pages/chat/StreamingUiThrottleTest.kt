@@ -11,6 +11,11 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class StreamingUiThrottleTest {
+    @Test fun `fast setting bypasses batching and normal mode stays high refresh`() {
+        assertEquals(0L, streamingUiWindowMs(true))
+        assertEquals(8L, streamingUiWindowMs(false))
+    }
+
     @Test fun `zero window bypasses batching and preserves all updates`() = runBlocking {
         val source = flow { emit("a"); emit("ab"); emit("abc"); emit("new") }
         val fast = source.throttleStreamingUpdates(0) { a, b -> b.startsWith(a) }
