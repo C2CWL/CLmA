@@ -1,0 +1,17 @@
+--- a/draft_notes.py
++++ b/draft_notes.py
+@@ -21,0 +22,14 @@
++if a.project == "clma":
++    from clma_changelog import collect, draft
++    head = R.gh_api(f"repos/{cfg['repo']}/commits/{cfg['branch']}")["sha"]
++    data = collect(cfg["repo"], head)
++    body = draft(core, data)
++    if a.out:
++        from pathlib import Path
++        Path(a.out).write_text(body, encoding="utf-8")
++        Path(a.out + ".sources.json").write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
++        print(f"Drafted {len(data['prs'])} reachable merged PRs; review {a.out} before publishing", file=sys.stderr)
++    else:
++        sys.stdout.write(body)
++    sys.exit(0)
++
