@@ -2,6 +2,8 @@ package com.clma.app.service
 
 import java.io.IOException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -75,6 +77,25 @@ class EdgeBarLifecycleTest {
         assertFalse(edgeBarMayStart(false, false))
         assertFalse(edgeBarMayStart(true, true))
         assertFalse(edgeBarMayStart(false, true))
+    }
+
+    @Test fun idleAndFinishedJobsNeverKeepTheBarWorking() {
+        assertFalse(edgeBarHasWork(emptyList()))
+        assertFalse(edgeBarHasWork(listOf(null)))
+        val done = Job().apply { complete() }
+        val cancelled = Job().apply { cancel() }
+        assertFalse(edgeBarHasWork(listOf(done, cancelled, null)))
+        val active = Job()
+        assertTrue(edgeBarHasWork(listOf(done, active)))
+        active.complete()
+        assertFalse(edgeBarHasWork(listOf(done, active)))
+    }
+
+    @Test fun lazyGenerationCountsBeforeStartAndCancelledTurnStopsImmediately() = runTest {
+        val turn = launch(start = CoroutineStart.LAZY) { }
+        assertTrue(edgeBarHasWork(listOf(turn)))
+        turn.cancel()
+        assertFalse(edgeBarHasWork(listOf(turn)))
     }
 
     @Test fun normalAnimationIsUnchangedButDetachedAndStoppedViewsCannotRenew() {
