@@ -757,6 +757,20 @@ Java_com_clma_llamacpp_LlamaCppJni_nativeGenerateVision(
     generate(env, ctx, model, applied, maxTokens, sink, projector, images);
 }
 
+// The reverse of common_chat_format_name, derived from that function rather than hand-written,
+// so a llama.cpp bump that renames or reorders a format produces a visible miss here instead of
+// a switch that still compiles and now maps the wrong way. COMMON_CHAT_FORMAT_COUNT is the
+// enum's own sentinel (common/chat.h).
+static common_chat_format formatFromName(const std::string &name) {
+    for (int i = 0; i < COMMON_CHAT_FORMAT_COUNT; ++i) {
+        const auto format = static_cast<common_chat_format>(i);
+        if (name == common_chat_format_name(format)) {
+            return format;
+        }
+    }
+    throw std::invalid_argument("unknown chat format: " + name);
+}
+
 extern "C" JNIEXPORT jbyteArray JNICALL
 Java_com_clma_llamacpp_LlamaCppJni_nativeParseChat(
         JNIEnv *env, jobject, jbyteArray textIn, jboolean isPartial, jbyteArray appliedIn) {

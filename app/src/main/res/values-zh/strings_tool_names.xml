@@ -566,4 +566,6 @@
   <string name="tool_display_desc_read_attachment">分片读取上传附件的文本或二进制内容</string>
   <string name="tool_display_name_deliver_file">交付文件</string>
   <string name="tool_display_desc_deliver_file">在聊天中附加可分享的文件，并可选导出到下载目录</string>
+  <string name="tool_display_name_recognize_local_media">本地媒体识别</string>
+  <string name="tool_display_desc_recognize_local_media">离线识别本地图片或视频稀疏关键帧，每次调用后释放模型</string>
 </resources>
