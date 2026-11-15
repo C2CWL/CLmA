@@ -1,0 +1,14 @@
+## CLmA 3.5
+
+- 新增“图片与视频识别”设置，集中管理图片处理、OCR 与本地模型。
+- 新增“OCR 模型 · 本地 Qwen3-VL”开关，默认关闭，可用本地视觉模型做 OCR。
+- 新增独立的“离线图片 / 视频理解”助手工具开关，无需开启文件工具。
+- 新增提供商页“打开 / 恢复 llama.cpp”入口，删除后仍可恢复并保留配置。
+- 修复切换 OCR 后端后复用旧缓存的问题，缓存按模型与提示词隔离。
+
+## Changes
+- Add one Image and video recognition section for media, OCR and local models.
+- Add an opt-in local Qwen3-VL OCR switch, off by default.
+- Add a separate offline image / video tool switch per assistant.
+- Add an open / restore llama.cpp entry on the providers page.
+- Fix OCR cache reuse after switching backends by scoping cache keys.
