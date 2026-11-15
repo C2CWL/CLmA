@@ -217,9 +217,13 @@ class LlamaCppProvider(
             "Local vision requires a local attachment; download remote images first"
         }
         require(android.os.Build.VERSION.SDK_INT >= 28) { "Local image decoding requires Android 9 or newer" }
-        val source = if (uri.scheme == null) android.graphics.ImageDecoder.createSource(File(url))
-            else android.graphics.ImageDecoder.createSource(context.contentResolver, uri)
-        val bitmap = android.graphics.ImageDecoder.decodeBitmap(source) { decoder, _, _ ->
+        val bytes = if (uri.scheme == "content") {
+            context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+        } else {
+            File(if (uri.scheme == "file") requireNotNull(uri.path) else url).takeIf { it.isFile }?.readBytes()
+        }
+        require(!bytes.isNullOrEmpty()) { "Cannot open local image" }
+        val source = android.graphics.ImageDecoder.createSource(java.nio.ByteBuffer.wrap(bytes))
             decoder.allocator = android.graphics.ImageDecoder.ALLOCATOR_SOFTWARE
         }
         val target = File.createTempFile("vision-", ".png", context.cacheDir)
