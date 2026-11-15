@@ -239,7 +239,7 @@ class SettingsStore(
         val SUGGESTION_PROMPT = stringPreferencesKey("suggestion_prompt")
         val IMAGE_RECOGNITION_MODE = stringPreferencesKey("image_recognition_mode")
         val OCR_MODEL = stringPreferencesKey("ocr_model")
-        val LOCAL_OCR = booleanPreferencesKey("local_ocr")
+        val LOCAL_OCR = booleanPreferencesKey("use_local_ocr")
         val OCR_PROMPT = stringPreferencesKey("ocr_prompt")
         val COMPRESS_MODEL = stringPreferencesKey("compress_model")
         val COMPACTION_ENGINE = stringPreferencesKey("compaction_engine")
