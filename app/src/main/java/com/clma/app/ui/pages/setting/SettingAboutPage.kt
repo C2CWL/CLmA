@@ -66,6 +66,10 @@ fun SettingAboutPage() {
             "💡", "🔥", "💥", "🚀", "⭐", "🌙"
         )
     }
+    var showChangelog by remember { mutableStateOf(false) }
+    if (showChangelog) {
+        com.clma.app.ui.components.update.VersionChangelogDialog { showChangelog = false }
+    }
     var logoCenterPx by remember { mutableStateOf(Offset.Zero) }
     Scaffold(
         topBar = {
@@ -138,7 +142,7 @@ fun SettingAboutPage() {
                     ) {
                         item(
                             modifier = Modifier.combinedClickable(
-                                onClick = {},
+                                onClick = { showChangelog = true },
                                 onLongClick = { navController.navigate(Screen.Debug) },
                             ),
                             leadingContent = { Icon(HugeIcons.Code, null) },

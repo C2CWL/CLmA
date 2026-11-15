@@ -1,0 +1,26 @@
+--- a/release.py
++++ b/release.py
+@@ -11,0 +12,2 @@
++from clma_changelog import bundled_files, verify_apk
++
+@@ -395,0 +398,3 @@
++    if proj == "clma" and notes_text:
++        bundled_files(v["name"], notes_text)  # reject mismatched versions and draft TODOs
++
+@@ -402,0 +408,3 @@
++        if proj == "clma" and notes_text:
++            files.update(bundled_files(v["name"], notes_text))
++            log("also bundles offline changelog", v["name"])
+@@ -447,0 +456,7 @@
++    if proj == "clma" and notes_text and sha:
++        path = next(iter(bundled_files(v["name"], notes_text)))
++        bundled = gh_api(f"repos/{repo}/contents/{path}?ref={sha}", ok404=True)
++        import base64
++        if not bundled or base64.b64decode(bundled["content"]).decode("utf-8") != notes_text:
++            die("release commit lacks matching offline notes; add the reviewed notes to the release PR and rebuild")
++
+@@ -479,0 +495,4 @@
++
++    if proj == "clma":
++        verify_apk(src, v["name"], notes_text)
++        log("APK offline changelog exactly matches Release notes")
