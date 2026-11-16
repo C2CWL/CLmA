@@ -11,12 +11,14 @@ import org.junit.Test
 class LlamaCppCatalogTest {
 
     @Test
-    fun `vision picks include a separate high precision projector`() {
+    fun `vision picks include a separate Q8 vision projector`() {
         val entries = LlamaCppCatalog.ENTRIES.filter { "vision" in it.tags }
         assertTrue(entries.isNotEmpty())
         entries.forEach { entry ->
             assertTrue(entry.file.endsWith("Q8_0.gguf"))
-            assertTrue(requireNotNull(entry.projectorFile).endsWith("F16.gguf"))
+            // New downloads ship the Q8 projector; an already installed F16 one stays
+            // accepted at load time, so only the catalog entry is pinned here.
+            assertTrue(requireNotNull(entry.projectorFile).endsWith("Q8_0.gguf"))
             assertTrue(entry.projectorSizeBytes > 0)
             assertTrue(requireNotNull(entry.projectorUrl()).startsWith("https://huggingface.co/"))
         }

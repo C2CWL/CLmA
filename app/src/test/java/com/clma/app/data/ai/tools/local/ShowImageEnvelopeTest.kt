@@ -72,8 +72,8 @@ class ShowImageEnvelopeTest {
 
     @Test
     fun `text-only model is not directed to copy files or run tesseract`() {
-        val note = parse(buildShowImageEnvelope("/upload/a.jpg", "image/jpeg", 10, 1, 1, false))
-            ["note"]!!.jsonPrimitive.content
+        val env = parse(buildShowImageEnvelope("/upload/a.jpg", "image/jpeg", 10, 1, 1, false))
+        val note = env.getValue("note").jsonPrimitive.content
         assertTrue(note.contains("Repeating show_image does not let you see"))
         assertTrue(!note.contains("tesseract"))
     }
