@@ -1,5 +1,6 @@
 package com.clma.app.data.ai
 
+import com.clma.ai.core.MessageRole
 import com.clma.ai.ui.UIMessage
 import com.clma.ai.ui.UIMessagePart
 import com.clma.app.data.ai.tools.ToolExecutionRetryPolicy
@@ -348,6 +349,12 @@ internal object ContextCompactionPlanner {
             widened++
         }
         return widened
+    }
+
+    /** Preserve the two latest user turns and every tool/assistant message following them. */
+    fun recentUserTurnsStartIndex(messages: List<UIMessage>): Int {
+        val starts = messages.indices.filter { messages[it].role == MessageRole.USER }
+        return starts.takeLast(2).firstOrNull() ?: 0
     }
 
     /** A short intermediate summary prevents a large map phase from inflating the reduce phase. */

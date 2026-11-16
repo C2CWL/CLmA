@@ -12,6 +12,7 @@ import com.clma.ai.ui.UIMessage
 import com.clma.ai.ui.UIMessagePart
 import com.clma.app.data.ai.tools.shouldUseExternalWebSearch
 import com.clma.app.data.datastore.AutoCompactionThresholdMode
+import com.clma.app.data.datastore.CompactionEngine
 import com.clma.app.data.datastore.DEFAULT_AUTO_MODEL_ID
 import com.clma.app.data.datastore.Settings
 import com.clma.app.data.model.Assistant
@@ -429,5 +430,83 @@ class ChatServiceTest {
 
         assertSame(fresh, result)
         assertSame(fresh, recorded)
+    }
+
+    @Test
+    fun `a local context-window miss is a context-limit error`() {
+        val error = IllegalArgumentException(
+            "Local context window exceeded: prompt needs 2400 bytes, budget is 100 bytes",
+        )
+        assertTrue(error.isContextLimitError())
+    }
+
+    // --- LOCAL compaction engine: explicit llama.cpp text model, never a cloud fallback ----
+
+    @Test
+    fun `local mode resolves the selected GGUF on an enabled llama cpp provider`() {
+        val gguf = Model(modelId = "Qwen3-1.7B-Q4_K_M.gguf")
+        val local = ProviderSetting.LlamaCppLocal(enabled = true, models = listOf(gguf))
+        val settings = Settings(
+            compactionEngine = CompactionEngine.LOCAL,
+            compressModelId = gguf.id,
+            providers = listOf(local),
+        )
+
+        assertEquals(gguf, resolveCompressionModel(settings))
+        assertEquals(gguf, resolveBotCompressionModel(settings, null))
+    }
+
+    @Test
+    fun `local mode never falls back to a cloud provider`() {
+        val cloud = Model(modelId = "gpt-5")
+        val cloudProvider = ProviderSetting.OpenAI(enabled = true, name = "OpenAI", models = listOf(cloud))
+        val settings = Settings(
+            compactionEngine = CompactionEngine.LOCAL,
+            compressModelId = cloud.id,
+            chatModelId = cloud.id,
+            providers = listOf(cloudProvider),
+        )
+
+        assertNull(resolveCompressionModel(settings))
+        assertNull(resolveBotCompressionModel(settings, cloud))
+    }
+
+    @Test
+    fun `local mode rejects a disabled llama cpp provider and vision catalog models`() {
+        val gguf = Model(modelId = "Qwen3-0.6B-Q8_0.gguf")
+        val vision = Model(modelId = "Qwen3VL-2B-Instruct-Q8_0.gguf")
+        val disabled = ProviderSetting.LlamaCppLocal(
+            enabled = false,
+            models = listOf(gguf, vision),
+        )
+        assertNull(
+            resolveCompressionModel(
+                Settings(
+                    compactionEngine = CompactionEngine.LOCAL,
+                    compressModelId = gguf.id,
+                    providers = listOf(disabled),
+                ),
+            ),
+        )
+
+        val enabled = ProviderSetting.LlamaCppLocal(enabled = true, models = listOf(vision))
+        assertNull(
+            resolveCompressionModel(
+                Settings(
+                    compactionEngine = CompactionEngine.LOCAL,
+                    compressModelId = vision.id,
+                    providers = listOf(enabled),
+                ),
+            ),
+        )
+    }
+
+    @Test
+    fun `local compaction failures are never routed to another model`() {
+        val localFailure = LocalCompactionException(IllegalStateException("native prefill failed"))
+        assertTrue(localFailure.message!!.contains("cloud fallback is disabled"))
+        // handleMessageComplete excludes this type from model routing, so a billed model
+        // cannot pick up the turn after a local failure.
+        assertSame(IllegalStateException::class.java, localFailure.cause!!.javaClass)
     }
 }

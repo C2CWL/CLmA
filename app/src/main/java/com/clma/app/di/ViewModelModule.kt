@@ -133,6 +133,7 @@ val viewModelModule = module {
             httpClient = get(),
             settingsStore = get(),
             hfApi = get(),
+            localProvider = get(),
         )
     }
 }

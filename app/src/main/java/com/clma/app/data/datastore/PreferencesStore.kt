@@ -88,7 +88,7 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.uuid.Uuid
 
 /** MODEL preserves existing installations; local and hybrid are explicit opt-ins. */
-enum class CompactionEngine { MODEL, TOMC, HYBRID }
+enum class CompactionEngine { MODEL, TOMC, HYBRID, LOCAL }
 
 enum class AutoCompactionThresholdMode {
     PERCENT,

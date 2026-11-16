@@ -75,6 +75,21 @@ class TomcAgentCompilerTest {
     }
 
     @Test
+    fun `a burst of log lines cannot spend the user constraint share`() {
+        val constraints = listOf(source("必须保留 ChatService.kt 的本地压缩模式", "req", "user"))
+        val logs = (1..60).map {
+            source("log line $it: 尝试修改文件$it.kt 测试失败", "log$it", "assistant")
+        }
+
+        val result = TomcAgentCompiler.compile(constraints + logs, "压缩", 900)
+
+        assertTrue(
+            "the user constraint must survive a log burst",
+            result.text.contains("[source=req:L1 role=user] 必须保留"),
+        )
+    }
+
+    @Test
     fun `unicode estimate counts cjk and surrogate pairs conservatively`() {
         assertEquals(4, TomcAgentCompiler.estimate("中文😀"))
         assertEquals(4, TomcAgentCompiler.estimate("abcdefghij"))

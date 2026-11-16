@@ -3,6 +3,7 @@ package com.clma.llamacpp
 import com.clma.ai.core.MessageRole
 import com.clma.ai.ui.UIMessage
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -69,5 +70,21 @@ class HistoryTrimTest {
         )
         assertEquals(messages.first(), trimmed.first())
         assertEquals(messages.last(), trimmed.last())
+    }
+
+    @Test
+    fun `a surviving turn over budget fails before native prefill`() {
+        val messages = listOf(UIMessage.user("x".repeat(2_000)))
+        val error = assertThrows(IllegalArgumentException::class.java) {
+            ChatRequestMapper.requireWithinBudget(messages, budgetBytes = 100)
+        }
+        assertTrue(error.message!!.contains("Local context window exceeded"))
+        assertTrue(error.message!!.contains("budget is 100 bytes"))
+    }
+
+    @Test
+    fun `a request inside the budget is accepted`() {
+        val messages = listOf(UIMessage.user("ok"))
+        ChatRequestMapper.requireWithinBudget(messages, budgetBytes = 10_000)
     }
 }

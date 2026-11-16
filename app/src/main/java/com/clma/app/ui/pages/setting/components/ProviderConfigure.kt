@@ -881,6 +881,8 @@ private fun ColumnScope.ProviderConfigureLlamaCpp(
         parameters = { parametersOf(LocalRuntime.LlamaCpp) },
     )
     val downloadProgress by vm.downloadProgress.collectAsStateWithLifecycle()
+    val deleting by vm.deleting.collectAsStateWithLifecycle()
+    val filesBusy = downloadProgress != null || deleting
     val errorMessage by vm.errorMessage.collectAsStateWithLifecycle()
     val installedModelFiles by vm.installedModelFiles.collectAsStateWithLifecycle()
     val perfTelemetry by vm.perfTelemetry.collectAsStateWithLifecycle()
@@ -927,24 +929,25 @@ private fun ColumnScope.ProviderConfigureLlamaCpp(
     // Install a GGUF the user already has on-device, via the storage file picker.
     OutlinedButton(
         onClick = { filePicker.launch(arrayOf("application/octet-stream")) },
-        enabled = downloadProgress == null,
+        enabled = !filesBusy,
     ) {
         Text(stringResource(R.string.local_llm_llamacpp_import_action))
     }
 
     // Manage installed files — rename or delete each downloaded GGUF.
-    if (provider.models.isNotEmpty()) {
+    if (installedModelFiles.isNotEmpty()) {
         Text(
             stringResource(R.string.local_llm_manage_files_title),
             style = MaterialTheme.typography.titleSmall,
             modifier = Modifier.padding(top = 8.dp),
         )
-        provider.models.forEach { model ->
+        installedModelFiles.sorted().forEach { fileName ->
+            val registered = provider.models.firstOrNull { it.modelId == fileName }
+            val model = registered ?: Model(modelId = fileName, displayName = fileName)
             InstalledModelRow(
                 model = model,
-                // llama.cpp is CPU-only with no vision support in this build (vision and
-                // mmproj are a spec non-goal) — there is no vision encoder that could
-                // fail, so this row never shows the vision caption or retry button.
+                enabled = !filesBusy,
+                // Visual GGUFs and projectors are managed as files, not chat models.
                 visionUnavailable = false,
                 allowVisionRetry = false,
                 perfSample = perfTelemetry[model.modelId],
@@ -972,7 +975,7 @@ private fun ColumnScope.ProviderConfigureLlamaCpp(
             LlamaCppCatalogEntryCard(
                 entry = entry,
                 installed = entry.file in installedModelFiles,
-                downloadInProgress = downloadProgress != null,
+                downloadInProgress = filesBusy,
                 onInstall = { vm.startManualDownload(entry.resolveUrl()) },
             )
         }
@@ -1074,7 +1077,7 @@ private fun ColumnScope.ProviderConfigureLlamaCpp(
                             fileName = file.fileName,
                             sizeBytes = file.sizeBytes,
                             installed = file.fileName in installedModelFiles,
-                            downloadInProgress = downloadProgress != null,
+                            downloadInProgress = filesBusy,
                             onInstall = { vm.installFromHuggingFace(selectedRepoId, file.fileName) },
                         )
                     }
@@ -1253,6 +1256,7 @@ private fun LlamaCppCatalogEntryCard(
 @Composable
 private fun InstalledModelRow(
     model: Model,
+    enabled: Boolean,
     visionUnavailable: Boolean,
     allowVisionRetry: Boolean,
     perfSample: com.clma.locallm.LocalRuntimePreferences.PerfSample?,
@@ -1285,7 +1289,7 @@ private fun InstalledModelRow(
                     onRename(renameText)
                     renaming = false
                 },
-                enabled = renameText.isNotBlank() && renameText != model.displayName,
+                enabled = enabled && renameText.isNotBlank() && renameText != model.displayName,
             ) {
                 Text(stringResource(R.string.local_llm_rename_save))
             }
@@ -1340,10 +1344,10 @@ private fun InstalledModelRow(
                     )
                 }
             }
-            IconButton(onClick = { renaming = true }) {
+            IconButton(enabled = enabled, onClick = { renaming = true }) {
                 Icon(HugeIcons.Edit01, stringResource(R.string.local_llm_rename))
             }
-            IconButton(onClick = { confirmDelete = true }) {
+            IconButton(enabled = enabled, onClick = { confirmDelete = true }) {
                 Icon(HugeIcons.Delete01, stringResource(R.string.local_llm_delete))
             }
         }

@@ -88,6 +88,11 @@ data class TextGenerationParams(
      */
     val textToolCallParsing: Boolean = true,
     val reasoningLevel: ReasoningLevel = ReasoningLevel.OFF,
+    /**
+     * Explicit thinking switch for providers whose template decides on its own (llama.cpp).
+     * Null keeps the template default; false forces a straight answer without a thinking block.
+     */
+    val enableThinking: Boolean? = null,
     val customHeaders: List<CustomHeader> = emptyList(),
     val customBody: List<CustomBody> = emptyList(),
     val sessionId: String? = Uuid.random().toString(),

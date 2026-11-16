@@ -48,17 +48,30 @@ internal object TomcAgentCompiler {
             val cost = estimate("[source=${u.source.id}:L${u.line} role=${u.source.role}] ${u.text}\n")
             if (used + cost <= ceiling) { chosen += position; used += cost }
         }
-        // Reserve 30% for recent verbatim evidence, as in TOMC2's recent_raw_fraction.
-        val symbolic = (budgetTokens * 0.70).toInt()
-        val signals = units.indices.filter { i ->
-            val text = units[i].text
-            requirement.containsMatchIn(text) || error.containsMatchIn(text) ||
-                attempt.containsMatchIn(text) || verifier.containsMatchIn(text) || entity.containsMatchIn(text)
+        // Exact duplicates within a speaker lane keep their latest provenance. Do not merge
+        // user constraints with assistant claims or normalize away meaningful whitespace.
+        val seen = hashSetOf<Pair<String, String>>()
+        val unique = units.indices.reversed().filter { i ->
+            seen.add(units[i].source.role to units[i].text)
         }
-        // Latest observations first within each lane; no regex is allowed to declare success.
-        for (i in signals.reversed()) add(i, symbolic)
-        for (i in relevant) add(i, symbolic)
-        for (i in units.indices.reversed()) add(i, budgetTokens)
+        val uniqueSet = unique.toHashSet()
+        val lanes = listOf(
+            unique.filter { units[it].source.role == "user" && requirement.containsMatchIn(units[it].text) },
+            unique.filter { error.containsMatchIn(units[it].text) || verifier.containsMatchIn(units[it].text) },
+            unique.filter { attempt.containsMatchIn(units[it].text) || entity.containsMatchIn(units[it].text) },
+            relevant.filter { it in uniqueSet },
+        )
+        // Reserve independent shares of the available payload, not of the header. A burst of
+        // recent logs cannot spend the user-constraint share. Unused shares are reclaimed below.
+        val payload = budgetTokens - used
+        val shares = listOf(0.25, 0.20, 0.15, 0.10)
+        for ((lane, share) in lanes.zip(shares)) {
+            val ceiling = used + (payload * share).toInt()
+            for (i in lane) add(i, ceiling)
+        }
+        val symbolic = estimate(header) + (payload * 0.70).toInt()
+        for (lane in lanes) for (i in lane) add(i, symbolic)
+        for (i in unique) add(i, budgetTokens)
         val text = header + chosen.sorted().joinToString("\n") { i ->
             val u = units[i]
             "[source=${u.source.id}:L${u.line} role=${u.source.role}] ${u.text}"
