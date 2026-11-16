@@ -82,7 +82,7 @@ class ChatVM(
 ) : ViewModel() {
     private val _conversationId: Uuid = Uuid.parse(id)
     val conversation: StateFlow<Conversation> = chatService.getConversationFlow(_conversationId)
-    // Keep high-refresh streaming: off batches for at most 8ms; on publishes immediately.
+    // Keep high-refresh streaming: off batches for at most 32ms; on publishes immediately.
     val conversationForUi: StateFlow<Conversation> = settingsStore.settingsFlow
         .map { it.displaySetting.fastStreamingOutput }
         .distinctUntilChanged()

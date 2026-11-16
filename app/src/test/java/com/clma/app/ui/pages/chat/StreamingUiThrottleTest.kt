@@ -13,7 +13,7 @@ import org.junit.Test
 class StreamingUiThrottleTest {
     @Test fun `fast setting bypasses batching and normal mode stays high refresh`() {
         assertEquals(0L, streamingUiWindowMs(true))
-        assertEquals(8L, streamingUiWindowMs(false))
+        assertEquals(32L, streamingUiWindowMs(false))
     }
 
     @Test fun `zero window bypasses batching and preserves all updates`() = runBlocking {
