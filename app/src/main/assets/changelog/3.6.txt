@@ -1,0 +1,20 @@
+## CLmA 3.6
+
+- 恢复回复与思考动画的原生帧率，移除额外的文字显示节流。
+- 优化边栏细条的空闲行为，不再自我重绘，工作态跟随未完成的会话任务。
+- 修复上传视频仍会自动加载本地视觉模型的问题，改为保留真实路径，由模型显式调用 `recognize_local_media`。
+- 修复无法读取或解码的媒体仍返回"成功"的问题，改为返回结构化失败与恢复建议。
+- 修复取消识别后视觉计算图仍在运行的问题，取消与十分钟上限都会中断计算，原生资源在工作退出后才释放。
+- 优化视觉投影器的下载，mmproj 改用 Q8 量化版本，已安装的 F16 投影器继续兼容。
+- 新增本地视觉模型的 Vulkan 后端，支持 Adreno 与 Mali，GPU 初始化失败时自动回退 CPU。
+- 修复上传视频按绝对路径打开失败的问题，内容 URI 仍走授权解析器。
+
+## Changes
+- Restore native reply and thinking animation cadence; drop the extra text throttle.
+- Stop the edge bar redrawing while idle; working state follows unfinished jobs.
+- Keep uploaded videos as an explicit path; the model calls `recognize_local_media`.
+- Return a structured failure with recovery guidance for unreadable media.
+- Make cancellation interrupt vision graph evaluation; release natives afterwards.
+- Quantize the vision projector to Q8 while still accepting an installed F16 one.
+- Build Vulkan for Adreno and Mali, falling back to CPU when GPU setup fails.
+- Open uploaded videos by absolute path; content URIs use the granted resolver.
