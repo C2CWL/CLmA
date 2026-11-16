@@ -722,6 +722,25 @@ class ContextCompactionPlannerTest {
         assertTrue(contract.contains("Do not invent facts"))
     }
 
+    @Test
+    fun `recent user turns keep the two latest turns and everything after them`() {
+        val messages = listOf(
+            UIMessage.user("one"),
+            UIMessage.assistant("a1"),
+            UIMessage.user("two"),
+            UIMessage.assistant("a2"),
+            UIMessage.user("three"),
+            UIMessage.assistant("a3"),
+        )
+
+        assertEquals(2, ContextCompactionPlanner.recentUserTurnsStartIndex(messages))
+        assertEquals(0, ContextCompactionPlanner.recentUserTurnsStartIndex(emptyList()))
+        assertEquals(
+            0,
+            ContextCompactionPlanner.recentUserTurnsStartIndex(listOf(UIMessage.user("only"))),
+        )
+    }
+
     private fun toolMessage(name: String) = UIMessage(
         role = MessageRole.ASSISTANT,
         parts = listOf(

@@ -18,8 +18,11 @@ import org.json.JSONObject
  */
 object ChatRequestMapper {
 
-    fun toRequestJson(messages: List<UIMessage>, tools: List<Tool>): String {
+    fun toRequestJson(
+        messages: List<UIMessage>, tools: List<Tool>, enableThinking: Boolean? = null,
+    ): String {
         val root = JSONObject()
+        if (enableThinking != null) root.put("enable_thinking", enableThinking)
         root.put("messages", messagesArray(messages))
         // Absent rather than empty: an empty array makes some templates emit a tool
         // preamble describing no tools at all.
@@ -57,6 +60,14 @@ object ChatRequestMapper {
             droppableCount--
         }
         return working
+    }
+
+    /** Reject a surviving oversized turn before native prefill; compaction can split and retry. */
+    fun requireWithinBudget(messages: List<UIMessage>, budgetBytes: Int) {
+        val requestBytes = messagesArray(messages).toString().toByteArray(Charsets.UTF_8).size
+        require(requestBytes <= budgetBytes) {
+            "Local context window exceeded: prompt needs $requestBytes bytes, budget is $budgetBytes bytes"
+        }
     }
 
     fun toolDeclarations(tools: List<Tool>): List<ToolDeclaration> {

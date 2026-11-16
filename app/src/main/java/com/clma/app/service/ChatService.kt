@@ -226,7 +226,7 @@ private const val COMPACTION_SUMMARY_HEADER = "[Summary of previous conversation
  */
 private const val STREAMING_PERSIST_INTERVAL_MS = 500L
 
-private fun Throwable.isContextLimitError(): Boolean {
+internal fun Throwable.isContextLimitError(): Boolean {
     val markers = listOf(
         "context length",
         "context window",
@@ -290,6 +290,30 @@ internal fun compactionContextLength(settings: Settings, model: Model): Int? =
  * those is usable.
  */
 internal fun resolveCompressionModel(settings: Settings): Model? {
+    if (settings.compactionEngine == CompactionEngine.LOCAL) return resolveLocalCompressionModel(settings)
+    return resolveConfiguredCompressionModel(settings)
+}
+
+/** Local compaction failed: the turn must surface the error, never route to a billed model. */
+internal class LocalCompactionException(cause: Exception) :
+    IllegalStateException(
+        "Local compaction failed; context unchanged and cloud fallback is disabled: ${cause.message}",
+        cause,
+    )
+
+/** Local mode requires an explicit choice and never consults cloud/current-chat fallbacks. */
+internal fun resolveLocalCompressionModel(settings: Settings): Model? {
+    val model = settings.findModelById(settings.compressModelId) ?: return null
+    val provider = model.findProvider(settings.providers)
+    return model.takeIf {
+        provider is com.clma.ai.provider.ProviderSetting.LlamaCppLocal && provider.enabled &&
+            com.clma.llamacpp.LlamaCppCatalog.ENTRIES.none { entry ->
+                entry.file == model.modelId && entry.projectorFile != null
+            }
+    }
+}
+
+private fun resolveConfiguredCompressionModel(settings: Settings): Model? {
     fun Model.takeIfUsable(): Model? {
         if (id == DEFAULT_AUTO_MODEL_ID) return null
         val provider = findProvider(settings.providers) ?: return null
@@ -312,6 +336,7 @@ internal fun resolveCompressionModel(settings: Settings): Model? {
  * for it. Null when neither is usable.
  */
 internal fun resolveBotCompressionModel(settings: Settings, conversationModel: Model?): Model? {
+    if (settings.compactionEngine == CompactionEngine.LOCAL) return resolveLocalCompressionModel(settings)
     fun Model.takeIfUsable(): Model? {
         if (id == DEFAULT_AUTO_MODEL_ID) return null
         val provider = findProvider(settings.providers) ?: return null
@@ -2939,8 +2964,11 @@ class ChatService(
             messageRange == null &&
             generationFailure != null &&
             generationFailure !is CancellationException &&
+            generationFailure !is LocalCompactionException &&
             // Another model gets the same oversized request and runs out of memory the same way.
-            !generationFailure.isRequestTooLarge()
+            // A local context-window miss must compact and retry this model, never a billed route.
+            !generationFailure.isRequestTooLarge() &&
+            !generationFailure.isContextLimitError()
         ) {
             val routeExclude = routeAttempts + model.id
             val routedModel = modelRouter.nextRouteCandidate(
@@ -3693,6 +3721,7 @@ class ChatService(
                         ContextCompactionView.build(latestConversation, it)
                     } ?: view
                     if (
+                        settings.compactionEngine != CompactionEngine.LOCAL &&
                         triggerTokens != null &&
                         firstView.rawTailStartIndex < latestConversation.messageNodes.size &&
                         ContextBudgetPlanner.estimateContextTokens(firstView.messages) >= triggerTokens
@@ -3725,7 +3754,7 @@ class ChatService(
             recordAutoCompactionFailure(conversation.id, e)
             // A failed pre-send compaction (e.g. the summary request failed) must not cost the
             // turn: send the uncompacted request as before; the context-limit retry still applies.
-            if (e is CancellationException || !preSend) throw e
+            if (e is CancellationException || !preSend || settings.compactionEngine == CompactionEngine.LOCAL) throw e
             Log.w(TAG, "Pre-send compaction failed for ${conversation.id}; sending uncompacted", e)
             return view
         } finally {
@@ -3841,12 +3870,17 @@ class ChatService(
             throw IllegalStateException(context.getString(R.string.chat_page_compress_not_enough_messages))
         }
 
-        val plannedTailStartIndex = ContextCompactionPlanner.automaticTailStartIndex(
+        val toolTailStartIndex = ContextCompactionPlanner.automaticTailStartIndex(
             messages = conversation.currentMessages,
             rawTailStartIndex = currentView.rawTailStartIndex,
             keepRecentToolCalls = keepRecentToolCalls,
             maxTailTokens = maxTailTokens,
         )
+        val plannedTailStartIndex = if (settings.compactionEngine == CompactionEngine.LOCAL) {
+            minOf(toolTailStartIndex, ContextCompactionPlanner.recentUserTurnsStartIndex(
+                conversation.currentMessages,
+            ))
+        } else toolTailStartIndex
         // Pre-send compaction: never fold the message the user is sending into the summary.
         val rawTailStartIndex = conversation.currentMessages.lastIndex
             .takeIf { keepTrailingUserMessage && conversation.currentMessages.lastOrNull()?.role == MessageRole.USER }
@@ -3963,6 +3997,7 @@ class ChatService(
                     )
                 }
 
+                val settings = settingsStore.settingsFlow.first()
                 val currentView = loadCompactedMessageView(latestConversation)
                 // The retained-message setting is an upper bound. If a short conversation has
                 // fewer nodes than the requested tail but still overflowed because of a huge tool
@@ -3977,8 +4012,15 @@ class ChatService(
                 // the compression model before it gets a chance to summarize anything.
                 val rawTailStartIndex = maxOf(
                     currentView.rawTailStartIndex,
-                    requestedTailStart,
+                    if (settings.compactionEngine == CompactionEngine.LOCAL) {
+                        minOf(requestedTailStart, ContextCompactionPlanner.recentUserTurnsStartIndex(allMessages))
+                    } else requestedTailStart,
                 )
+                if (settings.compactionEngine == CompactionEngine.LOCAL) {
+                    check(rawTailStartIndex > currentView.rawTailStartIndex) {
+                        "No older messages to compress without summarising the two latest user turns"
+                    }
+                }
                 val messagesToCompress = buildList {
                     currentView.compaction?.let { add(ContextCompactionView.summaryMessage(it)) }
                     addAll(
@@ -3991,7 +4033,7 @@ class ChatService(
 
                 generateAndStoreCompaction(
                     conversation = latestConversation,
-                    settings = settingsStore.settingsFlow.first(),
+                    settings = settings,
                     messagesToCompress = messagesToCompress,
                     previousCompaction = currentView.compaction,
                     rawTailStartIndex = rawTailStartIndex,
@@ -4236,6 +4278,9 @@ class ChatService(
                 conversation.id,
                 ContextCompactionPresentation.createFailureTool(isAuto, before, cancelled),
             )
+            if (!cancelled && settings.compactionEngine == CompactionEngine.LOCAL) {
+                throw LocalCompactionException(e)
+            }
             throw e
         }
         val after = ContextBudgetPlanner.estimateContextTokens(
@@ -4288,7 +4333,7 @@ class ChatService(
 
         // Compile from original messages, not a summary of a summary. Only the active branch's
         // compressed prefix is read; the retained raw tail is never duplicated in this memory.
-        val evidence = if (settings.compactionEngine != CompactionEngine.MODEL) {
+        val evidence = if (settings.compactionEngine in setOf(CompactionEngine.TOMC, CompactionEngine.HYBRID)) {
             withContext(Dispatchers.Default) {
                 val sources = conversation.currentMessages.take(rawTailStartIndex).map { message ->
                     TomcAgentCompiler.Source(
@@ -4336,7 +4381,13 @@ class ChatService(
             resolveBotCompressionModel(settings, resolveGenerationModel(settings, conversation))
         } else {
             resolveCompressionModel(settings)
-        } ?: throw IllegalStateException(compressionModelUnavailableMessage())
+        } ?: throw IllegalStateException(
+            if (settings.compactionEngine == CompactionEngine.LOCAL) {
+                "Local compaction requires an enabled llama.cpp text model selected as Compress Model. " +
+                    "Install/select a text GGUF in Settings. Cloud fallback is disabled."
+            } else compressionModelUnavailableMessage()
+        )
+        val localCompaction = settings.compactionEngine == CompactionEngine.LOCAL
         val provider = model.findProvider(settings.providers)
             ?: throw IllegalStateException("Provider not found")
         // Same defence as handleLlmTurn — refuse to compress against a disabled provider.
@@ -4365,7 +4416,7 @@ class ChatService(
         val mapInputBudgetTokens = ContextCompactionPlanner.mapInputBudgetTokens(
             inputBudgetTokens = inputBudgetTokens,
             allowLargeContext = hasExplicitCompressionContext,
-        )
+        ).let { if (localCompaction) it.coerceAtMost(2_048) else it }
         val rawContextRetentionReport = ContextCompactionPlanner.rawContextRetentionReport(
             conversation.currentMessages.drop(rawTailStartIndex)
         )
@@ -4380,6 +4431,7 @@ class ChatService(
         // Hybrid reserves part of the prose target for independently selected source evidence.
         val modelSummaryTargetTokens = (targetTokens -
             (evidence?.text?.let(TomcAgentCompiler::estimate) ?: 0)).coerceAtLeast(1)
+            .let { if (localCompaction) it.coerceAtMost(1_024) else it }
         val tomcLedgerEnabled = settings.enableTomcCompactionLedger
         val tomcLedgerMaxChars = (targetTokens / 4).coerceAtLeast(1) * 2
 
@@ -4479,7 +4531,9 @@ class ChatService(
                             providerSetting = provider,
                             messages = listOf(UIMessage.user(prompt)),
                             params = backgroundTextGenerationParams(model, conversation.id).copy(
-                                maxTokens = requestedTargetTokens,
+                                maxTokens = if (localCompaction) requestedTargetTokens.coerceAtMost(1_024)
+                                    else requestedTargetTokens,
+                                enableThinking = if (localCompaction) false else null,
                             ),
                         )
                     }
@@ -4572,7 +4626,7 @@ class ChatService(
             groups: List<List<String>>,
             requestedTargetTokens: Int,
         ): List<String> = groups
-            .chunked(MAX_PARALLEL_COMPACTION_REQUESTS)
+            .chunked(if (localCompaction) 1 else MAX_PARALLEL_COMPACTION_REQUESTS)
             .flatMap { batch ->
                 coroutineScope {
                     batch.map { group ->

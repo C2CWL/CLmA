@@ -350,6 +350,12 @@ internal object ContextCompactionPlanner {
         return widened
     }
 
+    /** Preserve the two latest user turns and every tool/assistant message following them. */
+    fun recentUserTurnsStartIndex(messages: List<UIMessage>): Int {
+        val starts = messages.indices.filter { messages[it].role == MessageRole.USER }
+        return starts.takeLast(2).firstOrNull() ?: 0
+    }
+
     /** A short intermediate summary prevents a large map phase from inflating the reduce phase. */
     fun intermediateTargetTokens(
         finalTargetTokens: Int,

@@ -196,6 +196,13 @@ class LlamaCppProvider(
         }
     }
 
+    /** Keep inference excluded until the caller has removed the files and their index. */
+    suspend fun <T> withModelFilesReleased(action: suspend () -> T): T = loadMutex.withLock {
+        releaseVisionModel()
+        mutableVisionStatus.value = LocalVisionStatus.Unloaded
+        action()
+    }
+
     /** Waits for native generation to stop before freeing its context/projector/model.
      * NonCancellable is essential: a cancelled collector must still release residency. */
     private suspend fun releaseVisionModel() = withContext(NonCancellable + Dispatchers.IO) {
@@ -408,9 +415,12 @@ class LlamaCppProvider(
             // long conversation drops its oldest turns instead of overflowing the prompt.
             val trimmedMessages = if (projector != null) messages else
                 ChatRequestMapper.trimToBudget(messages, runtime.inputBudgetBytes())
+            if (projector == null) {
+                ChatRequestMapper.requireWithinBudget(trimmedMessages, runtime.inputBudgetBytes())
+            }
             ChatRequestMapper.imageUrls(trimmedMessages)
             val appliedTemplateJson = runtime.applyTemplate(
-                ChatRequestMapper.toRequestJson(trimmedMessages, params.tools)
+                ChatRequestMapper.toRequestJson(trimmedMessages, params.tools, params.enableThinking)
             )
             val tracker = ChatDeltaTracker()
             val accumulated = StringBuilder()

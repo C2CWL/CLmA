@@ -52,6 +52,20 @@ class ChatRequestMapperTest {
     }
 
     @Test
+    fun `thinking can be switched off explicitly and stays unset by default`() {
+        val defaultJson = JSONObject(
+            ChatRequestMapper.toRequestJson(listOf(UIMessage.user("hi")), emptyList())
+        )
+        assertFalse("template default must be left alone", defaultJson.has("enable_thinking"))
+
+        val off = JSONObject(
+            ChatRequestMapper.toRequestJson(listOf(UIMessage.user("hi")), emptyList(), false)
+        )
+        assertFalse(off.getBoolean("enable_thinking"))
+        assertEquals("hi", off.getJSONArray("messages").getJSONObject(0).getString("content"))
+    }
+
+    @Test
     fun `tool declaration byte counts match the emitted json`() {
         // The planner budgets on these counts, so they must describe what is really sent.
         val tools = TestTools.two()

@@ -250,11 +250,15 @@ private fun AutoCompactionSettingItem(
             supportingContent = {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(stringResource(R.string.setting_compaction_engine_desc))
+                    if (settings.compactionEngine == CompactionEngine.LOCAL) {
+                        Text(stringResource(R.string.setting_compaction_engine_local_desc))
+                    }
                     SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                         val engines = listOf(
                             CompactionEngine.MODEL to stringResource(R.string.setting_compaction_engine_model),
                             CompactionEngine.TOMC to "TOMC",
                             CompactionEngine.HYBRID to stringResource(R.string.setting_compaction_engine_hybrid),
+                            CompactionEngine.LOCAL to stringResource(R.string.setting_compaction_engine_local),
                         )
                         engines.forEachIndexed { index, (engine, label) ->
                             SegmentedButton(

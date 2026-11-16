@@ -46,12 +46,16 @@ class SettingLocalLlmViewModel(
     private val httpClient: OkHttpClient,
     private val settingsStore: SettingsStore,
     private val hfApi: HuggingFaceAPI,
+    private val localProvider: com.clma.llamacpp.LlamaCppProvider,
 ) : ViewModel() {
 
     data class Progress(val percent: Int, val bytesRead: Long, val totalBytes: Long?)
 
     private val _downloadProgress = MutableStateFlow<Progress?>(null)
     val downloadProgress: StateFlow<Progress?> = _downloadProgress.asStateFlow()
+
+    private val _deleting = MutableStateFlow(false)
+    val deleting: StateFlow<Boolean> = _deleting.asStateFlow()
 
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
@@ -323,7 +327,7 @@ class SettingLocalLlmViewModel(
      * handled instead of once the network responds.
      */
     fun startDefaultDownload() {
-        if (_downloadProgress.value != null) return
+        if (_downloadProgress.value != null || _deleting.value) return
         _errorMessage.value = null
         _downloadProgress.value = Progress(0, 0L, null)
         viewModelScope.launch {
@@ -352,7 +356,7 @@ class SettingLocalLlmViewModel(
             _errorMessage.value = context.getString(R.string.local_llm_invalid_url)
             return
         }
-        if (_downloadProgress.value != null) return
+        if (_downloadProgress.value != null || _deleting.value) return
         _errorMessage.value = null
         _downloadProgress.value = Progress(0, 0L, null)
         viewModelScope.launch { executeDownload(normalizedUrl) }
@@ -511,6 +515,11 @@ class SettingLocalLlmViewModel(
      * validated, then registers it exactly like [collectDownloadProgress] does on success.
      */
     fun installPickedFile(inputStream: java.io.InputStream, fileName: String) {
+        if (_downloadProgress.value != null || _deleting.value) {
+            runCatching { inputStream.close() }
+            return
+        }
+        _downloadProgress.value = Progress(0, 0L, null)
         _errorMessage.value = null
         viewModelScope.launch {
             // The document provider's DISPLAY_NAME is untrusted input, so it gets reduced
@@ -522,6 +531,7 @@ class SettingLocalLlmViewModel(
             val safeFileName = fileName.substringAfterLast('/')
             if (safeFileName.isBlank() || safeFileName == "." || safeFileName == "..") {
                 runCatching { inputStream.close() }
+                _downloadProgress.value = null
                 _errorMessage.value = "Import failed: invalid file name from picker: $fileName"
                 return@launch
             }
@@ -561,20 +571,34 @@ class SettingLocalLlmViewModel(
      * Handles the full three-step cleanup: disk file, LocalRuntimePreferences, provider.models.
      */
     fun deleteModel(fileName: String) {
+        if (_downloadProgress.value != null || _deleting.value) return
+        _deleting.value = true
         viewModelScope.launch {
-            val installed = prefs.installedModels(runtime)
-            val path = installed[fileName]
-            if (path != null) {
-                runCatching { java.io.File(path).delete() }
-                // Also clean up any leftover partial file from a previous interrupted download.
-                runCatching { java.io.File("$path.partial").delete() }
+            try {
+                localProvider.withModelFilesReleased {
+                    val path = prefs.installedModels(runtime)[fileName]
+                    if (path != null) {
+                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                            for (file in listOf(java.io.File("$path.partial"), java.io.File(path))) {
+                                check(!file.exists() || file.delete()) { "Cannot delete ${file.name}" }
+                            }
+                        }
+                    }
+                    prefs.removeInstalledModel(runtime, fileName)
+                    updateMyProvider { p ->
+                        p.models.filter { it.modelId == fileName }.fold(p) { next, model ->
+                            next.delModel(model)
+                        }
+                    }
+                }
+                _errorMessage.value = null
+            } catch (cancel: kotlinx.coroutines.CancellationException) {
+                throw cancel
+            } catch (t: Exception) {
+                _errorMessage.value = "Uninstall failed: ${t.message}"
+            } finally {
+                _deleting.value = false
             }
-            prefs.removeInstalledModel(runtime, fileName)
-            updateMyProvider { p ->
-                val modelToRemove = p.models.firstOrNull { it.modelId == fileName }
-                if (modelToRemove != null) p.delModel(modelToRemove) else p
-            }
-            _errorMessage.value = null
         }
     }
 
