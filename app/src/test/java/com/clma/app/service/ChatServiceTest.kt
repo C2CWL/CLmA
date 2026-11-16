@@ -440,6 +440,14 @@ class ChatServiceTest {
         assertTrue(error.isContextLimitError())
     }
 
+    @Test
+    fun `local and online TOMC engines reserve identical original evidence budgets`() {
+        assertNull(compactionEvidenceBudget(CompactionEngine.MODEL, 3000))
+        assertEquals(3000, compactionEvidenceBudget(CompactionEngine.TOMC, 3000))
+        assertEquals(1000, compactionEvidenceBudget(CompactionEngine.HYBRID, 3000))
+        assertEquals(1000, compactionEvidenceBudget(CompactionEngine.LOCAL, 3000))
+    }
+
     // --- LOCAL compaction engine: explicit llama.cpp text model, never a cloud fallback ----
 
     @Test

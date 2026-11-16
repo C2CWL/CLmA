@@ -25,6 +25,21 @@ class LlamaCppCatalogTest {
     }
 
     @Test
+    fun `compaction trial points to full weights and is explicitly experimental`() {
+        val entry = LlamaCppCatalog.ENTRIES.single { "compaction" in it.tags }
+        assertEquals("lewisdog/qwen3-1.7b-cogs-ingest-GGUF", entry.repo)
+        assertEquals("qwen3-1.7b-cogs-ingest-Q8_0.gguf", entry.file)
+        assertEquals(1834426496L, entry.sizeBytes)
+        assertTrue("experimental" in entry.tags)
+        assertTrue("non-thinking" in entry.tags)
+        assertEquals(null, entry.projectorFile)
+        assertEquals(
+            "https://huggingface.co/lewisdog/qwen3-1.7b-cogs-ingest-GGUF/resolve/main/qwen3-1.7b-cogs-ingest-Q8_0.gguf",
+            entry.resolveUrl(),
+        )
+    }
+
+    @Test
     fun `every entry points at a gguf file`() {
         LlamaCppCatalog.ENTRIES.forEach { entry ->
             assertTrue(
