@@ -34,9 +34,6 @@ internal object EdgeBarLook {
 
     /** One clockwise lap of the "AI is replying" rainbow streak around the pill's outline. */
     const val RING_LOOP_MS = 1440L
-    /** Time from one end of the pill to the other (the return takes the same time). */
-    const val SHEEN_LOOP_MS = 1400L
-
     /** Stroke of the streak; its centre line is inset by half of it, so it stays inside the pill. */
     const val RING_STROKE_DP = 2f
 
@@ -86,10 +83,15 @@ internal object EdgeBarLook {
     const val DEFAULT_CENTER_FRACTION = 0.62f
 
     /**
-     * What the bar shows. [WORKING]: a rainbow streak runs clockwise around the pill's outline; [DONE]: the pill turns
-     * green with a white check until the user taps the bar (opening the app); [IDLE]: plain pill.
+     * What the bar shows. [WORKING]: the pill fills with a single steady colour while the AI is
+     * generating — no animation, so an idle-looking bar costs nothing per frame; [APPROVAL]: the
+     * amber "needs review" colour; [INPUT]: the same amber with an input mark; [DONE]: the pill
+     * turns green with a white check until the user taps the bar (opening the app); [IDLE]: plain pill.
      */
     enum class Signal { IDLE, WORKING, DONE, APPROVAL, INPUT }
+
+    /** Steady fill while generating. One colour, never animated. */
+    const val WORKING_BLUE = 0xFF3B82F6.toInt()
 
     const val WAITING_AMBER = 0xFFF0A128.toInt()
 
@@ -104,16 +106,6 @@ internal object EdgeBarLook {
         working -> Signal.WORKING
         unseenDone -> Signal.DONE
         else -> Signal.IDLE
-    }
-
-    /**
-     * Pixel shift of the pale band along a travel distance. It moves one way over [SHEEN_LOOP_MS],
-     * then back over the next loop, without rebuilding the gradient.
-     */
-    fun sheenShift(nowMs: Long, travelPx: Float): Float {
-        val cycle = nowMs.mod(SHEEN_LOOP_MS * 2).toFloat() / SHEEN_LOOP_MS
-        val phase = if (cycle <= 1f) cycle else 2f - cycle
-        return -travelPx * phase
     }
 
     /**

@@ -62,6 +62,7 @@ import com.clma.app.data.datastore.migration.PreferenceStoreV8Migration
 import com.clma.app.data.datastore.migration.PreferenceStoreV9Migration
 import com.clma.app.data.datastore.migration.PreferenceStoreV10Migration
 import com.clma.app.data.datastore.migration.PreferenceStoreV11Migration
+import com.clma.app.data.datastore.migration.PreferenceStoreV12Migration
 import com.clma.app.data.model.Assistant
 import com.clma.app.data.model.Avatar
 import com.clma.app.data.model.InjectionPosition
@@ -192,6 +193,7 @@ private fun createSettingsDataStore(context: Context): DataStore<Preferences> {
             PreferenceStoreV9Migration(),
             PreferenceStoreV10Migration(),
             PreferenceStoreV11Migration(),
+            PreferenceStoreV12Migration(),
         ),
         produceFile = { file },
     )
@@ -1352,8 +1354,8 @@ data class BotChannel(
 
 @Serializable
 data class DisplaySetting(
-    /** Bypass UI token batching; Markdown parsing stays off the main thread. */
-    val fastStreamingOutput: Boolean = true,
+    /** How fast streamed reply text reaches the list. Immediate publishes every token. */
+    val streamingPace: StreamingPace = StreamingPace.IMMEDIATE,
     val userAvatar: Avatar = Avatar.Dummy,
     val userNickname: String = "",
     val useAppIconStyleLoadingIndicator: Boolean = true,

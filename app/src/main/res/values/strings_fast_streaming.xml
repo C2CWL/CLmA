@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="setting_display_page_fast_streaming_title">Fast streaming output</string>
-    <string name="setting_display_page_fast_streaming_desc">Show incoming text without the 8 ms UI batching delay. May use more power; does not change model generation speed. Turn off to restore batching.</string>
+    <string name="setting_display_page_streaming_pace_title">Streaming pace</string>
+    <string name="setting_display_page_streaming_pace_desc">How fast reply text appears. Immediate shows every token as it arrives and costs the most to draw. Balanced and saver merge text updates, which lowers CPU use. Neither changes how fast the model generates.</string>
+    <string name="setting_display_page_streaming_pace_immediate">Immediate</string>
+    <string name="setting_display_page_streaming_pace_balanced">Balanced</string>
+    <string name="setting_display_page_streaming_pace_saver">Saver</string>
 </resources>

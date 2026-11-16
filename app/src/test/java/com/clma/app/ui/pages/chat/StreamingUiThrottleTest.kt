@@ -7,13 +7,16 @@ import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
+import com.clma.app.data.datastore.StreamingPace
+import com.clma.app.data.datastore.streamingPaceWindowMs
 import org.junit.Assert.*
 import org.junit.Test
 
 class StreamingUiThrottleTest {
-    @Test fun `fast setting bypasses batching and normal mode stays high refresh`() {
-        assertEquals(0L, streamingUiWindowMs(true))
-        assertEquals(8L, streamingUiWindowMs(false))
+    @Test fun `each pace maps to its batching window`() {
+        assertEquals(0L, streamingPaceWindowMs(StreamingPace.IMMEDIATE))
+        assertEquals(32L, streamingPaceWindowMs(StreamingPace.BALANCED))
+        assertEquals(50L, streamingPaceWindowMs(StreamingPace.SAVER))
     }
 
     @Test fun `zero window bypasses batching and preserves all updates`() = runBlocking {

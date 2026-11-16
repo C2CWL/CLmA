@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clma.app.R
 import com.clma.app.data.datastore.DisplaySetting
+import com.clma.app.data.datastore.StreamingPace
 import com.clma.app.data.datastore.ToolCallStyle
 import com.clma.app.ui.components.message.THINKING_STEPS_VISIBLE_ALL
 import com.clma.app.ui.components.message.THINKING_STEPS_VISIBLE_MAX
@@ -57,14 +58,27 @@ fun SettingPreferencesUIPage(vm: SettingVM = koinViewModel()) {
                 title = { Text(stringResource(R.string.setting_page_message_display_settings)) },
             ) {
                 item(
-                    headlineContent = { Text(stringResource(R.string.setting_display_page_fast_streaming_title)) },
-                    supportingContent = { Text(stringResource(R.string.setting_display_page_fast_streaming_desc)) },
+                    headlineContent = { Text(stringResource(R.string.setting_display_page_streaming_pace_title)) },
+                    supportingContent = { Text(stringResource(R.string.setting_display_page_streaming_pace_desc)) },
                     trailingContent = {
-                        Switch(
-                            checked = displaySetting.fastStreamingOutput,
-                            onCheckedChange = {
-                                updateDisplaySetting(displaySetting.copy(fastStreamingOutput = it))
+                        Select(
+                            options = StreamingPace.entries,
+                            selectedOption = displaySetting.streamingPace,
+                            onOptionSelected = {
+                                updateDisplaySetting(displaySetting.copy(streamingPace = it))
                             },
+                            optionToString = {
+                                stringResource(
+                                    when (it) {
+                                        StreamingPace.IMMEDIATE -> R.string.setting_display_page_streaming_pace_immediate
+                                        StreamingPace.BALANCED -> R.string.setting_display_page_streaming_pace_balanced
+                                        StreamingPace.SAVER -> R.string.setting_display_page_streaming_pace_saver
+                                    }
+                                )
+                            },
+                            containerColor = CustomColors.listItemColors.containerColor,
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                            modifier = Modifier.width(120.dp),
                         )
                     },
                 )
