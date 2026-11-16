@@ -50,6 +50,10 @@ endif()
 add_subdirectory(${LLAMA_ROOT} ${CMAKE_CURRENT_BINARY_DIR}/llama.cpp)
 
 if(TARGET ggml-vulkan)
+    # ggml-vulkan is its own shared library: the API-26 stub has no 1.1 entry
+    # points, so the shim must be compiled into ggml-vulkan itself. Adding it
+    # to llamajni leaves the symbol undefined when ggml-vulkan is linked.
+    target_sources(ggml-vulkan PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/vulkan_android_shim.c)
     # The NDK ships vulkan.h but not the C++ bindings (vulkan.hpp). Stage the
     # host SDK's Vulkan headers into the build dir: they are platform-neutral
     # declarations, and copying only that subdirectory keeps the Android
@@ -79,7 +83,7 @@ if(TARGET ggml-vulkan)
     endif()
 endif()
 
-add_library(llamajni SHARED llama_jni.cpp vulkan_android_shim.c)
+add_library(llamajni SHARED llama_jni.cpp)
 
 target_include_directories(llamajni PRIVATE
     ${LLAMA_ROOT}/include

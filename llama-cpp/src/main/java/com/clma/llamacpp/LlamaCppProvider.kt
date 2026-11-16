@@ -224,8 +224,9 @@ class LlamaCppProvider(
         } else {
             File(if (uri.scheme == "file") requireNotNull(uri.path) else url).takeIf { it.isFile }?.readBytes()
         }
-        require(!bytes.isNullOrEmpty()) { "Cannot open local image" }
-        val source = android.graphics.ImageDecoder.createSource(java.nio.ByteBuffer.wrap(bytes))
+        val imageBytes = bytes?.takeIf { it.isNotEmpty() }
+            ?: throw IllegalArgumentException("Cannot open local image")
+        val source = android.graphics.ImageDecoder.createSource(java.nio.ByteBuffer.wrap(imageBytes))
         val bitmap = android.graphics.ImageDecoder.decodeBitmap(source) { decoder, _, _ ->
             decoder.allocator = android.graphics.ImageDecoder.ALLOCATOR_SOFTWARE
         }
