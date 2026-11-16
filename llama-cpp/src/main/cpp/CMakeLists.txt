@@ -74,8 +74,6 @@ if(TARGET ggml-vulkan)
             file(COPY "${LLAMAJNI_SPIRV_DIR}/spirv" DESTINATION "${_llamajni_vk_stage}")
         endif()
         target_include_directories(ggml-vulkan PRIVATE "${_llamajni_vk_stage}")
-    # Vulkan 1.1 entry points are absent from the API 26 loader stub.
-    target_compile_definitions(llamajni PRIVATE LLAMAJNI_VULKAN_SHIM=1)
     else()
         message(WARNING "vulkan/vulkan.hpp not found; Vulkan backend will not compile")
     endif()
