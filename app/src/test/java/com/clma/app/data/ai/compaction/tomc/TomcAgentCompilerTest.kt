@@ -90,6 +90,41 @@ class TomcAgentCompilerTest {
     }
 
     @Test
+    fun `repeated logs keep one quotation per role and latest provenance`() {
+        val logs = (1..80).map { source("error repeated log", "log$it", "assistant") }
+        val result = TomcAgentCompiler.compile(
+            logs + source("error repeated log", "request", "user"), "repeated", 2000,
+        )
+        assertEquals(2, result.kept)
+        assertEquals(79, result.omitted)
+        assertTrue(result.text.contains("[source=log80:L1 role=assistant]"))
+        assertTrue(result.text.contains("[source=request:L1 role=user]"))
+        assertFalse(result.text.contains("[source=log1:L1"))
+    }
+
+    @Test
+    fun `old relevant evidence survives a burst of unrelated errors`() {
+        val evidence = source("quartz endpoint uses port 8123", "endpoint", "tool")
+        val noise = (1..100).map { source("error unrelated build number $it", "log$it", "tool") }
+        val result = TomcAgentCompiler.compile(listOf(evidence) + noise, "quartz endpoint", 450)
+        assertTrue(result.text.contains("[source=endpoint:L1 role=tool] quartz endpoint uses port 8123"))
+        assertTrue(TomcAgentCompiler.estimate(result.text) <= 450)
+    }
+
+    @Test
+    fun `relevant error keeps adjacent command and result from the same source`() {
+        val diagnostic = source(
+            "command: deploy quartz\nerror quartz rejected\nexit_code: 7", "call", "tool",
+        )
+        val noise = (1..40).map { source("ordinary log $it", "log$it", "tool") }
+        val result = TomcAgentCompiler.compile(listOf(diagnostic) + noise, "quartz rejected", 1000)
+        assertTrue(result.text.contains("[source=call:L1 role=tool] command: deploy quartz"))
+        assertTrue(result.text.contains("[source=call:L2 role=tool] error quartz rejected"))
+        assertTrue(result.text.contains("[source=call:L3 role=tool] exit_code: 7"))
+        assertTrue(TomcAgentCompiler.estimate(result.text) <= 1000)
+    }
+
+    @Test
     fun `unicode estimate counts cjk and surrogate pairs conservatively`() {
         assertEquals(4, TomcAgentCompiler.estimate("中文😀"))
         assertEquals(4, TomcAgentCompiler.estimate("abcdefghij"))

@@ -3316,10 +3316,10 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="common_use">Use</string>
     <string name="setting_compaction_engine">Compaction engine</string>
     <string name="setting_compaction_engine_model">Model</string>
-    <string name="setting_compaction_engine_hybrid">Hybrid</string>
-    <string name="setting_compaction_engine_local">Local</string>
-    <string name="setting_compaction_engine_local_desc">Select an installed llama.cpp text GGUF as Compress Model. Automatic triggers use local inference only; failure never switches to cloud. The latest two user turns stay verbatim, even if the remaining context is too large. No model is downloaded or selected automatically.</string>
-    <string name="setting_compaction_engine_desc">Applies to manual and automatic compaction. TOMC: CPU source selection, no model request. Hybrid: model summary plus independently preserved original evidence (one third of the target). Local: an installed llama.cpp GGUF writes the summary on-device; failures never fall back to cloud. Android adaptation of TOMC2, not the full Python compiler. Small budgets can omit important records; originals remain stored. Existing model mode stays selected until changed.</string>
+    <string name="setting_compaction_engine_hybrid">TOMC + online</string>
+    <string name="setting_compaction_engine_local">TOMC + local</string>
+    <string name="setting_compaction_engine_local_desc">TOMC independently preserves source evidence and an installed llama.cpp text GGUF writes the summary on-device. Each compaction request unloads its model when done and runs serially with image/video recognition. Automatic triggers use local inference only; failure never switches to cloud. The latest two user turns stay verbatim, even if the remaining context is too large. No model is downloaded or selected automatically; install a Qwen3 text GGUF from the local model page.</string>
+    <string name="setting_compaction_engine_desc">Applies to manual and automatic compaction. TOMC: CPU source selection, no model request. TOMC + online: model summary plus independent original evidence (one third of the target), using your compression model setting. TOMC + local: the same source selection plus an installed llama.cpp text GGUF summary; failures never fall back to cloud. Android adaptation of TOMC2, not the full Python compiler. Small budgets can omit important records; originals remain stored. Existing model mode stays selected until changed.</string>
   <string name="chat_subagent_children">%1$s Sub-agents (%2$d)</string>
 
   <!-- Runtime Timezone Settings -->

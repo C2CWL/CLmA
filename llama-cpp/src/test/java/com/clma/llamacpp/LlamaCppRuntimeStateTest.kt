@@ -64,6 +64,71 @@ class LlamaCppRuntimeStateTest {
     }
 
     @Test
+    fun `request scoped model is released after success and on the next load`() = runBlocking {
+        val native = FakeNative()
+        val runtime = LlamaCppRuntime(native)
+        val path = java.util.concurrent.atomic.AtomicReference<String?>("/tmp/compress.gguf")
+        runtime.load(path.get()!!, emptyList(), 0, 12_000_000_000L)
+        val result = LlamaCppProvider.withRequestResidency(runtime, path, true) { "summary" }
+        assertEquals("summary", result)
+        assertEquals(null, path.get())
+        assertTrue(native.freedContext)
+        assertTrue(native.freedModel)
+        LlamaCppProvider.ensureLoaded(runtime, path, "/tmp/vision.gguf", emptyList(), 0, 12_000_000_000L)
+        assertEquals("/tmp/vision.gguf", native.loadedPath)
+        runtime.unload()
+    }
+
+    @Test
+    fun `request scoped model is released on failure`() = runBlocking {
+        val native = FakeNative()
+        val runtime = LlamaCppRuntime(native)
+        val path = java.util.concurrent.atomic.AtomicReference<String?>("/tmp/compress.gguf")
+        runtime.load(path.get()!!, emptyList(), 0, 12_000_000_000L)
+        val failure = IllegalStateException("summary failed")
+        val actual = runCatching {
+            LlamaCppProvider.withRequestResidency(runtime, path, true) { throw failure }
+        }.exceptionOrNull()
+        assertTrue(actual === failure)
+        assertEquals(null, path.get())
+        assertTrue(native.freedContext)
+        assertTrue(native.freedModel)
+    }
+
+    @Test
+    fun `request scoped model is released even in a cancelled coroutine`() = runBlocking {
+        val native = FakeNative()
+        val runtime = LlamaCppRuntime(native)
+        val path = java.util.concurrent.atomic.AtomicReference<String?>("/tmp/compress.gguf")
+        runtime.load(path.get()!!, emptyList(), 0, 12_000_000_000L)
+        val entered = kotlinx.coroutines.CompletableDeferred<Unit>()
+        val job = launch {
+            LlamaCppProvider.withRequestResidency(runtime, path, true) {
+                entered.complete(Unit)
+                kotlinx.coroutines.awaitCancellation()
+            }
+        }
+        entered.await()
+        job.cancel()
+        job.join()
+        assertEquals(null, path.get())
+        assertTrue(native.freedContext)
+        assertTrue(native.freedModel)
+    }
+
+    @Test
+    fun `ordinary chat keeps the model resident`() = runBlocking {
+        val native = FakeNative()
+        val runtime = LlamaCppRuntime(native)
+        val path = java.util.concurrent.atomic.AtomicReference<String?>("/tmp/chat.gguf")
+        runtime.load(path.get()!!, emptyList(), 0, 12_000_000_000L)
+        LlamaCppProvider.withRequestResidency(runtime, path, false) { "chat" }
+        assertEquals("/tmp/chat.gguf", path.get())
+        assertFalse(native.freedModel)
+        runtime.unload()
+    }
+
+    @Test
     fun `unload releases both handles`() = runBlocking {
         val native = FakeNative()
         val runtime = LlamaCppRuntime(native)

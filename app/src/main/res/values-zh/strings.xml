@@ -3063,10 +3063,10 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="common_use">使用</string>
     <string name="setting_compaction_engine">压缩引擎</string>
     <string name="setting_compaction_engine_model">自选模型</string>
-    <string name="setting_compaction_engine_hybrid">联动</string>
-    <string name="setting_compaction_engine_local">本地</string>
-    <string name="setting_compaction_engine_local_desc">将已安装的 llama.cpp 文本 GGUF 选为压缩模型。沿用自动触发规则，仅在本地推理，失败不切云端。最近两轮用户对话及后续工具结果保留原文，即使剩余上下文仍超窗。不自动下载或选择模型。</string>
-    <string name="setting_compaction_engine_desc">手动与自动压缩共用。TOMC：CPU 选择原文，不请求模型；联动：模型摘要＋独立保留的原文证据（占目标三分之一）；本地：由已安装的 llama.cpp GGUF 在本机生成摘要，失败不回退云端。这是 TOMC2 的 Android 适配，非完整 Python 编译器。预算过小仍可能漏掉重要记录，原文保留在会话库中。未切换时沿用模型模式。</string>
+    <string name="setting_compaction_engine_hybrid">TOMC + 在线</string>
+    <string name="setting_compaction_engine_local">TOMC + 本地</string>
+    <string name="setting_compaction_engine_local_desc">TOMC 独立保留原文证据，由已安装的 llama.cpp 文本 GGUF 在本机写摘要。压缩请求结束即卸载模型，与图片、视频识别串行运行。沿用自动触发规则，仅在本地推理，失败不切云端。最近两轮用户对话及后续工具结果保留原文，即使剩余上下文仍超窗。不自动下载或选择模型；可在本地模型页安装 Qwen3 文本 GGUF。</string>
+    <string name="setting_compaction_engine_desc">手动与自动压缩共用。TOMC：CPU 选择原文，不请求模型；TOMC + 在线：模型摘要＋独立保留的原文证据（占目标三分之一），沿用压缩模型设置；TOMC + 本地：相同原文选源＋已安装的 llama.cpp 文本 GGUF 摘要，失败不回退云端。这是 TOMC2 的 Android 适配，非完整 Python 编译器。预算过小仍可能漏掉重要记录，原文保留在会话库中。未切换时沿用模型模式。</string>
   <string name="chat_subagent_children">%1$s 子智能体（%2$d）</string>
 
   <!-- Runtime Timezone Settings -->

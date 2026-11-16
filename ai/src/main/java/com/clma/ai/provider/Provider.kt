@@ -93,6 +93,8 @@ data class TextGenerationParams(
      * Null keeps the template default; false forces a straight answer without a thinking block.
      */
     val enableThinking: Boolean? = null,
+    /** Release local model residency after this request, including failure or cancellation. */
+    val releaseLocalModelAfterRequest: Boolean = false,
     val customHeaders: List<CustomHeader> = emptyList(),
     val customBody: List<CustomBody> = emptyList(),
     val sessionId: String? = Uuid.random().toString(),

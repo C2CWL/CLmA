@@ -294,6 +294,13 @@ internal fun resolveCompressionModel(settings: Settings): Model? {
     return resolveConfiguredCompressionModel(settings)
 }
 
+/** All TOMC lanes select evidence from originals; MODEL alone uses only the summary lane. */
+internal fun compactionEvidenceBudget(engine: CompactionEngine, targetTokens: Int): Int? = when (engine) {
+    CompactionEngine.MODEL -> null
+    CompactionEngine.TOMC -> targetTokens
+    CompactionEngine.HYBRID, CompactionEngine.LOCAL -> targetTokens / 3
+}
+
 /** Local compaction failed: the turn must surface the error, never route to a billed model. */
 internal class LocalCompactionException(cause: Exception) :
     IllegalStateException(
@@ -4333,7 +4340,8 @@ class ChatService(
 
         // Compile from original messages, not a summary of a summary. Only the active branch's
         // compressed prefix is read; the retained raw tail is never duplicated in this memory.
-        val evidence = if (settings.compactionEngine in setOf(CompactionEngine.TOMC, CompactionEngine.HYBRID)) {
+        val evidenceBudget = compactionEvidenceBudget(settings.compactionEngine, targetTokens)
+        val evidence = if (evidenceBudget != null) {
             withContext(Dispatchers.Default) {
                 val sources = conversation.currentMessages.take(rawTailStartIndex).map { message ->
                     TomcAgentCompiler.Source(
@@ -4346,7 +4354,7 @@ class ChatService(
                     ?.toText().orEmpty() + "\n" + additionalPrompt
                 TomcAgentCompiler.compile(
                     sources, query,
-                    if (settings.compactionEngine == CompactionEngine.HYBRID) targetTokens / 3 else targetTokens,
+                    evidenceBudget,
                 )
             }
         } else null
@@ -4534,6 +4542,7 @@ class ChatService(
                                 maxTokens = if (localCompaction) requestedTargetTokens.coerceAtMost(1_024)
                                     else requestedTargetTokens,
                                 enableThinking = if (localCompaction) false else null,
+                                releaseLocalModelAfterRequest = localCompaction,
                             ),
                         )
                     }

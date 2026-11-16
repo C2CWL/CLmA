@@ -70,6 +70,16 @@ object LlamaCppCatalog {
             minMemGb = 8,
             tags = listOf("thinking", "tools"),
         ),
+        // Experimental summarization fine-tune; full weights, NOT the 33 MB LoRA adapter.
+        // File and size verified via HF API on 2026-11-17. Not selected automatically.
+        LlamaCppCatalogEntry(
+            displayName = "cogs-ingest 1.7B Q8 · compaction trial",
+            repo = "lewisdog/qwen3-1.7b-cogs-ingest-GGUF",
+            file = "qwen3-1.7b-cogs-ingest-Q8_0.gguf",
+            sizeBytes = 1834426496L,
+            minMemGb = 8,
+            tags = listOf("compaction", "experimental", "non-thinking"),
+        ),
         // Official file names and sizes verified via HF API on 2026-11-15.
         LlamaCppCatalogEntry(
             displayName = "Qwen3-VL 2B · Q8 + Q8 vision / video keyframes",

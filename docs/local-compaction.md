@@ -2,8 +2,11 @@
 
 `CompactionEngine.LOCAL` runs the existing compaction pipeline against an installed
 llama.cpp GGUF instead of a cloud model. It is selected under Settings → Runtime and
-context → Compaction engine → Local, and it applies to both manual and automatic
-compaction, exactly like the other engines.
+context → Compaction engine → TOMC + local, and it applies to both manual and automatic
+compaction, exactly like the other engines. Like TOMC + online (`HYBRID`), it reserves
+one third of the target for independently selected quotations from original messages;
+the summary model receives the remaining prose budget. This is a logic change, not just
+a renamed setting.
 
 ## Why a separate engine instead of "pick a local model"
 
@@ -52,6 +55,40 @@ second "compact the full active context" pass is skipped for Local mode.
   GGUF does not spend the whole output budget inside a thinking block.
 - `TextGenerationParams.enableThinking` is null by default, so ordinary local chat keeps the
   template's own default. Only Local compaction sets it.
+
+## Shared runtime residency
+
+Vision/OCR and local compaction use the same singleton `LlamaCppProvider` and runtime.
+The provider holds `loadMutex` for loading, inference and cleanup, so one request waits
+until the previous request has stopped and released its native resources. A model switch
+unloads the old context/model before measuring available RAM for the new model.
+
+Local compaction sets `releaseLocalModelAfterRequest = true`. Each request releases its
+context and weights in a non-cancellable `finally`, on success, failure or cancellation.
+Vision requests already release their projector/context/model after recognition. Neither
+path automatically restores a previous model. Ordinary local chat keeps its existing
+resident-model behavior. Map/reduce compaction may therefore pay a reload cost for each
+request, trading latency for lower idle residency and a chance for queued vision work.
+This does not guarantee that a single large model fits: normal memory refusal still applies.
+
+## Suggested trial download
+
+For the first local compaction trial, use **cogs-ingest 1.7B Q8**, now listed in the
+local model catalog with `compaction`, `experimental` and `non-thinking` tags:
+
+https://huggingface.co/lewisdog/qwen3-1.7b-cogs-ingest-GGUF/resolve/main/qwen3-1.7b-cogs-ingest-Q8_0.gguf
+
+This is the full Q8_0 GGUF, **1,834,426,496 bytes** (about 1.71 GiB), not the roughly
+33 MiB LoRA adapter in the same repository. The catalog suggests at least 8 GB total RAM;
+actual free-memory checks still determine whether loading is allowed. Download/install it
+from the local model page, select it as Compress Model, then choose TOMC + local.
+No download or selection happens automatically.
+
+The model card describes a non-thinking information-extraction/summarization fine-tune,
+which makes it a reasonable trial candidate, not a proven best model. Its strict-JSON
+vault-ingest training differs from CLmA agent summaries; verify Chinese instructions,
+paths, SHA/error fidelity and latency on real conversations before relying on it.
+The file and size were checked against the Hugging Face API on 2026-11-17.
 
 ## Not implemented
 

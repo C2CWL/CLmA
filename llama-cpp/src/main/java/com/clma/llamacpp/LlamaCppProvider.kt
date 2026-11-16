@@ -138,43 +138,45 @@ class LlamaCppProvider(
     private suspend fun generateRequest(
         messages: List<UIMessage>, params: TextGenerationParams,
     ): TextGenerationResult = loadMutex.withLock {
-        val visionOnly = LocalVisionLifecycle.requiresMedia(params.model.modelId)
-        LocalVisionLifecycle.validateRequest(params.model.modelId, messages)
-        val temporary = mutableListOf<File>()
-        try {
-            // Free a resident text model before decoding media or measuring available RAM.
-            if (visionOnly) releaseVisionModel()
-            if (visionOnly) mutableVisionStatus.value = LocalVisionStatus.Loading
-            val expanded = withContext(Dispatchers.IO) { LocalVideoFrames.expand(context, messages, temporary) }
-            require(ChatRequestMapper.imageUrls(expanded).size <= 12) { "At most 12 images/keyframes per request" }
-            val projector = visionProjector(params)
-            if (visionOnly) requireNotNull(projector) { "Install the matching vision projector first" }
-            ensureModelReady(expanded, params)
-            if (visionOnly) mutableVisionStatus.value = LocalVisionStatus.Recognizing
-            // Bound the whole recognition, including native encode. Cancellation also sets the
-            // native flag; release below still waits for that native work to leave safely.
+        withRequestResidency(runtime, loadedPath, params.releaseLocalModelAfterRequest) {
+            val visionOnly = LocalVisionLifecycle.requiresMedia(params.model.modelId)
+            LocalVisionLifecycle.validateRequest(params.model.modelId, messages)
+            val temporary = mutableListOf<File>()
             try {
-                withTimeout(10 * 60 * 1000L) {
-                    generateFromLoadedModel(runtime, expanded, params, projector, ::materializeImage)
-                }
-            } catch (timeout: kotlinx.coroutines.TimeoutCancellationException) {
-                runtime.cancelGeneration()
-                throw IllegalStateException("Local recognition exceeded 10 minutes and was stopped", timeout)
-            }
-        } finally {
-            try {
-                if (visionOnly) {
-                    mutableVisionStatus.value = LocalVisionStatus.Releasing
-                    try {
-                        releaseVisionModel()
-                        mutableVisionStatus.value = LocalVisionStatus.Unloaded
-                    } catch (t: Throwable) {
-                        mutableVisionStatus.value = LocalVisionStatus.ReleaseFailed
-                        throw t
+                // Free a resident text model before decoding media or measuring available RAM.
+                if (visionOnly) releaseVisionModel()
+                if (visionOnly) mutableVisionStatus.value = LocalVisionStatus.Loading
+                val expanded = withContext(Dispatchers.IO) { LocalVideoFrames.expand(context, messages, temporary) }
+                require(ChatRequestMapper.imageUrls(expanded).size <= 12) { "At most 12 images/keyframes per request" }
+                val projector = visionProjector(params)
+                if (visionOnly) requireNotNull(projector) { "Install the matching vision projector first" }
+                ensureModelReady(expanded, params)
+                if (visionOnly) mutableVisionStatus.value = LocalVisionStatus.Recognizing
+                // Bound the whole recognition, including native encode. Cancellation also sets the
+                // native flag; release below still waits for that native work to leave safely.
+                try {
+                    withTimeout(10 * 60 * 1000L) {
+                        generateFromLoadedModel(runtime, expanded, params, projector, ::materializeImage)
                     }
+                } catch (timeout: kotlinx.coroutines.TimeoutCancellationException) {
+                    runtime.cancelGeneration()
+                    throw IllegalStateException("Local recognition exceeded 10 minutes and was stopped", timeout)
                 }
             } finally {
-                temporary.forEach { it.delete() }
+                try {
+                    if (visionOnly) {
+                        mutableVisionStatus.value = LocalVisionStatus.Releasing
+                        try {
+                            releaseVisionModel()
+                            mutableVisionStatus.value = LocalVisionStatus.Unloaded
+                        } catch (t: Throwable) {
+                            mutableVisionStatus.value = LocalVisionStatus.ReleaseFailed
+                            throw t
+                        }
+                    }
+                } finally {
+                    temporary.forEach { it.delete() }
+                }
             }
         }
     }
@@ -191,8 +193,10 @@ class LlamaCppProvider(
         // see the mutex's doc comment for why the generation itself must stay inside the lock.
         loadMutex.withLock {
             require(ChatRequestMapper.imageUrls(messages).isEmpty()) { "Use recognize_local_media for media recognition" }
-            ensureModelReady(messages, params)
-            emitAll(streamFromLoadedModel(runtime, messages, params))
+            withRequestResidency(runtime, loadedPath, params.releaseLocalModelAfterRequest) {
+                ensureModelReady(messages, params)
+                emitAll(streamFromLoadedModel(runtime, messages, params))
+            }
         }
     }
 
@@ -267,6 +271,8 @@ class LlamaCppProvider(
         // a Main-confined caller like ProviderConnectionTester's rememberCoroutineScope would
         // load the model on the UI thread and ANR.
         withContext(Dispatchers.IO) {
+            // Measure free RAM only after the previous model has left native memory.
+            if (loadedPath.get() != modelPath) releaseVisionModel()
             ensureLoaded(
                 runtime = runtime,
                 loadedPath = loadedPath,
@@ -305,6 +311,23 @@ class LlamaCppProvider(
 
     companion object {
         private const val DEFAULT_MAX_TOKENS = 2048
+
+        /** Caller holds loadMutex until request cleanup has finished. */
+        internal suspend fun <T> withRequestResidency(
+            runtime: LlamaCppRuntime,
+            loadedPath: AtomicReference<String?>,
+            releaseAfterRequest: Boolean,
+            action: suspend () -> T,
+        ): T = try {
+            action()
+        } finally {
+            if (releaseAfterRequest) {
+                withContext(NonCancellable + Dispatchers.IO) {
+                    loadedPath.set(null)
+                    runtime.unload()
+                }
+            }
+        }
 
         /**
          * Resolves [modelId] - a bare file name, never a path - against [installed], the
