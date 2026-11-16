@@ -1,0 +1,20 @@
+## CLmA 3.8
+
+- 优化 TOMC 选源，在检索前去除重复日志，减少重复内容挤占证据预算。
+- 提高查询相关证据的优先级，尽量保留同消息内错误与相邻命令、结果。
+- 将联动与本地压缩更名为 TOMC + 在线、TOMC + 本地。
+- 为 TOMC + 本地接入独立原文证据选源，预留目标预算的三分之一。
+- 为本地压缩添加请求结束后的模型释放，覆盖成功、失败和取消。
+- 调整模型切换顺序，先释放旧模型再测量可用内存，与视觉推理串行调度。
+- 新增实验性 cogs-ingest 1.7B Q8 压缩模型目录项，不自动下载或选中。
+- 补充证据选源与模型释放的回归测试。
+
+## Changes
+- Deduplicate TOMC source lines before retrieval to reduce repeated-log interference.
+- Prioritize query evidence and retain nearby commands and results when the budget allows.
+- Rename hybrid and local modes to TOMC + online and TOMC + local.
+- Reserve one third of the local compaction target for independent source evidence.
+- Release local compaction models after success, failure, or cancellation.
+- Unload old models before measuring free memory and serialize with vision inference.
+- Add experimental cogs-ingest 1.7B Q8 weights to the catalog without automatic selection.
+- Add regression coverage for source selection and request-scoped model residency.
