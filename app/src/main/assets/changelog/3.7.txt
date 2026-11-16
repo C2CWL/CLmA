@@ -1,0 +1,16 @@
+## CLmA 3.7
+
+- 新增本地压缩引擎，由已安装的 llama.cpp 文本模型在设备内生成摘要。
+- 新增本地压缩模式设置项，失败不回退云端，最近两轮对话保留原文。
+- 修复本地压缩失败后仍继续发送未压缩请求的问题，改为明确报错。
+- 修复本地摘要请求未关闭思考模式的问题，避免输出预算被思考块占用。
+- 新增本地模型删除与卸载的确认对话框，删除前先释放共享运行时。
+- 调整 TOMC 的预算分配，不再固定预留三成给最近原文。
+
+## Changes
+- Add a Local compaction engine that summarizes on-device with a llama.cpp model.
+- Add the Local engine setting: no cloud fallback, two verbatim user turns.
+- Fix local compaction failures sending an uncompacted request; now they error out.
+- Fix local summary requests not disabling thinking and spending the output budget.
+- Add a confirmation dialog before deleting a local model, releasing the runtime.
+- Adjust TOMC budget allocation to drop the fixed recent-verbatim reservation.
