@@ -8,4 +8,9 @@
     <string name="media_local_ocr_desc">Use the installed local visual model instead of a provider OCR model. Only runs when automatic image processing needs OCR; off by default. Download both weights and projector first. Failure preserves the original image; there is no cloud OCR fallback. The original image may still be sent to the main chat model.</string>
     <string name="media_tools_desc">Automatic OCR extracts text when sending images. The offline image / video tool is separate and controlled per assistant; enabling either does not enable the other. Video uses sparse keyframes up to 60 seconds, without audio.</string>
     <string name="media_tools_manage">Assistants · configure offline recognition tool</string>
+    <string name="media_status_unloaded">Local vision · not loaded</string>
+    <string name="media_status_loading">Local vision · loading / preparing media</string>
+    <string name="media_status_recognizing">Local vision · recognizing</string>
+    <string name="media_status_releasing">Local vision · releasing memory</string>
+    <string name="media_status_release_failed">Local vision · release failed (may still occupy memory)</string>
 </resources>

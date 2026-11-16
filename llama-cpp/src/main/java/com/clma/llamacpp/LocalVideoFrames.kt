@@ -50,12 +50,17 @@ internal object LocalVideoFrames {
         require(uri.scheme == "content" || uri.scheme == "file" || uri.scheme == null) {
             "Download the video locally before using local vision"
         }
+        val path = when (uri.scheme) {
+            null -> url
+            "file" -> requireNotNull(uri.path) { "File URI has no path" }
+            else -> null
+        }
         val retriever = MediaMetadataRetriever()
         val extractor = MediaExtractor()
         try {
-            if (uri.scheme == null) {
-                retriever.setDataSource(url)
-                extractor.setDataSource(url)
+            if (path != null) {
+                retriever.setDataSource(path)
+                extractor.setDataSource(path)
             } else {
                 retriever.setDataSource(context, uri)
                 extractor.setDataSource(context, uri, null)

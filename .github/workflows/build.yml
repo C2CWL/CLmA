@@ -73,6 +73,29 @@ jobs:
       # the NDKs, AGP never downloads one on this project, and the archive is
       # ~2 GB — saving it alone cost ~7 minutes while restoring it merely
       # overwrote files that were already on disk.
+      - name: Install Vulkan shader compiler
+        run: |
+          # llama.cpp compiles Vulkan shaders on the host during the Android cross
+          # build; the APK only links the NDK libvulkan.so stub. Use the distro
+          # packages: the LunarG vulkan-sdk conflicts with Ubuntu's libvulkan-dev.
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq glslc spirv-headers
+          command -v glslc
+          glslc --version
+          # ggml's ggml-vulkan needs SPIRV-Headers in config mode.
+          test -f /usr/share/cmake/SPIRV-Headers/SPIRV-HeadersConfig.cmake
+          # The NDK ships vulkan.h but not the C++ bindings, and Ubuntu's
+          # libvulkan-dev is older than this llama.cpp expects. Stage the
+          # official headers instead.
+          VK_HEADERS_TAG=vulkan-sdk-1.4.363.0
+          curl -fsSL --retry 3 --retry-delay 5 \
+            "https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/${VK_HEADERS_TAG}.tar.gz" \
+            -o /tmp/vk-headers.tar.gz
+          tar -xzf /tmp/vk-headers.tar.gz -C /tmp
+          sudo cp -r /tmp/Vulkan-Headers-*/include/vulkan /usr/local/include/
+          sudo cp -r /tmp/Vulkan-Headers-*/include/vk_video /usr/local/include/
+          test -f /usr/local/include/vulkan/vulkan.hpp
+
       - name: Install ccache
         run: |
           # ubuntu-latest does not ship ccache, so ANDROID_USE_CCACHE alone did

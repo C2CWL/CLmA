@@ -978,7 +978,7 @@ class LocalTools(
             tools.add(notificationStatusTool())
         }
         if (options.contains(LocalToolOption.LocalVision)) {
-            tools.add(com.clma.app.data.ai.tools.local.recognizeLocalMediaTool(localVisionProvider, localRuntimePreferences))
+            tools.add(com.clma.app.data.ai.tools.local.recognizeLocalMediaTool(context, localVisionProvider, localRuntimePreferences))
         }
         if (options.contains(LocalToolOption.Files)) {
             tools.add(listFilesTool())

@@ -41,7 +41,7 @@ import java.io.File
  * `visible_to_you: false` + an OCR pointer kills that at the source.
  */
 fun showImageTool(
-    @Suppress("UNUSED_PARAMETER") context: Context,
+    context: Context,
     modelCanSeeImages: Boolean = true,
 ): Tool = Tool(
     name = "show_image",
@@ -64,36 +64,40 @@ fun showImageTool(
                 buildJsonObject { put("error", "missing_path"); put("detail", "path is required") }.toString()
             ))
         }
-        val path = AgentWorkspace.expand(rawPath)
-        PathSafetyGuard.check(path)?.let { v ->
-            return@Tool listOf(UIMessagePart.Text(fmErrEnvelope(v.code, v.detail)))
-        }
-        val file = File(path)
-        if (!file.exists() || !file.isFile) {
-            return@Tool listOf(UIMessagePart.Text(fmErrEnvelope("not_found", "File not found: $rawPath")))
-        }
-        val ext = file.extension.lowercase()
-        val mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext) ?: ""
-        if (!mime.startsWith("image/")) {
-            return@Tool listOf(UIMessagePart.Text(fmErrEnvelope(
-                "not_an_image",
-                "File extension '$ext' is not a recognised image type — supported: png, jpg, jpeg, webp, gif, bmp",
-            )))
-        }
+        try {
+        val path = LocalMediaAccess.resolve(context, rawPath)
+        val uri = android.net.Uri.parse(path)
+        val isContent = uri.scheme == "content"
+        val file = if (isContent) null else File(path)
+        val mime = if (isContent) context.contentResolver.getType(uri).orEmpty()
+            else MimeTypeMap.getSingleton().getMimeTypeFromExtension(file!!.extension.lowercase()).orEmpty()
         val opts = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        BitmapFactory.decodeFile(file.absolutePath, opts)
+        if (isContent) context.contentResolver.openInputStream(uri)?.use {
+            BitmapFactory.decodeStream(it, null, opts)
+        } else BitmapFactory.decodeFile(path, opts)
+        require(opts.outWidth > 0 && opts.outHeight > 0) { "Image cannot be read or decoded" }
         val envelope = buildShowImageEnvelope(
-            path = file.absolutePath,
-            mime = mime,
-            sizeBytes = file.length(),
+            path = path,
+            mime = opts.outMimeType ?: mime,
+            sizeBytes = file?.length() ?: -1L,
             width = opts.outWidth,
             height = opts.outHeight,
             modelCanSeeImages = modelCanSeeImages,
         )
         listOf(
-            UIMessagePart.Image(url = "file://${file.absolutePath}"),
+            UIMessagePart.Image(url = if (isContent) path else "file://$path"),
             UIMessagePart.Text(envelope),
         )
+        } catch (cancel: kotlinx.coroutines.CancellationException) {
+            throw cancel
+        } catch (e: Exception) {
+            listOf(UIMessagePart.Text(buildJsonObject {
+                put("error", "image_read_failed")
+                put("detail", e.message ?: "Image cannot be read or decoded")
+                put("recovery", LocalMediaAccess.RECOVERY)
+                put("retryable", false)
+            }.toString()))
+        }
     },
 )
 
@@ -113,7 +117,9 @@ internal fun buildShowImageEnvelope(
     width: Int,
     height: Int,
     modelCanSeeImages: Boolean,
-): String = buildJsonObject {
+): String {
+    require(width > 0 && height > 0) { "Image cannot be read or decoded" }
+    return buildJsonObject {
     put("success", true)
     put("path", path)
     put("mime", mime)
@@ -127,8 +133,10 @@ internal fun buildShowImageEnvelope(
             "The image is now displayed to the user, but the current model has no " +
                 "vision capability — you cannot see its contents. Do not describe or " +
                 "guess what the image shows. To read it, OCR or otherwise process the " +
-                "file at `path` (e.g. `tesseract <path> stdout` via termux_run_command, if " +
-                "the Termux tools are enabled).",
+                "file at `path` using recognize_local_media if enabled. If unavailable, ask the user to enable " +
+                "offline recognition. Repeating show_image does not let you see it. Do not copy files to Termux.",
         )
     }
 }.toString()
+
+}
