@@ -39,5 +39,3 @@ internal fun isAppendOnlyStreamingUpdate(old: Conversation, new: Conversation): 
 internal fun Flow<Conversation>.throttleAppendOnlyStreaming(windowMs: Long = 0): Flow<Conversation> =
     throttleStreamingUpdates(windowMs, ::isAppendOnlyStreamingUpdate)
 
-/** Off batches for about four 120 Hz frames; fast mode retains the direct stream. */
-internal fun streamingUiWindowMs(fast: Boolean): Long = if (fast) 0L else 32L

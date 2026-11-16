@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="setting_display_page_fast_streaming_title">快速流式输出</string>
-    <string name="setting_display_page_fast_streaming_desc">收到文字后立即刷新，不再按 32 毫秒合并更新。可能增加耗电，不改变模型生成速度；关闭恢复原来的省资源模式。</string>
+    <string name="setting_display_page_streaming_pace_title">流式输出节奏</string>
+    <string name="setting_display_page_streaming_pace_desc">回复文字出现的快慢。即时：每个字到达就显示，绘制最耗资源。均衡与省电：把文字更新合并后再刷新，降低 CPU 占用。都不改变模型的生成速度。</string>
+    <string name="setting_display_page_streaming_pace_immediate">即时</string>
+    <string name="setting_display_page_streaming_pace_balanced">均衡</string>
+    <string name="setting_display_page_streaming_pace_saver">省电</string>
 </resources>

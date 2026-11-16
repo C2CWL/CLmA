@@ -36,6 +36,7 @@ import com.clma.ai.ui.UIMessagePart
 import com.clma.ai.ui.isEmptyInputMessage
 import com.clma.app.R
 import com.clma.app.data.datastore.Settings
+import com.clma.app.data.datastore.streamingPaceWindowMs
 import com.clma.app.data.datastore.SettingsStore
 import com.clma.app.data.datastore.getCurrentAssistant
 import com.clma.app.data.datastore.resolveChatModel
@@ -82,12 +83,12 @@ class ChatVM(
 ) : ViewModel() {
     private val _conversationId: Uuid = Uuid.parse(id)
     val conversation: StateFlow<Conversation> = chatService.getConversationFlow(_conversationId)
-    // Keep high-refresh streaming: off batches for at most 32ms; on publishes immediately.
+    // Append-only text is batched per the chosen pace; immediate publishes every token.
     val conversationForUi: StateFlow<Conversation> = settingsStore.settingsFlow
-        .map { it.displaySetting.fastStreamingOutput }
+        .map { it.displaySetting.streamingPace }
         .distinctUntilChanged()
-        .flatMapLatest { fast ->
-            conversation.throttleAppendOnlyStreaming(windowMs = streamingUiWindowMs(fast))
+        .flatMapLatest { pace ->
+            conversation.throttleAppendOnlyStreaming(windowMs = streamingPaceWindowMs(pace))
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), conversation.value)
 
