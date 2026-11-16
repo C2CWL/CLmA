@@ -6,7 +6,6 @@ import com.clma.app.utils.JsonInstant
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Test
@@ -62,9 +61,11 @@ class StreamingPaceMigrationTest {
     }
 
     @Test
-    fun `a full serialized setting with the old default migrates`() {
-        val old = JsonInstant.encodeToString(DisplaySetting())
-        assertFalse(old.contains("streamingPace"))
-        assertEquals(StreamingPace.IMMEDIATE, decode(migrateStreamingPaceJson(old)).streamingPace)
+    fun `a stored setting from the old version migrates`() {
+        // What an older build wrote: the boolean field, plus its neighbours.
+        val old = """{"fastStreamingOutput":true,"userNickname":"","bubbleOpacity":1.0}"""
+        val out = decode(migrateStreamingPaceJson(old))
+        assertEquals(StreamingPace.IMMEDIATE, out.streamingPace)
+        assertEquals(1.0f, out.bubbleOpacity, 0f)
     }
 }
