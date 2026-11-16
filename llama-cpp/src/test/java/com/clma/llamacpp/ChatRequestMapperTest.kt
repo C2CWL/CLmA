@@ -53,16 +53,19 @@ class ChatRequestMapperTest {
 
     @Test
     fun `thinking can be switched off explicitly and stays unset by default`() {
-        val defaultJson = JSONObject(
-            ChatRequestMapper.toRequestJson(listOf(UIMessage.user("hi")), emptyList())
+        val messages = listOf(
+            UIMessage(role = MessageRole.USER, parts = listOf(UIMessagePart.Text("hi"))),
         )
+
+        val defaultJson = JSONObject(ChatRequestMapper.toRequestJson(messages, emptyList()))
         assertFalse("template default must be left alone", defaultJson.has("enable_thinking"))
 
-        val off = JSONObject(
-            ChatRequestMapper.toRequestJson(listOf(UIMessage.user("hi")), emptyList(), false)
-        )
+        val off = JSONObject(ChatRequestMapper.toRequestJson(messages, emptyList(), false))
+        assertTrue(off.has("enable_thinking"))
         assertFalse(off.getBoolean("enable_thinking"))
-        assertEquals("hi", off.getJSONArray("messages").getJSONObject(0).getString("content"))
+
+        val on = JSONObject(ChatRequestMapper.toRequestJson(messages, emptyList(), true))
+        assertTrue(on.getBoolean("enable_thinking"))
     }
 
     @Test

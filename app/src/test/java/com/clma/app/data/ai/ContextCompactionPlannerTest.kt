@@ -725,21 +725,28 @@ class ContextCompactionPlannerTest {
     @Test
     fun `recent user turns keep the two latest turns and everything after them`() {
         val messages = listOf(
-            UIMessage.user("one"),
-            UIMessage.assistant("a1"),
-            UIMessage.user("two"),
-            UIMessage.assistant("a2"),
-            UIMessage.user("three"),
-            UIMessage.assistant("a3"),
+            textMessage(MessageRole.USER, "one"),
+            textMessage(MessageRole.ASSISTANT, "a1"),
+            textMessage(MessageRole.USER, "two"),
+            textMessage(MessageRole.ASSISTANT, "a2"),
+            textMessage(MessageRole.USER, "three"),
+            textMessage(MessageRole.ASSISTANT, "a3"),
         )
 
         assertEquals(2, ContextCompactionPlanner.recentUserTurnsStartIndex(messages))
         assertEquals(0, ContextCompactionPlanner.recentUserTurnsStartIndex(emptyList()))
         assertEquals(
             0,
-            ContextCompactionPlanner.recentUserTurnsStartIndex(listOf(UIMessage.user("only"))),
+            ContextCompactionPlanner.recentUserTurnsStartIndex(
+                listOf(textMessage(MessageRole.USER, "only")),
+            ),
         )
     }
+
+    private fun textMessage(role: MessageRole, text: String) = UIMessage(
+        role = role,
+        parts = listOf(UIMessagePart.Text(text)),
+    )
 
     private fun toolMessage(name: String) = UIMessage(
         role = MessageRole.ASSISTANT,

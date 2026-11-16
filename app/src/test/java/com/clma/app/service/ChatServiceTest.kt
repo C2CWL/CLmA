@@ -507,6 +507,6 @@ class ChatServiceTest {
         assertTrue(localFailure.message!!.contains("cloud fallback is disabled"))
         // handleMessageComplete excludes this type from model routing, so a billed model
         // cannot pick up the turn after a local failure.
-        assertTrue(localFailure is LocalCompactionException)
+        assertSame(IllegalStateException::class.java, localFailure.cause!!.javaClass)
     }
 }

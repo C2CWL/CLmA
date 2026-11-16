@@ -1,5 +1,6 @@
 package com.clma.app.data.ai
 
+import com.clma.ai.core.MessageRole
 import com.clma.ai.ui.UIMessage
 import com.clma.ai.ui.UIMessagePart
 import com.clma.app.data.ai.tools.ToolExecutionRetryPolicy
