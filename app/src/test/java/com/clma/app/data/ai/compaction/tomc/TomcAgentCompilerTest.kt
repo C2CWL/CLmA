@@ -84,8 +84,8 @@ class TomcAgentCompilerTest {
         val result = TomcAgentCompiler.compile(constraints + logs, "压缩", 900)
 
         assertTrue(
-            result.text.contains("[source=req:L1 role=user] 必须保留"),
             "the user constraint must survive a log burst",
+            result.text.contains("[source=req:L1 role=user] 必须保留"),
         )
     }
 
