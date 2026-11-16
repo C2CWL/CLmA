@@ -1,16 +1,11 @@
 package com.clma.app.service
 
-import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
-import android.graphics.Matrix
-import android.graphics.LinearGradient
 import android.graphics.Path
 import android.graphics.RectF
-import android.graphics.Shader
-import android.os.SystemClock
 import android.view.View
 import com.clma.app.data.datastore.EdgeBarColor
 import com.clma.app.service.EdgeBarLook.Signal
@@ -22,12 +17,11 @@ import com.clma.app.service.EdgeBarLook.Signal
  *
  *  - [Signal.IDLE]: the plain pill in the chosen [barColor] (light / dark per [darkMode] for the
  *    "follow theme" swatch);
- *  - [Signal.WORKING]: a pale light band moves back and forth along the pill;
+ *  - [Signal.WORKING]: the pill fills with one steady colour — generating, nothing moves;
+ *  - [Signal.APPROVAL] / [Signal.INPUT]: the amber "needs review" colour, with a mark;
  *  - [Signal.DONE]: the pill turns green with a white check mark.
  *
- * The only animation is a pale light band travelling along the pill. A cancellable callback drives
- * it only while working and visible; onDraw itself never schedules work. With system animations off
- * it rests. The geometry is cached, so a frame only updates the gradient phase.
+ * No signal animates. Nothing here schedules frames, so the bar never redraws on its own.
  */
 internal class EdgeBarView(context: Context) : View(context) {
 
@@ -39,7 +33,6 @@ internal class EdgeBarView(context: Context) : View(context) {
         style = Paint.Style.STROKE
         strokeWidth = dp(EdgeBarLook.OUTLINE_DP)
     }
-    private val sheenPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
     private val checkPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
         strokeCap = Paint.Cap.ROUND
@@ -49,9 +42,6 @@ internal class EdgeBarView(context: Context) : View(context) {
     }
     private val pill = RectF()
     private val check = Path()
-    private val sheenFor = RectF()
-    private var sheenVertical = false
-    private val sheenMatrix = Matrix()
 
     var barColor: EdgeBarColor = EdgeBarColor.DEFAULT
         set(value) {
@@ -72,7 +62,6 @@ internal class EdgeBarView(context: Context) : View(context) {
         set(value) {
             if (field == value) return
             field = value
-            updateFrameLoop()
             invalidate()
         }
 
@@ -95,51 +84,8 @@ internal class EdgeBarView(context: Context) : View(context) {
             invalidate()
         }
 
-    private val frameGate = EdgeBarFrameGate()
-
-    private val animationFrame = object : Runnable {
-        override fun run() {
-            if (!canAnimate()) return
-            invalidate()
-            postOnAnimation(this)
-        }
-    }
-
-    private fun canAnimate(): Boolean =
-        frameGate.canRequestFrame(signal == Signal.WORKING, ValueAnimator.areAnimatorsEnabled()) &&
-            isShown && windowVisibility == VISIBLE
-
-    private fun updateFrameLoop() {
-        removeCallbacks(animationFrame)
-        if (canAnimate()) postOnAnimation(animationFrame)
-    }
-
-    override fun onAttachedToWindow() {
-        super.onAttachedToWindow()
-        frameGate.attach()
-        updateFrameLoop()
-    }
-
-    override fun onWindowVisibilityChanged(visibility: Int) {
-        super.onWindowVisibilityChanged(visibility)
-        if (isAttachedToWindow) updateFrameLoop()
-    }
-
-    override fun onVisibilityChanged(changedView: View, visibility: Int) {
-        super.onVisibilityChanged(changedView, visibility)
-        // View's constructor may dispatch this before our fields are initialized.
-        if (isAttachedToWindow) updateFrameLoop()
-    }
-
-    override fun onDetachedFromWindow() {
-        frameGate.detach()
-        removeCallbacks(animationFrame)
-        super.onDetachedFromWindow()
-    }
-
+    /** Nothing here animates, so there is no frame loop and no lifecycle bookkeeping to do. */
     internal fun stopFrameLoop() {
-        frameGate.stop()
-        removeCallbacks(animationFrame)
         signal = Signal.IDLE
     }
 
@@ -162,6 +108,7 @@ internal class EdgeBarView(context: Context) : View(context) {
 
         val signal = signal
         fillPaint.color = when (signal) {
+            Signal.WORKING -> EdgeBarLook.WORKING_BLUE
             Signal.DONE -> EdgeBarLook.DONE_GREEN
             Signal.APPROVAL, Signal.INPUT -> EdgeBarLook.WAITING_AMBER
             else -> barColor.argb(darkMode)
@@ -178,8 +125,7 @@ internal class EdgeBarView(context: Context) : View(context) {
         }
 
         when (signal) {
-            Signal.IDLE -> Unit
-            Signal.WORKING -> drawSheen(canvas, radius)
+            Signal.IDLE, Signal.WORKING -> Unit
             Signal.DONE -> drawCheck(canvas)
             Signal.APPROVAL, Signal.INPUT -> {
                 val x = pill.centerX()
@@ -195,39 +141,6 @@ internal class EdgeBarView(context: Context) : View(context) {
         }
     }
 
-    /**
-     * A pale translucent band moving along the pill's long axis. Horizontal bars move left/right;
-     * vertical bars move up/down. One cached shader does the whole frame.
-     */
-    private fun drawSheen(canvas: Canvas, radius: Float) {
-        val vertical = pill.height() >= pill.width()
-        if (sheenFor != pill || sheenVertical != vertical) {
-            sheenFor.set(pill)
-            sheenVertical = vertical
-            val halfBand = (if (vertical) pill.height() else pill.width()) * SHEEN_BAND_FRACTION
-            sheenPaint.shader = LinearGradient(
-                if (vertical) 0f else -halfBand,
-                if (vertical) -halfBand else 0f,
-                if (vertical) 0f else halfBand,
-                if (vertical) halfBand else 0f,
-                intArrayOf(0x00FFFFFF, SHEEN_COLOR, 0x00FFFFFF),
-                floatArrayOf(0f, 0.5f, 1f),
-                Shader.TileMode.CLAMP,
-            )
-        }
-        val span = if (vertical) pill.height() else pill.width()
-        val shift = EdgeBarLook.sheenShift(
-            if (ValueAnimator.areAnimatorsEnabled()) SystemClock.uptimeMillis() else EdgeBarLook.SHEEN_LOOP_MS / 2,
-            span,
-        )
-        sheenMatrix.setTranslate(
-            if (vertical) 0f else pill.left - shift,
-            if (vertical) pill.top - shift else 0f,
-        )
-        sheenPaint.shader?.setLocalMatrix(sheenMatrix)
-        canvas.drawRoundRect(pill, radius, radius, sheenPaint)
-    }
-
     /** A small white check mark in the middle of the pill. */
     private fun drawCheck(canvas: Canvas) {
         val cx = pill.centerX()
@@ -238,10 +151,5 @@ internal class EdgeBarView(context: Context) : View(context) {
         check.lineTo(cx - 1.4f * s, cy + 3.2f * s)
         check.lineTo(cx + 4.5f * s, cy - 3.2f * s)
         canvas.drawPath(check, checkPaint)
-    }
-
-    private companion object {
-        const val SHEEN_COLOR = 0xBFFFFFFF.toInt()
-        const val SHEEN_BAND_FRACTION = 0.34f
     }
 }
