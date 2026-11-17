@@ -102,6 +102,8 @@ class ClmaApp : Application() {
             dir = java.io.File(filesDir, "logs"),
             minLevel = if (BuildConfig.DEBUG) LogLevel.DEBUG else LogLevel.INFO,
         )
+        // Recover native exits before workers and eager services can start local inference.
+        CrashHandler.install(this)
         FunctionalDiagnostics.init(this)
         startKoin {
             androidLogger()
@@ -129,9 +131,6 @@ class ClmaApp : Application() {
 
         // set cursor window size to 32MB
         DatabaseUtil.setCursorWindowSize(32 * 1024 * 1024)
-
-        // install crash handler
-        CrashHandler.install(this)
 
         // Init QuickJS native library
         QuickJSLoader.init()

@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(LLAMAJNI_ENABLE_OPENCL "Build the OpenCL backend for Adreno GPUs" OFF)
-option(LLAMAJNI_ENABLE_VULKAN "Build the Vulkan backend for Adreno and Mali GPUs" ON)
+option(LLAMAJNI_ENABLE_VULKAN "Build the Vulkan backend for Adreno and Mali GPUs" OFF)
 
 set(LLAMA_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../../../native/llama.cpp)
 
@@ -22,6 +22,9 @@ set(LLAMA_BUILD_COMMON   ON  CACHE BOOL "" FORCE)
 
 set(GGML_OPENMP    OFF CACHE BOOL "" FORCE)
 set(GGML_LLAMAFILE OFF CACHE BOOL "" FORCE)
+# Reset cached GPU flags as well when switching an existing build back to CPU.
+set(GGML_OPENCL ${LLAMAJNI_ENABLE_OPENCL} CACHE BOOL "" FORCE)
+set(GGML_VULKAN OFF CACHE BOOL "" FORCE)
 
 if(LLAMAJNI_ENABLE_OPENCL)
     set(GGML_OPENCL ON CACHE BOOL "" FORCE)
