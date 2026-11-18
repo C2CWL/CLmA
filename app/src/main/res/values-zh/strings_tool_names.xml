@@ -377,9 +377,9 @@
   <string name="tool_display_name_ssh_forget_host_key">忘记主机指纹</string>
   <string name="tool_display_desc_ssh_forget_host_key">删除已记住的主机指纹（重装后使用）</string>
   <string name="tool_display_name_ssh_upload">SSH 上传文件</string>
-  <string name="tool_display_desc_ssh_upload">用 SFTP 把手机文件传到远程主机</string>
+  <string name="tool_display_desc_ssh_upload">用 SFTP 把手机或工作区文件传到远程主机</string>
   <string name="tool_display_name_ssh_download">SSH 下载文件</string>
-  <string name="tool_display_desc_ssh_download">用 SFTP 把远程文件下载到手机</string>
+  <string name="tool_display_desc_ssh_download">用 SFTP 把远程文件下载到手机或工作区</string>
   <string name="tool_display_name_eval_javascript">运行 JS 代码</string>
   <string name="tool_display_desc_eval_javascript">在本地 QuickJS 引擎中执行任意代码</string>
   <string name="tool_display_name_run_js">运行 JS 技能</string>

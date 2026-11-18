@@ -906,8 +906,14 @@ class LocalTools(
         if (options.contains(LocalToolOption.Ssh) && enabledSshHosts.isNotEmpty()) {
             tools.add(listSshHostsTool(sshHostRepository, enabledSshHosts))
             tools.add(sshExecSavedTool(context, sshHostRepository, agentSecretsStore, enabledSshHosts))
-            tools.add(sshUploadTool(context, sshHostRepository, enabledSshHosts))
-            tools.add(sshDownloadTool(context, sshHostRepository, enabledSshHosts))
+            val sshWorkspaceId = invocationContext.callerAssistantId?.let { callerId ->
+                settingsStore.settingsFlow.value.assistants
+                    .find { it.id.toString() == callerId }
+                    ?.workspaceId
+                    ?.toString()
+            }
+            tools.add(sshUploadTool(context, sshHostRepository, enabledSshHosts, sshWorkspaceId))
+            tools.add(sshDownloadTool(context, sshHostRepository, enabledSshHosts, sshWorkspaceId))
         }
         if (options.contains(LocalToolOption.Shizuku)) {
             tools.add(com.clma.app.data.ai.tools.local.shizukuExecTool(context))

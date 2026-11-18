@@ -51,4 +51,34 @@ class RootfsFileOrNullTest {
         assertNull(manager.resolveRootfsFileOrNull(root, "/proc/self/status"))
         assertNull(manager.resolveRootfsFileOrNull(root, "relative.png"))
     }
+
+    @Test
+    fun `importRootfsBytes replaces a workspace file in place`() {
+        val manager = createManager(tempFolder.newFolder("tool_outputs"))
+        File(manager.filesDir(root), "notes/a.txt").apply {
+            parentFile!!.mkdirs()
+            writeText("old")
+        }
+        val entry = "new text".byteInputStream().use { manager.importRootfsBytes(root, "/workspace/notes/a.txt", it) }
+        assertEquals("notes/a.txt", entry.path)
+        assertEquals("new text", File(manager.filesDir(root), "notes/a.txt").readText())
+        assertEquals(1, File(manager.filesDir(root), "notes").list()!!.size)
+    }
+
+    @Test
+    fun `importRootfsBytes refuses a mount root and an escaping path`() {
+        val manager = createManager(tempFolder.newFolder("tool_outputs"))
+        try {
+            "x".byteInputStream().use { manager.importRootfsBytes(root, "/workspace", it) }
+            throw AssertionError("mount root should be refused")
+        } catch (_: IllegalArgumentException) {
+        }
+        try {
+            "x".byteInputStream().use { manager.importRootfsBytes(root, "/workspace/../../outside.txt", it) }
+            throw AssertionError("escaping path should be refused")
+        } catch (_: IllegalArgumentException) {
+        }
+        assertEquals(emptyList<String>(), tempFolder.root.list()?.filter { it == "outside.txt" } ?: emptyList<String>())
+    }
+
 }

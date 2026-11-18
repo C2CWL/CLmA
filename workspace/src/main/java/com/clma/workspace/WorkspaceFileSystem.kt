@@ -72,6 +72,45 @@ class WorkspaceFileSystem(
         return dir.toEntry(root)
     }
 
+    fun importBytesOverwrite(
+        root: File,
+        path: String,
+        inputStream: InputStream,
+    ): WorkspaceFileEntry {
+        val file = resolvePath(root, path)
+        require(!file.isDirectory) { "Path is a directory: $path" }
+        file.parentFile?.mkdirs()
+        val partial = File(file.parentFile, ".${file.name}.${System.nanoTime()}.partial")
+        try {
+            inputStream.use { input ->
+                partial.outputStream().use { output ->
+                    val buffer = ByteArray(8192)
+                    var total = 0L
+                    while (true) {
+                        val read = input.read(buffer)
+                        if (read < 0) break
+                        total += read
+                        require(total <= config.maxImportBytes) {
+                            "File is too large to import: more than ${config.maxImportBytes} bytes"
+                        }
+                        output.write(buffer, 0, read)
+                    }
+                }
+            }
+            if (file.exists() && !file.delete()) {
+                error("Could not replace existing file: $path")
+            }
+            if (!partial.renameTo(file)) {
+                partial.copyTo(file, overwrite = true)
+                partial.delete()
+            }
+        } catch (e: Throwable) {
+            partial.delete()
+            throw e
+        }
+        return file.toEntry(root)
+    }
+
     fun importBytes(root: File, path: String, inputStream: InputStream): WorkspaceFileEntry {
         val file = resolvePath(root, path)
         file.parentFile?.mkdirs()

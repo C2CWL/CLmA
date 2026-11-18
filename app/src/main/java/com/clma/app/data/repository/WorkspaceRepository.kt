@@ -296,6 +296,17 @@ class WorkspaceRepository(
         manager.exportRootfsFile(workspace.root, path, outputStream)
     }
 
+    suspend fun importRootfsBytes(
+        id: String,
+        path: String,
+        inputStream: InputStream,
+    ): WorkspaceFileEntry =
+        withContext(Dispatchers.IO) {
+            val workspace = dao.getById(id) ?: error("Workspace not found: $id")
+            manager.ensureWorkspace(workspace.root)
+            manager.importRootfsBytes(workspace.root, path, inputStream)
+        }
+
     /** 按 Rootfs 内绝对路径递归列出目录树, 支持 /workspace、bind mount 与 Rootfs 内部路径 */
     suspend fun readFolderTree(
         id: String,
