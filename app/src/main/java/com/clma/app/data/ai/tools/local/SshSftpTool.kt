@@ -238,40 +238,32 @@ fun sshDownloadTool(
         } else {
             null
         }
+        val stagedRef = java.util.concurrent.atomic.AtomicReference<Pair<File, Long>?>(null)
         val payload = runCancellableSshOp(timeoutSec * 1000L) { sessionRef ->
             withSavedHostSession(context, repo, name, allowedNames, timeoutSec * 1000, sessionRef) { session ->
                 val sftp = openSftp(session)
                 var ok = false
                 var written: File? = localFile
+                // The SFTP callback is not a coroutine. Stage the remote file, then import
+                // it on the coroutine below — importRootfsBytes is suspending.
                 try {
                     if (source == "workspace") {
-                        val counted = object : java.io.InputStream() {
-                            val remote = sftp.get(remotePath)
-                            var total = 0L
-                            override fun read(): Int {
-                                val value = remote.read()
-                                if (value >= 0) total += 1
-                                return value
-                            }
-                            override fun read(b: ByteArray, off: Int, len: Int): Int {
-                                val n = remote.read(b, off, len)
-                                if (n > 0) total += n
-                                return n
-                            }
-                            override fun close() { remote.close() }
-                        }
+                        val stage = File.createTempFile("ssh-dl-", ".part", context.cacheDir)
+                        written = stage
                         try {
-                            workspaceRepositoryOr(workspaceRepository).importRootfsBytes(
-                                workspaceId!!, localPath, counted,
-                            )
-                        } finally {
-                            counted.close()
+                            stage.outputStream().use { output -> sftp.get(remotePath, output) }
+                            stagedRef.set(stage to stage.length())
+                            written = null
+                        } catch (e: Throwable) {
+                            stage.delete()
+                            written = null
+                            throw e
                         }
                         ok = true
                         buildJsonObject {
                             put("success", true)
                             put("local_path", localPath)
-                            put("bytes", counted.total)
+                            put("bytes", stage.length())
                         }
                     } else {
                         val file = localFile!!
@@ -293,6 +285,23 @@ fun sshDownloadTool(
                     if (!ok) try { written?.takeIf { it.exists() }?.delete() } catch (_: Throwable) {}
                     try { sftp.disconnect() } catch (_: Throwable) {}
                 }
+            }
+        }
+        val staged = stagedRef.get()
+        if (staged != null) {
+            val (stage, _) = staged
+            try {
+                if (payload.get("error") == null) {
+                    stage.inputStream().use { input ->
+                        workspaceRepositoryOr(workspaceRepository).importRootfsBytes(workspaceId!!, localPath, input)
+                    }
+                }
+            } catch (e: Throwable) {
+                return@Tool listOf(UIMessagePart.Text(
+                    buildJsonObject { put("error", "workspace import failed: ${e.message ?: "unknown"}") }.toString()
+                ))
+            } finally {
+                stage.delete()
             }
         }
         listOf(UIMessagePart.Text(payload.toString()))
