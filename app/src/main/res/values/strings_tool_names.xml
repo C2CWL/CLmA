@@ -377,9 +377,9 @@
   <string name="tool_display_name_ssh_forget_host_key">Forget host key</string>
   <string name="tool_display_desc_ssh_forget_host_key">Removes a stored SSH host key</string>
   <string name="tool_display_name_ssh_upload">SSH upload</string>
-  <string name="tool_display_desc_ssh_upload">Uploads a file to a saved host via SFTP</string>
+  <string name="tool_display_desc_ssh_upload">Uploads a phone or Workspace file to a saved host via SFTP</string>
   <string name="tool_display_name_ssh_download">SSH download</string>
-  <string name="tool_display_desc_ssh_download">Downloads a file from a saved host via SFTP</string>
+  <string name="tool_display_desc_ssh_download">Downloads a file from a saved host into phone storage or a Workspace</string>
   <string name="tool_display_name_eval_javascript">Run JavaScript</string>
   <string name="tool_display_desc_eval_javascript">Runs any JavaScript in the local QuickJS engine</string>
   <string name="tool_display_name_run_js">Run JS skill</string>

@@ -179,6 +179,16 @@ class WorkspaceManager(
         outputStream.use { out -> file.inputStream().use { it.copyTo(out) } }
     }
 
+    fun importRootfsBytes(
+        root: String,
+        path: String,
+        inputStream: InputStream,
+    ): WorkspaceFileEntry {
+        val location = resolveRootfsPath(root, path)
+        require(location.relativePath.isNotBlank()) { "Refusing to overwrite a mount root: $path" }
+        return fileSystem.importBytesOverwrite(location.rootDir, location.relativePath, inputStream)
+    }
+
     /** 按 Rootfs 内绝对路径递归列出目录树, 支持 /workspace、bind mount 与 Rootfs 内部路径 */
     fun rootfsTree(root: String, path: String, maxDepth: Int = 10): WorkspaceTreeResult {
         val location = resolveRootfsPath(root, path)
