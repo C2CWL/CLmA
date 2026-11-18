@@ -399,11 +399,9 @@ internal fun clientMetadataJson(): JsonObject = buildJsonObject {
     put("pluginType", "GEMINI")
 }
 
-// oh-my-pi's DEFAULT_ANTIGRAVITY_VERSION, the pinned fallback it uses when it isn't reading the
-// live Antigravity update manifest (packages/catalog/src/wire/gemini-headers.ts:35). The backend
-// gates newer models on this version, so bump it there and here together when it moves; we do not
-// fetch the manifest ourselves to avoid a runtime dependency on an extra Google-owned endpoint.
-internal const val ANTIGRAVITY_VERSION = "2.25.0"
+// Pinned to the version in the Antigravity Hub macOS arm64 update manifest. We do not fetch
+// the manifest at runtime, so model discovery does not depend on a separate update endpoint.
+internal const val ANTIGRAVITY_VERSION = "2.32.2"
 internal const val ANTIGRAVITY_OS = "darwin"
 internal const val ANTIGRAVITY_ARCH = "arm64"
 // The backend does not validate cl: stale, zero, and absent values all pass model gating
