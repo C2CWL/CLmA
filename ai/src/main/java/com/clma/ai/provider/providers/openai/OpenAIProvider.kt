@@ -245,11 +245,9 @@ class OpenAIProvider(
                 put("model", params.model.modelId)
                 put("prompt", params.prompt)
                 put("n", params.numOfImages)
-                // xAI rejects the OpenAI `size` parameter with a 400 (upstream issue #1602),
-                // so leave it off for Grok and let the endpoint pick its own dimensions.
-                val isGrok = providerSetting.baseUrl.contains("x.ai", ignoreCase = true) ||
-                    params.model.modelId.contains("grok", ignoreCase = true)
-                if (!isGrok) {
+                if (isXaiBaseUrl(providerSetting.baseUrl)) {
+                    put("aspect_ratio", xaiImageAspectRatio(params.aspectRatio))
+                } else if (!params.model.modelId.contains("grok", ignoreCase = true)) {
                     put(
                         "size", when (params.aspectRatio) {
                             ImageAspectRatio.SQUARE -> "1024x1024"
@@ -585,6 +583,24 @@ class OpenAIProvider(
         if (isDashScopeBaseUrl(providerSetting.baseUrl)) {
             val items = withContext(Dispatchers.IO) {
                 editImageViaDashScope(providerSetting, params, key)
+            }
+            items.forEach { emit(it) }
+            return@flow
+        }
+
+        if (isXaiBaseUrl(providerSetting.baseUrl)) {
+            val items = withContext(Dispatchers.IO) {
+                val request = Request.Builder()
+                    .url("${providerSetting.baseUrl.trimEnd('/')}/images/edits")
+                    .headers(providerSetting.mergeCustomHeaders(params.customHeaders))
+                    .header("Authorization", "Bearer $key")
+                    .post(buildXaiImageEditRequestBody(params))
+                    .build()
+                client.newCall(request).await().use { response ->
+                    val body = response.body.string()
+                    check(response.isSuccessful) { "Failed to edit image: ${response.code} $body" }
+                    parseImageResponse(body)
+                }
             }
             items.forEach { emit(it) }
             return@flow
