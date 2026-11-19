@@ -1,0 +1,13 @@
+## CLmA 3.9
+
+- 修复本地模型避开 Vulkan 原生崩溃，并恢复安全模式。
+- 新增工作区文件经 SFTP 上传和下载。
+- 修复工作区下载先写入临时文件，再导入工作区。
+- 调整 Codex 与 Antigravity 的客户端版本。
+
+## Changes
+
+- Avoid the Vulkan native crash and restore safe mode for local models.
+- Add SFTP upload and download for workspace files.
+- Write workspace downloads to a temp file before importing them.
+- Update the Codex and Antigravity client versions.
