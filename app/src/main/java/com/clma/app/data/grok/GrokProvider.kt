@@ -15,6 +15,7 @@ import kotlinx.serialization.json.put
 import com.clma.ai.core.ReasoningLevel
 import com.clma.ai.provider.CustomBody
 import com.clma.ai.provider.CustomHeader
+import com.clma.ai.provider.ImageEditParams
 import com.clma.ai.provider.ImageGenerationParams
 import com.clma.ai.provider.Modality
 import com.clma.ai.provider.Model
@@ -25,10 +26,12 @@ import com.clma.ai.provider.ProviderSetting
 import com.clma.ai.provider.TextGenerationParams
 import com.clma.ai.provider.TextGenerationResult
 import com.clma.ai.provider.providers.openai.ResponseAPI
-import com.clma.ai.ui.ImageAspectRatio
+import com.clma.ai.provider.providers.openai.buildXaiImageEditRequestBody
+import com.clma.ai.provider.providers.openai.xaiImageAspectRatio
 import com.clma.ai.ui.ImageGenerationItem
 import com.clma.ai.ui.StreamChunk
 import com.clma.ai.ui.UIMessage
+import com.clma.ai.util.mergeCustomHeaders
 import com.clma.common.http.await
 import com.clma.app.AppScope
 import okhttp3.MediaType.Companion.toMediaType
@@ -188,7 +191,7 @@ class GrokProvider(
         val body = buildJsonObject {
             put("model", params.model.modelId)
             put("prompt", params.prompt)
-            put("aspect_ratio", grokImageAspectRatio(params.aspectRatio))
+            put("aspect_ratio", xaiImageAspectRatio(params.aspectRatio))
             put("resolution", GROK_IMAGE_RESOLUTION)
             put("n", params.numOfImages.coerceIn(1, 10))
             // Ask for base64 directly; grok-imagine's default URLs are short-lived (imgen.x.ai
@@ -210,6 +213,31 @@ class GrokProvider(
                 error("Failed to generate image: ${response.code} $bodyStr")
             }
             parseGrokImageResponse(bodyStr)
+        }
+        items.forEach { emit(it) }
+    }
+
+    override suspend fun editImage(
+        providerSetting: ProviderSetting,
+        params: ImageEditParams,
+    ): Flow<ImageGenerationItem> = flow {
+        val items = withContext(Dispatchers.IO) {
+            val body = buildXaiImageEditRequestBody(params)
+            val account = repository.acquireAccount()
+            val request = Request.Builder()
+                .url("$API_BASE/images/edits")
+                .headers(providerSetting.mergeCustomHeaders(params.customHeaders))
+                .grokHeaders(account)
+                .post(body)
+                .build()
+            client.newCall(request).await().use { response ->
+                val bodyStr = response.body.string()
+                if (!response.isSuccessful) {
+                    if (response.code == 401) repository.markInvalid(account.id)
+                    error("Failed to edit Grok image: ${response.code} $bodyStr")
+                }
+                parseGrokImageResponse(bodyStr)
+            }
         }
         items.forEach { emit(it) }
     }
@@ -262,12 +290,6 @@ class GrokProvider(
 // (e.g. grok-imagine-image, grok-imagine-image-quality). "grok-imagine-video" has no "image"
 // substring, so the video-generation models are naturally excluded.
 internal fun isGrokImageModel(id: String): Boolean = id.contains("image", ignoreCase = true)
-
-internal fun grokImageAspectRatio(ratio: ImageAspectRatio): String = when (ratio) {
-    ImageAspectRatio.SQUARE -> "1:1"
-    ImageAspectRatio.LANDSCAPE -> "16:9"
-    ImageAspectRatio.PORTRAIT -> "9:16"
-}
 
 internal fun grokReasoningEffort(level: ReasoningLevel): String? {
     return when (level) {
