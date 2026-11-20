@@ -58,7 +58,10 @@ class SkillUrlImporter(
 ) {
 
     /** Convenience constructor for production wiring — bridges the SkillManager. */
-    constructor(skillManager: SkillManager) : this(skillManager.asSaver())
+    constructor(
+        skillManager: SkillManager,
+        httpClient: OkHttpClient = defaultClient(),
+    ) : this(skillManager.asSaver(), httpClient)
 
     sealed class Result {
         data class Ok(val metadata: SkillMetadata, val format: SkillFormat) : Result()
