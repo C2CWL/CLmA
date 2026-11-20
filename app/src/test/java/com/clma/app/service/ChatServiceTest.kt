@@ -233,7 +233,7 @@ class ChatServiceTest {
         val assistant = Assistant(enableWebSearch = false)
         val model = Model()
 
-        assertFalse(shouldUseExternalWebSearch(assistant, model))
+        assertFalse(shouldUseExternalWebSearch(assistant, model, ProviderSetting.Google()))
     }
 
     @Test
@@ -241,7 +241,7 @@ class ChatServiceTest {
         val assistant = Assistant(enableWebSearch = true)
         val model = Model()
 
-        assertTrue(shouldUseExternalWebSearch(assistant, model))
+        assertTrue(shouldUseExternalWebSearch(assistant, model, ProviderSetting.Google()))
     }
 
     @Test
@@ -249,7 +249,23 @@ class ChatServiceTest {
         val assistant = Assistant(enableWebSearch = true)
         val model = Model(tools = setOf(BuiltInTools.Search))
 
-        assertFalse(shouldUseExternalWebSearch(assistant, model))
+        assertFalse(shouldUseExternalWebSearch(assistant, model, ProviderSetting.Google()))
+    }
+
+    @Test
+    fun `stale built-in search does not suppress external web search`() {
+        val assistant = Assistant(enableWebSearch = true)
+        val model = Model(tools = setOf(BuiltInTools.Search))
+        val providers = listOf(
+            null,
+            ProviderSetting.OpenAI(useResponseApi = false),
+            ProviderSetting.OpenAI(useResponseApi = true, enabled = false),
+            ProviderSetting.LlamaCppLocal(enabled = true),
+        )
+
+        providers.forEach { provider ->
+            assertTrue(shouldUseExternalWebSearch(assistant, model, provider))
+        }
     }
 
     @Test
@@ -257,7 +273,7 @@ class ChatServiceTest {
         val assistant = Assistant(enableWebSearch = false)
         val model = Model(tools = setOf(BuiltInTools.Search))
 
-        assertFalse(shouldUseExternalWebSearch(assistant, model))
+        assertFalse(shouldUseExternalWebSearch(assistant, model, ProviderSetting.Google()))
     }
 
     @Test
@@ -265,7 +281,7 @@ class ChatServiceTest {
         val assistant = Assistant(enableWebSearch = true)
         val model = Model(tools = setOf(BuiltInTools.UrlContext))
 
-        assertTrue(shouldUseExternalWebSearch(assistant, model))
+        assertTrue(shouldUseExternalWebSearch(assistant, model, ProviderSetting.Google()))
     }
 
     // --- resolveCompressionModel: Compress Model "Auto" resolving to a disabled provider -----

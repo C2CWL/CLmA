@@ -49,6 +49,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clma.ai.provider.Model
+import com.clma.app.data.ai.tools.SearchMode
 import com.clma.app.R
 import com.clma.app.Screen
 import com.clma.app.data.ai.mcp.McpManager

@@ -2183,8 +2183,8 @@ class ChatService(
      * (the factory builds one group at a time) and this runs once per turn, not per step — the
      * per-step part is [ChatToolSurface.tools], which just re-reads the activation set.
      *
-     * @param includeSearchTools `web_search` family: chat gates it on model ability, the rerun
-     *   path on `assistant.enableWebSearch` (both unchanged).
+     * @param includeSearchTools `web_search` family: chat suppresses it when native search is active;
+     *   rerun checks `assistant.enableWebSearch` because it runs an already selected local tool.
      * @param includeCompactionTools `compact_context`; chat only, the rerun path never had it.
      * @param allowCatalog false for paths that execute tools without ever showing schemas
      *   (rerun/regenerate): they get the full direct surface so a rerun can address any tool.
@@ -2515,7 +2515,7 @@ class ChatService(
         } else {
             model.displayName
         }
-        val useExternalWebSearch = shouldUseExternalWebSearch(assistant, model)
+        val useExternalWebSearch = shouldUseExternalWebSearch(assistant, model, resolvedProvider)
 
         val generationResult = runCatching {
             // reset suggestions

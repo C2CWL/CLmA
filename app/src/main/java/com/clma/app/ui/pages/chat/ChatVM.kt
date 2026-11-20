@@ -35,10 +35,12 @@ import com.clma.ai.ui.UIMessage
 import com.clma.ai.ui.UIMessagePart
 import com.clma.ai.ui.isEmptyInputMessage
 import com.clma.app.R
+import com.clma.app.data.ai.AssistantResolver
+import com.clma.app.data.ai.tools.SearchMode
+import com.clma.app.data.ai.tools.withSearchMode
 import com.clma.app.data.datastore.Settings
 import com.clma.app.data.datastore.streamingPaceWindowMs
 import com.clma.app.data.datastore.SettingsStore
-import com.clma.app.data.datastore.getCurrentAssistant
 import com.clma.app.data.datastore.resolveChatModel
 import com.clma.app.data.usage.TurnFooter
 import com.clma.app.data.usage.TurnNode
@@ -234,8 +236,8 @@ class ChatVM(
         settingsStore.settingsFlow.stateIn(viewModelScope, SharingStarted.Eagerly, Settings.dummy())
 
     // 网络搜索(每个助手独立)
-    val enableWebSearch = settings.map {
-        it.getCurrentAssistant().enableWebSearch
+    val enableWebSearch = combine(settings, conversation) { settings, conversation ->
+        AssistantResolver.forConversation(settings, conversation.assistantId).assistant.enableWebSearch
     }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     // 当前模型: 与输入栏模型选择器同一条解析链 (对话覆盖 → 对话所属助手 → 全局默认),
@@ -275,6 +277,19 @@ class ChatVM(
             // 检查用户头像是否有变化，如果有则删除旧头像
             checkUserAvatarDelete(oldSettings, newSettings)
             settingsStore.update(newSettings)
+        }
+    }
+
+    fun setSearchMode(mode: SearchMode) {
+        val target = conversation.value
+        viewModelScope.launch {
+            settingsStore.update { it.withSearchMode(target, mode) }
+        }
+    }
+
+    fun setSearchService(index: Int) {
+        viewModelScope.launch {
+            settingsStore.update { it.copy(searchServiceSelected = index) }
         }
     }
 
