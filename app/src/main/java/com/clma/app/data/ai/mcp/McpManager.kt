@@ -29,6 +29,7 @@ import com.clma.app.data.model.Assistant
 import com.clma.app.data.files.FilesManager
 import com.clma.app.data.files.saveUploadFromBytes
 import com.clma.app.utils.JsonInstant
+import com.clma.app.data.network.applyAppProxy
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 import kotlin.io.encoding.Base64
@@ -46,6 +47,7 @@ class McpManager(
     private val filesManager: FilesManager,
 ) {
     private val okHttpClient = OkHttpClient.Builder()
+        .applyAppProxy(settingsStore)
         .connectTimeout(20, TimeUnit.SECONDS)
         .readTimeout(10, TimeUnit.MINUTES)
         .writeTimeout(120, TimeUnit.SECONDS)

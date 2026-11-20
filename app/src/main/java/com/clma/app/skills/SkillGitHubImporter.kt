@@ -2,6 +2,8 @@ package com.clma.app.skills
 
 import com.clma.app.data.files.SkillFrontmatterParser
 import com.clma.app.data.files.SkillNameRules
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.network.applyAppProxy
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
@@ -227,7 +229,8 @@ object GitHubSkillImporter {
     }
 
     /** Convenience client used when the caller has none (tests inject their own). */
-    fun defaultClient(): OkHttpClient = OkHttpClient.Builder()
+    fun defaultClient(settingsStore: SettingsStore? = null): OkHttpClient = OkHttpClient.Builder()
+        .apply { settingsStore?.let { applyAppProxy(it) } }
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(60, TimeUnit.SECONDS)
         .followRedirects(true)

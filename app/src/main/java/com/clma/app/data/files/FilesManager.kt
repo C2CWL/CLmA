@@ -7,8 +7,8 @@ import android.util.Log
 import androidx.core.net.toFile
 import androidx.core.net.toUri
 import java.io.File
-import java.net.HttpURLConnection
-import java.net.URL
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -31,6 +31,7 @@ class FilesManager(
     private val context: Context,
     private val repository: FilesRepository,
     private val appScope: AppScope,
+    private val httpClient: OkHttpClient,
 ) {
     companion object {
         private const val TAG = "FilesManager"
@@ -343,18 +344,18 @@ class FilesManager(
 
             image.startsWith("http") -> {
                 runCatching {
-                    val url = URL(image)
-                    val connection = url.openConnection() as HttpURLConnection
-                    connection.connect()
-
-                    if (connection.responseCode == HttpURLConnection.HTTP_OK) {
-                        val bitmap = BitmapFactory.decodeStream(connection.inputStream)
-                        activityContext.exportImage(activity, bitmap)
-                    } else {
-                        Log.e(
-                            TAG,
-                            "saveMessageImage: Failed to download image from $image, response code: ${connection.responseCode}"
-                        )
+                    val request = Request.Builder().url(image).build()
+                    httpClient.newCall(request).execute().use { response ->
+                        if (response.isSuccessful) {
+                            val bytes = response.body.bytes()
+                            val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                            if (bitmap != null) activityContext.exportImage(activity, bitmap)
+                        } else {
+                            Log.e(
+                                TAG,
+                                "saveMessageImage: Failed to download image from $image, response code: ${response.code}"
+                            )
+                        }
                     }
                 }.getOrNull()
             }

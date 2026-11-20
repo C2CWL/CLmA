@@ -12,11 +12,12 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
+import com.clma.app.data.ai.tools.local.DefaultRouteSshSocketFactory
 import com.clma.app.data.ai.tools.local.SshAuth
 import com.clma.app.data.ai.tools.local.forgetHostKey
 import com.clma.app.data.ai.tools.local.isUsable
 import com.clma.app.data.ai.tools.local.knownHostsFile
-import com.clma.app.data.ai.tools.local.networkRaceSocketFactory
+import com.clma.app.data.ai.tools.local.currentAppSshProxy
 import com.clma.app.data.ai.tools.local.newJSch
 import com.clma.app.data.ai.tools.local.openSshSession
 import com.clma.app.data.ai.tools.local.wrapConnectError
@@ -42,10 +43,7 @@ data class SshTestResult(
  *
  * The connection test uses [openSshSession] rather than
  * [com.clma.app.data.ai.tools.local.execOneShot] — a test opens no channel and runs no
- * command — but it deliberately walks the same candidate transports, because otherwise the
- * page can report a failure for a host the tools reach without trouble (the tools spend their
- * first candidate on the default route too, then fall back to a physical network; a test
- * pinned to the default route alone cannot).
+ * command — and uses the same Android default route and proxy as the tools.
  */
 class SettingSshViewModel(
     private val context: Context,
@@ -145,12 +143,8 @@ class SettingSshViewModel(
                 return@withContext SshTestResult(false, "no_credentials", null)
             }
             val jsch = newJSch(context)
-            // Same candidate transports the exec path walks, so "test" agrees with
-            // `ssh_exec` / `ssh_exec_saved` on the very same host: a factory pinned to the
-            // default route alone cannot fall back to a physical network when the default
-            // route (an active VPN, adaptive routing, a captive portal) is the broken one, and
-            // the page then reported connect_failed for a host the tools reached fine.
-            val factory = networkRaceSocketFactory(context)
+            val proxyChoice = currentAppSshProxy(host.host, host.port)
+            val factory = DefaultRouteSshSocketFactory()
             var session: Session? = null
             try {
                 // [openSshSession] performs the connect. Do NOT add a second `Session.connect`
@@ -159,21 +153,16 @@ class SettingSshViewModel(
                 // "connect_failed" even though the handshake had just succeeded.
                 session = openSshSession(
                     jsch, host.host, host.port, host.user, auth, TEST_TIMEOUT_MS, factory,
+                    proxyChoice?.proxy,
                 )
                 SshTestResult(ok = true)
             } catch (e: Throwable) {
-                if (factory.winningLabel == null && factory.failures.isNotEmpty()) {
-                    // No transport reached the host at all: report what we tried, the same way
-                    // the exec path does, instead of a bare "connect_failed".
-                    SshTestResult(
-                        ok = false,
-                        errorCode = "tcp_unreachable",
-                        detail = factory.failures.joinToString("; ") { (label, reason) ->
-                            "$label: $reason"
-                        },
-                    )
+                val failure = factory.connectFailure
+                if (failure != null) {
+                    val via = proxyChoice?.dialHost?.let { " via proxy $it" }.orEmpty()
+                    SshTestResult(false, "tcp_unreachable", "default: $failure$via")
                 } else {
-                    val env = wrapConnectError(host.host, e)
+                    val env = wrapConnectError(host.host, e, proxyChoice?.dialHost)
                     SshTestResult(
                         ok = false,
                         errorCode = env["error"]?.jsonPrimitive?.contentOrNull,

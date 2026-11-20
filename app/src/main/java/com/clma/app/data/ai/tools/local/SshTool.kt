@@ -1,9 +1,6 @@
 package com.clma.app.data.ai.tools.local
 
 import android.content.Context
-import android.net.ConnectivityManager
-import android.net.Network
-import android.net.NetworkCapabilities
 import android.util.Log
 import com.jcraft.jsch.ChannelExec
 import com.jcraft.jsch.JSch
@@ -21,6 +18,11 @@ import kotlinx.serialization.json.put
 import com.clma.ai.core.InputSchema
 import com.clma.ai.core.Tool
 import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.datastore.NetworkSetting
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.network.SshProxyChoice
+import com.clma.app.data.network.jschProxy
+import org.koin.java.KoinJavaComponent
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -31,14 +33,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 private const val TAG_SSH = "SshTool"
 
-/**
- * Per-candidate TCP connect timeout for [NetworkRaceSocketFactory]. Candidates are tried in
- * order and the first successful socket is handed straight to JSch, so a device with ~3
- * transports spends at most ~3x this before giving up, on a par with the old design's worst
- * case (a 2.5s parallel probe plus a 10s JSch socket).
- */
-private const val CANDIDATE_CONNECT_TIMEOUT_MS = 4_000
-/** Connect timeout for the single-transport (default-route) factory. */
+/** TCP connect timeout on the app’s Android default route. */
 private const val SOCKET_CONNECT_TIMEOUT_MS = 10_000
 
 /**
@@ -195,48 +190,6 @@ internal fun resolveToIPv4(host: String): String? {
 }
 
 /**
- * Returns every Network the device has, ordered for [NetworkRaceSocketFactory]. Each entry is
- * a (label, network-or-null) pair; the null entry means "do not bind, let Android pick the
- * default route" and is placed first.
- *
- * All WiFi networks the device exposes are included individually (a phone may have a
- * saved-but-inactive hotspot AND the active WiFi visible at the same time; filtering down to
- * one would skip the working network on adaptive-routing devices), VALIDATED-INTERNET first.
- *
- * The order matters now: the factory walks this list instead of racing it in parallel, so
- * keeping the default route first keeps the common case down to a single socket.
- */
-private fun enumerateCandidateNetworks(ctx: Context): List<Pair<String, Network?>> {
-    val cm = ctx.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
-        ?: return listOf("default" to null)
-    val out = mutableListOf<Pair<String, Network?>>()
-    // The default route goes first: it is the one Android itself would pick (so it honours an
-    // active VPN) and it wins in the common case.
-    out += "default" to null
-    // allNetworks deprecated at API 31; the recommended NetworkCallback path is async and
-    // doesn't fit our synchronous enumeration here. Behaviour-equivalent and still functional.
-    @Suppress("DEPRECATION")
-    val all = try { cm.allNetworks.toList() } catch (_: Throwable) { emptyList() }
-    fun caps(n: Network) = try { cm.getNetworkCapabilities(n) } catch (_: Throwable) { null }
-
-    val wifis = all.filter { caps(it)?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true }
-        .sortedByDescending {
-            val c = caps(it)
-            val validated = c?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true
-            val internet = c?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
-            (if (validated) 2 else 0) + (if (internet) 1 else 0)
-        }
-    wifis.forEachIndexed { i, n ->
-        out += (if (wifis.size == 1) "wifi" else "wifi$i") to n
-    }
-    all.firstOrNull { caps(it)?.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) == true }
-        ?.let { out += "ethernet" to it }
-    all.firstOrNull { caps(it)?.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) == true }
-        ?.let { out += "cellular" to it }
-    return out
-}
-
-/**
  * Auth bundle. Either [password] or [privateKey] must be non-blank for connect to succeed.
  */
 internal data class SshAuth(
@@ -331,24 +284,27 @@ internal fun openSshSession(
     user: String,
     auth: SshAuth,
     timeoutMs: Int,
-    socketFactory: com.jcraft.jsch.SocketFactory? = null,
+    socketFactory: DefaultRouteSshSocketFactory = DefaultRouteSshSocketFactory(),
+    proxy: com.jcraft.jsch.Proxy? = currentAppSshProxy(host, port)?.proxy,
 ): Session {
     if (!auth.privateKey.isNullOrBlank()) {
         val keyBytes = auth.privateKey.toByteArray(Charsets.UTF_8)
         val passBytes = auth.passphrase?.toByteArray(Charsets.UTF_8)
         jsch.addIdentity("rikkahub-ssh-key-${System.nanoTime()}", keyBytes, null, passBytes)
     }
-    // Force IPv4 resolution before handing the address to JSch. Solves the "ssh works in
-    // Termux but times out in our app" Pixel-only failure: Android's DnsResolver returns
-    // AAAA first and JSch sits on the IPv6 SYN for the full timeout instead of falling
-    // back to v4. setHostKeyAlias keeps known_hosts comparisons keyed by the human-readable
-    // hostname so trust-on-first-use still works the same.
-    val ipv4 = resolveToIPv4(host)
+    // Direct connects still force IPv4 before handing the address to JSch. Android's
+    // DnsResolver returns AAAA first and JSch sits on the IPv6 SYN for the full timeout
+    // instead of falling back to v4, which is why Termux ssh works on the same Pixel.
+    // A proxy must see the original hostname: resolving it here would make DNS happen on
+    // the device instead of through the proxy, and setHostKeyAlias is unnecessary because
+    // the session host stays the name the user typed.
+    val ipv4 = if (proxy == null) resolveToIPv4(host) else null
     val effectiveHost = ipv4 ?: host
     val session = jsch.getSession(user, effectiveHost, port)
     if (ipv4 != null && ipv4 != host) {
         session.setHostKeyAlias(host)
     }
+    if (proxy != null) session.setProxy(proxy)
     if (!auth.password.isNullOrBlank()) session.setPassword(auth.password)
     // Trust on first use, without a UI prompt: see [TofuUserInfo]. (Not `accept-new` — JSch
     // 0.2.21 ignores that value entirely, storing nothing and verifying nothing.)
@@ -358,17 +314,7 @@ internal fun openSshSession(
         setProperty("StrictHostKeyChecking", "ask")
         setProperty("PreferredAuthentications", "publickey,keyboard-interactive,password")
     })
-    // Install a socket factory so JSch's internal sockets get a bounded connect timeout and,
-    // when the caller passes a [NetworkRaceSocketFactory], so the SSH connection is placed on
-    // the first transport that can actually reach the host (bypassing Android's adaptive
-    // routing, which would otherwise re-route app traffic away from the chosen WiFi LAN). The
-    // default is a single-candidate factory that leaves routing to Android.
-    session.setSocketFactory(
-        socketFactory ?: NetworkRaceSocketFactory(
-            listOf("default" to null),
-            SOCKET_CONNECT_TIMEOUT_MS,
-        )
-    )
+    session.setSocketFactory(socketFactory)
     // Keep-alive: send a server-alive probe every 30s of channel idle, give up after 3
     // unanswered. Without this an intermediate NAT/firewall silently drops the connection's
     // state entry during a long-running command and the session black-holes. This is the
@@ -381,56 +327,23 @@ internal fun openSshSession(
 }
 
 /**
- * JSch [SocketFactory] that picks the transport for the SSH connection itself.
- *
- * The previous design raced a *bare TCP* probe across every candidate transport before JSch
- * opened its own socket. Each probe was a connect-then-immediately-close, which sshd logs as
- * `Connection closed by ... [preauth]`. Those log lines are the structural source of the
- * fail2ban bans that took the VPS ssh channel down (see M05 T-01), and the winning probe
- * socket was thrown away regardless so JSch could open a *second*, real socket on that same
- * network.
- *
- * Here the search and the connection are the same act: [createSocket] walks [candidates] in
- * order and returns the first socket whose TCP connect succeeds, and JSch performs the SSH
- * handshake on *that* socket. A candidate whose connect fails never completes a TCP handshake,
- * so the far end never logs anything for it. Zero throwaway connections, no probe phase.
- *
- * Failure details for every candidate are retained in [failures] so the caller can still emit
- * the per-transport `tcp_unreachable` envelope.
+ * Leave socket routing to Android so SSH follows the VPN policy for CLmA's UID.
+ * Never fall back to a socket explicitly bound to Wi-Fi, Ethernet or cellular.
  */
-internal class NetworkRaceSocketFactory(
-    private val candidates: List<Pair<String, Network?>>,
-    private val connectTimeoutMs: Int,
-) : com.jcraft.jsch.SocketFactory {
-    private val _failures = mutableListOf<Pair<String, String>>()
-
-    /** Label of the transport whose socket was handed to JSch, or null if none succeeded. */
-    @Volatile
-    var winningLabel: String? = null
+internal class DefaultRouteSshSocketFactory : com.jcraft.jsch.SocketFactory {
+    var connectFailure: String? = null
         private set
 
-    /** (label, reason) for every candidate whose TCP connect did not succeed. */
-    val failures: List<Pair<String, String>> get() = _failures.toList()
-
     override fun createSocket(host: String, port: Int): java.net.Socket {
-        for ((label, network) in candidates) {
-            val s = java.net.Socket()
-            try {
-                if (network != null) {
-                    try { network.bindSocket(s) } catch (t: Throwable) {
-                        Log.w(TAG_SSH, "bindSocket to $label failed", t)
-                    }
-                }
-                s.connect(java.net.InetSocketAddress(host, port), connectTimeoutMs)
-                winningLabel = label
-                Log.i(TAG_SSH, "ssh socket up via $label")
-                return s
-            } catch (e: Throwable) {
-                _failures += label to "${e::class.java.simpleName}: ${e.message ?: "unknown"}"
-                try { s.close() } catch (_: Throwable) {}
-            }
+        val socket = java.net.Socket()
+        try {
+            socket.connect(java.net.InetSocketAddress(host, port), SOCKET_CONNECT_TIMEOUT_MS)
+            return socket
+        } catch (e: Exception) {
+            connectFailure = "${e::class.java.simpleName}: ${e.message ?: "unknown"}"
+            runCatching { socket.close() }
+            throw e
         }
-        throw java.net.SocketException("no transport could reach $host:$port")
     }
 
     override fun getInputStream(socket: java.net.Socket): java.io.InputStream =
@@ -440,38 +353,44 @@ internal class NetworkRaceSocketFactory(
         socket.getOutputStream()
 }
 
-/**
- * Build the transport-racing socket factory for [context]'s current networks. Shared by the
- * exec and SFTP paths so both pick a transport the same way.
- */
-internal fun networkRaceSocketFactory(context: Context): NetworkRaceSocketFactory =
-    NetworkRaceSocketFactory(enumerateCandidateNetworks(context), CANDIDATE_CONNECT_TIMEOUT_MS)
+/** App network setting, read at connect time. Null in unit tests that have no Koin graph. */
+internal fun currentNetworkSetting(): NetworkSetting? = runCatching {
+    KoinJavaComponent.getKoin().get<SettingsStore>().settingsFlow.value.networkSetting
+}.getOrNull()
 
-/**
- * Standard envelope for "we couldn't reach the host on any transport". Surfaces the per-
- * transport failure reasons so the LLM can quote them back to the user when explaining what
- * went wrong, plus the recovery hint for the most common Android routing pitfalls.
- */
+/** HTTP/SOCKS proxy for this SSH target, or null to use Android routing without one. */
+internal fun currentAppSshProxy(host: String, port: Int): SshProxyChoice? =
+    currentNetworkSetting()?.jschProxy(host, port)
+
+/** Reports a TCP connect failure on Android’s default route for this app. */
 internal fun unreachableEnvelope(
     host: String,
     port: Int,
     resolvedIp: String,
-    failures: List<Pair<String, String>>,
+    failure: String,
     totalMs: Long,
+    proxyDialHost: String? = null,
 ): JsonObject =
     buildJsonObject {
         put("error", "tcp_unreachable")
         put("host", host)
         put("ip", resolvedIp)
         put("port", port)
+        if (proxyDialHost != null) put("proxy", proxyDialHost)
         put("attempts", buildJsonObject {
-            failures.forEach { (label, reason) -> put(label, reason) }
+            put("default", failure)
         })
-        put("recovery", "Direct TCP to $resolvedIp:$port failed across every available " +
-            "network (${totalMs}ms total). If Termux ssh from the same device reaches " +
-            "this host, CLmA's process is being filtered. Check Settings → Network → " +
-            "Private DNS (try Off), any active VPN's per-app routing, and Settings → Apps → " +
-            "CLmA → Mobile data & Wi-Fi (enable Background data and Unrestricted data usage).")
+        put(
+            "recovery",
+            if (proxyDialHost != null) {
+                "TCP to proxy $proxyDialHost failed on Android's default route for CLmA " +
+                    "(${totalMs}ms). The SSH host was not dialed directly. Check the proxy " +
+                    "address and the VPN's per-app routing for CLmA."
+            } else {
+                "TCP to $resolvedIp:$port failed on Android's default route for CLmA " +
+                    "(${totalMs}ms). Check that the VPN includes CLmA and routes this destination."
+            },
+        )
     }
 
 /** Run a single command on an open session. Returns a JSON object with exit_code/stdout/stderr. */
@@ -696,13 +615,9 @@ internal suspend fun runCancellableSshOp(
 }
 
 /**
- * Connect → run → disconnect. The transport search is fused into the JSch socket factory
- * ([NetworkRaceSocketFactory]), so there is no separate probe phase: JSch performs the SSH
- * handshake on the first socket whose TCP connect succeeds. The handshake + exec are blocking,
- * so we hand them off to runInterruptible(IO) which gives us best-effort thread interrupt on
- * coroutine cancellation. The Session is stashed in [sessionRef] so the outer
- * [runCancellableSshOp] can also forcibly disconnect from outside if interrupt isn't honoured
- * by JNI.
+ * Connect → run → disconnect using Android's default route for this app. The handshake and
+ * exec are blocking, so they run in runInterruptible(IO). The session is stored in [sessionRef]
+ * so [runCancellableSshOp] can forcibly disconnect if JNI does not honour the interrupt.
  */
 internal suspend fun execOneShot(
     context: Context,
@@ -715,24 +630,29 @@ internal suspend fun execOneShot(
     sessionRef: AtomicReference<Session?>,
     stdin: String? = null,
 ): JsonObject {
-    val factory = networkRaceSocketFactory(context)
+    val proxyChoice = currentAppSshProxy(host, port)
+    val factory = DefaultRouteSshSocketFactory()
     return runInterruptible(Dispatchers.IO) {
         val jsch = newJSch(context)
         val handshakeStart = System.currentTimeMillis()
         val session = try {
-            openSshSession(jsch, host, port, user, auth, timeoutMs, factory)
+            openSshSession(jsch, host, port, user, auth, timeoutMs, factory, proxyChoice?.proxy)
         } catch (e: Throwable) {
             Log.w(TAG_SSH, "ssh handshake failed in ${System.currentTimeMillis() - handshakeStart}ms", e)
-            if (factory.winningLabel == null && factory.failures.isNotEmpty()) {
+            val failure = factory.connectFailure
+            if (failure != null) {
                 return@runInterruptible unreachableEnvelope(
-                    host, port, resolveToIPv4(host) ?: host, factory.failures,
+                    host, port,
+                    if (proxyChoice == null) resolveToIPv4(host) ?: host else host,
+                    failure,
                     System.currentTimeMillis() - handshakeStart,
+                    proxyChoice?.dialHost,
                 )
             }
-            return@runInterruptible wrapConnectError(host, e)
+            return@runInterruptible wrapConnectError(host, e, proxyChoice?.dialHost)
         }
         sessionRef.set(session)
-        Log.i(TAG_SSH, "ssh session up via ${factory.winningLabel ?: "default"} in ${System.currentTimeMillis() - handshakeStart}ms")
+        Log.i(TAG_SSH, "ssh session up on the default route in ${System.currentTimeMillis() - handshakeStart}ms")
         try {
             runOnSession(session, command, timeoutMs, stdin)
         } catch (e: Throwable) {
@@ -753,7 +673,7 @@ internal suspend fun execOneShot(
  *     model doesn't burn round-trips brute-forcing the same wrong password.
  *   - generic connect_failed: anything else.
  */
-internal fun wrapConnectError(host: String, e: Throwable): JsonObject {
+internal fun wrapConnectError(host: String, e: Throwable, proxyDialHost: String? = null): JsonObject {
     val msg = e.message.orEmpty()
     val isHostKeyChange = msg.contains("HostKey", ignoreCase = true) ||
         msg.contains("host key", ignoreCase = true) ||
@@ -790,6 +710,7 @@ internal fun wrapConnectError(host: String, e: Throwable): JsonObject {
     return buildJsonObject {
         put("error", "connect_failed")
         put("host", host)
+        if (proxyDialHost != null) put("proxy", proxyDialHost)
         put("reason", msg.ifBlank { e::class.simpleName ?: "unknown" })
     }
 }

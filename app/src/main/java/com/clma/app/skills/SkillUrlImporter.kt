@@ -5,6 +5,8 @@ import com.clma.app.data.files.SkillManager
 import com.clma.app.data.files.SkillMetadata
 import com.clma.app.data.files.SkillNameRules
 import kotlinx.serialization.json.contentOrNull
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.network.applyAppProxy
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.net.InetAddress
@@ -52,11 +54,14 @@ interface SkillSaver {
  */
 class SkillUrlImporter(
     private val skillManager: SkillSaver,
-    private val httpClient: OkHttpClient = defaultClient(),
+    internal val httpClient: OkHttpClient = defaultClient(),
 ) {
 
     /** Convenience constructor for production wiring — bridges the SkillManager. */
-    constructor(skillManager: SkillManager) : this(skillManager.asSaver())
+    constructor(
+        skillManager: SkillManager,
+        httpClient: OkHttpClient = defaultClient(),
+    ) : this(skillManager.asSaver(), httpClient)
 
     sealed class Result {
         data class Ok(val metadata: SkillMetadata, val format: SkillFormat) : Result()
@@ -361,7 +366,8 @@ class SkillUrlImporter(
     companion object {
         const val MAX_BODY_BYTES = 256 * 1024  // 256 KB
 
-        fun defaultClient(): OkHttpClient = OkHttpClient.Builder()
+        fun defaultClient(settingsStore: SettingsStore? = null): OkHttpClient = OkHttpClient.Builder()
+            .apply { settingsStore?.let { applyAppProxy(it) } }
             .connectTimeout(15, TimeUnit.SECONDS)
             .readTimeout(15, TimeUnit.SECONDS)
             .followRedirects(true)
