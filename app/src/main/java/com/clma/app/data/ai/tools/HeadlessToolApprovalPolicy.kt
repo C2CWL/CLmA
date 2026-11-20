@@ -90,6 +90,7 @@ object HeadlessToolApprovalPolicy {
         // Camera and screen
         "take_photo",
         "take_screenshot",
+        "wait_for",
         // Notifications
         "notification_action_click",
         "notification_reply",

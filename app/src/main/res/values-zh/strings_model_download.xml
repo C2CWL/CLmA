@@ -1,0 +1,3 @@
+<resources>
+    <string name="local_llm_download_mirror">允许 Hugging Face 公开模型下载回退到第三方镜像 hf-mirror.com</string>
+</resources>

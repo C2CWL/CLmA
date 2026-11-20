@@ -155,7 +155,7 @@ fun SettingToolApprovalsPage() {
                 LocalToolGroups.all.map { group ->
                     LocalToolInventory(
                         group = group,
-                        tools = localToolFactory.getTools(listOf(group)),
+                        tools = localToolFactory.getTools(listOf(group), filterUnavailable = false),
                     )
                 }
             )

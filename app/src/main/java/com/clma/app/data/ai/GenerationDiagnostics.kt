@@ -30,6 +30,13 @@ internal object GenerationDiagnostics {
         "GenerationDiag", "tool run=$run step=$step executed=$executed",
     )
 
+    fun turnSummary(run: Long, finished: Boolean, summary: TurnSummary) = Logging.log(
+        "GenerationDiag",
+        "turn run=$run finished=$finished events=${summary.eventCount} calls=${summary.toolCallCount} " +
+            "completed=${summary.completedToolCallCount} pending=${summary.pendingToolCallIds.size} " +
+            "failures=${summary.failureCount} recoveries=${summary.recoveryCount} compactions=${summary.compactionCount}",
+    )
+
     fun compaction(
         link: GenerationDiagnosticStep?,
         automatic: Boolean,

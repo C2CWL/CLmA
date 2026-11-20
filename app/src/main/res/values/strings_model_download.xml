@@ -1,0 +1,3 @@
+<resources>
+    <string name="local_llm_download_mirror">Allow fallback to hf-mirror.com (third party) for public Hugging Face model downloads</string>
+</resources>

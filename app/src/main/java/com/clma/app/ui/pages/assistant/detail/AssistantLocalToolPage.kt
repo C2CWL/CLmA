@@ -117,7 +117,7 @@ private fun AssistantLocalToolContent(
     // here, and the factory is the only authority on what a group actually produces.
     val groupTools: Map<LocalToolOption, List<String>> = remember(localToolFactory) {
         LocalToolGroups.all.associateWith { option ->
-            localToolFactory.getTools(listOf(option))
+            localToolFactory.getTools(listOf(option), filterUnavailable = false)
                 .map { it.name }
                 .filterNot { it in LocalTools.HIDDEN_TOOL_NAMES }
         }

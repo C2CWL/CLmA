@@ -3,13 +3,18 @@ package com.clma.locallm
 import android.content.Context
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
+import java.io.IOException
 import java.io.InputStream
+import java.util.concurrent.TimeUnit
+import javax.net.ssl.SSLException
 
 private const val TAG = "ModelInstall"
 
@@ -19,11 +24,10 @@ private const val TAG = "ModelInstall"
  * Resume-aware: a leftover `.partial` from a prior interrupted attempt triggers a
  * `Range: bytes=<existing-size>-` request, the server's 206 Partial Content response is
  * appended in place, and progress emits start at the resumed offset. Server-side fall-
- * backs: 200 OK → silently overwrite from 0; 416 → delete + signal restart-needed.
+ * backs: 200 OK → silently overwrite from 0; 416 → discard the stale partial and retry.
  *
  * Atomic rename to the final filename only on success, after a magic-byte integrity
- * check. Cancel-safe: a cancelled coroutine leaves no partial file (it is deleted on
- * failure paths and never renamed on cancellation before [Progress.Done]).
+ * check. Interrupted downloads retain URL-specific partials for later resume.
  *
  * Files land under `${context.filesDir}/local-models/llamacpp/<basename>`.
  */
@@ -133,16 +137,6 @@ object ModelInstall {
      * Download [url] into [target], emitting progress as it goes. Atomic rename to
      * [target] only on success after a magic-byte integrity check.
      *
-     * Resume logic is intentionally omitted in v1 (Phase 22A). Always starts fresh —
-     * any leftover .partial file is deleted before the request is issued. Resume with
-     * proper FileOutputStream(file, append=true) handling comes in 22B.
-     *
-     * Root cause of the previous sparse-file corruption: the old resume path called
-     * File.outputStream() (which is FileOutputStream(file, append=false) — truncates to
-     * zero on open) and then seeked the resulting FileChannel to `existing` bytes past
-     * EOF. This produced a file of the right total length where bytes 0..existing were
-     * all-zero (sparse fill) and the real data started at offset `existing`.
-     *
      * HuggingFace blob URLs are automatically normalised to resolve URLs before the
      * request is issued. Callers may also pre-normalise with [normalizeHuggingFaceUrl].
      */
@@ -150,22 +144,56 @@ object ModelInstall {
         client: OkHttpClient,
         url: String,
         target: File,
+        mirrorEnabled: Boolean = false,
+    ): Flow<Progress> = flow {
+        val sources = ModelDownloadPolicy.sources(normalizeHuggingFaceUrl(url), mirrorEnabled)
+        val downloadClient = client.newBuilder()
+            .readTimeout(ModelDownloadPolicy.STALL_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .build()
+        for (attempt in 1..ModelDownloadPolicy.MAX_ATTEMPTS) {
+            val source = sources[(attempt - 1) % sources.size]
+            var failure: Progress.Failed? = null
+            downloadOnce(downloadClient, source, target)
+                .catch { error ->
+                    if (error is IOException) emit(Progress.Failed(error)) else throw error
+                }.collect { progress ->
+                    when (progress) {
+                        is Progress.Failed -> failure = progress
+                        is Progress.Done -> {
+                            sources.forEach { ModelDownloadPolicy.partialFile(target, it).delete() }
+                            emit(progress)
+                        }
+                        else -> emit(progress)
+                    }
+                }
+            val failed = failure ?: return@flow
+            val cause = failed.cause
+            val retryable = cause is RetryableDownloadFailure ||
+                (cause is IOException && cause !is SSLException)
+            if (!retryable || attempt == ModelDownloadPolicy.MAX_ATTEMPTS) {
+                emit(failed)
+                return@flow
+            }
+            delay(ModelDownloadPolicy.backoffMillis(attempt + 1))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    private val contentRange = Regex("bytes ([0-9]+)-([0-9]+)/([0-9]+)")
+
+    private class RetryableDownloadFailure(message: String) : IllegalStateException(message)
+
+    private fun downloadOnce(
+        client: OkHttpClient,
+        normalized: String,
+        target: File,
     ): Flow<Progress> = flow {
         target.parentFile?.mkdirs()
-        val partial = File(target.absolutePath + ".partial")
-        // Resume support: if a `.partial` survives from a prior interrupted attempt, ask
-        // the server for `Range: bytes=<existing-size>-`. HuggingFace's `/resolve/` URLs
-        // serve immutable per-commit files so the partial bytes are guaranteed to match
-        // the rest of the response. If the server returns 206 we append; if it returns
-        // 200 (Range not honored) we silently overwrite the partial; if 416 (partial >=
-        // server's file size, e.g. server file shrank or partial corrupt-trailing) we
-        // delete + restart from zero. Without this, leaving the Settings page mid-
-        // download cancelled the coroutine and the next tap re-downloaded the entire
-        // multi-GB file from scratch.
+        val partial = ModelDownloadPolicy.partialFile(target, normalized)
+        // Resume only from this source URL's partial; imports and mirrors use separate files.
         val resumeFrom = if (partial.exists() && partial.length() > 0) partial.length() else 0L
 
-        val normalized = normalizeHuggingFaceUrl(url)
-        val requestBuilder = Request.Builder().url(normalized)
+        // The partial records the raw byte offsets. Do not negotiate compressed bodies.
+        val requestBuilder = Request.Builder().url(normalized).header("Accept-Encoding", "identity")
         if (resumeFrom > 0) {
             requestBuilder.header("Range", "bytes=$resumeFrom-")
         }
@@ -176,16 +204,18 @@ object ModelInstall {
             // server-side replacement). Restart fresh.
             if (response.code == 416 && resumeFrom > 0) {
                 Log.w(TAG, "Server returned 416 (Range Not Satisfiable) — partial=$resumeFrom; restarting from 0")
-                runCatching { partial.delete() }
-                // Fall through to a clean retry by emitting Failed + letting the caller retry.
-                emit(Progress.Failed(IllegalStateException(
-                    "Existing partial file no longer matches server. Tap Install again to restart."
-                )))
+                val cause = if (partial.delete() || !partial.exists()) {
+                    RetryableDownloadFailure("Server rejected the saved range; restarting download")
+                } else IllegalStateException("Cannot remove the stale download partial")
+                emit(Progress.Failed(cause))
                 return@flow
             }
             if (!response.isSuccessful) {
-                Log.w(TAG, "Download failed: HTTP ${response.code} for $normalized")
-                emit(Progress.Failed(IllegalStateException("HTTP ${response.code}")))
+                Log.w(TAG, "Download failed: HTTP ${response.code}")
+                val message = "HTTP ${response.code}"
+                emit(Progress.Failed(if (ModelDownloadPolicy.isTransientHttpCode(response.code)) {
+                    RetryableDownloadFailure(message)
+                } else IllegalStateException(message)))
                 return@flow
             }
 
@@ -193,7 +223,7 @@ object ModelInstall {
             // Cloudflare error pages, etc. would otherwise land silently as an HTML file.
             val contentType = response.header("Content-Type").orEmpty()
             if (contentType.startsWith("text/html") || contentType.startsWith("application/xhtml")) {
-                Log.w(TAG, "Download rejected: HTML content-type '$contentType' for $normalized")
+                Log.w(TAG, "Download rejected: HTML content-type '$contentType'")
                 emit(Progress.Failed(IllegalStateException(
                     "Server returned an HTML page, not a model file. " +
                     "Use a /resolve/ URL — for HuggingFace, /blob/ paths auto-rewrite to /resolve/."
@@ -207,8 +237,18 @@ object ModelInstall {
             // comes from Content-Range when resuming (`bytes 1024-4095/4096`); from
             // Content-Length when fresh.
             val isResume = response.code == 206 && resumeFrom > 0
-            val total: Long? = if (isResume) {
-                response.header("Content-Range")?.substringAfterLast('/')?.toLongOrNull()
+            val total: Long? = if (response.code == 206) {
+                val range = contentRange.matchEntire(response.header("Content-Range").orEmpty())
+                val start = range?.groupValues?.get(1)?.toLongOrNull()
+                val end = range?.groupValues?.get(2)?.toLongOrNull()
+                val size = range?.groupValues?.get(3)?.toLongOrNull()
+                if (!isResume || start != resumeFrom || end == null || size == null ||
+                    end < resumeFrom || end != size - 1
+                ) {
+                    emit(Progress.Failed(IllegalStateException("Unexpected Content-Range for resumed download")))
+                    return@flow
+                }
+                size
             } else {
                 response.header("Content-Length")?.toLongOrNull()
             }
@@ -250,7 +290,7 @@ object ModelInstall {
             // on disk are intact and resumable on the next Install tap because of the
             // Range-resume logic above.
             var totalRead = effectiveResumeFrom
-            val ioFailure: Throwable? = try {
+            val ioFailure: IOException? = try {
                 out.use { sink ->
                     body.byteStream().use { input ->
                         val buf = ByteArray(64 * 1024)
@@ -271,12 +311,12 @@ object ModelInstall {
                     }
                 }
                 null
-            } catch (e: java.io.IOException) {
+            } catch (e: IOException) {
                 e
             }
             if (ioFailure != null) {
-                Log.w(TAG, "Download read interrupted: ${ioFailure::class.simpleName}: ${ioFailure.message}")
-                emit(Progress.Failed(java.io.IOException(
+                Log.w(TAG, "Download read interrupted: ${ioFailure::class.simpleName}")
+                emit(Progress.Failed(ioFailure.takeIf { it is SSLException } ?: IOException(
                     "Download interrupted (${ioFailure::class.simpleName}: ${ioFailure.message}). " +
                     "Tap Install again to resume from where it stopped.",
                     ioFailure,
@@ -286,7 +326,7 @@ object ModelInstall {
 
             if (bailed) {
                 runCatching { partial.delete() }
-                Log.w(TAG, "Download aborted: HTML magic bytes detected in response body for $normalized")
+                Log.w(TAG, "Download aborted: HTML magic bytes detected in response body")
                 emit(Progress.Failed(IllegalStateException(
                     "Server returned an HTML page (magic-byte check failed). Check the URL."
                 )))
@@ -299,8 +339,13 @@ object ModelInstall {
             // tell that apart from a real completed download; without this check a short
             // read silently passed the magic-byte check below whenever the truncation
             // landed after the first few bytes, and got registered as a working model.
+            if (total != null && totalRead > total) {
+                partial.delete()
+                emit(Progress.Failed(IllegalStateException("Download exceeds the declared size")))
+                return@flow
+            }
             if (total != null && totalRead < total) {
-                Log.w(TAG, "Download short: got $totalRead of $total bytes for $normalized")
+                Log.w(TAG, "Download short: got $totalRead of $total bytes")
                 emit(Progress.Failed(java.io.IOException(
                     "Download incomplete: received $totalRead of $total bytes. " +
                     "Tap Install again to resume from where it stopped."
@@ -314,9 +359,9 @@ object ModelInstall {
             val ext = target.name.substringAfterLast('.', "").lowercase()
             val firstBytes = ByteArray(16)
             val bytesRead = partial.inputStream().use { it.read(firstBytes) }
-            if (bytesRead > 0 && !isValidMagicForExtension(ext, firstBytes.copyOf(bytesRead))) {
+            if (bytesRead <= 0 || !isValidMagicForExtension(ext, firstBytes.copyOf(bytesRead))) {
                 val hexDump = firstBytes.take(8).joinToString(" ") { "%02x".format(it.toInt() and 0xff) }
-                Log.w(TAG, "Magic-byte check failed for .$ext — first bytes: $hexDump ($normalized)")
+                Log.w(TAG, "Magic-byte check failed for .$ext — first bytes: $hexDump")
                 runCatching { partial.delete() }
                 emit(Progress.Failed(IllegalStateException(
                     "Downloaded file does not have the expected magic bytes for .$ext " +
@@ -326,7 +371,7 @@ object ModelInstall {
                 return@flow
             }
 
-            if (target.exists()) target.delete()
+            // Do not unlink the existing model before an atomic same-directory rename.
             val renamed = partial.renameTo(target)
             if (!renamed) {
                 // renameTo() returns false silently on cross-partition moves or permission errors.
@@ -341,7 +386,7 @@ object ModelInstall {
             Log.i(TAG, "Download complete: ${target.absolutePath}")
             emit(Progress.Done(target))
         }
-    }.flowOn(Dispatchers.IO)
+    }
 
     /**
      * Copies [input] into [target], emitting the same [Progress] events as [download]. Used

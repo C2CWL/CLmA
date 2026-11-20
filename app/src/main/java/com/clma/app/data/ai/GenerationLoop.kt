@@ -29,6 +29,7 @@ import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import com.clma.ai.core.MessageRole
@@ -940,8 +941,14 @@ class GenerationLoop(
         }
 
         val diagnosticRun = GenerationDiagnostics.nextRun()
+        val turnEvents = TurnEventLog()
+        turnEvents.append(TurnEvent.Started(diagnosticRun.toString()))
+        var answerFinished = false
+        try {
         val turnStartMs = android.os.SystemClock.elapsedRealtime()
         var loopGuardTripCount = 0
+        val queuedRepeatReminders = linkedSetOf<RepeatBreaker.Grade>()
+        val deliveredRepeatReminders = mutableSetOf<RepeatBreaker.Grade>()
         // Amnesia-proof ledger of everything already executed in this turn.
         //
         // `onAfterToolExecution` may hand back a compacted request history, and the loop
@@ -972,6 +979,7 @@ class GenerationLoop(
                 break
             }
 
+            turnEvents.append(TurnEvent.ModelStep(stepIndex))
             GenerationDiagnostics.step(diagnosticRun, stepIndex, messages.size, loopGuardTripCount)
             Log.i(TAG, "streamText: start step #$stepIndex (${model.id})")
 
@@ -1063,6 +1071,7 @@ class GenerationLoop(
                     val injections = delivery?.runs.orEmpty().map {
                         SubAgentCompletionNotice.format(it, null)
                     }
+                    val repeatReminder = queuedRepeatReminders.maxByOrNull { it.ordinal }
                     steered = generateInternal(
                         assistant = assistant,
                         settings = settings,
@@ -1071,7 +1080,9 @@ class GenerationLoop(
                                 .joinToString("\n\n")
                         } else systemAddendum,
                         messages = messages,
-                        injectedNotices = injections,
+                        injectedNotices = injections + listOfNotNull(repeatReminder?.let {
+                            "<system-reminder>${it.reminder}</system-reminder>"
+                        }),
                         hasPendingSteer = hasPendingSteer,
                         onUpdateMessages = {
                             messages = it.transforms(
@@ -1111,6 +1122,7 @@ class GenerationLoop(
                         conversationLorebookIds = conversationLorebookIds,
                         workspaceCwd = workspaceCwd,
                         continuationFromPartial = continuationFromPartial && stepIndex == 0,
+                        turnEvents = turnEvents,
                     )
                     if (!steered) delivery?.let { subAgentRegistry.acknowledge(it) }
                 } catch (t: Throwable) {
@@ -1181,6 +1193,10 @@ class GenerationLoop(
                 } finally {
                     delivery?.let { subAgentRegistry.release(it) }
                 }
+                if (!steered) {
+                    deliveredRepeatReminders.addAll(queuedRepeatReminders)
+                    queuedRepeatReminders.clear()
+                }
                 if (steered) {
                     // 插话打断：最后一条 assistant 若没有任何内容就丢掉，避免空气泡；
                     // 有内容则保留为“话说到一半”的半截回复（不 finalize，不出操作栏）。
@@ -1221,6 +1237,7 @@ class GenerationLoop(
                         Log.i(TAG, "generateText: no tool calls but a steer is pending, continuing")
                         continue
                     }
+                    answerFinished = true
                     // 整轮正常完结：无后续工具调用且未被插话打断，在此处标记最终完成时间并通知 UI。
                     // 有未执行工具或等待用户审批时保持 finishedAt == null，避免多 step 交互中提前出现操作栏与双气泡分裂。
                     if (!steered && messages.lastOrNull()?.role == MessageRole.ASSISTANT) {
@@ -1362,6 +1379,7 @@ class GenerationLoop(
             // tool_call 是 dangling call，provider 会拒绝下一次请求。
             var steerAbortedTools = false
             toolsToProcess.forEach { tool ->
+                turnEvents.append(TurnEvent.ToolCalled(tool.toolCallId, tool.toolName))
                 // Also covers resumed calls: no tool body may run in the summary step.
                 if (finalSummaryStep) {
                     executedTools += tool.copy(
@@ -1556,6 +1574,9 @@ class GenerationLoop(
                             },
                         )
                         val priorOccurrences = loopDecision.priorOccurrences
+                        RepeatBreaker.grade(loopDecision, loopGuardTripCount + 1)?.let {
+                            if (it !in deliveredRepeatReminders) queuedRepeatReminders.add(it)
+                        }
                         if (loopDecision.block) {
                             loopGuardTripCount++
                             val (errorType, recoveryMsg) = if (loopDecision.blockReason == LoopBlockReason.CONSECUTIVE_SEARCH_EXHAUSTED) {
@@ -1902,6 +1923,13 @@ class GenerationLoop(
                         ?: toolResultFingerprint(tool.output),
                     executed = tool.executionStartedAt != null,
                 )
+                val reportedError = tool.output.filterIsInstance<UIMessagePart.Text>().any {
+                    it.text.trimStart().startsWith('{') &&
+                        (runCatching { json.parseToJsonElement(it.text) }.getOrNull() as? JsonObject)?.containsKey("error") == true
+                }
+                turnEvents.append(TurnEvent.ToolCompleted(
+                    tool.toolCallId, tool.toolName, tool.executionStartedAt != null && !reportedError,
+                ))
                 GenerationDiagnostics.tool(diagnosticRun, stepIndex, tool.executionStartedAt != null)
             }
             val lastMessage = messages.last()
@@ -1928,8 +1956,17 @@ class GenerationLoop(
                 onAfterToolExecution(messages)
             }?.let { compactedMessages ->
                 Log.i(TAG, "generateText: replacing request history after tool execution")
+                turnEvents.append(TurnEvent.CompactionStarted("context", messages.size))
                 messages = compactedMessages
+                turnEvents.append(TurnEvent.CompactionFinished(messages.size))
             }
+        }
+        } catch (failure: Throwable) {
+            if (failure !is CancellationException) turnEvents.append(TurnEvent.Failed("turn", "generation", false))
+            throw failure
+        } finally {
+            turnEvents.append(TurnEvent.Finished(answerFinished))
+            GenerationDiagnostics.turnSummary(diagnosticRun, answerFinished, turnEvents.summary())
         }
 
     }
@@ -2039,6 +2076,7 @@ class GenerationLoop(
          * sends exactly what it sent before.
          */
         injectedNotices: List<String> = emptyList(),
+        turnEvents: TurnEventLog,
         // 每个 stream chunk 到达时检查是否有待处理的用户插话（见 generateText 的同名参数）。
         hasPendingSteer: () -> Boolean = { false },
     ): Boolean {
@@ -2149,6 +2187,20 @@ class GenerationLoop(
             workspaceCwd = workspaceCwd,
         )
 
+        fun projectRequest(request: List<UIMessage>): List<UIMessage> {
+            if (tools.none { it.name == "tool_output_read" }) return request
+            val projected = MicroCompaction.project(request) { id, text ->
+                val safe = redactToolOutputValues(listOf(UIMessagePart.Text(text)))
+                    .filterIsInstance<UIMessagePart.Text>().joinToString("\n") { it.text }
+                spillToolOutput(id, safe)
+            }
+            if (projected !== request) {
+                turnEvents.append(TurnEvent.CompactionStarted("tool_output_projection", request.size))
+                turnEvents.append(TurnEvent.CompactionFinished(projected.size))
+            }
+            return projected
+        }
+
         val preStreamMessages = messages
         var messages: List<UIMessage> = preStreamMessages
         val params = TextGenerationParams(
@@ -2209,11 +2261,11 @@ class GenerationLoop(
                 while (true) {
                     receivedMeaningfulOutput = false
                     receivedAnyChunk = false
-                    val attemptMessages = if (continuationsUsed == 0) {
+                    val attemptMessages = projectRequest(if (continuationsUsed == 0) {
                         internalMessages
                     } else {
                         continuationRequestMessages(internalMessages, messages)
-                    }
+                    })
                     aiLoggingManager.recordGeneration(params, attemptMessages, stream = true, memoryPrompt = inspectionMemoryPrompt)
                     val attemptStartMessages = messages
                     try {
@@ -2414,6 +2466,7 @@ class GenerationLoop(
                             )
                         ) {
                             continuationsUsed++
+                            turnEvents.append(TurnEvent.Recovered(null, "stream_continuation"))
                             processingStatus.value = continueStatusText(
                                 context = context,
                                 number = continuationsUsed,
@@ -2434,6 +2487,7 @@ class GenerationLoop(
                             )
                         ) {
                             restartedAfterPartial = true
+                            turnEvents.append(TurnEvent.Recovered(null, "stream_restart"))
                             continuationsUsed = 0
                             messages = preStreamMessages
                             onUpdateMessages(preStreamMessages)
@@ -2448,7 +2502,8 @@ class GenerationLoop(
                     }
                 }
             } else {
-                aiLoggingManager.recordGeneration(params, internalMessages, stream = false, memoryPrompt = inspectionMemoryPrompt)
+                val requestMessages = projectRequest(internalMessages)
+                aiLoggingManager.recordGeneration(params, requestMessages, stream = false, memoryPrompt = inspectionMemoryPrompt)
                 val result = retryGenerationTransportRequest(
                     maxRetries = params.maxStreamRetries,
                     onRetry = { retryNumber, failure ->
@@ -2472,7 +2527,7 @@ class GenerationLoop(
                         )
                     ) { providerImpl.generateText(
                         providerSetting = provider,
-                        messages = internalMessages,
+                        messages = requestMessages,
                         params = params,
                     ) }
                 }

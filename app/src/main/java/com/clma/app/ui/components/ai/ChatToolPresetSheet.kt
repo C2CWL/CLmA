@@ -93,8 +93,11 @@ fun ChatToolPresetSheet(
         runCatching {
             buildMap {
                 assistant.localTools.forEach { group ->
-                    localTools.getTools(listOf(group), disabledToolNames = assistant.disabledLocalTools)
-                        .forEach { tool -> putIfAbsent(tool.name, group) }
+                    localTools.getTools(
+                        listOf(group),
+                        disabledToolNames = assistant.disabledLocalTools,
+                        filterUnavailable = false,
+                    ).forEach { tool -> putIfAbsent(tool.name, group) }
                 }
             }
         }.getOrDefault(emptyMap())

@@ -315,6 +315,13 @@ class SettingLocalLlmViewModel(
         }
     }
 
+    private val _downloadMirrorEnabled = MutableStateFlow(false)
+    val downloadMirrorEnabled: StateFlow<Boolean> = _downloadMirrorEnabled
+
+    fun setDownloadMirrorEnabled(enabled: Boolean) {
+        if (_downloadProgress.value == null) _downloadMirrorEnabled.value = enabled
+    }
+
     /**
      * Both entry points below set [_downloadProgress] to a non-null placeholder
      * synchronously, before [viewModelScope.launch] ever suspends, and refuse to start a
@@ -415,6 +422,7 @@ class SettingLocalLlmViewModel(
      * [LocalRuntimePreferences] and the provider's models list, then calls [refreshFromDisk].
      */
     private suspend fun executeDownload(url: String) {
+        val mirrorEnabled = _downloadMirrorEnabled.value
         val fileName = ModelInstall.extractFileNameFromUrl(url)
         val baseDir = ModelInstall.localModelsDir(context)
         val target = ModelInstall.targetFile(baseDir, runtime, fileName)
@@ -432,7 +440,7 @@ class SettingLocalLlmViewModel(
             if (projectorUrl != null) {
                 val projector = ModelInstall.targetFile(baseDir, runtime, requireNotNull(entry.projectorFile))
                 var ready = false
-                ModelInstall.download(httpClient, projectorUrl, projector).collect { p ->
+                ModelInstall.download(httpClient, projectorUrl, projector, mirrorEnabled).collect { p ->
                     when (p) {
                         is ModelInstall.Progress.Started -> _downloadProgress.value = Progress(0, 0L, p.totalBytes)
                         is ModelInstall.Progress.Tick -> {
@@ -447,7 +455,7 @@ class SettingLocalLlmViewModel(
                 }
                 check(ready) { "Vision projector download did not complete" }
             }
-            collectDownloadProgress(url, fileName, target)
+            collectInstallProgress(fileName, ModelInstall.download(httpClient, url, target, mirrorEnabled))
         } catch (cancel: kotlinx.coroutines.CancellationException) {
             // Cancellation is normal — user navigated away or hit Cancel. Don't surface.
             _downloadProgress.value = null
@@ -459,14 +467,9 @@ class SettingLocalLlmViewModel(
         }
     }
 
-    private suspend fun collectDownloadProgress(url: String, fileName: String, target: java.io.File) {
-        collectInstallProgress(fileName, ModelInstall.download(httpClient, url, target))
-    }
-
     /**
-     * Shared progress + registration handling for both [collectDownloadProgress] (HTTP
-     * fetch) and the SAF import in [installPickedFile] (local stream copy) — both emit the
-     * same [ModelInstall.Progress] events, so a completed one is registered identically:
+     * HTTP downloads and SAF imports in [installPickedFile] emit the same
+     * [ModelInstall.Progress] events and share the same registration path:
      * [fileName] lands in [prefs] and the provider's models the same way a completed
      * download always has.
      */
