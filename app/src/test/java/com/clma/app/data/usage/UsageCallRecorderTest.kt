@@ -12,9 +12,35 @@ class UsageCallRecorderTest {
         val rows = mutableListOf<UsageRecordEntity>()
         var failWith: Throwable? = null
 
+        private var lifetime = LifetimeUsage()
+
         override suspend fun insert(record: UsageRecordEntity) {
             failWith?.let { throw it }
             rows += record
+        }
+
+        override suspend fun ensureLifetimeRow(usage: LifetimeUsage) {
+            if (!lifetime.legacyBaselined && lifetime.inputTokens == 0L &&
+                lifetime.outputTokens == 0L && lifetime.cachedTokens == 0L
+            ) lifetime = usage
+        }
+
+        override suspend fun lifetimeUsage(): LifetimeUsage = lifetime
+
+        override suspend fun addLifetimeTokens(input: Int, output: Int, cached: Int) {
+            lifetime = lifetime.copy(
+                inputTokens = lifetime.inputTokens + input.coerceAtLeast(0),
+                outputTokens = lifetime.outputTokens + output.coerceAtLeast(0),
+                cachedTokens = lifetime.cachedTokens + cached.coerceAtLeast(0),
+            )
+        }
+
+        override suspend fun applyLegacyFloor(input: Long, output: Long, cached: Long) {
+            if (lifetime.legacyBaselined) return
+            lifetime = LifetimeUsage.floor(
+                lifetime,
+                LifetimeUsage(inputTokens = input, outputTokens = output, cachedTokens = cached),
+            )
         }
 
         override suspend fun latest(limit: Int) = rows.takeLast(limit).reversed()

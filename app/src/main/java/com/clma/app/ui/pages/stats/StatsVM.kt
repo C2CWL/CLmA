@@ -1,7 +1,9 @@
 package com.clma.app.ui.pages.stats
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,10 +13,12 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.clma.app.data.db.dao.ConversationDAO
 import com.clma.app.data.db.dao.MessageNodeDAO
+import com.clma.app.data.db.dao.countVisibleMessages
 import com.clma.app.data.db.dao.getTokenStats
 import com.clma.app.data.agentrun.AgentRunRepository
 import com.clma.app.data.datastore.SettingsStore
 import com.clma.app.data.usage.LedgerStatsView
+import com.clma.app.data.usage.LifetimeUsage
 import com.clma.app.data.usage.OrchestrationTree
 import com.clma.app.data.usage.OrchestrationTreeFactory
 import com.clma.app.data.usage.UsageLedger
@@ -45,8 +49,8 @@ class StatsVM(
 
     /**
      * P2-12c - the ledger window, or null before it loads (and if the read fails). Keeping it a
-     * separate flow from [stats] is deliberate: [AppStats] counts the whole message history, the
-     * ledger only covers the 90-day retention window, so the two must never be added together.
+     * separate flow from [stats] is deliberate: the overview totals are lifetime counters, while
+     * this flow only covers the selected retention window, so the two must never be added together.
      */
     private val _ledgerStats = MutableStateFlow<LedgerStatsView?>(null)
     val ledgerStats = _ledgerStats.asStateFlow()
@@ -89,18 +93,28 @@ class StatsVM(
         // here (it was the heatmap's only consumer).
         val totalConversations = conversationDAO.countAll()
 
-        // json_each() + json_extract() 在 SQLite 侧聚合，不再加载完整 JSON 到 Kotlin
-        val tokenStats = messageNodeDAO.getTokenStats()
+        // Message count still describes the conversations that exist now. Token totals do not:
+        // deleting a chat must not erase usage that was already paid for.
+        val messageCount = messageNodeDAO.countVisibleMessages()
+        val lifetime = try {
+            usageLedger.lifetimeUsage()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w("StatsVM", "Could not read lifetime usage; showing recoverable message totals", e)
+            val legacy = messageNodeDAO.getTokenStats()
+            LifetimeUsage(inputTokens = legacy.promptTokens, outputTokens = legacy.completionTokens, cachedTokens = legacy.cachedTokens)
+        }
 
         val launchCount = settingsStore.settingsFlow.value.launchCount
 
         _stats.value = AppStats(
             isLoading = false,
             totalConversations = totalConversations,
-            totalMessages = tokenStats.totalMessages,
-            totalPromptTokens = tokenStats.promptTokens,
-            totalCompletionTokens = tokenStats.completionTokens,
-            totalCachedTokens = tokenStats.cachedTokens,
+            totalMessages = messageCount,
+            totalPromptTokens = lifetime.inputTokens,
+            totalCompletionTokens = lifetime.outputTokens,
+            totalCachedTokens = lifetime.cachedTokens,
             launchCount = launchCount,
         )
 

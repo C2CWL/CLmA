@@ -11,6 +11,9 @@ internal object DatabaseBackup {
     const val ARCHIVE_DATABASE = "rikka_hub.db"
     const val WAL = "rikka_hub-wal"
     const val SHM = "rikka_hub-shm"
+    const val ARCHIVE_USAGE_LEDGER = "usage_ledger.db"
+    const val USAGE_WAL = "$ARCHIVE_USAGE_LEDGER-wal"
+    const val USAGE_SHM = "$ARCHIVE_USAGE_LEDGER-shm"
 
     /** VACUUM INTO includes committed WAL contents in a consistent, standalone snapshot. */
     fun createSnapshot(database: SupportSQLiteDatabase, destination: File) {

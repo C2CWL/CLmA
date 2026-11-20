@@ -2,6 +2,8 @@ package com.clma.app.data.usage
 
 import com.clma.ai.core.TokenUsage
 import java.util.UUID
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 object UsageLedgerDefaults {
     /** How long a row survives before the retention sweep removes it. */
@@ -83,8 +85,31 @@ class UsageLedger(
     private val dao: UsageRecordDao,
     private val nowMs: () -> Long = { System.currentTimeMillis() },
     private val newId: () -> String = { UUID.randomUUID().toString() },
+    private val legacyUsage: suspend () -> LifetimeUsage = { LifetimeUsage() },
 ) {
     private var lastSweepMs: Long = 0
+
+    private val baselineMutex = Mutex()
+    @Volatile private var baselineReady = false
+
+    /** Capture recoverable history once, before the first new call or retention sweep. */
+    internal suspend fun initializeLifetimeUsage() {
+        if (baselineReady) return
+        baselineMutex.withLock {
+            if (baselineReady) return@withLock
+            if (dao.lifetimeUsage()?.legacyBaselined != true) {
+                val legacy = legacyUsage()
+                dao.ensureLifetimeRow(LifetimeUsage())
+                dao.applyLegacyFloor(legacy.inputTokens, legacy.outputTokens, legacy.cachedTokens)
+            }
+            baselineReady = true
+        }
+    }
+
+    suspend fun lifetimeUsage(): LifetimeUsage {
+        initializeLifetimeUsage()
+        return checkNotNull(dao.lifetimeUsage())
+    }
 
     suspend fun record(
         purpose: UsagePurpose,
@@ -117,7 +142,8 @@ class UsageLedger(
             streaming = streaming,
             latencyMs = latencyMs,
         )
-        dao.insert(row)
+        initializeLifetimeUsage()
+        dao.insertAndAccumulate(row)
         // Retention: at most one sweep per day, and only when something was written.
         if (at - lastSweepMs >= UsageLedgerDefaults.SWEEP_INTERVAL_MS) {
             lastSweepMs = at
@@ -127,8 +153,10 @@ class UsageLedger(
     }
 
     /** Removes rows older than [UsageLedgerDefaults.RETENTION_DAYS]; returns rows removed. */
-    suspend fun prune(at: Long = nowMs()): Int =
-        dao.deleteOlderThan(UsageRecordMapper.retentionCutoffMs(at))
+    suspend fun prune(at: Long = nowMs()): Int {
+        initializeLifetimeUsage()
+        return dao.deleteOlderThan(UsageRecordMapper.retentionCutoffMs(at))
+    }
 
     suspend fun tokensForOrchestration(parentRunId: String): Long =
         dao.tokensForParentRun(parentRunId)

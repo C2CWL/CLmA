@@ -445,11 +445,11 @@ private data class OverviewMetric(
 )
 
 /**
- * The all-time overview: every figure covers the whole message history (or the settings store's
- * launch counter), so the section has a single time scope and the header can say so. The
- * windowed token figures live in the ledger section below — an earlier revision swapped these
- * cards to the ledger's window total once it loaded, which mixed two time scopes on one screen
- * and made the numbers jump as the load finished.
+ * The all-time overview. Conversation and message counts describe what is still stored.
+ * Token totals come from the durable usage counter. Deleting a conversation does not shrink
+ * them, and backups with a ledger restore the saved totals. The windowed figures live in the ledger
+ * section below — an earlier revision swapped these cards to the ledger's window total once
+ * it loaded, which mixed two time scopes on one screen and made the numbers jump.
  *
  * No all-time cache hit rate: the message DB cannot tell "provider reported no caching" from
  * "provider does not report cache fields", so the rate would read low for no real reason (the

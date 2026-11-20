@@ -20,6 +20,9 @@ import com.clma.app.data.db.AppDatabaseFactory
 import com.clma.app.data.db.AppDatabase
 import com.clma.app.data.db.ImportedDatabaseReconciler
 import com.clma.app.data.db.SQLiteConfiguration
+import com.clma.app.data.usage.UsageLedger
+import com.clma.app.data.usage.UsageLedgerDatabase
+import com.clma.app.data.usage.UsageLedgerDatabaseFactory
 import java.io.File
 import java.io.FileOutputStream
 import java.nio.file.Files
@@ -35,6 +38,8 @@ class BackupManager(
     private val database: AppDatabase,
     private val settingsStore: SettingsStore,
     private val json: Json,
+    private val usageDatabase: UsageLedgerDatabase,
+    private val usageLedger: UsageLedger,
 ) {
     private val restoreMutex = Mutex()
     val localSnapshots by lazy { LocalSnapshotManager(context, this, settingsStore) }
@@ -42,9 +47,10 @@ class BackupManager(
     /** Estimated (pre-compression) size of each selectable [BackupItem]. Runs on the IO dispatcher. */
     suspend fun estimateItemSizes(): Map<BackupItem, Long> = withContext(Dispatchers.IO) {
         val db = context.getDatabasePath(SQLiteConfiguration.DATABASE_NAME)
+        val usage = context.getDatabasePath(UsageLedgerDatabaseFactory.DATABASE_NAME)
         BackupSizeEstimator.estimate(
             filesDir = context.filesDir,
-            databaseFiles = listOf(db, File(db.path + "-wal")),
+            databaseFiles = listOf(db, File(db.path + "-wal"), usage, File(usage.path + "-wal")),
         )
     }
 
@@ -70,9 +76,15 @@ class BackupManager(
                 zip.write(json.encodeToString(settings).toByteArray(Charsets.UTF_8))
                 zip.closeEntry()
                 if (BackupItem.DATABASE in selected) {
+                    usageLedger.initializeLifetimeUsage()
                     val snapshot = File(staging, SQLiteConfiguration.DATABASE_NAME)
                     DatabaseBackup.createSnapshot(database.openHelper.writableDatabase, snapshot)
                     addFile(zip, snapshot, DatabaseBackup.ARCHIVE_DATABASE)
+                    // The usage ledger is a separate file, but it belongs to the chat-records item:
+                    // lifetime totals must survive the same backup and restore as the conversations.
+                    val usageSnapshot = File(staging, UsageLedgerDatabaseFactory.DATABASE_NAME)
+                    DatabaseBackup.createSnapshot(usageDatabase.openHelper.writableDatabase, usageSnapshot)
+                    addFile(zip, usageSnapshot, DatabaseBackup.ARCHIVE_USAGE_LEDGER)
                 }
                 if (BackupItem.CONFIG in selected) {
                     for (name in BackupLayout.sharedPreferenceFiles) {
@@ -170,6 +182,8 @@ class BackupManager(
                     val payload = File(staging, "payload")
                     val stagedDatabase = File(payload, "database/${SQLiteConfiguration.DATABASE_NAME}")
                     val stagedWal = File(stagedDatabase.path + "-wal")
+                    val stagedUsage = File(payload, "database/${UsageLedgerDatabaseFactory.DATABASE_NAME}")
+                    val stagedUsageWal = File(stagedUsage.path + "-wal")
                     val seen = mutableSetOf<String>()
                     var restoredEntries = 0
                     val quota = RestoreQuota(availableBytes = { staging.usableSpace })
@@ -188,6 +202,11 @@ class BackupManager(
                                     if (BackupItem.DATABASE in selected) stagedWal else null
 
                                 DatabaseBackup.SHM -> null // Rebuilt by SQLite; never restore shared-memory state.
+                                DatabaseBackup.ARCHIVE_USAGE_LEDGER ->
+                                    if (BackupItem.DATABASE in selected) stagedUsage else null
+                                DatabaseBackup.USAGE_WAL ->
+                                    if (BackupItem.DATABASE in selected) stagedUsageWal else null
+                                DatabaseBackup.USAGE_SHM -> null
                                 BackupLayout.SECRETS_FILE ->
                                     if (BackupItem.SECRETS in selected) File(staging, BackupLayout.SECRETS_FILE) else null
                                 else -> {
@@ -212,6 +231,7 @@ class BackupManager(
                     }
                     require(restoredEntries > 0) { "No selected data found in the backup" }
                     require(!stagedWal.exists() || stagedDatabase.exists()) { "Backup WAL has no matching database" }
+                    require(!stagedUsageWal.exists() || stagedUsage.exists()) { "Usage WAL has no matching database" }
                     if (stagedDatabase.exists()) {
                         DatabaseBackup.normalize(context, stagedDatabase)
                         // A backup exported from upstream RikkaHub lacks the fork-only tables and
@@ -226,6 +246,16 @@ class BackupManager(
                             room.close()
                         }
                         DatabaseBackup.removeSidecars(stagedDatabase)
+                    }
+                    if (stagedUsage.exists()) {
+                        DatabaseBackup.normalize(context, stagedUsage)
+                        val usageRoom = UsageLedgerDatabaseFactory.create(context, stagedUsage.absolutePath)
+                        try {
+                            DatabaseBackup.checkpoint(usageRoom.openHelper.writableDatabase)
+                        } finally {
+                            usageRoom.close()
+                        }
+                        DatabaseBackup.removeSidecars(stagedUsage)
                     }
 
                     val secretsEncFile = File(staging, BackupLayout.SECRETS_FILE)
@@ -267,6 +297,7 @@ class BackupManager(
             root = File(context.noBackupFilesDir, "backup-restore"),
             databaseFile = context.getDatabasePath(SQLiteConfiguration.DATABASE_NAME),
             filesDir = context.filesDir,
+            extraDatabaseFiles = listOf(context.getDatabasePath(UsageLedgerDatabaseFactory.DATABASE_NAME)),
         )
 
         /** Must finish before Koin, Room, SettingsStore or any background consumers are initialized. */

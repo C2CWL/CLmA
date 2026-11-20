@@ -33,6 +33,7 @@ import com.clma.app.data.datastore.SettingsStore
 import com.clma.app.data.sync.BackupManager
 import com.clma.app.data.db.AppDatabaseFactory
 import com.clma.app.data.db.AppDatabase
+import com.clma.app.data.db.dao.getTokenStats
 import com.clma.app.data.db.fts.MessageFtsManager
 import com.clma.app.data.ai.mcp.McpManager
 import com.clma.app.data.agentrun.AgentRunBootRecovery
@@ -54,6 +55,7 @@ import java.util.concurrent.atomic.AtomicReference
 import com.clma.app.data.agentdef.AgentDefinitionDatabase
 import com.clma.app.data.agentdef.AgentDefinitionDatabaseFactory
 import com.clma.app.data.agentdef.AgentDefinitionRepository
+import com.clma.app.data.usage.LifetimeUsage
 import com.clma.app.data.usage.UsageLedger
 import com.clma.app.data.usage.UsageLedgerDatabase
 import com.clma.app.data.usage.UsageLedgerDatabaseFactory
@@ -73,7 +75,20 @@ val dataSourceModule = module {
     // why), so a telemetry retention sweep can never touch the chat database.
     single { UsageLedgerDatabaseFactory.create(context = get()) }
     single { get<UsageLedgerDatabase>().usageRecordDao() }
-    single { UsageLedger(get()) }
+    single {
+        val messageNodeDao = get<AppDatabase>().messageNodeDao()
+        UsageLedger(
+            dao = get(),
+            legacyUsage = {
+                val stats = messageNodeDao.getTokenStats()
+                LifetimeUsage(
+                    inputTokens = stats.promptTokens,
+                    outputTokens = stats.completionTokens,
+                    cachedTokens = stats.cachedTokens,
+                )
+            },
+        )
+    }
 
     // P2-06 - the expert library also lives in its own database file (see
     // AgentDefinitionDatabase for why). Unlike the usage ledger this holds USER data, so a
@@ -403,7 +418,16 @@ val dataSourceModule = module {
         }
     }
 
-    single { BackupManager(context = get(), database = get(), settingsStore = get(), json = get()) }
+    single {
+        BackupManager(
+            context = get(),
+            database = get(),
+            settingsStore = get(),
+            json = get(),
+            usageDatabase = get(),
+            usageLedger = get(),
+        )
+    }
     single { get<BackupManager>().localSnapshots }
 
     single {

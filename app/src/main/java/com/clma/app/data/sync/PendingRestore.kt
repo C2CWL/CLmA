@@ -17,8 +17,10 @@ internal class PendingRestore(
     private val root: File,
     private val databaseFile: File,
     private val filesDir: File,
+    private val extraDatabaseFiles: List<File> = emptyList(),
 ) {
     private val pending get() = File(root, "pending")
+    private val databaseFiles = listOf(databaseFile) + extraDatabaseFiles
 
     fun createStagingDirectory(): File {
         check(!pending.exists()) { "A backup restore is already pending. Restart the app first." }
@@ -103,11 +105,13 @@ internal class PendingRestore(
         val entries = paths.map { path ->
             RestoreEntry(path, install = true, hadOriginal = targetFile(path).exists())
         }.toMutableList()
-        if (paths.contains("database/${databaseFile.name}")) {
-            // The new database is standalone. Keep the old DB's sidecars with the old DB only.
-            for (suffix in listOf("-wal", "-shm", "-journal")) {
-                val path = "database/${databaseFile.name}$suffix"
-                entries.add(0, RestoreEntry(path, install = false, hadOriginal = targetFile(path).exists()))
+        databaseFiles.forEach { file ->
+            if (paths.contains("database/${file.name}")) {
+                // The new database is standalone. Keep the old DB's sidecars with the old DB only.
+                for (suffix in listOf("-wal", "-shm", "-journal")) {
+                    val path = "database/${file.name}$suffix"
+                    entries.add(0, RestoreEntry(path, install = false, hadOriginal = targetFile(path).exists()))
+                }
             }
         }
         return entries
@@ -127,13 +131,11 @@ internal class PendingRestore(
         return when {
             path.startsWith("database/") -> {
                 val name = path.removePrefix("database/")
-                require(name in listOf(
-                    databaseFile.name, databaseFile.name + "-wal",
-                    databaseFile.name + "-shm", databaseFile.name + "-journal"
-                )) {
-                    "Invalid restore database path"
+                val database = databaseFiles.firstOrNull { file ->
+                    name in listOf(file.name, file.name + "-wal", file.name + "-shm", file.name + "-journal")
                 }
-                File(databaseFile.parentFile, name)
+                require(database != null) { "Invalid restore database path" }
+                File(database.parentFile, name)
             }
             path.startsWith("files/shared_prefs/") -> {
                 val name = path.removePrefix("files/shared_prefs/")

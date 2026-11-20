@@ -147,6 +147,43 @@ class PendingRestoreTest {
         assertFalse(File(temporary.root, "restore/pending").exists())
     }
 
+    @Test fun installsUsageLedgerBesideChatDatabaseAndRemovesItsOldSidecars() = runBlocking {
+        write(database(), "old database")
+        val usage = File(database().parentFile, "usage_ledger.db")
+        write(usage, "old usage")
+        write(File(usage.path + "-wal"), "old usage wal")
+        val restore = PendingRestore(
+            File(temporary.root, "restore"), database(), File(temporary.root, "files"),
+            extraDatabaseFiles = listOf(usage),
+        )
+        val staging = restore.createStagingDirectory()
+        write(File(staging, "payload/database/rikka_hub"), "new database")
+        write(File(staging, "payload/database/usage_ledger.db"), "new usage")
+        restore.publish(staging)
+
+        assertTrue(restore.installRestore(restoreSettings = {}))
+        assertEquals("new database", database().readText())
+        assertEquals("new usage", usage.readText())
+        assertFalse(File(usage.path + "-wal").exists())
+    }
+
+    @Test fun legacyChatBackupKeepsExistingUsageLedgerAndItsSidecars() = runBlocking {
+        write(database(), "current chat")
+        val usage = File(database().parentFile, "usage_ledger.db")
+        write(usage, "current usage")
+        val wal = write(File(usage.path + "-wal"), "current usage wal")
+        val restore = PendingRestore(
+            File(temporary.root, "restore"), database(), File(temporary.root, "files"),
+            extraDatabaseFiles = listOf(usage),
+        )
+        stage(restore)
+
+        assertTrue(restore.installRestore(restoreSettings = {}))
+        assertEquals("new database", database().readText())
+        assertEquals("current usage", usage.readText())
+        assertEquals("current usage wal", wal.readText())
+    }
+
     @Test fun filesOnlyRestoreLeavesDatabaseAndWalUntouched() = runBlocking {
         write(database(), "old database")
         write(File(database().path + "-wal"), "old wal")
