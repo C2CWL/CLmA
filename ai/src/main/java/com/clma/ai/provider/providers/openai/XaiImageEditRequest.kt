@@ -46,7 +46,12 @@ internal fun buildXaiImageEditJson(params: ImageEditParams, imageUrls: List<Stri
         } else {
             putJsonArray("images") {
                 imageUrls.forEach { url ->
-                    addJsonObject { put("url", url) }
+                    add(
+                        buildJsonObject {
+                            put("url", url)
+                            put("type", "image_url")
+                        },
+                    )
                 }
             }
         }
