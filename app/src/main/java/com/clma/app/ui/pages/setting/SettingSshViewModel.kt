@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
+import com.clma.app.data.ai.tools.local.DefaultRouteSshSocketFactory
 import com.clma.app.data.ai.tools.local.SshAuth
 import com.clma.app.data.ai.tools.local.forgetHostKey
 import com.clma.app.data.ai.tools.local.isUsable
@@ -19,7 +20,6 @@ import com.clma.app.data.ai.tools.local.knownHostsFile
 import com.clma.app.data.ai.tools.local.currentAppSshProxy
 import com.clma.app.data.ai.tools.local.newJSch
 import com.clma.app.data.ai.tools.local.openSshSession
-import com.clma.app.data.ai.tools.local.sshSocketFactory
 import com.clma.app.data.ai.tools.local.wrapConnectError
 import com.clma.app.data.db.entity.SshHostEntity
 import com.clma.app.data.repository.SshHostRepository
@@ -43,10 +43,7 @@ data class SshTestResult(
  *
  * The connection test uses [openSshSession] rather than
  * [com.clma.app.data.ai.tools.local.execOneShot] — a test opens no channel and runs no
- * command — but it deliberately walks the same candidate transports, because otherwise the
- * page can report a failure for a host the tools reach without trouble (the tools spend their
- * first candidate on the default route too, then fall back to a physical network; a test
- * pinned to the default route alone cannot).
+ * command — and uses the same Android default route and proxy as the tools.
  */
 class SettingSshViewModel(
     private val context: Context,
@@ -146,13 +143,8 @@ class SettingSshViewModel(
                 return@withContext SshTestResult(false, "no_credentials", null)
             }
             val jsch = newJSch(context)
-            // Same candidate transports the exec path walks, so "test" agrees with
-            // `ssh_exec` / `ssh_exec_saved` on the very same host: a factory pinned to the
-            // default route alone cannot fall back to a physical network when the default
-            // route (an active VPN, adaptive routing, a captive portal) is the broken one, and
-            // the page then reported connect_failed for a host the tools reached fine.
             val proxyChoice = currentAppSshProxy(host.host, host.port)
-            val factory = sshSocketFactory(context, proxyChoice?.dialHost)
+            val factory = DefaultRouteSshSocketFactory()
             var session: Session? = null
             try {
                 // [openSshSession] performs the connect. Do NOT add a second `Session.connect`
@@ -165,17 +157,10 @@ class SettingSshViewModel(
                 )
                 SshTestResult(ok = true)
             } catch (e: Throwable) {
-                if (factory.winningLabel == null && factory.failures.isNotEmpty()) {
-                    // No transport reached the dial target. With a proxy that target is the
-                    // proxy host, not the SSH server.
+                val failure = factory.connectFailure
+                if (failure != null) {
                     val via = proxyChoice?.dialHost?.let { " via proxy $it" }.orEmpty()
-                    SshTestResult(
-                        ok = false,
-                        errorCode = "tcp_unreachable",
-                        detail = factory.failures.joinToString("; ") { (label, reason) ->
-                            "$label: $reason"
-                        } + via,
-                    )
+                    SshTestResult(false, "tcp_unreachable", "default: $failure$via")
                 } else {
                     val env = wrapConnectError(host.host, e, proxyChoice?.dialHost)
                     SshTestResult(

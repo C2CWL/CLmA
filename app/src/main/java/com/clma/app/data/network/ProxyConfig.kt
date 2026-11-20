@@ -5,7 +5,6 @@ import com.clma.app.data.datastore.SettingsStore
 import com.jcraft.jsch.ProxyHTTP
 import com.jcraft.jsch.ProxySOCKS5
 import java.io.IOException
-import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.PasswordAuthentication
 import java.net.Proxy
@@ -106,8 +105,8 @@ class SettingsProxySelector(
  * The proxy an SSH session should use so it follows the same network setting as OkHttp.
  *
  * An explicit app proxy wins. An empty proxy URL falls through to the system selector, the
- * same order [SettingsProxySelector] uses. Returns null only when both say direct: that is
- * the path that keeps the IPv4 pre-resolution and the transport race.
+ * same order [SettingsProxySelector] uses. Without an HTTP/SOCKS proxy, the target is
+ * reached through Android's default route for the app (which may be a VPN).
  *
  * Credentials are attached only when the chosen proxy is the one configured in the app.
  * A system proxy must not receive the app proxy's username and password.
@@ -143,24 +142,6 @@ internal fun NetworkSetting.jschProxy(
         }
     }
     return SshProxyChoice(proxy, host)
-}
-
-/**
- * True when binding this socket to a Wi-Fi or cellular [Network] cannot reach [host].
- * A loopback proxy (127.0.0.1, localhost) lives in the process, not on a physical NIC:
- * [android.net.Network.bindSocket] makes that connect fail on every candidate.
- */
-internal fun isUnbindableProxyHost(host: String): Boolean {
-    val value = host.trim().removeSurrounding("[", "]")
-    if (value.equals("localhost", ignoreCase = true)) return true
-    // Only numeric literals are classified. A DNS name that happens to resolve to a loopback
-    // address is still reachable through the normal selector, and resolving it here would
-    // make this check do DNS for a host the proxy may need to resolve on the far side.
-    val numeric = value.any { it.isDigit() } &&
-        value.all { it.isDigit() || it == '.' || it == ':' || it in 'a'..'f' || it in 'A'..'F' }
-    if (!numeric) return false
-    val literal = runCatching { InetAddress.getByName(value) }.getOrNull() ?: return false
-    return literal.isLoopbackAddress || literal.isAnyLocalAddress
 }
 
 private fun systemProxy(host: String, port: Int, selector: ProxySelector?): Proxy? {

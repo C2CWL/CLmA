@@ -2,9 +2,7 @@ package com.clma.app.data.network
 
 import com.clma.app.data.datastore.NetworkSetting
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.IOException
 import java.net.InetSocketAddress
@@ -97,14 +95,6 @@ class ProxyConfigTest {
 
         assertEquals("ProxySOCKS5", choice.proxy::class.java.simpleName)
         assertEquals("192.0.2.11", choice.dialHost)
-    }
-
-    @Test
-    fun `loopback and localhost proxies cannot be reached through a bound socket`() {
-        assertTrue(isUnbindableProxyHost("127.0.0.1"))
-        assertTrue(isUnbindableProxyHost("localhost"))
-        assertTrue(isUnbindableProxyHost("[::1]"))
-        assertFalse(isUnbindableProxyHost("192.0.2.1"))
     }
 
     private fun selectorReturningNone() = FixedSelector(listOf(Proxy.NO_PROXY))

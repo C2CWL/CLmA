@@ -53,10 +53,8 @@ private suspend fun withSavedHostSession(
     if (!auth.isUsable()) {
         return buildJsonObject { put("error", "saved host has no usable credentials") }
     }
-    // Same connect path the exec tool uses, including the app proxy. The factory dials the
-    // proxy when one is configured; otherwise it races transports to the SSH host.
     val proxyChoice = currentAppSshProxy(h.host, h.port)
-    val factory = sshSocketFactory(context, proxyChoice?.dialHost)
+    val factory = DefaultRouteSshSocketFactory()
     val startedAt = System.currentTimeMillis()
     return runInterruptible(Dispatchers.IO) {
         val jsch = newJSch(context)
@@ -64,11 +62,12 @@ private suspend fun withSavedHostSession(
             openSshSession(jsch, h.host, h.port, h.user, auth, timeoutMs, factory, proxyChoice?.proxy)
         } catch (e: Throwable) {
             Log.w(TAG_SFTP, "ssh handshake failed", e)
-            if (factory.winningLabel == null && factory.failures.isNotEmpty()) {
+            val failure = factory.connectFailure
+            if (failure != null) {
                 return@runInterruptible unreachableEnvelope(
                     h.host, h.port,
                     if (proxyChoice == null) resolveToIPv4(h.host) ?: h.host else h.host,
-                    factory.failures,
+                    failure,
                     System.currentTimeMillis() - startedAt,
                     proxyChoice?.dialHost,
                 )
