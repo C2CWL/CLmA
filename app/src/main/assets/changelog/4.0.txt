@@ -1,0 +1,15 @@
+## CLmA 4.0
+
+- 修复 xAI 图片编辑改用 JSON，避免 HTTP 415。
+- 修复累计 Token 用量持久保存，并纳入备份。
+- 新增长任务压缩、失败诊断和本地模型断点续传。
+- 新增 SSH 与下载链路遵循应用网络代理。
+- 修复会话搜索按助手和请求适配器判定开关。
+
+## Changes
+
+- Send xAI image edits as JSON to avoid HTTP 415.
+- Persist lifetime token totals and include them in backups.
+- Add long-task compaction, failure diagnostics, and resumable local-model downloads.
+- Route SSH and downloads through the app network proxy.
+- Resolve chat search from the assistant and request adapter.
