@@ -5,12 +5,14 @@ import android.util.Log
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import com.clma.ai.core.Tool
-import com.clma.ai.provider.BuiltInTools
 import com.clma.ai.provider.Model
+import com.clma.ai.provider.ProviderSetting
+import com.clma.ai.provider.effectiveBuiltInSearch
 import com.clma.app.data.ai.mcp.McpManager
 import com.clma.app.data.ai.ToolSurfaceResolver
 import com.clma.app.data.ai.mcp.McpTool
 import com.clma.app.data.datastore.Settings
+import com.clma.app.data.datastore.findProvider
 import com.clma.app.data.files.SkillManager
 import com.clma.app.data.model.Assistant
 import com.clma.app.data.repository.ConversationRepository
@@ -21,9 +23,8 @@ import kotlin.uuid.Uuid
 
 private const val TAG = "ChatToolFactory"
 
-internal fun shouldUseExternalWebSearch(assistant: Assistant, model: Model): Boolean {
-    return assistant.enableWebSearch && BuiltInTools.Search !in model.tools
-}
+internal fun shouldUseExternalWebSearch(assistant: Assistant, model: Model, provider: ProviderSetting?): Boolean =
+    assistant.enableWebSearch && !model.effectiveBuiltInSearch(provider)
 
 class InvalidMcpServerNamesException(val names: List<String>) :
     IllegalStateException("Invalid MCP server names: ${names.joinToString(", ")}")
@@ -60,7 +61,7 @@ class ChatToolFactory(
                 )
             )
         }
-        if (shouldUseExternalWebSearch(assistant, model)) {
+        if (shouldUseExternalWebSearch(assistant, model, model.findProvider(settings.providers))) {
             addAll(createSearchTools(settings))
         }
         addAll(ToolSurfaceResolver.resolve(localTools, assistant, ToolSurfaceResolver.contextless))

@@ -5,6 +5,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import com.clma.ai.core.Tool
+import com.clma.ai.provider.BuiltInTools
 import com.clma.ai.provider.Model
 import com.clma.ai.provider.ModelAbility
 import com.clma.ai.provider.ProviderSetting
@@ -50,7 +51,20 @@ class ChatCompletionsToolSchemaTest {
         assertFalse(parameters.containsKey("required"))
     }
 
-    private fun buildRequest(tool: Tool): JsonObject {
+    @Test
+    fun `native search flag does not add a server tool to chat completions`() {
+        val body = buildRequest(Model(modelId = "test-model", tools = setOf(BuiltInTools.Search)))
+
+        assertFalse(body.containsKey("tools"))
+        assertFalse(body.containsKey("web_search_options"))
+    }
+
+    private fun buildRequest(tool: Tool): JsonObject = buildRequest(
+        model = Model(modelId = "test-model", abilities = listOf(ModelAbility.TOOL)),
+        tools = listOf(tool),
+    )
+
+    private fun buildRequest(model: Model, tools: List<Tool> = emptyList()): JsonObject {
         val method = ChatCompletionsAPI::class.java.getDeclaredMethod(
             "buildChatCompletionRequest",
             List::class.java,
@@ -63,13 +77,7 @@ class ChatCompletionsToolSchemaTest {
         return method.invoke(
             api,
             listOf(UIMessage.user("Use the get_current_time tool.")),
-            TextGenerationParams(
-                model = Model(
-                    modelId = "test-model",
-                    abilities = listOf(ModelAbility.TOOL),
-                ),
-                tools = listOf(tool),
-            ),
+            TextGenerationParams(model = model, tools = tools),
             ProviderSetting.OpenAI(),
             false,
         ) as JsonObject

@@ -111,6 +111,7 @@ import com.clma.app.ui.components.ui.AppAlertDialog
 import com.clma.app.ui.components.ui.DialogPrimaryButton
 import com.clma.app.ui.components.ui.DialogSecondaryButton
 import com.clma.ai.provider.BuiltInTools
+import com.clma.ai.provider.supportsNativeWebSearch
 import com.clma.ai.provider.Modality
 import com.clma.ai.provider.Model
 import com.clma.ai.provider.ModelAbility
@@ -1085,6 +1086,7 @@ private fun ModelSettingsForm(
                     // 内置工具页面
                     BuiltInToolsSettings(
                         tools = model.tools,
+                        supportsSearch = (model.providerOverwrite ?: parentProvider).supportsNativeWebSearch(),
                         onUpdateTools = { tools ->
                             onModelChange(model.copy(tools = tools))
                         }
@@ -1985,6 +1987,7 @@ private fun ModelCardMutedAbilityRow(model: Model) {
 @Composable
 private fun BuiltInToolsSettings(
     tools: Set<BuiltInTools>,
+    supportsSearch: Boolean,
     onUpdateTools: (Set<BuiltInTools>) -> Unit
 ) {
     Column(
@@ -2048,6 +2051,7 @@ private fun BuiltInToolsSettings(
                     }
                     Switch(
                         checked = tool in tools,
+                        enabled = tool != BuiltInTools.Search || supportsSearch || tool in tools,
                         onCheckedChange = { checked ->
                             if (checked) {
                                 onUpdateTools(tools + tool)

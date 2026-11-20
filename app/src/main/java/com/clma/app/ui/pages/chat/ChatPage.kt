@@ -96,7 +96,6 @@ import com.clma.app.ui.theme.LocalDarkMode
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import com.clma.ai.provider.BuiltInTools
 import com.clma.ai.provider.Model
 import com.clma.ai.provider.ProviderSetting
 import com.clma.ai.ui.UIMessagePart
@@ -110,6 +109,7 @@ import com.clma.app.data.usage.TurnFooter
 import com.clma.app.data.datastore.ChatLayout
 import com.clma.app.data.datastore.Settings
 import com.clma.app.data.datastore.effectiveChatLayout
+import com.clma.app.data.ai.AssistantResolver
 import com.clma.app.data.datastore.findProvider
 import com.clma.app.data.datastore.getCurrentAssistant
 import com.clma.app.data.datastore.getSelectedASRProvider
@@ -134,7 +134,6 @@ import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.SlidersHorizontal
 import com.clma.app.ui.components.ui.KeepScreenOn
 import com.clma.app.ui.components.ai.FilesPicker
-import com.clma.app.ui.components.ai.SearchMode
 import com.clma.app.ui.components.ai.completion.WorkspaceCompletionProvider
 import com.clma.app.ui.components.ai.rememberChatAttachmentPickerActions
 import com.clma.app.ui.context.LocalNavController
@@ -471,7 +470,7 @@ internal fun ChatPageContent(
     val workspaceRepository: WorkspaceRepository = koinInject()
     val turnFooters by vm.turnFooters.collectAsStateWithLifecycle()
     var previewMode by rememberSaveable { mutableStateOf(false) }
-    val assistant = setting.getCurrentAssistant()
+    val assistant = AssistantResolver.forConversation(setting, conversation.assistantId).assistant
     val geminiLayout = botChrome == null && setting.displaySetting.effectiveChatLayout == ChatLayout.GEMINI
     val compressAndContinueLabel = stringResource(R.string.chat_suggestion_compress_continue)
     var showFilesSheet by remember { mutableStateOf(false) }
@@ -508,41 +507,8 @@ internal fun ChatPageContent(
     }
 
     // Model and search live on the input bar (model chip, search icon). The handlers stay here.
-    val onUpdateSearchMode: (SearchMode) -> Unit = { mode ->
-        val current = setting.getCurrentAssistant()
-        val model = currentChatModel
-        vm.updateSettings(
-            setting.copy(
-                assistants = setting.assistants.map { assistant ->
-                    if (assistant.id == current.id) {
-                        assistant.copy(enableWebSearch = mode == SearchMode.LOCAL)
-                    } else {
-                        assistant
-                    }
-                },
-                providers = if (model == null) {
-                    setting.providers
-                } else {
-                    setting.providers.map { provider ->
-                        provider.editModel(
-                            model.copy(
-                                tools = if (mode == SearchMode.BUILT_IN) {
-                                    model.tools + BuiltInTools.Search
-                                } else {
-                                    model.tools - BuiltInTools.Search
-                                }
-                            )
-                        )
-                    }
-                },
-            )
-        )
-    }
     val onUpdateChatModel: (Model) -> Unit = { model ->
         vm.setConversationChatModel(model)
-    }
-    val onUpdateSearchService: (Int) -> Unit = { index ->
-        vm.updateSettings(setting.copy(searchServiceSelected = index))
     }
 
     TTSAutoPlay(vm = vm, setting = setting, conversation = conversation)
@@ -966,8 +932,8 @@ internal fun ChatPageContent(
                         enableSearch = enableWebSearch,
                         model = currentChatModel,
                         mcpManager = vm.mcpManager,
-                        onUpdateSearchMode = onUpdateSearchMode,
-                        onUpdateSearchService = onUpdateSearchService,
+                        onUpdateSearchMode = vm::setSearchMode,
+                        onUpdateSearchService = vm::setSearchService,
                         onUpdateAssistant = { updated ->
                             vm.updateSettings(
                                 setting.copy(

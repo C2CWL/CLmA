@@ -55,7 +55,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.clma.ai.provider.BuiltInTools
 import com.clma.ai.provider.Model
-import com.clma.ai.provider.ProviderSetting
+import com.clma.ai.provider.effectiveBuiltInSearch
+import com.clma.ai.provider.supportsNativeWebSearch
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.AiSearch02
 import me.rerere.hugeicons.stroke.ArrowLeft01
@@ -65,6 +66,7 @@ import me.rerere.hugeicons.stroke.CheckmarkCircle02
 import me.rerere.hugeicons.stroke.GlobalSearch
 import me.rerere.hugeicons.stroke.Search01
 import me.rerere.hugeicons.stroke.Settings03
+import com.clma.app.data.ai.tools.SearchMode
 import com.clma.app.R
 import com.clma.app.Screen
 import com.clma.app.data.datastore.Settings
@@ -74,12 +76,6 @@ import com.clma.app.ui.components.ui.AutoAIIconFill
 import com.clma.app.ui.components.ui.ToggleSurface
 import com.clma.app.ui.context.LocalNavController
 import com.clma.app.ui.pages.setting.SearchAbilityTagLine
-
-enum class SearchMode {
-    OFF,
-    LOCAL,
-    BUILT_IN,
-}
 
 @Composable
 fun SearchControlCard(
@@ -92,7 +88,7 @@ fun SearchControlCard(
 ) {
     var showSearchPicker by remember { mutableStateOf(false) }
     val currentService = settings.searchServices.getOrNull(settings.searchServiceSelected)
-    val builtIn = model?.tools?.contains(BuiltInTools.Search) == true
+    val builtIn = model.effectiveBuiltInSearch(model?.findProvider(settings.providers))
     val serviceOn = builtIn || (enableSearch && currentService != null)
 
     val serviceSubtitle = when {
@@ -181,7 +177,7 @@ fun SearchControlChip(
 ) {
     var showSearchPicker by remember { mutableStateOf(false) }
     val currentService = settings.searchServices.getOrNull(settings.searchServiceSelected)
-    val builtIn = model?.tools?.contains(BuiltInTools.Search) == true
+    val builtIn = model.effectiveBuiltInSearch(model?.findProvider(settings.providers))
     val serviceOn = builtIn || (enableSearch && currentService != null)
 
     val label = when {
@@ -238,7 +234,7 @@ fun SearchPickerButton(
     var showSearchPicker by remember { mutableStateOf(false) }
     val currentService = settings.searchServices.getOrNull(settings.searchServiceSelected)
 
-    val builtIn = model?.tools?.contains(BuiltInTools.Search) == true
+    val builtIn = model.effectiveBuiltInSearch(model?.findProvider(settings.providers))
     val serviceOn = builtIn || (enableSearch && currentService != null)
     ToggleSurface(
         modifier = modifier.size(30.dp),
@@ -346,13 +342,9 @@ private fun SearchPicker(
     val navBackStack = LocalNavController.current
 
     val provider = model?.findProvider(settings.providers)
-    // Google 和使用 Responses API 的 OpenAI Provider 支持内置搜索
-    val supportsBuiltInSearch = provider is ProviderSetting.Google ||
-        provider is ProviderSetting.OpenAI && provider.useResponseApi
-    // 模型是否已开启内置搜索（可能是不支持的模型残留的孤儿状态）
-    val hasBuiltInSearchEnabled = model?.tools?.contains(BuiltInTools.Search) == true
-    // 模型支持内置搜索，或已开启内置搜索（后者保证残留状态也能被关闭）时显示模型搜索卡片
-    val showModelSearch = model != null && (supportsBuiltInSearch || hasBuiltInSearchEnabled)
+    val showModelSearch = provider?.enabled == true && provider.supportsNativeWebSearch()
+    val hasBuiltInSearchEnabled = model.effectiveBuiltInSearch(provider)
+    val hasSearchFlag = model?.tools?.contains(BuiltInTools.Search) == true
     val isLocalSearchSelected = enableSearch && !hasBuiltInSearchEnabled
 
     Column(
@@ -422,7 +414,7 @@ private fun SearchPicker(
             }
         }
 
-        if (enableSearch || hasBuiltInSearchEnabled) {
+        if (enableSearch || hasSearchFlag) {
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center
