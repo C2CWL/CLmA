@@ -958,6 +958,16 @@ private fun ColumnScope.ProviderConfigureLlamaCpp(
         }
     }
 
+    val mirrorEnabled by vm.downloadMirrorEnabled.collectAsStateWithLifecycle()
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            stringResource(R.string.local_llm_download_mirror),
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodySmall,
+        )
+        Switch(checked = mirrorEnabled, onCheckedChange = vm::setDownloadMirrorEnabled, enabled = !filesBusy)
+    }
+
     // Curated GGUF picker (LlamaCppCatalog.ENTRIES). Per-entry Install button calls the
     // same startManualDownload path as a manual URL, so the install flow
     // (and the progress/error reporting at the bottom of this tile) is identical.

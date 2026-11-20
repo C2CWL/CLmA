@@ -450,4 +450,62 @@ class ModelInstallTest {
 
         assertTrue("expected Done, got ${events.last()}", events.last() is ModelInstall.Progress.Done)
     }
+
+    @Test fun `download resumes the same source after a short read`() = runBlocking {
+        val url = "https://example.com/model.gguf"
+        val content = ggufBytes(200)
+        val ranges = mutableListOf<String?>()
+        val target = File(tempFolder.newFolder(), "model.gguf")
+        val client = OkHttpClient.Builder().addInterceptor { chain ->
+            val request = chain.request()
+            ranges += request.header("Range")
+            assertEquals("identity", request.header("Accept-Encoding"))
+            val response = Response.Builder().request(request).protocol(Protocol.HTTP_1_1).message("OK")
+            if (ranges.size == 1) {
+                response.code(200).header("Content-Length", content.size.toString())
+                    .body(content.copyOf(50).toResponseBody()).build()
+            } else {
+                response.code(206).header("Content-Range", "bytes 50-${content.lastIndex}/${content.size}")
+                    .body(content.copyOfRange(50, content.size).toResponseBody()).build()
+            }
+        }.build()
+
+        val events = ModelInstall.download(client, url, target).toList()
+        assertTrue(events.last() is ModelInstall.Progress.Done)
+        assertEquals(listOf(null, "bytes=50-"), ranges)
+        assertArrayEquals(content, target.readBytes())
+    }
+
+    @Test fun `transient primary failure falls back without appending the primary partial`() = runBlocking {
+        val url = "https://huggingface.co/org/repo/resolve/main/model.gguf"
+        val target = File(tempFolder.newFolder(), "model.gguf")
+        val primaryPartial = ModelDownloadPolicy.partialFile(target, url)
+        primaryPartial.writeBytes(ggufBytes(50))
+        val content = ggufBytes(200)
+        val requests = mutableListOf<Pair<String, String?>>()
+        val client = OkHttpClient.Builder().addInterceptor { chain ->
+            val request = chain.request()
+            requests += request.url.host to request.header("Range")
+            val primary = request.url.host == "huggingface.co"
+            Response.Builder().request(request).protocol(Protocol.HTTP_1_1).message("test")
+                .code(if (primary) 503 else 200)
+                .body((if (primary) byteArrayOf() else content).toResponseBody()).build()
+        }.build()
+
+        val events = ModelInstall.download(client, url, target, mirrorEnabled = true).toList()
+        assertTrue(events.last() is ModelInstall.Progress.Done)
+        assertEquals(listOf("huggingface.co" to "bytes=54-", "hf-mirror.com" to null), requests)
+        assertFalse(primaryPartial.exists())
+        assertArrayEquals(content, target.readBytes())
+    }
+
+    @Test fun `mirror never receives a URL query or userinfo and is opt in`() {
+        val url = "https://huggingface.co/org/repo/resolve/main/model.gguf"
+        assertEquals(listOf(url), ModelDownloadPolicy.sources(url, mirrorEnabled = false))
+        val signed = "$url?token=test"
+        val userInfo = url.replace("https://", "https://user:pass@")
+        assertEquals(listOf(signed), ModelDownloadPolicy.sources(signed, mirrorEnabled = true))
+        assertEquals(listOf(userInfo), ModelDownloadPolicy.sources(userInfo, mirrorEnabled = true))
+    }
+
 }

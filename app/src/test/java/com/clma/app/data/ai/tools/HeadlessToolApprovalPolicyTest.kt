@@ -287,7 +287,7 @@ class HeadlessToolApprovalPolicyTest {
             setOf(
                 "list_contacts", "search_contacts", "create_contact",
                 "list_sms_inbox", "search_sms", "send_sms", "send_sms_intent", "list_call_log",
-                "take_photo", "take_screenshot",
+                "take_photo", "take_screenshot", "wait_for",
                 "notification_action_click", "notification_reply", "dismiss_notification",
                 "send_email_intent",
                 "memory_write",

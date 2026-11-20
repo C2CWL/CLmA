@@ -28,6 +28,7 @@ import kotlinx.serialization.json.put
 import com.clma.ai.core.InputSchema
 import com.clma.ai.core.Tool
 import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.ai.InstanceRuntimeSnapshot
 import com.clma.app.data.ai.tools.local.BiometricResultBuffer
 import com.clma.app.data.ai.tools.local.CameraResultBuffer
 import com.clma.app.data.ai.tools.local.InteractiveToolStreamer
@@ -783,6 +784,7 @@ class LocalTools(
         invocationContext: ToolInvocationContext = ToolInvocationContext.EMPTY,
         disabledToolNames: Set<String> = emptySet(),
         enabledSshHosts: Set<String> = emptySet(),
+        filterUnavailable: Boolean = true,
     ): List<Tool> {
         val tools = mutableListOf<Tool>()
         tools.add(com.clma.app.data.ai.tools.local.readAttachmentTool(context))
@@ -943,6 +945,7 @@ class LocalTools(
             tools.add(longPressTool(invocationContext, interactiveToolStreamer))
             tools.add(swipeTool(invocationContext, interactiveToolStreamer))
             tools.add(readWindowTreeTool(invocationContext, interactiveToolStreamer))
+            if (!invocationContext.isHeadless) tools.add(com.clma.app.data.ai.tools.local.waitForTool())
             tools.add(findNodeTool(invocationContext, interactiveToolStreamer))
             tools.add(clickNodeTool(invocationContext, interactiveToolStreamer))
             tools.add(com.clma.app.data.ai.tools.local.setTextTool(invocationContext, interactiveToolStreamer))
@@ -1263,7 +1266,12 @@ class LocalTools(
         // P2-02 - drop the names the assistant opted out of, IN PLACE: workflow_create was
         // built above with a knownToolNamesProvider closure over this very list, so it must
         // not advertise a tool that is no longer on the surface. An empty set mutates nothing.
-        LocalToolFilter.removeDisabled(tools, LocalToolFilter.applicableDisabledNames(disabledToolNames))
+        val unavailable = if (filterUnavailable) InstanceRuntimeSnapshot.capture(
+            context = context,
+            checkTermux = LocalToolOption.Termux in options,
+            checkShizuku = LocalToolOption.Shizuku in options || LocalToolOption.VirtualDisplay in options,
+        ).unavailableToolNames() else emptySet()
+        LocalToolFilter.removeDisabled(tools, LocalToolFilter.applicableDisabledNames(disabledToolNames) + unavailable)
 
         return tools.map { t ->
             val withApproval = if (
