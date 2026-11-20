@@ -48,6 +48,8 @@
   <string name="tool_display_desc_tool_close">释放已激活的工具以腾出槽位并减少上下文占用</string>
   <string name="tool_display_name_tool_output_read">读取工具输出</string>
   <string name="tool_display_desc_tool_output_read">分段切片读取或按正则筛选之前工具的执行输出</string>
+  <string name="tool_display_name_wait_for">等待</string>
+  <string name="tool_display_desc_wait_for">在前台等待一段时间或等到指定时刻</string>
   <string name="tool_display_name_get_time_info">获取当前时间</string>
   <string name="tool_display_desc_get_time_info">读取设备的日期、时间、星期和时区</string>
   <string name="tool_display_name_get_battery_status">查看电池状态</string>

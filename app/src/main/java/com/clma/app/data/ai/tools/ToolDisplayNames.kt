@@ -45,6 +45,7 @@ object ToolDisplayNames {
         "tool_open" to Res(R.string.tool_display_name_tool_open, R.string.tool_display_desc_tool_open),
         "tool_close" to Res(R.string.tool_display_name_tool_close, R.string.tool_display_desc_tool_close),
         "tool_output_read" to Res(R.string.tool_display_name_tool_output_read, R.string.tool_display_desc_tool_output_read),
+        "wait_for" to Res(R.string.tool_display_name_wait_for, R.string.tool_display_desc_wait_for),
         "get_time_info" to Res(R.string.tool_display_name_get_time_info, R.string.tool_display_desc_get_time_info),
         "get_battery_status" to Res(R.string.tool_display_name_get_battery_status, R.string.tool_display_desc_get_battery_status),
         "get_storage_info" to Res(R.string.tool_display_name_get_storage_info, R.string.tool_display_desc_get_storage_info),
