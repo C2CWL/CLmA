@@ -16,9 +16,10 @@ import com.clma.app.data.ai.tools.local.SshAuth
 import com.clma.app.data.ai.tools.local.forgetHostKey
 import com.clma.app.data.ai.tools.local.isUsable
 import com.clma.app.data.ai.tools.local.knownHostsFile
-import com.clma.app.data.ai.tools.local.networkRaceSocketFactory
+import com.clma.app.data.ai.tools.local.currentAppSshProxy
 import com.clma.app.data.ai.tools.local.newJSch
 import com.clma.app.data.ai.tools.local.openSshSession
+import com.clma.app.data.ai.tools.local.sshSocketFactory
 import com.clma.app.data.ai.tools.local.wrapConnectError
 import com.clma.app.data.db.entity.SshHostEntity
 import com.clma.app.data.repository.SshHostRepository
@@ -150,7 +151,8 @@ class SettingSshViewModel(
             // default route alone cannot fall back to a physical network when the default
             // route (an active VPN, adaptive routing, a captive portal) is the broken one, and
             // the page then reported connect_failed for a host the tools reached fine.
-            val factory = networkRaceSocketFactory(context)
+            val proxyChoice = currentAppSshProxy(host.host, host.port)
+            val factory = sshSocketFactory(context, proxyChoice?.dialHost)
             var session: Session? = null
             try {
                 // [openSshSession] performs the connect. Do NOT add a second `Session.connect`
@@ -159,21 +161,23 @@ class SettingSshViewModel(
                 // "connect_failed" even though the handshake had just succeeded.
                 session = openSshSession(
                     jsch, host.host, host.port, host.user, auth, TEST_TIMEOUT_MS, factory,
+                    proxyChoice?.proxy,
                 )
                 SshTestResult(ok = true)
             } catch (e: Throwable) {
                 if (factory.winningLabel == null && factory.failures.isNotEmpty()) {
-                    // No transport reached the host at all: report what we tried, the same way
-                    // the exec path does, instead of a bare "connect_failed".
+                    // No transport reached the dial target. With a proxy that target is the
+                    // proxy host, not the SSH server.
+                    val via = proxyChoice?.dialHost?.let { " via proxy $it" }.orEmpty()
                     SshTestResult(
                         ok = false,
                         errorCode = "tcp_unreachable",
                         detail = factory.failures.joinToString("; ") { (label, reason) ->
                             "$label: $reason"
-                        },
+                        } + via,
                     )
                 } else {
-                    val env = wrapConnectError(host.host, e)
+                    val env = wrapConnectError(host.host, e, proxyChoice?.dialHost)
                     SshTestResult(
                         ok = false,
                         errorCode = env["error"]?.jsonPrimitive?.contentOrNull,

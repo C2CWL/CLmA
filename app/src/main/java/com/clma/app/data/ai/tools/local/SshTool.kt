@@ -21,6 +21,12 @@ import kotlinx.serialization.json.put
 import com.clma.ai.core.InputSchema
 import com.clma.ai.core.Tool
 import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.datastore.NetworkSetting
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.network.SshProxyChoice
+import com.clma.app.data.network.isUnbindableProxyHost
+import com.clma.app.data.network.jschProxy
+import org.koin.java.KoinJavaComponent
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -332,23 +338,26 @@ internal fun openSshSession(
     auth: SshAuth,
     timeoutMs: Int,
     socketFactory: com.jcraft.jsch.SocketFactory? = null,
+    proxy: com.jcraft.jsch.Proxy? = currentAppSshProxy(host, port)?.proxy,
 ): Session {
     if (!auth.privateKey.isNullOrBlank()) {
         val keyBytes = auth.privateKey.toByteArray(Charsets.UTF_8)
         val passBytes = auth.passphrase?.toByteArray(Charsets.UTF_8)
         jsch.addIdentity("rikkahub-ssh-key-${System.nanoTime()}", keyBytes, null, passBytes)
     }
-    // Force IPv4 resolution before handing the address to JSch. Solves the "ssh works in
-    // Termux but times out in our app" Pixel-only failure: Android's DnsResolver returns
-    // AAAA first and JSch sits on the IPv6 SYN for the full timeout instead of falling
-    // back to v4. setHostKeyAlias keeps known_hosts comparisons keyed by the human-readable
-    // hostname so trust-on-first-use still works the same.
-    val ipv4 = resolveToIPv4(host)
+    // Direct connects still force IPv4 before handing the address to JSch. Android's
+    // DnsResolver returns AAAA first and JSch sits on the IPv6 SYN for the full timeout
+    // instead of falling back to v4, which is why Termux ssh works on the same Pixel.
+    // A proxy must see the original hostname: resolving it here would make DNS happen on
+    // the device instead of through the proxy, and setHostKeyAlias is unnecessary because
+    // the session host stays the name the user typed.
+    val ipv4 = if (proxy == null) resolveToIPv4(host) else null
     val effectiveHost = ipv4 ?: host
     val session = jsch.getSession(user, effectiveHost, port)
     if (ipv4 != null && ipv4 != host) {
         session.setHostKeyAlias(host)
     }
+    if (proxy != null) session.setProxy(proxy)
     if (!auth.password.isNullOrBlank()) session.setPassword(auth.password)
     // Trust on first use, without a UI prompt: see [TofuUserInfo]. (Not `accept-new` — JSch
     // 0.2.21 ignores that value entirely, storing nothing and verifying nothing.)
@@ -448,6 +457,29 @@ internal fun networkRaceSocketFactory(context: Context): NetworkRaceSocketFactor
     NetworkRaceSocketFactory(enumerateCandidateNetworks(context), CANDIDATE_CONNECT_TIMEOUT_MS)
 
 /**
+ * Socket factory for one SSH connect.
+ *
+ * Direct connects keep the transport race. A configured proxy is what the factory dials, so
+ * the race is about reaching the proxy, not the SSH host. A loopback proxy cannot be bound
+ * to Wi-Fi or cellular: that connect fails on every candidate, so it uses the unbound socket.
+ */
+internal fun sshSocketFactory(context: Context, dialHost: String?): NetworkRaceSocketFactory {
+    if (dialHost != null && isUnbindableProxyHost(dialHost)) {
+        return NetworkRaceSocketFactory(listOf("default" to null), SOCKET_CONNECT_TIMEOUT_MS)
+    }
+    return networkRaceSocketFactory(context)
+}
+
+/** App network setting, read at connect time. Null in unit tests that have no Koin graph. */
+internal fun currentNetworkSetting(): NetworkSetting? = runCatching {
+    KoinJavaComponent.getKoin().get<SettingsStore>().settingsFlow.value.networkSetting
+}.getOrNull()
+
+/** Proxy for this SSH target, or null when the app and the system both say direct. */
+internal fun currentAppSshProxy(host: String, port: Int): SshProxyChoice? =
+    currentNetworkSetting()?.jschProxy(host, port)
+
+/**
  * Standard envelope for "we couldn't reach the host on any transport". Surfaces the per-
  * transport failure reasons so the LLM can quote them back to the user when explaining what
  * went wrong, plus the recovery hint for the most common Android routing pitfalls.
@@ -458,20 +490,32 @@ internal fun unreachableEnvelope(
     resolvedIp: String,
     failures: List<Pair<String, String>>,
     totalMs: Long,
+    proxyDialHost: String? = null,
 ): JsonObject =
     buildJsonObject {
         put("error", "tcp_unreachable")
         put("host", host)
         put("ip", resolvedIp)
         put("port", port)
+        if (proxyDialHost != null) put("proxy", proxyDialHost)
         put("attempts", buildJsonObject {
             failures.forEach { (label, reason) -> put(label, reason) }
         })
-        put("recovery", "Direct TCP to $resolvedIp:$port failed across every available " +
-            "network (${totalMs}ms total). If Termux ssh from the same device reaches " +
-            "this host, CLmA's process is being filtered. Check Settings → Network → " +
-            "Private DNS (try Off), any active VPN's per-app routing, and Settings → Apps → " +
-            "CLmA → Mobile data & Wi-Fi (enable Background data and Unrestricted data usage).")
+        put(
+            "recovery",
+            if (proxyDialHost != null) {
+                "TCP to the configured proxy $proxyDialHost failed across every available " +
+                    "network (${totalMs}ms total). The SSH host $resolvedIp:$port was not dialed " +
+                    "directly. Check Settings → Network → Proxy, and that this process can reach " +
+                    "the proxy (a VPN or per-app route can hide it)."
+            } else {
+                "Direct TCP to $resolvedIp:$port failed across every available " +
+                    "network (${totalMs}ms total). If Termux ssh from the same device reaches " +
+                    "this host, CLmA's process is being filtered. Check Settings → Network → " +
+                    "Private DNS (try Off), any active VPN's per-app routing, and Settings → Apps → " +
+                    "CLmA → Mobile data & Wi-Fi (enable Background data and Unrestricted data usage)."
+            },
+        )
     }
 
 /** Run a single command on an open session. Returns a JSON object with exit_code/stdout/stderr. */
@@ -715,21 +759,25 @@ internal suspend fun execOneShot(
     sessionRef: AtomicReference<Session?>,
     stdin: String? = null,
 ): JsonObject {
-    val factory = networkRaceSocketFactory(context)
+    val proxyChoice = currentAppSshProxy(host, port)
+    val factory = sshSocketFactory(context, proxyChoice?.dialHost)
     return runInterruptible(Dispatchers.IO) {
         val jsch = newJSch(context)
         val handshakeStart = System.currentTimeMillis()
         val session = try {
-            openSshSession(jsch, host, port, user, auth, timeoutMs, factory)
+            openSshSession(jsch, host, port, user, auth, timeoutMs, factory, proxyChoice?.proxy)
         } catch (e: Throwable) {
             Log.w(TAG_SSH, "ssh handshake failed in ${System.currentTimeMillis() - handshakeStart}ms", e)
             if (factory.winningLabel == null && factory.failures.isNotEmpty()) {
                 return@runInterruptible unreachableEnvelope(
-                    host, port, resolveToIPv4(host) ?: host, factory.failures,
+                    host, port,
+                    if (proxyChoice == null) resolveToIPv4(host) ?: host else host,
+                    factory.failures,
                     System.currentTimeMillis() - handshakeStart,
+                    proxyChoice?.dialHost,
                 )
             }
-            return@runInterruptible wrapConnectError(host, e)
+            return@runInterruptible wrapConnectError(host, e, proxyChoice?.dialHost)
         }
         sessionRef.set(session)
         Log.i(TAG_SSH, "ssh session up via ${factory.winningLabel ?: "default"} in ${System.currentTimeMillis() - handshakeStart}ms")
@@ -753,7 +801,7 @@ internal suspend fun execOneShot(
  *     model doesn't burn round-trips brute-forcing the same wrong password.
  *   - generic connect_failed: anything else.
  */
-internal fun wrapConnectError(host: String, e: Throwable): JsonObject {
+internal fun wrapConnectError(host: String, e: Throwable, proxyDialHost: String? = null): JsonObject {
     val msg = e.message.orEmpty()
     val isHostKeyChange = msg.contains("HostKey", ignoreCase = true) ||
         msg.contains("host key", ignoreCase = true) ||
@@ -790,6 +838,7 @@ internal fun wrapConnectError(host: String, e: Throwable): JsonObject {
     return buildJsonObject {
         put("error", "connect_failed")
         put("host", host)
+        if (proxyDialHost != null) put("proxy", proxyDialHost)
         put("reason", msg.ifBlank { e::class.simpleName ?: "unknown" })
     }
 }

@@ -101,6 +101,7 @@ val appModule = module {
     single {
         com.clma.app.skills.SkillUrlImporter(
             skillManager = get<com.clma.app.data.files.SkillManager>(),
+            httpClient = com.clma.app.skills.SkillUrlImporter.defaultClient(get()),
         )
     }
 

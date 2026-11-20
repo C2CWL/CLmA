@@ -51,7 +51,7 @@ class RootfsInstaller(
         target: File,
         onProgress: (RootfsInstallProgress) -> Unit,
     ) {
-        val connection = URL(url).openConnection() as HttpURLConnection
+        val connection = WorkspaceDownloads.open(URL(url)) as HttpURLConnection
         connection.connectTimeout = CONNECT_TIMEOUT_MS
         connection.readTimeout = READ_TIMEOUT_MS
         connection.instanceFollowRedirects = true

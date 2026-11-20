@@ -53,25 +53,27 @@ private suspend fun withSavedHostSession(
     if (!auth.isUsable()) {
         return buildJsonObject { put("error", "saved host has no usable credentials") }
     }
-    // Same connect path the exec tool uses: the transport search lives inside the JSch socket
-    // factory, so SFTP traffic lands on the first transport that can reach the host. Without
-    // this, SFTP is left to Android's default-network selection, which on adaptive-routing
-    // devices routes the app's outgoing connections away from WiFi LAN even though WiFi is up.
-    val factory = networkRaceSocketFactory(context)
+    // Same connect path the exec tool uses, including the app proxy. The factory dials the
+    // proxy when one is configured; otherwise it races transports to the SSH host.
+    val proxyChoice = currentAppSshProxy(h.host, h.port)
+    val factory = sshSocketFactory(context, proxyChoice?.dialHost)
     val startedAt = System.currentTimeMillis()
     return runInterruptible(Dispatchers.IO) {
         val jsch = newJSch(context)
         val session = try {
-            openSshSession(jsch, h.host, h.port, h.user, auth, timeoutMs, factory)
+            openSshSession(jsch, h.host, h.port, h.user, auth, timeoutMs, factory, proxyChoice?.proxy)
         } catch (e: Throwable) {
             Log.w(TAG_SFTP, "ssh handshake failed", e)
             if (factory.winningLabel == null && factory.failures.isNotEmpty()) {
                 return@runInterruptible unreachableEnvelope(
-                    h.host, h.port, resolveToIPv4(h.host) ?: h.host, factory.failures,
+                    h.host, h.port,
+                    if (proxyChoice == null) resolveToIPv4(h.host) ?: h.host else h.host,
+                    factory.failures,
                     System.currentTimeMillis() - startedAt,
+                    proxyChoice?.dialHost,
                 )
             }
-            return@runInterruptible wrapConnectError(h.host, e)
+            return@runInterruptible wrapConnectError(h.host, e, proxyChoice?.dialHost)
         }
         sessionRef.set(session)
         try {

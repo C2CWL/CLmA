@@ -30,9 +30,8 @@ import com.clma.app.skills.loadCatalogFromAssets
 import java.util.LinkedHashMap
 import org.json.JSONArray
 import java.io.File
-import java.net.HttpURLConnection
-import java.net.URL
 import java.nio.file.Files
+import okhttp3.Request
 import kotlin.collections.iterator
 
 class SkillsVM(
@@ -531,15 +530,12 @@ class SkillsVM(
     }
 
     private fun downloadText(url: String): String? {
-        val connection = URL(url).openConnection() as HttpURLConnection
-        connection.connectTimeout = 10_000
-        connection.readTimeout = 30_000
-        connection.setRequestProperty("Accept", "application/vnd.github+json")
-        return try {
-            if (connection.responseCode == 200) connection.inputStream.bufferedReader().readText()
-            else null
-        } finally {
-            connection.disconnect()
+        val request = Request.Builder()
+            .url(url)
+            .header("Accept", "application/vnd.github+json")
+            .build()
+        return urlImporter.httpClient.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) null else response.body.string()
         }
     }
 }

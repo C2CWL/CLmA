@@ -42,6 +42,7 @@ import com.clma.app.data.ai.OrphanedReasoningRecovery
 import com.clma.app.data.network.SettingsProxySelector
 import com.clma.app.data.network.SettingsProxyAuthenticator
 import com.clma.app.data.network.SettingsSocks5Authenticator
+import com.clma.app.data.network.applyAppProxy
 import com.clma.app.data.sync.webdav.WebDavSync
 import com.clma.search.SearchService
 import com.clma.app.data.sync.S3Sync
@@ -287,7 +288,9 @@ val dataSourceModule = module {
     }
 
     single<OkHttpClient>(named("codex")) {
+        val settingsStore: SettingsStore = get()
         OkHttpClient.Builder()
+            .applyAppProxy(settingsStore)
             .connectTimeout(20, TimeUnit.SECONDS)
             .readTimeout(10, TimeUnit.MINUTES)
             .writeTimeout(120, TimeUnit.SECONDS)
@@ -298,7 +301,9 @@ val dataSourceModule = module {
     }
 
     single<OkHttpClient>(named("grok")) {
+        val settingsStore: SettingsStore = get()
         OkHttpClient.Builder()
+            .applyAppProxy(settingsStore)
             .connectTimeout(20, TimeUnit.SECONDS)
             .readTimeout(10, TimeUnit.MINUTES)
             .writeTimeout(120, TimeUnit.SECONDS)
@@ -309,7 +314,9 @@ val dataSourceModule = module {
     }
 
     single<OkHttpClient>(named("gemini")) {
+        val settingsStore: SettingsStore = get()
         OkHttpClient.Builder()
+            .applyAppProxy(settingsStore)
             .connectTimeout(20, TimeUnit.SECONDS)
             .readTimeout(10, TimeUnit.MINUTES)
             .writeTimeout(120, TimeUnit.SECONDS)
@@ -439,16 +446,22 @@ val dataSourceModule = module {
     }
 
     single<HttpClient> {
+        val settingsStore: SettingsStore = get()
+        // Ktor's OkHttp engine builds its own client unless one is handed over. Preconfigure
+        // it from the app setting so provider/backup traffic follows the configured proxy
+        // exactly like the shared OkHttpClient does.
+        val okHttpClient = OkHttpClient.Builder()
+            .applyAppProxy(settingsStore)
+            .connectTimeout(20, TimeUnit.SECONDS)
+            .readTimeout(10, TimeUnit.MINUTES)
+            .writeTimeout(120, TimeUnit.SECONDS)
+            .followSslRedirects(true)
+            .followRedirects(true)
+            .retryOnConnectionFailure(true)
+            .build()
         HttpClient(OkHttp) {
             engine {
-                config {
-                    connectTimeout(20, TimeUnit.SECONDS)
-                    readTimeout(10, TimeUnit.MINUTES)
-                    writeTimeout(120, TimeUnit.SECONDS)
-                    followSslRedirects(true)
-                    followRedirects(true)
-                    retryOnConnectionFailure(true)
-                }
+                preconfigured = okHttpClient
             }
         }
     }

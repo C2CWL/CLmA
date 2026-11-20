@@ -13,6 +13,8 @@ import com.clma.ai.ui.UIMessagePart
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.InputStream
+import okhttp3.OkHttpClient
+import okhttp3.Request
 
 private val supportedTypes = setOf(
     "image/jpeg",
@@ -119,6 +121,7 @@ fun UIMessagePart.Image.encodeBase64(withPrefix: Boolean = true): Result<Encoded
 fun UIMessagePart.Image.toBitmap(
     context: Context,
     maxDimension: Int = 1536,
+    httpClient: OkHttpClient = AppNetwork.fetchClient(),
 ): Bitmap? {
     val raw: Bitmap? = runCatching {
         when {
@@ -140,19 +143,8 @@ fun UIMessagePart.Image.toBitmap(
                 }
             }
             url.startsWith("http://") || url.startsWith("https://") -> {
-                // Bare HTTP fetch — pull as a single buffered read. This path is used by
-                // chat surfaces that pasted an https image URL directly; it does NOT honor
-                // the app's OkHttp interceptors (auth, network-change pool eviction, etc).
-                // Callers that need those should resolve the URL upstream and hand us a
-                // file:// or data: instead.
-                val conn = java.net.URL(url).openConnection().apply {
-                    connectTimeout = 8_000
-                    readTimeout = 15_000
-                }
-                conn.getInputStream().use { stream ->
-                    val bytes = stream.readBytes()
-                    BitmapFactory.decodeByteArray(bytes, 0, bytes.size, sampleOpts(bytes, maxDimension))
-                }
+                val bytes = httpClient.fetchBytes(url) ?: return@runCatching null
+                BitmapFactory.decodeByteArray(bytes, 0, bytes.size, sampleOpts(bytes, maxDimension))
             }
             else -> null
         }
@@ -172,7 +164,10 @@ fun UIMessagePart.Image.toBitmap(
  * — the on-device runtime accepts the encoded
  * container; the runtime decodes internally. Returns null when the URL can't be opened.
  */
-fun UIMessagePart.Audio.audioBytes(context: Context): ByteArray? {
+fun UIMessagePart.Audio.audioBytes(
+    context: Context,
+    httpClient: OkHttpClient = AppNetwork.fetchClient(),
+): ByteArray? {
     return runCatching {
         when {
             url.startsWith("data:") -> {
@@ -187,16 +182,41 @@ fun UIMessagePart.Audio.audioBytes(context: Context): ByteArray? {
             url.startsWith("content://") -> {
                 context.contentResolver.openInputStream(url.toUri())?.use { it.readBytes() }
             }
-            url.startsWith("http://") || url.startsWith("https://") -> {
-                val conn = java.net.URL(url).openConnection().apply {
-                    connectTimeout = 8_000
-                    readTimeout = 15_000
-                }
-                conn.getInputStream().use { it.readBytes() }
-            }
+            url.startsWith("http://") || url.startsWith("https://") -> httpClient.fetchBytes(url)
             else -> null
         }
     }.getOrNull()
+}
+
+/**
+ * HTTP downloads used while encoding a chat attachment. The app process installs the real
+ * client (with the network-setting proxy) at startup; tests and library callers can pass
+ * their own client instead. The fallback is direct so a caller that never installed one
+ * still works, rather than failing closed on a missing graph.
+ */
+object AppNetwork {
+    @Volatile
+    var client: OkHttpClient = OkHttpClient.Builder()
+        .connectTimeout(8, java.util.concurrent.TimeUnit.SECONDS)
+        .readTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+        .build()
+
+    /**
+     * Same proxy, dispatcher and connection pool as [client], but bounded timeouts for the
+     * attachment fetches below: the shared chat client allows a 10-minute read so a long
+     * streamed reply is not cut off, which is far too long to block on one image download.
+     */
+    fun fetchClient(): OkHttpClient = client.newBuilder()
+        .connectTimeout(8, java.util.concurrent.TimeUnit.SECONDS)
+        .readTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+        .build()
+}
+
+private fun OkHttpClient.fetchBytes(url: String): ByteArray? {
+    val request = Request.Builder().url(url).build()
+    return newCall(request).execute().use { response ->
+        if (!response.isSuccessful) null else response.body.bytes()
+    }
 }
 
 private fun sampleOpts(bytes: ByteArray, maxDimension: Int): BitmapFactory.Options {

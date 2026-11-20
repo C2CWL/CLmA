@@ -1,5 +1,9 @@
 package com.clma.app
 
+import com.clma.app.data.network.applyAppProxy
+import com.clma.app.data.network.toProxyOrNull
+import java.util.concurrent.TimeUnit
+import okhttp3.OkHttpClient
 import com.clma.app.diagnostics.FunctionalDiagnostics
 import android.app.Application
 import android.content.Intent
@@ -110,6 +114,7 @@ class ClmaApp : Application() {
             androidContext(this@ClmaApp)
             modules(appModule, viewModelModule, dataSourceModule, repositoryModule)
         }
+        installProxyAwareNetworkClients()
         observeLocalSnapshots()
         initWorkManager()
         // Retire the periodic probe persisted by older builds.
@@ -284,6 +289,35 @@ class ClmaApp : Application() {
                 Log.e(TAG, "startWorkflowRegistry failed", it)
             }
         }
+    }
+
+    /**
+     * Modules below :app (:ai, :speech, :workspace) cannot read the network setting, so they
+     * expose a hook the app process fills in at startup. Without this, remote attachments,
+     * TTS synthesis and rootfs downloads opened their own direct connections and silently
+     * ignored a configured app proxy.
+     */
+    private fun installProxyAwareNetworkClients() {
+        runCatching {
+            val settingsStore: SettingsStore = get()
+            val sharedClient = OkHttpClient.Builder()
+                .applyAppProxy(settingsStore)
+                .connectTimeout(20, TimeUnit.SECONDS)
+                .readTimeout(10, TimeUnit.MINUTES)
+                .writeTimeout(120, TimeUnit.SECONDS)
+                .build()
+            com.clma.ai.util.AppNetwork.client = sharedClient
+            com.clma.tts.net.SpeechHttp.base = sharedClient
+            com.clma.workspace.WorkspaceDownloads.proxyFor = { url ->
+                settingsStore.settingsFlow.value.networkSetting.proxyUrl.toProxyOrNull()
+                    ?: runCatching {
+                        val uri = url.toURI()
+                        java.net.ProxySelector.getDefault()
+                            ?.select(uri)
+                            ?.firstOrNull { it.type() != java.net.Proxy.Type.DIRECT }
+                    }.getOrNull()
+            }
+        }.onFailure { Log.w(TAG, "installProxyAwareNetworkClients failed", it) }
     }
 
     private fun startNetworkChangeMonitor() {

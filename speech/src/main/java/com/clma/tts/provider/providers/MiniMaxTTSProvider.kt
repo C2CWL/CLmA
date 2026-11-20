@@ -13,14 +13,13 @@ import com.clma.common.http.sseFlow
 import com.clma.tts.model.AudioChunk
 import com.clma.tts.model.AudioFormat
 import com.clma.tts.model.TTSRequest
+import com.clma.tts.net.SpeechHttp
 import com.clma.tts.provider.TTSProvider
 import com.clma.tts.provider.TTSProviderException
 import com.clma.tts.provider.TTSProviderSetting
 import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
-import java.util.concurrent.TimeUnit
 
 private const val TAG = "MiniMaxTTSProvider"
 
@@ -37,9 +36,7 @@ private data class MiniMaxResponse(
 )
 
 class MiniMaxTTSProvider : TTSProvider<TTSProviderSetting.MiniMax> {
-    private val httpClient = OkHttpClient.Builder()
-        .readTimeout(60, TimeUnit.SECONDS)
-        .build()
+    private val httpClient = SpeechHttp.client(60)
 
     private val json = Json {
         ignoreUnknownKeys = true

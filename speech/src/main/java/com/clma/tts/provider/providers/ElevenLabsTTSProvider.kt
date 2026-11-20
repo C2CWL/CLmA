@@ -7,22 +7,19 @@ import kotlinx.coroutines.flow.flow
 import com.clma.tts.model.AudioChunk
 import com.clma.tts.model.AudioFormat
 import com.clma.tts.model.TTSRequest
+import com.clma.tts.net.SpeechHttp
 import com.clma.tts.provider.TTSProvider
 import com.clma.tts.provider.TTSProviderException
 import com.clma.tts.provider.TTSProviderSetting
 import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
-import java.util.concurrent.TimeUnit
 
 private const val TAG = "ElevenLabsTTSProvider"
 
 class ElevenLabsTTSProvider : TTSProvider<TTSProviderSetting.ElevenLabs> {
-    private val httpClient = OkHttpClient.Builder()
-        .readTimeout(120, TimeUnit.SECONDS)
-        .build()
+    private val httpClient = SpeechHttp.client(120)
 
     override fun generateSpeech(
         context: Context,
