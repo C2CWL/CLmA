@@ -58,6 +58,9 @@ interface MessageNodeDAO {
     suspend fun getTokenStatsRaw(query: SupportSQLiteQuery): MessageTokenStats
 
     @RawQuery
+    suspend fun countVisibleMessagesRaw(query: SupportSQLiteQuery): Int
+
+    @RawQuery
     suspend fun getMessageCountPerDayRaw(query: SupportSQLiteQuery): List<MessageDayCount>
 }
 
@@ -98,6 +101,12 @@ private val TOKEN_STATS_SQL = SimpleSQLiteQuery(
 )
 
 suspend fun MessageNodeDAO.getTokenStats(): MessageTokenStats = getTokenStatsRaw(TOKEN_STATS_SQL)
+
+private val MESSAGE_COUNT_SQL = SimpleSQLiteQuery(
+    "SELECT COUNT(*) FROM message_node mn WHERE json_array_length($VALID_MESSAGES_JSON) > 0"
+)
+
+suspend fun MessageNodeDAO.countVisibleMessages(): Int = countVisibleMessagesRaw(MESSAGE_COUNT_SQL)
 
 // 按用户消息的 createdAt 字段（LocalDateTime ISO 字符串前10位即日期）统计每日消息数
 // 同样只算选中分支：编辑一条用户消息会在同一个 node 里留下旧版本，那不是"这一天多了一条消息"

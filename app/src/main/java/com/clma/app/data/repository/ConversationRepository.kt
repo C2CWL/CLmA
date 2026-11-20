@@ -32,6 +32,7 @@ import com.clma.app.data.files.FilesManager
 import com.clma.app.data.model.Conversation
 import com.clma.app.data.model.ConversationCompaction
 import com.clma.app.data.model.MessageNode
+import com.clma.app.data.usage.UsageLedger
 import com.clma.app.utils.JsonInstant
 import java.time.Instant
 import kotlin.uuid.Uuid
@@ -44,6 +45,7 @@ class ConversationRepository(
     private val database: AppDatabase,
     private val filesManager: FilesManager,
     private val messageFtsManager: MessageFtsManager,
+    private val usageLedger: UsageLedger,
 ) {
     companion object {
         private const val TAG = "ConversationRepository"
@@ -382,6 +384,7 @@ class ConversationRepository(
         conversation: Conversation,
         updateSearchIndex: Boolean = true,
     ) {
+        usageLedger.initializeLifetimeUsage()
         val entities = encodeMessageNodes(conversation.id.toString(), conversation.messageNodes)
         database.withTransaction {
             conversationDAO.update(
@@ -397,6 +400,7 @@ class ConversationRepository(
     }
 
     suspend fun deleteConversation(conversation: Conversation) {
+        usageLedger.initializeLifetimeUsage()
         // 获取完整的 Conversation（包含 messageNodes）以正确清理文件
         val fullConversation = if (conversation.messageNodes.isEmpty()) {
             getConversationById(conversation.id) ?: conversation

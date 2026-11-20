@@ -8,6 +8,12 @@ import kotlinx.coroutines.runBlocking
 import com.clma.app.data.datastore.SettingsStore
 import com.clma.app.data.db.AppDatabase
 import com.clma.app.data.db.AppDatabaseFactory
+import com.clma.ai.core.TokenUsage
+import com.clma.app.data.usage.LifetimeUsage
+import com.clma.app.data.usage.UsageLedger
+import com.clma.app.data.usage.UsageLedgerDatabase
+import com.clma.app.data.usage.UsageLedgerDatabaseFactory
+import com.clma.app.data.usage.UsagePurpose
 import com.clma.app.utils.JsonInstant
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -29,6 +35,8 @@ class BackupManagerTest {
     private lateinit var context: Context
     private lateinit var liveDatabase: AppDatabase
     private lateinit var manager: BackupManager
+    private lateinit var usageDatabase: UsageLedgerDatabase
+    private lateinit var ledger: UsageLedger
 
     @Before fun setUp() {
         val app = InstrumentationRegistry.getInstrumentation().targetContext
@@ -44,11 +52,16 @@ class BackupManagerTest {
         liveDatabase = AppDatabaseFactory.create(context)
         liveDatabase.openHelper.writableDatabase.execSQL("CREATE TABLE backup_probe (text TEXT)")
         liveDatabase.openHelper.writableDatabase.execSQL("INSERT INTO backup_probe VALUES ('live')")
-        manager = BackupManager(context, liveDatabase, GlobalContext.get().get<SettingsStore>(), JsonInstant)
+        usageDatabase = UsageLedgerDatabaseFactory.create(context)
+        ledger = UsageLedger(usageDatabase.usageRecordDao())
+        manager = BackupManager(
+            context, liveDatabase, GlobalContext.get().get<SettingsStore>(), JsonInstant, usageDatabase, ledger,
+        )
     }
 
     @After fun tearDown() {
         liveDatabase.close()
+        usageDatabase.close()
         directory.deleteRecursively()
     }
 
@@ -89,9 +102,60 @@ class BackupManagerTest {
             assertTrue(zip.getEntry(DatabaseBackup.ARCHIVE_DATABASE) != null)
             assertEquals(null, zip.getEntry(DatabaseBackup.WAL))
             assertEquals(null, zip.getEntry(DatabaseBackup.SHM))
+            assertTrue(zip.getEntry(DatabaseBackup.ARCHIVE_USAGE_LEDGER) != null)
+            assertEquals(null, zip.getEntry(DatabaseBackup.USAGE_WAL))
+            assertEquals(null, zip.getEntry(DatabaseBackup.USAGE_SHM))
         }
         manager.stageRestore(archive, listOf(BackupItem.DATABASE))
         assertEquals("live", probe(liveDatabase))
+    }
+
+    @Test fun restoresLifetimeTotalsEvenAfterDetailPruning() = runBlocking {
+        ledger.record(UsagePurpose.MAIN, TokenUsage(promptTokens = 40, completionTokens = 5, totalTokens = 45))
+        assertEquals(1, ledger.prune(at = Long.MAX_VALUE))
+        val archive = manager.createBackup(listOf(BackupItem.DATABASE))
+
+        ledger.record(UsagePurpose.MAIN, TokenUsage(promptTokens = 10, totalTokens = 10))
+        manager.stageRestore(archive, listOf(BackupItem.DATABASE))
+        assertEquals(50L, ledger.lifetimeUsage().inputTokens)
+
+        liveDatabase.close()
+        usageDatabase.close()
+        assertTrue(BackupManager.applyPendingRestore(context, JsonInstant))
+        usageDatabase = UsageLedgerDatabaseFactory.create(context)
+        val restored = UsageLedger(
+            dao = usageDatabase.usageRecordDao(),
+            legacyUsage = { error("Already baselined") },
+        )
+        assertEquals(40L, restored.lifetimeUsage().inputTokens)
+        assertEquals(5L, restored.lifetimeUsage().outputTokens)
+        assertEquals(0, usageDatabase.usageRecordDao().count())
+    }
+
+    @Test fun migratesVersionOneDetailsAndBaselinesOnlyOnce() = runBlocking {
+        val path = File(directory, "legacy-usage.db").absolutePath
+        val original = UsageLedgerDatabaseFactory.create(context, path)
+        try {
+            val ledger = UsageLedger(original.usageRecordDao())
+            ledger.record(UsagePurpose.MAIN, TokenUsage(promptTokens = 40, completionTokens = 5, totalTokens = 45))
+            original.openHelper.writableDatabase.apply {
+                execSQL("DROP TABLE lifetime_usage")
+                version = 1
+            }
+        } finally {
+            original.close()
+        }
+
+        val migrated = UsageLedgerDatabaseFactory.create(context, path)
+        try {
+            val dao = migrated.usageRecordDao()
+            assertEquals(1, dao.count())
+            val ledger = UsageLedger(dao, legacyUsage = { LifetimeUsage(inputTokens = 60, outputTokens = 3) })
+            assertEquals(LifetimeUsage(inputTokens = 60, outputTokens = 5, legacyBaselined = true), ledger.lifetimeUsage())
+            assertEquals(ledger.lifetimeUsage(), UsageLedger(dao, legacyUsage = { error("Already baselined") }).lifetimeUsage())
+        } finally {
+            migrated.close()
+        }
     }
 
     @Test fun unsupportedSchemaIsRejectedBeforePublishing() = runBlocking {
