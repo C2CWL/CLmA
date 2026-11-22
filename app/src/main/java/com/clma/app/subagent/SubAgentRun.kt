@@ -95,10 +95,11 @@ object SubAgentDefaults {
      * retry also benefits from model routing — a model that failed is in cooldown, so the
      * next attempt automatically tries a different favourite model.
      *
-     * Default 1 (one retry) so a transient network blip does not waste a whole sub-agent run;
-     * 0 preserves the pre-retry behaviour (fail immediately).
+     * Default 0: retries regenerate from the original user message, which can replay any
+     * file/command side effect a tool already performed. Opt in explicitly only when the
+     * run is known to be read-only; even then retries are skipped after tool execution.
      */
-    const val DEFAULT_RETRY_ON_FAILURE = 1
+    const val DEFAULT_RETRY_ON_FAILURE = 0
     const val MAX_RETRY_ON_FAILURE = 5
 
     /** Default system prompt used when the assistant's per-sub-agent prompt is empty. */

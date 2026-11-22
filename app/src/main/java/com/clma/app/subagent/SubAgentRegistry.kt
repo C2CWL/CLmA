@@ -75,24 +75,36 @@ class SubAgentRegistry(private val store: SubAgentStore? = null) {
      * serialisable and we don't want UI consumers re-collecting on Job-pointer churn.
      */
     private val activeJobs: ConcurrentHashMap<String, Job> = ConcurrentHashMap()
+    // A cancel can land while a run is PENDING and has no Job yet. Remember it so setJob()
+    // cancels the Job as soon as the engine publishes it, instead of losing the request.
+    private val cancelRequested: MutableSet<String> = mutableSetOf()
 
     fun addPending(run: SubAgentRun, job: Job? = null) {
         synchronized(lock) {
             val safeRun = if (run.noResult) run.copy(result = null) else run
             publish(_runs.value + (run.id to safeRun))
         }
-        if (job != null) activeJobs[run.id] = job
+        if (job != null) setJob(run.id, job)
     }
 
     fun update(id: String, transform: (SubAgentRun) -> SubAgentRun) = synchronized(lock) {
         val existing = _runs.value[id] ?: return@synchronized
         val updated = transform(existing)
+        if (updated.status == SubAgentStatus.SUCCEEDED || updated.status == SubAgentStatus.FAILED ||
+            updated.status == SubAgentStatus.TIMED_OUT || updated.status == SubAgentStatus.CANCELLED
+        ) {
+            cancelRequested.remove(id)
+        }
         // no_result is suppression at rest too, not just a model-facing encoder guard.
         publish(_runs.value + (id to if (updated.noResult) updated.copy(result = null) else updated))
     }
 
     fun setJob(id: String, job: Job) {
-        activeJobs[id] = job
+        val cancelNow = synchronized(lock) {
+            activeJobs[id] = job
+            cancelRequested.remove(id)
+        }
+        if (cancelNow) job.cancel()
     }
 
     fun get(id: String): SubAgentRun? = _runs.value[id]
@@ -128,15 +140,30 @@ class SubAgentRegistry(private val store: SubAgentStore? = null) {
         }
 
     /**
-     * Cancel a single run by id. Returns true if a cancellable job existed; false if the
-     * run was already in a terminal state or if the id is unknown. Marking the status to
-     * CANCELLED is the caller's job (typically the engine after the Job's onCompletion
-     * fires) so we don't double-write.
+     * Cancel a single run by id. Works for both RUNNING runs (a Job is cancelled immediately)
+     * and PENDING runs (no Job exists yet, so the request is remembered and applied by
+     * [setJob]). Returns false only for an unknown id or a run already in a terminal state.
+     * The status flip happens here, synchronously, so tool callers get an accurate answer
+     * and the engine's completion handler can still settle the run ledger.
      */
-    fun requestCancel(id: String): Boolean {
-        val job = activeJobs.remove(id) ?: return false
-        job.cancel()
-        return true
+    fun requestCancel(id: String): Boolean = synchronized(lock) {
+        val run = _runs.value[id] ?: return@synchronized false
+        if (run.status != SubAgentStatus.RUNNING && run.status != SubAgentStatus.PENDING) {
+            return@synchronized false
+        }
+        val job = activeJobs.remove(id)
+        cancelRequested.add(id)
+        publish(
+            _runs.value + (
+                id to run.copy(
+                    status = SubAgentStatus.CANCELLED,
+                    finishedAtMs = System.currentTimeMillis(),
+                    error = "cancelled by caller",
+                )
+            ),
+        )
+        job?.cancel()
+        true
     }
 
     /**
@@ -156,7 +183,10 @@ class SubAgentRegistry(private val store: SubAgentStore? = null) {
     }
 
     fun clearJob(id: String) {
-        activeJobs.remove(id)
+        synchronized(lock) {
+            activeJobs.remove(id)
+            cancelRequested.remove(id)
+        }
     }
 
 }
