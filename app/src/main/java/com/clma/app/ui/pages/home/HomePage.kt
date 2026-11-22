@@ -53,7 +53,6 @@ import com.clma.app.utils.navigateToChatPage
 import com.composables.icons.lucide.ArrowUp
 import com.composables.icons.lucide.BookOpen
 import com.composables.icons.lucide.Bot
-import com.composables.icons.lucide.Code2
 import com.composables.icons.lucide.FolderOpen
 import com.composables.icons.lucide.Lightbulb
 import com.composables.icons.lucide.Lucide
@@ -85,7 +84,7 @@ fun HomePage() {
         HomePrompt(Lucide.FolderOpen, R.string.home_prompt_workspace_title,
             R.string.home_prompt_workspace_sub, R.string.home_prompt_workspace_text,
             { Color(0xFF74C7A6) }),
-        HomePrompt(Lucide.Code2, R.string.home_prompt_script_title,
+        HomePrompt(Lucide.CodeXml, R.string.home_prompt_script_title,
             R.string.home_prompt_script_sub, R.string.home_prompt_script_text,
             { Color(0xFFB39DFF) }),
         HomePrompt(Lucide.BookOpen, R.string.home_prompt_project_title,
@@ -208,10 +207,11 @@ fun HomePage() {
                         horizontalArrangement = Arrangement.spacedBy(14.dp),
                     ) {
                         for (p in prompts.subList(i, minOf(i + 2, prompts.size))) {
+                            val promptText = stringResource(p.promptRes)
                             HomePromptCard(
                                 prompt = p,
                                 modifier = Modifier.weight(1f),
-                                onClick = { start(stringResource(p.promptRes)) },
+                                onClick = { start(promptText) },
                             )
                         }
                     }
