@@ -28,8 +28,6 @@ import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ArrowRight01
 import com.clma.app.R
 import com.clma.app.data.ai.prompts.DEFAULT_OCR_PROMPT
-import com.clma.app.data.ai.prompts.DEFAULT_SUGGESTION_PROMPT
-import com.clma.app.data.ai.prompts.DEFAULT_TITLE_PROMPT
 import com.clma.app.data.ai.prompts.DEFAULT_TRANSLATION_PROMPT
 import com.clma.app.data.datastore.Settings
 import com.clma.app.ui.components.ai.ReasoningButton
@@ -53,24 +51,6 @@ internal fun PromptSettingsPage(settings: Settings, vm: SettingVM, contentPaddin
                 onResetPrompt = { vm.updateSettings(settings.copy(translatePrompt = DEFAULT_TRANSLATION_PROMPT)) },
                 reasoningLevel = ReasoningLevel.fromBudgetTokens(settings.translateThinkingBudget),
                 onUpdateReasoningLevel = { vm.updateSettings(settings.copy(translateThinkingBudget = it.budgetTokens)) },
-            )
-        }
-        item {
-            PromptSettingItem(
-                title = stringResource(R.string.setting_model_page_prompt_title),
-                promptDescription = stringResource(R.string.setting_model_page_suggestion_prompt_vars),
-                promptValue = settings.titlePrompt,
-                onPromptChange = { text -> vm.updateSettings { it.copy(titlePrompt = text) } },
-                onResetPrompt = { vm.updateSettings(settings.copy(titlePrompt = DEFAULT_TITLE_PROMPT)) },
-            )
-        }
-        item {
-            PromptSettingItem(
-                title = stringResource(R.string.setting_model_page_prompt_suggestion),
-                promptDescription = stringResource(R.string.setting_model_page_suggestion_prompt_vars),
-                promptValue = settings.suggestionPrompt,
-                onPromptChange = { text -> vm.updateSettings { it.copy(suggestionPrompt = text) } },
-                onResetPrompt = { vm.updateSettings(settings.copy(suggestionPrompt = DEFAULT_SUGGESTION_PROMPT)) },
             )
         }
         item {

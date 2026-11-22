@@ -100,7 +100,6 @@ class SettingsSearchQueryTest {
         assertTop("S3 Bucket", Screen.Backup(initialTab = 2))
         assertTop("备份提醒", Screen.Backup(initialTab = 3))
         assertTop("语音识别", Screen.SettingSpeech(initialTab = 1))
-        assertTop("标题生成", Screen.SettingModels(initialTab = 1))
     }
 
     @Test

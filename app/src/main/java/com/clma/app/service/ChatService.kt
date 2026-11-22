@@ -3506,44 +3506,7 @@ class ChatService(
             }
         }
 
-        runCatching {
-            val settings = settingsStore.settingsFlow.first()
-            val model = settings.findModelById(settings.fastModelId)
-                ?: run { applyTitle(fallback); return@runCatching }
-            val provider = model.findProvider(settings.providers)
-                ?: run { applyTitle(fallback); return@runCatching }
-            // Same defence as handleLlmTurn: don't burn tokens on a disabled provider.
-            if (!provider.enabled) {
-                applyTitle(fallback)
-                return@runCatching
-            }
-
-            val providerHandler = providerManager.getProviderByType(provider)
-            val result = withContext(UsageCallContext(purpose = UsagePurpose.TITLE, conversationId = conversation.id.toString())) { providerHandler.generateText(
-                providerSetting = provider,
-                messages = listOf(
-                    UIMessage.user(
-                        prompt = settings.titlePrompt.applyPlaceholders(
-                            "locale" to Locale.getDefault().displayName,
-                            "content" to conversation.currentMessages
-                                .takeLast(4).joinToString("\n\n") { it.summaryAsText(maxLength = 500) })
-                    ),
-                ),
-                params = backgroundTextGenerationParams(model, conversationId, settings.fastModelReasoningLevel),
-            ) }
-
-            applyTitle(result.message.toText().trim().ifBlank { fallback })
-        }.onFailure {
-            // Title generation is auxiliary — a failure here doesn't block the chat
-            // and surfaces visibly as a blank conversation title in the list. Don't
-            // push it onto the user-facing error stream: when the title model 429s,
-            // the next message sees title.isBlank()==true, tries again, 429s again,
-            // and the user gets a popup per message until they switch models. Match
-            // the generateSuggestion pattern (log only) to keep the surface quiet.
-            Log.w(TAG, "generateTitle failed", it)
-            runCatching { applyTitle(fallback) }
-                .onFailure { e -> Log.w(TAG, "generateTitle fallback apply failed", e) }
-        }
+        applyTitle(fallback)
     }
 
     // ---- 生成建议 ----
@@ -3552,55 +3515,8 @@ class ChatService(
         conversationId: Uuid,
         conversation: Conversation,
     ) = withContext(Dispatchers.IO) {
-        runCatching {
-            val settings = settingsStore.settingsFlow.first()
-            if (!settings.enableSuggestion) return@runCatching
-            val model = settings.findModelById(settings.fastModelId)
-                ?: return@runCatching
-            val provider = model.findProvider(settings.providers) ?: return@runCatching
-            // Same defence as handleLlmTurn: don't burn tokens on a disabled provider.
-            if (!provider.enabled) return@runCatching
-
-            sessions[conversationId]?.let { session ->
-                updateConversation(
-                    conversationId,
-                    session.state.value.copy(chatSuggestions = emptyList())
-                )
-            }
-
-            val providerHandler = providerManager.getProviderByType(provider)
-            val result = withContext(UsageCallContext(purpose = UsagePurpose.SUGGESTION, conversationId = conversationId.toString())) { providerHandler.generateText(
-                providerSetting = provider,
-                messages = listOf(
-                    UIMessage.user(
-                        settings.suggestionPrompt.applyPlaceholders(
-                            "locale" to Locale.getDefault().displayName,
-                            "content" to conversation.currentMessages
-                                .takeLast(8).joinToString("\n\n") { it.summaryAsText(maxLength = 500) }),
-                    )
-                ),
-                params = backgroundTextGenerationParams(model, conversationId, settings.fastModelReasoningLevel),
-            ) }
-            val suggestions =
-                result.message.toText().split("\n").map { it.trim() }
-                    .filter { it.isNotBlank() }
-
-            val latestConversation = conversationRepo.getConversationById(conversationId)
-                ?: sessions[conversationId]?.state?.value
-                ?: conversation
-            saveConversation(
-                conversationId,
-                latestConversation.copy(
-                    chatSuggestions = suggestions.take(
-                        10
-                    )
-                )
-            )
-        }.onFailure {
-            // Suggestion generation is auxiliary — log only, don't push onto the
-            // user-facing error stream (mirrors the generateTitle failure handling).
-            Log.w(TAG, "generateSuggestion failed", it)
-        }
+        // 建议属于辅助任务，不再调用模型消耗 Token；静态快捷建议由 stalled / failure 路径提供。
+        null
     }
 
     // ---- 压缩对话历史 ----
