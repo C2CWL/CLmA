@@ -2969,7 +2969,9 @@ class ChatService(
         // the next usable model in the user's favourites list. The original
         // model enters a 5-minute cooldown; it is silently restored on the
         // next user turn because routing only overrides this single attempt.
+        // The autoModelRouting setting gates the whole path, including cooldown.
         if (
+            settings.autoModelRouting &&
             messageRange == null &&
             generationFailure != null &&
             generationFailure !is CancellationException &&

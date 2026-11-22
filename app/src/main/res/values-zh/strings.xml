@@ -1518,6 +1518,8 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="setting_provider_page_include_history_reasoning">回传历史思考过程</string>
   <string name="setting_model_page_fast_model">快速模型</string>
   <string name="setting_model_page_fast_model_desc">用于生成标题、聊天建议以及执行其他快速或后台任务</string>
+  <string name="setting_model_page_auto_model_routing">启用自动模型路由</string>
+  <string name="setting_model_page_auto_model_routing_desc">失败或工具能力不足时自动切换到收藏模型；关闭后始终使用当前选择的模型</string>
   <string name="setting_model_page_enable_suggestion">启用聊天建议</string>
   <!-- fork (agent) strings preserved from merge -->
   <string name="setting_display_page_show_date_below_name_desc">是否在昵称或模型名称下方显示消息日期</string>

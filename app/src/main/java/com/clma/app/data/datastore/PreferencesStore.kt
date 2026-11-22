@@ -226,6 +226,7 @@ class SettingsStore(
 
         // 模型选择
         val FAVORITE_MODELS = stringPreferencesKey("favorite_models")
+        val AUTO_MODEL_ROUTING = booleanPreferencesKey("auto_model_routing")
         val SELECT_MODEL = stringPreferencesKey("chat_model")
         val FAST_MODEL = stringPreferencesKey("fast_model")
         val FAST_MODEL_REASONING_LEVEL = stringPreferencesKey("fast_model_reasoning_level")
@@ -372,6 +373,7 @@ class SettingsStore(
                 preferences[NETWORK_SETTING] = JsonInstant.encodeToString(settings.networkSetting)
 
                 preferences[FAVORITE_MODELS] = JsonInstant.encodeToString(settings.favoriteModels)
+                preferences[AUTO_MODEL_ROUTING] = settings.autoModelRouting
                 preferences[SELECT_MODEL] = settings.chatModelId.toString()
                 preferences[FAST_MODEL] = settings.fastModelId.toString()
                 preferences[FAST_MODEL_REASONING_LEVEL] = settings.fastModelReasoningLevel.name
@@ -497,6 +499,7 @@ class SettingsStore(
                         emptyList()
                     }
                 } ?: emptyList(),
+                autoModelRouting = preferences[AUTO_MODEL_ROUTING] ?: true,
                 chatModelId = preferences[SELECT_MODEL]?.let { runCatching { Uuid.parse(it) }.getOrNull() }
                     ?: DEFAULT_AUTO_MODEL_ID,
                 fastModelId = preferences[FAST_MODEL]?.let { runCatching { Uuid.parse(it) }.getOrNull() }
@@ -1123,6 +1126,7 @@ data class Settings(
     val chatModelId: Uuid = Uuid.random(),
     val fastModelId: Uuid = Uuid.random(),
     val fastModelReasoningLevel: ReasoningLevel = ReasoningLevel.AUTO,
+    val autoModelRouting: Boolean = true,
     val imageGenerationModelId: Uuid = Uuid.random(),
     val videoGenerationModelId: Uuid = Uuid.random(),
     val titlePrompt: String = DEFAULT_TITLE_PROMPT,

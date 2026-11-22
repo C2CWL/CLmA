@@ -157,6 +157,22 @@ private fun ModelSettingsPage(settings: Settings, vm: SettingVM, contentPadding:
             )
         }
         item {
+            CardGroup {
+                item(
+                    headlineContent = { Text(stringResource(R.string.setting_model_page_auto_model_routing)) },
+                    supportingContent = { Text(stringResource(R.string.setting_model_page_auto_model_routing_desc)) },
+                    trailingContent = {
+                        Switch(
+                            checked = settings.autoModelRouting,
+                            onCheckedChange = { enabled ->
+                                vm.updateSettings(settings.copy(autoModelRouting = enabled))
+                            }
+                        )
+                    },
+                )
+            }
+        }
+        item {
             SuggestionSettingItem(
                 settings = settings,
                 vm = vm,
