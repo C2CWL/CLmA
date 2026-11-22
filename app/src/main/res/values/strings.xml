@@ -3448,4 +3448,22 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="chat_page_panel_title">Conversation</string>
   <string name="chat_page_panel_usage">Total usage · %1$s</string>
   <string name="chat_page_new_temporary_chat">New temporary chat</string>
+
+  <string name="home_drawer_entry">Start page</string>
+  <string name="home_new_chat">New chat</string>
+  <string name="home_assistant">Assistant</string>
+  <string name="home_subtitle">What would you like to work on today?</string>
+  <string name="home_composer_hint">Message CLmA...</string>
+  <string name="home_prompt_workspace_title">Explore workspace</string>
+  <string name="home_prompt_workspace_sub">Browse and understand your project files</string>
+  <string name="home_prompt_workspace_text">Help me explore and understand my current workspace</string>
+  <string name="home_prompt_script_title">Write a script</string>
+  <string name="home_prompt_script_sub">Automate a small task</string>
+  <string name="home_prompt_script_text">Write a small script to help me automate a task</string>
+  <string name="home_prompt_project_title">Start a project</string>
+  <string name="home_prompt_project_sub">Scaffold something new</string>
+  <string name="home_prompt_project_text">Help me plan and scaffold a brand new project</string>
+  <string name="home_prompt_git_title">Learn Git</string>
+  <string name="home_prompt_git_sub">Explain Git concepts</string>
+  <string name="home_prompt_git_text">Explain Git basics and common workflows to me</string>
 </resources>

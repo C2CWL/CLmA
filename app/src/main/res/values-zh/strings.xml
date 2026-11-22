@@ -3436,4 +3436,22 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="chat_page_panel_title">会话</string>
   <string name="chat_page_panel_usage">累计用量 · %1$s</string>
   <string name="chat_page_new_temporary_chat">新建临时对话</string>
+
+  <string name="home_drawer_entry">起始页</string>
+  <string name="home_new_chat">新对话</string>
+  <string name="home_assistant">助手</string>
+  <string name="home_subtitle">今天想做点什么？</string>
+  <string name="home_composer_hint">给 CLmA 发消息...</string>
+  <string name="home_prompt_workspace_title">看看工作区</string>
+  <string name="home_prompt_workspace_sub">浏览并理解项目文件</string>
+  <string name="home_prompt_workspace_text">帮我浏览并理解当前工作区</string>
+  <string name="home_prompt_script_title">写个小脚本</string>
+  <string name="home_prompt_script_sub">自动完成一个小任务</string>
+  <string name="home_prompt_script_text">写一个小脚本帮我自动完成某个任务</string>
+  <string name="home_prompt_project_title">新建项目</string>
+  <string name="home_prompt_project_sub">从零搭建一个新东西</string>
+  <string name="home_prompt_project_text">帮我规划并从零搭建一个新项目</string>
+  <string name="home_prompt_git_title">讲讲 Git</string>
+  <string name="home_prompt_git_sub">讲解 Git 概念</string>
+  <string name="home_prompt_git_text">给我讲讲 Git 的基础知识和常用流程</string>
 </resources>
