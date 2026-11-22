@@ -1100,6 +1100,8 @@
   <string name="setting_model_page_compress_model">Compress Model</string>
   <string name="setting_model_page_fast_model">Fast Model</string>
   <string name="setting_model_page_fast_model_desc">Model used for titles, chat suggestions, and other fast or background tasks</string>
+  <string name="setting_model_page_auto_model_routing">Enable automatic model routing</string>
+  <string name="setting_model_page_auto_model_routing_desc">Automatically switch to favorite models when the current model fails or lacks tool capability; when off, always use the currently selected model</string>
   <string name="setting_model_page_compress_model_desc">Model for compressing conversation history</string>
   <string name="setting_model_page_compress_prompt_vars">Variables: {content}, {target_tokens}, {additional_context}</string>
   <string name="setting_model_page_image_recognition_mode">Image Recognition Mode</string>

@@ -131,4 +131,12 @@ class SettingsPersistenceCoverageTest {
         assertTrue(keyNames.contains("sub_agent_archive_folders"))
         assertTrue(keyNames.contains("auto_enabled_default_skills"))
     }
+
+    @Test
+    fun `auto model routing is persisted`() {
+        val keyNames = declaredKeys().values
+
+        assertEquals("auto_model_routing", expectedKeyName("autoModelRouting"))
+        assertTrue(keyNames.contains("auto_model_routing"))
+    }
 }

@@ -50,5 +50,8 @@ class SettingsReadBackCoverageTest {
     fun `record requests is read back from its key and defaults to on`() {
         // 日志页「记录请求」开关: 曾经只存在内存里, 重启就变回关闭。缺失 key 时默认开启。
         assertEquals(true, source.contains("recordRequests = preferences[RECORD_REQUESTS] ?: true"))
+
+        // auto routing key must actually be read; missing key defaults to enabled.
+        assertEquals(true, source.contains("autoModelRouting = preferences[AUTO_MODEL_ROUTING] ?: true"))
     }
 }

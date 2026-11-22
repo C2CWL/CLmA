@@ -5,6 +5,7 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
+import com.clma.app.data.datastore.Settings
 import com.clma.app.utils.JsonInstant
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -157,5 +158,12 @@ class PreferenceStoreMigrationHelpersTest {
         ).jsonObject
 
         assertTrue(migrated["contextCompactionTargetTokensK"] is JsonNull)
+    }
+
+    @Test
+    fun `settings json without auto routing key decodes with routing enabled`() {
+        val migrated = SettingsJsonMigrator.migrate("{}")
+        val settings = JsonInstant.decodeFromString<Settings>(migrated)
+        assertTrue(settings.autoModelRouting)
     }
 }
