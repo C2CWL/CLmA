@@ -117,6 +117,7 @@ import com.clma.app.ui.pages.extensions.workspace.WorkspacePage
 import com.clma.app.ui.pages.extensions.workspace.WorkspaceTerminalPage
 import com.clma.workspace.WorkspaceStorageArea
 import com.clma.app.ui.pages.favorite.FavoritePage
+import com.clma.app.ui.pages.home.HomePage
 import com.clma.app.ui.pages.history.HistoryPage
 import com.clma.app.ui.pages.imggen.ImageGenPage
 import com.clma.app.ui.pages.videogen.VideoGenPage
@@ -546,6 +547,10 @@ class RouteActivity : FragmentActivity() {
                                 FavoritePage()
                             }
 
+                            entry<Screen.Home> {
+                                HomePage()
+                            }
+
                             entry<Screen.Assistant> {
                                 AssistantPage()
                             }
@@ -929,6 +934,9 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data object Favorite : Screen
+
+    @Serializable
+    data object Home : Screen
 
     @Serializable
     data object Assistant : Screen

@@ -140,6 +140,11 @@ internal fun drawerToolsMenu(navController: Navigator): List<AppMenuEntry> = lis
 @Composable
 internal fun drawerMoreMenu(navController: Navigator): List<AppMenuEntry> = listOf(
     AppMenuEntry(
+        text = stringResource(R.string.home_drawer_entry),
+        icon = Lucide.Sparkles,
+        onClick = { navController.navigate(Screen.Home) },
+    ),
+    AppMenuEntry(
         text = stringResource(R.string.assistant_page_title),
         icon = Lucide.Bot,
         onClick = { navController.navigate(Screen.Assistant) },

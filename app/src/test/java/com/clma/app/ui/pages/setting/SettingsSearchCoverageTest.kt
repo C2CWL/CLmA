@@ -28,6 +28,7 @@ class SettingsSearchCoverageTest {
         "MessageSearch" to "message search",
         "Stats" to "usage statistics",
         "GettingStarted" to "first-run onboarding, opened from chat",
+        "Home" to "standalone home page opened from the drawer, not a settings page",
         "BotHome" to "Bot mode home (bot list / channels), not a settings page",
         "BotChat" to "one bot's conversation in Bot mode",
         "BotInfo" to "one bot's info page in Bot mode, opened from its chat or the bot list",
