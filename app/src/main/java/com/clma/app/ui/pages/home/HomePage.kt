@@ -53,6 +53,7 @@ import com.clma.app.utils.navigateToChatPage
 import com.composables.icons.lucide.ArrowUp
 import com.composables.icons.lucide.BookOpen
 import com.composables.icons.lucide.Bot
+import com.composables.icons.lucide.CodeXml
 import com.composables.icons.lucide.FolderOpen
 import com.composables.icons.lucide.Lightbulb
 import com.composables.icons.lucide.Lucide
