@@ -36,6 +36,12 @@ import kotlin.math.roundToInt
 import androidx.compose.material3.MaterialTheme
 
 
+/** 过程旁白显示方式；映射到 DisplaySetting.foldProcessNarration，默认并入思考链。 */
+private enum class ProcessNarrationMode {
+    FOLD_INTO_THINKING,
+    SHOW_AS_MESSAGE,
+}
+
 /**
  * 消息显示 (route kept as [com.clma.app.Screen.SettingPreferencesUI]): how messages, thinking,
  * tool calls and code blocks look. Layout, fonts and the interface-style rows that used to share
@@ -219,11 +225,31 @@ fun SettingPreferencesUIPage(vm: SettingVM = koinViewModel()) {
                     headlineContent = { Text(stringResource(R.string.setting_display_page_fold_process_narration_title)) },
                     supportingContent = { Text(stringResource(R.string.setting_display_page_fold_process_narration_desc)) },
                     trailingContent = {
-                        Switch(
-                            checked = displaySetting.foldProcessNarration,
-                            onCheckedChange = {
-                                updateDisplaySetting(displaySetting.copy(foldProcessNarration = it))
-                            }
+                        Select(
+                            options = ProcessNarrationMode.entries,
+                            selectedOption = if (displaySetting.foldProcessNarration) {
+                                ProcessNarrationMode.FOLD_INTO_THINKING
+                            } else {
+                                ProcessNarrationMode.SHOW_AS_MESSAGE
+                            },
+                            onOptionSelected = {
+                                updateDisplaySetting(
+                                    displaySetting.copy(
+                                        foldProcessNarration = it == ProcessNarrationMode.FOLD_INTO_THINKING
+                                    )
+                                )
+                            },
+                            optionToString = { mode ->
+                                stringResource(
+                                    when (mode) {
+                                        ProcessNarrationMode.FOLD_INTO_THINKING -> R.string.setting_display_page_fold_process_narration_mode_fold
+                                        ProcessNarrationMode.SHOW_AS_MESSAGE -> R.string.setting_display_page_fold_process_narration_mode_expose
+                                    }
+                                )
+                            },
+                            containerColor = CustomColors.listItemColors.containerColor,
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                            modifier = Modifier.width(150.dp),
                         )
                     },
                 )

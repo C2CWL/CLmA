@@ -851,8 +851,10 @@
   <string name="setting_display_page_thinking_steps_visible_desc">思考/工具步骤组折叠时保留最后几步可见，0 为只显示一行标题</string>
   <string name="setting_display_page_thinking_steps_visible_title">折叠时显示的步骤数</string>
   <string name="setting_display_page_thinking_steps_visible_all">全部</string>
-  <string name="setting_display_page_fold_process_narration_title">过程旁白并入步骤</string>
-  <string name="setting_display_page_fold_process_narration_desc">把工具/思考轮次之间的说明文字收进步骤卡片，正文只留最终回答。关闭则恢复旁白与步骤穿插的旧布局</string>
+  <string name="setting_display_page_fold_process_narration_title">过程旁白显示方式</string>
+  <string name="setting_display_page_fold_process_narration_desc">工具/思考轮次之间产生的说明文字如何显示。并入思考链为现有行为；显露在外则作为普通正文显示，步骤卡片会按旁白分段</string>
+  <string name="setting_display_page_fold_process_narration_mode_fold">并入思考链</string>
+  <string name="setting_display_page_fold_process_narration_mode_expose">显露在外</string>
   <string name="setting_display_page_tool_call_style_title">工具调用样式</string>
   <string name="setting_display_page_tool_call_style_desc">经典样式保留时间线。胶囊样式把搜索和网页工具显示为紧凑的动作标签</string>
   <string name="setting_display_page_tool_call_style_classic">经典</string>
