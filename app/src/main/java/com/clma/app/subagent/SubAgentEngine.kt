@@ -62,6 +62,13 @@ internal suspend fun finishSubAgentWait(completed: Boolean, stop: suspend () -> 
     return false
 }
 
+/**
+ * A retry re-runs the original user message from scratch. Once a tool has executed, that
+ * replay can re-apply file/command side effects, so refuse it even when the caller opted in.
+ */
+internal fun shouldRetrySubAgent(attempt: Int, maxAttempts: Int, toolsAlreadyRan: Boolean): Boolean =
+    attempt < maxAttempts - 1 && !toolsAlreadyRan
+
 
 /**
  * Phase 11 — sub-agent dispatch engine.
@@ -322,7 +329,11 @@ class SubAgentEngine(
         // handler is the one place that sees every exit, including the ones the body never ran.
         executionJob.invokeOnCompletion { cause ->
             val current = registry.get(runId)?.status
-            if (current != SubAgentStatus.PENDING && current != SubAgentStatus.RUNNING) {
+            // CANCELLED is included: requestCancel() may have flipped the registry before
+            // this Job ever started, and the ledger row still needs a terminal write.
+            if (current != SubAgentStatus.PENDING && current != SubAgentStatus.RUNNING &&
+                current != SubAgentStatus.CANCELLED
+            ) {
                 return@invokeOnCompletion
             }
             val cancelled = cause == null || cause is kotlinx.coroutines.CancellationException
@@ -746,7 +757,13 @@ class SubAgentEngine(
 
                 // Generation failed
                 failureDetail = newErrors.firstOrNull()?.error?.message ?: "generation failed"
-                if (attempt >= maxAttempts - 1) break // no more retries
+                val toolsAlreadyRan = subAgentConversationExecutedTools(conv.id)
+                if (!shouldRetrySubAgent(attempt, maxAttempts, toolsAlreadyRan)) {
+                    if (toolsAlreadyRan) {
+                        failureDetail = "$failureDetail; retry skipped after tool execution to avoid replaying side effects"
+                    }
+                    break
+                }
 
                 // Retry: dismiss the errors so they don't accumulate across attempts,
                 // update the run record, and regenerate from the original user message.
@@ -790,6 +807,13 @@ class SubAgentEngine(
         } catch (t: Throwable) {
             Log.w(TAG, "sub-agent run failed", t)
             attachRunUsage(runId, conv.id.toString())
+            // The engine Job owns only the wait loop; ChatService's generation Job lives in
+            // appScope and survives a plain coroutine cancel. Stop it explicitly, otherwise
+            // the child model keeps running and can write files after the UI shows CANCELLED.
+            if (t is kotlinx.coroutines.CancellationException) {
+                runCatching { chatService.stopGeneration(conv.id) }
+                    .onFailure { Log.w(TAG, "sub-agent cancel: stopGeneration failed for $runId", it) }
+            }
             // CancellationException → CANCELLED, anything else → FAILED.
             val terminal = if (t is kotlinx.coroutines.CancellationException) SubAgentStatus.CANCELLED else SubAgentStatus.FAILED
             markTerminal(runId, terminal, "${t::class.simpleName}: ${t.message.orEmpty()}")
@@ -913,6 +937,13 @@ class SubAgentEngine(
             SubAgentContextDigest.mediaPartsFrom(selected)
         }.getOrElse { emptyList() }
     }
+
+    /** True when this sub-agent conversation already contains at least one tool result. */
+    private suspend fun subAgentConversationExecutedTools(conversationId: Uuid): Boolean =
+        runCatching {
+            conversationRepo.getConversationById(conversationId)?.currentMessages
+                ?.any { it.role == MessageRole.TOOL } == true
+        }.getOrDefault(false)
 
     private suspend fun harvestFinalText(conversationId: Uuid, allowPartial: Boolean = false): String =
         runCatching {

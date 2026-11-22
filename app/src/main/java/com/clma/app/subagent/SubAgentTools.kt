@@ -231,7 +231,9 @@ fun subagentDispatchTool(
                                 "${SubAgentDefaults.MAX_RETRY_ON_FAILURE}. Each retry re-runs " +
                                 "from the original task and benefits from model routing (a " +
                                 "failed model enters cooldown, so the next attempt tries a " +
-                                "different favourite model). 0 = fail immediately.",
+                                "different favourite model). Retries are skipped once the run " +
+                                "has executed a tool, to avoid replaying file/command side " +
+                                "effects. 0 = fail immediately.",
                         )
                     })
                     // T-04: only offered when the assistant has the feature enabled. When it

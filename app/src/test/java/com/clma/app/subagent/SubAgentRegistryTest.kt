@@ -89,10 +89,27 @@ class SubAgentRegistryTest {
         assertEquals(1, r.activeCountForAssistant("asst-2"))
     }
 
-    @Test fun `requestCancel returns false when no job registered`() {
+    @Test fun `requestCancel cancels a pending run that has no job yet`() {
         val r = SubAgentRegistry()
-        r.addPending(makeRun("a"))
-        assertFalse(r.requestCancel("a"))
+        r.addPending(makeRun("a", status = SubAgentStatus.PENDING))
+        assertTrue(r.requestCancel("a"))
+        assertEquals(SubAgentStatus.CANCELLED, r.get("a")?.status)
+        assertFalse(r.requestCancel("a")) // already terminal
+    }
+
+    @Test fun `cancel requested before setJob cancels the job immediately`() {
+        val r = SubAgentRegistry()
+        r.addPending(makeRun("a", status = SubAgentStatus.PENDING))
+        assertTrue(r.requestCancel("a"))
+        val job = Job()
+        assertFalse(job.isCancelled)
+        r.setJob("a", job)
+        assertTrue(job.isCancelled)
+    }
+
+    @Test fun `requestCancel returns false for unknown id`() {
+        val r = SubAgentRegistry()
+        assertFalse(r.requestCancel("missing"))
     }
 
     @Test fun `cancelAllForParent returns count of cancellable jobs`() {
