@@ -9,12 +9,15 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import com.clma.ai.core.ReasoningLevel
 import com.clma.ai.provider.CustomBody
+import com.clma.ai.provider.Model
 import com.clma.ai.provider.ProviderManager
 import com.clma.ai.provider.TextGenerationParams
 import com.clma.ai.registry.ModelRegistry
 import com.clma.ai.ui.StreamChunkHandler
 import com.clma.ai.ui.UIMessage
+import com.clma.app.data.datastore.DEFAULT_AUTO_MODEL_ID
 import com.clma.app.data.datastore.Settings
+import com.clma.app.data.datastore.getCurrentChatModel
 import com.clma.app.data.datastore.findModelById
 import com.clma.app.data.datastore.findProvider
 import com.clma.app.utils.applyPlaceholders
@@ -32,8 +35,8 @@ class TranslationHandler(
         targetLanguage: Locale,
         onStreamUpdate: ((String) -> Unit)? = null,
     ): Flow<String> = flow {
-        val model = settings.providers.findModelById(settings.translateModeId)
-            ?: error("Translation model not found")
+        val model = resolveTranslationModel(settings)
+            ?: error("No available model for translation")
         val provider = model.findProvider(settings.providers)
             ?: error("Translation provider not found")
 
@@ -97,4 +100,22 @@ class TranslationHandler(
             }
         }
     }.flowOn(Dispatchers.IO)
+
+    private fun resolveTranslationModel(settings: Settings): Model? {
+        fun Model.takeIfUsable(): Model? {
+            if (id == DEFAULT_AUTO_MODEL_ID) return null
+            val provider = findProvider(settings.providers) ?: return null
+            return if (provider.enabled) this else null
+        }
+
+        settings.findModelById(settings.translateModeId)?.takeIfUsable()?.let { return it }
+        settings.getCurrentChatModel()?.takeIfUsable()?.let { return it }
+        for (provider in settings.providers) {
+            if (!provider.enabled) continue
+            for (model in provider.models) {
+                model.takeIfUsable()?.let { return it }
+            }
+        }
+        return null
+    }
 }

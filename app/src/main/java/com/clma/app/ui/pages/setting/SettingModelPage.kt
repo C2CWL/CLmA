@@ -129,34 +129,6 @@ private fun ModelSettingsPage(settings: Settings, vm: SettingVM, contentPadding:
             )
         }
         item {
-            ModelSettingItem(
-                title = stringResource(R.string.setting_model_page_fast_model),
-                description = stringResource(R.string.setting_model_page_fast_model_desc),
-                modelId = settings.fastModelId,
-                providers = settings.providers,
-                onSelect = { vm.updateSettings(settings.copy(fastModelId = it.id)) },
-                reasoningLevel = settings.fastModelReasoningLevel,
-                onUpdateReasoningLevel = {
-                    vm.updateSettings(settings.copy(fastModelReasoningLevel = it))
-                },
-                onUpdateCodexServiceTier = { tier ->
-                    settings.fastModelId?.let { modelId ->
-                        vm.updateSettings { current ->
-                            current.copy(
-                                providers = current.providers.map { provider ->
-                                    provider.copyProvider(
-                                        models = provider.models.map { model ->
-                                            if (model.id == modelId) model.copy(serviceTier = tier) else model
-                                        },
-                                    )
-                                },
-                            )
-                        }
-                    }
-                },
-            )
-        }
-        item {
             CardGroup {
                 item(
                     headlineContent = { Text(stringResource(R.string.setting_model_page_auto_model_routing)) },
@@ -171,21 +143,6 @@ private fun ModelSettingsPage(settings: Settings, vm: SettingVM, contentPadding:
                     },
                 )
             }
-        }
-        item {
-            SuggestionSettingItem(
-                settings = settings,
-                vm = vm,
-            )
-        }
-        item {
-            ModelSettingItem(
-                title = stringResource(R.string.setting_model_page_translate_model),
-                description = stringResource(R.string.setting_model_page_translate_model_desc),
-                modelId = settings.translateModeId,
-                providers = settings.providers,
-                onSelect = { vm.updateSettings(settings.copy(translateModeId = it.id)) },
-            )
         }
         item {
             CardGroup(title = { Text(stringResource(R.string.media_recognition_title)) }) {
@@ -271,26 +228,6 @@ private fun ModelSettingsPage(settings: Settings, vm: SettingVM, contentPadding:
                 }) { Text(stringResource(R.string.local_llama_open_or_restore)) }
             }
         }
-    }
-}
-
-@Composable
-private fun SuggestionSettingItem(
-    settings: Settings,
-    vm: SettingVM,
-) {
-    CardGroup {
-        item(
-            headlineContent = { Text(stringResource(R.string.setting_model_page_enable_suggestion)) },
-            trailingContent = {
-                Switch(
-                    checked = settings.enableSuggestion,
-                    onCheckedChange = {
-                        vm.updateSettings(settings.copy(enableSuggestion = it))
-                    }
-                )
-            },
-        )
     }
 }
 

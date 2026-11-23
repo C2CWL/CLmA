@@ -1098,8 +1098,6 @@
   <string name="setting_model_page_chat_model">Chat Model</string>
   <string name="setting_model_page_chat_model_desc">Global default chat model</string>
   <string name="setting_model_page_compress_model">Compress Model</string>
-  <string name="setting_model_page_fast_model">Fast Model</string>
-  <string name="setting_model_page_fast_model_desc">Model used for titles, chat suggestions, and other fast or background tasks</string>
   <string name="setting_model_page_auto_model_routing">Enable automatic model routing</string>
   <string name="setting_model_page_auto_model_routing_desc">Automatically switch to favorite models when the current model fails or lacks tool capability; when off, always use the currently selected model</string>
   <string name="setting_model_page_compress_model_desc">Model for compressing conversation history</string>
@@ -1114,7 +1112,6 @@
   <string name="setting_model_page_ocr_prompt_vars">Variables: Image data: {images}</string>
   <string name="setting_model_page_prompt">Prompt</string>
   <string name="setting_model_page_reset_to_default">Reset to default</string>
-  <string name="setting_model_page_enable_suggestion">Enable Chat Suggestions</string>
   <string name="setting_model_page_suggestion_model">Chat Suggestion Model</string>
   <string name="setting_model_page_suggestion_model_desc">Model used to generate conversation suggestions. If not set, uses the fast model</string>
   <string name="setting_model_page_suggestion_prompt_vars">Variables: Conversation content: {content}, Language: {locale}</string>
@@ -1122,8 +1119,6 @@
   <string name="setting_model_page_generation_limits">Generation limits</string>
   <string name="setting_model_page_title_model">Title Summary Model</string>
   <string name="setting_model_page_title_model_desc">Model used to summarize conversation titles. If not set, uses the fast model</string>
-  <string name="setting_model_page_translate_model">Translation Model</string>
-  <string name="setting_model_page_translate_model_desc">The model used for translation features</string>
   <string name="setting_model_page_translate_prompt_vars">Variables: Source text: {source_text}, Target language: {target_lang}</string>
 
   <string name="setting_page_hub_chat_display">Chat display</string>
@@ -1580,8 +1575,6 @@
   <string name="setting_model_page_tab_model">Model</string>
   <string name="setting_model_page_tab_prompt">Prompts</string>
   <string name="setting_model_page_prompt_translation">Translation</string>
-  <string name="setting_model_page_prompt_title">Title Generation</string>
-  <string name="setting_model_page_prompt_suggestion">Chat Reply Suggestions</string>
   <string name="setting_model_page_prompt_ocr">OCR Recognition</string>
   <string name="setting_model_page_prompt_compress">Context Compression</string>
   <string name="setting_display_page_bubble_opacity_title">Bubble Opacity</string>
