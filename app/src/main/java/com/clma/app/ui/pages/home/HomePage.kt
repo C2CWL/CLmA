@@ -62,6 +62,8 @@ import com.composables.icons.lucide.Mic
 import com.composables.icons.lucide.Plus
 import com.composables.icons.lucide.Sparkles
 
+const val HOME_AS_START_PAGE_PREF_KEY = "home_as_start_page_enabled"
+
 private data class HomePrompt(
     val icon: ImageVector,
     val titleRes: Int,

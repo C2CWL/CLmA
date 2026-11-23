@@ -16,34 +16,57 @@ import kotlin.uuid.Uuid
 const val BOT_MODE_ROOT_PREF_KEY = "bot_mode_root_enabled"
 
 /** Initial back stack at cold start. */
-fun initialRootStack(botMode: Boolean, chatIds: List<String>, deepLinkConversationId: String?): List<NavKey> =
-    if (botMode) {
-        // A deep link is resolved by the activity's intent handling once the real settings and
-        // the conversation's library are known ([conversationLinkTarget]); never push the classic
-        // chat page onto the Bot root.
-        listOf(Screen.BotHome)
-    } else {
-        chatIds.map { Screen.Chat(it) }
-    }
+fun initialRootStack(
+    botMode: Boolean,
+    chatIds: List<String>,
+    deepLinkConversationId: String?,
+    useHomeAsStartPage: Boolean = false,
+): List<NavKey> = when {
+    botMode -> listOf(Screen.BotHome)
+    // A deep link is resolved by the activity's intent handling once the real settings and
+    // the conversation's library are known ([conversationLinkTarget]); keep a chat root so the
+    // target can be pushed above it instead of replacing the chosen start page.
+    useHomeAsStartPage && deepLinkConversationId == null -> listOf(Screen.Home)
+    else -> chatIds.map { Screen.Chat(it) }
+}
 
 /**
  * Move [stack] onto the root for [botMode] after the switch flips (or when the real settings
  * arrive after a cold start). Screens pushed above the root — e.g. the settings page where the
  * switch lives — stay, so the user is not yanked away from where they are.
  */
-fun reconcileRootStack(stack: MutableList<NavKey>, botMode: Boolean, newChat: () -> Screen.Chat) {
+fun reconcileRootStack(
+    stack: MutableList<NavKey>,
+    botMode: Boolean,
+    useHomeAsStartPage: Boolean = false,
+    newChat: () -> Screen.Chat,
+) {
     if (botMode) {
         if (stack.firstOrNull() == Screen.BotHome) return
-        while (stack.firstOrNull() is Screen.Chat) stack.removeAt(0)
+        while (stack.firstOrNull() is Screen.Chat || stack.firstOrNull() == Screen.Home) stack.removeAt(0)
         stack.add(0, Screen.BotHome)
-    } else {
-        if (Screen.BotHome !in stack) return
+        return
+    }
+
+    val hadBotRoot = Screen.BotHome in stack
+    if (hadBotRoot) {
         // Bot chats, bot info and channel pages belong to Bot mode too; classic opens
         // conversations in its own page.
         stack.removeAll {
             it == Screen.BotHome || it is Screen.BotChat || it is Screen.BotInfo || it is Screen.BotChannel
         }
-        if (stack.firstOrNull() !is Screen.Chat) stack.add(0, newChat())
+        if (!useHomeAsStartPage && stack.firstOrNull() !is Screen.Chat) stack.add(0, newChat())
+    }
+
+    when {
+        useHomeAsStartPage && stack.firstOrNull() != Screen.Home -> {
+            while (stack.firstOrNull() is Screen.Chat) stack.removeAt(0)
+            if (stack.firstOrNull() != Screen.Home) stack.add(0, Screen.Home)
+        }
+        !useHomeAsStartPage && stack.firstOrNull() == Screen.Home -> {
+            stack.removeAt(0)
+            if (stack.firstOrNull() !is Screen.Chat) stack.add(0, newChat())
+        }
     }
 }
 
@@ -131,6 +154,8 @@ fun libraryGuardedStack(
         }
     }
     if (!changed) return stack
-    if (!botRoot && guarded.firstOrNull() !is Screen.Chat) return listOf(newChat()) + guarded
+    if (!botRoot && guarded.firstOrNull() !is Screen.Chat && guarded.firstOrNull() != Screen.Home) {
+        return listOf(newChat()) + guarded
+    }
     return guarded
 }

@@ -28,6 +28,7 @@ import com.clma.app.ui.components.ui.CardGroup
 import com.clma.app.ui.components.ui.PercentSlider
 import com.clma.app.ui.components.ui.Select
 import com.clma.app.ui.hooks.rememberSharedPreferenceBoolean
+import com.clma.app.ui.pages.home.HOME_AS_START_PAGE_PREF_KEY
 import com.clma.app.utils.plus
 import org.koin.androidx.compose.koinViewModel
 
@@ -53,6 +54,7 @@ fun SettingPreferencesGeneralPage(vm: SettingVM = koinViewModel()) {
                 "create_new_conversation_on_start",
                 true
             )
+            var useHomeAsStartPage by rememberSharedPreferenceBoolean(HOME_AS_START_PAGE_PREF_KEY, false)
             CardGroup(
                 modifier = Modifier.padding(horizontal = 8.dp),
                 title = { Text(stringResource(R.string.setting_page_general_group_conversation)) },
@@ -64,6 +66,16 @@ fun SettingPreferencesGeneralPage(vm: SettingVM = koinViewModel()) {
                         Switch(
                             checked = createNewConversationOnStart,
                             onCheckedChange = { createNewConversationOnStart = it }
+                        )
+                    },
+                )
+                item(
+                    headlineContent = { Text(stringResource(R.string.setting_general_start_page_home_title)) },
+                    supportingContent = { Text(stringResource(R.string.setting_general_start_page_home_desc)) },
+                    trailingContent = {
+                        Switch(
+                            checked = useHomeAsStartPage,
+                            onCheckedChange = { useHomeAsStartPage = it }
                         )
                     },
                 )

@@ -19,6 +19,41 @@ class BotNavigationTest {
     private val newChat = { Screen.Chat("new") }
 
     @Test
+    fun `home start page is initial root in classic mode`() {
+        assertEquals(
+            listOf<NavKey>(Screen.Home),
+            initialRootStack(false, listOf("c1"), null, true),
+        )
+    }
+
+    @Test
+    fun `deep link keeps chat root when home start page is enabled`() {
+        assertEquals(
+            listOf<NavKey>(Screen.Chat("deep")),
+            initialRootStack(false, listOf("deep"), "deep", true),
+        )
+    }
+
+    @Test
+    fun `reconcile switches between chat and home roots without dropping pages above`() {
+        val stack = mutableListOf<NavKey>(Screen.Chat("c1"), Screen.Setting)
+        reconcileRootStack(stack, false, true, newChat)
+        assertEquals(listOf<NavKey>(Screen.Home, Screen.Setting), stack)
+
+        reconcileRootStack(stack, false, false, newChat)
+        assertEquals(2, stack.size)
+        assertTrue(stack[0] is Screen.Chat)
+        assertEquals(Screen.Setting, stack[1])
+    }
+
+    @Test
+    fun `switching to bot mode replaces home root`() {
+        val stack = mutableListOf<NavKey>(Screen.Home, Screen.Setting)
+        reconcileRootStack(stack, true, true, newChat)
+        assertEquals(listOf<NavKey>(Screen.BotHome, Screen.Setting), stack)
+    }
+
+    @Test
     fun `cold start root follows the mode`() {
         assertEquals(listOf(Screen.Chat("a"), Screen.Chat("b")), initialRootStack(false, listOf("a", "b"), "b"))
         assertEquals(listOf(Screen.BotHome), initialRootStack(true, listOf("a"), null))
