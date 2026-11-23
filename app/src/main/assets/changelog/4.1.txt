@@ -1,0 +1,20 @@
+## CLmA 4.1
+
+- 将不支持原生视频的模型桥接为关键帧与时间戳。
+- 新增独立起始页并接入抽屉导航。
+- 修复子代理待调度取消与失败重试重复副作用。
+- 新增自动模型路由开关。
+- 将过程旁白显示方式改为二选一模式选择器。
+- 移除快速模型与标题/建议提示词配置。
+- 翻译模型未指定时自动回退到聊天模型或首个可用模型。
+- 抽屉打开动效换用无过冲 spring，消除慢与顿挫感。
+
+## Changes
+- Bridge models without native video support to keyframes with timestamps.
+- Add a standalone start page wired into drawer navigation.
+- Fix duplicate side effects on pending-run cancellation and failed retries.
+- Add an automatic model routing toggle.
+- Switch process narration to a two-option mode selector.
+- Remove quick-model and title/suggestion prompt settings.
+- Fall back to the chat or first available model for translation.
+- Use an overshoot-free spring for drawer opening to remove sluggishness.
