@@ -1,5 +1,6 @@
 package com.clma.app.ui.pages.chat
 
+import com.clma.app.ui.motion.DrawerMotionScheme
 import com.clma.app.ui.motion.Motion
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.flow.first
@@ -43,7 +44,6 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.PermanentNavigationDrawer
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SheetValue
@@ -304,7 +304,7 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null, is
             val appDensity = LocalDensity.current
             val drawerDensity = remember(appDensity.density) { drawerAnchorDensity(appDensity) }
             CompositionLocalProvider(LocalDensity provides drawerDensity) {
-                MaterialTheme(motionScheme = MotionScheme.standard()) {
+                MaterialTheme(motionScheme = DrawerMotionScheme) {
                     ModalNavigationDrawer(
                         drawerState = drawerState,
                         drawerContent = {
