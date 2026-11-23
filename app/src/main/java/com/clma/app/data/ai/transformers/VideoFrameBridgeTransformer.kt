@@ -1,5 +1,6 @@
 package com.clma.app.data.ai.transformers
 
+import com.clma.ai.provider.Model
 import com.clma.ai.provider.Modality
 import com.clma.ai.ui.UIMessage
 import com.clma.ai.ui.UIMessagePart
@@ -19,13 +20,21 @@ import kotlinx.coroutines.withContext
  * VideoAttachmentTransformer, which downgrades any Video left over on failure to a
  * "cannot see this video" notice.
  */
+internal fun shouldBridgeVideoToFrames(model: Model): Boolean =
+    Modality.VIDEO !in model.inputModalities && Modality.IMAGE in model.inputModalities
+
 object VideoFrameBridgeTransformer : InputMessageTransformer {
     override suspend fun transform(
         ctx: TransformerContext,
         messages: List<UIMessage>,
     ): List<UIMessage> {
-        // Native video input needs no bridge.
-        if (Modality.VIDEO in ctx.model.inputModalities) return messages
+        // Only bridge when the keyframes can actually reach the model. For a text-only
+        // model ChatCompletionsAPI rewrites every Image part into an "image unsupported"
+        // placeholder, so extracting frames would be wasted work AND would consume the
+        // Video part that drives VideoAttachmentTransformer's explicit-path notice.
+        // Leaving the Video untouched here lets the downstream transformer produce that
+        // notice with the recognize_local_media recovery guidance.
+        if (!shouldBridgeVideoToFrames(ctx.model)) return messages
         if (messages.none { message -> message.parts.any { it is UIMessagePart.Video } }) {
             return messages
         }
