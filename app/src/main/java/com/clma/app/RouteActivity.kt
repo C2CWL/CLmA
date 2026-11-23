@@ -87,6 +87,7 @@ import com.clma.app.ui.context.Navigator
 import com.clma.app.ui.hooks.readBooleanPreference
 import com.clma.app.ui.hooks.readStringPreference
 import com.clma.app.ui.hooks.writeBooleanPreference
+import com.clma.app.ui.hooks.rememberSharedPreferenceBoolean
 import com.clma.app.ui.hooks.rememberCustomTtsState
 import com.clma.app.ui.hooks.rememberCustomAsrState
 import com.clma.app.ui.hooks.rememberCurrentColorMode
@@ -118,6 +119,7 @@ import com.clma.app.ui.pages.extensions.workspace.WorkspaceTerminalPage
 import com.clma.workspace.WorkspaceStorageArea
 import com.clma.app.ui.pages.favorite.FavoritePage
 import com.clma.app.ui.pages.home.HomePage
+import com.clma.app.ui.pages.home.HOME_AS_START_PAGE_PREF_KEY
 import com.clma.app.ui.pages.history.HistoryPage
 import com.clma.app.ui.pages.imggen.ImageGenPage
 import com.clma.app.ui.pages.videogen.VideoGenPage
@@ -402,16 +404,18 @@ class RouteActivity : FragmentActivity() {
 
         // Bot mode has its own root (Bot home). The real settings load asynchronously, so the
         // cold-start root comes from a synchronous pref mirror; the effect below corrects it.
+        val useHomeAsStartPage by rememberSharedPreferenceBoolean(HOME_AS_START_PAGE_PREF_KEY, false)
         val initialStack = remember {
             initialRootStack(
                 botMode = readBooleanPreference(BOT_MODE_ROOT_PREF_KEY, false),
                 chatIds = initialChatIds,
                 deepLinkConversationId = deepLinkConversationId,
+                useHomeAsStartPage = useHomeAsStartPage,
             )
         }
         val backStack = rememberNavBackStack(*initialStack.toTypedArray())
         val botModeEnabled = settings.displaySetting.botModeEnabled
-        LaunchedEffect(settings.init, botModeEnabled) {
+        LaunchedEffect(settings.init, botModeEnabled, useHomeAsStartPage) {
             if (settings.init) return@LaunchedEffect
             writeBooleanPreference(BOT_MODE_ROOT_PREF_KEY, botModeEnabled)
             // Separate libraries: Bot mode sets up its own (with a main bot) on first use, and
@@ -427,7 +431,7 @@ class RouteActivity : FragmentActivity() {
                 withLibrary.withAssistantInLibrary(botModeEnabled)
             }
             if (fix(settings) != settings) settingsStore.update(fix)
-            reconcileRootStack(backStack, botModeEnabled) {
+            reconcileRootStack(backStack, botModeEnabled, useHomeAsStartPage) {
                 Screen.Chat(
                     if (readBooleanPreference("create_new_conversation_on_start", true)) {
                         Uuid.random().toString()
@@ -457,7 +461,9 @@ class RouteActivity : FragmentActivity() {
         LaunchedEffect(settings.init) {
             if (!gettingStartedSeen && !settings.init && !settings.hasConfiguredModel() &&
                 backStack.size == 1 &&
-                (backStack.firstOrNull() is Screen.Chat || backStack.firstOrNull() == Screen.BotHome)
+                (backStack.firstOrNull() is Screen.Chat ||
+                    backStack.firstOrNull() == Screen.Home ||
+                    backStack.firstOrNull() == Screen.BotHome)
             ) {
                 backStack.add(Screen.GettingStarted)
             }
@@ -483,7 +489,9 @@ class RouteActivity : FragmentActivity() {
                     eligible = !settings.init &&
                         (gettingStartedSeen || settings.hasConfiguredModel()) &&
                         backStack.size == 1 &&
-                        (backStack.firstOrNull() is Screen.Chat || backStack.firstOrNull() == Screen.BotHome),
+                        (backStack.firstOrNull() is Screen.Chat ||
+                            backStack.firstOrNull() == Screen.Home ||
+                            backStack.firstOrNull() == Screen.BotHome),
                 )
                 TTSController()
                 Box(

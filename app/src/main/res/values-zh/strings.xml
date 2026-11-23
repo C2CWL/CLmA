@@ -878,6 +878,8 @@
   <string name="setting_display_page_code_block_auto_wrap_title">代码块自动换行</string>
   <string name="setting_display_page_create_new_conversation_on_start_desc">当应用启动时，自动创建一个新的对话</string>
   <string name="setting_display_page_create_new_conversation_on_start_title">启动时新建对话</string>
+  <string name="setting_general_start_page_home_title">启动页使用起始页</string>
+  <string name="setting_general_start_page_home_desc">经典模式下启动时显示独立起始页；Bot 模式仍进入 Bot 首页。</string>
   <string name="setting_display_page_custom_font_import">导入自定义字体</string>
   <string name="setting_display_page_custom_font_import_failed">导入字体失败：%1$s</string>
   <string name="setting_display_page_custom_font_import_success">自定义字体已导入</string>
