@@ -201,7 +201,7 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
         altTitles = listOf(R.string.setting_page_preferences_general, R.string.setting_page_hub_chat_actions),
         items = listOf(
             row(R.string.setting_display_page_create_new_conversation_on_start_title, R.string.setting_display_page_create_new_conversation_on_start_desc),
-            row(R.string.string_general_start_page_home_title, R.string.string_general_start_page_home_desc),
+            row(R.string.setting_general_start_page_home_title, R.string.setting_general_start_page_home_desc),
             row(R.string.setting_display_page_send_on_enter_title, R.string.setting_display_page_send_on_enter_desc),
             row(R.string.setting_display_page_show_message_jumper_title, R.string.setting_display_page_show_message_jumper_desc),
             row(R.string.setting_display_page_message_jumper_position_title, R.string.setting_display_page_message_jumper_position_desc),
