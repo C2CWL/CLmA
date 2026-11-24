@@ -49,6 +49,7 @@ import com.clma.app.ui.components.ui.Greeting
 import com.clma.app.ui.context.LocalNavController
 import com.clma.app.ui.pages.chat.MeshGradientBackground
 import com.clma.app.ui.theme.LocalDarkMode
+import com.clma.app.utils.base64Encode
 import com.clma.app.utils.navigateToChatPage
 import com.composables.icons.lucide.ArrowUp
 import com.composables.icons.lucide.BookOpen
@@ -104,7 +105,8 @@ fun HomePage() {
 
     fun start(text: String) {
         if (text.isBlank()) return
-        navigateToChatPage(navigator = navController, initText = text.trim(), isTemporary = true)
+        // Screen.Chat.text is base64-encoded by convention (see applyInitialChatInput).
+        navigateToChatPage(navigator = navController, initText = text.trim().base64Encode(), isTemporary = true)
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
