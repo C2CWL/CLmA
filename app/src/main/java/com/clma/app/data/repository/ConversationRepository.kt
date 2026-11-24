@@ -27,6 +27,9 @@ import com.clma.app.data.db.dao.FavoriteDAO
 import com.clma.app.data.db.dao.MessageNodeDAO
 import com.clma.app.data.db.entity.ConversationEntity
 import com.clma.app.data.db.entity.ConversationCompactionEntity
+import com.clma.app.data.db.entity.ContextOperationLogEntity
+import com.clma.app.data.db.entity.ContextOperationType
+import com.clma.app.data.db.entity.ContextOperationResult
 import com.clma.app.data.db.entity.MessageNodeEntity
 import com.clma.app.data.files.FilesManager
 import com.clma.app.data.model.Conversation
@@ -339,7 +342,12 @@ class ConversationRepository(
             )
         }
 
-    suspend fun upsertCompaction(compaction: ConversationCompaction) {
+    suspend fun upsertCompaction(
+        compaction: ConversationCompaction,
+        conversationTitle: String? = null,
+        messageCount: Int = 0,
+        summaryTokenEstimate: Int = 0,
+    ) {
         conversationCompactionDAO.upsert(
             ConversationCompactionEntity(
                 conversationId = compaction.conversationId.toString(),
@@ -352,10 +360,69 @@ class ConversationRepository(
                 createdAt = compaction.createdAt.toEpochMilli(),
             )
         )
+        logContextOperation(
+            conversationId = compaction.conversationId,
+            conversationTitle = conversationTitle,
+            operationType = ContextOperationType.COMPACT,
+            isAuto = compaction.isAuto,
+            sourceTokenEstimate = compaction.sourceTokenEstimate,
+            summaryTokenEstimate = summaryTokenEstimate,
+            messageCount = messageCount,
+        )
     }
 
     suspend fun clearCompaction(conversationId: Uuid) {
         conversationCompactionDAO.deleteByConversationId(conversationId.toString())
+        logContextOperation(
+            conversationId = conversationId,
+            operationType = ContextOperationType.CLEAR,
+            isAuto = true,
+            details = "compaction cleared",
+        )
+    }
+
+    /**
+     * 写入一条上下文操作历史（压缩 / 清空）。日志属于审计旁路：
+     * 写失败不能影响压缩或清空主流程，因此用 runCatching 吞掉异常。
+     */
+    suspend fun logContextOperation(
+        conversationId: Uuid,
+        operationType: String,
+        conversationTitle: String? = null,
+        isAuto: Boolean = false,
+        sourceTokenEstimate: Int = 0,
+        summaryTokenEstimate: Int = 0,
+        messageCount: Int = 0,
+        result: String = ContextOperationResult.SUCCESS,
+        details: String? = null,
+    ) {
+        runCatching {
+            database.contextOperationLogDao().insert(
+                ContextOperationLogEntity(
+                    conversationId = conversationId.toString(),
+                    conversationTitle = conversationTitle,
+                    operationType = operationType,
+                    isAuto = isAuto,
+                    sourceTokenEstimate = sourceTokenEstimate,
+                    summaryTokenEstimate = summaryTokenEstimate,
+                    messageCount = messageCount,
+                    result = result,
+                    details = details,
+                    createdAt = System.currentTimeMillis(),
+                )
+            )
+        }.onFailure {
+            Log.w(TAG, "failed to write context operation log: $operationType", it)
+        }
+    }
+
+    /** 全部上下文操作记录，供「压缩与清空记录」页观察（按时间倒序）。 */
+    fun observeContextOperationLogs(): Flow<List<ContextOperationLogEntity>> =
+        database.contextOperationLogDao().observeAll()
+
+    suspend fun deleteContextOperationLogs() {
+        runCatching { database.contextOperationLogDao().deleteAll() }
+            .onFailure { Log.w(TAG, "failed to clear context operation logs", it) }
     }
 
     suspend fun countConversationsByAssistant(): Map<Uuid, Int> {

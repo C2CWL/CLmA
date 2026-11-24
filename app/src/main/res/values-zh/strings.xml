@@ -3453,4 +3453,17 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="home_prompt_git_title">讲讲 Git</string>
   <string name="home_prompt_git_sub">讲解 Git 概念</string>
   <string name="home_prompt_git_text">给我讲讲 Git 的基础知识和常用流程</string>
+  <string name="chat_context_operation_log">压缩与清空记录</string>
+  <string name="chat_context_operation_log_desc">查看上下文压缩与清空历史</string>
+  <string name="chat_context_operation_log_group">上下文</string>
+  <string name="chat_context_operation_log_clear">清空记录</string>
+  <string name="chat_context_operation_log_empty">暂无压缩或清空记录</string>
+  <string name="chat_context_op_compact">压缩上下文</string>
+  <string name="chat_context_op_clear">清空上下文</string>
+  <string name="chat_context_op_auto">自动</string>
+  <string name="chat_context_op_manual">手动</string>
+  <string name="chat_context_op_result_success">成功</string>
+  <string name="chat_context_op_result_failed">失败</string>
+  <string name="chat_context_op_result_cancelled">已取消</string>
+  <string name="chat_context_op_tokens">%1$d tokens</string>
 </resources>

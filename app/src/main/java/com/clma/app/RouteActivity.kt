@@ -123,6 +123,7 @@ import com.clma.app.ui.pages.home.HOME_AS_START_PAGE_PREF_KEY
 import com.clma.app.ui.pages.history.HistoryPage
 import com.clma.app.ui.pages.imggen.ImageGenPage
 import com.clma.app.ui.pages.videogen.VideoGenPage
+import com.clma.app.ui.pages.log.ContextOperationLogPage
 import com.clma.app.ui.pages.log.LogPage
 import com.clma.app.ui.pages.search.SearchPage
 import com.clma.app.ui.pages.setting.SettingAboutPage
@@ -829,6 +830,10 @@ class RouteActivity : FragmentActivity() {
                                 LogPage()
                             }
 
+                            entry<Screen.ContextOperationLog> {
+                                ContextOperationLogPage()
+                            }
+
                             entry<Screen.QuickMessages> {
                                 QuickMessagesPage()
                             }
@@ -1150,6 +1155,9 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data object Log : Screen
+
+    @Serializable
+    data object ContextOperationLog : Screen
 
     @Serializable
     data object QuickMessages : Screen

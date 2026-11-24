@@ -8,6 +8,7 @@ import androidx.room.TypeConverters
 import com.clma.ai.core.TokenUsage
 import com.clma.app.data.agentrun.AgentRun
 import com.clma.app.data.agentrun.AgentRunDao
+import com.clma.app.data.db.dao.ContextOperationLogDAO
 import com.clma.app.data.db.dao.ConversationDAO
 import com.clma.app.data.db.dao.ConversationCompactionDAO
 import com.clma.app.data.db.dao.FavoriteDAO
@@ -21,6 +22,7 @@ import com.clma.app.data.db.dao.ScheduledJobRunDao
 import com.clma.app.data.db.dao.SshHostDao
 import com.clma.app.data.db.dao.TelegramChatDao
 import com.clma.app.data.db.dao.WorkspaceDAO
+import com.clma.app.data.db.entity.ContextOperationLogEntity
 import com.clma.app.data.db.entity.ConversationEntity
 import com.clma.app.data.db.entity.ConversationCompactionEntity
 import com.clma.app.data.db.entity.FavoriteEntity
@@ -63,9 +65,12 @@ import com.clma.app.workflow.db.WorkflowRunEntity
         AgentRun::class,
         WorkspaceEntity::class,
         FolderEntity::class,
+        ContextOperationLogEntity::class,
     ],
-    version = 35,
+    version = 36,
     autoMigrations = [
+        // v36: context_operation_log - explicit Migration_35_36 (AppDatabaseFactory), not
+        // AutoMigration: schema 35.json was never committed, so Room cannot generate 35->36.
         // v32: parent_conversation_id — Migration_31_32 (AppDatabaseFactory), not AutoMigration:
         // schema 32.json was never committed on main, so Room cannot generate 31→32.
         // v33: agent_mode_enabled — Migration_32_33 (AppDatabaseFactory), same reason.
@@ -154,6 +159,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun workspaceDao(): WorkspaceDAO
 
     abstract fun folderDao(): FolderDAO
+
+    abstract fun contextOperationLogDao(): ContextOperationLogDAO
 }
 
 object TokenUsageConverter {
