@@ -200,6 +200,7 @@ class SettingsSearchCoverageTest {
         "SettingFiles" to listOf("ui/pages/setting/SettingFilesPage.kt"),
         "SettingDoctor" to listOf("ui/pages/setting/doctor/DoctorScreen.kt"),
         "Log" to listOf("ui/pages/log/LogPage.kt"),
+        "ContextOperationLog" to listOf("ui/pages/log/ContextOperationLogPage.kt"),
         "SettingAbout" to listOf("ui/pages/setting/SettingAboutPage.kt"),
         "Developer" to listOf("ui/pages/developer/DeveloperPage.kt"),
     )

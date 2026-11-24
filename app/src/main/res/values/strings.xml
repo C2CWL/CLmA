@@ -3465,4 +3465,17 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="home_prompt_git_title">Learn Git</string>
   <string name="home_prompt_git_sub">Explain Git concepts</string>
   <string name="home_prompt_git_text">Explain Git basics and common workflows to me</string>
+  <string name="chat_context_operation_log">Compression and Clear Log</string>
+  <string name="chat_context_operation_log_desc">View compression and clear history</string>
+  <string name="chat_context_operation_log_group">Context</string>
+  <string name="chat_context_operation_log_clear">Clear records</string>
+  <string name="chat_context_operation_log_empty">No compression or clear records yet</string>
+  <string name="chat_context_op_compact">Compress context</string>
+  <string name="chat_context_op_clear">Clear context</string>
+  <string name="chat_context_op_auto">Auto</string>
+  <string name="chat_context_op_manual">Manual</string>
+  <string name="chat_context_op_result_success">Success</string>
+  <string name="chat_context_op_result_failed">Failed</string>
+  <string name="chat_context_op_result_cancelled">Cancelled</string>
+  <string name="chat_context_op_tokens">%1$d tokens</string>
 </resources>

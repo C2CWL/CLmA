@@ -76,6 +76,7 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.launch
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ArrowDown01
+import me.rerere.hugeicons.stroke.Clock02
 import me.rerere.hugeicons.stroke.ArrowRight01
 import me.rerere.hugeicons.stroke.Package01
 import me.rerere.hugeicons.stroke.Tick02
@@ -223,6 +224,18 @@ fun ChatConversationSettingsPanel(
                             },
                             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                             modifier = Modifier.clickable { showCompressDialog = true },
+                        )
+                    }
+
+                    SettingsGroupCard(title = stringResource(R.string.chat_context_operation_log_group)) {
+                        SettingsActionRow(
+                            icon = HugeIcons.Clock02,
+                            title = stringResource(R.string.chat_context_operation_log),
+                            subtitle = stringResource(R.string.chat_context_operation_log_desc),
+                            onClick = {
+                                onDismiss()
+                                navController.navigate(Screen.ContextOperationLog)
+                            },
                         )
                     }
 
