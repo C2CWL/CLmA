@@ -1,0 +1,14 @@
+## CLmA 4.2
+
+- 修复起始页卡片与输入框点击时提示词未编码导致的崩溃。
+- 启动页可设为打开起始页或聊天页。
+- 纯文本模型跳过视频抽帧桥接，保留视频交由降级提示处理。
+- 新增压缩与清空记录入口及历史页。
+- 记录自动压缩的配置、估算与触发判定日志。
+
+## Changes
+- Fix start-page crashes by base64-encoding the prefill text.
+- Let the launch screen open either the start page or chat.
+- Skip video frame bridging for text-only models and use the fallback notice.
+- Add an entry and history page for compaction and clear operation logs.
+- Log automatic compaction settings, token estimates, and trigger decisions.
