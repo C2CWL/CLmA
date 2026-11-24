@@ -1,5 +1,6 @@
 package com.clma.app.data.ai
 
+import com.clma.ai.core.TokenUsage
 import com.clma.ai.ui.UIMessage
 import com.clma.ai.ui.UIMessagePart
 import com.clma.app.data.ai.document.DocumentSizeEstimator
@@ -94,13 +95,19 @@ object ContextBudgetPlanner {
         )
     }
 
-    fun estimateInputTokens(messages: List<UIMessage>): Int {
+    fun estimateInputTokens(messages: List<UIMessage>): Int = estimateInputTokens(messages, null)
+
+    internal fun estimateInputTokens(
+        messages: List<UIMessage>,
+        onUsage: ((TokenUsage) -> Unit)?,
+    ): Int {
         val usageIndex = messages.indexOfLast { message ->
             val usage = message.usage
             usage != null && (usage.totalTokens > 0 || usage.promptTokens + usage.completionTokens > 0)
         }
         val estimate = if (usageIndex >= 0) {
             val usage = messages[usageIndex].usage!!
+            onUsage?.invoke(usage)
             val reportedTotal = usage.totalTokens.takeIf { it > 0 }
                 ?: (usage.promptTokens + usage.completionTokens)
             // Tool outputs are attached to the assistant message only after the provider has

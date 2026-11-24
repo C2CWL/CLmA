@@ -1,6 +1,7 @@
 package com.clma.app.data.ai
 
 import com.clma.ai.core.MessageRole
+import com.clma.ai.core.TokenUsage
 import com.clma.ai.provider.Model
 import com.clma.ai.registry.ModelRegistry
 import com.clma.ai.ui.UIMessage
@@ -165,14 +166,21 @@ object PreSendContextGuard {
      * Estimated input tokens of [messages] (the request view). When [compactedAt] is set, usage
      * reported by a message created before that compaction is not trusted.
      */
-    fun estimateTokens(messages: List<UIMessage>, compactedAt: LocalDateTime?): Int {
-        if (compactedAt == null) return ContextBudgetPlanner.estimateInputTokens(messages)
+    fun estimateTokens(messages: List<UIMessage>, compactedAt: LocalDateTime?): Int =
+        estimateTokens(messages, compactedAt, null)
+
+    internal fun estimateTokens(
+        messages: List<UIMessage>,
+        compactedAt: LocalDateTime?,
+        onUsage: ((TokenUsage) -> Unit)?,
+    ): Int {
+        if (compactedAt == null) return ContextBudgetPlanner.estimateInputTokens(messages, onUsage)
         val latestUsage = messages.lastOrNull { message ->
             val usage = message.usage
             usage != null && (usage.totalTokens > 0 || usage.promptTokens + usage.completionTokens > 0)
         }
         return if (latestUsage != null && latestUsage.createdAt >= compactedAt) {
-            ContextBudgetPlanner.estimateInputTokens(messages)
+            ContextBudgetPlanner.estimateInputTokens(messages, onUsage)
         } else {
             ContextBudgetPlanner.estimateContextTokens(messages)
         }
@@ -189,6 +197,7 @@ object PreSendContextGuard {
         maxRequestBytes: Long = defaultMaxRequestBytes(),
         // Request-only image ageing batch of this conversation (Bot cost-saving); 1 = classic.
         imageAgingBatch: Int = 1,
+        onThresholdEstimate: ((Int, TokenUsage?) -> Unit)? = null,
     ): PreSendContextDecision {
         // Only a brand-new user turn; tool resumes / approvals keep the usage-driven path.
         if (messages.lastOrNull()?.role != MessageRole.USER) return PreSendContextDecision.Send
@@ -205,7 +214,9 @@ object PreSendContextGuard {
         }
         if (autoCompactionEnabled) {
             val trigger = triggerTokens?.takeIf { it > 0 } ?: return PreSendContextDecision.Send
-            val estimated = estimateTokens(messages, compactedAt)
+            var usage: TokenUsage? = null
+            val estimated = estimateTokens(messages, compactedAt) { usage = it }
+            onThresholdEstimate?.invoke(estimated, usage)
             return if (estimated >= trigger) {
                 PreSendContextDecision.Compact(estimated, trigger)
             } else {

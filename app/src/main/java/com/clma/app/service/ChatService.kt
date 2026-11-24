@@ -100,7 +100,10 @@ import com.clma.ai.util.MediaTooLargeException
 import com.clma.ai.util.RequestTooLargeException
 import com.clma.ai.util.isRequestTooLarge
 import com.clma.app.data.ai.ContextCompactionPlanner
+import com.clma.ai.core.TokenUsage
 import com.clma.app.data.ai.GenerationDiagnostics
+import com.clma.app.data.ai.GenerationDiagnostics.CompactionEntry
+import com.clma.app.data.ai.GenerationDiagnostics.CompactionReason
 import com.clma.app.data.ai.GenerationDiagnosticStep
 import kotlinx.coroutines.currentCoroutineContext
 import com.clma.app.data.ai.ContextCompactionPresentation
@@ -2700,9 +2703,23 @@ class ChatService(
                         // execution result appended afterwards so the threshold reflects the
                         // next request without turning automatic compaction into a preflight
                         // estimate of an otherwise unverified conversation.
-                        val nextRequestTokens = ContextBudgetPlanner
-                            .estimateInputTokens(generatedMessages)
+                        var usage: TokenUsage? = null
+                        val nextRequestTokens = ContextBudgetPlanner.estimateInputTokens(generatedMessages) {
+                            usage = it
+                        }
                         val triggerTokens = automaticCompactionTriggerTokens(settings, model)
+                        val shouldCompact = actualPromptTokens != null && triggerTokens != null &&
+                            nextRequestTokens >= triggerTokens
+                        GenerationDiagnostics.compactionDecision(
+                            CompactionEntry.AFTER_TOOL, settings, triggerTokens, nextRequestTokens, usage,
+                            shouldCompact,
+                            reason = when {
+                                actualPromptTokens == null -> CompactionReason.NO_PROMPT_USAGE
+                                triggerTokens == null -> CompactionReason.NO_THRESHOLD
+                                else -> CompactionReason.TOKEN_THRESHOLD
+                            },
+                            link = currentCoroutineContext()[GenerationDiagnosticStep],
+                        )
                         if (actualPromptTokens == null ||
                             triggerTokens == null ||
                             nextRequestTokens < triggerTokens
@@ -3127,11 +3144,18 @@ class ChatService(
         val model = resolveGenerationModel(settings, conversation) ?: return
         if (model.findProvider(settings.providers)?.enabled != true) return
         val view = loadCompactedMessageView(conversation)
+        var usage: TokenUsage? = null
         val estimated = PreSendContextGuard.estimateTokens(
             view.messages,
             view.compaction?.let { ContextCompactionView.summaryMessage(it).createdAt },
+        ) { usage = it }
+        val triggerTokens = automaticCompactionTriggerTokens(settings, model)
+        val shouldCompact = BotCostPolicy.idleCompactionDue(estimated, triggerTokens)
+        GenerationDiagnostics.compactionDecision(
+            CompactionEntry.IDLE, settings, triggerTokens, estimated, usage, shouldCompact,
+            reason = if (triggerTokens == null) CompactionReason.NO_THRESHOLD else CompactionReason.TOKEN_THRESHOLD,
         )
-        if (!BotCostPolicy.idleCompactionDue(estimated, automaticCompactionTriggerTokens(settings, model))) return
+        if (!shouldCompact) return
         Log.i(TAG, "Idle pre-compaction for bot conversation $conversationId: ~$estimated tokens")
         val result = runCatching {
             prepareMessagesForGeneration(
@@ -3570,10 +3594,10 @@ class ChatService(
 
         val preSend = !force
         if (preSend) {
-            val decision = preSendContextDecision(view, settings, model, assistant)
-            if (decision is PreSendContextDecision.MediaTooLarge) throwIfRequestTooLarge(decision)
             val hasOlderRawMessages =
                 conversation.currentMessages.lastIndex > view.rawTailStartIndex
+            val decision = preSendContextDecision(view, settings, model, assistant, hasOlderRawMessages)
+            if (decision is PreSendContextDecision.MediaTooLarge) throwIfRequestTooLarge(decision)
             // Over the byte cap with nothing older to compress: send anyway. If it really does
             // not fit, the OutOfMemoryError is caught, not retried, and offers "compress and
             // continue" (see handleMessageComplete).
@@ -3695,29 +3719,55 @@ class ChatService(
         settings: Settings,
         model: Model,
         assistant: Assistant,
+        hasOlderRawMessages: Boolean = false,
     ): PreSendContextDecision = withContext(Dispatchers.IO) {
-        runCatching {
+        val triggerTokens = if (settings.enableAutoCompaction) {
+            automaticCompactionTriggerTokens(settings, model)
+        } else {
+            null
+        }
+        var estimatedTokens: Int? = null
+        var usage: TokenUsage? = null
+        val result = runCatching {
             PreSendContextGuard.decide(
                 messages = view.messages,
                 autoCompactionEnabled = settings.enableAutoCompaction,
-                triggerTokens = if (settings.enableAutoCompaction) {
-                    automaticCompactionTriggerTokens(settings, model)
-                } else {
-                    null
-                },
+                triggerTokens = triggerTokens,
                 hardLimitTokens = PreSendContextGuard.hardContextLimit(model),
                 compactedAt = view.compaction?.let { ContextCompactionView.summaryMessage(it).createdAt },
                 fileSize = ::localFileSize,
                 // Same image retention the generation loop applies to this assistant's request,
                 // so a Bot's batched ageing (up to batch-1 more images) is not underestimated.
                 imageAgingBatch = BotCostPolicy.imageAgingBatch(assistant),
+                onThresholdEstimate = { estimated, reportedUsage ->
+                    estimatedTokens = estimated
+                    usage = reportedUsage
+                },
             )
-        }.getOrElse { error ->
+        }
+        val decision = result.getOrElse { error ->
             if (error is CancellationException) throw error
             // An estimation bug must never block sending.
             Log.w(TAG, "pre-send context check failed; sending as is", error)
             PreSendContextDecision.Send
         }
+        if (settings.enableAutoCompaction) {
+            GenerationDiagnostics.compactionDecision(
+                CompactionEntry.PRE_SEND, settings, triggerTokens, estimatedTokens, usage,
+                shouldCompact = hasOlderRawMessages && decision.shouldCompact,
+                reason = when {
+                    result.isFailure -> CompactionReason.ESTIMATION_FAILED
+                    decision is PreSendContextDecision.OverByteLimit -> CompactionReason.BYTE_LIMIT
+                    decision is PreSendContextDecision.MediaTooLarge -> CompactionReason.MEDIA_LIMIT
+                    estimatedTokens != null -> CompactionReason.TOKEN_THRESHOLD
+                    view.messages.lastOrNull()?.role != MessageRole.USER -> CompactionReason.NO_NEW_USER_TURN
+                    else -> CompactionReason.NO_THRESHOLD
+                },
+                link = currentCoroutineContext()[GenerationDiagnosticStep],
+                hasOlderRawMessages = hasOlderRawMessages,
+            )
+        }
+        decision
     }
 
     /** Size of a local `file:` URL without reading it; null for anything else. */

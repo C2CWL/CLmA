@@ -1,6 +1,9 @@
 package com.clma.app.data.ai
 
+import com.clma.ai.core.TokenUsage
 import com.clma.ai.ui.UIMessagePart
+import com.clma.app.data.datastore.AutoCompactionThresholdMode
+import com.clma.app.data.datastore.Settings
 import com.clma.common.android.Logging
 import java.security.MessageDigest
 import java.util.concurrent.atomic.AtomicLong
@@ -36,6 +39,39 @@ internal object GenerationDiagnostics {
             "completed=${summary.completedToolCallCount} pending=${summary.pendingToolCallIds.size} " +
             "failures=${summary.failureCount} recoveries=${summary.recoveryCount} compactions=${summary.compactionCount}",
     )
+
+    enum class CompactionEntry { PRE_SEND, AFTER_TOOL, IDLE }
+
+    enum class CompactionReason {
+        TOKEN_THRESHOLD, BYTE_LIMIT, MEDIA_LIMIT, NO_THRESHOLD, NO_PROMPT_USAGE,
+        NO_NEW_USER_TURN, ESTIMATION_FAILED,
+    }
+
+    fun compactionDecision(
+        entry: CompactionEntry,
+        settings: Settings,
+        triggerTokens: Int?,
+        estimatedTokens: Int?,
+        usage: TokenUsage?,
+        shouldCompact: Boolean,
+        reason: CompactionReason,
+        link: GenerationDiagnosticStep? = null,
+        hasOlderRawMessages: Boolean? = null,
+    ) {
+        val mode = settings.autoCompactionThresholdMode
+        val configured = when (mode) {
+            AutoCompactionThresholdMode.TOKENS -> settings.autoCompactionThresholdTokensK
+            AutoCompactionThresholdMode.PERCENT -> settings.autoCompactionThresholdPercent
+        }
+        Logging.log(
+            "GenerationDiag",
+            "compaction_decision entry=$entry run=${link?.run ?: 0} step=${link?.step ?: -1} " +
+                "mode=$mode configured=$configured trigger_tokens=$triggerTokens estimated_tokens=$estimatedTokens " +
+                "usage_prompt=${usage?.promptTokens} usage_completion=${usage?.completionTokens} " +
+                "usage_total=${usage?.totalTokens} should_compact=$shouldCompact reason=$reason " +
+                "has_older_raw=$hasOlderRawMessages",
+        )
+    }
 
     fun compaction(
         link: GenerationDiagnosticStep?,
