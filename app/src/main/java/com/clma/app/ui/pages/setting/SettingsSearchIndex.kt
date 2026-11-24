@@ -553,6 +553,12 @@ SettingsSearchPageSpec(
         ),
     ),
     SettingsSearchPageSpec(
+        route = Screen.ContextOperationLog,
+        parent = Screen.Log,
+        titleRes = R.string.chat_context_operation_log,
+        descriptionRes = R.string.chat_context_operation_log_desc,
+    ),
+    SettingsSearchPageSpec(
         route = Screen.SettingAbout,
         items = listOf(
             row(R.string.about_page_version),
