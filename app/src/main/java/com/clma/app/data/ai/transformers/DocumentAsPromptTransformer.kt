@@ -12,6 +12,7 @@ import com.clma.app.data.ai.document.BoundedTextReader
 import com.clma.app.data.ai.document.DocumentFormat
 import com.clma.app.data.ai.document.DocumentInlineBudget
 import com.clma.app.data.ai.document.DocumentInlineNotices
+import com.clma.app.data.ai.document.DocumentSizeEstimator
 import com.clma.app.data.ai.document.DocumentTextExtractor
 import com.clma.app.data.ai.document.ExtractedTextCache
 import com.clma.app.data.datastore.getEffectiveContextLength
