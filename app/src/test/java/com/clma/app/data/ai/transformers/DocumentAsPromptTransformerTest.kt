@@ -86,7 +86,11 @@ class DocumentAsPromptTransformerTest {
             messages, contextLength = 1_000_000, maxOutputTokens = null, load = loader(mapOf("u1" to "hello")),
         )
         assertEquals(
-            "<UploadFile name=\"a.txt\" path=\"/upload/a.txt\">\n```\nhello\n```\n</UploadFile>",
+            "<UploadFile name=\"a.txt\" path=\"/upload/a.txt\">\n" +
+                "path: /upload/a.txt\n" +
+                "Read more on demand with read_attachment(path=\"/upload/a.txt\") or workspace_read_file offset/limit. " +
+                "Do not assume this message contains the whole file.\n" +
+                "```\nhello\n```\n</UploadFile>",
             promptOf(result[0]),
         )
         // The original parts (text + document) are kept after the inlined prompt.
@@ -96,25 +100,27 @@ class DocumentAsPromptTransformerTest {
     }
 
     @Test
-    fun `large document is cut to the budget with a notice and the user is told`() {
-        // (20_000 - 2_000) * 90% = 16_200; the other content is "看看" (2) + 8 overhead = 10
-        // -> 16_190 available, minus the 300-token notice reserve = 15_890 CJK chars shown.
+    fun `large document is cut to the preview cap with a notice and the user is told`() {
+        // The inline preview is capped at 8000 characters so a huge document never fills
+        // the request window and triggers compaction.
         val messages = listOf(user(UIMessagePart.Text("看看"), doc("u1")))
         val result = DocumentAsPromptTransformer.inlineDocuments(
             messages, contextLength = 20_000, maxOutputTokens = 2_000,
             load = loader(mapOf("u1" to "文".repeat(50_000))),
         )
         val prompt = promptOf(result[0])
-        assertTrue(prompt.contains("文".repeat(15_890) + "\n```"))
-        assertFalse(prompt.contains("文".repeat(15_891)))
+        assertTrue(prompt.contains("文".repeat(8_000) + "\n```"))
+        assertFalse(prompt.contains("文".repeat(8_001)))
+        assertTrue(prompt.contains("path: /upload/a.txt"))
+        assertTrue(prompt.contains("read_attachment(path=\"/upload/a.txt\")"))
         assertTrue(prompt.contains("[DOCUMENT TRUNCATED]"))
-        assertTrue(prompt.contains("15890 of 50000 characters (about 31%)"))
+        assertTrue(prompt.contains("8000 of 50000 characters (about 16%)"))
         assertTrue(prompt.contains("/upload/.extracted/a.txt.1-2.txt"))
         assertTrue(prompt.endsWith("</UploadFile>"))
         assertTrue(DocumentTokenEstimates.get("u1")!! < 16_200L)
 
         val notices = DocumentInlineNotices.takeFor(listOf("u1"))
-        assertEquals(listOf(DocumentInlineNotices.Notice("u1", "a.txt", 31)), notices)
+        assertEquals(listOf(DocumentInlineNotices.Notice("u1", "a.txt", 16)), notices)
         // Announced once only.
         DocumentAsPromptTransformer.inlineDocuments(
             messages, 20_000, 2_000, loader(mapOf("u1" to "文".repeat(50_000))),
@@ -133,26 +139,26 @@ class DocumentAsPromptTransformerTest {
             messages, contextLength = 30_000, maxOutputTokens = 2_000,
             load = loader(mapOf("old" to "旧".repeat(15_000), "new" to "新".repeat(15_000))),
         )
-        assertFalse(promptOf(result[1]).contains("[DOCUMENT TRUNCATED]"))
-        assertTrue(promptOf(result[1]).contains("新".repeat(15_000)))
+        // Both exceed the inline preview; the newer one still gets the preview, not the whole file.
+        assertTrue(promptOf(result[1]).contains("[DOCUMENT TRUNCATED]"))
+        assertTrue(promptOf(result[1]).contains("新".repeat(DocumentAsPromptTransformer.INLINE_PREVIEW_CHARS)))
+        assertFalse(promptOf(result[1]).contains("新".repeat(DocumentAsPromptTransformer.INLINE_PREVIEW_CHARS + 1)))
+        assertTrue(promptOf(result[1]).contains("path: /upload/new.txt"))
         assertTrue(promptOf(result[0]).contains("[DOCUMENT TRUNCATED]"))
-        // 25_184 - 15_000 - 300 = 9_884 characters of the older one.
-        assertTrue(promptOf(result[0]).contains("9884 of 15000 characters"))
+        assertTrue(promptOf(result[0]).contains("path: /upload/old.txt"))
     }
 
     @Test
     fun `unknown context window uses the 128k default`() {
         // Default budget: (128_000 - 16_000) * 90% = 100_800 minus 8 for the message.
-        val fits = DocumentAsPromptTransformer.inlineDocuments(
+        val preview = DocumentAsPromptTransformer.inlineDocuments(
             listOf(user(doc("u1"))), contextLength = null, maxOutputTokens = null,
             load = loader(mapOf("u1" to "字".repeat(90_000))),
         )
-        assertFalse(promptOf(fits[0]).contains("[DOCUMENT TRUNCATED]"))
-        val tooBig = DocumentAsPromptTransformer.inlineDocuments(
-            listOf(user(doc("u1"))), contextLength = null, maxOutputTokens = null,
-            load = loader(mapOf("u1" to "字".repeat(120_000))),
-        )
-        assertTrue(promptOf(tooBig[0]).contains("[DOCUMENT TRUNCATED]"))
+        assertTrue(promptOf(preview[0]).contains("[DOCUMENT TRUNCATED]"))
+        assertTrue(promptOf(preview[0]).contains("path: /upload/a.txt"))
+        assertTrue(promptOf(preview[0]).contains("字".repeat(DocumentAsPromptTransformer.INLINE_PREVIEW_CHARS)))
+        assertFalse(promptOf(preview[0]).contains("字".repeat(DocumentAsPromptTransformer.INLINE_PREVIEW_CHARS + 1)))
     }
 
     @Test
@@ -163,17 +169,14 @@ class DocumentAsPromptTransformerTest {
     }
 
     @Test
-    fun `plain text upload gets a full-text copy only when it is truncated`() {
+    fun `complete plain text is not copied just to be inlined`() {
         val upload = tmp.newFolder("upload")
-        val source = File(upload, "big.txt").apply { writeText("line\n".repeat(10)) }
+        val source = File(upload, "big.txt").also { it.writeText("line\n".repeat(10)) }
         val loaded = DocumentAsPromptTransformer.loadDocumentFile(source, "big.txt", "text/plain")
         assertEquals("line\n".repeat(10), loaded.text)
         assertEquals("/upload/big.txt", loaded.workspacePath)
+        assertEquals("/upload/big.txt", loaded.fullTextPath())
         assertFalse(File(upload, ".extracted").exists())
-        val path = loaded.fullTextPath()
-        assertNotNull(path)
-        assertTrue(path!!.startsWith("/upload/.extracted/big.txt."))
-        assertTrue(File(upload, ".extracted").listFiles()!!.single().readText() == "line\n".repeat(10))
     }
 
     @Test
@@ -186,14 +189,13 @@ class DocumentAsPromptTransformerTest {
         assertEquals(text.length, loaded.totalChars)
         assertEquals(DocumentInlineBudget.estimateTokens(text), loaded.totalTokens)
         assertEquals(DocumentInlineBudget.lineCount(text), loaded.totalLines)
-        // The full text was copied to the cache as a stream, and the model is pointed at it.
-        val path = loaded.fullTextPath()
-        assertNotNull(path)
-        assertEquals(text, File(upload, ".extracted").listFiles()!!.single().readText())
-        // Second load goes through the cache, still bounded.
+        // Sending only a preview must not copy the whole file into the extract cache.
+        assertEquals("/upload/huge.log.txt", loaded.fullTextPath())
+        assertFalse(File(upload, ".extracted").exists())
         val again = DocumentAsPromptTransformer.loadDocumentFile(source, "huge.log.txt", "text/plain", maxChars = 5_000)
         assertEquals(5_000, again.text.length)
         assertEquals(text.length, again.totalChars)
+        assertFalse(File(upload, ".extracted").exists())
     }
 
     @Test

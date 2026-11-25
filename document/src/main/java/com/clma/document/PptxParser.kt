@@ -14,10 +14,20 @@ private data class SlideContent(
 )
 
 object PptxParser {
-    fun parse(file: File): String {
+    /** One shape cannot exceed the caller budget by more than this. */
+    private const val SHAPE_CAP = 8_192
+
+    fun parse(file: File): String = parse(file, Int.MAX_VALUE)
+
+    /**
+     * @param maxChars stop once accumulated text reaches this many characters. The result may be
+     * a prefix and is not a complete extraction.
+     */
+    fun parse(file: File, maxChars: Int): String {
         return try {
             ZipFile(file).use { zipFile ->
                 val slides = mutableListOf<SlideContent>()
+                val limit = maxChars.coerceAtLeast(0)
 
                 // Find all slide XML files and sort them by number
                 val slideEntries = zipFile.entries().toList()
@@ -30,18 +40,19 @@ object PptxParser {
                     return "No slides found in PPTX file"
                 }
 
-                // Parse each slide
-                slideEntries.forEachIndexed { index, entry ->
+                // Parse each slide until the character budget is spent.
+                for ((index, entry) in slideEntries.withIndex()) {
+                    if (slides.sumOf { it.content.length + it.notes.length } >= limit) break
                     val slideNumber = index + 1
                     val slideContent = zipFile.getInputStream(entry).use { stream ->
-                        parseSlideXml(stream)
+                        parseSlideXml(stream, limit)
                     }
 
                     // Try to get notes for this slide
                     val notesEntry = zipFile.getEntry("ppt/notesSlides/notesSlide${slideNumber}.xml")
-                    val notes = if (notesEntry != null) {
+                    val notes = if (notesEntry != null && slideContent.length < limit) {
                         zipFile.getInputStream(notesEntry).use { stream ->
-                            parseNotesXml(stream)
+                            parseNotesXml(stream, (limit - slideContent.length).coerceAtLeast(0))
                         }
                     } else ""
 
@@ -49,32 +60,41 @@ object PptxParser {
                 }
 
                 // Format output
-                formatOutput(slides)
+                formatOutput(slides, limit)
             }
         } catch (e: Exception) {
             "Error parsing PPTX file: ${e.message}"
         }
     }
 
-    private fun formatOutput(slides: List<SlideContent>): String {
+    private fun formatOutput(slides: List<SlideContent>, maxChars: Int = Int.MAX_VALUE): String {
         val result = StringBuilder()
+        val limit = maxChars.coerceAtLeast(0)
 
-        slides.forEach { slide ->
-            result.append("## Slide ${slide.slideNumber}\n\n")
-            result.append(slide.content)
+        for (slide in slides) {
+            if (result.length >= limit) break
+            appendBounded(result, limit, "## Slide ${slide.slideNumber}\n\n")
+            appendBounded(result, limit, slide.content)
 
-            if (slide.notes.isNotBlank()) {
-                result.append("\n### Speaker Notes\n\n")
-                result.append(slide.notes)
+            if (slide.notes.isNotBlank() && result.length < limit) {
+                appendBounded(result, limit, "\n### Speaker Notes\n\n")
+                appendBounded(result, limit, slide.notes)
             }
 
-            result.append("\n")
+            appendBounded(result, limit, "\n")
         }
 
-        return result.toString().trim()
+        val out = result.toString()
+        return if (out.length >= limit) out else out.trim()
     }
 
-    private fun parseSlideXml(inputStream: InputStream): String {
+    private fun appendBounded(out: StringBuilder, limit: Int, text: String) {
+        val room = limit - out.length
+        if (room <= 0 || text.isEmpty()) return
+        if (text.length <= room) out.append(text) else out.append(text, 0, room)
+    }
+
+    private fun parseSlideXml(inputStream: InputStream, maxChars: Int = Int.MAX_VALUE): String {
         return try {
             val factory = XmlPullParserFactory.newInstance()
             factory.isNamespaceAware = true
@@ -82,8 +102,9 @@ object PptxParser {
             parser.setInput(inputStream, "UTF-8")
 
             val result = StringBuilder()
+            val limit = maxChars.coerceAtLeast(0)
 
-            while (parser.eventType != XmlPullParser.END_DOCUMENT) {
+            while (parser.eventType != XmlPullParser.END_DOCUMENT && result.length < limit) {
                 when (parser.eventType) {
                     XmlPullParser.START_TAG -> {
                         when (parser.name) {
@@ -95,7 +116,8 @@ object PptxParser {
                 parser.next()
             }
 
-            result.toString()
+            val out = result.toString()
+            if (out.length > limit) out.substring(0, limit) else out
         } catch (e: Exception) {
             "Error parsing slide XML: ${e.message}\n"
         }
@@ -130,7 +152,7 @@ object PptxParser {
             }
         }
 
-        val text = textContent.toString().trim()
+        val text = textContent.toString().trim().take(SHAPE_CAP)
         if (text.isNotBlank()) {
             result.append(text)
             result.append("\n\n")
@@ -367,7 +389,7 @@ object PptxParser {
         return result.toString().trim()
     }
 
-    private fun parseNotesXml(inputStream: InputStream): String {
+    private fun parseNotesXml(inputStream: InputStream, maxChars: Int = Int.MAX_VALUE): String {
         return try {
             val factory = XmlPullParserFactory.newInstance()
             factory.isNamespaceAware = true
@@ -376,8 +398,9 @@ object PptxParser {
 
             val result = StringBuilder()
             var inNotesShape = false
+            val limit = maxChars.coerceAtLeast(0)
 
-            while (parser.eventType != XmlPullParser.END_DOCUMENT) {
+            while (parser.eventType != XmlPullParser.END_DOCUMENT && result.length < limit) {
                 when (parser.eventType) {
                     XmlPullParser.START_TAG -> {
                         when (parser.name) {
@@ -400,7 +423,8 @@ object PptxParser {
                 parser.next()
             }
 
-            result.toString().trim()
+            val out = result.toString()
+            if (out.length > limit) out.substring(0, limit) else out.trim()
         } catch (e: Exception) {
             ""
         }

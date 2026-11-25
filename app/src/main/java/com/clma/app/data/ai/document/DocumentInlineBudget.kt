@@ -143,7 +143,12 @@ object DocumentInlineBudget {
         append("$shownChars of $totalChars characters (about $percent%), ")
         append("because the whole document (~$totalTokens tokens) does not fit in the model's context window.")
         if (fullTextPath != null) {
-            append("\nThe full extracted text is saved at $fullTextPath ($totalLines lines; ")
+            val savedExtract = fullTextPath.contains("/.extracted/")
+            append(if (savedExtract) {
+                "\nThe full extracted text is saved at $fullTextPath ($totalLines lines; "
+            } else {
+                "\nThe original file is at $fullTextPath (about $totalLines lines; "
+            })
             append("the part above ends at line ${head.lastLine}). ")
             append("To read the rest, call read_attachment (no Workspace needed) ")
             append("or workspace_read_file on that path with offset/limit ")
