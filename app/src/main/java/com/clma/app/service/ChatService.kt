@@ -200,6 +200,9 @@ import com.clma.app.web.BadRequestException
 import com.clma.app.web.NotFoundException
 import com.clma.app.utils.applyPlaceholders
 import java.time.Instant
+import kotlin.time.toKotlinInstant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
@@ -2704,9 +2707,13 @@ class ChatService(
                         // next request without turning automatic compaction into a preflight
                         // estimate of an otherwise unverified conversation.
                         var usage: TokenUsage? = null
-                        val nextRequestTokens = ContextBudgetPlanner.estimateInputTokens(generatedMessages) {
-                            usage = it
-                        }
+                        val nextRequestTokens = ContextBudgetPlanner.estimateInputTokens(
+                            generatedMessages,
+                            { usage = it },
+                            conversationRepo.getCompaction(conversationId)?.createdAt
+                                ?.toKotlinInstant()
+                                ?.toLocalDateTime(TimeZone.currentSystemDefault()),
+                        )
                         val triggerTokens = automaticCompactionTriggerTokens(settings, model)
                         val shouldCompact = actualPromptTokens != null && triggerTokens != null &&
                             nextRequestTokens >= triggerTokens
