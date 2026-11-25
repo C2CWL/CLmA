@@ -170,7 +170,7 @@ class DocumentAsPromptTransformerTest {
 
     @Test
     fun `complete plain text is not copied just to be inlined`() {
-        val upload = File(tempDir, "upload").also { it.mkdirs() }
+        val upload = tmp.newFolder("upload")
         val source = File(upload, "big.txt").also { it.writeText("line\n".repeat(10)) }
         val loaded = DocumentAsPromptTransformer.loadDocumentFile(source, "big.txt", "text/plain")
         assertEquals("line\n".repeat(10), loaded.text)
