@@ -4,6 +4,7 @@ import com.clma.ai.core.TokenUsage
 import com.clma.ai.ui.UIMessage
 import com.clma.ai.ui.UIMessagePart
 import com.clma.app.data.ai.document.DocumentSizeEstimator
+import kotlinx.datetime.LocalDateTime
 
 data class ContextBudgetPlan(
     val estimatedInputTokens: Int,
@@ -97,11 +98,23 @@ object ContextBudgetPlanner {
 
     fun estimateInputTokens(messages: List<UIMessage>): Int = estimateInputTokens(messages, null)
 
+    /**
+     * Estimates the next request. [ignoreUsageBefore] drops provider usage recorded before a
+     * compaction: that figure describes the replaced history, not the summary that follows it.
+     * Usage on or after the boundary remains authoritative.
+     */
+    fun estimateInputTokens(
+        messages: List<UIMessage>,
+        ignoreUsageBefore: LocalDateTime?,
+    ): Int = estimateInputTokens(messages, null, ignoreUsageBefore)
+
     internal fun estimateInputTokens(
         messages: List<UIMessage>,
         onUsage: ((TokenUsage) -> Unit)?,
+        ignoreUsageBefore: LocalDateTime? = null,
     ): Int {
         val usageIndex = messages.indexOfLast { message ->
+            if (ignoreUsageBefore != null && message.createdAt < ignoreUsageBefore) return@indexOfLast false
             val usage = message.usage
             usage != null && (usage.totalTokens > 0 || usage.promptTokens + usage.completionTokens > 0)
         }

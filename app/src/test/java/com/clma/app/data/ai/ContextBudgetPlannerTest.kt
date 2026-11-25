@@ -4,6 +4,7 @@ import com.clma.ai.core.MessageRole
 import com.clma.ai.core.TokenUsage
 import com.clma.ai.ui.UIMessage
 import com.clma.ai.ui.UIMessagePart
+import kotlinx.datetime.LocalDateTime
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -50,6 +51,42 @@ class ContextBudgetPlannerTest {
         )
 
         assertEquals(7_000, ContextBudgetPlanner.estimateInputTokens(messages))
+    }
+
+    @Test
+    fun `input estimate ignores provider usage recorded before compaction`() {
+        val compaction = LocalDateTime.parse("2026-11-25T12:00:00")
+        val messages = listOf(
+            UIMessage(
+                role = MessageRole.ASSISTANT,
+                parts = listOf(UIMessagePart.Text("x".repeat(300))),
+                createdAt = LocalDateTime.parse("2026-11-25T11:59:59"),
+                usage = TokenUsage(promptTokens = 140_000, completionTokens = 1_000, totalTokens = 141_000),
+            ),
+            UIMessage(
+                role = MessageRole.ASSISTANT,
+                parts = listOf(UIMessagePart.Text("summary")),
+                createdAt = compaction,
+            ),
+        )
+
+        // "summary" is 7 ASCII chars -> 3 tokens, plus the 8-token message overhead.
+        assertEquals(11, ContextBudgetPlanner.estimateInputTokens(messages, compaction))
+    }
+
+    @Test
+    fun `input estimate keeps provider usage recorded at compaction boundary`() {
+        val compaction = LocalDateTime.parse("2026-11-25T12:00:00")
+        val messages = listOf(
+            UIMessage(
+                role = MessageRole.ASSISTANT,
+                parts = emptyList(),
+                createdAt = compaction,
+                usage = TokenUsage(promptTokens = 18_000, completionTokens = 500, totalTokens = 18_500),
+            ),
+        )
+
+        assertEquals(18_500, ContextBudgetPlanner.estimateInputTokens(messages, compaction))
     }
 
     @Test
