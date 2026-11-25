@@ -146,4 +146,30 @@ class DocumentTextExtractorTest {
         val parsers = DocumentParsers(docx = { "Error parsing DOCX file: boom" })
         assertFalse(DocumentTextExtractor.extract(file, "broken.docx", "application/msword", parsers).cacheable)
     }
+
+    @Test
+    fun `bounded parse keeps a prefix and does not mark it cacheable`() {
+        val file = zip("long.docx", "word/document.xml")
+        val parsers = DocumentParsers(
+            docxBounded = { _, maxChars -> "x".repeat(maxChars) },
+        )
+        val result = DocumentTextExtractor.extract(
+            file, "long.docx", "application/msword", parsers, maxChars = 4,
+        )
+        assertEquals("xxxx", result.text)
+        assertFalse(result.complete)
+        assertFalse(result.cacheable)
+    }
+
+    @Test
+    fun `bounded parse that ends inside the limit stays complete and cacheable`() {
+        val file = zip("short.docx", "word/document.xml")
+        val parsers = DocumentParsers(docxBounded = { _, _ -> "ok" })
+        val result = DocumentTextExtractor.extract(
+            file, "short.docx", "application/msword", parsers, maxChars = 8,
+        )
+        assertEquals("ok", result.text)
+        assertTrue(result.complete)
+        assertTrue(result.cacheable)
+    }
 }

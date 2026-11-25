@@ -10,21 +10,38 @@ import java.io.File
 private const val MAX_PAGES = 300
 
 object PdfParser {
-    fun parserPdf(file: File): String {
+    fun parserPdf(file: File): String = parserPdf(file, Int.MAX_VALUE)
+
+    private fun appendBounded(out: StringBuilder, limit: Int, text: String) {
+        val room = limit - out.length
+        if (room <= 0 || text.isEmpty()) return
+        if (text.length <= room) out.append(text) else out.append(text, 0, room)
+    }
+
+    /**
+     * @param maxChars stop once the accumulated text reaches this many characters. Later pages
+     * are not loaded. The result may be a prefix and is not cached as a complete extraction.
+     */
+    fun parserPdf(file: File, maxChars: Int): String {
         val document = PDFDocument.openDocument(file.absolutePath).asPDF()
         try {
             val pageCount = document.countPages()
             val pagesToRead = minOf(pageCount, MAX_PAGES)
             val result = StringBuilder()
+            val limit = maxChars.coerceAtLeast(0)
+            var stoppedEarly = false
             for (i in 0 until pagesToRead) {
+                if (result.length >= limit) {
+                    stoppedEarly = true
+                    break
+                }
                 val page = document.loadPage(i)
                 try {
                     val structuredText = page.toStructuredText()
                     try {
-                        result.append("---")
-                        result.append("Page ${i + 1}:\n")
-                        result.append(structuredText.asText())
-                        result.appendLine()
+                        appendBounded(result, limit, "---Page ${i + 1}:\n")
+                        appendBounded(result, limit, structuredText.asText())
+                        appendBounded(result, limit, "\n")
                     } finally {
                         structuredText.destroy()
                     }
@@ -32,8 +49,8 @@ object PdfParser {
                     page.destroy()
                 }
             }
-            if (pagesToRead < pageCount) {
-                result.append("\n[Truncated: showing $pagesToRead of $pageCount pages]")
+            if (!stoppedEarly && pagesToRead < pageCount && result.length < limit) {
+                appendBounded(result, limit, "\n[Truncated: showing $pagesToRead of $pageCount pages]")
             }
             return result.toString()
         } finally {

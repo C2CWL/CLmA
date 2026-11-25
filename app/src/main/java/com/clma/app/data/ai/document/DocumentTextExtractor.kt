@@ -15,12 +15,20 @@ import java.util.zip.ZipFile
 /** What a document attachment really is, decided from its bytes first and its labels second. */
 enum class DocumentFormat { PDF, DOCX, PPTX, EPUB, TEXT, BINARY }
 
+private val PARSED_FORMATS = setOf(
+    DocumentFormat.PDF, DocumentFormat.DOCX, DocumentFormat.PPTX, DocumentFormat.EPUB,
+)
+
 /** Parsers per format; injectable so routing can be tested without MuPDF / XmlPull. */
 class DocumentParsers(
     val pdf: (File) -> String = PdfParser::parserPdf,
     val docx: (File) -> String = DocxParser::parse,
     val pptx: (File) -> String = PptxParser::parse,
     val epub: (File) -> String = EpubParser::parse,
+    val pdfBounded: ((File, Int) -> String)? = null,
+    val docxBounded: ((File, Int) -> String)? = null,
+    val pptxBounded: ((File, Int) -> String)? = null,
+    val epubBounded: ((File, Int) -> String)? = null,
 )
 
 /**
@@ -80,21 +88,38 @@ object DocumentTextExtractor {
         fileName: String,
         mime: String,
         parsers: DocumentParsers = DocumentParsers(),
+        /** For PDF/DOCX/PPTX/EPUB, stop once this many characters are accumulated. */
+        maxChars: Int = Int.MAX_VALUE,
     ): Extraction {
         val format = detectFormat(file, fileName, mime)
         return runCatching {
+            val limit = maxChars.coerceAtLeast(0)
+            val bounded = limit != Int.MAX_VALUE && format in PARSED_FORMATS
+            // One extra character tells a stopped parse from one that ended exactly on the limit.
+            val probe = if (bounded) limit + 1 else Int.MAX_VALUE
             val text = when (format) {
-                DocumentFormat.PDF -> parsers.pdf(file)
-                DocumentFormat.DOCX -> parsers.docx(file)
-                DocumentFormat.PPTX -> parsers.pptx(file)
-                DocumentFormat.EPUB -> parsers.epub(file)
-                DocumentFormat.TEXT -> decodeText(file.readBytes())
+                DocumentFormat.PDF -> if (bounded) (parsers.pdfBounded ?: PdfParser::parserPdf)(file, probe) else parsers.pdf(file)
+                DocumentFormat.DOCX -> if (bounded) (parsers.docxBounded ?: DocxParser::parse)(file, probe) else parsers.docx(file)
+                DocumentFormat.PPTX -> if (bounded) (parsers.pptxBounded ?: PptxParser::parse)(file, probe) else parsers.pptx(file)
+                DocumentFormat.EPUB -> if (bounded) (parsers.epubBounded ?: EpubParser::parse)(file, probe) else parsers.epub(file)
+                DocumentFormat.TEXT -> if (limit == Int.MAX_VALUE) {
+                    decodeText(file.readBytes())
+                } else {
+                    BoundedTextReader.read(file, Charsets.UTF_8, 0, limit).head
+                }
                 DocumentFormat.BINARY -> return Extraction(format, binaryPlaceholder(file.length()), cacheable = false)
             }
-            val isError = PARSER_ERROR_PREFIXES.any { text.startsWith(it) }
-            Extraction(format, text, cacheable = !isError && format != DocumentFormat.TEXT)
+            val complete = !bounded || text.length <= limit
+            val prefix = if (complete) text else text.substring(0, limit)
+            val isError = PARSER_ERROR_PREFIXES.any { prefix.startsWith(it) }
+            Extraction(
+                format,
+                prefix,
+                cacheable = complete && !isError && format != DocumentFormat.TEXT,
+                complete = complete,
+            )
         }.getOrElse {
-            Extraction(format, "[ERROR, failed to read file: $fileName]", cacheable = false)
+            Extraction(format, "[ERROR, failed to read file: $fileName]", cacheable = false, complete = false)
         }
     }
 
@@ -103,6 +128,8 @@ object DocumentTextExtractor {
         val text: String,
         /** True for successfully parsed PDF/DOCX/PPTX/EPUB output worth caching on disk. */
         val cacheable: Boolean,
+        /** False when a parser stopped at [maxChars] and [text] is only a prefix. */
+        val complete: Boolean = true,
     )
 
     /**

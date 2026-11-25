@@ -129,6 +129,22 @@ class DocumentInlineBudgetTest {
     }
 
     @Test
+    fun `truncation notice for the original file does not claim a full extract exists`() {
+        val head = DocumentInlineBudget.Head(text = "x", chars = 250, lastLine = 10, nextLine = 11)
+        val notice = DocumentInlineBudget.truncationNotice(
+            shownChars = 250,
+            totalChars = 1_000,
+            totalTokens = 400,
+            totalLines = 40,
+            head = head,
+            fullTextPath = "/upload/report.pdf",
+        )
+        assertTrue(notice.contains("The original file is at /upload/report.pdf"))
+        assertFalse(notice.contains("full extracted text"))
+        assertTrue(notice.contains("read_attachment"))
+    }
+
+    @Test
     fun `truncation notice without a file tells the model to inform the user`() {
         val head = DocumentInlineBudget.Head(text = "x", chars = 10, lastLine = 1, nextLine = 1)
         val notice = DocumentInlineBudget.truncationNotice(10, 100, 50, 3, head, fullTextPath = null)

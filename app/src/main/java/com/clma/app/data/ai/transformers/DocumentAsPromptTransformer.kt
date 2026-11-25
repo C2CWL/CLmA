@@ -20,11 +20,11 @@ import java.io.File
 /**
  * Inlines attached documents into the prompt as `<UploadFile>` text.
  *
- * A document that fits in the model's context (after the rest of the request and the reserved
- * output) is inlined whole, as before. One that does not fit is cut to the head that fits and
- * followed by a notice telling the model how much it sees and where the full extracted text is,
- * so it can read the rest with workspace_read_file offset/limit. The user is told too (see
- * [DocumentInlineNotices]). Budget arithmetic: [DocumentInlineBudget].
+ * A short document is inlined whole. Anything larger than [INLINE_PREVIEW_CHARS] is sent as a
+ * short head plus the real file path, so the model reads the rest on demand with read_attachment
+ * or workspace_read_file offset/limit instead of stuffing the whole file into the prompt (where
+ * auto-compaction then makes it unreadable). The user is told too (see [DocumentInlineNotices]).
+ * Budget arithmetic: [DocumentInlineBudget].
  */
 object DocumentAsPromptTransformer : InputMessageTransformer {
     override suspend fun transform(
@@ -62,16 +62,24 @@ object DocumentAsPromptTransformer : InputMessageTransformer {
     }
 
     /**
-     * Characters read from a document at most: no single document can be given more than the
-     * whole document budget, and the head cut counts at most 3 characters per token. The margin
-     * covers the minimum preview and rounding.
+     * Characters inlined into the prompt for one document. Larger files are not read past this:
+     * the model is given the real path and pages the rest itself. Kept well under a typical
+     * compaction threshold so sending a file does not immediately compress the conversation.
      */
-    internal fun maxReadChars(availableTokens: Long): Int =
-        (availableTokens.coerceAtLeast(0L) * 3L + READ_MARGIN_CHARS)
+    internal const val INLINE_PREVIEW_CHARS = 8_000
+
+    /**
+     * Characters read from a document at most. The prompt only keeps [INLINE_PREVIEW_CHARS];
+     * a tighter context budget reads even less.
+     */
+    internal fun maxReadChars(availableTokens: Long): Int {
+        val budgetChars = (availableTokens.coerceAtLeast(0L) * 3L)
             .coerceAtMost(Int.MAX_VALUE.toLong())
             .toInt()
+        return minOf(INLINE_PREVIEW_CHARS, budgetChars.coerceAtLeast(MIN_READ_CHARS))
+    }
 
-    private const val READ_MARGIN_CHARS = 16_384L
+    private const val MIN_READ_CHARS = 1_024
 
     /**
      * Core of [transform], free of Android types so it can be unit-tested with fake loaders.
@@ -108,10 +116,13 @@ object DocumentAsPromptTransformer : InputMessageTransformer {
                 loadBounded?.invoke(document, readCap) ?: load(document)
             }
             val sizes = loaded.map { it.totalTokens }
+            val previewTokens = DocumentInlineBudget.estimateTokens("字".repeat(INLINE_PREVIEW_CHARS))
             // Newest document first: the one the user just sent wins over older ones.
             val newestFirst = refs.indices.reversed().toList()
             val allocations = DocumentInlineBudget.allocate(newestFirst.map { sizes[it] }, available)
-            val allocationByIndex = newestFirst.zip(allocations).toMap()
+            val allocationByIndex = newestFirst.zip(allocations).associate { (index, allocation) ->
+                index to allocation.copy(tokens = minOf(allocation.tokens, previewTokens))
+            }
             refs.indices.map { index ->
                 buildPrompt(
                     document = refs[index].second,
@@ -176,6 +187,10 @@ object DocumentAsPromptTransformer : InputMessageTransformer {
         }
         return buildString {
             append("<UploadFile name=\"${document.fileName}\"$pathAttr>\n")
+            if (loaded.workspacePath != null) {
+                append("path: ${loaded.workspacePath}\n")
+                append("Read more on demand with read_attachment(path=\"${loaded.workspacePath}\") or workspace_read_file offset/limit. Do not assume this message contains the whole file.\n")
+            }
             append("```\n")
             append(content)
             append("\n```\n")
@@ -249,34 +264,49 @@ object DocumentAsPromptTransformer : InputMessageTransformer {
                 ExtractedTextCache.cacheFileFor(file)?.let(ExtractedTextCache::workspacePathOf)
             }
         }
-        // A large plain-text file: never readBytes() it. Copy it into the cache as a stream (the
-        // model pages through that copy anyway) and read only the head that can be inlined.
+        // A large plain-text file: never readBytes() it, and do not copy the whole file into the
+        // extract cache just to send a preview. The original path is what the model pages.
         if (file.length() > maxChars &&
             DocumentTextExtractor.detectFormat(file, fileName, mime) == DocumentFormat.TEXT
         ) {
             val detected = BoundedTextReader.detectCharset(file)
-            val streamedCache = ExtractedTextCache.writeStreaming(file, detected.charset, detected.bomBytes)
-            val loaded = if (streamedCache != null) {
-                boundedLoad(streamedCache, Charsets.UTF_8, 0, maxChars, workspacePath) {
-                    ExtractedTextCache.workspacePathOf(streamedCache)
-                }
-            } else {
-                boundedLoad(file, detected.charset, detected.bomBytes, maxChars, workspacePath) { null }
-            }
-            loaded?.let { return it }
+            boundedLoad(file, detected.charset, detected.bomBytes, maxChars, workspacePath) {
+                workspacePath
+            }?.let { return it }
         }
-        val extraction = DocumentTextExtractor.extract(file, fileName, mime)
+        val extraction = DocumentTextExtractor.extract(file, fileName, mime, maxChars = maxChars)
+        // An incomplete parse is a prefix only. Never store it as the full extracted document.
         val cacheFile = if (extraction.cacheable) ExtractedTextCache.write(file, extraction.text) else null
-        // Parsed formats (PDF/DOCX/...) are extracted in memory once; keep only the head.
-        if (extraction.text.length > maxChars) {
+        if (!extraction.complete || extraction.text.length > maxChars) {
+            val prefix = extraction.text.take(maxChars)
+            val estimatedTokens = DocumentSizeEstimator.estimate(file, fileName, mime)
+            val totalChars = if (extraction.complete) {
+                extraction.text.length
+            } else {
+                maxOf(prefix.length + 1, estimatedTokens.toInt().coerceAtLeast(0))
+            }
+            // A prefix is not the full extract. Point at the original file, never a partial cache.
+            val restPath: () -> String? = if (extraction.complete) {
+                { cacheFile?.let(ExtractedTextCache::workspacePathOf) ?: workspacePath }
+            } else {
+                { workspacePath }
+            }
             return LoadedDocument(
-                text = extraction.text.substring(0, maxChars),
+                text = prefix,
                 workspacePath = workspacePath,
-                fullTextPath = { cacheFile?.let(ExtractedTextCache::workspacePathOf) },
+                fullTextPath = restPath,
                 fullSize = BoundedTextReader.FullSize(
-                    chars = extraction.text.length,
-                    tokens = DocumentInlineBudget.estimateTokens(extraction.text),
-                    lines = DocumentInlineBudget.lineCount(extraction.text),
+                    chars = totalChars,
+                    tokens = if (extraction.complete) {
+                        DocumentInlineBudget.estimateTokens(extraction.text)
+                    } else {
+                        maxOf(DocumentInlineBudget.estimateTokens(prefix) + 1, estimatedTokens)
+                    },
+                    lines = if (extraction.complete) {
+                        DocumentInlineBudget.lineCount(extraction.text)
+                    } else {
+                        maxOf(DocumentInlineBudget.lineCount(prefix) + 1, 2)
+                    },
                 ),
             )
         }

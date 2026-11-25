@@ -26,7 +26,13 @@ internal fun escapeUnresolvableEntities(xml: String): String =
     xml.replace(UNRESOLVABLE_ENTITY_RE, "&amp;")
 
 object EpubParser {
-    fun parse(file: File): String {
+    fun parse(file: File): String = parse(file, Int.MAX_VALUE)
+
+    /**
+     * @param maxChars stop once accumulated text reaches this many characters. The result may be
+     * a prefix and is not a complete extraction.
+     */
+    fun parse(file: File, maxChars: Int): String {
         return try {
             ZipFile(file).use { zip ->
                 val opfPath = findOpfPath(zip)
@@ -38,20 +44,25 @@ object EpubParser {
                 val (manifest, spine) = zip.getInputStream(opfEntry).use { parseOpf(it) }
 
                 val result = StringBuilder()
+                val limit = maxChars.coerceAtLeast(0)
                 for (itemId in spine) {
+                    if (result.length >= limit) break
                     val item = manifest[itemId] ?: continue
                     if (!item.mediaType.contains("html")) continue
 
                     val itemPath = if (opfDir.isEmpty()) item.href else "$opfDir/${item.href}"
                     val entry = zip.getEntry(itemPath) ?: continue
-                    val content = zip.getInputStream(entry).use { parseXhtml(it) }
+                    val content = zip.getInputStream(entry).use { parseXhtml(it, limit - result.length) }
                     if (content.isNotBlank()) {
-                        result.append(content)
-                        result.append("\n\n")
+                        val room = limit - result.length
+                        if (content.length <= room) result.append(content) else result.append(content, 0, room)
+                        if (result.length < limit) result.append("\n\n")
                     }
                 }
 
-                result.toString().trim().ifEmpty { "No readable content found in EPUB file" }
+                val out = result.toString()
+                if (out.length > limit) out.substring(0, limit)
+                else out.trim().ifEmpty { "No readable content found in EPUB file" }
             }
         } catch (e: Exception) {
             "Error parsing EPUB file: ${e.message}"
@@ -111,9 +122,17 @@ object EpubParser {
         return manifest to spine
     }
 
-    private fun parseXhtml(inputStream: InputStream): String {
+    private fun parseXhtml(inputStream: InputStream, maxChars: Int = Int.MAX_VALUE): String {
         return try {
-            val xml = escapeUnresolvableEntities(inputStream.bufferedReader(Charsets.UTF_8).readText())
+            val reader = inputStream.bufferedReader(Charsets.UTF_8)
+            val raw = if (maxChars == Int.MAX_VALUE) {
+                reader.readText()
+            } else {
+                val buf = CharArray((maxChars.coerceAtLeast(0) + 4_096).coerceAtMost(256_000))
+                val n = reader.read(buf)
+                if (n <= 0) "" else String(buf, 0, n)
+            }
+            val xml = escapeUnresolvableEntities(raw)
 
             val factory = XmlPullParserFactory.newInstance()
             factory.isNamespaceAware = false
@@ -125,8 +144,9 @@ object EpubParser {
             val tagStack = ArrayDeque<String>()
             var inBody = false
             var listCounter = 0
+            val limit = maxChars.coerceAtLeast(0)
 
-            while (parser.eventType != XmlPullParser.END_DOCUMENT) {
+            while (parser.eventType != XmlPullParser.END_DOCUMENT && result.length < limit) {
                 when (parser.eventType) {
                     XmlPullParser.START_TAG -> {
                         val tag = parser.name.lowercase()
@@ -187,7 +207,10 @@ object EpubParser {
                                 ?.replace('\r', ' ')
                                 ?.replace("\\s+".toRegex(), " ")
                             if (!text.isNullOrBlank()) {
-                                result.append(text)
+                                val room = (limit - result.length).coerceAtLeast(0)
+                                if (room > 0) {
+                                    result.append(if (text.length <= room) text else text.substring(0, room))
+                                }
                             }
                         }
                     }
@@ -236,9 +259,8 @@ object EpubParser {
                 }
             }
 
-            result.toString()
-                .replace(Regex("\n{3,}"), "\n\n")
-                .trim()
+            val out = result.toString().replace(Regex("\n{3,}"), "\n\n")
+            if (out.length > limit) out.substring(0, limit) else out.trim()
         } catch (e: Exception) {
             ""
         }

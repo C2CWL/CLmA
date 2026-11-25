@@ -18,14 +18,23 @@ private data class ParagraphProperties(
 )
 
 object DocxParser {
-    fun parse(file: File): String {
+    /** One paragraph cannot exceed the caller budget by more than this. */
+    private const val PARAGRAPH_CAP = 8_192
+
+    fun parse(file: File): String = parse(file, Int.MAX_VALUE)
+
+    /**
+     * @param maxChars stop once accumulated text reaches this many characters. The result may be
+     * a prefix and is not a complete extraction.
+     */
+    fun parse(file: File, maxChars: Int): String {
         return try {
             file.inputStream().use { fileInputStream ->
                 ZipInputStream(fileInputStream).use { zipStream ->
                     var entry = zipStream.nextEntry
                     while (entry != null) {
                         if (entry.name == "word/document.xml") {
-                            return parseDocumentXml(zipStream)
+                            return parseDocumentXml(zipStream, maxChars)
                         }
                         entry = zipStream.nextEntry
                     }
@@ -37,7 +46,7 @@ object DocxParser {
         }
     }
 
-    private fun parseDocumentXml(inputStream: InputStream): String {
+    private fun parseDocumentXml(inputStream: InputStream, maxChars: Int = Int.MAX_VALUE): String {
         return try {
             val factory = XmlPullParserFactory.newInstance()
             factory.isNamespaceAware = true
@@ -46,8 +55,9 @@ object DocxParser {
 
             val result = StringBuilder()
             var inBody = false
+            val limit = maxChars.coerceAtLeast(0)
 
-            while (parser.eventType != XmlPullParser.END_DOCUMENT) {
+            while (parser.eventType != XmlPullParser.END_DOCUMENT && result.length < limit) {
                 when (parser.eventType) {
                     XmlPullParser.START_TAG -> {
                         when (parser.name) {
@@ -63,7 +73,8 @@ object DocxParser {
                 parser.next()
             }
 
-            result.toString().trim()
+            val out = result.toString()
+            if (out.length > limit) out.substring(0, limit) else out.trim()
         } catch (e: Exception) {
             "Error parsing document XML: ${e.message}"
         }
@@ -95,7 +106,7 @@ object DocxParser {
             }
         }
 
-        val paragraphText = paragraphContent.toString().trim()
+        val paragraphText = paragraphContent.toString().trim().take(PARAGRAPH_CAP)
         if (paragraphText.isNotBlank()) {
             when {
                 listInfo != null -> {
