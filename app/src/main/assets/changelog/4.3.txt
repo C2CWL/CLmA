@@ -1,0 +1,18 @@
+## CLmA 4.3
+
+- 修复工具轮次后自动压缩仍计入压缩前用量的问题。
+- 修复大附件整份塞进提示词导致模型读不完的问题。
+- 限制大附件内联预览的长度。
+- 保留附件提示词中的原始文件路径。
+- 达到字符上限后停止文档解析。
+- 避免把半截抽取结果写入缓存。
+- 避免复制大纯文本到抽取缓存。
+
+## Changes
+- Ignore pre-compaction usage after a tool round during automatic compaction.
+- Stop inlining large attachments in full into prompts.
+- Limit the size of inlined attachment previews.
+- Keep the original file path in attachment prompts.
+- Stop document parsing after reaching the character limit.
+- Avoid caching partial text extraction results.
+- Avoid copying large plain-text files into the extracted cache.
