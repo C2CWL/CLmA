@@ -100,27 +100,27 @@ class DocumentAsPromptTransformerTest {
     }
 
     @Test
-    fun `large document is cut to the budget with a notice and the user is told`() {
-        // (20_000 - 2_000) * 90% = 16_200; the other content is "看看" (2) + 8 overhead = 10
-        // -> 16_190 available, minus the 300-token notice reserve = 15_890 CJK chars shown.
+    fun `large document is cut to the preview cap with a notice and the user is told`() {
+        // The inline preview is capped at 8000 characters so a huge document never fills
+        // the request window and triggers compaction.
         val messages = listOf(user(UIMessagePart.Text("看看"), doc("u1")))
         val result = DocumentAsPromptTransformer.inlineDocuments(
             messages, contextLength = 20_000, maxOutputTokens = 2_000,
             load = loader(mapOf("u1" to "文".repeat(50_000))),
         )
         val prompt = promptOf(result[0])
-        assertTrue(prompt.contains("文".repeat(15_890) + "\n```"))
-        assertFalse(prompt.contains("文".repeat(15_891)))
+        assertTrue(prompt.contains("文".repeat(8_000) + "\n```"))
+        assertFalse(prompt.contains("文".repeat(8_001)))
         assertTrue(prompt.contains("path: /upload/a.txt"))
         assertTrue(prompt.contains("read_attachment(path=\"/upload/a.txt\")"))
         assertTrue(prompt.contains("[DOCUMENT TRUNCATED]"))
-        assertTrue(prompt.contains("15890 of 50000 characters (about 31%)"))
+        assertTrue(prompt.contains("8000 of 50000 characters (about 16%)"))
         assertTrue(prompt.contains("/upload/.extracted/a.txt.1-2.txt"))
         assertTrue(prompt.endsWith("</UploadFile>"))
         assertTrue(DocumentTokenEstimates.get("u1")!! < 16_200L)
 
         val notices = DocumentInlineNotices.takeFor(listOf("u1"))
-        assertEquals(listOf(DocumentInlineNotices.Notice("u1", "a.txt", 31)), notices)
+        assertEquals(listOf(DocumentInlineNotices.Notice("u1", "a.txt", 16)), notices)
         // Announced once only.
         DocumentAsPromptTransformer.inlineDocuments(
             messages, 20_000, 2_000, loader(mapOf("u1" to "文".repeat(50_000))),

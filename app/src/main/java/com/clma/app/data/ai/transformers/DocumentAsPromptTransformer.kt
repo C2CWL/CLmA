@@ -160,7 +160,9 @@ object DocumentAsPromptTransformer : InputMessageTransformer {
         val pathAttr = loaded.workspacePath?.let { " path=\"$it\"" } ?: ""
         val content: String
         var notice: String? = null
-        if (allocation.fitsWhole && loaded.fullSize == null) {
+        if (allocation.fitsWhole && loaded.fullSize == null &&
+            loaded.text.length <= INLINE_PREVIEW_CHARS
+        ) {
             content = loaded.text
             DocumentTokenEstimates.record(document.url, totalTokens)
         } else {
@@ -312,12 +314,7 @@ object DocumentAsPromptTransformer : InputMessageTransformer {
             )
         }
         return LoadedDocument(extraction.text, workspacePath) {
-            cacheFile?.let(ExtractedTextCache::workspacePathOf)
-                ?: if (extraction.format == DocumentFormat.TEXT) {
-                    ExtractedTextCache.write(file, extraction.text)?.let(ExtractedTextCache::workspacePathOf)
-                } else {
-                    null
-                }
+            cacheFile?.let(ExtractedTextCache::workspacePathOf) ?: workspacePath
         }
     }
 }
