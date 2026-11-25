@@ -2710,7 +2710,7 @@ class ChatService(
                         val nextRequestTokens = ContextBudgetPlanner.estimateInputTokens(
                             generatedMessages,
                             { usage = it },
-                            conversation.compactions.maxOfOrNull { it.createdAt }
+                            conversationRepo.getCompaction(conversationId)?.createdAt
                                 ?.toKotlinInstant()
                                 ?.toLocalDateTime(TimeZone.currentSystemDefault()),
                         )

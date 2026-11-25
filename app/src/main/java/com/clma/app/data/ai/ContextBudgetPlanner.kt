@@ -96,7 +96,8 @@ object ContextBudgetPlanner {
         )
     }
 
-    fun estimateInputTokens(messages: List<UIMessage>): Int = estimateInputTokens(messages, null)
+    fun estimateInputTokens(messages: List<UIMessage>): Int =
+        estimateInputTokens(messages = messages, onUsage = null)
 
     /**
      * Estimates the next request. [ignoreUsageBefore] drops provider usage recorded before a
@@ -106,7 +107,11 @@ object ContextBudgetPlanner {
     fun estimateInputTokens(
         messages: List<UIMessage>,
         ignoreUsageBefore: LocalDateTime?,
-    ): Int = estimateInputTokens(messages, null, ignoreUsageBefore)
+    ): Int = estimateInputTokens(
+        messages = messages,
+        onUsage = null,
+        ignoreUsageBefore = ignoreUsageBefore,
+    )
 
     internal fun estimateInputTokens(
         messages: List<UIMessage>,
