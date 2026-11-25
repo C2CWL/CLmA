@@ -70,8 +70,10 @@ class ContextBudgetPlannerTest {
             ),
         )
 
-        // "summary" is 7 ASCII chars -> 3 tokens, plus the 8-token message overhead.
-        assertEquals(11, ContextBudgetPlanner.estimateInputTokens(messages, compaction))
+        // The pre-compaction message no longer contributes its 141K provider usage, but its
+        // text is still estimated locally: 300 ASCII chars -> 100 + 8 overhead = 108.
+        // "summary" is 7 ASCII chars -> 3 tokens + 8 overhead = 11.
+        assertEquals(119, ContextBudgetPlanner.estimateInputTokens(messages, compaction))
     }
 
     @Test
