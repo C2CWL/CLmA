@@ -37,10 +37,13 @@ import com.clma.ai.core.Tool
 import com.clma.ai.provider.Model
 import com.clma.ai.provider.CustomBody
 import com.clma.ai.provider.PromptCacheDiagnosticPurpose
+import com.clma.ai.provider.PromptCacheSystemSection
+import com.clma.ai.provider.PromptCacheSystemSections
 import com.clma.ai.provider.Provider
 import com.clma.ai.provider.ProviderManager
 import com.clma.ai.provider.ProviderSetting
 import com.clma.ai.provider.TextGenerationParams
+import com.clma.ai.provider.providers.openai.PromptCacheDiagnostics
 import com.clma.ai.provider.providers.openai.ResponseStreamErrorException
 import com.clma.ai.registry.ModelRegistry
 import com.clma.ai.ui.UIMessage
@@ -2109,6 +2112,8 @@ class GenerationLoop(
         val approvalLine = if (approvalLines.isEmpty()) "" else approvalLines.joinToString("; ") +
             ". Call directly; do not request an extra conversational confirmation. Safety constraints still apply."
         val runtimePolicy = RuntimePolicyPrompt.render(approvalLine, dispatchLine, maxToolSteps)
+        val traceSystemSections = PromptCacheDiagnostics.isEnabled()
+        var cacheSystemSections: PromptCacheSystemSections? = null
         val internalMessages = buildList {
             // Conversation-level system prompt override (upstream): when the assistant
             // allows it and the conversation supplies one, it replaces the assistant prompt.
@@ -2126,6 +2131,16 @@ class GenerationLoop(
                 buildRecentChatsPrompt(assistant, conversationRepo)
             } else ""
             val toolPrompts = tools.map { tool -> tool.systemPrompt(model, messages) }
+            if (traceSystemSections) {
+                cacheSystemSections = PromptCacheSystemSections(mapOf(
+                    PromptCacheSystemSection.ASSISTANT to effectiveSystemPrompt,
+                    PromptCacheSystemSection.TOOLS to toolPrompts.joinToString("\n"),
+                    PromptCacheSystemSection.MEMORY to memoryPrompt,
+                    PromptCacheSystemSection.RECENT_CHATS to recentChatsPrompt,
+                    PromptCacheSystemSection.ADDENDUM to systemAddendum.orEmpty(),
+                    PromptCacheSystemSection.POLICY to runtimePolicy,
+                ).filterValues { it.isNotBlank() })
+            }
             // Split into stable (assistant + tools) and volatile (memory + recent chats +
             // addendum) so prompt caching survives memory injection: the stable part is the
             // cached prefix, the volatile part sits after it. See SystemPromptBuilder.
@@ -2246,6 +2261,7 @@ class GenerationLoop(
             },
             sessionId = (conversationId ?: Uuid.random()).toString(),
             promptCacheDiagnosticPurpose = PromptCacheDiagnosticPurpose.CHAT,
+            promptCacheSystemSections = cacheSystemSections,
         )
         try {
             if (stream) {

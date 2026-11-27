@@ -2,6 +2,8 @@ package com.clma.ai.provider.providers.openai
 
 import com.clma.ai.core.TokenUsage
 import com.clma.ai.provider.PromptCacheDiagnosticPurpose
+import com.clma.ai.provider.PromptCacheSystemSection
+import com.clma.ai.provider.TOOL_OUTPUT_PROJECTION_MARKER
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertEquals
@@ -19,7 +21,8 @@ class PromptCacheDiagnosticsTest {
         provider: String = "p",
         endpoint: String = "e",
         purpose: PromptCacheDiagnosticPurpose = PromptCacheDiagnosticPurpose.CHAT,
-    ) = tracker.record(session, provider, endpoint, Json.parseToJsonElement(body).jsonObject, purpose)
+        systemSections: Map<PromptCacheSystemSection, String> = emptyMap(),
+    ) = tracker.record(session, provider, endpoint, Json.parseToJsonElement(body).jsonObject, purpose, systemSections)
 
     @Test
     fun `distinguishes append from early rewrite without logging message contents`() {
@@ -73,6 +76,38 @@ class PromptCacheDiagnosticsTest {
         assertTrue(compactAgain.fields.contains("previous=${compact.id} "))
         assertTrue(compactAgain.fields.contains("firstChangedMessage=none change=identical"))
         assertTrue(unspecified.fields.contains("previous=none "))
+    }
+
+    @Test
+    fun `names changed system inputs without logging their text`() {
+        val sections = mapOf(
+            PromptCacheSystemSection.ASSISTANT to "assistant instructions",
+            PromptCacheSystemSection.RECENT_CHATS to "private title before",
+        )
+        record(systemSections = sections)
+        val next = record(
+            initial.replace("private text", "updated system text"),
+            systemSections = sections + (PromptCacheSystemSection.RECENT_CHATS to "private title after"),
+        )
+        assertTrue(next.fields.contains("oldRole=system newRole=system systemInputsChanged=recent_chats"))
+        assertFalse(next.fields.contains("private title"))
+        assertFalse(next.fields.contains("updated system text"))
+    }
+
+    @Test
+    fun `recognizes a projection transition only for the same tool call`() {
+        fun body(id: String, content: String) =
+            """{"model":"test","messages":[{"role":"tool","tool_call_id":"$id","content":"$content"}]}"""
+        val marker = "$TOOL_OUTPUT_PROJECTION_MARKER Older result (~700 tokens). Private file reference."
+        record(body("private id", "private tool output"))
+        val projected = record(body("private id", marker))
+        assertTrue(projected.fields.contains("oldRole=tool newRole=tool toolProjection=added"))
+        assertFalse(projected.fields.contains("private id"))
+        assertFalse(projected.fields.contains("Private file reference"))
+        val restored = record(body("private id", "private tool output"))
+        assertTrue(restored.fields.contains("toolProjection=removed"))
+        val differentCall = record(body("different id", marker))
+        assertFalse(differentCall.fields.contains("toolProjection="))
     }
 
     @Test

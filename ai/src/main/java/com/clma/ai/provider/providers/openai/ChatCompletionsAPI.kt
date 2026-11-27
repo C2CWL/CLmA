@@ -118,6 +118,7 @@ class ChatCompletionsAPI(
         val cacheTrace = PromptCacheDiagnostics.begin(
             params.sessionId, providerSetting.id.toString(), request.url.toString(), requestBody,
             streaming = false, purpose = params.promptCacheDiagnosticPurpose,
+            systemSections = params.promptCacheSystemSections?.inputs,
         )
 
         val response = client.newCall(request).await()
@@ -226,6 +227,7 @@ class ChatCompletionsAPI(
         val cacheTrace = PromptCacheDiagnostics.begin(
             params.sessionId, providerSetting.id.toString(), request.url.toString(), requestBody,
             streaming = true, purpose = params.promptCacheDiagnosticPurpose,
+            systemSections = params.promptCacheSystemSections?.inputs,
         )
 
         val cacheUsage = cacheTrace?.let { AtomicReference<TokenUsage?>() }
