@@ -75,6 +75,7 @@ import com.clma.app.data.ai.tools.truncateToolResult
 import com.clma.app.data.datastore.NetworkSetting
 import com.clma.app.data.datastore.Settings
 import com.clma.app.data.datastore.findProvider
+import com.clma.app.data.datastore.getEffectiveContextLength
 import com.clma.app.data.model.Assistant
 import com.clma.app.data.botmode.BotCostPolicy
 import com.clma.app.data.model.AssistantMemory
@@ -843,6 +844,12 @@ class GenerationLoop(
     private val systemPromptBuilder: SystemPromptBuilder,
     private val subAgentRegistry: SubAgentRegistry,
 ) {
+    private val toolOutputProjections = androidx.collection.LruCache<Uuid, MicroCompaction>(32)
+
+    @Synchronized
+    private fun toolOutputProjection(conversationId: Uuid): MicroCompaction =
+        toolOutputProjections[conversationId] ?: MicroCompaction().also { toolOutputProjections.put(conversationId, it) }
+
     fun generateText(
         settings: Settings,
         model: Model,
@@ -944,6 +951,7 @@ class GenerationLoop(
 
         val diagnosticRun = GenerationDiagnostics.nextRun()
         val turnEvents = TurnEventLog()
+        val outputProjection = conversationId?.let(::toolOutputProjection) ?: MicroCompaction()
         turnEvents.append(TurnEvent.Started(diagnosticRun.toString()))
         var answerFinished = false
         try {
@@ -1125,6 +1133,7 @@ class GenerationLoop(
                         workspaceCwd = workspaceCwd,
                         continuationFromPartial = continuationFromPartial && stepIndex == 0,
                         turnEvents = turnEvents,
+                        outputProjection = outputProjection,
                     )
                     if (!steered) delivery?.let { subAgentRegistry.acknowledge(it) }
                 } catch (t: Throwable) {
@@ -2079,6 +2088,7 @@ class GenerationLoop(
          */
         injectedNotices: List<String> = emptyList(),
         turnEvents: TurnEventLog,
+        outputProjection: MicroCompaction,
         // 每个 stream chunk 到达时检查是否有待处理的用户插话（见 generateText 的同名参数）。
         hasPendingSteer: () -> Boolean = { false },
     ): Boolean {
@@ -2197,16 +2207,18 @@ class GenerationLoop(
 
         fun projectRequest(request: List<UIMessage>): List<UIMessage> {
             if (tools.none { it.name == "tool_output_read" }) return request
-            val projected = MicroCompaction.project(request) { id, text ->
+            val inputBudget = MicroCompaction.inputBudget(settings.getEffectiveContextLength(model), assistant.maxTokens)
+            val outputDir = File(context.filesDir, FileFolders.TOOL_OUTPUTS)
+            val projected = outputProjection.project(request, inputBudget, isReadable = { File(outputDir, it).isFile }) { id, text ->
                 val safe = redactToolOutputValues(listOf(UIMessagePart.Text(text)))
                     .filterIsInstance<UIMessagePart.Text>().joinToString("\n") { it.text }
                 spillToolOutput(id, safe)
             }
-            if (projected !== request) {
+            if (projected.newResults > 0) {
                 turnEvents.append(TurnEvent.CompactionStarted("tool_output_projection", request.size))
-                turnEvents.append(TurnEvent.CompactionFinished(projected.size))
+                turnEvents.append(TurnEvent.CompactionFinished(projected.messages.size))
             }
-            return projected
+            return projected.messages
         }
 
         val preStreamMessages = messages
