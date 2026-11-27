@@ -215,6 +215,13 @@ internal object ContextCompactionPlanner {
         section when any tool record is present. Do not replace these records with a vague phrase
         such as "tools were used". If an output is long, condense it faithfully instead of
         omitting its result.
+
+        ATTACHMENT RECALL IS MANDATORY:
+        A compacted summary must preserve user-uploaded file names and any /upload/... path that
+        appeared in the source messages or tool records. After compaction, list current-conversation
+        attachments with conversation_attachment and read their text in bounded pages with
+        read_attachment(path, offset, column, limit). Do not claim a log or document is unavailable
+        because its inline text was compacted or no longer appears in the visible thread.
     """.trimIndent()
 
     /**

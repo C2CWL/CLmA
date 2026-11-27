@@ -34,6 +34,8 @@
   <string name="tool_display_desc_current_conversation_search">在当前对话的消息历史中进行全文检索</string>
   <string name="tool_display_name_conversation_image">回看对话图片</string>
   <string name="tool_display_desc_conversation_image">列出并查看当前对话中用户上传的历史图片</string>
+  <string name="tool_display_name_conversation_attachment">回看对话附件</string>
+  <string name="tool_display_desc_conversation_attachment">列出当前对话中的上传附件及路径，供分片读取</string>
   <string name="tool_display_name_compact_context">压缩对话上下文</string>
   <string name="tool_display_desc_compact_context">把本对话较早的内容总结压缩</string>
   <string name="tool_display_name_check_token_usage">查看 Token 用量</string>
