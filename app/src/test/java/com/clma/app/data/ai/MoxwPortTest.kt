@@ -36,13 +36,13 @@ class MoxwPortTest {
         val original = (0..7).map(::toolResult)
         val firstBudget = ContextBudgetPlanner.estimateContextTokens(original).toLong()
         val noSpill: (String, String) -> String? = { _, _ -> error("unexpected spill") }
-        assertSame(original, projector.project(original, null, noSpill).messages)
-        assertSame(original, projector.project(original, firstBudget + 1, noSpill).messages)
+        assertSame(original, projector.project(original, null, spill = noSpill).messages)
+        assertSame(original, projector.project(original, firstBudget + 1, spill = noSpill).messages)
 
         val batch = projector.project(original, firstBudget) { id, _ -> "$id.txt" }
         assertEquals(2, batch.newResults)
         val next = original + toolResult(8)
-        val appended = projector.project(next, firstBudget, noSpill)
+        val appended = projector.project(next, firstBudget, spill = noSpill)
         assertEquals(0, appended.newResults)
         assertEquals(batch.messages, appended.messages.dropLast(1))
 
