@@ -56,7 +56,6 @@ import com.clma.ai.util.HttpException
 import com.clma.ai.util.isFatalForRetry
 import com.clma.ai.util.redactSecrets
 import com.clma.app.data.secrets.SecretVaultRegistry
-import com.clma.app.data.repository.ConversationRepository
 import com.clma.app.data.ai.limits.ConversationReasoningOverrides
 import com.clma.app.subagent.SubAgentRegistry
 import com.clma.app.subagent.SubAgentCompletionNotice
@@ -840,7 +839,6 @@ class GenerationLoop(
     private val providerManager: ProviderManager,
     private val json: Json,
     private val memoryRepo: MemoryRepository,
-    private val conversationRepo: ConversationRepository,
     private val aiLoggingManager: AILoggingManager,
     private val systemPromptBuilder: SystemPromptBuilder,
     private val subAgentRegistry: SubAgentRegistry,
@@ -2127,27 +2125,21 @@ class GenerationLoop(
                 buildMemoryPrompt(memories = memories)
             } else ""
             inspectionMemoryPrompt = memoryPrompt
-            val recentChatsPrompt = if (assistant.enableRecentChatsReference) {
-                buildRecentChatsPrompt(assistant, conversationRepo)
-            } else ""
             val toolPrompts = tools.map { tool -> tool.systemPrompt(model, messages) }
             if (traceSystemSections) {
                 cacheSystemSections = PromptCacheSystemSections(mapOf(
                     PromptCacheSystemSection.ASSISTANT to effectiveSystemPrompt,
                     PromptCacheSystemSection.TOOLS to toolPrompts.joinToString("\n"),
                     PromptCacheSystemSection.MEMORY to memoryPrompt,
-                    PromptCacheSystemSection.RECENT_CHATS to recentChatsPrompt,
                     PromptCacheSystemSection.ADDENDUM to systemAddendum.orEmpty(),
                     PromptCacheSystemSection.POLICY to runtimePolicy,
                 ).filterValues { it.isNotBlank() })
             }
-            // Split into stable (assistant + tools) and volatile (memory + recent chats +
-            // addendum) so prompt caching survives memory injection: the stable part is the
-            // cached prefix, the volatile part sits after it. See SystemPromptBuilder.
+            // Recent chats are available through tools only: putting their changing titles
+            // and dates here would rewrite the prefix before the conversation history.
             val (stableSystem, volatileSystem) = systemPromptBuilder.buildSections(
                 assistantPrompt = effectiveSystemPrompt,
                 memoryPrompt = memoryPrompt,
-                recentChatsPrompt = recentChatsPrompt,
                 toolPrompts = toolPrompts,
                 systemAddendum = systemAddendum,
                 policyPrompt = runtimePolicy,

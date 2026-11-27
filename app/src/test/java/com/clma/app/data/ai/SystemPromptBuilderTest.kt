@@ -9,11 +9,10 @@ class SystemPromptBuilderTest {
     private val builder = SystemPromptBuilder()
 
     @Test
-    fun `build orders stable sections (assistant, tools) before volatile (memory, chats, addendum)`() {
+    fun `build orders stable sections (assistant, tools) before volatile (memory, addendum)`() {
         val prompt = builder.build(
             assistantPrompt = "Assistant prompt",
             memoryPrompt = "**Memories**\nMemory block",
-            recentChatsPrompt = "**Recent Chats**\nRecent block",
             toolPrompts = listOf("Tool A", "Tool B"),
             systemAddendum = "Surface addendum",
         )
@@ -26,23 +25,21 @@ class SystemPromptBuilderTest {
         assertTrue(prompt.contains(SystemPromptBuilder.REFERENCE_NOTICE))
         assertTrue(prompt.endsWith("Surface addendum"))
 
-        // Stable-first: wrapped assistant + tools precede the volatile memory/recent-chats sections.
+        // Stable-first: wrapped assistant + tools precede the volatile memory and addendum.
         assertTrue(prompt.indexOf(SystemPromptBuilder.PRECEDENCE_NOTICE) < prompt.indexOf("<user_instructions"))
         assertTrue(prompt.indexOf("Assistant prompt") < prompt.indexOf("Tool cost guidance"))
         assertTrue(prompt.indexOf("</user_instructions>") < prompt.indexOf("Tool cost guidance"))
         assertTrue(prompt.indexOf("Tool A") < prompt.indexOf("Tool B"))
         assertTrue(prompt.indexOf("Tool B") < prompt.indexOf(SystemPromptBuilder.REFERENCE_NOTICE))
         assertTrue(prompt.indexOf(SystemPromptBuilder.REFERENCE_NOTICE) < prompt.indexOf("**Memories**"))
-        assertTrue(prompt.indexOf("**Memories**") < prompt.indexOf("**Recent Chats**"))
-        assertTrue(prompt.indexOf("**Recent Chats**") < prompt.indexOf("Surface addendum"))
+        assertTrue(prompt.indexOf("**Memories**") < prompt.indexOf("Surface addendum"))
     }
 
     @Test
-    fun `buildSections puts assistant+tools in stable and memory+chats+addendum in volatile`() {
+    fun `buildSections puts assistant+tools in stable and memory+addendum in volatile`() {
         val (stable, volatile) = builder.buildSections(
             assistantPrompt = "You are helpful.",
             memoryPrompt = "**Memories** m1",
-            recentChatsPrompt = "**Recent Chats** c1",
             toolPrompts = listOf("tool_a docs"),
             systemAddendum = "telegram chat_id 5",
         )
@@ -54,7 +51,6 @@ class SystemPromptBuilderTest {
         assertFalse(stable.contains("Memories"))
         assertTrue(volatile.contains(SystemPromptBuilder.REFERENCE_NOTICE))
         assertTrue(volatile.contains("**Memories** m1"))
-        assertTrue(volatile.contains("**Recent Chats** c1"))
         assertTrue(volatile.contains("telegram chat_id 5"))
         // Tool section is not demoted with an extra notice.
         assertFalse(stable.contains("以下为工具补充说明"))
@@ -62,15 +58,14 @@ class SystemPromptBuilderTest {
 
     @Test
     fun `stable prefix is byte-identical when only volatile inputs change`() {
-        fun stableFor(mem: String, chats: String) = builder.buildSections(
+        fun stableFor(mem: String, addendum: String) = builder.buildSections(
             assistantPrompt = "You are helpful.",
             memoryPrompt = mem,
-            recentChatsPrompt = chats,
             toolPrompts = listOf("tool_a docs"),
-            systemAddendum = null,
+            systemAddendum = addendum,
         ).first
-        // Turn 1 vs turn 2: memory + recent chats differ; the cached stable prefix must not.
-        assertEquals(stableFor("mem v1", "chats v1"), stableFor("mem v2 changed", "chats v2 changed"))
+        // Turn 1 vs turn 2: memory + addendum differ; the cached stable prefix must not.
+        assertEquals(stableFor("mem v1", "addendum v1"), stableFor("mem v2 changed", "addendum v2 changed"))
     }
 
     @Test
