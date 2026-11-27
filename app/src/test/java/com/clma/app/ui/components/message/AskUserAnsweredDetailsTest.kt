@@ -50,6 +50,25 @@ class AskUserAnsweredDetailsTest {
     }
 
     @Test
+    fun `raw fallback with multiple questions keeps questions and answer summary`() {
+        val input = """
+            {"questions":[
+              {"id":"q1","question":"用哪种数据库？","options":["SQLite"]},
+              {"id":"q2","question":"是否保留离线模式？","options":[]}
+            ]}
+        """.trimIndent()
+        val tool = askUserTool(input, ToolApprovalState.Answered("A"))
+
+        val details = askUserAnsweredDetails(tool)
+
+        assertEquals(3, details.size)
+        assertEquals("用哪种数据库？", details[0].question)
+        assertEquals("是否保留离线模式？", details[1].question)
+        assertEquals("", details[2].question)
+        assertEquals("A", details[2].answer)
+    }
+
+    @Test
     fun `pending tool has no answered details`() {
         val input = """{"questions":[{"id":"q1","question":"选哪个？","options":["A"]}]}"""
         assertTrue(askUserAnsweredDetails(askUserTool(input)).isEmpty())

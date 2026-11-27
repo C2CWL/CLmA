@@ -862,9 +862,18 @@ internal fun askUserAnsweredDetails(tool: UIMessagePart.Tool): List<AskUserAnswe
             .orEmpty()
         AskUserAnsweredDetail(questionText, answer)
     }
-    if (details.isNotEmpty()) return details
-    val summary = askUserAnswerSummary(tool, questions).takeIf { it.isNotBlank() } ?: return emptyList()
-    return listOf(AskUserAnsweredDetail("", summary))
+    if (details.isEmpty()) {
+        val fallback = askUserAnswerSummary(tool, questions).takeIf { it.isNotBlank() }
+            ?: return emptyList()
+        return listOf(AskUserAnsweredDetail("", fallback))
+    }
+    if (details.none { it.answer.isNotBlank() }) {
+        val fallback = askUserAnswerSummary(tool, questions).takeIf { it.isNotBlank() }
+            ?: return details
+        if (details.size == 1) return listOf(details[0].copy(answer = fallback))
+        return details + AskUserAnsweredDetail("", fallback)
+    }
+    return details
 }
 
 /**
