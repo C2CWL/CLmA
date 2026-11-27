@@ -17,6 +17,7 @@ import com.clma.ai.core.InputSchema
 import com.clma.ai.core.Tool
 import com.clma.ai.ui.UIMessagePart
 import com.clma.app.RouteActivity
+import com.clma.app.R
 import com.clma.app.data.ai.tools.ToolInvocationContext
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
@@ -48,6 +49,7 @@ fun notificationTool(
     context: Context,
     invocationContext: ToolInvocationContext = ToolInvocationContext.EMPTY,
     streamer: InteractiveToolStreamer = InteractiveToolStreamer.NoOp,
+    showPreview: () -> Boolean = { true },
 ): Tool = Tool(
     name = "post_notification",
     description = """
@@ -94,11 +96,12 @@ fun notificationTool(
 
         ensureChannel(context)
 
+        val preview = showPreview()
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setContentTitle(title)
+            .setContentTitle(if (preview) title else context.getString(R.string.bot_isolation_notification_title))
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setAutoCancel(true)
-        if (body != null) {
+        if (preview && body != null) {
             builder.setContentText(body)
             builder.setStyle(NotificationCompat.BigTextStyle().bigText(body))
         }

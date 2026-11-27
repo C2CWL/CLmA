@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bot_isolation_notification_title">会话更新</string>
+</resources>

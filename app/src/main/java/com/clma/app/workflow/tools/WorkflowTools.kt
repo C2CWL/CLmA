@@ -1,5 +1,6 @@
 package com.clma.app.workflow.tools
 
+import com.clma.app.data.botmode.AssistantScope
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
@@ -38,6 +39,7 @@ fun workflowCreateTool(
     knownToolNamesProvider: () -> List<String>,
     callerContext: com.clma.app.data.ai.tools.ToolInvocationContext =
         com.clma.app.data.ai.tools.ToolInvocationContext.EMPTY,
+    scope: () -> AssistantScope = { AssistantScope.ALL },
 ): Tool = Tool(
     name = "workflow_create",
     description = """
@@ -121,6 +123,11 @@ fun workflowCreateTool(
         when (parsed) {
             is WorkflowJson.ParseResult.Err -> errorResponse(parsed.error, parsed.detail)
             is WorkflowJson.ParseResult.Ok -> {
+                if (repository.getById(parsed.definition.id)?.let {
+                        !scope().allows(it.definition.authoringAssistantId.orEmpty())
+                    } == true) {
+                    return@Tool errorResponse("not_found", "Workflow not found")
+                }
                 // Stamp the authoring assistant from the caller context — the engine reads
                 // this back at fire time to resolve the right tool surface deterministically.
                 // If the user-declared definition pre-set an authoringAssistantId we trust it
@@ -129,6 +136,9 @@ fun workflowCreateTool(
                     authoringAssistantId = parsed.definition.authoringAssistantId
                         ?: callerContext.callerAssistantId,
                 )
+                if (!scope().allows(def.authoringAssistantId.orEmpty())) {
+                    return@Tool errorResponse("not_found", "Assistant not found")
+                }
                 runCatching { repository.upsert(def) }.fold(
                     onSuccess = {
                         listOf(UIMessagePart.Text(buildJsonObject {
@@ -144,7 +154,7 @@ fun workflowCreateTool(
     }
 )
 
-fun workflowListTool(repository: WorkflowRepository): Tool = Tool(
+fun workflowListTool(repository: WorkflowRepository, scope: () -> AssistantScope = { AssistantScope.ALL }): Tool = Tool(
     name = "workflow_list",
     description = """
         List all workflows. Each entry includes id, name, enabled, trigger_type, and the
@@ -162,7 +172,10 @@ fun workflowListTool(repository: WorkflowRepository): Tool = Tool(
     },
     execute = { json ->
         val enabledOnly = json.jsonObject["enabled_only"]?.jsonPrimitive?.contentOrNull?.toBooleanStrictOrNull() ?: false
-        val all = if (enabledOnly) repository.listEnabled() else repository.listAll()
+        val library = scope()
+        val all = (if (enabledOnly) repository.listEnabled() else repository.listAll()).filter {
+            library.allows(it.definition.authoringAssistantId.orEmpty())
+        }
         val payload = buildJsonObject {
             put("count", all.size)
             put("items", buildJsonArray {
@@ -184,7 +197,7 @@ fun workflowListTool(repository: WorkflowRepository): Tool = Tool(
     }
 )
 
-fun workflowGetTool(repository: WorkflowRepository): Tool = Tool(
+fun workflowGetTool(repository: WorkflowRepository, scope: () -> AssistantScope = { AssistantScope.ALL }): Tool = Tool(
     name = "workflow_get",
     description = """
         Fetch the full definition of one workflow plus its last 10 runs. Use this when the
@@ -204,7 +217,7 @@ fun workflowGetTool(repository: WorkflowRepository): Tool = Tool(
     execute = { json ->
         val id = json.jsonObject["id"]?.jsonPrimitive?.contentOrNull
             ?: return@Tool errorResponse("missing_id", "id is required")
-        val loaded = repository.getById(id)
+        val loaded = repository.getById(id)?.takeIf { scope().allows(it.definition.authoringAssistantId.orEmpty()) }
             ?: return@Tool errorResponse("not_found", "no workflow with id=$id")
         val runs = repository.lastRuns(id, limit = 10)
         val payload = buildJsonObject {
@@ -237,6 +250,7 @@ fun workflowUpdateTool(
     knownToolNamesProvider: () -> List<String>,
     callerContext: com.clma.app.data.ai.tools.ToolInvocationContext =
         com.clma.app.data.ai.tools.ToolInvocationContext.EMPTY,
+    scope: () -> AssistantScope = { AssistantScope.ALL },
 ): Tool = Tool(
     name = "workflow_update",
     description = """
@@ -267,6 +281,7 @@ fun workflowUpdateTool(
             is WorkflowJson.ParseResult.Err -> errorResponse(parsed.error, parsed.detail)
             is WorkflowJson.ParseResult.Ok -> {
                 val existing = repository.getById(parsed.definition.id)
+                    ?.takeIf { scope().allows(it.definition.authoringAssistantId.orEmpty()) }
                     ?: return@Tool errorResponse("not_found", "no workflow with id=${parsed.definition.id}; use workflow_create instead")
                 // Preserve the existing authoring assistant — workflow_update is for body
                 // edits, not for transferring ownership. If the LLM tries to change it,
@@ -276,6 +291,9 @@ fun workflowUpdateTool(
                         ?: parsed.definition.authoringAssistantId
                         ?: callerContext.callerAssistantId,
                 )
+                if (!scope().allows(def.authoringAssistantId.orEmpty())) {
+                    return@Tool errorResponse("not_found", "Assistant not found")
+                }
                 runCatching { repository.upsert(def) }.fold(
                     onSuccess = {
                         listOf(UIMessagePart.Text(buildJsonObject {
@@ -291,7 +309,7 @@ fun workflowUpdateTool(
     }
 )
 
-fun workflowDeleteTool(repository: WorkflowRepository): Tool = Tool(
+fun workflowDeleteTool(repository: WorkflowRepository, scope: () -> AssistantScope = { AssistantScope.ALL }): Tool = Tool(
     name = "workflow_delete",
     description = """
         Delete a workflow and all of its run history. The triggers it owned (broadcast
@@ -312,6 +330,9 @@ fun workflowDeleteTool(repository: WorkflowRepository): Tool = Tool(
     execute = { json ->
         val id = json.jsonObject["id"]?.jsonPrimitive?.contentOrNull
             ?: return@Tool errorResponse("missing_id", "id is required")
+        if (repository.getById(id)?.takeIf { scope().allows(it.definition.authoringAssistantId.orEmpty()) } == null) {
+            return@Tool errorResponse("not_found", "no workflow with id=$id")
+        }
         val ok = repository.deleteCascading(id)
         if (ok) listOf(UIMessagePart.Text(buildJsonObject {
             put("ok", true); put("id", id)
@@ -320,7 +341,7 @@ fun workflowDeleteTool(repository: WorkflowRepository): Tool = Tool(
     }
 )
 
-fun workflowSetEnabledTool(repository: WorkflowRepository): Tool = Tool(
+fun workflowSetEnabledTool(repository: WorkflowRepository, scope: () -> AssistantScope = { AssistantScope.ALL }): Tool = Tool(
     name = "workflow_set_enabled",
     description = """
         Enable or disable a workflow. Disabled workflows keep their definition and run
@@ -350,7 +371,7 @@ fun workflowSetEnabledTool(repository: WorkflowRepository): Tool = Tool(
             ?: return@Tool errorResponse("missing_enabled", "enabled is required")
         val enabled = enabledStr.toBooleanStrictOrNull()
             ?: return@Tool errorResponse("invalid_enabled", "enabled must be true or false")
-        if (repository.getById(id) == null) {
+        if (repository.getById(id)?.takeIf { scope().allows(it.definition.authoringAssistantId.orEmpty()) } == null) {
             return@Tool errorResponse("not_found", "no workflow with id=$id")
         }
         repository.setEnabled(id, enabled)
@@ -363,6 +384,7 @@ fun workflowSetEnabledTool(repository: WorkflowRepository): Tool = Tool(
 fun workflowRunTool(
     engine: WorkflowEngine,
     repository: WorkflowRepository,
+    scope: () -> AssistantScope = { AssistantScope.ALL },
 ): Tool = Tool(
     name = "workflow_run",
     description = """
@@ -386,7 +408,7 @@ fun workflowRunTool(
     execute = { json ->
         val id = json.jsonObject["id"]?.jsonPrimitive?.contentOrNull
             ?: return@Tool errorResponse("missing_id", "id is required")
-        if (repository.getById(id) == null) {
+        if (repository.getById(id)?.takeIf { scope().allows(it.definition.authoringAssistantId.orEmpty()) } == null) {
             return@Tool errorResponse("not_found", "no workflow with id=$id")
         }
         val outcome = engine.fire(id)

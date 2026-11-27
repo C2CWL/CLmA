@@ -7,6 +7,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.combine
+import com.clma.app.data.botmode.activeLibraryScope
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.workflow.model.WorkflowRunStatus
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.clma.app.workflow.execution.WorkflowEngine
@@ -19,10 +23,13 @@ class WorkflowsViewModel(
     private val repository: WorkflowRepository,
     private val engine: WorkflowEngine,
     private val secretsStore: WorkflowSecretsStore,
+    private val settingsStore: SettingsStore,
 ) : ViewModel() {
 
-    val workflows: StateFlow<List<Loaded>> = repository.observeAll()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val workflows: StateFlow<List<Loaded>> = combine(repository.observeAll(), settingsStore.settingsFlow) { workflows, settings ->
+        val scope = settings.activeLibraryScope()
+        workflows.filter { scope.allows(it.definition.authoringAssistantId.orEmpty()) }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     /**
      * T-07 — secret names, refreshed after every mutation. Only names are ever held here; a
@@ -32,22 +39,26 @@ class WorkflowsViewModel(
     val secretNames: StateFlow<List<String>> = _secretNames
 
     fun setEnabled(id: String, enabled: Boolean) {
-        viewModelScope.launch(Dispatchers.IO) { repository.setEnabled(id, enabled) }
+        viewModelScope.launch(Dispatchers.IO) { if (get(id) != null) repository.setEnabled(id, enabled) }
     }
 
     fun delete(id: String, onDone: () -> Unit = {}) {
         viewModelScope.launch(Dispatchers.IO) {
+            get(id) ?: return@launch
             repository.deleteCascading(id)
             onDone()
         }
     }
 
-    suspend fun runNow(id: String): WorkflowEngine.FireOutcome = engine.fire(id)
+    suspend fun runNow(id: String): WorkflowEngine.FireOutcome =
+        if (get(id) != null) engine.fire(id) else WorkflowEngine.FireOutcome(WorkflowRunStatus.FAILED, null, "")
 
     suspend fun history(id: String, limit: Int = 20): List<WorkflowRun> =
-        repository.lastRuns(id, limit)
+        if (get(id) == null) emptyList() else repository.lastRuns(id, limit)
 
-    suspend fun get(id: String): Loaded? = repository.getById(id)
+    suspend fun get(id: String): Loaded? = repository.getById(id)?.takeIf {
+        settingsStore.settingsFlow.value.activeLibraryScope().allows(it.definition.authoringAssistantId.orEmpty())
+    }
 
     /**
      * T-07 — flip the per-workflow dynamic-argument switch. Suspends so the caller can
@@ -55,7 +66,9 @@ class WorkflowsViewModel(
      * the freshly loaded definition, not by optimistic local state).
      */
     suspend fun setUseActionTemplates(id: String, enabled: Boolean) = withContext(Dispatchers.IO) {
-        val loaded = repository.getById(id) ?: return@withContext
+        val loaded = repository.getById(id)?.takeIf {
+        settingsStore.settingsFlow.value.activeLibraryScope().allows(it.definition.authoringAssistantId.orEmpty())
+    } ?: return@withContext
         repository.upsert(
             loaded.definition.copy(
                 useActionTemplates = enabled,

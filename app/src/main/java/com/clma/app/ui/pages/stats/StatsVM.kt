@@ -1,5 +1,6 @@
 package com.clma.app.ui.pages.stats
 
+import com.clma.app.data.botmode.activeLibraryScope
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -9,6 +10,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.clma.app.data.db.dao.ConversationDAO
@@ -75,7 +80,19 @@ class StatsVM(
     val conversationTitles = _conversationTitles.asStateFlow()
 
     init {
-        viewModelScope.launch { loadStats() }
+        viewModelScope.launch {
+            settingsStore.settingsFlow.filter { !it.init }
+                .map { it.activeLibraryScope() }
+                .distinctUntilChanged()
+                .collectLatest {
+                    _stats.value = AppStats()
+                    _ledgerStats.value = null
+                    _assistantNames.value = emptyMap()
+                    _orchestrationTrees.value = null
+                    _conversationTitles.value = emptyMap()
+                    loadStats()
+                }
+        }
     }
 
     /** Switches the ledger window and re-reads it. A no-op when the value is unchanged. */
@@ -91,11 +108,13 @@ class StatsVM(
         // D10 - the 52-week conversation heatmap is gone. The page's daily series now comes
         // from the ledger's `byDay` buckets, so the message-per-day scan is no longer read
         // here (it was the heatmap's only consumer).
-        val totalConversations = conversationDAO.countAll()
+        val settings = settingsStore.settingsFlow.first { !it.init }
+        val scope = settings.activeLibraryScope()
+        val totalConversations = conversationDAO.getAll().first().count { scope.allows(it.assistantId) }
 
         // Message count still describes the conversations that exist now. Token totals do not:
         // deleting a chat must not erase usage that was already paid for.
-        val messageCount = messageNodeDAO.countVisibleMessages()
+        val messageCount = messageNodeDAO.countVisibleMessages(scope)
         val lifetime = try {
             usageLedger.lifetimeUsage()
         } catch (e: CancellationException) {
@@ -134,7 +153,9 @@ class StatsVM(
      * in as the fallback resolver.
      */
     private suspend fun loadLedger() {
+        val scope = settingsStore.settingsFlow.first { !it.init }.activeLibraryScope()
         _assistantNames.value = settingsStore.settingsFlow.value.assistants
+            .filter { scope.allows(it.id.toString()) }
             .associate { it.id.toString() to it.name }
 
         runCatching {
@@ -146,10 +167,12 @@ class StatsVM(
                 conversationDAO.getAll().first().associate { it.id to it.assistantId }
             }
             UsageStatsFactory.build(
-                records = rows,
+                records = rows.filter {
+                    scope.allows(it.assistantId ?: conversationToAssistant[it.conversationId].orEmpty())
+                },
                 assistantOfConversation = conversationToAssistant::get,
             )
-        }.onSuccess { _ledgerStats.value = it }
+        }.onSuccess { if (scope == settingsStore.settingsFlow.value.activeLibraryScope()) _ledgerStats.value = it }
     }
 
     /**
@@ -166,12 +189,15 @@ class StatsVM(
      */
     private suspend fun loadOrchestration() {
         runCatching {
-            val runs = agentRunRepository.getRecent(ORCHESTRATION_RUN_LIMIT)
+            val scope = settingsStore.settingsFlow.first { !it.init }.activeLibraryScope()
+            val conversations = withContext(Dispatchers.IO) { conversationDAO.getAll().first() }
+                .filter { scope.allows(it.assistantId) }
+            val ids = conversations.map { it.id }.toSet()
+            val runs = agentRunRepository.getRecent(ORCHESTRATION_RUN_LIMIT).filter { it.parentRunId in ids }
             if (runs.isEmpty()) return@runCatching emptyList<OrchestrationTree>()
 
             val sinceMs = runs.minOf { it.createdAtMs }
             val rows = usageLedger.recordsSince(sinceMs, UsageLedgerDefaults.STATS_QUERY_LIMIT)
-            val conversations = withContext(Dispatchers.IO) { conversationDAO.getAll().first() }
             _conversationTitles.value = conversations.associate { it.id to it.title }
             // P2-14d — the ceiling lives on the assistant, the tree is keyed by the conversation that
             // dispatched, so the two are joined here (the same shape as the ledger's

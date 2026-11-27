@@ -24,6 +24,7 @@ import com.clma.app.data.botmode.BotRoutineApprovalRules
 import com.clma.app.data.botmode.BotRoutineApprovals
 import com.clma.app.data.botmode.ParkedRoutineRun
 import com.clma.app.data.model.isBot
+import com.clma.app.data.botmode.activeLibraryIsBot
 import com.clma.ai.core.MessageRole
 import com.clma.app.data.agentrun.AgentRunRepository
 import com.clma.app.data.agentrun.AgentRunStatus
@@ -329,7 +330,10 @@ class CronJobWorker(
                     notifyBotRoutineFinished(job.assistantId, job.name, convIdMaybe, outcome, errorMessage)
                 } else if (outcome != "success") {
                     // Failure notification (post once per failure; the existing channel handles dedup)
-                    postFailureNotification(job.id, job.name, "$outcome: ${errorMessage.orEmpty()}")
+                    postFailureNotification(
+                        job.id, job.name, "$outcome: ${errorMessage.orEmpty()}", convIdMaybe,
+                        isBotJob(job) == settingsStore.settingsFlow.value.activeLibraryIsBot(),
+                    )
                 }
             }
 
@@ -695,19 +699,36 @@ class CronJobWorker(
         }.onFailure { Log.w(TAG, "recordRun failed", it) }
     }
 
-    private fun postFailureNotification(jobId: String, jobName: String, errorMessage: String) {
+    private fun postFailureNotification(
+        jobId: String,
+        jobName: String,
+        errorMessage: String,
+        conversationId: Uuid?,
+        showPreview: Boolean,
+    ) {
         val ctx = applicationContext
         val nm = ctx.getSystemService(NotificationManager::class.java)
         if (nm.getNotificationChannel(CHANNEL_ID) == null) {
             nm.createNotificationChannel(NotificationChannel(
                 CHANNEL_ID, "Scheduled jobs", NotificationManager.IMPORTANCE_DEFAULT))
         }
+        val detail = if (showPreview) "$jobName: $errorMessage" else ""
         val builder = NotificationCompat.Builder(ctx, CHANNEL_ID)
-            .setContentTitle("Scheduled job failed")
-            .setContentText("$jobName: $errorMessage")
-            .setStyle(NotificationCompat.BigTextStyle().bigText("$jobName: $errorMessage"))
+            .setContentTitle(if (showPreview) "Scheduled job failed" else ctx.getString(com.clma.app.R.string.bot_isolation_notification_title))
+            .setContentText(detail)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(detail))
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setAutoCancel(true)
+        if (conversationId != null) {
+            val intent = android.content.Intent(ctx, com.clma.app.RouteActivity::class.java).apply {
+                flags = android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP or android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
+                data = android.net.Uri.parse("clma://cron/$conversationId")
+                putExtra("conversationId", conversationId.toString())
+            }
+            builder.setContentIntent(android.app.PendingIntent.getActivity(
+                ctx, 0, intent, android.app.PendingIntent.FLAG_IMMUTABLE,
+            ))
+        }
         try {
             // jobId is the job's DB primary key (a stable UUID string), not the
             // user-editable display name — two jobs can share a name (and thus a

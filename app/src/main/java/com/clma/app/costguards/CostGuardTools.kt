@@ -1,5 +1,9 @@
 package com.clma.app.costguards
 
+import com.clma.app.data.botmode.activeLibraryIsBot
+import com.clma.app.data.botmode.isInLibrary
+import com.clma.app.data.botmode.isBotAssistantId
+import com.clma.app.data.botmode.withAssistantInLibrary
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
@@ -42,6 +46,7 @@ private fun errEnv(error: String, detail: String): List<UIMessagePart> {
 fun checkTokenUsageTool(
     settingsStore: SettingsStore,
     conversationRepo: ConversationRepository,
+    callerAssistantId: String? = null,
 ): Tool = Tool(
     name = "check_token_usage",
     description = """
@@ -67,10 +72,12 @@ fun checkTokenUsageTool(
         val params = args.jsonObject
         val rawConvId = params["conversation_id"]?.jsonPrimitive?.contentOrNull
         val settings = settingsStore.settingsFlow.first()
-        val assistant = settings.getCurrentAssistant()
+        val caller = callerAssistantId?.let { id -> settings.assistants.find { it.id.toString() == id } }
+        val bot = caller?.let { settings.isBotAssistantId(it.id) } ?: settings.activeLibraryIsBot()
+        val assistant = caller ?: settings.withAssistantInLibrary(bot).getCurrentAssistant()
         val convId = rawConvId?.let { runCatching { Uuid.parse(it) }.getOrNull() }
         val conv = if (convId != null) {
-            conversationRepo.getConversationById(convId)
+            conversationRepo.getConversationById(convId)?.takeIf { settings.isInLibrary(it.assistantId, bot) }
         } else {
             // No conversation specified: pick the most recent for this assistant.
             conversationRepo.getRecentConversations(assistant.id, 1).firstOrNull()

@@ -30,6 +30,9 @@ import androidx.core.content.ContextCompat
 import com.clma.app.AppScope
 import com.clma.app.diagnostics.FunctionalDiagnostics
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.combine
+import com.clma.app.data.botmode.activeLibraryScope
+import com.clma.app.data.botmode.isInActiveLibrary
 import org.koin.core.context.GlobalContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -254,21 +257,33 @@ class FloatingBallService : Service(), KoinComponent {
         FunctionalDiagnostics.event("edgebar.service.create")
         // Colour changes from the settings page repaint the running bar live.
         scope.launch {
+            var library = settingsStore.settingsFlow.value.activeLibraryScope()
             settingsStore.settingsFlow.collect { settings ->
                 barView?.barColor = settings.floatingBallBarColor
+                val nextLibrary = settings.activeLibraryScope()
+                if (library != nextLibrary) {
+                    library = nextLibrary
+                    unseenDone = false
+                    syncBar()
+                }
             }
         }
         // Generation jobs are authoritative. Overlay commands may arrive late, or the
         // GenerationLoop indicator may finish before/after the session's actual job.
         scope.launch {
-            chatService.getConversationJobs().collect { jobs ->
-                val next = edgeBarHasWork(jobs.values)
+            var previousLibrary = settingsStore.settingsFlow.value.activeLibraryScope()
+            combine(chatService.getConversationJobs(), settingsStore.settingsFlow) { jobs, settings ->
+                jobs.filterKeys { settings.isInActiveLibrary(chatService.getConversationFlow(it).value.assistantId) }.values to
+                    settings.activeLibraryScope()
+            }.collect { (jobs, library) ->
+                val next = edgeBarHasWork(jobs)
                 if (working != next) {
-                    val finished = working && !next
+                    val finished = working && !next && library == previousLibrary
                     working = next
-                    unseenDone = finished && AgentOverlay.waitingConversation == null && !chatBox.isShowing
+                    unseenDone = finished && waitingConversationInLibrary() == null && !chatBox.isShowing
                     syncBar()
                 }
+                previousLibrary = library
             }
         }
         // Which conversations are generating / just finished: the chat box follows them.
@@ -321,7 +336,7 @@ class FloatingBallService : Service(), KoinComponent {
             }
 
             ACTION_INTERACTION_CHANGED -> {
-                if (AgentOverlay.waitingConversation != null) unseenDone = false
+                if (waitingConversationInLibrary() != null) unseenDone = false
                 if (barView == null) stopSelf() else syncBar()
                 return START_NOT_STICKY
             }
@@ -512,10 +527,15 @@ class FloatingBallService : Service(), KoinComponent {
         }
     }
 
+    private fun waitingConversationInLibrary(): Uuid? =
+        AgentOverlay.waitingConversation?.takeIf { id ->
+            settingsStore.settingsFlow.value.isInActiveLibrary(chatService.getConversationFlow(id).value.assistantId)
+        }
+
     /** Pushes the current status onto the bar. */
     private fun syncBar() {
         val view = barView ?: return
-        val waiting = AgentOverlay.waitingConversation != null
+        val waiting = waitingConversationInLibrary() != null
         view.signal = EdgeBarLook.signal(
             working = working, unseenDone = unseenDone,
             waiting = waiting, waitingForInput = AgentOverlay.waitingForInput,
@@ -666,7 +686,7 @@ class FloatingBallService : Service(), KoinComponent {
      * chat box if "点细条打开聊天框" is on, else the app.
      */
     private fun onBarTap() {
-        AgentOverlay.waitingConversation?.let { id ->
+        waitingConversationInLibrary()?.let { id ->
             chatBox.close()
             openConversation(id)
             return

@@ -1,5 +1,6 @@
 package com.clma.app.service
 
+import com.clma.app.data.botmode.activeLibraryScope
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -83,11 +84,14 @@ class CronBootReceiver : BroadcastReceiver(), KoinComponent {
         }
 
         // Single aggregate notification per boot rather than one per stranded row.
-        val jobNames = stranded
-            .mapNotNull { row -> repo.getById(row.jobId)?.name }
-            .distinct()
-        val title = if (stranded.size == 1) "Scheduled job interrupted"
-                    else "${stranded.size} scheduled jobs interrupted"
+        val scope = settingsStore.settingsFlow.first { !it.init }.activeLibraryScope()
+        val visibleJobs = stranded.mapNotNull { row ->
+            repo.getById(row.jobId)?.takeIf { scope.allows(it.assistantId) }
+        }
+        if (visibleJobs.isEmpty()) return
+        val jobNames = visibleJobs.map { it.name }.distinct()
+        val title = if (visibleJobs.size == 1) "Scheduled job interrupted"
+                    else "${visibleJobs.size} scheduled jobs interrupted"
         val text = if (jobNames.size <= 3) jobNames.joinToString(", ")
                    else jobNames.take(3).joinToString(", ") + ", and ${jobNames.size - 3} others"
         postFailureNotification(context, title, text)

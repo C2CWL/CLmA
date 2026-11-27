@@ -1,5 +1,11 @@
 package com.clma.app.service.chatbox
 
+import com.clma.app.data.botmode.activeLibraryIsBot
+import com.clma.app.data.botmode.activeLibraryScope
+import com.clma.app.data.botmode.isInActiveLibrary
+import com.clma.app.data.botmode.withAssistantInLibrary
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.distinctUntilChanged
 import android.content.Context
 import android.os.SystemClock
 import android.util.Log
@@ -74,6 +80,7 @@ internal class EdgeBarChatBoxController(
     private val includedConversationIds = MutableStateFlow<Set<Uuid>>(emptySet())
     private var conversation: Conversation? = null
     private var conversations = emptyList<EdgeBarChatBoxView.ConversationOption>()
+    private var library = settingsStore.settingsFlow.value.activeLibraryScope()
     private var keepScreenOnMode = settingsStore.settingsFlow.value.displaySetting.keepScreenOnMode
 
     val isShowing: Boolean get() = view?.isShowing == true
@@ -95,6 +102,12 @@ internal class EdgeBarChatBoxController(
         }
         scope.launch {
             settingsStore.settingsFlow.collect { settings ->
+                val nextLibrary = settings.activeLibraryScope()
+                if (library != nextLibrary) {
+                    library = nextLibrary
+                    close()
+                    conversations = emptyList()
+                }
                 keepScreenOnMode = settings.displaySetting.keepScreenOnMode
                 val typeface = settings.displaySetting.resolveChatTypeface(context)
                 view?.setChatTypeface(typeface)
@@ -141,14 +154,22 @@ internal class EdgeBarChatBoxController(
     // ---- Conversation choice / binding ----
 
     private suspend fun pickConversation(preferFinished: Boolean): Uuid {
-        AgentOverlay.waitingConversation?.let { return it }
-        newestGenerating()?.let { return it }
-        if (preferFinished) lastFinished?.let { return it }
+        val settings = settingsStore.settingsFlow.value
+        val candidates = listOfNotNull(
+            AgentOverlay.waitingConversation,
+            generating.entries.sortedByDescending { it.value.second }.firstOrNull {
+                settings.isInActiveLibrary(chatService.getConversationFlow(it.key).value.assistantId)
+            }?.key,
+            lastFinished.takeIf { preferFinished },
+        )
+        for (id in candidates) {
+            if (settings.isInActiveLibrary(chatService.getConversationFlow(id).value.assistantId)) return id
+        }
         context.readStringPreference(LAST_CONVERSATION_KEY)
             ?.let { runCatching { Uuid.parse(it) }.getOrNull() }
-            ?.takeIf { conversationRepo.existsConversationById(it) }
+            ?.takeIf { id -> conversationRepo.getAssistantIdOfConversation(id)?.let(settings::isInActiveLibrary) == true }
             ?.let { return it }
-        val assistantId = settingsStore.settingsFlow.value.assistantId
+        val assistantId = settings.withAssistantInLibrary(settings.activeLibraryIsBot()).assistantId
         return conversationRepo.getRecentConversations(assistantId, limit = 3)
             .maxByOrNull { it.updateAt }?.id
             ?: Uuid.random()
@@ -172,7 +193,7 @@ internal class EdgeBarChatBoxController(
         bindJob = scope.launch {
             chatService.getConversationFlow(id).collect { c ->
                 if (boundId != id) return@collect
-                conversation = c
+                conversation = c.takeIf { settingsStore.settingsFlow.value.isInActiveLibrary(it.assistantId) }
                 render()
             }
         }
@@ -206,8 +227,6 @@ internal class EdgeBarChatBoxController(
         render()
     }
 
-    private fun newestGenerating(): Uuid? = generating.maxByOrNull { it.value.second }?.key
-
     /**
      * True when [id] is generating. [generating] only tracks jobs this window watched start, so a
      * reply already in flight when the window opened looks idle here — and a send would start a
@@ -236,14 +255,15 @@ internal class EdgeBarChatBoxController(
     private fun observeConversations() {
         conversationsJob = scope.launch {
             combine(
-                includedConversationIds.flatMapLatest { ids ->
-                    conversationRepo.observeOverlayConversations(ids)
-                },
-                settingsStore.settingsFlow,
-            ) { recent, _ -> recent }.collect { recent ->
-                conversations = recent.map(::conversationOption)
-                if (isShowing) render()
-            }
+                includedConversationIds,
+                settingsStore.settingsFlow.map { it.activeLibraryScope() }.distinctUntilChanged(),
+            ) { ids, library -> ids to library }
+                .flatMapLatest { (ids, library) -> conversationRepo.observeOverlayConversations(ids, scope = library) }
+                .collect { recent ->
+                    conversations = recent.filter { settingsStore.settingsFlow.value.isInActiveLibrary(it.assistantId) }
+                        .map(::conversationOption)
+                    if (isShowing) render()
+                }
         }
     }
 
@@ -324,8 +344,12 @@ internal class EdgeBarChatBoxController(
 
     override fun onConversationSelected(id: String) {
         val uuid = runCatching { Uuid.parse(id) }.getOrNull() ?: return
-        if (uuid != boundId) bind(uuid)
-        render()
+        scope.launch {
+            val owner = conversationRepo.getAssistantIdOfConversation(uuid) ?: return@launch
+            if (!settingsStore.settingsFlow.value.isInActiveLibrary(owner) || !isShowing) return@launch
+            if (uuid != boundId) bind(uuid)
+            render()
+        }
     }
 
     override fun onNewConversation() {

@@ -6,7 +6,6 @@ import com.clma.app.data.datastore.DisplaySetting
 import com.clma.app.data.datastore.Settings
 import com.clma.app.data.model.Assistant
 import com.clma.app.data.model.AssistantLibrary
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import kotlin.uuid.Uuid
 import org.junit.Assert.assertEquals
@@ -132,18 +131,15 @@ class BotNavigationTest {
     )
 
     @Test
-    fun `conversation links stay inside the library of the current root`() {
-        // Bot root: Bot conversations open in their bot's chat page, classic ones are refused.
-        assertEquals(Screen.BotChat(bot.id.toString(), "c1"), conversationLinkTarget(true, "c1", bot.id, settings))
-        assertNull(conversationLinkTarget(true, "c2", classic.id, settings))
-        // Classic root: the mirror image.
-        assertEquals(Screen.Chat("c2"), conversationLinkTarget(false, "c2", classic.id, settings))
-        assertNull(conversationLinkTarget(false, "c1", bot.id, settings))
-        // Orphans (assistant deleted) are classic, as all pre-existing data.
-        assertEquals(Screen.Chat("c3"), conversationLinkTarget(false, "c3", Uuid.random(), settings))
-        // Not created yet: belongs to the current assistant on the current root.
-        assertEquals(Screen.BotChat(bot.id.toString(), "n"), conversationLinkTarget(true, "n", null, settings))
-        assertEquals(Screen.Chat("n"), conversationLinkTarget(false, "n", null, settings))
+    fun `conversation links open the owner library from either mode`() {
+        val classicSettings = settings.copy(displaySetting = DisplaySetting(botModeEnabled = false))
+        for (current in listOf(settings, classicSettings)) {
+            assertEquals(Screen.BotChat(bot.id.toString(), "c1"), conversationLinkTarget("c1", bot.id, current))
+            assertEquals(Screen.Chat("c2"), conversationLinkTarget("c2", classic.id, current))
+        }
+        assertEquals(Screen.Chat("orphan"), conversationLinkTarget("orphan", Uuid.random(), settings))
+        assertEquals(Screen.BotChat(bot.id.toString(), "new"), conversationLinkTarget("new", null, settings))
+        assertEquals(Screen.Chat("new"), conversationLinkTarget("new", null, classicSettings))
     }
 
     @Test

@@ -59,6 +59,9 @@ class ConversationRepository(
     suspend fun hasFileReference(fileUrl: String): Boolean =
         messageNodeDAO.hasFileReference(JsonInstant.encodeToString(fileUrl))
 
+    suspend fun getFileReferenceAssistantIds(fileUrl: String): List<String> =
+        messageNodeDAO.getFileReferenceAssistantIds(JsonInstant.encodeToString(fileUrl))
+
     suspend fun getRecentConversations(assistantId: Uuid, limit: Int = 10): List<Conversation> {
         return conversationDAO.getRecentConversationsOfAssistant(
             assistantId = assistantId.toString(),
@@ -80,8 +83,11 @@ class ConversationRepository(
             }
     }
 
-    fun observeOverlayConversations(includedIds: Set<Uuid>, limit: Int = 30): Flow<List<Conversation>> =
-        conversationDAO.observeOverlayConversations(includedIds.map { it.toString() }, limit).map { rows ->
+    fun observeOverlayConversations(includedIds: Set<Uuid>, limit: Int = 30, scope: AssistantScope = AssistantScope.ALL): Flow<List<Conversation>> =
+        conversationDAO.observeOverlayConversations(
+            includedIds.map { it.toString() }, limit,
+            scope.include == null, scope.include.orEmpty().toList(), scope.exclude.toList(),
+        ).map { rows ->
             rows.map { conversationSummaryToConversation(it) }
         }
 
@@ -221,8 +227,14 @@ class ConversationRepository(
         folderId: Uuid,
         offset: Int,
         limit: Int,
+        scope: AssistantScope = AssistantScope.ALL,
     ): ConversationPageResult = loadConversationPage(
-        conversationDAO.getConversationsOfFolderPaging(folderId.toString()),
+        conversationDAO.getConversationsOfFolderPaging(
+            folderId.toString(),
+            scope.include == null,
+            scope.include.orEmpty().toList(),
+            scope.exclude.toList(),
+        ),
         offset,
         limit,
     )
@@ -417,11 +429,17 @@ class ConversationRepository(
     }
 
     /** 全部上下文操作记录，供「压缩与清空记录」页观察（按时间倒序）。 */
-    fun observeContextOperationLogs(): Flow<List<ContextOperationLogEntity>> =
-        database.contextOperationLogDao().observeAll()
+    fun observeContextOperationLogs(scope: AssistantScope): Flow<List<ContextOperationLogEntity>> =
+        database.contextOperationLogDao().observeAll(
+            scope.include == null, scope.include.orEmpty().toList(), scope.exclude.toList(),
+        )
 
-    suspend fun deleteContextOperationLogs() {
-        runCatching { database.contextOperationLogDao().deleteAll() }
+    suspend fun deleteContextOperationLogs(scope: AssistantScope) {
+        runCatching {
+            database.contextOperationLogDao().deleteAll(
+                scope.include == null, scope.include.orEmpty().toList(), scope.exclude.toList(),
+            )
+        }
             .onFailure { Log.w(TAG, "failed to clear context operation logs", it) }
     }
 

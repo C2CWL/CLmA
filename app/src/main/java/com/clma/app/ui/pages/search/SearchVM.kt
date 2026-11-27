@@ -87,13 +87,13 @@ class SearchVM(
         }
         viewModelScope.launch {
             settingsStore.settingsFlow
-                .map { it.getCurrentAssistant().id }
+                .map { it.getCurrentAssistant().id to it.activeLibraryScope() }
                 .distinctUntilChanged()
-                .collect { assistantId ->
+                .collect { (assistantId, library) ->
                     currentAssistantId = assistantId
-                    if (searchScope == MessageSearchScope.CURRENT_ASSISTANT) {
-                        search()
-                    }
+                    if (searchScope == MessageSearchScope.CURRENT_ASSISTANT ||
+                        currentRequest?.libraryScope != library
+                    ) search()
                 }
         }
     }
@@ -180,6 +180,7 @@ class SearchVM(
                 limit = SearchPageSize + 1, offset = request.offset,
                 scope = request.libraryScope,
             )
+            if (settingsStore.settingsFlow.value.activeLibraryScope() != request.libraryScope) return
             val loaded = page.take(SearchPageSize)
             results = if (request.offset == 0) loaded else
                 (results + loaded).distinctBy { it.messageId }

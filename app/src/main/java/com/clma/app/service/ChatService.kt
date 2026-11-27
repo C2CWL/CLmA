@@ -1,5 +1,7 @@
 package com.clma.app.service
 
+import com.clma.app.data.repository.memoryScopeId
+
 import com.clma.app.data.botmode.BotPeerRuntime
 import com.clma.app.data.botmode.BotPeerTools
 import com.clma.app.data.botmode.BotPeerToolPolicy
@@ -9,6 +11,9 @@ import com.clma.app.data.botmode.PeerStore
 import com.clma.app.data.botmode.PeerTask
 import com.clma.app.data.botmode.PeerThread
 import com.clma.app.data.botmode.libraryScopeOf
+import com.clma.app.data.botmode.isInActiveLibrary
+import com.clma.app.data.botmode.activeLibraryIsBot
+import com.clma.app.data.botmode.withAssistantInLibrary
 import com.clma.app.data.botmode.peerTurnAnswerText
 import com.clma.app.diagnostics.FunctionalDiagnostics
 import android.app.Application
@@ -879,7 +884,7 @@ class ChatService(
                 id = id,
                 initial = Conversation.ofId(
                     id = id,
-                    assistantId = settings.getCurrentAssistant().id
+                    assistantId = settings.withAssistantInLibrary(settings.activeLibraryIsBot()).getCurrentAssistant().id
                 ),
                 scope = appScope,
                 onIdle = { removeSession(it) },
@@ -1112,7 +1117,9 @@ class ChatService(
                 // Keep the live content but still follow the stored assistant binding.
                 updateConversationState(conversationId) { it.copy(assistantId = conversation.assistantId) }
             }
-            settingsStore.updateAssistant(conversation.assistantId)
+            if (settingsStore.settingsFlow.value.isInActiveLibrary(conversation.assistantId)) {
+                settingsStore.updateAssistant(conversation.assistantId)
+            }
         } else {
             // A send can race this asynchronous initialization for a brand-new conversation.
             // Do not replace a session that already has content or queued/in-flight work with
@@ -1124,7 +1131,7 @@ class ChatService(
             ) return
             // 新建对话, 并添加预设消息
             val currentSettings = settingsStore.settingsFlowRaw.first()
-            val assistant = currentSettings.getCurrentAssistant()
+            val assistant = currentSettings.withAssistantInLibrary(currentSettings.activeLibraryIsBot()).getCurrentAssistant()
             val newConversation = Conversation.ofId(
                 id = conversationId,
                 assistantId = assistant.id,
@@ -1245,9 +1252,8 @@ class ChatService(
         val settings = settingsStore.settingsFlow.value
         val conversation = session.state.value
         val assistant = AssistantResolver.forConversation(
-            assistants = settings.assistants,
+            settings = settings,
             conversationAssistantId = conversation.assistantId,
-            currentAssistantId = settings.assistantId,
         ).assistant
         val parts = try {
             preprocessUserInputParts(content, assistant)
@@ -1326,9 +1332,8 @@ class ChatService(
                 // generation makes one conversation preprocess input with another's config.
                 val settings = settingsStore.settingsFlow.first()
                 val assistant = AssistantResolver.forConversation(
-                    assistants = settings.assistants,
+                    settings = settings,
                     conversationAssistantId = currentConversation.assistantId,
-                    currentAssistantId = settings.assistantId,
                 ).assistant
                 val processedContent = preprocessUserInputParts(content, assistant)
 
@@ -2575,9 +2580,8 @@ class ChatService(
         // (model, memories, tools, sender name) keys off this resolved assistant.
         val initialConversation = getConversationFlow(conversationId).value
         val assistant = AssistantResolver.forConversation(
-            assistants = storedSettings.assistants,
+            settings = storedSettings,
             conversationAssistantId = initialConversation.assistantId,
-            currentAssistantId = storedSettings.assistantId,
         ).assistant
         // Bot cost-saving defaults (automatic + precision compaction). Request-scoped only: this
         // copy is never written back. Classic assistants get storedSettings unchanged.
@@ -2868,11 +2872,7 @@ class ChatService(
                 conversationModeInjectionIds = conversation.modeInjectionIds,
                 conversationLorebookIds = conversation.lorebookIds,
                 workspaceCwd = conversation.workspaceCwd,
-                memories = if (assistant.useGlobalMemory) {
-                    memoryRepository.getGlobalMemories()
-                } else {
-                    memoryRepository.getMemoriesOfAssistant(assistant.id.toString())
-                },
+                memories = memoryRepository.getMemoriesOfAssistant(assistant.memoryScopeId()),
                 inputTransformers = buildList {
                     addAll(inputTransformers)
                     add(templateTransformer)
@@ -3306,7 +3306,7 @@ class ChatService(
             val root = File(context.filesDir, "assistant_memory/${assistant.id}")
             val directory = File(root, relative).canonicalFile
             require(directory.toPath().startsWith(root.canonicalFile.toPath()))
-            if (File(directory, ".migrated").isFile) {
+            if (assistant.isBot || File(directory, ".migrated").isFile) {
                 return@withContext AssistantColdMemoryStore(directory, null, memoryRepository.history, "${assistant.id}/$relative")
             }
             // Resolve the old workspace only for the non-destructive, one-time copy.
@@ -4826,12 +4826,13 @@ class ChatService(
         cancelLiveUpdateNotification(conversationId)
 
         val conversation = getConversationFlow(conversationId).value
+        val showPreview = settingsStore.settingsFlow.value.isInActiveLibrary(conversation.assistantId)
         context.sendNotification(
             channelId = CHAT_COMPLETED_NOTIFICATION_CHANNEL_ID,
             notificationId = 1
         ) {
-            title = senderName
-            content = conversation.currentMessages.lastOrNull()?.toText()?.take(50)?.trim() ?: ""
+            title = if (showPreview) senderName else context.getString(R.string.bot_isolation_notification_title)
+            content = if (showPreview) conversation.currentMessages.lastOrNull()?.toText()?.take(50)?.trim().orEmpty() else ""
             autoCancel = true
             useDefaults = true
             category = NotificationCompat.CATEGORY_MESSAGE
@@ -4844,6 +4845,9 @@ class ChatService(
         senderName: String,
         pendingTool: UIMessagePart.Tool,
     ) {
+        val showPreview = settingsStore.settingsFlow.value.isInActiveLibrary(
+            getConversationFlow(conversationId).value.assistantId,
+        )
         val toolName = pendingTool.toolName
             .removePrefix("mcp__")
             .substringAfter("__", missingDelimiterValue = pendingTool.toolName.removePrefix("mcp__"))
@@ -4851,8 +4855,8 @@ class ChatService(
             channelId = CHAT_COMPLETED_NOTIFICATION_CHANNEL_ID,
             notificationId = 1,
         ) {
-            title = senderName
-            content = "${context.getString(R.string.setting_mcp_page_needs_approval)}: $toolName"
+            title = if (showPreview) senderName else context.getString(R.string.bot_isolation_notification_title)
+            content = if (showPreview) "${context.getString(R.string.setting_mcp_page_needs_approval)}: $toolName" else ""
             autoCancel = true
             useDefaults = true
             category = NotificationCompat.CATEGORY_MESSAGE
@@ -4873,6 +4877,9 @@ class ChatService(
         messages: List<UIMessage>,
         senderName: String
     ) {
+        val showPreview = settingsStore.settingsFlow.value.isInActiveLibrary(
+            getConversationFlow(conversationId).value.assistantId,
+        )
         val lastMessage = messages.lastOrNull() ?: return
         val parts = lastMessage.parts
 
@@ -4883,16 +4890,16 @@ class ChatService(
             channelId = CHAT_LIVE_UPDATE_NOTIFICATION_CHANNEL_ID,
             notificationId = getLiveUpdateNotificationId(conversationId)
         ) {
-            title = senderName
-            content = contentText
-            subText = statusText
+            title = if (showPreview) senderName else context.getString(R.string.bot_isolation_notification_title)
+            content = if (showPreview) contentText else ""
+            if (showPreview) subText = statusText
             ongoing = true
             onlyAlertOnce = true
             category = NotificationCompat.CATEGORY_PROGRESS
             useBigTextStyle = true
             contentIntent = getPendingIntent(context, conversationId)
             requestPromotedOngoing = true
-            shortCriticalText = chipText
+            if (showPreview) shortCriticalText = chipText
             // Edge-bar fallback: progress + a 停止 action that reaches stopGeneration.
             indeterminateProgress = true
             actions = listOf(
@@ -5373,9 +5380,8 @@ class ChatService(
         val currentConversation = getConversationFlow(conversationId).value
         val settings = settingsStore.settingsFlow.first()
         val assistant = AssistantResolver.forConversation(
-            assistants = settings.assistants,
+            settings = settings,
             conversationAssistantId = currentConversation.assistantId,
-            currentAssistantId = settings.assistantId,
         ).assistant
         val processedParts = preprocessUserInputParts(parts, assistant)
         var edited = false

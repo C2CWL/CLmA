@@ -1,5 +1,9 @@
 package com.clma.app.data.repository
 
+import com.clma.app.data.model.isBot
+
+import com.clma.app.data.model.Assistant
+
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.clma.app.data.memory.MemoryOperation
@@ -10,12 +14,19 @@ import com.clma.app.data.db.dao.MemoryDAO
 import com.clma.app.data.db.entity.MemoryEntity
 import com.clma.app.data.model.AssistantMemory
 
+internal fun Assistant.memoryScopeId(): String = when {
+    !useGlobalMemory -> id.toString()
+    isBot -> MemoryRepository.BOT_GLOBAL_MEMORY_ID
+    else -> MemoryRepository.GLOBAL_MEMORY_ID
+}
+
 class MemoryRepository(
     private val memoryDAO: MemoryDAO,
     val history: MemoryOperationHistory,
 ) {
     companion object {
         const val GLOBAL_MEMORY_ID = "__global__"
+        const val BOT_GLOBAL_MEMORY_ID = "__bot_global__"
     }
 
     fun getMemoriesOfAssistantFlow(assistantId: String): Flow<List<AssistantMemory>> =
