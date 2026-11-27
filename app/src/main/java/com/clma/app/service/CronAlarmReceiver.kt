@@ -3,67 +3,60 @@ package com.clma.app.service
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.os.PowerManager
 import android.util.Log
+import androidx.core.content.ContextCompat
 import androidx.work.Data
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.OutOfQuotaPolicy
 import androidx.work.WorkManager
 
-private const val TAG = "CronAlarmReceiver"
-
-/**
- * Wakeful receiver fired by [android.app.AlarmManager.setExactAndAllowWhileIdle] to ensure
- * scheduled cron jobs trigger on time even during device lock / Doze mode.
- *
- * Acquires a temporary partial wake lock (up to 3 minutes) so the CPU stays awake while
- * WorkManager starts [CronJobWorker]. Once ChatService starts generation,
- * ChatGenerationForegroundService acquires its own wake lock.
- */
 class CronAlarmReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
-        val jobId = intent.getStringExtra(KEY_JOB_ID) ?: return
-        Log.d(TAG, "onReceive: exact alarm fired for job $jobId")
-
-        val pm = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
-        val wakeLock = pm?.newWakeLock(
-            PowerManager.PARTIAL_WAKE_LOCK,
-            "clma:cron_alarm_$jobId"
-        )?.apply {
-            setReferenceCounted(false)
-            acquire(3 * 60 * 1000L) // 3 minutes safety timeout
-        }
-
+        val input = scheduledAlarmInput(intent) ?: return
         try {
-            val req = OneTimeWorkRequestBuilder<CronJobWorker>()
-                .setInputData(Data.Builder().apply {
-                    putString(CronJobWorker.KEY_JOB_ID, jobId)
-                    if (intent.hasExtra(CronJobWorker.KEY_SCHEDULED_AT_MS)) {
-                        putLong(
-                            CronJobWorker.KEY_SCHEDULED_AT_MS,
-                            intent.getLongExtra(CronJobWorker.KEY_SCHEDULED_AT_MS, 0L),
-                        )
-                    }
-                }.build())
-                .build()
-            // Separate lane: wake promptly without cancelling a fallback already running.
-            // The frozen slot + worker replay guard deduplicate the two delivery paths.
-            WorkManager.getInstance(context).enqueueUniqueWork(
-                "cron_job_${jobId}_alarm",
-                ExistingWorkPolicy.KEEP,
-                req
+            // An exact alarm is one of the cases where Android 12+ lets a background app start a
+            // foreground service, so the run starts now, even in Doze, instead of waiting for a
+            // WorkManager maintenance window.
+            ContextCompat.startForegroundService(
+                context,
+                Intent(context, ScheduledRunService::class.java).putExtras(intent),
             )
-        } catch (e: Throwable) {
-            Log.e(TAG, "Failed to enqueue CronJobWorker for job $jobId", e)
-            wakeLock?.let {
-                if (it.isHeld) it.release()
-            }
+        } catch (error: Exception) {
+            Log.w("CronAlarmReceiver", "Unable to start scheduled run service", error)
+            enqueueAlarmFallback(context, input)
         }
     }
 
     companion object {
         const val ACTION_CRON_ALARM = "com.clma.app.action.CRON_ALARM"
         const val KEY_JOB_ID = "job_id"
+    }
+}
+
+internal fun scheduledAlarmInput(intent: Intent): Data? {
+    val jobId = intent.getStringExtra(CronAlarmReceiver.KEY_JOB_ID) ?: return null
+    return Data.Builder().apply {
+        putString(CronJobWorker.KEY_JOB_ID, jobId)
+        val slotKey = CronJobWorker.KEY_SCHEDULED_AT_MS
+        if (intent.hasExtra(slotKey)) putLong(slotKey, intent.getLongExtra(slotKey, 0L))
+    }.build()
+}
+
+internal fun enqueueAlarmFallback(context: Context, input: Data) {
+    val jobId = input.getString(CronJobWorker.KEY_JOB_ID) ?: return
+    try {
+        val request = OneTimeWorkRequestBuilder<CronJobWorker>()
+            .setInputData(input)
+            .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+            .build()
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            "cron_job_${jobId}_alarm",
+            ExistingWorkPolicy.KEEP,
+            request,
+        )
+    } catch (error: Exception) {
+        Log.e("CronAlarmReceiver", "Unable to enqueue scheduled run fallback for $jobId", error)
     }
 }

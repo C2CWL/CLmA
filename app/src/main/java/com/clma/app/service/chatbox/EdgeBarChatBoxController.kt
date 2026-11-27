@@ -403,10 +403,10 @@ internal class EdgeBarChatBoxController(
         val id = boundId ?: return
         val parts = listOf(UIMessagePart.Text(text))
         if (isGeneratingNow(id)) {
-            val accepted = runCatching { chatService.interjectMessage(id, parts) }
+            val steerId = runCatching { chatService.interjectMessage(id, parts) }
                 .onFailure { Log.w(TAG, "interjectMessage failed", it) }
-                .getOrDefault(false)
-            if (accepted) {
+                .getOrNull()
+            if (steerId != null) {
                 view?.clearInput()
             } else {
                 // Keep the text in the field so it can be sent again.

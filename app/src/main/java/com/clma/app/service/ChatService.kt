@@ -1239,15 +1239,15 @@ class ChatService(
      * turn 结束才派发；插话由 GenerationLoop 在下一次模型请求前消费，模型能立刻看到
      * 新指令并调整方向。
      *
-     * @return true 已暂存，将在下一个安全点并入；false 当前没有进行中的生成（空闲或
-     * 正在等待工具审批），调用方应保留草稿并提示用户。
+     * @return 已暂存插话的消息 id，可在被消费前撤销；null 表示当前没有进行中的生成
+     * （空闲或正在等待工具审批），调用方应保留草稿并提示用户。
      */
-    fun interjectMessage(conversationId: Uuid, content: List<UIMessagePart>): Boolean {
-        if (content.isEmptyInputMessage()) return false
+    fun interjectMessage(conversationId: Uuid, content: List<UIMessagePart>): Uuid? {
+        if (content.isEmptyInputMessage()) return null
         val session = getOrCreateSession(conversationId)
         // 空闲或只剩待审批工具时没有可插话的回合：交给调用方提示，不静默吞掉输入。
-        if (!session.isGenerating) return false
-        // 同步入队：调用方拿到 true 时消息一定已经在队列里，不会出现
+        if (!session.isGenerating) return null
+        // 同步入队：调用方拿到 id 时消息一定已经在队列里，不会出现
         // “返回成功但异步入队失败、草稿已清空”的窗口。
         val settings = settingsStore.settingsFlow.value
         val conversation = session.state.value
@@ -1258,21 +1258,30 @@ class ChatService(
         val parts = try {
             preprocessUserInputParts(content, assistant)
         } catch (e: Exception) {
-            // 预处理（正则替换等）失败：返回 false 让调用方保留草稿。
+            // 预处理（正则替换等）失败：返回 null 让调用方保留草稿。
             Log.w(TAG, "interjectMessage preprocess failed", e)
             addError(
                 error = e,
                 conversationId = conversationId,
                 title = context.getString(R.string.error_title_send_message),
             )
-            return false
+            return null
         }
+        val steerMessage = UIMessage(role = MessageRole.USER, parts = parts)
         ConversationSteers.push(
             conversationId = conversationId,
-            message = UIMessage(role = MessageRole.USER, parts = parts),
+            message = steerMessage,
         )
-        return true
+        return steerMessage.id
     }
+
+    /** 撤销一条尚未并入生成的插话。 */
+    fun cancelInterject(conversationId: Uuid, messageId: Uuid): Boolean =
+        ConversationSteers.remove(conversationId, messageId)
+
+    /** 插话已被生成消费后，UI 不应继续展示撤销入口。 */
+    fun hasPendingInterject(conversationId: Uuid, messageId: Uuid): Boolean =
+        ConversationSteers.contains(conversationId, messageId)
 
     /** Enqueue immediately; the result belongs to this item even after edits or later turns. */
     fun enqueueVoiceMessage(conversationId: Uuid, text: String): Deferred<String?> {

@@ -168,6 +168,12 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null, is
     val setting by vm.settings.collectAsStateWithLifecycle()
     val conversation by vm.conversationForUi.collectAsStateWithLifecycle()
     val loadingJob by vm.conversationJob.collectAsStateWithLifecycle()
+    LaunchedEffect(loadingJob) {
+        if (loadingJob == null) vm.clearPendingInterject()
+    }
+    LaunchedEffect(conversation.currentMessages) {
+        vm.prunePendingInterject()
+    }
     val processingStatus by vm.processingStatus.collectAsStateWithLifecycle()
     val currentChatModel by vm.currentChatModel.collectAsStateWithLifecycle()
     val enableWebSearch by vm.enableWebSearch.collectAsStateWithLifecycle()
@@ -625,6 +631,8 @@ internal fun ChatPageContent(
                                 }
                             }
                         } else null,
+                        pendingInterject = vm.pendingInterject != null,
+                        onCancelInterject = vm::cancelInterject,
                         onUpdateAssistant = {
                             vm.updateSettings(
                                 setting.copy(
@@ -1194,6 +1202,7 @@ private fun TopBar(
                 AppDropdownMenu(
                     expanded = showNewChatMenu,
                     onDismissRequest = { showNewChatMenu = false },
+                    softMotion = true,
                     // Keep the temporary-chat description from widening the popup.
                     modifier = Modifier.widthIn(max = 240.dp),
                     items = listOf(

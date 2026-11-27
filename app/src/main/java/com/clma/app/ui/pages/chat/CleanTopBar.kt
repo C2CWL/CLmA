@@ -354,6 +354,7 @@ private fun CleanNewChatMenu(
     AppDropdownMenu(
         expanded = expanded,
         onDismissRequest = onDismiss,
+        softMotion = true,
         // Keep the temporary-chat description from widening the popup.
         modifier = Modifier.widthIn(max = 240.dp),
         items = listOf(

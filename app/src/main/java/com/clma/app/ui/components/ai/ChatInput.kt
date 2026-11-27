@@ -184,6 +184,9 @@ fun ChatInput(
     // 生成中且输入框非空时的发送动作（插话）。为 null 时退回 onSendClick（排队），
     // 保证未接入插话的调用方行为不变。
     onInterjectClick: (() -> Unit)? = null,
+    // 插话暂存后的一次性撤销入口；仅在提供了回调且有 pending 插话时显示。
+    pendingInterject: Boolean = false,
+    onCancelInterject: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     completionProviders: List<ChatCompletionProvider> = emptyList(),
     messageQueue: MessageQueueState = MessageQueueState(),
@@ -452,6 +455,23 @@ fun ChatInput(
                     }
                     if (state.messageContent.isNotEmpty()) {
                         MediaFileInputRow(state = state)
+                    }
+                    if (pendingInterject && onCancelInterject != null) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.End,
+                        ) {
+                            Text(
+                                text = stringResource(R.string.chat_interject_pending),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            TextButton(onClick = onCancelInterject) {
+                                Text(stringResource(R.string.chat_interject_cancel))
+                            }
+                        }
                     }
 
                     // One composition, two arrangements: as a pill the buttons flank the one-line

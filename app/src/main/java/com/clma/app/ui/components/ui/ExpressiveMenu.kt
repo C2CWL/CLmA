@@ -1,5 +1,15 @@
 package com.clma.app.ui.components.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
@@ -7,6 +17,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -26,13 +37,25 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
+import kotlinx.coroutines.delay
 import com.clma.app.data.datastore.PopupMenuStyle
 import com.clma.app.ui.context.LocalSettings
 import me.rerere.hugeicons.HugeIcons
@@ -72,8 +95,14 @@ fun AppGroupedDropdownMenu(
     onDismissRequest: () -> Unit,
     groups: List<List<AppMenuEntry>>,
     modifier: Modifier = Modifier,
+    softMotion: Boolean = false,
 ) {
-    AppDropdownMenu(expanded, onDismissRequest, modifier = modifier) {
+    AppDropdownMenu(
+        expanded = expanded,
+        onDismissRequest = onDismissRequest,
+        modifier = modifier,
+        softMotion = softMotion,
+    ) {
         groups.filter { it.isNotEmpty() }.forEachIndexed { index, group ->
             if (index > 0) AppMenuDivider()
             group.forEach { entry ->
@@ -103,8 +132,15 @@ fun AppDropdownMenu(
     onDismissRequest: () -> Unit,
     items: List<AppMenuEntry>,
     modifier: Modifier = Modifier,
+    softMotion: Boolean = false,
 ) {
-    AppGroupedDropdownMenu(expanded, onDismissRequest, listOf(items), modifier)
+    AppGroupedDropdownMenu(
+        expanded = expanded,
+        onDismissRequest = onDismissRequest,
+        groups = listOf(items),
+        modifier = modifier,
+        softMotion = softMotion,
+    )
 }
 
 /** Keeps the stored motion preference; both paths use the same lightweight bubble surface. */
@@ -115,30 +151,24 @@ fun AppDropdownMenu(
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
     style: PopupMenuStyle = LocalSettings.current.displaySetting.popupMenuStyle,
+    softMotion: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    when (style) {
-        PopupMenuStyle.EXPRESSIVE -> DropdownMenuPopup(
+    when {
+        softMotion -> SoftAnchoredMenu(
+            expanded = expanded,
+            onDismissRequest = onDismissRequest,
+            modifier = modifier,
+            content = content,
+        )
+        style == PopupMenuStyle.EXPRESSIVE -> DropdownMenuPopup(
             expanded = expanded,
             onDismissRequest = onDismissRequest,
             modifier = modifier,
         ) {
-            Surface(
-                shape = AppMenuDefaults.Shape,
-                color = AppMenuDefaults.containerColor,
-                tonalElevation = 0.dp,
-                shadowElevation = AppMenuDefaults.ShadowElevation,
-                border = AppMenuDefaults.border,
-            ) {
-                Column(
-                    modifier = Modifier
-                        .verticalScroll(rememberScrollState())
-                        .padding(horizontal = AppMenuDefaults.HorizontalPadding, vertical = 10.dp),
-                    content = content,
-                )
-            }
+            AppScrollableMenuSurface(content = content)
         }
-        PopupMenuStyle.CLASSIC -> DropdownMenu(
+        else -> DropdownMenu(
             expanded = expanded,
             onDismissRequest = onDismissRequest,
             modifier = modifier,
@@ -149,6 +179,100 @@ fun AppDropdownMenu(
             border = AppMenuDefaults.border,
         ) {
             Column(Modifier.padding(horizontal = AppMenuDefaults.HorizontalPadding), content = content)
+        }
+    }
+}
+
+@Composable
+private fun AppScrollableMenuSurface(
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Surface(
+        modifier = modifier,
+        shape = AppMenuDefaults.Shape,
+        color = AppMenuDefaults.containerColor,
+        tonalElevation = 0.dp,
+        shadowElevation = AppMenuDefaults.ShadowElevation,
+        border = AppMenuDefaults.border,
+    ) {
+        Column(
+            modifier = Modifier
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = AppMenuDefaults.HorizontalPadding, vertical = 10.dp),
+            content = content,
+        )
+    }
+}
+
+/**
+ * Top-bar menus open with a short downward slide and settle into place instead of the default
+ * scale pop. The popup stays mounted briefly after [expanded] turns false so the exit can finish.
+ */
+@Composable
+private fun SoftAnchoredMenu(
+    expanded: Boolean,
+    onDismissRequest: () -> Unit,
+    modifier: Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    var mounted by remember { mutableStateOf(false) }
+    LaunchedEffect(expanded) {
+        if (expanded) {
+            mounted = true
+        } else if (mounted) {
+            delay(140)
+            mounted = false
+        }
+    }
+    val popupOffset = with(LocalDensity.current) { 8.dp.roundToPx() }
+    if (expanded || mounted) {
+        Popup(
+            alignment = Alignment.TopEnd,
+            offset = IntOffset(0, popupOffset),
+            onDismissRequest = onDismissRequest,
+            properties = PopupProperties(
+                focusable = expanded,
+                dismissOnBackPress = expanded,
+                dismissOnClickOutside = expanded,
+            ),
+        ) {
+            val menuScaleSpec = spring<Float>(
+                dampingRatio = Spring.DampingRatioNoBouncy,
+                stiffness = Spring.StiffnessMedium,
+            )
+            val menuSlideSpec = spring<IntOffset>(
+                dampingRatio = Spring.DampingRatioNoBouncy,
+                stiffness = Spring.StiffnessMedium,
+            )
+            AnimatedVisibility(
+                visible = expanded,
+                enter = fadeIn(animationSpec = tween(120)) +
+                    scaleIn(
+                        initialScale = 0.94f,
+                        transformOrigin = TransformOrigin(1f, 0f),
+                        animationSpec = menuScaleSpec,
+                    ) +
+                    slideInVertically(initialOffsetY = { -10 }, animationSpec = menuSlideSpec),
+                exit = fadeOut(animationSpec = tween(100)) +
+                    scaleOut(
+                        targetScale = 0.97f,
+                        transformOrigin = TransformOrigin(1f, 0f),
+                        animationSpec = tween(110),
+                    ) +
+                    slideOutVertically(targetOffsetY = { -6 }, animationSpec = tween(110)),
+            ) {
+                AppScrollableMenuSurface(
+                    modifier = modifier.widthIn(max = 280.dp),
+                    content = content,
+                )
+            }
+            if (!expanded) {
+                LaunchedEffect(Unit) {
+                    delay(140)
+                    mounted = false
+                }
+            }
         }
     }
 }
