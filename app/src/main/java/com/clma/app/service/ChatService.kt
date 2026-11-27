@@ -59,6 +59,7 @@ import com.clma.ai.core.ReasoningLevel
 import com.clma.ai.core.Tool
 import com.clma.ai.provider.Model
 import com.clma.ai.provider.ModelAbility
+import com.clma.ai.provider.PromptCacheDiagnosticPurpose
 import com.clma.ai.provider.ProviderManager
 import com.clma.ai.provider.TextGenerationParams
 import com.clma.ai.ui.ToolApprovalState
@@ -267,7 +268,7 @@ internal fun Throwable.isContextLimitError(): Boolean {
         }
 }
 
-internal fun backgroundTextGenerationParams(
+internal fun compactionTextGenerationParams(
     model: Model,
     conversationId: Uuid,
     reasoningLevel: ReasoningLevel = ReasoningLevel.OFF,
@@ -277,6 +278,7 @@ internal fun backgroundTextGenerationParams(
     customHeaders = model.customHeaders,
     customBody = model.customBodies,
     sessionId = conversationId.toString(),
+    promptCacheDiagnosticPurpose = PromptCacheDiagnosticPurpose.COMPACTION,
 )
 
 /**
@@ -4525,7 +4527,7 @@ class ChatService(
                         providerHandler.generateText(
                             providerSetting = provider,
                             messages = listOf(UIMessage.user(prompt)),
-                            params = backgroundTextGenerationParams(model, conversation.id).copy(
+                            params = compactionTextGenerationParams(model, conversation.id).copy(
                                 maxTokens = if (localCompaction) requestedTargetTokens.coerceAtMost(1_024)
                                     else requestedTargetTokens,
                                 enableThinking = if (localCompaction) false else null,

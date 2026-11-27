@@ -7,6 +7,7 @@ import com.clma.ai.provider.BuiltInTools
 import com.clma.ai.provider.CustomBody
 import com.clma.ai.provider.CustomHeader
 import com.clma.ai.provider.Model
+import com.clma.ai.provider.PromptCacheDiagnosticPurpose
 import com.clma.ai.provider.ProviderSetting
 import com.clma.ai.ui.UIMessage
 import com.clma.ai.ui.UIMessagePart
@@ -52,7 +53,7 @@ class ChatServiceTest {
     }
 
     @Test
-    fun `background generation params include model custom request configuration`() {
+    fun `compaction generation params preserve request configuration and label diagnostics`() {
         val headers = listOf(CustomHeader(name = "X-Gateway-Token", value = "test-token"))
         val bodies = listOf(CustomBody(key = "gateway_mode", value = JsonPrimitive("strict")))
         val model = Model(
@@ -62,13 +63,14 @@ class ChatServiceTest {
         )
 
         val conversationId = Uuid.random()
-        val params = backgroundTextGenerationParams(model, conversationId)
+        val params = compactionTextGenerationParams(model, conversationId)
 
         assertEquals(model, params.model)
         assertEquals(ReasoningLevel.OFF, params.reasoningLevel)
         assertEquals(headers, params.customHeaders)
         assertEquals(bodies, params.customBody)
         assertEquals(conversationId.toString(), params.sessionId)
+        assertEquals(PromptCacheDiagnosticPurpose.COMPACTION, params.promptCacheDiagnosticPurpose)
     }
 
     @Test

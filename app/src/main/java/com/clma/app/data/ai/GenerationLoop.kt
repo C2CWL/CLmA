@@ -36,6 +36,7 @@ import com.clma.ai.core.MessageRole
 import com.clma.ai.core.Tool
 import com.clma.ai.provider.Model
 import com.clma.ai.provider.CustomBody
+import com.clma.ai.provider.PromptCacheDiagnosticPurpose
 import com.clma.ai.provider.Provider
 import com.clma.ai.provider.ProviderManager
 import com.clma.ai.provider.ProviderSetting
@@ -2244,6 +2245,7 @@ class GenerationLoop(
                 }
             },
             sessionId = (conversationId ?: Uuid.random()).toString(),
+            promptCacheDiagnosticPurpose = PromptCacheDiagnosticPurpose.CHAT,
         )
         try {
             if (stream) {

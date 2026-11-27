@@ -2,6 +2,7 @@ package com.clma.ai.provider
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import kotlinx.serialization.json.JsonElement
 import com.clma.ai.core.ReasoningLevel
 import com.clma.ai.core.Tool
@@ -69,6 +70,8 @@ data class TextGenerationResult(
     val usage: TokenUsage? = null,
 )
 
+enum class PromptCacheDiagnosticPurpose { UNSPECIFIED, CHAT, COMPACTION }
+
 @Serializable
 data class TextGenerationParams(
     val model: Model,
@@ -98,6 +101,8 @@ data class TextGenerationParams(
     val customHeaders: List<CustomHeader> = emptyList(),
     val customBody: List<CustomBody> = emptyList(),
     val sessionId: String? = Uuid.random().toString(),
+    /** Only scopes client-side diagnostics; never changes request routing or cache keys. */
+    @Transient val promptCacheDiagnosticPurpose: PromptCacheDiagnosticPurpose = PromptCacheDiagnosticPurpose.UNSPECIFIED,
 )
 
 @Serializable
