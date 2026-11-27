@@ -32,16 +32,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.compose.runtime.DisposableEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clma.app.R
+import com.clma.app.data.botmode.settings.BotModeSettings
+import com.clma.app.data.botmode.settings.BotModeSettingsStore
+import com.clma.app.ui.components.ScheduledTaskReliabilityCard
 import com.clma.app.data.botmode.BotRoutineForm
 import com.clma.app.data.botmode.BotRoutineFormError
 import com.clma.app.data.botmode.BotRoutineKind
@@ -53,13 +52,13 @@ import com.clma.app.data.botmode.botRoutineFormFrom
 import com.clma.app.data.botmode.parseBotRoutineSchedule
 import com.clma.app.data.botmode.validate
 import com.clma.app.data.db.entity.ScheduledJobEntity
-import com.clma.app.service.BotRoutineRuns
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.TextStyle
 import java.util.Locale
 import kotlin.uuid.Uuid
+import org.koin.compose.koinInject
 
 // ------------------------------------------------------------------ labels
 
@@ -107,7 +106,7 @@ fun botRoutineRowText(summary: BotRoutineRowSummary): String {
 
 /**
  * "自动任务" group on the Bot info page: this bot's scheduled jobs with pause / run now / edit /
- * delete, runs waiting on the user's approval, and a hint when exact alarms are off.
+ * delete, runs waiting on the user's approval, and background reliability guidance.
  */
 @Composable
 fun BotRoutinesGroup(
@@ -120,25 +119,11 @@ fun BotRoutinesGroup(
     onOpenConversation: (Uuid) -> Unit,
 ) {
     val context = LocalContext.current
-    val botSettingsStore = org.koin.compose.koinInject<com.clma.app.data.botmode.settings.BotModeSettingsStore>()
-    val botSettings by botSettingsStore.settings.collectAsStateWithLifecycle(
-        initialValue = com.clma.app.data.botmode.settings.BotModeSettings(),
-    )
+    val botSettingsStore = koinInject<BotModeSettingsStore>()
+    val botSettings by botSettingsStore.settings.collectAsStateWithLifecycle(initialValue = BotModeSettings())
     var editing by remember { mutableStateOf<ScheduledJobEntity?>(null) }
     var creating by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf<ScheduledJobEntity?>(null) }
-
-    // Re-check the exact-alarm permission whenever the page comes back (the user may have just
-    // granted it in system settings).
-    var exactAlarmsAllowed by remember { mutableStateOf(BotRoutineRuns.canScheduleExactAlarms(context)) }
-    val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) exactAlarmsAllowed = BotRoutineRuns.canScheduleExactAlarms(context)
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-    }
 
     val enabledCount = routines.count { it.enabled }
     BotCollapsibleGroup(
@@ -151,29 +136,8 @@ fun BotRoutinesGroup(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        if (botSettings.showRoutineReliability && routines.isNotEmpty() && !exactAlarmsAllowed) {
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.tertiaryContainer,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
-                        stringResource(R.string.bot_routine_exact_alarm_title),
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.onTertiaryContainer,
-                    )
-                    Text(
-                        stringResource(R.string.bot_routine_exact_alarm_desc),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onTertiaryContainer,
-                    )
-                    TextButton(onClick = {
-                        val intent = BotRoutineRuns.exactAlarmSettingsIntent(context)
-                        if (intent != null) runCatching { context.startActivity(intent) }
-                    }) { Text(stringResource(R.string.bot_routine_exact_alarm_action)) }
-                }
-            }
+        if (botSettings.showRoutineReliability) {
+            ScheduledTaskReliabilityCard()
         }
         parkedRuns.filterNot { it.resuming }.forEach { run ->
             Surface(

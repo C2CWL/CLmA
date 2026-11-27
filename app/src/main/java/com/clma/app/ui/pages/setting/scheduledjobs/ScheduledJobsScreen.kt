@@ -3,6 +3,7 @@ package com.clma.app.ui.pages.setting.scheduledjobs
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -41,6 +42,7 @@ import com.clma.app.ui.components.ui.DialogPrimaryButton
 import com.clma.app.R
 import com.clma.app.Screen
 import com.clma.app.data.db.entity.ScheduledJobEntity
+import com.clma.app.ui.components.ScheduledTaskReliabilityCard
 import com.clma.app.ui.components.nav.BackButton
 import com.clma.app.ui.context.LocalNavController
 import com.clma.app.ui.theme.CustomColors
@@ -82,17 +84,15 @@ fun ScheduledJobsScreen(vm: ScheduledJobsViewModel = koinViewModel()) {
         containerColor = CustomColors.topBarColors.containerColor,
     ) { innerPadding ->
         if (jobs.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = stringResource(R.string.setting_page_scheduled_jobs_empty),
-                    style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            Column(Modifier.fillMaxSize().padding(innerPadding).padding(horizontal = 8.dp)) {
+                ScheduledTaskReliabilityCard()
+                Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    Text(
+                        text = stringResource(R.string.setting_page_scheduled_jobs_empty),
+                        style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         } else {
             LazyColumn(
@@ -100,6 +100,7 @@ fun ScheduledJobsScreen(vm: ScheduledJobsViewModel = koinViewModel()) {
                 contentPadding = innerPadding + PaddingValues(8.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
+                item { ScheduledTaskReliabilityCard() }
                 items(jobs, key = { it.id }) { job ->
                     ScheduledJobRow(
                         job = job,

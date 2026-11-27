@@ -14,7 +14,7 @@
   <string name="bot_settings_description">Team description</string>
   <string name="bot_settings_full">Full access</string>
   <string name="bot_settings_full_confirm">Allow this Bot to use tools without routine approval? Actions that always require confirmation and your outbound policy still apply.</string>
-  <string name="bot_settings_full_confirm_default">Allow Bots that inherit the default to use tools without routine approval? Actions that always require confirmation and each Bot's outbound policy still apply.</string>
+  <string name="bot_settings_full_confirm_default">Allow Bots that inherit the default to use tools without routine approval? Actions that always require confirmation and each Bot\'s outbound policy still apply.</string>
   <string name="bot_settings_headless_denied">Bot policy requires approval. This run has no approval channel.</string>
   <string name="bot_settings_identity">Identity</string>
   <string name="bot_settings_idle">Idle</string>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="cron_wake_running">定时任务运行中</string>
+    <string name="cron_wake_reliability">后台运行设置</string>
+    <string name="cron_wake_exact_alarm_hint">未允许精确闹钟时，定时任务可能延迟运行。</string>
+    <string name="cron_wake_exact_alarm_action">允许精确闹钟</string>
+    <string name="cron_wake_battery_hint">手机闲置时，电池优化可能延迟任务或中断任务的网络连接。</string>
+    <string name="cron_wake_battery_action">取消电池使用限制</string>
+    <string name="cron_wake_oem_hint">部分手机还需要在系统设置中允许后台活动或自启动。</string>
+</resources>

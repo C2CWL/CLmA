@@ -1,10 +1,8 @@
 package com.clma.app.service
 
-import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.work.Data
 import androidx.work.ExistingWorkPolicy
@@ -62,24 +60,6 @@ object BotRoutineRuns {
 
     fun cancelExpiry(context: Context, conversationId: String) {
         WorkManager.getInstance(context).cancelUniqueWork(expiryWorkName(conversationId))
-    }
-
-    /**
-     * False only on Android 12+ when the user has not allowed exact alarms: routines then fire
-     * through inexact alarms / WorkManager and can run late.
-     */
-    fun canScheduleExactAlarms(context: Context): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true
-        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return true
-        return runCatching { alarmManager.canScheduleExactAlarms() }.getOrDefault(true)
-    }
-
-    /** Settings screen where the user grants "Alarms & reminders" for this app (Android 12+). */
-    fun exactAlarmSettingsIntent(context: Context): Intent? {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return null
-        return Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
-            .setData(android.net.Uri.parse("package:${context.packageName}"))
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     }
 
     // ------------------------------------------------------------ notifications

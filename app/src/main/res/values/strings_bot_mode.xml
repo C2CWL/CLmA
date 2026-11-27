@@ -190,9 +190,6 @@
   <string name="bot_routine_delete_confirm">Delete “%1$s” and its run history? Topics it already created stay.</string>
   <string name="bot_routine_waiting_title">“%1$s” is waiting for your approval</string>
   <string name="bot_routine_waiting_desc">Tap to open it and answer the approval card. The run continues after you answer.</string>
-  <string name="bot_routine_exact_alarm_title">Routines may run late</string>
-  <string name="bot_routine_exact_alarm_desc">“Alarms &amp; reminders” is off for this app, so Android can delay scheduled runs. Turn it on to run them on time.</string>
-  <string name="bot_routine_exact_alarm_action">Open settings</string>
   <string name="bot_routine_new_title">New routine</string>
   <string name="bot_routine_edit_title">Edit routine</string>
   <string name="bot_routine_field_name">Name</string>
