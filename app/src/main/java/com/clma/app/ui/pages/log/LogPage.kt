@@ -53,6 +53,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.clma.ai.provider.providers.openai.PromptCacheDiagnostics
 import com.clma.common.android.LogEntry
 import com.clma.common.android.LogLevel
 import com.clma.common.android.Logging
@@ -176,9 +177,24 @@ private fun UnifiedLogList(
     ) {
 
         item {
-            RequestLoggingSwitchCard(
+            LoggingSwitchCard(
+                title = stringResource(R.string.log_page_record_requests),
+                description = stringResource(R.string.log_page_record_requests_desc),
                 enabled = requestLoggingEnabled,
                 onEnabledChange = onRequestLoggingChange
+            )
+        }
+
+        item {
+            var enabled by remember { mutableStateOf(PromptCacheDiagnostics.isEnabled()) }
+            LoggingSwitchCard(
+                title = stringResource(R.string.log_page_prompt_cache_diagnostics),
+                description = stringResource(R.string.log_page_prompt_cache_diagnostics_desc),
+                enabled = enabled,
+                onEnabledChange = {
+                    PromptCacheDiagnostics.setEnabled(it)
+                    enabled = it
+                },
             )
         }
 
@@ -253,7 +269,9 @@ private fun UnifiedLogList(
 }
 
 @Composable
-private fun RequestLoggingSwitchCard(
+private fun LoggingSwitchCard(
+    title: String,
+    description: String,
     enabled: Boolean,
     onEnabledChange: (Boolean) -> Unit
 ) {
@@ -269,12 +287,12 @@ private fun RequestLoggingSwitchCard(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = stringResource(R.string.log_page_record_requests),
+                    text = title,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = stringResource(R.string.log_page_record_requests_desc),
+                    text = description,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

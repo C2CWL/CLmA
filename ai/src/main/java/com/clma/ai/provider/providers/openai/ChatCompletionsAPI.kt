@@ -77,6 +77,7 @@ import okhttp3.sse.EventSource
 import okhttp3.sse.EventSourceListener
 import okhttp3.sse.EventSources
 import kotlin.time.Clock
+import java.util.concurrent.atomic.AtomicReference
 
 private const val TAG = "ChatCompletionsAPI"
 
@@ -114,6 +115,10 @@ class ChatCompletionsAPI(
             Log.i(TAG, "generateText: ${json.encodeToString(redactSecrets(requestBody))}")
         }
 
+        val cacheTrace = PromptCacheDiagnostics.begin(
+            params.sessionId, providerSetting.id.toString(), request.url.toString(), requestBody, streaming = false,
+        )
+
         val response = client.newCall(request).await()
         if (!response.isSuccessful) {
             val errorBody = response.body.string()
@@ -139,6 +144,7 @@ class ChatCompletionsAPI(
             ?.content
             ?: "unknown"
         val usage = parseTokenUsage(bodyJson["usage"] as? JsonObject)
+        cacheTrace?.reportUsage?.invoke(usage)
 
         // Same recovery as the streaming decoder: a model that writes its tool call as text would
         // otherwise silently lose it for assistants with streaming turned off. Applied after
@@ -216,8 +222,17 @@ class ChatCompletionsAPI(
             textToolCallsEnabled = params.textToolCallParsing,
         )
 
+        val cacheTrace = PromptCacheDiagnostics.begin(
+            params.sessionId, providerSetting.id.toString(), request.url.toString(), requestBody, streaming = true,
+        )
+
+        val cacheUsage = cacheTrace?.let { AtomicReference<TokenUsage?>() }
+
         fun sendChunks(chunks: Iterable<StreamChunk>) {
             chunks.forEach { chunk ->
+                if (chunk is StreamChunk.Usage) cacheUsage?.updateAndGet { prior ->
+                    chunk.usage.takeIf { it.cachedTokensReported || it.cacheMissTokens != null } ?: prior ?: chunk.usage
+                }
                 trySend(chunk).onFailure { e ->
                     Log.w(TAG, "onEvent: chunk dropped (${e?.message})")
                 }
@@ -287,6 +302,7 @@ class ChatCompletionsAPI(
         val eventSource = EventSources.createFactory(client).newEventSource(request, listener)
 
         awaitClose {
+            cacheTrace?.reportUsage?.invoke(cacheUsage?.get())
             println("[awaitClose] 关闭eventSource ")
             eventSource.cancel()
         }
