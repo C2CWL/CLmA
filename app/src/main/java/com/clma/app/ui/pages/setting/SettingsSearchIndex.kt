@@ -357,6 +357,16 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
         ),
     ),
     SettingsSearchPageSpec(
+        route = Screen.SettingPlugins,
+        descriptionRes = R.string.setting_page_plugins_desc,
+        altTitles = listOf(R.string.setting_page_plugins),
+        items = listOf(
+            row(R.string.setting_plugins_install),
+            row(R.string.setting_plugins_uninstall),
+            row(R.string.setting_plugins_settings),
+        ),
+    ),
+    SettingsSearchPageSpec(
         route = Screen.SettingMcp,
         altTitles = listOf(R.string.setting_page_mcp),
         items = listOf(row(R.string.setting_mcp_page_import_title)),

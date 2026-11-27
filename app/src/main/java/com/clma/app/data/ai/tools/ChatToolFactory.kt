@@ -1,10 +1,16 @@
 package com.clma.app.data.ai.tools
 
 import com.clma.app.data.botmode.libraryScopeOf
+import com.clma.app.data.plugins.PluginRepository
 import android.util.Log
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
+import com.clma.ai.core.InputSchema
 import com.clma.ai.core.Tool
+import com.clma.ai.ui.UIMessagePart
 import com.clma.ai.provider.Model
 import com.clma.ai.provider.ProviderSetting
 import com.clma.ai.provider.effectiveBuiltInSearch
@@ -38,6 +44,7 @@ class ChatToolFactory(
     private val mcpManager: McpManager,
     private val skillManager: SkillManager,
     private val workspaceRepository: WorkspaceRepository,
+    private val pluginRepository: PluginRepository,
 ) {
     suspend fun createTools(
         settings: Settings,
@@ -90,7 +97,42 @@ class ChatToolFactory(
                 )
             )
         }
+
+        // Native Android plugins: every enabled plugin tool is namespaced by plugin id.
+        pluginRepository.enabledPluginsWithTools().forEach { (pluginEntry, pluginTool) ->
+            val descriptor = pluginTool.descriptor
+            add(
+                Tool(
+                    name = "plugin__${toolSegment(pluginEntry.id)}__${toolSegment(descriptor.name)}",
+                    description = "[${pluginEntry.name}] ${descriptor.description}",
+                    parameters = {
+                        runCatching {
+                            val schema = json.parseToJsonElement(descriptor.inputSchemaJson).jsonObject
+                            InputSchema.Obj(
+                                properties = schema["properties"]?.jsonObject ?: JsonObject(emptyMap()),
+                                required = schema["required"]?.jsonArray
+                                    ?.mapNotNull { (it as? JsonPrimitive)?.content }
+                                    ?.takeIf { it.isNotEmpty() },
+                            )
+                        }.getOrElse { InputSchema.Obj(properties = JsonObject(emptyMap())) }
+                    },
+                    needsApproval = { descriptor.needsApproval },
+                    execute = { input ->
+                        val result = runCatching { pluginTool.execute(input.toString()) }
+                            .getOrElse { error ->
+                                "Plugin tool '${descriptor.name}' failed: ${error.message ?: "unknown error"}"
+                            }
+                        listOf(UIMessagePart.Text(result))
+                    },
+                )
+            )
+        }
     }
+
+    private fun toolSegment(value: String): String =
+        value.map { ch ->
+            if (ch.isLetterOrDigit() || ch == '_' || ch == '-') ch else '_'
+        }.joinToString("").ifEmpty { "unnamed" }
 
     /**
      * Validates that every enabled MCP server's name can form a valid `mcp__<name>__tool`
