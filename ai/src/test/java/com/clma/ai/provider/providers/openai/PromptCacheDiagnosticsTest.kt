@@ -1,6 +1,7 @@
 package com.clma.ai.provider.providers.openai
 
 import com.clma.ai.core.TokenUsage
+import com.clma.ai.provider.CONTEXT_BUDGET_REMINDER_PREFIX
 import com.clma.ai.provider.PromptCacheDiagnosticPurpose
 import com.clma.ai.provider.PromptCacheSystemSection
 import com.clma.ai.provider.TOOL_OUTPUT_PROJECTION_MARKER
@@ -108,6 +109,25 @@ class PromptCacheDiagnosticsTest {
         assertTrue(restored.fields.contains("toolProjection=removed"))
         val differentCall = record(body("different id", marker))
         assertFalse(differentCall.fields.contains("toolProjection="))
+    }
+
+    @Test
+    fun `labels the changing reminder position without logging reminder text`() {
+        fun reminder(value: String) =
+            """{"role":"user","content":"$CONTEXT_BUDGET_REMINDER_PREFIX$value</context_reminder>"}"""
+        fun body(vararg messages: String) = initial.replace("]}", "," + messages.joinToString(",") + "]}")
+        val user = """{"role":"user","content":"question"}"""
+        val tool = """{"role":"tool","content":"result"}"""
+        record(body(user, reminder("private old estimate")))
+        val changed = record(body(user, reminder("private new estimate")))
+        assertTrue(changed.fields.contains("firstChangedMessage=2 change=rewrite"))
+        assertTrue(changed.fields.contains("contextBudgetReminderAtChange=both"))
+        assertFalse(changed.fields.contains("private"))
+        val afterTool = record(body(user, tool, reminder("private next estimate")))
+        assertTrue(afterTool.fields.contains("firstChangedMessage=2 change=rewrite"))
+        assertTrue(afterTool.fields.contains("contextBudgetReminderAtChange=old"))
+        val repeated = record(body(user, tool, reminder("private next estimate")))
+        assertFalse(repeated.fields.contains("contextBudgetReminderAtChange="))
     }
 
     @Test

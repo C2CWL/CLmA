@@ -1,6 +1,6 @@
 package com.clma.app.data.ai.transformers
 
-import com.clma.ai.core.MessageRole
+import com.clma.ai.provider.CONTEXT_BUDGET_REMINDER_PREFIX
 import com.clma.ai.ui.UIMessage
 import com.clma.app.data.ai.ContextBudgetPlanner
 import com.clma.app.data.datastore.getEffectiveContextLength
@@ -8,7 +8,7 @@ import com.clma.app.data.datastore.getEffectiveContextLength
 /**
  * 上下文预算提醒注入转换器
  *
- * 当本次请求的上下文估算值达到助手配置的提醒阈值时, 在最后一条用户消息之前注入一条合成的
+ * 当本次请求的上下文估算值达到助手配置的提醒阈值时, 在请求末尾追加一条合成的
  * `<context_reminder>`, 让模型知道上下文快满了, 从而自行判断是否要调用 `compact_context`
  * 主动压缩。
  *
@@ -59,8 +59,7 @@ internal fun buildContextBudgetReminder(
     if (!plan.shouldCompact) return null
     val percent = (plan.estimatedInputTokens.toLong() * 100L / contextLength).coerceIn(0L, 100L)
     return buildString {
-        append("<context_reminder>")
-        append("Context budget: ~")
+        append(CONTEXT_BUDGET_REMINDER_PREFIX)
         append(plan.estimatedInputTokens)
         append(" / ")
         append(contextLength)
@@ -75,13 +74,7 @@ internal fun buildContextBudgetReminder(
     }
 }
 
-/**
- * 纯函数: 在最后一条用户消息之前插入一条合成的提醒消息(与 [TimeReminderTransformer] 的注入方式一致)。
- * 没有任何用户消息时追加到末尾。
- */
-internal fun injectContextReminder(messages: List<UIMessage>, reminder: String): List<UIMessage> {
-    val reminderMessage = UIMessage.user(reminder).copy(isSynthetic = true)
-    val lastUserIndex = messages.indexOfLast { it.role == MessageRole.USER }
-    if (lastUserIndex < 0) return messages + reminderMessage
-    return messages.toMutableList().apply { add(lastUserIndex, reminderMessage) }
-}
+// The estimate changes on tool steps. Keep it after the entire history, including tool results,
+// so a new estimate does not invalidate the cached prefix before the last user message.
+internal fun injectContextReminder(messages: List<UIMessage>, reminder: String): List<UIMessage> =
+    messages + UIMessage.user(reminder).copy(isSynthetic = true)

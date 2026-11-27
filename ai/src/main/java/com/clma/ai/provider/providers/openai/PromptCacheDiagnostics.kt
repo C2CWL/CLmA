@@ -1,6 +1,7 @@
 package com.clma.ai.provider.providers.openai
 
 import com.clma.ai.core.TokenUsage
+import com.clma.ai.provider.CONTEXT_BUDGET_REMINDER_PREFIX
 import com.clma.ai.provider.PromptCacheDiagnosticPurpose
 import com.clma.ai.provider.PromptCacheSystemSection
 import com.clma.ai.provider.TOOL_OUTPUT_PROJECTION_MARKER
@@ -92,6 +93,7 @@ internal class PromptCachePrefixTracker {
         val role: String,
         val toolCall: Fingerprint?,
         val projectedToolOutput: Boolean,
+        val contextBudgetReminder: Boolean,
     )
     private data class Snapshot(
         val messages: List<MessageFingerprint>,
@@ -121,10 +123,13 @@ internal class PromptCachePrefixTracker {
                     else -> "other"
                 }
                 val toolCall = if (role == "tool") obj?.get("tool_call_id")?.let { fingerprint(it, mac) } else null
+                val text = (obj?.get("content") as? JsonPrimitive)?.contentOrNull
                 val projected = role == "tool" &&
-                    (obj?.get("content") as? JsonPrimitive)?.contentOrNull
-                        ?.startsWith("$TOOL_OUTPUT_PROJECTION_MARKER Older result (") == true
-                MessageFingerprint(fingerprint(element, mac), role, toolCall, projected)
+                    text?.startsWith("$TOOL_OUTPUT_PROJECTION_MARKER Older result (") == true
+                // Signature on the final wire body, not proof of who authored the text.
+                val reminder = role == "user" && text != null &&
+                    text.startsWith(CONTEXT_BUDGET_REMINDER_PREFIX) && text.endsWith("</context_reminder>")
+                MessageFingerprint(fingerprint(element, mac), role, toolCall, projected, reminder)
             }.toList(),
             systemSections = systemSections?.mapValues { (_, text) -> fingerprint(JsonPrimitive(text), mac) },
             messageCount = messages?.size,
@@ -191,9 +196,16 @@ internal class PromptCachePrefixTracker {
                     }
                 }
             } else ""
+            val reminderSource = if (before?.contextBudgetReminder == true || after?.contextBudgetReminder == true) {
+                " contextBudgetReminderAtChange=" + when {
+                    before?.contextBudgetReminder == true && after?.contextBudgetReminder == true -> "both"
+                    before?.contextBudgetReminder == true -> "old"
+                    else -> "new"
+                }
+            } else ""
             "prefixMessages=$common prefixMessageBytes=$prefixBytes firstChangedMessage=$firstChanged " +
                 "change=$changeKind oldMessageHash=${before?.wire?.hash ?: "-"} " +
-                "newMessageHash=${after?.wire?.hash ?: "-"}$source"
+                "newMessageHash=${after?.wire?.hash ?: "-"}$source$reminderSource"
         }
         return Sample(id, series,
             "previous=${prior?.id ?: "none"} messages=${current.messageCount ?: "unavailable"} " +
