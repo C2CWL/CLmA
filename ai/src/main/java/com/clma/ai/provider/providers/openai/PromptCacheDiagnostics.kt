@@ -1,6 +1,7 @@
 package com.clma.ai.provider.providers.openai
 
 import com.clma.ai.core.TokenUsage
+import com.clma.ai.provider.PromptCacheDiagnosticPurpose
 import com.clma.ai.util.json
 import com.clma.common.android.Logging
 import java.io.OutputStream
@@ -33,12 +34,14 @@ object PromptCacheDiagnostics {
         endpoint: String,
         body: JsonObject,
         streaming: Boolean,
+        purpose: PromptCacheDiagnosticPurpose,
     ): RequestTrace? {
         val active = tracker ?: return null
         if (sessionId == null) return null // No reliable conversation to compare against.
-        val sample = active.record(sessionId, providerId, endpoint, body)
+        val sample = active.record(sessionId, providerId, endpoint, body, purpose)
         if (tracker !== active) return null
-        Logging.log(TAG, "request=${sample.id} series=${sample.series} stream=$streaming ${sample.fields}")
+        Logging.log(TAG, "request=${sample.id} series=${sample.series} purpose=${purpose.name.lowercase()} " +
+            "stream=$streaming ${sample.fields}")
         return RequestTrace { usage ->
             if (tracker === active) Logging.log(TAG, "request=${sample.id} ${formatCacheUsage(usage)}")
         }
@@ -71,7 +74,13 @@ internal class PromptCachePrefixTracker {
     private var serial = 0L
 
     internal data class Sample(val id: String, val series: String, val fields: String)
-    private data class Scope(val session: String, val provider: String, val endpoint: String, val model: Fingerprint?)
+    private data class Scope(
+        val session: String,
+        val provider: String,
+        val endpoint: String,
+        val model: Fingerprint?,
+        val purpose: PromptCacheDiagnosticPurpose,
+    )
     private data class Fingerprint(val hash: String, val bytes: Long)
     private data class Snapshot(
         val messages: List<Fingerprint>,
@@ -81,9 +90,15 @@ internal class PromptCachePrefixTracker {
     )
     private data class Entry(val id: String, val series: String, val snapshot: Snapshot)
 
-    fun record(session: String, provider: String, endpoint: String, body: JsonObject): Sample {
+    fun record(
+        session: String,
+        provider: String,
+        endpoint: String,
+        body: JsonObject,
+        purpose: PromptCacheDiagnosticPurpose,
+    ): Sample {
         val mac = Mac.getInstance("HmacSHA256").apply { init(key) }
-        val scope = Scope(session, provider, endpoint, body["model"]?.let { fingerprint(it, mac) })
+        val scope = Scope(session, provider, endpoint, body["model"]?.let { fingerprint(it, mac) }, purpose)
         val messages = body["messages"] as? JsonArray
         val current = Snapshot(
             messages = messages.orEmpty().asSequence().take(MAX_MESSAGES).map { fingerprint(it, mac) }.toList(),

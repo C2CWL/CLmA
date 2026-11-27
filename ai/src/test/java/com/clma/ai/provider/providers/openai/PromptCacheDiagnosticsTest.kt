@@ -1,6 +1,7 @@
 package com.clma.ai.provider.providers.openai
 
 import com.clma.ai.core.TokenUsage
+import com.clma.ai.provider.PromptCacheDiagnosticPurpose
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertEquals
@@ -12,8 +13,13 @@ class PromptCacheDiagnosticsTest {
     private val tracker = PromptCachePrefixTracker()
     private val initial = """{"model":"test","messages":[{"role":"system","content":"private text"}]}"""
 
-    private fun record(body: String = initial, session: String = "one", provider: String = "p", endpoint: String = "e") =
-        tracker.record(session, provider, endpoint, Json.parseToJsonElement(body).jsonObject)
+    private fun record(
+        body: String = initial,
+        session: String = "one",
+        provider: String = "p",
+        endpoint: String = "e",
+        purpose: PromptCacheDiagnosticPurpose = PromptCacheDiagnosticPurpose.CHAT,
+    ) = tracker.record(session, provider, endpoint, Json.parseToJsonElement(body).jsonObject, purpose)
 
     @Test
     fun `distinguishes append from early rewrite without logging message contents`() {
@@ -47,6 +53,26 @@ class PromptCacheDiagnosticsTest {
             record(endpoint = "other"),
             record(initial.replace("\"test\"", "\"other\"")),
         ).forEach { assertTrue(it.fields.contains("previous=none")) }
+    }
+
+    @Test
+    fun `interleaved compaction does not replace the previous chat snapshot`() {
+        val chat = record()
+        val summaryBody = """{"model":"test","messages":[{"role":"user","content":"summarize"}]}"""
+        val compact = record(summaryBody, purpose = PromptCacheDiagnosticPurpose.COMPACTION)
+        val appended = record(initial.replace("]}", """,{"role":"user","content":"next"}]}"""))
+        val compactAgain = record(summaryBody, purpose = PromptCacheDiagnosticPurpose.COMPACTION)
+        val unspecified = record(purpose = PromptCacheDiagnosticPurpose.UNSPECIFIED)
+
+        assertFalse(chat.series == compact.series)
+        assertTrue(compact.fields.contains("previous=none "))
+        assertEquals(chat.series, appended.series)
+        assertTrue(appended.fields.contains("previous=${chat.id} "))
+        assertTrue(appended.fields.contains("firstChangedMessage=1 change=append"))
+        assertEquals(compact.series, compactAgain.series)
+        assertTrue(compactAgain.fields.contains("previous=${compact.id} "))
+        assertTrue(compactAgain.fields.contains("firstChangedMessage=none change=identical"))
+        assertTrue(unspecified.fields.contains("previous=none "))
     }
 
     @Test
