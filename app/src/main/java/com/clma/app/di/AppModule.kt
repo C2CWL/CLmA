@@ -239,6 +239,8 @@ val appModule = module {
     single { com.clma.llamacpp.LlamaCppRuntime() }
     single { com.clma.llamacpp.LlamaCppProvider(context = get(), runtime = get(), prefs = get()) }
 
+    single { com.clma.app.data.plugins.PluginRepository(context = get(), json = get()) }
+
     single {
         ChatToolFactory(
             json = get(),
@@ -248,6 +250,7 @@ val appModule = module {
             mcpManager = get(),
             skillManager = get(),
             workspaceRepository = get(),
+            pluginRepository = get(),
         )
     }
 

@@ -1,0 +1,8 @@
+{
+  "id": "com.clma.plugin.hello",
+  "name": "Hello Plugin",
+  "version": "0.1.0",
+  "description": "Minimal native Android plugin example for CLmA.",
+  "minHostVersion": null,
+  "entry": "com.clma.plugin.sample.hello.HelloPlugin"
+}

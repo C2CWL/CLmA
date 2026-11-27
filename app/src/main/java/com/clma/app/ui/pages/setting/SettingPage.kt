@@ -487,6 +487,7 @@ private fun hubItemSummary(id: SettingsHubItemId, settings: Settings, status: Hu
         SettingsHubItemId.SEARCH -> count(settings.searchServices.size)
         SettingsHubItemId.SPEECH -> count(settings.ttsProviders.size + settings.asrProviders.size)
         SettingsHubItemId.MCP -> count(settings.mcpServers.size)
+        SettingsHubItemId.PLUGINS -> null
         SettingsHubItemId.SUB_AGENTS ->
             stringResource(R.string.setting_hub_summary_concurrency, settings.subAgentGlobalConcurrencyCap)
         SettingsHubItemId.TOOL_APPROVALS -> stringResource(
@@ -581,6 +582,7 @@ private fun hubItemIcon(id: SettingsHubItemId): ImageVector = when (id) {
     SettingsHubItemId.WORKSPACES -> HugeIcons.Folder01
     SettingsHubItemId.SKILLS -> HugeIcons.AiSparkles
     SettingsHubItemId.MCP -> HugeIcons.Plug
+    SettingsHubItemId.PLUGINS -> HugeIcons.Plug
     SettingsHubItemId.SUB_AGENTS -> HugeIcons.LookTop
     SettingsHubItemId.TOOL_APPROVALS -> HugeIcons.Shield01
     SettingsHubItemId.RUNTIME -> HugeIcons.Timer01
