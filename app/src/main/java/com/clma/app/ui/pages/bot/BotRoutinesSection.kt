@@ -31,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
@@ -113,6 +114,7 @@ fun BotRoutinesGroup(
     onDelete: (String) -> Unit,
     onOpenConversation: (Uuid) -> Unit,
 ) {
+    val context = LocalContext.current
     var editing by remember { mutableStateOf<ScheduledJobEntity?>(null) }
     var creating by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf<ScheduledJobEntity?>(null) }
