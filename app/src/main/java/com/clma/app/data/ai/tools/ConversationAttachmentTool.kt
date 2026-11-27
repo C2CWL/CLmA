@@ -45,8 +45,9 @@ fun createConversationAttachmentTool(
             "List user-uploaded document attachments in the CURRENT conversation's selected branch, " +
                 "including messages folded into a compaction summary. Returns up to 20 entries per page " +
                 "with stable attachment_ref, file_name, mime, date, nearby text, and the exact /upload/... " +
-                "path to pass to read_attachment. Attachment text is NOT returned here: use read_attachment " +
-                "for bounded paging. No arbitrary paths or other conversations.",
+                "path to pass to read_attachment. Use attachment_ref to resolve one listed entry without " +
+                "paging. Attachment text is NOT returned here: use read_attachment for bounded paging. " +
+                "No arbitrary paths or other conversations.",
         parameters = {
             InputSchema.Obj(
                 properties =
@@ -59,40 +60,45 @@ fun createConversationAttachmentTool(
                                 put("description", "Listing offset, default 0")
                             },
                         )
+                        put(
+                            "attachment_ref",
+                            buildJsonObject {
+                                put("type", "string")
+                                put("description", "Stable ref returned by this tool; resolves one listed entry")
+                            },
+                        )
                     },
             )
         },
         execute = { input ->
             val args = input.jsonObject
-            val offset = (args["offset"]?.jsonPrimitive?.intOrNull ?: 0).coerceAtLeast(0)
+            val attachmentRef = args["attachment_ref"]?.jsonPrimitive?.contentOrNull
             val entries = collectConversationAttachments(messages())
-            val page = entries.drop(offset).take(20)
-            listOf(
-                UIMessagePart.Text(
-                    buildJsonObject {
+            val response =
+                buildJsonObject {
+                    if (attachmentRef != null) {
+                        val entry = entries.firstOrNull { it.attachmentRef == attachmentRef }
+                        if (entry == null) {
+                            put("error", "attachment_not_found")
+                            put("detail", "attachment_ref must come from conversation_attachment in this conversation")
+                        } else {
+                            put("attachment", attachmentJson(entry))
+                        }
+                    } else {
+                        val offset = (args["offset"]?.jsonPrimitive?.intOrNull ?: 0).coerceAtLeast(0)
+                        val page = entries.drop(offset).take(20)
                         put(
                             "attachments",
                             buildJsonArray {
-                                page.forEach { entry ->
-                                    add(
-                                        buildJsonObject {
-                                            put("attachment_ref", entry.attachmentRef)
-                                            put("date", entry.date)
-                                            put("text", entry.text)
-                                            put("file_name", entry.fileName)
-                                            put("mime", entry.mime)
-                                            put("path", entry.path)
-                                        },
-                                    )
-                                }
+                                page.forEach { entry -> add(attachmentJson(entry)) }
                             },
                         )
                         if (entries.size.toLong() > offset.toLong() + page.size.toLong()) {
                             put("next_offset", offset + page.size)
                         }
-                    }.toString(),
-                ),
-            )
+                    }
+                }
+            listOf(UIMessagePart.Text(response.toString()))
         },
     )
 
@@ -113,6 +119,16 @@ private fun collectConversationAttachments(messages: List<UIMessage>): List<Conv
                 )
             }
         }
+
+private fun attachmentJson(entry: ConversationAttachmentEntry) =
+    buildJsonObject {
+        put("attachment_ref", entry.attachmentRef)
+        put("date", entry.date)
+        put("text", entry.text)
+        put("file_name", entry.fileName)
+        put("mime", entry.mime)
+        put("path", entry.path)
+    }
 
 /** Only local uploads are listable; the returned path is always a bounded `/upload/<name>`. */
 private fun attachmentPath(url: String): String? =

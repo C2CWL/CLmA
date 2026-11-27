@@ -21,7 +21,7 @@ class ConversationAttachmentToolTest {
     ) = UIMessage(
         role = role,
         parts = listOf(
-            UIMessagePart.Text("log content that must not be listed"),
+            UIMessagePart.Text("nearby summary text"),
             UIMessagePart.Document(url = url, fileName = fileName, mime = "text/plain"),
         ),
     )
@@ -46,7 +46,8 @@ class ConversationAttachmentToolTest {
         assertEquals("a.txt", attachment.getValue("file_name").jsonPrimitive.content)
         assertEquals("/upload/a.txt", attachment.getValue("path").jsonPrimitive.content)
         assertEquals("text/plain", attachment.getValue("mime").jsonPrimitive.content)
-        assertFalse(result.toString().contains("log content that must not be listed"))
+        assertEquals("nearby summary text", attachment.getValue("text").jsonPrimitive.content)
+        assertFalse(result.toString().contains("file body that must not be listed"))
     }
 
     @Test
