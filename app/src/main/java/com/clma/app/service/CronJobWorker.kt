@@ -18,6 +18,11 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import com.clma.ai.ui.UIMessagePart
 import com.clma.app.data.agentrun.AgentRunKind
+import com.clma.app.data.botmode.BotRoutineApprovalRules
+import com.clma.app.data.botmode.BotRoutineApprovals
+import com.clma.app.data.botmode.ParkedRoutineRun
+import com.clma.app.data.model.isBot
+import com.clma.ai.core.MessageRole
 import com.clma.app.data.agentrun.AgentRunRepository
 import com.clma.app.data.agentrun.AgentRunStatus
 import com.clma.app.data.ai.tools.HeadlessConversations
@@ -171,6 +176,11 @@ class CronJobWorker(
     private val agentRunRepo: AgentRunRepository by inject()
 
     override suspend fun doWork(): Result {
+        // Bot routines: the same worker resumes a parked run once its cards are answered, and
+        // gives up on one nobody answered.
+        inputData.getString(KEY_RESUME_CONVERSATION)?.let { return resumeParked(it) }
+        inputData.getString(KEY_EXPIRE_CONVERSATION)?.let { return expireParked(it) }
+
         val jobId = inputData.getString(KEY_JOB_ID) ?: return Result.failure()
         val isManual = inputData.getBoolean(KEY_MANUAL, false)
         val enqueuedSlotMs = inputData.keyValueMap[KEY_SCHEDULED_AT_MS] as? Long
@@ -261,8 +271,11 @@ class CronJobWorker(
                 },
             )
 
+            // Bot-library owners get parkable runs: approvals wait for the user instead of
+            // being refused, and every finished run posts a short notification.
+            val botRoutine = job.mode == "llm" && isBotJob(job)
             val (outcome, errorMessage, convIdMaybe) = when (job.mode) {
-                "llm"    -> runLlm(job)
+                "llm"    -> runLlm(job, parkable = botRoutine)
                 "direct" -> runDirect(job)
                 else     -> Triple("failed", "unknown_mode:${job.mode}", null)
             }
@@ -283,15 +296,39 @@ class CronJobWorker(
             // outcomes map to: success → succeeded; timed_out / failed / unknown → failed.
             // (concurrent_skip / skipped_catchup / process_killed_replay never reach here —
             // they early-return before the ledger row is opened.)
-            agentRunRepo.markTerminal(
-                id = ledgerId,
-                status = if (outcome == "success") AgentRunStatus.succeeded else AgentRunStatus.failed,
-                lastError = if (outcome == "success") null else "$outcome: ${errorMessage.orEmpty()}",
-            )
+            if (outcome == OUTCOME_AWAITING_APPROVAL && convIdMaybe != null) {
+                // Parked: the row stays `awaiting_approval` (finished, so the stranded-run sweep
+                // leaves it alone) until the resume worker writes the real outcome.
+                agentRunRepo.setStatus(ledgerId, AgentRunStatus.awaiting_approval)
+                park(
+                    ParkedRoutineRun(
+                        conversationId = convIdMaybe.toString(),
+                        assistantId = job.assistantId,
+                        jobId = job.id,
+                        jobName = job.name,
+                        runId = runRowId,
+                        mode = job.mode,
+                        scheduledAtMs = scheduledAtMs,
+                        startedAtMs = nowMs,
+                        ledgerId = ledgerId,
+                        workedMs = System.currentTimeMillis() - nowMs,
+                        parkedAtMs = 0L,
+                        expiresAtMs = 0L,
+                    )
+                )
+            } else {
+                agentRunRepo.markTerminal(
+                    id = ledgerId,
+                    status = if (outcome == "success") AgentRunStatus.succeeded else AgentRunStatus.failed,
+                    lastError = if (outcome == "success") null else "$outcome: ${errorMessage.orEmpty()}",
+                )
 
-            // Failure notification (post once per failure; the existing channel handles dedup)
-            if (outcome != "success") {
-                postFailureNotification(job.id, job.name, "$outcome: ${errorMessage.orEmpty()}")
+                if (botRoutine && convIdMaybe != null) {
+                    notifyBotRoutineFinished(job.assistantId, job.name, convIdMaybe, outcome, errorMessage)
+                } else if (outcome != "success") {
+                    // Failure notification (post once per failure; the existing channel handles dedup)
+                    postFailureNotification(job.id, job.name, "$outcome: ${errorMessage.orEmpty()}")
+                }
             }
 
             // Manual fires (trigger_job_now) are bonus — they get a history row but
@@ -332,7 +369,7 @@ class CronJobWorker(
         return false
     }
 
-    private suspend fun runLlm(job: ScheduledJobEntity): Triple<String, String?, Uuid?> {
+    private suspend fun runLlm(job: ScheduledJobEntity, parkable: Boolean = false): Triple<String, String?, Uuid?> {
         val prompt = job.prompt ?: return Triple("failed", "missing_prompt_for_llm_mode", null)
         val assistantUuid = runCatching { Uuid.parse(job.assistantId) }.getOrNull()
             ?: return Triple("failed", "bad_assistant_id:${job.assistantId}", null)
@@ -344,15 +381,19 @@ class CronJobWorker(
         ).copy(title = "[Scheduled] ${job.name}")
         conversationRepo.insertConversation(conv)
         chatService.initializeConversation(conv.id)
-        HeadlessConversations.mark(conv.id)
+        if (parkable) HeadlessConversations.markParkable(conv.id) else HeadlessConversations.mark(conv.id)
         try {
             chatService.sendMessage(conv.id, listOf(UIMessagePart.Text(CRON_DELIVERY_DIRECTIVE + "\n\n" + prompt)))
             // Wait for the generation job to clear, with a 15-min wall-clock cap.
             // See awaitGenerationTerminal's KDoc for the Unit-sentinel rationale.
             val completed = awaitGenerationTerminal(
                 flow = chatService.getGenerationJobStateFlow(conv.id),
-                timeoutMs = 15L * 60_000L,
+                timeoutMs = BotRoutineApprovalRules.RUN_LIMIT_MS,
             )
+            // A parkable run that stopped on an approval card is waiting, not finished.
+            if (completed && parkable && pendingToolName(conv.id) != null) {
+                return Triple(OUTCOME_AWAITING_APPROVAL, null, conv.id)
+            }
             return finishRunLlm(completed, conv.id) {
                 runCatching { chatService.stopGeneration(conv.id) }
                     .onFailure { Log.w(TAG, "runLlm: stopGeneration failed after timeout for ${job.id}", it) }
@@ -387,6 +428,192 @@ class CronJobWorker(
         )
         val seq = directRunner.run(parsed, tools)
         return Triple(seq.finalOutcome, seq.errorMessage, null)
+    }
+
+    // ------------------------------------------------------------ Bot routines
+
+    private suspend fun isBotJob(job: ScheduledJobEntity): Boolean {
+        val id = runCatching { Uuid.parse(job.assistantId) }.getOrNull() ?: return false
+        val settings = settingsStore.settingsFlow.first()
+        return AssistantResolver.byId(settings, id)?.isBot == true
+    }
+
+    private suspend fun botName(assistantId: String): String {
+        val id = runCatching { Uuid.parse(assistantId) }.getOrNull()
+        val settings = settingsStore.settingsFlow.first()
+        val name = id?.let { AssistantResolver.byId(settings, it)?.name }.orEmpty()
+        return name.ifBlank { applicationContext.getString(com.clma.app.R.string.bot_routine_default_bot_name) }
+    }
+
+    /** Name of the first tool still waiting for approval in [convId], or null when none is. */
+    private suspend fun pendingToolName(convId: Uuid): String? {
+        runCatching { chatService.ensureHydrated(convId) }
+        return chatService.getConversationFlow(convId).value.currentMessages
+            .asSequence()
+            .flatMap { it.parts.asSequence() }
+            .filterIsInstance<UIMessagePart.Tool>()
+            .firstOrNull { it.isPending }
+            ?.toolName
+    }
+
+    /** First line of the run's last assistant reply, for the result notification. */
+    private fun lastReplyLine(convId: Uuid): String =
+        chatService.getConversationFlow(convId).value.currentMessages
+            .lastOrNull { it.role == MessageRole.ASSISTANT && it.parts.any { p -> p is UIMessagePart.Text && p.text.isNotBlank() } }
+            ?.parts?.filterIsInstance<UIMessagePart.Text>()
+            ?.joinToString(" ") { it.text }
+            ?.replace(Regex("[`*#>_~]+"), "")
+            ?.trim()
+            .orEmpty()
+
+    private suspend fun notifyBotRoutineFinished(
+        assistantId: String,
+        jobName: String,
+        convId: Uuid,
+        outcome: String,
+        errorMessage: String?,
+    ) {
+        val name = botName(assistantId)
+        if (outcome == "success") {
+            BotRoutineRuns.notifyDone(applicationContext, convId.toString(), name, jobName, lastReplyLine(convId))
+        } else {
+            BotRoutineRuns.notifyFailed(applicationContext, convId.toString(), name, jobName, "$outcome ${errorMessage.orEmpty()}".trim())
+        }
+    }
+
+    /** Save a run that stopped on an approval card, arm its give-up timer and tell the user. */
+    private suspend fun park(run: ParkedRoutineRun) {
+        val now = System.currentTimeMillis()
+        val parked = run.copy(
+            parkedAtMs = now,
+            expiresAtMs = BotRoutineApprovalRules.expiresAt(now),
+            resuming = false,
+        )
+        BotRoutineApprovals.put(parked)
+        BotRoutineRuns.scheduleExpiry(applicationContext, parked.conversationId, BotRoutineApprovalRules.APPROVAL_TTL_MS)
+        val convId = Uuid.parse(parked.conversationId)
+        val tool = pendingToolName(convId).orEmpty()
+            .removePrefix("mcp__")
+        BotRoutineRuns.notifyApprovalNeeded(
+            applicationContext, parked.conversationId, botName(parked.assistantId), parked.jobName, tool,
+        )
+    }
+
+    private suspend fun writeRunRow(run: ParkedRoutineRun, outcome: String, errorMessage: String?) {
+        runCatching {
+            runRepo.update(ScheduledJobRunEntity(
+                id = run.runId,
+                jobId = run.jobId,
+                mode = run.mode,
+                scheduledAtMs = run.scheduledAtMs,
+                startedAtMs = run.startedAtMs,
+                finishedAtMs = System.currentTimeMillis(),
+                outcome = outcome,
+                conversationId = run.conversationId,
+                errorMessage = errorMessage?.take(500),
+            ))
+        }.onFailure { Log.w(TAG, "writeRunRow failed for ${run.runId}", it) }
+    }
+
+    /**
+     * The user answered every approval card of a parked run: continue the same turn headless,
+     * with only the run time it has left (time spent waiting is not counted).
+     */
+    private suspend fun resumeParked(conversationId: String): Result {
+        val parkedRun = BotRoutineApprovals.get(conversationId) ?: return Result.success()
+        val convId = runCatching { Uuid.parse(conversationId) }.getOrNull() ?: run {
+            BotRoutineApprovals.remove(conversationId)
+            return Result.success()
+        }
+        if (!parkedRun.resuming && BotRoutineApprovalRules.isExpired(parkedRun, System.currentTimeMillis())) {
+            return expireParked(conversationId)
+        }
+        // Another card is still open: wait for it (its answer re-queues this worker).
+        if (pendingToolName(convId) != null) return Result.success()
+        val trackerKey = "resume:$conversationId"
+        if (!CronJobRunningTracker.start(trackerKey)) return Result.success()
+
+        BotRoutineRuns.cancelExpiry(applicationContext, conversationId)
+        BotRoutineApprovals.put(parkedRun.copy(resuming = true))
+        parkedRun.ledgerId?.let { agentRunRepo.setStatus(it, AgentRunStatus.running) }
+        val resumedAt = System.currentTimeMillis()
+        var outcome = "failed"
+        var errorMessage: String? = null
+        HeadlessConversations.markParkable(convId)
+        try {
+            chatService.resumeAnsweredTurn(convId)
+            val completed = awaitGenerationTerminal(
+                flow = chatService.getGenerationJobStateFlow(convId),
+                timeoutMs = BotRoutineApprovalRules.remainingBudgetMs(parkedRun.workedMs),
+            )
+            outcome = when {
+                !completed -> {
+                    runCatching { chatService.stopGeneration(convId) }
+                    errorMessage = "llm turn exceeded the run limit"
+                    "timed_out"
+                }
+                pendingToolName(convId) != null -> OUTCOME_AWAITING_APPROVAL
+                else -> "success"
+            }
+        } catch (t: Throwable) {
+            if (t is kotlinx.coroutines.CancellationException) {
+                // The worker was stopped mid-resume: leave the run parked so a later answer
+                // (or the give-up timer) can still settle it.
+                BotRoutineApprovals.put(parkedRun.copy(resuming = false))
+                BotRoutineRuns.scheduleExpiry(
+                    applicationContext, conversationId,
+                    (parkedRun.expiresAtMs - System.currentTimeMillis()).coerceAtLeast(0L),
+                )
+                throw t
+            }
+            outcome = "failed"
+            errorMessage = "${t::class.simpleName}: ${t.message.orEmpty()}"
+        } finally {
+            HeadlessConversations.unmark(convId)
+            CronJobRunningTracker.stop(trackerKey)
+        }
+
+        val worked = parkedRun.workedMs + (System.currentTimeMillis() - resumedAt)
+        if (outcome == OUTCOME_AWAITING_APPROVAL) {
+            writeRunRow(parkedRun, OUTCOME_AWAITING_APPROVAL, null)
+            parkedRun.ledgerId?.let { agentRunRepo.setStatus(it, AgentRunStatus.awaiting_approval) }
+            park(parkedRun.copy(workedMs = worked))
+            return Result.success()
+        }
+        BotRoutineApprovals.remove(conversationId)
+        writeRunRow(parkedRun, outcome, errorMessage)
+        parkedRun.ledgerId?.let {
+            agentRunRepo.markTerminal(
+                id = it,
+                status = if (outcome == "success") AgentRunStatus.succeeded else AgentRunStatus.failed,
+                lastError = if (outcome == "success") null else "$outcome: ${errorMessage.orEmpty()}",
+            )
+        }
+        notifyBotRoutineFinished(parkedRun.assistantId, parkedRun.jobName, convId, outcome, errorMessage)
+        return Result.success()
+    }
+
+    /** Nobody answered a parked run in time: close its cards, cancel the run, tell the user. */
+    private suspend fun expireParked(conversationId: String): Result {
+        val parkedRun = BotRoutineApprovals.get(conversationId) ?: return Result.success()
+        if (parkedRun.resuming) return Result.success()
+        if (!BotRoutineApprovalRules.isExpired(parkedRun, System.currentTimeMillis())) {
+            // Re-parked since this timer was armed; a fresh timer covers the new wait.
+            return Result.success()
+        }
+        BotRoutineApprovals.remove(conversationId)
+        runCatching { Uuid.parse(conversationId) }.getOrNull()?.let { convId ->
+            runCatching {
+                chatService.closePendingTools(
+                    convId,
+                    applicationContext.getString(com.clma.app.R.string.bot_routine_approval_expired_reason),
+                )
+            }.onFailure { Log.w(TAG, "expireParked: closing cards failed for $conversationId", it) }
+        }
+        writeRunRow(parkedRun, OUTCOME_APPROVAL_EXPIRED, "no answer within ${BotRoutineApprovalRules.APPROVAL_TTL_MS / 3_600_000L}h")
+        parkedRun.ledgerId?.let { agentRunRepo.markTerminal(it, AgentRunStatus.cancelled, OUTCOME_APPROVAL_EXPIRED) }
+        BotRoutineRuns.notifyExpired(applicationContext, conversationId, botName(parkedRun.assistantId), parkedRun.jobName)
+        return Result.success()
     }
 
     private suspend fun recordRun(
@@ -441,6 +668,14 @@ class CronJobWorker(
         const val KEY_JOB_ID = "cron_job_id"
         const val KEY_MANUAL = "cron_job_manual"
         const val KEY_SCHEDULED_AT_MS = "cron_job_scheduled_at_ms"
+        /** Bot routines: resume the parked run of this conversation id. */
+        const val KEY_RESUME_CONVERSATION = "bot_routine_resume_conversation"
+        /** Bot routines: give up on the parked run of this conversation id. */
+        const val KEY_EXPIRE_CONVERSATION = "bot_routine_expire_conversation"
+        /** Run-row outcome while a Bot routine waits on the user's approval. */
+        const val OUTCOME_AWAITING_APPROVAL = "awaiting_approval"
+        /** Run-row outcome when nobody answered a parked run in time. */
+        const val OUTCOME_APPROVAL_EXPIRED = "approval_expired"
         const val CHANNEL_ID = "rikkahub_cron_jobs"
     }
 }

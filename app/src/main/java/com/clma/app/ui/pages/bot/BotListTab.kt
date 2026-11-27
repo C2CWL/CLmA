@@ -224,6 +224,16 @@ private fun BotListRow(
                         unread = row.unread,
                     )
                 }
+                row.routine?.let { summary ->
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        text = botRoutineRowText(summary),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
         }
         DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {

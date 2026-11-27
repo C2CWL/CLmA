@@ -21,6 +21,8 @@ data class BotHomeRow(
     val pinned: Boolean,
     val pendingApproval: Boolean,
     val generating: Boolean,
+    /** The bot's soonest enabled routine (自动任务), shown under the preview. */
+    val routine: BotRoutineRowSummary? = null,
 )
 
 /** Latest top-level (non sub-agent) conversation by update time, ignoring the pinned-first DAO order. */

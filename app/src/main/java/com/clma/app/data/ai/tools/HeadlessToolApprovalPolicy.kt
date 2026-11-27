@@ -219,6 +219,14 @@ object HeadlessToolApprovalPolicy {
     fun isRefused(toolName: String): Boolean = refusalDetail(toolName) != null
 
     /**
+     * Bot routines: true when a call needs a person, so a parkable run
+     * ([HeadlessConversations.canParkForApproval]) stops on an approval card instead of being
+     * refused. The same set a plain headless run refuses, plus SSH power operations.
+     */
+    fun needsHumanToRun(toolName: String, inputJson: String): Boolean =
+        isRefused(toolName) || HardlineCommandGuard.requiresSshPowerApproval(toolName, inputJson)
+
+    /**
      * The JSON envelope handed back to the model in place of the tool's real output, or null
      * when [toolName] may run.
      */

@@ -57,6 +57,9 @@ val viewModelModule = module {
             settingsStore = get(),
             conversationRepo = get(),
             memoryRepository = get(),
+            scheduledJobRepository = get(),
+            scheduledJobRunRepository = get(),
+            cronJobScheduler = get(),
         )
     }
     viewModel<com.clma.app.ui.pages.bot.BotChannelVM> {
