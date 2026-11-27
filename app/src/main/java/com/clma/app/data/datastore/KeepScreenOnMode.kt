@@ -45,9 +45,9 @@ enum class KeepScreenOnMode(val serialName: String) {
 fun KeepScreenOnMode.shouldKeepScreenOn(inChat: Boolean, generating: Boolean): Boolean =
     inChat &&
         when (this) {
-            NEVER -> false
-            WHILE_GENERATING -> generating
-            ALWAYS_IN_CHAT -> true
+            KeepScreenOnMode.NEVER -> false
+            KeepScreenOnMode.WHILE_GENERATING -> generating
+            KeepScreenOnMode.ALWAYS_IN_CHAT -> true
         }
 
 object KeepScreenOnModeSerializer : KSerializer<KeepScreenOnMode> {
