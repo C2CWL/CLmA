@@ -72,6 +72,16 @@ data class TextGenerationResult(
 
 enum class PromptCacheDiagnosticPurpose { UNSPECIFIED, CHAT, COMPACTION }
 
+enum class PromptCacheSystemSection { ASSISTANT, TOOLS, MEMORY, RECENT_CHATS, ADDENDUM, POLICY }
+
+/** The inputs never appear in TextGenerationParams.toString(). */
+class PromptCacheSystemSections(internal val inputs: Map<PromptCacheSystemSection, String>) {
+    override fun toString(): String = "PromptCacheSystemSections"
+}
+
+/** Also used by wire diagnostics to recognize projected tool results without logging the reference. */
+const val TOOL_OUTPUT_PROJECTION_MARKER = "[Tool output compacted]"
+
 @Serializable
 data class TextGenerationParams(
     val model: Model,
@@ -103,6 +113,8 @@ data class TextGenerationParams(
     val sessionId: String? = Uuid.random().toString(),
     /** Only scopes client-side diagnostics; never changes request routing or cache keys. */
     @Transient val promptCacheDiagnosticPurpose: PromptCacheDiagnosticPurpose = PromptCacheDiagnosticPurpose.UNSPECIFIED,
+    /** System assembly inputs, only populated when cache diagnostics are enabled. Never sent. */
+    @Transient val promptCacheSystemSections: PromptCacheSystemSections? = null,
 )
 
 @Serializable
