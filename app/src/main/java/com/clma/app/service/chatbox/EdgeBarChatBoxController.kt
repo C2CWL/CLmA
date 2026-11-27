@@ -9,6 +9,7 @@ import com.clma.ai.ui.UIMessagePart
 import com.clma.app.R
 import com.clma.app.data.datastore.SettingsStore
 import com.clma.app.data.datastore.getAssistantById
+import com.clma.app.data.datastore.shouldKeepScreenOn
 import com.clma.app.data.model.Conversation
 import com.clma.app.data.repository.ConversationRepository
 import com.clma.app.service.PendingToolInteractions
@@ -73,6 +74,7 @@ internal class EdgeBarChatBoxController(
     private val includedConversationIds = MutableStateFlow<Set<Uuid>>(emptySet())
     private var conversation: Conversation? = null
     private var conversations = emptyList<EdgeBarChatBoxView.ConversationOption>()
+    private var keepScreenOnMode = settingsStore.settingsFlow.value.displaySetting.keepScreenOnMode
 
     val isShowing: Boolean get() = view?.isShowing == true
 
@@ -93,8 +95,10 @@ internal class EdgeBarChatBoxController(
         }
         scope.launch {
             settingsStore.settingsFlow.collect { settings ->
+                keepScreenOnMode = settings.displaySetting.keepScreenOnMode
                 val typeface = settings.displaySetting.resolveChatTypeface(context)
                 view?.setChatTypeface(typeface)
+                if (isShowing) render()
             }
         }
     }
@@ -272,6 +276,7 @@ internal class EdgeBarChatBoxController(
         val c = conversation
         val messages = c?.currentMessages.orEmpty()
         val start = id?.let { generating[it]?.second }
+        val generatingNow = id?.let(::isGeneratingNow) == true
         val mode = when {
             start != null -> EdgeBarChatBoxView.Mode.Working(
                 status = if (messages.isEmpty()) {
@@ -297,6 +302,10 @@ internal class EdgeBarChatBoxController(
             mode = mode,
             items = ChatBoxItems.build(messages),
             conversations = options.map { it.copy(selected = it.id == id?.toString()) },
+            keepScreenOn = keepScreenOnMode.shouldKeepScreenOn(
+                inChat = true,
+                generating = generatingNow,
+            ),
         )
     }
 

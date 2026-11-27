@@ -121,7 +121,7 @@ import com.clma.app.data.repository.WorkspaceRepository
 import com.clma.app.service.ChatError
 import com.clma.app.ui.components.ai.ChatAttachmentPickerActions
 import com.clma.app.Screen
-import com.clma.app.data.datastore.KeepScreenOnMode
+import com.clma.app.data.datastore.shouldKeepScreenOn
 import com.clma.app.ui.components.ai.ChatInput
 import com.clma.app.ui.components.ai.ChatConversationSettingsPanel
 import com.clma.app.data.botmode.withBotUnreadClearedConversation
@@ -513,11 +513,10 @@ internal fun ChatPageContent(
 
     TTSAutoPlay(vm = vm, setting = setting, conversation = conversation)
 
-    val keepScreenOn = when (setting.displaySetting.keepScreenOnMode) {
-        KeepScreenOnMode.NEVER -> false
-        KeepScreenOnMode.WHILE_GENERATING -> loadingJob != null
-        KeepScreenOnMode.ALWAYS_IN_CHAT -> true
-    }
+    val keepScreenOn = setting.displaySetting.keepScreenOnMode.shouldKeepScreenOn(
+        inChat = true,
+        generating = loadingJob != null,
+    )
     if (keepScreenOn) {
         KeepScreenOn()
     }

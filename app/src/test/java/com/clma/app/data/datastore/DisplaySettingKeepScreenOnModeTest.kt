@@ -2,6 +2,8 @@ package com.clma.app.data.datastore
 
 import com.clma.app.utils.JsonInstant
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -50,6 +52,18 @@ class DisplaySettingKeepScreenOnModeTest {
             KeepScreenOnMode.WHILE_GENERATING,
             JsonInstant.decodeFromString<DisplaySetting>(json).keepScreenOnMode,
         )
+    }
+
+    @Test
+    fun `helper keeps screen on only for the selected mode and chat context`() {
+        assertFalse(KeepScreenOnMode.NEVER.shouldKeepScreenOn(inChat = true, generating = true))
+        assertFalse(KeepScreenOnMode.NEVER.shouldKeepScreenOn(inChat = true, generating = false))
+
+        assertTrue(KeepScreenOnMode.WHILE_GENERATING.shouldKeepScreenOn(inChat = true, generating = true))
+        assertFalse(KeepScreenOnMode.WHILE_GENERATING.shouldKeepScreenOn(inChat = true, generating = false))
+
+        assertTrue(KeepScreenOnMode.ALWAYS_IN_CHAT.shouldKeepScreenOn(inChat = true, generating = false))
+        assertFalse(KeepScreenOnMode.ALWAYS_IN_CHAT.shouldKeepScreenOn(inChat = false, generating = true))
     }
 
     @Test
