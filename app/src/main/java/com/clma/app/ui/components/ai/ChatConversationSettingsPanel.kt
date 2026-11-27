@@ -2,11 +2,15 @@ package com.clma.app.ui.components.ai
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -42,6 +46,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -104,48 +109,68 @@ fun ChatConversationSettingsPanel(
     onOpenMessageOutline: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    AnimatedVisibility(
-        visible = visible,
-        enter = expandVertically(
-            expandFrom = Alignment.Top,
-            animationSpec = tween(260),
-        ) + fadeIn(animationSpec = tween(240)),
-        exit = shrinkVertically(
-            shrinkTowards = Alignment.Top,
-            animationSpec = tween(220),
-        ) + fadeOut(animationSpec = tween(180)),
-        modifier = modifier,
-    ) {
-        val scope = rememberCoroutineScope()
-        val navController = LocalNavController.current
-        val approvalPrefs = koinInject<ToolApprovalPreferences>()
-        val settingsStore = koinInject<SettingsStore>()
-        val workspaceRepository: WorkspaceRepository = koinInject()
-        val workspaces by workspaceRepository.listFlow().collectAsState(initial = emptyList())
-        val approvalMode by approvalPrefs.modeFlow.collectAsStateWithLifecycle(initialValue = ApprovalMode.MANUAL)
-        val liveSettings by settingsStore.settingsFlow.collectAsStateWithLifecycle()
-        val dispatchProfile = liveSettings.subAgentDispatchProfile
-        val currentModel = model ?: settings.resolveChatModel(conversation.chatModelId, conversation.assistantId)
-
-        var showPresetSheet by remember { mutableStateOf(false) }
-        var showInjectionSheet by remember { mutableStateOf(false) }
-        var showCompressDialog by remember { mutableStateOf(false) }
-        var pendingAuto by remember { mutableStateOf(false) }
-
-        BackHandler(onBack = onDismiss)
-
-        Box(modifier = Modifier.fillMaxSize()) {
-            // Scrim
+    Box(modifier = modifier.fillMaxSize()) {
+        AnimatedVisibility(
+            visible = visible,
+            enter = fadeIn(animationSpec = tween(180)),
+            exit = fadeOut(animationSpec = tween(150)),
+        ) {
+            // Scrim fades independently so the panel no longer stretches the whole overlay.
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Color.Black.copy(alpha = 0.32f))
                     .clickable(onClick = onDismiss),
             )
+        }
+
+        AnimatedVisibility(
+            visible = visible,
+            enter = slideInVertically(
+                initialOffsetY = { -it / 10 },
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioNoBouncy,
+                    stiffness = Spring.StiffnessMedium,
+                ),
+            ) + fadeIn(animationSpec = tween(180)) + scaleIn(
+                initialScale = 0.985f,
+                transformOrigin = TransformOrigin(0.5f, 0f),
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioNoBouncy,
+                    stiffness = Spring.StiffnessMedium,
+                ),
+            ),
+            exit = slideOutVertically(
+                targetOffsetY = { -it / 14 },
+                animationSpec = tween(160),
+            ) + fadeOut(animationSpec = tween(140)) + scaleOut(
+                targetScale = 0.99f,
+                transformOrigin = TransformOrigin(0.5f, 0f),
+                animationSpec = tween(160),
+            ),
+            modifier = Modifier.align(Alignment.TopCenter),
+            clip = false,
+        ) {
+            val scope = rememberCoroutineScope()
+            val navController = LocalNavController.current
+            val approvalPrefs = koinInject<ToolApprovalPreferences>()
+            val settingsStore = koinInject<SettingsStore>()
+            val workspaceRepository: WorkspaceRepository = koinInject()
+            val workspaces by workspaceRepository.listFlow().collectAsState(initial = emptyList())
+            val approvalMode by approvalPrefs.modeFlow.collectAsStateWithLifecycle(initialValue = ApprovalMode.MANUAL)
+            val liveSettings by settingsStore.settingsFlow.collectAsStateWithLifecycle()
+            val dispatchProfile = liveSettings.subAgentDispatchProfile
+            val currentModel = model ?: settings.resolveChatModel(conversation.chatModelId, conversation.assistantId)
+
+            var showPresetSheet by remember { mutableStateOf(false) }
+            var showInjectionSheet by remember { mutableStateOf(false) }
+            var showCompressDialog by remember { mutableStateOf(false) }
+            var pendingAuto by remember { mutableStateOf(false) }
+
+            BackHandler(onBack = onDismiss)
 
             Surface(
                 modifier = Modifier
-                    .align(Alignment.TopCenter)
                     .fillMaxWidth()
                     .padding(horizontal = 10.dp)
                     .heightIn(max = 520.dp),
