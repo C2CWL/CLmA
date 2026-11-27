@@ -34,6 +34,8 @@
   <string name="tool_display_desc_current_conversation_search">Full-text search across messages in the current conversation</string>
   <string name="tool_display_name_conversation_image">Recall chat image</string>
   <string name="tool_display_desc_conversation_image">Lists and views user images in the current conversation</string>
+  <string name="tool_display_name_conversation_attachment">Recall chat attachment</string>
+  <string name="tool_display_desc_conversation_attachment">Lists current-conversation uploads with paths for bounded reading</string>
   <string name="tool_display_name_compact_context">Compact context</string>
   <string name="tool_display_desc_compact_context">Summarises earlier parts of this chat in place</string>
   <string name="tool_display_name_check_token_usage">Token usage</string>

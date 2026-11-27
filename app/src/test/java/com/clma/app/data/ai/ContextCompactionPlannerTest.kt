@@ -180,6 +180,9 @@ class ContextCompactionPlannerTest {
         assertTrue(instruction.contains("tool name"))
         assertTrue(instruction.contains("factual outcome"))
         assertTrue(instruction.contains("file paths"))
+        assertTrue(instruction.contains("conversation_attachment"))
+        assertTrue(instruction.contains("read_attachment(path, offset, column, limit)"))
+        assertTrue(instruction.contains("/upload/"))
     }
 
     @Test

@@ -43,6 +43,8 @@ object ChatModeTools {
         "conversation_search",
         "current_conversation_search",
         "conversation_image",
+        "conversation_attachment",
+        "read_attachment",
         // Context compaction
         "compact_context",
         // Cost / token budget read

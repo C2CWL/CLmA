@@ -2139,6 +2139,11 @@ class ChatService(
                     messages = { conversationRepo.getConversationById(conversationId)?.currentMessages.orEmpty() },
                 )
             )
+            add(
+                com.clma.app.data.ai.tools.createConversationAttachmentTool(
+                    messages = { conversationRepo.getConversationById(conversationId)?.currentMessages.orEmpty() },
+                )
+            )
             if (includeCompactionTools && surfaceAssistant.enableCompactContextTool) {
                 addAll(
                     ChatModeTools.filterTools(
@@ -2328,6 +2333,11 @@ class ChatService(
                 com.clma.app.data.ai.tools.createConversationImageTool(
                     context = context,
                     modelCanSeeImages = localContext.modelCanSeeImages,
+                    messages = { conversationRepo.getConversationById(conversationId)?.currentMessages.orEmpty() },
+                )
+            )
+            add(
+                com.clma.app.data.ai.tools.createConversationAttachmentTool(
                     messages = { conversationRepo.getConversationById(conversationId)?.currentMessages.orEmpty() },
                 )
             )
