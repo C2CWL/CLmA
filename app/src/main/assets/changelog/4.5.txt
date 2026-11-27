@@ -1,0 +1,12 @@
+## CLmA 4.5
+
+- 恢复压缩后对当前会话附件的查找能力。
+- 提升底部路由和失败原因文字的可读性。
+- 让首轮纯思考块也显示气泡底色。
+- 隔离提示词缓存诊断里的压缩请求基线。
+
+## Changes
+- Restore attachment recall after compaction.
+- Improve legibility of chat footer status text.
+- Give the first reasoning-only block a visible bubble.
+- Isolate compaction in prompt cache diagnostics.
