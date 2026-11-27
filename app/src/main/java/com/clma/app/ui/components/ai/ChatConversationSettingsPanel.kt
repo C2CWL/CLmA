@@ -149,7 +149,6 @@ fun ChatConversationSettingsPanel(
                 animationSpec = tween(160),
             ),
             modifier = Modifier.align(Alignment.TopCenter),
-            clip = false,
         ) {
             val scope = rememberCoroutineScope()
             val navController = LocalNavController.current
