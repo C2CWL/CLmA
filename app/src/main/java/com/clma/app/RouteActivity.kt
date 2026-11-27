@@ -144,6 +144,7 @@ import com.clma.app.ui.pages.setting.SettingRuntimePage
 import com.clma.app.ui.pages.setting.SettingThemePage
 import com.clma.app.ui.pages.setting.SettingFilesPage
 import com.clma.app.ui.pages.setting.SettingMcpPage
+import com.clma.app.ui.pages.setting.SettingPluginsPage
 import com.clma.app.ui.pages.setting.SettingModelPage
 import com.clma.app.ui.pages.setting.SettingPage
 import com.clma.app.ui.pages.setting.SettingsHubSectionId
@@ -734,6 +735,10 @@ class RouteActivity : FragmentActivity() {
                                 SettingMcpPage()
                             }
 
+                            entry<Screen.SettingPlugins> {
+                                SettingPluginsPage()
+                            }
+
                             entry<Screen.SettingSubAgents> {
                                 SettingSubAgentsPage()
                             }
@@ -1083,6 +1088,9 @@ sealed interface Screen : NavKey {
 
     @Serializable
     data object SettingMcp : Screen
+
+    @Serializable
+    data object SettingPlugins : Screen
 
     @Serializable
     data object SettingSubAgents : Screen

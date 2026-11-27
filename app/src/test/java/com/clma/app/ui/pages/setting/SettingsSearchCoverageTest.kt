@@ -173,6 +173,7 @@ class SettingsSearchCoverageTest {
         "Workspaces" to listOf("ui/pages/extensions/workspace/WorkspacePage.kt"),
         "SettingSubAgents" to listOf("ui/pages/setting/SettingSubAgentsPage.kt"),
         "SettingMcp" to listOf("ui/pages/setting/SettingMcpPage.kt"),
+        "SettingPlugins" to listOf("ui/pages/setting/SettingPluginsPage.kt"),
         "SettingWorkflows" to listOf("workflow/ui/WorkflowsScreen.kt"),
         "SettingScheduledJobs" to listOf("ui/pages/setting/scheduledjobs/ScheduledJobsScreen.kt"),
         "SettingToolApprovals" to listOf("ui/pages/setting/SettingToolApprovalsPage.kt"),
