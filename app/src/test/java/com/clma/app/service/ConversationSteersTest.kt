@@ -31,7 +31,7 @@ class ConversationSteersTest {
         assertFalse(ConversationSteers.contains(conversationId, first.id))
         assertEquals(1, ConversationSteers.pendingCount(conversationId))
 
-        val remaining = ConversationSteers.drainIntoRequest(conversationId, mutableListOf())
+        val remaining = ConversationSteers.drain(conversationId)
         assertEquals(listOf(second.id), remaining.map { it.id })
     }
 }
