@@ -4826,13 +4826,12 @@ class ChatService(
         cancelLiveUpdateNotification(conversationId)
 
         val conversation = getConversationFlow(conversationId).value
-        val showPreview = settingsStore.settingsFlow.value.isInActiveLibrary(conversation.assistantId)
         context.sendNotification(
             channelId = CHAT_COMPLETED_NOTIFICATION_CHANNEL_ID,
             notificationId = 1
         ) {
-            title = if (showPreview) senderName else context.getString(R.string.bot_isolation_notification_title)
-            content = if (showPreview) conversation.currentMessages.lastOrNull()?.toText()?.take(50)?.trim().orEmpty() else ""
+            title = senderName
+            content = conversation.currentMessages.lastOrNull()?.toText()?.take(50)?.trim() ?: ""
             autoCancel = true
             useDefaults = true
             category = NotificationCompat.CATEGORY_MESSAGE
@@ -4845,9 +4844,6 @@ class ChatService(
         senderName: String,
         pendingTool: UIMessagePart.Tool,
     ) {
-        val showPreview = settingsStore.settingsFlow.value.isInActiveLibrary(
-            getConversationFlow(conversationId).value.assistantId,
-        )
         val toolName = pendingTool.toolName
             .removePrefix("mcp__")
             .substringAfter("__", missingDelimiterValue = pendingTool.toolName.removePrefix("mcp__"))
@@ -4855,8 +4851,8 @@ class ChatService(
             channelId = CHAT_COMPLETED_NOTIFICATION_CHANNEL_ID,
             notificationId = 1,
         ) {
-            title = if (showPreview) senderName else context.getString(R.string.bot_isolation_notification_title)
-            content = if (showPreview) "${context.getString(R.string.setting_mcp_page_needs_approval)}: $toolName" else ""
+            title = senderName
+            content = "${context.getString(R.string.setting_mcp_page_needs_approval)}: $toolName"
             autoCancel = true
             useDefaults = true
             category = NotificationCompat.CATEGORY_MESSAGE
@@ -4877,9 +4873,6 @@ class ChatService(
         messages: List<UIMessage>,
         senderName: String
     ) {
-        val showPreview = settingsStore.settingsFlow.value.isInActiveLibrary(
-            getConversationFlow(conversationId).value.assistantId,
-        )
         val lastMessage = messages.lastOrNull() ?: return
         val parts = lastMessage.parts
 
@@ -4890,16 +4883,16 @@ class ChatService(
             channelId = CHAT_LIVE_UPDATE_NOTIFICATION_CHANNEL_ID,
             notificationId = getLiveUpdateNotificationId(conversationId)
         ) {
-            title = if (showPreview) senderName else context.getString(R.string.bot_isolation_notification_title)
-            content = if (showPreview) contentText else ""
-            if (showPreview) subText = statusText
+            title = senderName
+            content = contentText
+            subText = statusText
             ongoing = true
             onlyAlertOnce = true
             category = NotificationCompat.CATEGORY_PROGRESS
             useBigTextStyle = true
             contentIntent = getPendingIntent(context, conversationId)
             requestPromotedOngoing = true
-            if (showPreview) shortCriticalText = chipText
+            shortCriticalText = chipText
             // Edge-bar fallback: progress + a 停止 action that reaches stopGeneration.
             indeterminateProgress = true
             actions = listOf(

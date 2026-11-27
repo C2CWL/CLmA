@@ -13,9 +13,6 @@ import androidx.work.WorkManager
 import com.clma.app.R
 import com.clma.app.RouteActivity
 import com.clma.app.utils.sendNotification
-import com.clma.app.data.botmode.activeLibraryIsBot
-import com.clma.app.data.datastore.SettingsStore
-import org.koin.core.context.GlobalContext
 import java.util.concurrent.TimeUnit
 import kotlin.uuid.Uuid
 
@@ -106,14 +103,12 @@ object BotRoutineRuns {
 
     private fun post(context: Context, conversationId: String, title: String, text: String) {
         runCatching {
-            val settings = GlobalContext.get().get<SettingsStore>().settingsFlow.value
-            val showPreview = !settings.init && settings.activeLibraryIsBot()
             context.sendNotification(
                 channelId = BOT_ROUTINE_NOTIFICATION_CHANNEL_ID,
                 notificationId = notificationIdFor(conversationId),
             ) {
-                this.title = if (showPreview) title else context.getString(R.string.bot_isolation_notification_title)
-                content = if (showPreview) text else ""
+                this.title = title
+                content = text
                 autoCancel = true
                 useDefaults = true
                 useBigTextStyle = true

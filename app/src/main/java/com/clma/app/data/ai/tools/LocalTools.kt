@@ -1,7 +1,6 @@
 package com.clma.app.data.ai.tools
 
 import com.clma.app.data.botmode.activeLibraryIsBot
-import com.clma.app.data.botmode.activeLibraryScope
 import com.clma.app.data.botmode.libraryScope
 import com.clma.app.data.botmode.libraryScopeOf
 import com.clma.app.data.botmode.withAssistantInLibrary
@@ -861,9 +860,7 @@ class LocalTools(
             tools.add(toastTool(context, invocationContext, interactiveToolStreamer))
         }
         if (options.contains(LocalToolOption.Notification)) {
-            tools.add(notificationTool(context, invocationContext, interactiveToolStreamer) {
-                settingsStore.settingsFlow.value.activeLibraryScope().allows(callerId)
-            })
+            tools.add(notificationTool(context, invocationContext, interactiveToolStreamer))
         }
         if (options.contains(LocalToolOption.Share)) {
             tools.add(shareTool(context, invocationContext, interactiveToolStreamer))
