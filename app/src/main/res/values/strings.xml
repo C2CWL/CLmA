@@ -169,7 +169,7 @@
   <string name="assistant_page_quick_message_title">Title</string>
   <string name="assistant_page_quick_messages">Quick Messages</string>
   <string name="assistant_page_recent_chats">Reference Recent Chats</string>
-  <string name="assistant_page_recent_chats_desc">When enabled, allows the assistant to search past conversations for relevant information</string>
+  <string name="assistant_page_recent_chats_desc">Lets the assistant list or search past chats when needed. Recent chats are not automatically included in each request.</string>
   <string name="assistant_page_regex_affecting_scopes">Affecting Scopes:</string>
   <string name="assistant_page_regex_desc">Define regex patterns to transform messages before sending/receiving</string>
   <string name="assistant_page_regex_find_regex">Find Regex</string>
