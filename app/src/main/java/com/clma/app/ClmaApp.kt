@@ -130,6 +130,8 @@ class ClmaApp : Application() {
         // Restore any headless conversation IDs that survived a process kill; must run
         // before any cron worker fires so mark/unmark are consistent.
         HeadlessConversations.init(this)
+        // Bot routine runs parked on an approval card (they outlive the worker that parked them).
+        com.clma.app.data.botmode.BotRoutineApprovals.init(this)
 
         // Sweep orphan headless conversations created by workers that were killed mid-execute.
         sweepOrphanHeadlessConversations()
@@ -340,11 +342,47 @@ class ClmaApp : Application() {
      * We clear the persisted set at the end regardless — if a conversation doesn't exist in
      * DB there's nothing to clean up, and stale IDs only confuse future sweeps.
      */
+    /**
+     * A Bot routine whose resume was running when the process died: its turn cannot be picked
+     * up safely (a tool may have half-run), so the run is closed as interrupted instead.
+     */
+    private suspend fun settleInterruptedRoutineResumes() {
+        val approvals = com.clma.app.data.botmode.BotRoutineApprovals
+        val stuck = approvals.parked.value.filter { it.resuming }
+        if (stuck.isEmpty()) return
+        val runRepo = get<com.clma.app.data.repository.ScheduledJobRunRepository>()
+        for (run in stuck) {
+            runCatching {
+                runRepo.update(
+                    com.clma.app.data.db.entity.ScheduledJobRunEntity(
+                        id = run.runId,
+                        jobId = run.jobId,
+                        mode = run.mode,
+                        scheduledAtMs = run.scheduledAtMs,
+                        startedAtMs = run.startedAtMs,
+                        finishedAtMs = System.currentTimeMillis(),
+                        outcome = "process_killed_replay",
+                        conversationId = run.conversationId,
+                        errorMessage = "interrupted while resuming after approval",
+                    )
+                )
+            }.onFailure { Log.w(TAG, "settleInterruptedRoutineResumes: ${run.runId}", it) }
+            approvals.remove(run.conversationId)
+        }
+    }
+
     private fun sweepOrphanHeadlessConversations() {
         get<AppScope>().launch(Dispatchers.IO) {
             runCatching {
-                val orphanIds = HeadlessConversations.activeIds()
-                if (orphanIds.isEmpty()) return@runCatching
+                // A parked Bot routine conversation is the user's pending work, never an orphan
+                // (read before settling, so an interrupted resume keeps its conversation too).
+                val parked = com.clma.app.data.botmode.BotRoutineApprovals.conversationIds()
+                settleInterruptedRoutineResumes()
+                val orphanIds = HeadlessConversations.activeIds().filterNot { it.toString() in parked }
+                if (orphanIds.isEmpty()) {
+                    HeadlessConversations.clearAll()
+                    return@runCatching
+                }
                 Log.i(TAG, "sweepOrphanHeadlessConversations: found ${orphanIds.size} candidate(s)")
                 val convRepo = get<com.clma.app.data.repository.ConversationRepository>()
                 for (id in orphanIds) {
@@ -589,6 +627,13 @@ class ClmaApp : Application() {
             .setShowBadge(false)
             .build()
         notificationManager.createNotificationChannel(floatingBallChannel)
+
+        val botRoutineChannel = NotificationChannelCompat
+            .Builder(com.clma.app.service.BOT_ROUTINE_NOTIFICATION_CHANNEL_ID, NotificationManagerCompat.IMPORTANCE_HIGH)
+            .setName(getString(R.string.notification_channel_bot_routines))
+            .setVibrationEnabled(true)
+            .build()
+        notificationManager.createNotificationChannel(botRoutineChannel)
     }
 
     override fun onTerminate() {

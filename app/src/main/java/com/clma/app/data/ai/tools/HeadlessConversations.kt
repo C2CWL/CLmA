@@ -11,6 +11,7 @@ private const val TAG = "HeadlessConversations"
 private const val PREFS_NAME = "headless_conversations"
 private const val PREFS_KEY = "active_ids"
 private const val PREFS_KEY_AUTO_APPROVE = "auto_approve_ids"
+private const val PREFS_KEY_PARKABLE = "parkable_ids"
 
 /**
  * Process-scoped registry of conversation ids that run "headless" — i.e. with no
@@ -48,6 +49,7 @@ object HeadlessConversations {
 
     private val ids: MutableSet<Uuid> = ConcurrentHashMap.newKeySet()
     private val autoApproveIds: MutableSet<Uuid> = ConcurrentHashMap.newKeySet()
+    private val parkableIds: MutableSet<Uuid> = ConcurrentHashMap.newKeySet()
     @Volatile private var prefs: SharedPreferences? = null
 
     /**
@@ -68,6 +70,12 @@ object HeadlessConversations {
             if (raw.isNotBlank()) {
                 runCatching { autoApproveIds.add(Uuid.parse(raw.trim())) }
                     .onFailure { Log.w(TAG, "init: could not parse stored auto-approve UUID '$raw'") }
+            }
+        }
+        p.getString(PREFS_KEY_PARKABLE, null)?.split(',')?.forEach { raw ->
+            if (raw.isNotBlank()) {
+                runCatching { parkableIds.add(Uuid.parse(raw.trim())) }
+                    .onFailure { Log.w(TAG, "init: could not parse stored parkable UUID '$raw'") }
             }
         }
         Log.d(TAG, "init: restored ${ids.size} headless IDs + ${autoApproveIds.size} auto-approve IDs from prefs")
@@ -97,11 +105,28 @@ object HeadlessConversations {
         persistIds()
     }
 
+    /**
+     * Mark a Bot routine run: fully headless like [mark] (ordinary tools auto-approve), but a
+     * tool that needs a human is parked as Pending instead of refused, so the run can stop,
+     * notify the user and resume once they answer the approval card. See
+     * [com.clma.app.data.botmode.BotRoutineApprovals].
+     */
+    fun markParkable(conversationId: Uuid) {
+        ids.add(conversationId)
+        autoApproveIds.add(conversationId)
+        parkableIds.add(conversationId)
+        persistIds()
+    }
+
     fun unmark(conversationId: Uuid) {
         ids.remove(conversationId)
         autoApproveIds.remove(conversationId)
+        parkableIds.remove(conversationId)
         persistIds()
     }
+
+    /** True for a [markParkable] conversation: human-approval tools park instead of being refused. */
+    fun canParkForApproval(conversationId: Uuid): Boolean = conversationId in parkableIds
 
     /**
      * True if this conversation is browser-headless (caller has no in-app chat UI).
@@ -131,6 +156,7 @@ object HeadlessConversations {
     fun clearAll() {
         ids.clear()
         autoApproveIds.clear()
+        parkableIds.clear()
         persistIds()
     }
 
@@ -139,6 +165,7 @@ object HeadlessConversations {
         p.edit()
             .putString(PREFS_KEY, ids.joinToString(",") { it.toString() })
             .putString(PREFS_KEY_AUTO_APPROVE, autoApproveIds.joinToString(",") { it.toString() })
+            .putString(PREFS_KEY_PARKABLE, parkableIds.joinToString(",") { it.toString() })
             .apply()
     }
 }

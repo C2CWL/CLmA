@@ -1300,6 +1300,18 @@ class GenerationLoop(
                                     "should run it themselves in a terminal outside the agent."
                             ))
                         }
+                        // Bot routine runs (HeadlessConversations.markParkable): a tool that needs
+                        // a person parks the run on an approval card instead of being refused.
+                        // The worker sees the Pending tool, saves the run and notifies the user;
+                        // their answer re-queues it. Plain headless runs keep the refusals below.
+                        tool.approvalState is ToolApprovalState.Auto &&
+                            conversationId != null &&
+                            com.clma.app.data.ai.tools.HeadlessConversations.canParkForApproval(conversationId) &&
+                            com.clma.app.data.ai.tools.HeadlessToolApprovalPolicy
+                                .needsHumanToRun(tool.toolName, tool.input) -> {
+                            hasPendingApproval = true
+                            tool.copy(approvalState = ToolApprovalState.Pending)
+                        }
                         com.clma.app.data.ai.tools.HardlineCommandGuard
                             .requiresSshPowerApproval(tool.toolName, tool.input) &&
                             tool.approvalState is ToolApprovalState.Auto -> {
@@ -1483,10 +1495,13 @@ class GenerationLoop(
                             .HardlineCommandGuard.checkTool(
                                 tool.toolName,
                                 tool.input,
+                                // A person approved it: either an interactive chat, or a parked
+                                // Bot routine whose card the user answered.
                                 allowSshPower = tool.approvalState is ToolApprovalState.Approved &&
-                                    !(conversationId?.let {
-                                        com.clma.app.data.ai.tools.HeadlessConversations.shouldAutoApprove(it)
-                                    } ?: false),
+                                    (conversationId?.let {
+                                        !com.clma.app.data.ai.tools.HeadlessConversations.shouldAutoApprove(it) ||
+                                            com.clma.app.data.ai.tools.HeadlessConversations.canParkForApproval(it)
+                                    } ?: true),
                             )
                         if (resumeHardlineReason != null) {
                             Log.w(TAG, "generateText: resume-path hardline re-check blocked ${tool.toolName}: $resumeHardlineReason")
@@ -1520,9 +1535,12 @@ class GenerationLoop(
                         val headlessRefusal = com.clma.app.data.ai.tools.HeadlessToolApprovalPolicy
                             .refusalEnvelopeFor(
                                 toolName = tool.toolName,
+                                // A parked Bot routine call the user approved on its card runs.
                                 headless = conversationId?.let { id ->
                                     com.clma.app.data.ai.tools.HeadlessConversations
-                                        .shouldAutoApprove(id)
+                                        .shouldAutoApprove(id) &&
+                                        !(tool.approvalState is ToolApprovalState.Approved &&
+                                            com.clma.app.data.ai.tools.HeadlessConversations.canParkForApproval(id))
                                 } ?: false,
                             )
                         if (headlessRefusal != null) {
@@ -1788,7 +1806,8 @@ class GenerationLoop(
                                                     toolCallId = tool.toolCallId,
                                                     approved = tool.approvalState is ToolApprovalState.Approved,
                                                     headless = conversationId == null ||
-                                                        com.clma.app.data.ai.tools.HeadlessConversations.isHeadless(conversationId),
+                                                        com.clma.app.data.ai.tools.HeadlessConversations.isHeadless(conversationId) &&
+                                                        !com.clma.app.data.ai.tools.HeadlessConversations.canParkForApproval(conversationId),
                                                 )
                                             } ?: run {
                                                 Log.w(TAG, "generateText: ${toolDef.name} cancelled — wall-clock budget exhausted mid-execution")

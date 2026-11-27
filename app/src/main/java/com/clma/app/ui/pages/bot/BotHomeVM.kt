@@ -48,6 +48,7 @@ class BotHomeVM(
     private val settingsStore: SettingsStore,
     private val conversationRepo: ConversationRepository,
     chatService: ChatService,
+    scheduledJobRepository: com.clma.app.data.repository.ScheduledJobRepository,
 ) : ViewModel() {
 
     val settings: StateFlow<Settings> = settingsStore.settingsFlow
@@ -77,11 +78,15 @@ class BotHomeVM(
         .map { jobs -> jobs.filterValues { it?.isActive == true }.keys }
         .distinctUntilChanged()
 
+    private val routineJobs = scheduledJobRepository.observeAll()
+
     val items: StateFlow<List<BotHomeItem>> = combine(
         settingsStore.settingsFlow,
         latestByBot,
         generatingIds,
-    ) { s, latest, generating ->
+        routineJobs,
+        com.clma.app.data.botmode.BotRoutineApprovals.parked,
+    ) { s, latest, generating, jobs, parked ->
         val ds = s.displaySetting
         val bots = s.botsForContactList()
         val rows = bots.map { bot ->
@@ -93,8 +98,12 @@ class BotHomeVM(
                 updatedAt = conv?.updateAt,
                 unread = ds.botUnreadCount(bot.id),
                 pinned = ds.isBotPinned(bot.id),
-                pendingApproval = hasPendingApproval(conv),
+                // A routine run parked on an approval card counts even when it is not the
+                // bot's latest conversation.
+                pendingApproval = hasPendingApproval(conv) ||
+                    parked.any { it.assistantId == bot.id.toString() && !it.resuming },
                 generating = conv?.id != null && conv.id in generating,
+                routine = com.clma.app.data.botmode.botRoutineRowSummary(jobs, bot.id),
             )
         }
         val byId = bots.associateBy { it.id }
@@ -159,8 +168,13 @@ class BotHomeVM(
     fun open(row: BotHomeRow, onReady: (conversationId: Uuid) -> Unit) = viewModelScope.launch {
         var openId: Uuid? = null
         settingsStore.update { s ->
+            // A routine run waiting on the user's yes opens first, then the unread badge's chat.
+            val parkedId = com.clma.app.data.botmode.BotRoutineApprovals.parked.value
+                .lastOrNull { it.assistantId == row.assistantId.toString() && !it.resuming }
+                ?.conversationId
+                ?.let { runCatching { Uuid.parse(it) }.getOrNull() }
             openId = resolveBotOpenConversationId(
-                unreadConversationId = s.displaySetting.botUnreadConversationId(row.assistantId),
+                unreadConversationId = parkedId ?: s.displaySetting.botUnreadConversationId(row.assistantId),
                 latestConversationId = row.latestConversationId,
             )
             s.copy(

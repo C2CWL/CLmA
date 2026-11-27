@@ -93,6 +93,8 @@ fun BotInfoPage(botId: String, conversationId: String?) {
     val settings by vm.settings.collectAsStateWithLifecycle()
     val conversations by vm.conversations.collectAsStateWithLifecycle()
     val memoryCount by vm.memoryCount.collectAsStateWithLifecycle()
+    val routines by vm.routines.collectAsStateWithLifecycle()
+    val parkedRuns by vm.parkedRuns.collectAsStateWithLifecycle()
     val approvalPrefs: ToolApprovalPreferences = koinInject()
     val approvalMode by approvalPrefs.modeFlow.collectAsStateWithLifecycle(initialValue = ApprovalMode.MANUAL)
     val displays by VirtualDisplayController.activeDisplays.collectAsStateWithLifecycle()
@@ -264,6 +266,17 @@ fun BotInfoPage(botId: String, conversationId: String?) {
                     }
                 }
             }
+
+            // Routines (自动任务): this bot's scheduled jobs, on the existing scheduler.
+            BotRoutinesGroup(
+                routines = routines,
+                parkedRuns = parkedRuns,
+                onSave = { form, existingId -> vm.saveRoutine(form, existingId) },
+                onSetEnabled = { jobId, enabled -> vm.setRoutineEnabled(jobId, enabled) },
+                onRunNow = { jobId, onResult -> vm.runRoutineNow(jobId, onResult) },
+                onDelete = { jobId -> vm.deleteRoutine(jobId) },
+                onOpenConversation = openConversation,
+            )
 
             // Model, prompt, memory
             val modelLabel = settings.findModelById(bot.chatModelId)?.displayName

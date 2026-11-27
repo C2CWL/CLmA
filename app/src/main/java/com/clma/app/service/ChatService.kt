@@ -1660,6 +1660,9 @@ class ChatService(
 
         val releaseForegroundWork = foregroundWorkTracker.acquire()
         val job = appScope.launch {
+            // Bot routines: whether THIS call changed a card (so only a real answer re-queues
+            // a parked run; a stale double tap must not restart an active resume).
+            var applied = false
             try {
                 awaitForegroundWorkReady()
                 convMutex.withLock {
@@ -1675,6 +1678,13 @@ class ChatService(
                         if (conversation.currentMessages.none { message ->
                                 message.getTools().any { it.toolCallId == toolCallId && it.isPending }
                             }) return@afterPreviousGeneration
+                        // A parked Bot routine past its approval deadline: the card no longer
+                        // authorizes anything (the expiry worker closes it under this mutex).
+                        com.clma.app.data.botmode.BotRoutineApprovals.get(conversationId)?.let { parkedRun ->
+                            if (!parkedRun.resuming && com.clma.app.data.botmode.BotRoutineApprovalRules
+                                    .isExpired(parkedRun, System.currentTimeMillis())
+                            ) return@afterPreviousGeneration
+                        }
                         val pendingCall = conversation.currentMessages.asSequence()
                             .flatMap { it.getTools().asSequence() }
                             .first { it.toolCallId == toolCallId && it.isPending }
@@ -1711,6 +1721,7 @@ class ChatService(
                         }
                         val updatedConversation = conversation.copy(messageNodes = updatedNodes)
                         saveConversation(conversationId, updatedConversation)
+                        applied = true
                     }
                 }
                 // Outside the mutex: kick off the resume generation if no tools remain pending.
@@ -1722,7 +1733,14 @@ class ChatService(
                     }
                 }
                 if (!pendingNow) {
-                    handleMessageComplete(conversationId)
+                    if (com.clma.app.data.botmode.BotRoutineApprovals.isParked(conversationId)) {
+                        // A parked Bot routine resumes in its own worker (headless again, with
+                        // the time it still has left), not in this approval coroutine. Only an
+                        // answer that actually closed a card queues it.
+                        if (applied) com.clma.app.service.BotRoutineRuns.requestResume(context, conversationId)
+                    } else {
+                        handleMessageComplete(conversationId)
+                    }
                 }
                 _generationDoneFlow.emit(conversationId)
             } catch (e: Exception) {
@@ -1735,6 +1753,65 @@ class ChatService(
         }
 
         session.setJob(job, cancelPrevious = false)
+    }
+
+    /**
+     * Bot routines: continue a parked run's turn once every approval card is answered. Called
+     * by the resume worker after it marked the conversation parkable again; the generation job
+     * it sets is what the worker waits on.
+     */
+    fun resumeAnsweredTurn(conversationId: Uuid) {
+        val session = getOrCreateSession(conversationId)
+        val priorGenerationJob = session.getJob()
+        val releaseForegroundWork = foregroundWorkTracker.acquire()
+        val job = appScope.launch {
+            try {
+                awaitForegroundWorkReady()
+                mutexFor(conversationId).withLock { ensureHydrated(conversationId) }
+                afterPreviousGeneration(priorGenerationJob) {
+                    val pendingNow = session.state.value.messageNodes.any { node ->
+                        node.currentMessage.parts.any { part -> part is UIMessagePart.Tool && part.isPending }
+                    }
+                    if (!pendingNow) handleMessageComplete(conversationId)
+                }
+                _generationDoneFlow.emit(conversationId)
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                addError(e, conversationId, title = context.getString(R.string.error_title_tool_approval))
+            } finally {
+                releaseForegroundWork()
+            }
+        }
+        session.setJob(job, cancelPrevious = false)
+    }
+
+    /**
+     * Bot routines: a parked run's wait ran out. Its still-pending tools become Denied with
+     * [reason] so the cards stop offering a yes; the turn is NOT resumed. Returns how many tool
+     * calls were closed.
+     */
+    suspend fun closePendingTools(conversationId: Uuid, reason: String): Int {
+        var closed = 0
+        mutexFor(conversationId).withLock {
+            ensureHydrated(conversationId)
+            val conversation = getOrCreateSession(conversationId).state.value
+            val updatedNodes = conversation.messageNodes.map { node ->
+                node.copy(
+                    messages = node.messages.map { msg ->
+                        msg.copy(
+                            parts = msg.parts.map { part ->
+                                if (part is UIMessagePart.Tool && part.isPending) {
+                                    closed++
+                                    part.copy(approvalState = ToolApprovalState.Denied(reason))
+                                } else part
+                            }
+                        )
+                    }
+                )
+            }
+            if (closed > 0) saveConversation(conversationId, conversation.copy(messageNodes = updatedNodes))
+        }
+        return closed
     }
 
     /** Outcome of [rerunTool]. [Failure.message] is a short, non-localized diagnostic
@@ -2869,7 +2946,9 @@ class ChatService(
                 if (
                     completionCause == null &&
                     !isForeground.value &&
-                    settings.displaySetting.enableNotificationOnMessageGeneration
+                    settings.displaySetting.enableNotificationOnMessageGeneration &&
+                    // Bot routine runs post their own result / approval notification.
+                    !com.clma.app.data.ai.tools.HeadlessConversations.canParkForApproval(conversationId)
                 ) {
                     val pendingTool = updatedConversation.currentMessages
                         .asReversed()
