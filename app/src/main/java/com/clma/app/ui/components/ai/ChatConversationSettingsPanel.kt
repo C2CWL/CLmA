@@ -109,6 +109,24 @@ fun ChatConversationSettingsPanel(
     onOpenMessageOutline: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val scope = rememberCoroutineScope()
+    val navController = LocalNavController.current
+    val approvalPrefs = koinInject<ToolApprovalPreferences>()
+    val settingsStore = koinInject<SettingsStore>()
+    val workspaceRepository: WorkspaceRepository = koinInject()
+    val workspaces by workspaceRepository.listFlow().collectAsState(initial = emptyList())
+    val approvalMode by approvalPrefs.modeFlow.collectAsStateWithLifecycle(initialValue = ApprovalMode.MANUAL)
+    val liveSettings by settingsStore.settingsFlow.collectAsStateWithLifecycle()
+    val dispatchProfile = liveSettings.subAgentDispatchProfile
+    val currentModel = model ?: settings.resolveChatModel(conversation.chatModelId, conversation.assistantId)
+
+    var showPresetSheet by remember { mutableStateOf(false) }
+    var showInjectionSheet by remember { mutableStateOf(false) }
+    var showCompressDialog by remember { mutableStateOf(false) }
+    var pendingAuto by remember { mutableStateOf(false) }
+
+    if (visible) BackHandler(onBack = onDismiss)
+
     Box(modifier = modifier.fillMaxSize()) {
         AnimatedVisibility(
             visible = visible,
@@ -150,24 +168,6 @@ fun ChatConversationSettingsPanel(
             ),
             modifier = Modifier.align(Alignment.TopCenter),
         ) {
-            val scope = rememberCoroutineScope()
-            val navController = LocalNavController.current
-            val approvalPrefs = koinInject<ToolApprovalPreferences>()
-            val settingsStore = koinInject<SettingsStore>()
-            val workspaceRepository: WorkspaceRepository = koinInject()
-            val workspaces by workspaceRepository.listFlow().collectAsState(initial = emptyList())
-            val approvalMode by approvalPrefs.modeFlow.collectAsStateWithLifecycle(initialValue = ApprovalMode.MANUAL)
-            val liveSettings by settingsStore.settingsFlow.collectAsStateWithLifecycle()
-            val dispatchProfile = liveSettings.subAgentDispatchProfile
-            val currentModel = model ?: settings.resolveChatModel(conversation.chatModelId, conversation.assistantId)
-
-            var showPresetSheet by remember { mutableStateOf(false) }
-            var showInjectionSheet by remember { mutableStateOf(false) }
-            var showCompressDialog by remember { mutableStateOf(false) }
-            var pendingAuto by remember { mutableStateOf(false) }
-
-            BackHandler(onBack = onDismiss)
-
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -438,7 +438,8 @@ fun ChatConversationSettingsPanel(
             }
         }
 
-        if (showPresetSheet) {
+        if (visible) {
+            if (showPresetSheet) {
             ChatToolPresetSheet(
                 conversationId = conversation.id,
                 assistant = liveSettings.getCurrentAssistant(),
@@ -498,7 +499,8 @@ fun ChatConversationSettingsPanel(
                 },
             )
         }
-    } // AnimatedVisibility
+        }
+    } // Box
 }
 
 @Composable
