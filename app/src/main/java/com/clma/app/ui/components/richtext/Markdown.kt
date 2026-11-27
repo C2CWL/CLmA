@@ -1072,11 +1072,16 @@ private fun AnnotatedString.Builder.appendMarkdownNodeContent(
         node.type == MarkdownTokenTypes.BLOCK_QUOTE -> {}
 
         node.type == GFMTokenTypes.GFM_AUTOLINK -> {
-            val link = node.getTextInNode(content)
+            // lexer 的 \S 会把紧随 URL 的中文/中文标点吞进同一个 token，
+            // 这里切出真正的 URL，其余部分按普通文本渲染，避免链接样式蔓延到正文。
+            val (link, trailingText) = splitGfmAutoLink(node.getTextInNode(content))
             withLink(LinkAnnotation.Url(link)) {
                 withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
                     append(link)
                 }
+            }
+            if (trailingText.isNotEmpty()) {
+                append(trailingText)
             }
         }
 
