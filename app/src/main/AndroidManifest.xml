@@ -407,6 +407,7 @@
         <action android:name="android.intent.action.BOOT_COMPLETED" />
         <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
         <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+        <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
       </intent-filter>
     </receiver>
 
@@ -432,6 +433,16 @@
     <receiver
       android:name=".service.GenerationStopReceiver"
       android:exported="false" />
+
+    <service
+      android:name=".service.ScheduledRunService"
+      android:exported="false"
+      android:foregroundServiceType="specialUse"
+      android:stopWithTask="false">
+      <property
+        android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+        android:value="Runs a scheduled task the user created at its set time" />
+    </service>
 
     <service
       android:name=".service.ChatGenerationForegroundService"

@@ -1,8 +1,10 @@
 package com.clma.app.service
 
+import android.app.AlarmManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import androidx.work.Data
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
@@ -36,12 +38,23 @@ class CronBootReceiver : BroadcastReceiver(), KoinComponent {
 
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action ?: return
-        if (action != Intent.ACTION_BOOT_COMPLETED &&
+        val alarmPermissionChanged = action == AlarmManager.ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED
+        if (!alarmPermissionChanged &&
+            action != Intent.ACTION_BOOT_COMPLETED &&
             action != Intent.ACTION_MY_PACKAGE_REPLACED &&
             action != "android.intent.action.QUICKBOOT_POWERON") return
         val pending = goAsync()
         scope.launch {
             try {
+                if (alarmPermissionChanged) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                        context.getSystemService(AlarmManager::class.java).canScheduleExactAlarms()
+                    ) {
+                        scheduler.scheduleAllEnabled()
+                    }
+                    return@launch
+                }
+
                 sweepStrandedRunRows(context)
                 applyCatchupAndSchedule(context)
 
