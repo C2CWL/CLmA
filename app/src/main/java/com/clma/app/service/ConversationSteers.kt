@@ -54,6 +54,31 @@ object ConversationSteers {
         }
     }
 
+    /** 按消息 id 撤销一条尚未消费的插话；已并入生成的消息无法撤销。 */
+    fun remove(conversationId: Uuid, messageId: Uuid): Boolean {
+        val deque = byConv[conversationId] ?: return false
+        return synchronized(deque) {
+            val iterator = deque.iterator()
+            var removed = false
+            while (iterator.hasNext()) {
+                if (iterator.next().id == messageId) {
+                    iterator.remove()
+                    removed = true
+                    break
+                }
+            }
+            // 不 remove key：与并发 push 的 computeIfAbsent 竞态时，删掉 key 会让新消息进入
+            // 一个已被移除的 deque 而永久丢失。
+            removed
+        }
+    }
+
+    /** 该插话是否仍在队列中，便于 UI 在它被消费后收起撤销入口。 */
+    fun contains(conversationId: Uuid, messageId: Uuid): Boolean {
+        val deque = byConv[conversationId] ?: return false
+        return synchronized(deque) { deque.any { it.id == messageId } }
+    }
+
     /** 丢弃该会话所有未消费的插话（用户主动停止生成时调用）。 */
     fun clear(conversationId: Uuid) {
         byConv.remove(conversationId)

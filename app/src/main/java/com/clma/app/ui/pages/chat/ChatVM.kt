@@ -102,6 +102,12 @@ class ChatVM(
     /** 未发送的输入按对话持久化; VM 随对话销毁, 只有落到 prefs 才不会丢。 */
     private val drafts = ChatDrafts(context)
 
+    data class PendingInterject(val id: Uuid, val content: List<UIMessagePart>)
+
+    /** 已暂存但尚未被模型消费的插话；用于提供一次撤销入口。 */
+    var pendingInterject by mutableStateOf<PendingInterject?>(null)
+        private set
+
     val voiceSession = VoiceSessionController(viewModelScope, context::getString) {
         chatService.enqueueVoiceMessage(_conversationId, it)
     }
@@ -382,9 +388,31 @@ class ChatVM(
     fun interjectMessage(content: List<UIMessagePart>): Boolean {
         if (content.isEmptyInputMessage()) return false
 
-        val accepted = chatService.interjectMessage(_conversationId, content)
-        if (accepted) drafts.clear(_conversationId)
-        return accepted
+        val steerId = chatService.interjectMessage(_conversationId, content)
+        if (steerId != null) {
+            pendingInterject = PendingInterject(steerId, content)
+            drafts.clear(_conversationId)
+        }
+        return steerId != null
+    }
+
+    /** 撤销尚未并入生成的插话；成功撤销时把原输入放回输入框。 */
+    fun cancelInterject() {
+        val pending = pendingInterject ?: return
+        val removed = chatService.cancelInterject(_conversationId, pending.id)
+        pendingInterject = null
+        if (removed) inputState.setContents(pending.content)
+    }
+
+    /** 生成结束或停止后，插话要么已被消费、要么已随队列清空，不再提供撤销。 */
+    fun clearPendingInterject() {
+        pendingInterject = null
+    }
+
+    /** 插话被并入下一次请求后，ConversationSteers 中不再有这条消息。 */
+    fun prunePendingInterject() {
+        val pending = pendingInterject ?: return
+        if (!chatService.hasPendingInterject(_conversationId, pending.id)) pendingInterject = null
     }
 
     fun handleMessageEdit(parts: List<UIMessagePart>, messageId: Uuid) {

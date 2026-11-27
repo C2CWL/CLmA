@@ -3327,6 +3327,8 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="chat_page_subagents_running">%1$d sub-agent(s) running · %2$s</string>
   <string name="chat_interject_unavailable">Generation already finished — send it as a normal message</string>
   <string name="chat_interjection_label">Interjection</string>
+  <string name="chat_interject_pending">Interjection queued</string>
+  <string name="chat_interject_cancel">Undo</string>
 
   <!-- Embedding Model Sheet -->
   <string name="common_use">Use</string>

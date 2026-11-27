@@ -3074,6 +3074,8 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="chat_page_subagents_running">子 agent %1$d 个运行中 · %2$s</string>
   <string name="chat_interject_unavailable">生成已结束，请重新发送</string>
   <string name="chat_interjection_label">插话</string>
+  <string name="chat_interject_pending">插话已暂存</string>
+  <string name="chat_interject_cancel">撤销</string>
 
   <!-- Embedding Model Sheet -->
   <string name="common_use">使用</string>

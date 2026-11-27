@@ -444,4 +444,64 @@ class UsageTurnViewTest {
         assertEquals(3, footer.usage.callCount)
         assertEquals(1_000L, footer.startedAtMs)
     }
+
+    @Test
+    fun `an interjection keeps one turn when tool messages surround it`() {
+        val nodes = listOf(
+            TurnNode("u1", MessageRole.USER, 1_000L, null),
+            TurnNode("a1", MessageRole.ASSISTANT, 1_200L, null),
+            TurnNode("t1", MessageRole.TOOL, 3_000L, null),
+            TurnNode("u2", MessageRole.USER, 4_000L, null),
+            TurnNode("t2", MessageRole.TOOL, 4_200L, null),
+            TurnNode("a2", MessageRole.ASSISTANT, 5_000L, 7_000L),
+        )
+        val records = listOf(
+            row("r1", 1_500L, input = 10, output = 1),
+            row("r2", 5_500L, input = 20, output = 2),
+        )
+
+        val footers = UsageTurnViewFactory.footersFor(nodes, records)
+
+        assertEquals(1, footers.size)
+        val footer = footers.getValue("a2")
+        assertEquals(30L, footer.usage!!.inputTokens)
+        assertEquals(2, footer.usage.callCount)
+        assertEquals(1_000L, footer.startedAtMs)
+    }
+
+    @Test
+    fun `a tool node never becomes the footer anchor`() {
+        val nodes = listOf(
+            TurnNode("u1", MessageRole.USER, 1_000L, null),
+            TurnNode("a1", MessageRole.ASSISTANT, 1_200L, 2_000L),
+            TurnNode("t1", MessageRole.TOOL, 3_000L, null),
+        )
+        val records = listOf(row("r1", 3_500L, input = 10, output = 1))
+
+        val footers = UsageTurnViewFactory.footersFor(nodes, records)
+
+        assertEquals(1, footers.size)
+        assertFalse(footers.containsKey("t1"))
+        assertEquals(10L, footers.getValue("a1").usage!!.inputTokens)
+    }
+
+    @Test
+    fun `consecutive interjections do not split the turn`() {
+        val nodes = listOf(
+            TurnNode("u1", MessageRole.USER, 1_000L, null),
+            TurnNode("a1", MessageRole.ASSISTANT, 1_200L, null),
+            TurnNode("u2", MessageRole.USER, 3_000L, null),
+            TurnNode("u3", MessageRole.USER, 4_000L, null),
+            TurnNode("a2", MessageRole.ASSISTANT, 5_000L, 7_000L),
+        )
+        val records = listOf(
+            row("r1", 1_500L, input = 10, output = 1),
+            row("r2", 5_500L, input = 20, output = 2),
+        )
+
+        val footers = UsageTurnViewFactory.footersFor(nodes, records)
+
+        assertEquals(1, footers.size)
+        assertEquals(30L, footers.getValue("a2").usage!!.inputTokens)
+    }
 }

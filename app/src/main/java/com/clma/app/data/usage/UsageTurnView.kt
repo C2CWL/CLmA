@@ -295,21 +295,39 @@ object UsageTurnViewFactory {
         var current: TurnSpan? = null
         nodes.forEachIndexed { index, node ->
             if (node.role == MessageRole.USER) {
-                val prev = nodes.getOrNull(index - 1)
-                val next = nodes.getOrNull(index + 1)
-                val interjection = prev?.role == MessageRole.ASSISTANT &&
-                    prev.finishedAtMs == null &&
-                    next?.role == MessageRole.ASSISTANT
+                val interjection =
+                    hasUnfinishedAssistantBefore(nodes, index) && hasAssistantContinuationAfter(nodes, index)
                 if (interjection) return@forEachIndexed
                 current?.let { turns += it }
                 current = TurnSpan(startMs = node.createdAtMs)
                 return@forEachIndexed
             }
             val turn = current ?: TurnSpan(startMs = nodes.first().createdAtMs).also { current = it }
-            turn.lastAssistant = node
+            // Tool messages belong to a turn but are not valid footer anchors.
+            if (node.role == MessageRole.ASSISTANT) turn.lastAssistant = node
         }
         current?.let { turns += it }
         return turns
+    }
+
+    private fun hasUnfinishedAssistantBefore(nodes: List<TurnNode>, index: Int): Boolean {
+        for (i in index - 1 downTo 0) {
+            val node = nodes[i]
+            // 连续插话会在消息列表里留下多个 USER 节点，跳过它们去找当前回合的助手半程。
+            if (node.role == MessageRole.USER) continue
+            if (node.role == MessageRole.ASSISTANT) return node.finishedAtMs == null
+        }
+        return false
+    }
+
+    private fun hasAssistantContinuationAfter(nodes: List<TurnNode>, index: Int): Boolean {
+        for (i in index + 1 until nodes.size) {
+            val node = nodes[i]
+            // 同理跳过后续插话，直到遇到本回合的助手续写。
+            if (node.role == MessageRole.USER) continue
+            if (node.role == MessageRole.ASSISTANT) return true
+        }
+        return false
     }
 
     /** 合并两段 turn usage（插话打断时前半结转到后半）。null 视为空。 */
