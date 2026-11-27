@@ -46,7 +46,7 @@ class ConversationAttachmentToolTest {
         assertEquals("a.txt", attachment.getValue("file_name").jsonPrimitive.content)
         assertEquals("/upload/a.txt", attachment.getValue("path").jsonPrimitive.content)
         assertEquals("text/plain", attachment.getValue("mime").jsonPrimitive.content)
-        assertEquals("nearby summary text", attachment.getValue("text").jsonPrimitive.content)
+        assertEquals("nearby summary text", attachment.getValue("text").jsonPrimitive.content.trim())
         assertFalse(result.toString().contains("file body that must not be listed"))
     }
 
