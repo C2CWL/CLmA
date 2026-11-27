@@ -563,16 +563,7 @@ private fun AskUserToolCard(
         return
     }
     if (isAnswered) {
-        val summary = askUserAnswerSummary(tool, questions)
-        InteractiveSettledRow(
-            icon = HugeIcons.Tick01,
-            text = if (summary.isBlank()) {
-                stringResource(R.string.chat_interactive_card_answered_plain)
-            } else {
-                stringResource(R.string.chat_interactive_card_answered, summary)
-            },
-            tint = MaterialTheme.colorScheme.primary,
-        )
+        AskUserAnsweredCard(tool)
         return
     }
 
@@ -762,6 +753,57 @@ private fun AskUserToolCard(
     }
 }
 
+@Composable
+private fun AskUserAnsweredCard(tool: UIMessagePart.Tool) {
+    val details = askUserAnsweredDetails(tool)
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.72f),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Icon(
+                    imageVector = HugeIcons.Tick01,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Text(
+                    text = stringResource(R.string.chat_interactive_card_answered_plain),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+            // Keep the original questions visible in history, paired with their answers.
+            details.forEach { detail ->
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    if (detail.question.isNotBlank()) {
+                        Text(
+                            text = detail.question,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
+                    if (detail.answer.isNotBlank()) {
+                        Text(
+                            text = stringResource(R.string.chat_interactive_card_answered, detail.answer),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
 private data class AskUserQuestion(
     val id: String,
     val question: String,
@@ -800,6 +842,38 @@ private fun askUserAnswerSummary(tool: UIMessagePart.Tool, questions: List<AskUs
     val raw = answered.answer.trim()
     if (raw.startsWith("{") || raw.startsWith("[")) return ""
     return raw.replace('\n', ' ')
+}
+
+internal data class AskUserAnsweredDetail(val question: String, val answer: String)
+
+/** Preserve each asked question in chat history together with the answer the user gave. */
+internal fun askUserAnsweredDetails(tool: UIMessagePart.Tool): List<AskUserAnsweredDetail> {
+    val answered = tool.approvalState as? ToolApprovalState.Answered ?: return emptyList()
+    val questions = parseAskUserQuestions(tool.inputAsJson())
+    val answers = runCatching {
+        JsonInstant.parseToJsonElement(answered.answer).jsonObject["answers"]?.jsonObject
+    }.getOrNull()
+    val details = questions.mapNotNull { question ->
+        val questionText = question.question.trim().ifBlank { return@mapNotNull null }
+        val answer = answers?.get(question.id)
+            ?.let { runCatching { it.jsonPrimitive.contentOrNull }.getOrNull() }
+            ?.replace('\n', ' ')
+            ?.trim()
+            .orEmpty()
+        AskUserAnsweredDetail(questionText, answer)
+    }
+    if (details.isEmpty()) {
+        val fallback = askUserAnswerSummary(tool, questions).takeIf { it.isNotBlank() }
+            ?: return emptyList()
+        return listOf(AskUserAnsweredDetail("", fallback))
+    }
+    if (details.none { it.answer.isNotBlank() }) {
+        val fallback = askUserAnswerSummary(tool, questions).takeIf { it.isNotBlank() }
+            ?: return details
+        if (details.size == 1) return listOf(details[0].copy(answer = fallback))
+        return details + AskUserAnsweredDetail("", fallback)
+    }
+    return details
 }
 
 /**
