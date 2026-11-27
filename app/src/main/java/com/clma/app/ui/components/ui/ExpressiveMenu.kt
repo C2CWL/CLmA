@@ -237,7 +237,11 @@ private fun SoftAnchoredMenu(
                 dismissOnClickOutside = expanded,
             ),
         ) {
-            val menuMotionSpec = spring<Float>(
+            val menuScaleSpec = spring<Float>(
+                dampingRatio = Spring.DampingRatioNoBouncy,
+                stiffness = Spring.StiffnessMedium,
+            )
+            val menuSlideSpec = spring<IntOffset>(
                 dampingRatio = Spring.DampingRatioNoBouncy,
                 stiffness = Spring.StiffnessMedium,
             )
@@ -247,9 +251,9 @@ private fun SoftAnchoredMenu(
                     scaleIn(
                         initialScale = 0.94f,
                         transformOrigin = TransformOrigin(1f, 0f),
-                        animationSpec = menuMotionSpec,
+                        animationSpec = menuScaleSpec,
                     ) +
-                    slideInVertically(initialOffsetY = { -10 }, animationSpec = menuMotionSpec),
+                    slideInVertically(initialOffsetY = { -10 }, animationSpec = menuSlideSpec),
                 exit = fadeOut(animationSpec = tween(100)) +
                     scaleOut(
                         targetScale = 0.97f,
