@@ -23,11 +23,13 @@ import kotlinx.serialization.json.putJsonArray
 import com.clma.ai.provider.ImageEditParams
 import com.clma.ai.provider.ImageGenerationParams
 import com.clma.ai.provider.Model
+import com.clma.ai.provider.Modality
 import com.clma.ai.provider.Provider
 import com.clma.ai.provider.ProviderSetting
 import com.clma.ai.provider.TextGenerationResult
 import com.clma.ai.provider.TextGenerationParams
 import com.clma.ai.provider.VideoGenerationParams
+import com.clma.ai.registry.ModelRegistry
 import com.clma.ai.ui.ImageAspectRatio
 import com.clma.ai.ui.ImageGenerationItem
 import com.clma.ai.ui.StreamChunk
@@ -139,6 +141,9 @@ class OpenAIProvider(
                     Model(
                         modelId = id,
                         displayName = id,
+                        inputModalities = if (isDashScopeBaseUrl(providerSetting.baseUrl)) {
+                            ModelRegistry.MODEL_INPUT_MODALITIES.getData(id)
+                        } else listOf(Modality.TEXT),
                     )
                 }
             }

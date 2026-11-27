@@ -95,20 +95,22 @@ object ModelRegistry {
 
     private val GEMINI_20_FLASH = defineModel {
         tokens("gemini", "2", "0", "flash")
-        visionInput()
+        input(Modality.TEXT, Modality.IMAGE, Modality.AUDIO, Modality.VIDEO)
         toolAbility()
     }
 
     val GEMINI_2_5_FLASH = defineModel {
         tokens("gemini", "2", "5", "flash")
         notTokens("image")
-        visionInput()
+        notTokens("tts")
+        notTokens("native", "audio")
+        input(Modality.TEXT, Modality.IMAGE, Modality.AUDIO, Modality.VIDEO)
         toolReasoningAbility()
     }
 
     val GEMINI_2_5_PRO = defineModel {
         tokens("gemini", "2", "5", "pro")
-        visionInput()
+        input(Modality.TEXT, Modality.IMAGE, Modality.AUDIO, Modality.VIDEO)
         toolReasoningAbility()
     }
 
@@ -132,25 +134,25 @@ object ModelRegistry {
 
     val GEMINI_3_PRO = defineModel {
         tokens("gemini", "3", "pro")
-        visionInput()
+        input(Modality.TEXT, Modality.IMAGE, Modality.AUDIO, Modality.VIDEO)
         toolReasoningAbility()
     }
 
     val GEMINI_3_FLASH = defineModel {
         tokens("gemini", "3", "flash")
-        visionInput()
+        input(Modality.TEXT, Modality.IMAGE, Modality.AUDIO, Modality.VIDEO)
         toolReasoningAbility()
     }
 
     val GEMINI_3_1_PRO_PREVIEW = defineModel {
         tokens("gemini", "3", "1", "pro", "preview")
-        visionInput()
+        input(Modality.TEXT, Modality.IMAGE, Modality.AUDIO, Modality.VIDEO)
         toolReasoningAbility()
     }
 
     val GEMINI_3_1_PRO_PREVIEW_CUSTOMTOOLS = defineModel {
         tokens("gemini", "3", "1", "pro", "preview", "customtools")
-        visionInput()
+        input(Modality.TEXT, Modality.IMAGE, Modality.AUDIO, Modality.VIDEO)
         toolReasoningAbility()
     }
 
@@ -163,19 +165,19 @@ object ModelRegistry {
 
     val GEMINI_3_5 = defineModel {
         tokens("gemini", "3", "5")
-        visionInput()
+        input(Modality.TEXT, Modality.IMAGE, Modality.AUDIO, Modality.VIDEO)
         toolReasoningAbility()
     }
 
     val GEMINI_FLASH_LATEST = defineModel {
         exact("gemini-flash-latest")
-        visionInput()
+        input(Modality.TEXT, Modality.IMAGE, Modality.AUDIO, Modality.VIDEO)
         toolReasoningAbility()
     }
 
     val GEMINI_PRO_LATEST = defineModel {
         exact("gemini-pro-latest")
-        visionInput()
+        input(Modality.TEXT, Modality.IMAGE, Modality.AUDIO, Modality.VIDEO)
         toolReasoningAbility()
     }
 
@@ -352,6 +354,31 @@ object ModelRegistry {
         tokens("deepseek", "v", "3", "2")
         toolReasoningAbility()
         contextLength(128.k)
+    }
+
+    private val QWEN_VL = defineModel {
+        tokens("qwen", "vl")
+        input(Modality.TEXT, Modality.IMAGE, Modality.VIDEO)
+        toolReasoningAbility()
+    }
+
+    private val QWEN_2_5_VL = defineModel {
+        tokens("qwen", "2", "5", "vl")
+        input(Modality.TEXT, Modality.IMAGE, Modality.VIDEO)
+        toolAbility()
+    }
+
+    private val QWEN_3_VL = defineModel {
+        tokens("qwen", "3", "vl")
+        input(Modality.TEXT, Modality.IMAGE, Modality.VIDEO)
+        toolReasoningAbility()
+    }
+
+    private val QWEN_3_8_OMNI = defineModel {
+        tokens("qwen", "3", "8", "omni", "flash")
+        notTokens("realtime")
+        input(Modality.TEXT, Modality.IMAGE, Modality.AUDIO, Modality.VIDEO)
+        toolReasoningAbility()
     }
 
     private val QWEN_3 = defineModel {
@@ -657,6 +684,10 @@ object ModelRegistry {
         DEEPSEEK_V4_PRO,
         DEEPSEEK_V3_1,
         DEEPSEEK_V3_2,
+        QWEN_VL,
+        QWEN_2_5_VL,
+        QWEN_3_VL,
+        QWEN_3_8_OMNI,
         QWEN_3,
         QWEN_3_5,
         QWEN_3_6,
@@ -768,7 +799,7 @@ object ModelRegistry {
         return if (modalities.isEmpty()) {
             listOf(Modality.TEXT)
         } else {
-            listOf(Modality.TEXT, Modality.IMAGE).filter { it in modalities }
+            Modality.entries.filter { it in modalities }
         }
     }
 

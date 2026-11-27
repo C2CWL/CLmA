@@ -37,6 +37,7 @@ import com.clma.ai.provider.TextGenerationParams
 import com.clma.ai.provider.TextGenerationResult
 import com.clma.ai.provider.providers.google.CODE_ASSIST_SAFETY_CATEGORIES
 import com.clma.ai.provider.providers.google.GoogleProvider
+import com.clma.ai.registry.ModelRegistry
 import com.clma.ai.ui.ImageGenerationItem
 import com.clma.ai.ui.MessageChunk
 import com.clma.ai.ui.StreamChunk
@@ -521,7 +522,8 @@ private fun mapAvailableModels(body: String, json: Json): List<Model> {
             modelId = modelId,
             displayName = item["displayName"]?.jsonPrimitive?.contentOrNull ?: modelId,
             inputModalities = if (supportsImages) {
-                listOf(Modality.TEXT, Modality.IMAGE)
+                (listOf(Modality.TEXT, Modality.IMAGE) +
+                    ModelRegistry.MODEL_INPUT_MODALITIES.getData(modelId)).distinct()
             } else {
                 listOf(Modality.TEXT)
             },

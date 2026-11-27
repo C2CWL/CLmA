@@ -96,11 +96,6 @@ internal fun FilesPicker(
     val settings = LocalSettings.current
     val currentModel = settings.resolveChatModel(conversation.chatModelId, conversation.assistantId)
     val provider = currentModel?.findProvider(providers = settings.providers)
-    // D3 — the video/audio buttons used to appear only for Google, whose provider hard-codes
-    // those two modalities. Now any model that DECLARES the modality gets them; Google stays
-    // unconditional so an existing Google setup cannot regress.
-    val supportsVideo = provider is ProviderSetting.Google ||
-        Modality.VIDEO in (currentModel?.inputModalities ?: emptyList())
     val supportsAudio = provider is ProviderSetting.Google ||
         Modality.AUDIO in (currentModel?.inputModalities ?: emptyList())
 
@@ -119,9 +114,7 @@ internal fun FilesPicker(
 
             ImagePickButton(onClick = onPickImage)
 
-            if (supportsVideo) {
-                VideoPickButton(onClick = onPickVideo)
-            }
+            VideoPickButton(onClick = onPickVideo)
 
             if (supportsAudio) {
                 AudioPickButton(onClick = onPickAudio)

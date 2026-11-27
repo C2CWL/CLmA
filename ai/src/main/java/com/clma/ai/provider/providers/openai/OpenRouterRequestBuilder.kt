@@ -116,6 +116,8 @@ fun openRouterModelFromJson(modelObj: JsonObject): Model? {
     val inputModalities = buildList {
         add(Modality.TEXT)
         if ("image" in inMods) add(Modality.IMAGE)
+        if ("audio" in inMods) add(Modality.AUDIO)
+        if ("video" in inMods) add(Modality.VIDEO)
     }.distinct()
     val outputModalities = buildList {
         add(Modality.TEXT)

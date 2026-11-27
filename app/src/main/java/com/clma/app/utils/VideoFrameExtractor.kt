@@ -2,10 +2,9 @@ package com.clma.app.utils
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.media.MediaExtractor
-import android.media.MediaFormat
 import android.media.MediaMetadataRetriever
 import android.net.Uri
+import android.os.Build
 import android.util.Base64
 import android.util.Log
 import kotlinx.coroutines.CancellationException
@@ -14,152 +13,98 @@ import kotlinx.coroutines.ensureActive
 import java.io.ByteArrayOutputStream
 import java.util.Locale
 
-/**
- * Sparse keyframe extraction for local videos using Android's platform
- * MediaMetadataRetriever + MediaExtractor. Visual frames + timestamps only —
- * no audio transcription. Frames are emitted as inline `data:image/jpeg;base64,...`
- * URLs, which FileEncoder/encodeBase64 passes straight through to `image_url`.
- */
 object VideoFrameExtractor {
-    private const val TAG = "VideoFrameExtractor"
-
-    /** Hard ceiling: at most 12 keyframes per request, across every video in it. */
-    const val MAX_FRAMES_PER_REQUEST = 12
-
-    /** Balanced default: 8 evenly spaced sync samples per video. */
-    const val TARGET_FRAMES = 8
-
-    /** Fewer distinct frames than this is too sparse to be useful; caller falls back. */
-    const val MIN_FRAMES = 6
-
-    /** Longest edge of an encoded frame; keeps inline base64 and vision tokens bounded. */
+    const val MAX_FRAMES_PER_REQUEST = VideoSampling.MAX_FRAMES
     private const val MAX_FRAME_EDGE = 768
-    private const val JPEG_QUALITY = 80
+    private const val PROBE_EDGE = 24
 
-    /** One decoded frame plus its real sync-sample timestamp, never a fabricated seek time. */
-    data class ExtractedFrame(
-        val imageUrl: String,
-        val timestampText: String,
-    )
+    data class ExtractedFrame(val imageUrl: String, val timestampText: String)
 
-    /**
-     * Never throws for a malformed/unreadable video (except cancellation): returns an
-     * empty list so the caller keeps the original Video part for downstream fallback.
-     */
+    /** Android returns the nearest decoded frame. Labels describe seek positions, not exact PTS. */
     suspend fun extract(
         context: Context,
         url: String,
-        maxFrames: Int = TARGET_FRAMES,
+        maxFrames: Int = MAX_FRAMES_PER_REQUEST,
+        detail: LongRange? = null,
     ): List<ExtractedFrame> {
-        if (maxFrames < 2) return emptyList()
-        return runCatching { extractInternal(context, url, maxFrames) }.getOrElse { error ->
-            if (error is CancellationException) throw error
-            Log.w(TAG, "Frame extraction failed, falling back to original video", error)
-            emptyList()
-        }
-    }
-
-    private suspend fun extractInternal(
-        context: Context,
-        url: String,
-        maxFrames: Int,
-    ): List<ExtractedFrame> {
-        val uri = Uri.parse(url)
-        require(uri.scheme == "content" || uri.scheme == "file" || uri.scheme == null) {
-            "Video must be local before extracting frames"
-        }
-        val path = when (uri.scheme) {
-            null -> url
-            "file" -> requireNotNull(uri.path) { "File URI has no path" }
-            else -> null
-        }
-
+        if (maxFrames < 1) return emptyList()
         val retriever = MediaMetadataRetriever()
-        val extractor = MediaExtractor()
-        try {
-            if (path != null) {
-                retriever.setDataSource(path)
-                extractor.setDataSource(path)
+        return try {
+            val uri = Uri.parse(url)
+            when (uri.scheme) {
+                "content" -> retriever.setDataSource(context, uri)
+                "file" -> retriever.setDataSource(requireNotNull(uri.path))
+                null -> retriever.setDataSource(url)
+                else -> return emptyList()
+            }
+            val durationMs = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull()
+                ?.takeIf { it in 1..(Long.MAX_VALUE / 1_000) } ?: return emptyList()
+            val endUs = durationMs * 1_000 - 1
+            val range = if (detail == null) 0L..endUs else {
+                if (detail.first > endUs) return emptyList()
+                detail.first..minOf(detail.last, endUs)
+            }
+            val times = if (detail != null) {
+                VideoSampling.times(range, minOf(maxFrames, VideoSampling.DETAIL_FRAMES))
             } else {
-                retriever.setDataSource(context, uri)
-                extractor.setDataSource(context, uri, null)
+                val count = minOf(maxFrames, VideoSampling.overviewCount(durationMs))
+                val probes = VideoSampling.times(range, maxOf(4, count * 3))
+                val samples = probes.mapNotNull { time ->
+                    currentCoroutineContext().ensureActive()
+                    val bitmap = retriever.frame(time, PROBE_EDGE) ?: return@mapNotNull null
+                    try {
+                        val thumbnail = Bitmap.createScaledBitmap(bitmap, PROBE_EDGE, PROBE_EDGE, true)
+                        try {
+                            val pixels = IntArray(PROBE_EDGE * PROBE_EDGE)
+                            thumbnail.getPixels(pixels, 0, PROBE_EDGE, 0, 0, PROBE_EDGE, PROBE_EDGE)
+                            VideoSampling.Sample(time, pixels)
+                        } finally {
+                            if (thumbnail !== bitmap) thumbnail.recycle()
+                        }
+                    } finally {
+                        bitmap.recycle()
+                    }
+                }
+                VideoSampling.select(samples, count)
             }
-
-            val durationMs = retriever
-                .extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
-                ?.toLongOrNull()
-            require(durationMs != null && durationMs > 0) { "Video duration is unavailable" }
-
-            val trackIndex = (0 until extractor.trackCount).firstOrNull {
-                extractor.getTrackFormat(it).getString(MediaFormat.KEY_MIME)
-                    ?.startsWith("video/") == true
-            }
-            require(trackIndex != null) { "No decodable video track" }
-            extractor.selectTrack(trackIndex)
-
-            // Seek to PREVIOUS_SYNC so each timestamp is a real keyframe PTS, and decode
-            // with OPTION_PREVIOUS_SYNC so non-key frames are never decoded (which can
-            // stall on older API levels).
-            val timestamps = linkedSetOf<Long>()
-            for (i in 0 until maxFrames) {
+            times.take(maxFrames).mapNotNull { time ->
                 currentCoroutineContext().ensureActive()
-                val requestedUs = (durationMs - 1) * 1000L * i / (maxFrames - 1)
-                extractor.seekTo(requestedUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC)
-                val pts = extractor.sampleTime
-                if (pts >= 0) timestamps += pts
+                val frame = retriever.frame(time, MAX_FRAME_EDGE) ?: return@mapNotNull null
+                try {
+                    val buffer = ByteArrayOutputStream()
+                    if (!frame.compress(Bitmap.CompressFormat.JPEG, 80, buffer)) return@mapNotNull null
+                    ExtractedFrame(
+                        "data:image/jpeg;base64," + Base64.encodeToString(buffer.toByteArray(), Base64.NO_WRAP),
+                        String.format(Locale.ROOT, "[Video frame near %.3f s]", time / 1_000_000.0),
+                    )
+                } finally {
+                    frame.recycle()
+                }
             }
-            require(timestamps.size >= MIN_FRAMES) { "Not enough distinct keyframes" }
-
-            val frames = mutableListOf<ExtractedFrame>()
-            for (pts in timestamps.sorted().take(MAX_FRAMES_PER_REQUEST)) {
-                currentCoroutineContext().ensureActive()
-                val bitmap = retriever.getFrameAtTime(
-                    pts,
-                    MediaMetadataRetriever.OPTION_PREVIOUS_SYNC,
-                ) ?: continue
-                val imageUrl = runCatching { encode(bitmap) }.getOrNull() ?: continue
-                frames += ExtractedFrame(
-                    imageUrl = imageUrl,
-                    timestampText = String.format(
-                        Locale.ROOT,
-                        "[Video keyframe PTS %.3f s]",
-                        pts / 1_000_000.0,
-                    ),
-                )
-            }
-            return if (frames.size >= MIN_FRAMES) frames else emptyList()
+        } catch (cancel: CancellationException) {
+            throw cancel
+        } catch (error: Exception) {
+            Log.w("VideoFrameExtractor", "Frame extraction failed", error)
+            emptyList()
         } finally {
-            try {
-                extractor.release()
-            } finally {
-                retriever.release()
-            }
+            runCatching { retriever.release() }
         }
     }
 
-    private fun encode(frame: Bitmap): String {
-        val longest = maxOf(frame.width, frame.height).coerceAtLeast(1)
-        val scaled = if (longest > MAX_FRAME_EDGE) {
-            val ratio = MAX_FRAME_EDGE.toFloat() / longest
-            Bitmap.createScaledBitmap(
-                frame,
-                (frame.width * ratio).toInt().coerceAtLeast(1),
-                (frame.height * ratio).toInt().coerceAtLeast(1),
-                true,
-            )
-        } else {
-            frame
+    private fun MediaMetadataRetriever.frame(time: Long, edge: Int): Bitmap? {
+        val width = extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toIntOrNull() ?: edge
+        val height = extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)?.toIntOrNull() ?: edge
+        val rotated = extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION) in setOf("90", "270")
+        val ratio = minOf(1.0, edge.toDouble() / maxOf(width, height, 1))
+        val scaledWidth = ((if (rotated) height else width) * ratio).toInt().coerceAtLeast(1)
+        val scaledHeight = ((if (rotated) width else height) * ratio).toInt().coerceAtLeast(1)
+        val option = MediaMetadataRetriever.OPTION_CLOSEST
+        if (Build.VERSION.SDK_INT >= 27) {
+            return getScaledFrameAtTime(time, option, scaledWidth, scaledHeight)
         }
-        try {
-            val buffer = ByteArrayOutputStream()
-            check(scaled.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, buffer)) {
-                "JPEG compression failed"
-            }
-            val payload = Base64.encodeToString(buffer.toByteArray(), Base64.NO_WRAP)
-            return "data:image/jpeg;base64,$payload"
-        } finally {
-            if (scaled !== frame) scaled.recycle()
-            frame.recycle()
-        }
+        val bitmap = getFrameAtTime(time, option) ?: return null
+        val scaled = Bitmap.createScaledBitmap(bitmap, scaledWidth, scaledHeight, true)
+        if (scaled !== bitmap) bitmap.recycle()
+        return scaled
     }
 }

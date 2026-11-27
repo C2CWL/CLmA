@@ -32,6 +32,10 @@ class MediaTooLargeException(
 
 /** Hard limits on media inlined into a request (base64 grows it by 4/3, built per request). */
 object MediaLimits {
+    /** Raw video bytes across one request, leaving room for base64 inflation and other parts. */
+    const val MAX_NATIVE_VIDEO_BYTES = 12_000_000L
+    const val MAX_COMPATIBLE_VIDEO_BYTES = 7_000_000L
+
     /** A video or audio file larger than this is not inlined into a request. */
     const val MAX_INLINE_MEDIA_BYTES: Long = 20L * 1024 * 1024
 }

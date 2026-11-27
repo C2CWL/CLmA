@@ -158,7 +158,6 @@ import com.clma.app.data.ai.transformers.Base64ImageToLocalFileTransformer
 import com.clma.app.data.ai.transformers.ContextBudgetReminderTransformer
 import com.clma.app.data.ai.transformers.DocumentAsPromptTransformer
 import com.clma.app.data.ai.document.DocumentInlineNotices
-import com.clma.app.data.ai.transformers.VideoFrameBridgeTransformer
 import com.clma.app.data.ai.transformers.VideoAttachmentTransformer
 import com.clma.app.data.ai.transformers.OcrTransformer
 import com.clma.app.data.ai.transformers.PlaceholderTransformer
@@ -500,7 +499,6 @@ private val inputTransformers by lazy {
         PlaceholderTransformer,
         DocumentAsPromptTransformer,
         OcrTransformer,
-        VideoFrameBridgeTransformer,
         VideoAttachmentTransformer,
     )
 }
