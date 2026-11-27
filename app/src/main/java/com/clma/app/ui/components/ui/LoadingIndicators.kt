@@ -34,14 +34,14 @@ import dev.chrisbanes.haze.HazeState
  */
 
 /*
- * Wallpaper plate behind the new rows (原子三点 / 呼吸光球 / 双星绕轨): deliberately lighter than the
- * usage line's (0.70 / 20dp frosted, 0.86 flat) so it reads as a soft, see-through capsule rather
- * than a block. The flat fallback for devices without real blur (API < 31) is scaled down in
- * proportion.
+ * Wallpaper plate behind the new rows (原子三点 / 呼吸光球 / 双星绕轨): still lighter than the usage
+ * line's (0.70 / 20dp frosted, 0.86 flat), but opaque enough to keep the model-routing and
+ * retry-failure status readable on a busy photo. The flat fallback for devices without real blur
+ * (API < 31) is scaled down in proportion.
  */
-private const val THINKING_PLATE_FROST_TINT_ALPHA = 0.42f
-private val THINKING_PLATE_FROST_BLUR = 12.dp
-private const val THINKING_PLATE_FLAT_ALPHA = 0.60f
+private const val THINKING_PLATE_FROST_TINT_ALPHA = 0.58f
+private val THINKING_PLATE_FROST_BLUR = 14.dp
+private const val THINKING_PLATE_FLAT_ALPHA = 0.74f
 
 /** Icon-sized indicator for square slots (e.g. the compress dialog), in the chosen style. */
 @Composable
@@ -83,11 +83,22 @@ fun ChatLoadingIndicator(
             AnimatedVisibility(
                 visible = processingStatus != null,
             ) {
-                Text(
-                    text = processingStatus ?: "",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                // Same wallpaper plate as the other styles: routing / failure text was bare over
+                // the chat background and all but disappeared on a busy photo.
+                WallpaperContrastPlate(
+                    photoShown = photoShown,
+                    hazeState = hazeState,
+                    frostTintAlpha = THINKING_PLATE_FROST_TINT_ALPHA,
+                    frostBlur = THINKING_PLATE_FROST_BLUR,
+                    flatAlpha = THINKING_PLATE_FLAT_ALPHA,
+                ) {
+                    Text(
+                        text = processingStatus ?: "",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                    )
+                }
             }
         }
 

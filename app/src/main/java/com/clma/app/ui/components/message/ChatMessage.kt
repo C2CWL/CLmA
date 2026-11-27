@@ -100,7 +100,6 @@ import com.clma.app.data.datastore.usesGeminiChatUi
 import com.clma.app.data.datastore.usesModernChatUi
 import com.clma.app.ui.components.ui.ModernSurfaceCorner
 import com.clma.app.ui.components.ui.ModernUserBubbleShape
-import com.clma.app.ui.components.ui.modernThinkFill
 import com.clma.app.data.model.Assistant
 import com.clma.app.data.model.AssistantAffectScope
 import com.clma.app.data.model.AssistantBackgroundMode
@@ -549,7 +548,9 @@ private fun MessagePartsBlock(
                         forceExpanded = hasPendingApproval,
                         showTimeline = !capsule,
                         maskIcons = !capsule,
-                        // 现代：12dp 方角；纯思考是一条很淡的主题色底，带工具的是中性浅灰底。
+                        // 现代：12dp 方角；纯思考与带工具的步骤一样用中性浅灰底。此前纯思考用
+                        // modernThinkFill()（alpha≈0.06），在背景上几乎透明，看起来没有气泡，
+                        // 要等到第二步带工具时才出现底色。
                         shape = RoundedCornerShape(
                             when {
                                 modern -> ModernSurfaceCorner
@@ -559,11 +560,7 @@ private fun MessagePartsBlock(
                         ),
                         toolCallStyle = toolCallStyle,
                         cardColors = CardDefaults.cardColors(
-                            containerColor = if (modern && isReasoningOnlyBlock) {
-                                modernThinkFill().let {
-                                    it.copy(alpha = it.alpha * settings.displaySetting.bubbleOpacity)
-                                }
-                            } else if (modern || capsule) {
+                            containerColor = if (modern || capsule) {
                                 MaterialTheme.colorScheme.surfaceContainer
                                     .copy(alpha = settings.displaySetting.bubbleOpacity)
                             } else {
