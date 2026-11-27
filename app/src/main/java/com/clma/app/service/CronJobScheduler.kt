@@ -25,8 +25,8 @@ private const val TAG = "CronJobScheduler"
  * Each scheduled job has a unique work name "cron_job_<id>" and an exact alarm
  * set via [AlarmManager.setExactAndAllowWhileIdle] to pierce Doze mode / lock screen.
  *
- * Recurring jobs re-schedule themselves at the end of CronJobWorker.doWork(). Boot
- * recovery happens via CronBootReceiver which calls scheduleAllEnabled().
+ * Recurring jobs re-schedule themselves after execution. CronBootReceiver re-arms alarms
+ * after reboot, app updates, and exact-alarm permission grants.
  */
 class CronJobScheduler(
     private val context: Context,
@@ -54,7 +54,8 @@ class CronJobScheduler(
                 .build())
             .build()
         // A worker must not REPLACE (cancel) itself while scheduling its successor.
-        // An external edit still cancels both old delivery paths.
+        // A service execution can replace its old fallback with the next slot.
+        // External edits also replace both old delivery paths.
         if (!fromWorker) wm.cancelUniqueWork("cron_job_${job.id}_alarm")
         val policy = if (fromWorker) ExistingWorkPolicy.APPEND_OR_REPLACE else ExistingWorkPolicy.REPLACE
         wm.enqueueUniqueWork(workNameFor(job.id), policy, req)
