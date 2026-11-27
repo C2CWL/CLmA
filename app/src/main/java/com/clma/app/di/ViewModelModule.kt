@@ -1,6 +1,7 @@
 package com.clma.app.di
 
 import com.clma.app.ui.pages.assistant.AssistantVM
+import org.koin.android.ext.koin.androidContext
 import com.clma.app.ui.pages.assistant.detail.AssistantDetailVM
 import com.clma.app.ui.pages.backup.BackupVM
 import com.clma.app.ui.pages.chat.ChatDrawerVM
@@ -60,6 +61,7 @@ val viewModelModule = module {
             scheduledJobRepository = get(),
             scheduledJobRunRepository = get(),
             cronJobScheduler = get(),
+            appContext = androidContext(),
         )
     }
     viewModel<com.clma.app.ui.pages.bot.BotChannelVM> {

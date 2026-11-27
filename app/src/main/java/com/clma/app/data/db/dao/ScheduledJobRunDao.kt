@@ -36,7 +36,10 @@ interface ScheduledJobRunDao {
             "AND id NOT IN (SELECT id FROM scheduled_job_runs WHERE jobId = :jobId " +
             "AND outcome = 'success' ORDER BY startedAtMs DESC LIMIT :keep) " +
             "AND id NOT IN (SELECT id FROM scheduled_job_runs WHERE jobId = :jobId " +
-            "AND outcome <> 'success' ORDER BY startedAtMs DESC LIMIT :keep)"
+            "AND outcome <> 'success' ORDER BY startedAtMs DESC LIMIT :keep) " +
+            // A Bot routine run parked on an approval is still open; its row is rewritten
+            // with the real outcome when it settles, so it must survive trimming until then.
+            "AND outcome <> 'awaiting_approval'"
     )
     suspend fun trim(jobId: String, keep: Int)
 

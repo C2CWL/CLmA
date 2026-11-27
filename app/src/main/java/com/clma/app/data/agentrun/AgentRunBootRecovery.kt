@@ -28,6 +28,11 @@ private const val TAG = "AgentRunBootRecovery"
 class AgentRunBootRecovery(
     private val repository: AgentRunRepository,
     /**
+     * Rows that look stranded but are legitimately waiting (a Bot routine parked on an
+     * approval may wait up to a day). Skipped by the sweep.
+     */
+    private val isLegitimatelyWaiting: (AgentRun) -> Boolean = { false },
+    /**
      * Aggregate-notification sink. Defaults to a real Android notification; injectable so
      * the sweep logic can be unit-tested on the JVM without a [Context]. Called at most
      * once per [runRecovery] invocation, only when at least one row was flipped.
@@ -39,6 +44,9 @@ class AgentRunBootRecovery(
     constructor(context: Context, repository: AgentRunRepository) : this(
         repository = repository,
         notifyStranded = { stranded -> postAggregateNotification(context, stranded) },
+        isLegitimatelyWaiting = { run ->
+            com.clma.app.data.botmode.BotRoutineApprovals.isWaitingLedger(run.id)
+        },
     )
 
     /**
@@ -48,7 +56,7 @@ class AgentRunBootRecovery(
     suspend fun runRecovery(): Int {
         return runCatching {
             val cutoff = System.currentTimeMillis() - AgentRunDefaults.STRANDED_THRESHOLD_MS
-            val stranded = repository.getStranded(cutoff)
+            val stranded = repository.getStranded(cutoff).filterNot(isLegitimatelyWaiting)
             if (stranded.isEmpty()) {
                 logSafe { Log.i(TAG, "runRecovery: no stranded runs") }
                 return@runCatching 0

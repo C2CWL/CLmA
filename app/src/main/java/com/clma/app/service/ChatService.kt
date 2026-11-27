@@ -1660,6 +1660,9 @@ class ChatService(
 
         val releaseForegroundWork = foregroundWorkTracker.acquire()
         val job = appScope.launch {
+            // Bot routines: whether THIS call changed a card (so only a real answer re-queues
+            // a parked run; a stale double tap must not restart an active resume).
+            var applied = false
             try {
                 awaitForegroundWorkReady()
                 convMutex.withLock {
@@ -1675,6 +1678,13 @@ class ChatService(
                         if (conversation.currentMessages.none { message ->
                                 message.getTools().any { it.toolCallId == toolCallId && it.isPending }
                             }) return@afterPreviousGeneration
+                        // A parked Bot routine past its approval deadline: the card no longer
+                        // authorizes anything (the expiry worker closes it under this mutex).
+                        com.clma.app.data.botmode.BotRoutineApprovals.get(conversationId)?.let { parkedRun ->
+                            if (!parkedRun.resuming && com.clma.app.data.botmode.BotRoutineApprovalRules
+                                    .isExpired(parkedRun, System.currentTimeMillis())
+                            ) return@afterPreviousGeneration
+                        }
                         val pendingCall = conversation.currentMessages.asSequence()
                             .flatMap { it.getTools().asSequence() }
                             .first { it.toolCallId == toolCallId && it.isPending }
@@ -1711,6 +1721,7 @@ class ChatService(
                         }
                         val updatedConversation = conversation.copy(messageNodes = updatedNodes)
                         saveConversation(conversationId, updatedConversation)
+                        applied = true
                     }
                 }
                 // Outside the mutex: kick off the resume generation if no tools remain pending.
@@ -1724,8 +1735,9 @@ class ChatService(
                 if (!pendingNow) {
                     if (com.clma.app.data.botmode.BotRoutineApprovals.isParked(conversationId)) {
                         // A parked Bot routine resumes in its own worker (headless again, with
-                        // the time it still has left), not in this approval coroutine.
-                        com.clma.app.service.BotRoutineRuns.requestResume(context, conversationId)
+                        // the time it still has left), not in this approval coroutine. Only an
+                        // answer that actually closed a card queues it.
+                        if (applied) com.clma.app.service.BotRoutineRuns.requestResume(context, conversationId)
                     } else {
                         handleMessageComplete(conversationId)
                     }

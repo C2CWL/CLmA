@@ -44,6 +44,7 @@ class BotInfoVM(
     private val scheduledJobRepository: ScheduledJobRepository,
     private val scheduledJobRunRepository: ScheduledJobRunRepository,
     private val cronJobScheduler: CronJobScheduler,
+    private val appContext: android.content.Context,
 ) : ViewModel() {
     val id: Uuid = Uuid.parse(botId)
 
@@ -130,7 +131,7 @@ class BotInfoVM(
         if (existingId != null && existing == null) return@launch
         val job = form.toJob(assistantId = id, existing = existing, nowMs = System.currentTimeMillis())
         scheduledJobRepository.upsert(job)
-        cronJobScheduler.schedule(job)
+        if (job.enabled) cronJobScheduler.schedule(job) else cronJobScheduler.cancel(job.id)
     }
 
     fun setRoutineEnabled(jobId: String, enabled: Boolean) = viewModelScope.launch(Dispatchers.IO) {
@@ -154,6 +155,11 @@ class BotInfoVM(
         cronJobScheduler.cancel(jobId)
         scheduledJobRunRepository.deleteAllForJob(jobId)
         scheduledJobRepository.deleteById(jobId)
+        // Runs of this routine still waiting for approval: close their cards and cancel them
+        // now (the worker sees the routine is gone), keeping their topics.
+        BotRoutineApprovals.ofJob(jobId).forEach {
+            com.clma.app.service.BotRoutineRuns.settleNow(appContext, it.conversationId)
+        }
     }
 
     /** Team-pack Markdown with just this bot, readable by the team-pack import. */

@@ -184,6 +184,16 @@ class BotRoutineScheduleTest {
         assertEquals(existing.runsSoFar, updated.runsSoFar)
     }
 
+    @Test
+    fun `editing a paused routine keeps it paused`() {
+        val paused = job().copy(enabled = false)
+        val updated = form.copy(kind = BotRoutineKind.DAILY, name = "Renamed").toJob(
+            assistantId, existing = paused, nowMs = todayAtNine, zone = zone,
+        )
+        assertEquals(false, updated.enabled)
+        assertEquals("Renamed", updated.name)
+    }
+
     private fun job(id: String = "routine") = ScheduledJobEntity(
         id = id,
         name = form.name,

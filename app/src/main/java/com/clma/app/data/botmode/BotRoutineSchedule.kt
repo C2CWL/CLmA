@@ -222,7 +222,13 @@ fun BotRoutineForm.toJob(
         prompt = prompt.trim().take(BotRoutineForm.PROMPT_MAX),
         mode = "llm",
         actionsJson = null,
-        enabled = true,
+        // Editing keeps a paused routine paused; only a brand-new routine, or re-arming a
+        // one-time routine that already fired, switches it on.
+        enabled = when {
+            existing == null -> true
+            kind == BotRoutineKind.ONCE && existing.scheduleType == "once" && existing.lastRunAtMs != null -> true
+            else -> existing.enabled
+        },
         nextRunAtMs = null,
     )
     return if (kind == BotRoutineKind.ONCE) {

@@ -38,7 +38,17 @@ object BotRoutineRuns {
         val req = OneTimeWorkRequestBuilder<CronJobWorker>()
             .setInputData(Data.Builder().putString(CronJobWorker.KEY_RESUME_CONVERSATION, id).build())
             .build()
-        WorkManager.getInstance(context).enqueueUniqueWork(resumeWorkName(id), ExistingWorkPolicy.REPLACE, req)
+        // APPEND_OR_REPLACE: a resume already queued or running is never cancelled by a later
+        // request; the later one runs after it and is a no-op unless the run parked again.
+        WorkManager.getInstance(context).enqueueUniqueWork(resumeWorkName(id), ExistingWorkPolicy.APPEND_OR_REPLACE, req)
+    }
+
+    /**
+     * The routine behind parked run(s) was deleted: let the worker settle each one now (close
+     * its cards, cancel the run) instead of waiting out the approval deadline. The topic stays.
+     */
+    fun settleNow(context: Context, conversationId: String) {
+        scheduleExpiry(context, conversationId, 0L)
     }
 
     /** Cancel the parked run if nobody answers within [delayMs]. */

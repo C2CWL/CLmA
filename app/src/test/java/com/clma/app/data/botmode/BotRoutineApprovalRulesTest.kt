@@ -15,9 +15,10 @@ class BotRoutineApprovalRulesTest {
     }
 
     @Test
-    fun `remaining budget has a one minute floor`() {
-        assertEquals(60_000L, BotRoutineApprovalRules.remainingBudgetMs(899_999L))
-        assertEquals(60_000L, BotRoutineApprovalRules.remainingBudgetMs(900_001L))
+    fun `remaining budget is capped at what is left and never negative`() {
+        assertEquals(1L, BotRoutineApprovalRules.remainingBudgetMs(899_999L))
+        assertEquals(0L, BotRoutineApprovalRules.remainingBudgetMs(900_000L))
+        assertEquals(0L, BotRoutineApprovalRules.remainingBudgetMs(900_001L))
     }
 
     @Test

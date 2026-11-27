@@ -11,6 +11,8 @@ import androidx.work.WorkerParameters
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.uuid.Uuid
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
@@ -525,11 +527,15 @@ class CronJobWorker(
             BotRoutineApprovals.remove(conversationId)
             return Result.success()
         }
-        if (!parkedRun.resuming && BotRoutineApprovalRules.isExpired(parkedRun, System.currentTimeMillis())) {
-            return expireParked(conversationId)
+        // The routine was deleted while this run waited: settle it, never execute it.
+        if (repo.getById(parkedRun.jobId) == null) return expireParked(conversationId)
+        // Another card is still open: wait for it (its answer re-queues this worker), or for
+        // the deadline if it has already passed.
+        if (pendingToolName(convId) != null) {
+            return if (!parkedRun.resuming && BotRoutineApprovalRules.isExpired(parkedRun, System.currentTimeMillis())) {
+                expireParked(conversationId)
+            } else Result.success()
         }
-        // Another card is still open: wait for it (its answer re-queues this worker).
-        if (pendingToolName(convId) != null) return Result.success()
         val trackerKey = "resume:$conversationId"
         if (!CronJobRunningTracker.start(trackerKey)) return Result.success()
 
@@ -537,33 +543,53 @@ class CronJobWorker(
         BotRoutineApprovals.put(parkedRun.copy(resuming = true))
         parkedRun.ledgerId?.let { agentRunRepo.setStatus(it, AgentRunStatus.running) }
         val resumedAt = System.currentTimeMillis()
+        val budgetMs = BotRoutineApprovalRules.remainingBudgetMs(parkedRun.workedMs)
+        val errorsBefore = chatService.errors.value.filter { it.conversationId == convId }.mapTo(mutableSetOf()) { it.id }
         var outcome = "failed"
         var errorMessage: String? = null
         HeadlessConversations.markParkable(convId)
         try {
-            chatService.resumeAnsweredTurn(convId)
-            val completed = awaitGenerationTerminal(
-                flow = chatService.getGenerationJobStateFlow(convId),
-                timeoutMs = BotRoutineApprovalRules.remainingBudgetMs(parkedRun.workedMs),
-            )
-            outcome = when {
-                !completed -> {
-                    runCatching { chatService.stopGeneration(convId) }
-                    errorMessage = "llm turn exceeded the run limit"
-                    "timed_out"
+            if (budgetMs <= 0L) {
+                outcome = "timed_out"
+                errorMessage = "llm turn exceeded the run limit"
+            } else {
+                chatService.resumeAnsweredTurn(convId)
+                val completed = awaitGenerationTerminal(
+                    flow = chatService.getGenerationJobStateFlow(convId),
+                    timeoutMs = budgetMs,
+                )
+                val newError = chatService.errors.value
+                    .lastOrNull { it.conversationId == convId && it.id !in errorsBefore }
+                outcome = when {
+                    !completed -> {
+                        runCatching { chatService.stopGeneration(convId) }
+                        errorMessage = "llm turn exceeded the run limit"
+                        "timed_out"
+                    }
+                    pendingToolName(convId) != null -> OUTCOME_AWAITING_APPROVAL
+                    newError != null -> {
+                        errorMessage = newError.error.message ?: newError.error::class.simpleName
+                        "failed"
+                    }
+                    else -> "success"
                 }
-                pendingToolName(convId) != null -> OUTCOME_AWAITING_APPROVAL
-                else -> "success"
             }
         } catch (t: Throwable) {
             if (t is kotlinx.coroutines.CancellationException) {
-                // The worker was stopped mid-resume: leave the run parked so a later answer
-                // (or the give-up timer) can still settle it.
-                BotRoutineApprovals.put(parkedRun.copy(resuming = false))
-                BotRoutineRuns.scheduleExpiry(
-                    applicationContext, conversationId,
-                    (parkedRun.expiresAtMs - System.currentTimeMillis()).coerceAtLeast(0L),
-                )
+                // The worker was stopped mid-resume. The turn runs in the app scope, so stop it
+                // first; tools may already have run, so never replay it: re-park only if it is
+                // sitting on a new card, otherwise settle it as interrupted.
+                withContext(NonCancellable) {
+                    runCatching { chatService.stopGeneration(convId) }
+                    val worked = parkedRun.workedMs + (System.currentTimeMillis() - resumedAt)
+                    if (pendingToolName(convId) != null) {
+                        writeRunRow(parkedRun, OUTCOME_AWAITING_APPROVAL, null)
+                        parkedRun.ledgerId?.let { agentRunRepo.setStatus(it, AgentRunStatus.awaiting_approval) }
+                        park(parkedRun.copy(workedMs = worked))
+                    } else {
+                        settle(parkedRun, convId, "failed", "interrupted while resuming", notify = true)
+                    }
+                }
                 throw t
             }
             outcome = "failed"
@@ -580,7 +606,20 @@ class CronJobWorker(
             park(parkedRun.copy(workedMs = worked))
             return Result.success()
         }
-        BotRoutineApprovals.remove(conversationId)
+        settle(parkedRun, convId, outcome, errorMessage, notify = true)
+        return Result.success()
+    }
+
+    /** Write a parked run's final outcome everywhere and drop it from the store. */
+    private suspend fun settle(
+        parkedRun: ParkedRoutineRun,
+        convId: Uuid,
+        outcome: String,
+        errorMessage: String?,
+        notify: Boolean,
+    ) {
+        BotRoutineApprovals.remove(parkedRun.conversationId)
+        BotRoutineRuns.cancelExpiry(applicationContext, parkedRun.conversationId)
         writeRunRow(parkedRun, outcome, errorMessage)
         parkedRun.ledgerId?.let {
             agentRunRepo.markTerminal(
@@ -589,26 +628,40 @@ class CronJobWorker(
                 lastError = if (outcome == "success") null else "$outcome: ${errorMessage.orEmpty()}",
             )
         }
-        notifyBotRoutineFinished(parkedRun.assistantId, parkedRun.jobName, convId, outcome, errorMessage)
-        return Result.success()
+        if (notify) notifyBotRoutineFinished(parkedRun.assistantId, parkedRun.jobName, convId, outcome, errorMessage)
     }
 
-    /** Nobody answered a parked run in time: close its cards, cancel the run, tell the user. */
+    /**
+     * Nobody answered a parked run in time, or its routine was deleted: close its cards, cancel
+     * the run and (for a timeout) tell the user. Closing the cards happens under the chat's
+     * mutex BEFORE the run leaves the store, so an approval racing the deadline either lands
+     * first (and the run resumes) or finds the card already closed.
+     */
     private suspend fun expireParked(conversationId: String): Result {
         val parkedRun = BotRoutineApprovals.get(conversationId) ?: return Result.success()
         if (parkedRun.resuming) return Result.success()
-        if (!BotRoutineApprovalRules.isExpired(parkedRun, System.currentTimeMillis())) {
+        val deleted = repo.getById(parkedRun.jobId) == null
+        if (!deleted && !BotRoutineApprovalRules.isExpired(parkedRun, System.currentTimeMillis())) {
             // Re-parked since this timer was armed; a fresh timer covers the new wait.
             return Result.success()
         }
+        val convId = runCatching { Uuid.parse(conversationId) }.getOrNull()
+        if (convId != null) {
+            val reason = applicationContext.getString(com.clma.app.R.string.bot_routine_approval_expired_reason)
+            val closed = runCatching { chatService.closePendingTools(convId, reason) }
+                .onFailure { Log.w(TAG, "expireParked: closing cards failed for $conversationId", it) }
+                .getOrNull()
+            if (!deleted && closed == 0) {
+                // Every card was answered just before the deadline: that answer queued a
+                // resume, which finishes the run.
+                return Result.success()
+            }
+        }
         BotRoutineApprovals.remove(conversationId)
-        runCatching { Uuid.parse(conversationId) }.getOrNull()?.let { convId ->
-            runCatching {
-                chatService.closePendingTools(
-                    convId,
-                    applicationContext.getString(com.clma.app.R.string.bot_routine_approval_expired_reason),
-                )
-            }.onFailure { Log.w(TAG, "expireParked: closing cards failed for $conversationId", it) }
+        if (deleted) {
+            // The routine and its run history are gone; only the ledger row is left to close.
+            parkedRun.ledgerId?.let { agentRunRepo.markTerminal(it, AgentRunStatus.cancelled, "routine_deleted") }
+            return Result.success()
         }
         writeRunRow(parkedRun, OUTCOME_APPROVAL_EXPIRED, "no answer within ${BotRoutineApprovalRules.APPROVAL_TTL_MS / 3_600_000L}h")
         parkedRun.ledgerId?.let { agentRunRepo.markTerminal(it, AgentRunStatus.cancelled, OUTCOME_APPROVAL_EXPIRED) }

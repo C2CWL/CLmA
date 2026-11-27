@@ -50,12 +50,13 @@ object BotRoutineApprovalRules {
     /** A parked run whose cards nobody answered within this window is cancelled. */
     const val APPROVAL_TTL_MS: Long = 24L * 60L * 60_000L
 
-    /** A resumed run always gets at least this long, even when it had nearly used its limit. */
-    const val MIN_RESUME_BUDGET_MS: Long = 60_000L
-
-    /** Budget left for a resumed run: the limit minus the time already worked (waiting excluded). */
+    /**
+     * Budget left for a resumed run: the limit minus the time already worked (waiting excluded).
+     * Zero once the limit is used up, so repeated approval cycles cannot stretch the work past
+     * [RUN_LIMIT_MS] in total.
+     */
     fun remainingBudgetMs(workedMs: Long, limitMs: Long = RUN_LIMIT_MS): Long =
-        (limitMs - workedMs.coerceAtLeast(0L)).coerceAtLeast(MIN_RESUME_BUDGET_MS)
+        (limitMs - workedMs.coerceAtLeast(0L)).coerceAtLeast(0L)
 
     fun isExpired(run: ParkedRoutineRun, nowMs: Long): Boolean = nowMs >= run.expiresAtMs
 
@@ -92,6 +93,16 @@ object BotRoutineApprovals {
         _parked.value.firstOrNull { it.conversationId == conversationId }
 
     fun isParked(conversationId: Uuid): Boolean = get(conversationId) != null
+
+    /** Parked runs of routine [jobId]. */
+    fun ofJob(jobId: String): List<ParkedRoutineRun> = _parked.value.filter { it.jobId == jobId }
+
+    /**
+     * True when ledger row [ledgerId] belongs to a run that is legitimately waiting for the
+     * user (parked, not mid-resume), so boot recovery must not call it stranded.
+     */
+    fun isWaitingLedger(ledgerId: String): Boolean =
+        _parked.value.any { it.ledgerId == ledgerId && !it.resuming }
 
     fun conversationIds(): Set<String> = _parked.value.mapTo(mutableSetOf()) { it.conversationId }
 
