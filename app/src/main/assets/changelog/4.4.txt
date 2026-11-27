@@ -1,0 +1,8 @@
+## CLmA 4.4
+
+- 新增默认关闭的提示词缓存诊断。
+- 记录相邻请求前缀差异和缓存用量，不记录请求正文。
+
+## Changes
+- Add opt-in prompt cache prefix diagnostics.
+- Log prefix differences and cache usage without request bodies.
