@@ -41,12 +41,17 @@ class BotInfoVM(
     private val settingsStore: SettingsStore,
     conversationRepo: ConversationRepository,
     memoryRepository: MemoryRepository,
+    chatService: com.clma.app.service.ChatService,
     private val scheduledJobRepository: ScheduledJobRepository,
     private val scheduledJobRunRepository: ScheduledJobRunRepository,
     private val cronJobScheduler: CronJobScheduler,
     private val appContext: android.content.Context,
 ) : ViewModel() {
     val id: Uuid = Uuid.parse(botId)
+
+    val activity = com.clma.app.data.botmode.settings.observeBotActivity(id, conversationRepo, chatService)
+        .map { it.activity }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), com.clma.app.data.botmode.settings.BotActivity.IDLE)
 
     val settings: StateFlow<Settings> = settingsStore.settingsFlow
 

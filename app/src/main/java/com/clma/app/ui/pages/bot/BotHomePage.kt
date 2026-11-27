@@ -79,6 +79,9 @@ fun BotHomePage(vm: BotHomeVM = koinViewModel()) {
                     )
                 },
                 actions = {
+                    IconButton(onClick = { nav.navigate(Screen.BotSettings) }) {
+                        Icon(Lucide.LucideSettings, contentDescription = stringResource(R.string.bot_settings_title))
+                    }
                     if (tab == BotHomeTab.BOTS) {
                         IconButton(onClick = { showNewBot = true }) {
                             Icon(Lucide.Plus, contentDescription = stringResource(R.string.bot_home_new_bot))

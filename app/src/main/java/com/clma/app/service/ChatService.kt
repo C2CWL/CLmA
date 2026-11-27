@@ -1,5 +1,14 @@
 package com.clma.app.service
 
+import com.clma.app.data.botmode.settings.BotModeSettingsStore
+import com.clma.app.data.botmode.settings.BotProfileStore
+import com.clma.app.data.botmode.settings.BotTeamMember
+import com.clma.app.data.botmode.settings.canGrantForBot
+import com.clma.app.data.botmode.settings.LiveBotConversation
+import com.clma.app.data.botmode.settings.botAutoVerdict
+import com.clma.app.data.botmode.settings.botProfilePrompt
+import com.clma.app.data.botmode.settings.notificationSettings
+import com.clma.app.data.botmode.settings.requiresBotToolConsent
 import com.clma.app.data.botmode.BotPeerRuntime
 import com.clma.app.data.botmode.BotPeerTools
 import com.clma.app.data.botmode.BotPeerToolPolicy
@@ -37,6 +46,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -577,6 +587,8 @@ class ChatService(
     private val toolApprovalPreferences: com.clma.app.data.preferences.ToolApprovalPreferences,
     private val workspaceRepository: WorkspaceRepository,
     private val folderRepository: FolderRepository,
+    private val botModeSettingsStore: BotModeSettingsStore,
+    private val botProfileStore: BotProfileStore,
 ) {
     // workspace 系统提示注入 (依赖 workspaceRepository, 故在类内构造)
     private val workspaceReminderTransformer = WorkspaceReminderTransformer(workspaceRepository)
@@ -1056,6 +1068,26 @@ class ChatService(
         }
     }
 
+    internal fun observeLiveBotConversations(assistantId: Uuid): Flow<List<LiveBotConversation>> =
+        _sessionsVersion.flatMapLatest {
+            val observed = sessions.values.map { session ->
+                combine(session.state, session.generationJob) { conversation, job ->
+                    val generating = job?.isActive == true
+                    if (conversation.assistantId != assistantId || (!generating && conversation.messageNodes.isEmpty())) {
+                        null
+                    } else {
+                        LiveBotConversation(
+                            id = session.id,
+                            generating = generating,
+                            pending = com.clma.app.data.botmode.hasPendingApproval(conversation),
+                        )
+                    }
+                }.distinctUntilChanged()
+            }
+            if (observed.isEmpty()) flowOf(emptyList())
+            else combine(observed) { snapshots -> snapshots.filterNotNull() }
+        }
+
     /**
      * Whether [conversationId] has a generation running right now. Same source of truth the chat
      * page reads; exposed for surfaces (the floating chat box) that only know about jobs they
@@ -1445,6 +1477,8 @@ class ChatService(
         }
 
         if (com.clma.app.connectors.ConnectorWriteApproval.requiresApproval(tool.name)) return false
+        // Bot turns use the generation path for both profile instructions and tool approval.
+        if (assistant.isBot) return false
         // 聊天模式快路径：只执行白名单工具，其余回落 LLM。
         if (!afterUserSave.agentModeEnabled && !ChatModeTools.isAllowed(tool.name)) return false
 
@@ -1604,10 +1638,11 @@ class ChatService(
     // ---- 处理工具调用审批 ----
 
     /** Scope of an "approve" decision. Once = this single tool call only. ChatScope =
-     *  every future call of the same tool name in this conversation (until /new). There is no
-     *  persistent "always" scope any more — the blacklist (Settings → Tool approvals) is where
-     *  a tool stops asking for good. */
-    enum class ApprovalScope { Once, ChatScope }
+     *  every future call of the same tool name in this conversation (until /new).
+     *  BotScope persists the tool name in the conversation owner's Bot profile. */
+    enum class ApprovalScope { Once, ChatScope, BotScope }
+
+    private val botGrantsInFlight = ConcurrentHashMap.newKeySet<Pair<Uuid, String>>()
 
     fun handleToolApproval(
         conversationId: Uuid,
@@ -1620,15 +1655,10 @@ class ChatService(
     ) {
         val session = getOrCreateSession(conversationId)
         val convMutex = mutexFor(conversationId)
+        val botGrant = (conversationId to toolCallId).takeIf { scope == ApprovalScope.BotScope }
+        if (botGrant != null && !botGrantsInFlight.add(botGrant)) return
 
-        // Snapshot the prior generation job BEFORE the appScope.launch below replaces it
-        // via setJob. session.setJob runs synchronously after launch returns; the launched
-        // body is dispatched and runs LATER (Dispatchers.Main posts to the looper). So
-        // calling session.getJob() inside the body would return THIS very job — and
-        // cancelAndJoin would self-cancel the resume coroutine: saveConversation's first
-        // suspend then throws CancellationException, the tool stays Pending, and the
-        // generation never resumes. The YOLO toggle masked this because auto-approval
-        // skips the Pending → handleToolApproval path entirely.
+        // Capture the preceding job before registering the lazy approval job as its successor.
         val priorGenerationJob = session.getJob()
 
         // Commit the "allow for this chat" grant on a NonCancellable scope BEFORE the
@@ -1659,39 +1689,55 @@ class ChatService(
         }
 
         val releaseForegroundWork = foregroundWorkTracker.acquire()
-        val job = appScope.launch {
+        val job = appScope.launch(start = CoroutineStart.LAZY) {
             // Bot routines: whether THIS call changed a card (so only a real answer re-queues
             // a parked run; a stale double tap must not restart an active resume).
             var applied = false
             try {
                 awaitForegroundWorkReady()
-                convMutex.withLock {
-                    // Hydrate from disk if the in-memory session is empty (post-restart
-                    // path). Without this, the snapshot read below sees an empty
-                    // Conversation and the saveConversation downstream OVERWRITES the
-                    // persisted Pending tool with empty content — silent data loss.
-                    ensureHydrated(conversationId)
-
-                    afterPreviousGeneration(priorGenerationJob) {
+                afterPreviousGeneration(priorGenerationJob) {
+                    convMutex.withLock {
+                        // Restore persisted approval cards before mutating the conversation.
+                        ensureHydrated(conversationId)
                         val conversation = session.state.value
                         // Ignore double taps and stale approvals for completed or inactive tools.
                         if (conversation.currentMessages.none { message ->
                                 message.getTools().any { it.toolCallId == toolCallId && it.isPending }
-                            }) return@afterPreviousGeneration
+                            }) return@withLock
                         // A parked Bot routine past its approval deadline: the card no longer
                         // authorizes anything (the expiry worker closes it under this mutex).
                         com.clma.app.data.botmode.BotRoutineApprovals.get(conversationId)?.let { parkedRun ->
                             if (!parkedRun.resuming && com.clma.app.data.botmode.BotRoutineApprovalRules
                                     .isExpired(parkedRun, System.currentTimeMillis())
-                            ) return@afterPreviousGeneration
+                            ) return@withLock
                         }
                         val pendingCall = conversation.currentMessages.asSequence()
                             .flatMap { it.getTools().asSequence() }
                             .first { it.toolCallId == toolCallId && it.isPending }
+                        if (approved && scope == ApprovalScope.BotScope) {
+                            val bot = settingsStore.settingsFlow.value.assistants.firstOrNull {
+                                it.id == conversation.assistantId && it.isBot
+                            } ?: return@withLock
+                            val name = pendingCall.toolName
+                            if (name != toolName || !pendingCall.canGrantForBot() || answer != null) {
+                                return@withLock
+                            }
+                            val saved = try {
+                                botProfileStore.allow(bot.id.toString(), name)
+                            } catch (e: java.io.IOException) {
+                                Log.w(TAG, "Bot approval grant write failed", e)
+                                android.widget.Toast.makeText(context, R.string.bot_settings_save_failed, android.widget.Toast.LENGTH_SHORT).show()
+                                return@withLock
+                            }
+                            if (!saved) {
+                                android.widget.Toast.makeText(context, R.string.bot_settings_allow_limit, android.widget.Toast.LENGTH_SHORT).show()
+                                return@withLock
+                            }
+                        }
                         if (com.clma.app.connectors.ConnectorWriteApproval.requiresApproval(pendingCall.toolName)) {
                             if (answer != null || (approved && scope != ApprovalScope.Once) ||
                                 com.clma.app.data.ai.tools.HeadlessConversations.isHeadless(conversationId)
-                            ) return@afterPreviousGeneration
+                            ) return@withLock
                             if (approved) {
                                 com.clma.app.connectors.ConnectorWriteApproval.approveOnce(
                                     conversationId.toString(), toolCallId, pendingCall.toolName, pendingCall.inputAsJson(),
@@ -1720,8 +1766,7 @@ class ChatService(
                             )
                         }
                         val updatedConversation = conversation.copy(messageNodes = updatedNodes)
-                        saveConversation(conversationId, updatedConversation)
-                        applied = true
+                        applied = saveConversation(conversationId, updatedConversation)
                     }
                 }
                 // Outside the mutex: kick off the resume generation if no tools remain pending.
@@ -1732,12 +1777,12 @@ class ChatService(
                         part is UIMessagePart.Tool && part.isPending
                     }
                 }
-                if (!pendingNow) {
+                if (!pendingNow && applied) {
                     if (com.clma.app.data.botmode.BotRoutineApprovals.isParked(conversationId)) {
                         // A parked Bot routine resumes in its own worker (headless again, with
                         // the time it still has left), not in this approval coroutine. Only an
                         // answer that actually closed a card queues it.
-                        if (applied) com.clma.app.service.BotRoutineRuns.requestResume(context, conversationId)
+                        com.clma.app.service.BotRoutineRuns.requestResume(context, conversationId)
                     } else {
                         handleMessageComplete(conversationId)
                     }
@@ -1752,6 +1797,7 @@ class ChatService(
             }
         }
 
+        if (botGrant != null) job.invokeOnCompletion { botGrantsInFlight.remove(botGrant) }
         session.setJob(job, cancelPrevious = false)
     }
 
@@ -2742,6 +2788,22 @@ class ChatService(
                 model.copy(tools = ChatModeTools.filterBuiltIns(model.tools))
             }
 
+            val botId = assistant.id.toString().takeIf { assistant.isBot }
+            val botProfiles = if (botId == null) emptyMap() else botProfileStore.profiles.first()
+            val profileAddendum = botId?.let { id ->
+                botProfiles[id]?.let { profile ->
+                    botProfilePrompt(
+                        botId = id,
+                        profile = profile,
+                        bots = settings.assistants.filter { it.isBot }.map {
+                            val teammateId = it.id.toString()
+                            BotTeamMember(teammateId, it.name, botProfiles[teammateId]?.description.orEmpty())
+                        },
+                        canDelegate = profile.chiefOfStaff && toolSurface.tools().any { it.name == "delegate_bot" },
+                    )
+                }
+            }
+
             generationLoop.generateText(
                 settings = settings,
                 model = generationModel,
@@ -2757,32 +2819,29 @@ class ChatService(
                 // anything else) gets its runtime context into the system prompt without
                 // having to plumb a parameter all the way through sendMessage. Returns null
                 // for in-app conversations that didn't register one.
-                systemAddendum = buildEffectiveSystemAddendum(conversationId, surfaceAssistant),
+                systemAddendum = buildEffectiveSystemAddendum(conversationId, surfaceAssistant).let { base ->
+                    if (profileAddendum == null) base
+                    else listOfNotNull(base, profileAddendum).joinToString("\n\n")
+                },
+                enforceBotApproval = botId != null,
                 isToolAutoApproved = { toolName ->
-                    // The decision itself is pure — see ToolApprovalPolicy (unit-tested). Here
-                    // we only supply the async inputs: the persisted blacklist + mode (one
-                    // DataStore read), whether this conversation is headless, and any in-memory
-                    // "allow for this chat" grant, plus the user's floor / MCP waivers. The mode
-                    // decides the posture: Auto approves everything but the named floor unless
-                    // waived (relayed mcp__* tools are waived in Auto);
-                    // Semi consults the blacklist; Manual asks on every call. The HARDLINE
-                    // command floor still blocks rm -rf / et al because GenerationLoop checks
-                    // it before this.
-                    val snapshot = toolApprovalPreferences.snapshot()
-                    com.clma.app.data.ai.tools.ToolApprovalPolicy.shouldAutoApprove(
-                        toolName = toolName,
-                        blacklist = snapshot.blacklist,
-                        mode = snapshot.mode,
-                        headless = com.clma.app.data.ai.tools.HeadlessConversations
-                            .shouldAutoApprove(conversationId),
-                        allowedForChat = com.clma.app.data.ai.tools.ToolApprovalAllowList
-                            .isAllowedForChat(conversationId, toolName),
-                        // User-acknowledged waivers of the default-ask floor / MCP approval.
-                        // Headless runs never reach them (headless returns early above, and
-                        // HeadlessToolApprovalPolicy still refuses the floor at execution).
-                        floorWaived = snapshot.floorWaived,
-                        mcpRequireApproval = snapshot.mcpRequireApproval,
-                    )
+                    if (botId != null) {
+                        shouldAutoApproveBotTool(botId, toolName)
+                    } else {
+                        val snapshot = toolApprovalPreferences.snapshot()
+                        com.clma.app.data.ai.tools.ToolApprovalPolicy.shouldAutoApprove(
+                            toolName = toolName,
+                            blacklist = snapshot.blacklist,
+                            mode = snapshot.mode,
+                            headless = com.clma.app.data.ai.tools.HeadlessConversations
+                                .shouldAutoApprove(conversationId),
+                            allowedForChat = com.clma.app.data.ai.tools.ToolApprovalAllowList
+                                .isAllowedForChat(conversationId, toolName),
+                            // User-acknowledged waivers of the default-ask floor / MCP approval.
+                            floorWaived = snapshot.floorWaived,
+                            mcpRequireApproval = snapshot.mcpRequireApproval,
+                        )
+                    }
                 },
                 onAfterToolExecution = { generatedMessages ->
                     if (messageRange != null || !settings.enableAutoCompaction) {
@@ -2946,7 +3005,7 @@ class ChatService(
                 if (
                     completionCause == null &&
                     !isForeground.value &&
-                    settings.displaySetting.enableNotificationOnMessageGeneration &&
+                    (botId != null || settings.displaySetting.enableNotificationOnMessageGeneration) &&
                     // Bot routine runs post their own result / approval notification.
                     !com.clma.app.data.ai.tools.HeadlessConversations.canParkForApproval(conversationId)
                 ) {
@@ -2956,13 +3015,14 @@ class ChatService(
                         .flatMap { it.parts.asReversed().asSequence() }
                         .filterIsInstance<UIMessagePart.Tool>()
                         .firstOrNull { it.isPending }
-                    if (pendingTool != null) {
+                    val botNotifications = botId?.let { botModeSettingsStore.notificationSettings() }
+                    if (pendingTool != null && botNotifications?.notifyApprovals != false) {
                         sendToolApprovalRequiredNotification(
                             conversationId = conversationId,
                             senderName = senderName,
                             pendingTool = pendingTool,
                         )
-                    } else {
+                    } else if (pendingTool == null && botNotifications?.notifyReplies != false) {
                         sendGenerationDoneNotification(conversationId, senderName)
                     }
                 }
@@ -3003,7 +3063,10 @@ class ChatService(
                         }
 
                         // 如果应用不在前台，发送 Live Update 通知
-                        if (!isForeground.value && settings.displaySetting.enableNotificationOnMessageGeneration && settings.displaySetting.enableLiveUpdateNotification) {
+                        if (!isForeground.value && botId == null &&
+                            settings.displaySetting.enableNotificationOnMessageGeneration &&
+                            settings.displaySetting.enableLiveUpdateNotification
+                        ) {
                             sendLiveUpdateNotification(conversationId, chunk.messages, senderName)
                         }
                     }
@@ -3463,6 +3526,12 @@ class ChatService(
                 Log.d(TAG, "flushAutomationPlaybook($fileName) failed: ${e.message}")
             }
         }
+    }
+
+    private suspend fun shouldAutoApproveBotTool(botId: String, toolName: String): Boolean {
+        val defaults = botModeSettingsStore.settings.first()
+        val profile = botProfileStore.profile(botId)
+        return botAutoVerdict(toolName, defaults, profile, safetyFloor = requiresBotToolConsent(toolName))
     }
 
     private suspend fun buildEffectiveSystemAddendum(

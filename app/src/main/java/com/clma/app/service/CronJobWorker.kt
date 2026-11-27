@@ -1,5 +1,8 @@
 package com.clma.app.service
 
+import com.clma.app.data.botmode.settings.BotModeSettingsStore
+import com.clma.app.data.botmode.settings.notificationSettings
+
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
@@ -173,6 +176,7 @@ class CronJobWorker(
     private val chatService: ChatService by inject()
     private val conversationRepo: ConversationRepository by inject()
     private val settingsStore: SettingsStore by inject()
+    private val botModeSettingsStore: BotModeSettingsStore by inject()
     private val localTools: LocalTools by inject()
     private val directRunner: DirectModeActionRunner by inject()
     private val agentRunRepo: AgentRunRepository by inject()
@@ -475,6 +479,7 @@ class CronJobWorker(
         outcome: String,
         errorMessage: String?,
     ) {
+        if (!botModeSettingsStore.notificationSettings().notifyRoutineResults) return
         val name = botName(assistantId)
         if (outcome == "success") {
             BotRoutineRuns.notifyDone(applicationContext, convId.toString(), name, jobName, lastReplyLine(convId))
@@ -493,6 +498,7 @@ class CronJobWorker(
         )
         BotRoutineApprovals.put(parked)
         BotRoutineRuns.scheduleExpiry(applicationContext, parked.conversationId, BotRoutineApprovalRules.APPROVAL_TTL_MS)
+        if (!botModeSettingsStore.notificationSettings().notifyApprovals) return
         val convId = Uuid.parse(parked.conversationId)
         val tool = pendingToolName(convId).orEmpty()
             .removePrefix("mcp__")
@@ -665,7 +671,9 @@ class CronJobWorker(
         }
         writeRunRow(parkedRun, OUTCOME_APPROVAL_EXPIRED, "no answer within ${BotRoutineApprovalRules.APPROVAL_TTL_MS / 3_600_000L}h")
         parkedRun.ledgerId?.let { agentRunRepo.markTerminal(it, AgentRunStatus.cancelled, OUTCOME_APPROVAL_EXPIRED) }
-        BotRoutineRuns.notifyExpired(applicationContext, conversationId, botName(parkedRun.assistantId), parkedRun.jobName)
+        if (botModeSettingsStore.notificationSettings().notifyRoutineResults) {
+            BotRoutineRuns.notifyExpired(applicationContext, conversationId, botName(parkedRun.assistantId), parkedRun.jobName)
+        }
         return Result.success()
     }
 

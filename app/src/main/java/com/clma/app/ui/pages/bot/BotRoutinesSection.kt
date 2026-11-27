@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.runtime.DisposableEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clma.app.R
 import com.clma.app.data.botmode.BotRoutineForm
 import com.clma.app.data.botmode.BotRoutineFormError
@@ -119,6 +120,10 @@ fun BotRoutinesGroup(
     onOpenConversation: (Uuid) -> Unit,
 ) {
     val context = LocalContext.current
+    val botSettingsStore = org.koin.compose.koinInject<com.clma.app.data.botmode.settings.BotModeSettingsStore>()
+    val botSettings by botSettingsStore.settings.collectAsStateWithLifecycle(
+        initialValue = com.clma.app.data.botmode.settings.BotModeSettings(),
+    )
     var editing by remember { mutableStateOf<ScheduledJobEntity?>(null) }
     var creating by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf<ScheduledJobEntity?>(null) }
@@ -146,7 +151,7 @@ fun BotRoutinesGroup(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        if (routines.isNotEmpty() && !exactAlarmsAllowed) {
+        if (botSettings.showRoutineReliability && routines.isNotEmpty() && !exactAlarmsAllowed) {
             Surface(
                 shape = RoundedCornerShape(12.dp),
                 color = MaterialTheme.colorScheme.tertiaryContainer,

@@ -24,10 +24,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clma.app.R
 import com.clma.app.Screen
-import com.clma.app.data.ai.tools.ApprovalMode
+import com.clma.app.data.botmode.botAssistants
 import com.clma.app.data.botmode.parseBotTeamPackMarkdown
 import com.clma.app.data.botmode.withBotChannelRemoved
 import com.clma.app.data.botmode.withBotChannelUpserted
@@ -35,20 +34,14 @@ import com.clma.app.data.botmode.withImportedBotTeam
 import com.clma.app.data.datastore.BotChannel
 import com.clma.app.data.datastore.DisplaySetting
 import com.clma.app.data.datastore.Settings
-import com.clma.app.data.preferences.ToolApprovalPreferences
 import com.clma.app.ui.components.ui.CardGroup
 import com.clma.app.ui.context.LocalNavController
-import com.clma.app.data.botmode.botAssistants
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.koin.compose.koinInject
 import kotlin.uuid.Uuid
 
-/**
- * Bot-mode settings extras: approval tier shortcut, lightweight channels, MCP connection shell,
- * and Markdown team-pack import. Only shown when Bot mode is on; classic mode stays untouched.
- */
+/** Channel management, connected apps and team import for the Bot settings page. */
 @Composable
 fun BotModeExtrasSection(
     settings: Settings,
@@ -57,71 +50,21 @@ fun BotModeExtrasSection(
     updateSettings: (Settings) -> Unit,
 ) {
     val nav = LocalNavController.current
-    val scope = rememberCoroutineScope()
-    val approvalPrefs: ToolApprovalPreferences = koinInject()
-    val mode by approvalPrefs.modeFlow.collectAsStateWithLifecycle(initialValue = ApprovalMode.MANUAL)
-
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-    CardGroup(
-        modifier = Modifier.padding(horizontal = 8.dp),
-        title = { Text(stringResource(R.string.bot_mode_approval_tier_title)) },
-    ) {
-        item(
-            headlineContent = { Text(stringResource(R.string.bot_mode_approval_tier_title)) },
-            supportingContent = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(stringResource(R.string.bot_mode_approval_tier_desc))
-                    FlowRowChips(
-                        selected = mode,
-                        onSelect = { next -> scope.launch { approvalPrefs.setMode(next) } },
-                    )
-                    TextButton(onClick = { nav.navigate(Screen.SettingToolApprovals) }) {
-                        Text(stringResource(R.string.bot_mode_approval_open_full))
-                    }
-                }
-            },
+        BotChannelsCard(
+            settings = settings,
+            displaySetting = displaySetting,
+            updateDisplaySetting = updateDisplaySetting,
         )
-    }
 
-    BotChannelsCard(
-        settings = settings,
-        displaySetting = displaySetting,
-        updateDisplaySetting = updateDisplaySetting,
-    )
-
-    BotAppsConnectionsCard(
-        settings = settings,
-        onOpenMcp = { nav.navigate(Screen.SettingMcp) },
-    )
-
-    BotTeamPackImportCard(
-        settings = settings,
-        updateSettings = updateSettings,
-    )
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun FlowRowChips(
-    selected: ApprovalMode,
-    onSelect: (ApprovalMode) -> Unit,
-) {
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        FilterChip(
-            selected = selected == ApprovalMode.MANUAL,
-            onClick = { onSelect(ApprovalMode.MANUAL) },
-            label = { Text(stringResource(R.string.bot_mode_approval_manual)) },
+        BotAppsConnectionsCard(
+            settings = settings,
+            onOpenMcp = { nav.navigate(Screen.SettingMcp) },
         )
-        FilterChip(
-            selected = selected == ApprovalMode.SEMI,
-            onClick = { onSelect(ApprovalMode.SEMI) },
-            label = { Text(stringResource(R.string.bot_mode_approval_semi)) },
-        )
-        FilterChip(
-            selected = selected == ApprovalMode.AUTO,
-            onClick = { onSelect(ApprovalMode.AUTO) },
-            label = { Text(stringResource(R.string.bot_mode_approval_auto)) },
+
+        BotTeamPackImportCard(
+            settings = settings,
+            updateSettings = updateSettings,
         )
     }
 }

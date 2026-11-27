@@ -1,0 +1,44 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<resources>
+  <string name="bot_settings_access">Access</string>
+  <string name="bot_settings_allow_count">Always allowed (%1$d/%2$d)</string>
+  <string name="bot_settings_allow_for_bot">Always allow for this Bot</string>
+  <string name="bot_settings_allow_limit">This Bot already has 200 always-allowed tools.</string>
+  <string name="bot_settings_approval">Approval level</string>
+  <string name="bot_settings_approval_alerts">Approval requests</string>
+  <string name="bot_settings_ask">Ask for approval</string>
+  <string name="bot_settings_auto">Approve for me</string>
+  <string name="bot_settings_character_count">%1$d / %2$d</string>
+  <string name="bot_settings_chief">Team coordinator</string>
+  <string name="bot_settings_defaults">Bot defaults</string>
+  <string name="bot_settings_description">Team description</string>
+  <string name="bot_settings_full">Full access</string>
+  <string name="bot_settings_full_confirm">Allow this Bot to use tools without routine approval? Actions that always require confirmation and your outbound policy still apply.</string>
+  <string name="bot_settings_full_confirm_default">Allow Bots that inherit the default to use tools without routine approval? Actions that always require confirmation and each Bot's outbound policy still apply.</string>
+  <string name="bot_settings_headless_denied">Bot policy requires approval. This run has no approval channel.</string>
+  <string name="bot_settings_identity">Identity</string>
+  <string name="bot_settings_idle">Idle</string>
+  <string name="bot_settings_memory">Memory</string>
+  <string name="bot_settings_none">None</string>
+  <string name="bot_settings_notifications">Notifications</string>
+  <string name="bot_settings_outbound">Sending on your behalf</string>
+  <string name="bot_settings_outbound_allow">Allow sending</string>
+  <string name="bot_settings_outbound_ask">Ask every time</string>
+  <string name="bot_settings_overview">Overview</string>
+  <string name="bot_settings_permissions">Permissions</string>
+  <string name="bot_settings_profile_title">Bot profile</string>
+  <string name="bot_settings_reliability">Show alarm reliability card</string>
+  <string name="bot_settings_remove">Remove</string>
+  <string name="bot_settings_replies">Bot replies</string>
+  <string name="bot_settings_reports_to">Reports to</string>
+  <string name="bot_settings_routine_results">Routine results</string>
+  <string name="bot_settings_routines">Routines</string>
+  <string name="bot_settings_save">Save</string>
+  <string name="bot_settings_save_failed">Could not save Bot settings.</string>
+  <string name="bot_settings_soul">Soul</string>
+  <string name="bot_settings_standing_instructions">Standing instructions</string>
+  <string name="bot_settings_title">Bot settings</string>
+  <string name="bot_settings_use_default">Default (%1$s)</string>
+  <string name="bot_settings_waiting">Waiting on you</string>
+  <string name="bot_settings_working">Working</string>
+</resources>

@@ -605,6 +605,10 @@ class RouteActivity : FragmentActivity() {
                                 TranslatorPage()
                             }
 
+                            entry<Screen.BotSettings> {
+                                com.clma.app.ui.pages.bot.settings.BotSettingsPage()
+                            }
+
                             entry<Screen.BotHome> {
                                 BotHomePage()
                             }
@@ -995,6 +999,9 @@ sealed interface Screen : NavKey {
     /** Bot mode root: bot list / channels / settings tabs. Classic mode never shows it. */
     @Serializable
     data object BotHome : Screen
+
+    @Serializable
+    data object BotSettings : Screen
 
     /** One bot's conversation in Bot mode (its own chrome, no classic drawer). */
     @Serializable

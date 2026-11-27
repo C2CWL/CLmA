@@ -902,6 +902,7 @@ class GenerationLoop(
         // ToolApprovalPolicy). Default returns false so callers that don't care still get
         // vanilla approval gating.
         isToolAutoApproved: suspend (toolName: String) -> Boolean = { false },
+        enforceBotApproval: Boolean = false,
         // Optional per-call addendum appended to the system prompt. Used by surfaces that
         // need the model to know runtime context (e.g. "you're talking via Telegram, the
         // chat_id is 12345") without polluting the user message body — without this the
@@ -1280,10 +1281,12 @@ class GenerationLoop(
                     // envelope to the model without executing.
                     val hardlineReason = com.clma.app.data.ai.tools
                         .HardlineCommandGuard.checkTool(tool.toolName, tool.input, allowSshPower = true)
-                    val peerDenied = conversationId?.let {
+                    val peerTurn = conversationId?.let {
                         com.clma.app.data.botmode.BotPeerToolPolicy.isPeer(it)
-                    } == true && (!com.clma.app.data.botmode.BotPeerToolPolicy.allows(tool.toolName) ||
-                        toolDef?.needsApproval(tool.inputAsJson()) == true && !isToolAutoApproved(tool.toolName))
+                    } == true
+                    val peerDenied = peerTurn && (!com.clma.app.data.botmode.BotPeerToolPolicy.allows(tool.toolName) ||
+                        toolDef != null && (enforceBotApproval || toolDef.needsApproval(tool.inputAsJson())) &&
+                        !isToolAutoApproved(tool.toolName))
                     val transformed = when {
                         finalSummaryStep -> tool.copy(approvalState = ToolApprovalState.Denied(
                             "subagent_final_summary: tool budget reserved for the final text reply"
@@ -1340,8 +1343,9 @@ class GenerationLoop(
                                 tool.copy(approvalState = ToolApprovalState.Pending)
                             }
                         }
-                        // Tool needs approval and state is Auto:
-                        toolDef?.needsApproval(tool.inputAsJson()) == true &&
+                        // Bot policy also covers tools that come without an approval gate.
+                        toolDef != null && (toolDef.needsApproval(tool.inputAsJson()) ||
+                            (enforceBotApproval && !peerTurn)) &&
                             tool.approvalState is ToolApprovalState.Auto -> {
                             // Fresh per-tool auto-approval check (was a frozen pre-
                             // resolved set). Costs a DataStore.first() per tool but tools
@@ -1349,6 +1353,13 @@ class GenerationLoop(
                             // freshness matters for the YOLO toggle / mid-iteration grants.
                             if (isToolAutoApproved(tool.toolName)) {
                                 tool  // leave as Auto so the executor runs it without prompting
+                            } else if (enforceBotApproval && conversationId != null &&
+                                com.clma.app.data.ai.tools.HeadlessConversations.shouldAutoApprove(conversationId) &&
+                                !com.clma.app.data.ai.tools.HeadlessConversations.canParkForApproval(conversationId)
+                            ) {
+                                tool.copy(approvalState = ToolApprovalState.Denied(
+                                    context.getString(com.clma.app.R.string.bot_settings_headless_denied),
+                                ))
                             } else {
                                 hasPendingApproval = true
                                 tool.copy(approvalState = ToolApprovalState.Pending)

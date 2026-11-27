@@ -1,0 +1,14 @@
+Portions of CLmA's Bot mode are adapted from OpenMausBot
+https://github.com/milind-soni/OpenMausBot (commit 95f3c9f1628ce72b8b83373af7bfa46400f1c187)
+
+OpenMausBot
+Copyright 2026 Milind Soni and OpenMausBot contributors
+Licensed under the Apache License, Version 2.0 (see LICENSE in this folder).
+
+Only files outside OpenMausBot's enterprise/ directory were used. The adapted
+code was ported from TypeScript to Kotlin and modified for CLmA; every adapted
+CLmA source file says so in its header. The OpenMausBot name and mascot are not
+used by CLmA.
+
+CLmA as a whole remains licensed under the GNU Affero General Public License
+v3.0; the Apache-2.0 terms above continue to apply to the adapted portions.

@@ -1,0 +1,44 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<resources>
+  <string name="bot_settings_access">访问</string>
+  <string name="bot_settings_allow_count">始终允许（%1$d/%2$d）</string>
+  <string name="bot_settings_allow_for_bot">始终允许此 Bot</string>
+  <string name="bot_settings_allow_limit">此 Bot 的始终允许列表已达到 200 项。</string>
+  <string name="bot_settings_approval">审批级别</string>
+  <string name="bot_settings_approval_alerts">审批请求</string>
+  <string name="bot_settings_ask">请求批准</string>
+  <string name="bot_settings_auto">代我批准</string>
+  <string name="bot_settings_character_count">%1$d / %2$d</string>
+  <string name="bot_settings_chief">团队协调员</string>
+  <string name="bot_settings_defaults">Bot 默认设置</string>
+  <string name="bot_settings_description">团队简介</string>
+  <string name="bot_settings_full">完全访问</string>
+  <string name="bot_settings_full_confirm">允许此 Bot 在无需常规审批的情况下使用工具吗？必须逐次确认的操作和对外发送策略仍然有效。</string>
+  <string name="bot_settings_full_confirm_default">允许使用默认设置的 Bot 在无需常规审批的情况下使用工具吗？必须逐次确认的操作和各 Bot 的对外发送策略仍然有效。</string>
+  <string name="bot_settings_headless_denied">Bot 策略要求审批。此运行没有审批渠道。</string>
+  <string name="bot_settings_identity">身份</string>
+  <string name="bot_settings_idle">空闲</string>
+  <string name="bot_settings_memory">记忆</string>
+  <string name="bot_settings_none">无</string>
+  <string name="bot_settings_notifications">通知</string>
+  <string name="bot_settings_outbound">代你发送内容</string>
+  <string name="bot_settings_outbound_allow">允许发送</string>
+  <string name="bot_settings_outbound_ask">每次都询问</string>
+  <string name="bot_settings_overview">概览</string>
+  <string name="bot_settings_permissions">权限</string>
+  <string name="bot_settings_profile_title">Bot 档案</string>
+  <string name="bot_settings_reliability">显示闹钟可靠性提示</string>
+  <string name="bot_settings_remove">移除</string>
+  <string name="bot_settings_replies">Bot 回复</string>
+  <string name="bot_settings_reports_to">汇报对象</string>
+  <string name="bot_settings_routine_results">例行任务结果</string>
+  <string name="bot_settings_routines">例行任务</string>
+  <string name="bot_settings_save">保存</string>
+  <string name="bot_settings_save_failed">无法保存 Bot 设置。</string>
+  <string name="bot_settings_soul">SOUL</string>
+  <string name="bot_settings_standing_instructions">常驻指令</string>
+  <string name="bot_settings_title">Bot 设置</string>
+  <string name="bot_settings_use_default">默认（%1$s）</string>
+  <string name="bot_settings_waiting">等你处理</string>
+  <string name="bot_settings_working">工作中</string>
+</resources>

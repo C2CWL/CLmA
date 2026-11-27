@@ -20,7 +20,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
@@ -283,28 +282,9 @@ private fun BotListRow(
 @Composable
 private fun BotRowStatus(generating: Boolean, pendingApproval: Boolean, unread: Int) {
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-        if (generating) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(14.dp),
-                strokeWidth = 2.dp,
-            )
-            Text(
-                text = stringResource(R.string.bot_home_running),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.primary,
-            )
-        }
-        if (pendingApproval) {
-            Text(
-                text = stringResource(R.string.bot_home_pending_approval),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onTertiaryContainer,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(MaterialTheme.colorScheme.tertiaryContainer)
-                    .padding(horizontal = 6.dp, vertical = 2.dp),
-            )
-        }
+        com.clma.app.ui.pages.bot.settings.BotActivityLabel(
+            com.clma.app.data.botmode.settings.botActivity(generating, pendingApproval),
+        )
         if (unread > 0) {
             Box(
                 modifier = Modifier

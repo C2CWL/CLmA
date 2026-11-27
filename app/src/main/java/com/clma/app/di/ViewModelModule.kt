@@ -60,6 +60,7 @@ val viewModelModule = module {
             memoryRepository = get(),
             scheduledJobRepository = get(),
             scheduledJobRunRepository = get(),
+            chatService = get(),
             cronJobScheduler = get(),
             appContext = androidContext(),
         )

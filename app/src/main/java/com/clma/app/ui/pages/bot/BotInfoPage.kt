@@ -26,9 +26,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -53,13 +50,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clma.app.R
 import com.clma.app.Screen
-import com.clma.app.data.ai.tools.ApprovalMode
 import com.clma.app.data.ai.tools.local.VirtualDisplayController
 import com.clma.app.data.botmode.BotCostPolicy
 import com.clma.app.data.botmode.isMainBot
 import com.clma.app.data.datastore.findModelById
 import com.clma.app.data.model.isBot
-import com.clma.app.data.preferences.ToolApprovalPreferences
 import com.clma.app.ui.components.ui.AssistantAvatar
 import com.clma.app.ui.context.LocalNavController
 import com.clma.app.ui.pages.assistant.AssistantVM
@@ -72,7 +67,6 @@ import kotlinx.coroutines.withContext
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ArrowLeft01
 import org.koin.androidx.compose.koinViewModel
-import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
 import kotlin.uuid.Uuid
 
@@ -95,8 +89,7 @@ fun BotInfoPage(botId: String, conversationId: String?) {
     val memoryCount by vm.memoryCount.collectAsStateWithLifecycle()
     val routines by vm.routines.collectAsStateWithLifecycle()
     val parkedRuns by vm.parkedRuns.collectAsStateWithLifecycle()
-    val approvalPrefs: ToolApprovalPreferences = koinInject()
-    val approvalMode by approvalPrefs.modeFlow.collectAsStateWithLifecycle(initialValue = ApprovalMode.MANUAL)
+    val activity by vm.activity.collectAsStateWithLifecycle()
     val displays by VirtualDisplayController.activeDisplays.collectAsStateWithLifecycle()
 
     val bot = settings.assistants.find { it.id == vm.id && it.isBot }
@@ -126,7 +119,7 @@ fun BotInfoPage(botId: String, conversationId: String?) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.bot_info_title)) },
+                title = { Text(stringResource(R.string.bot_settings_profile_title)) },
                 navigationIcon = {
                     IconButton(onClick = { nav.popBackStack() }) {
                         Icon(HugeIcons.ArrowLeft01, contentDescription = stringResource(R.string.back))
@@ -186,6 +179,7 @@ fun BotInfoPage(botId: String, conversationId: String?) {
                         }
                     }
                 }
+                com.clma.app.ui.pages.bot.settings.BotActivityLabel(activity)
                 if (bot.systemPrompt.isNotBlank()) {
                     Text(
                         bot.systemPrompt.lineSequence().firstOrNull { it.isNotBlank() }.orEmpty(),
@@ -232,7 +226,7 @@ fun BotInfoPage(botId: String, conversationId: String?) {
             // Conversations
             BotCollapsibleGroup(
                 key = "conversations",
-                title = stringResource(R.string.bot_info_group_conversations),
+                title = stringResource(R.string.bot_settings_overview),
                 summary = stringResource(R.string.bot_info_conversations_count, conversations.size),
             ) {
                 FilledTonalButton(onClick = { openConversation(Uuid.random()) }, modifier = Modifier.fillMaxWidth()) {
@@ -282,7 +276,7 @@ fun BotInfoPage(botId: String, conversationId: String?) {
             val modelLabel = settings.findModelById(bot.chatModelId)?.displayName
             BotCollapsibleGroup(
                 key = "model",
-                title = stringResource(R.string.bot_info_group_model),
+                title = stringResource(R.string.bot_settings_identity),
                 summary = modelLabel ?: stringResource(R.string.bot_info_model_default),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -300,6 +294,14 @@ fun BotInfoPage(botId: String, conversationId: String?) {
                     else stringResource(R.string.bot_info_chars, bot.systemPrompt.length),
                     onClick = { nav.navigate(Screen.AssistantPrompt(bot.id.toString())) },
                 )
+                com.clma.app.ui.pages.bot.settings.BotDescriptionSettings(bot.id.toString())
+            }
+
+            BotCollapsibleGroup(
+                key = "memory",
+                title = stringResource(R.string.bot_settings_memory),
+                summary = stringResource(R.string.bot_info_memory_count, memoryCount),
+            ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text(stringResource(R.string.bot_info_memory))
@@ -337,33 +339,10 @@ fun BotInfoPage(botId: String, conversationId: String?) {
                 }
             }
 
-            // Approval tier (global)
-            BotCollapsibleGroup(
-                key = "approval",
-                title = stringResource(R.string.bot_mode_approval_tier_title),
-                summary = approvalLabel(approvalMode),
-            ) {
-                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                    val modes = listOf(ApprovalMode.MANUAL, ApprovalMode.SEMI, ApprovalMode.AUTO)
-                    modes.forEachIndexed { index, mode ->
-                        SegmentedButton(
-                            selected = approvalMode == mode,
-                            onClick = { scope.launch { approvalPrefs.setMode(mode) } },
-                            shape = SegmentedButtonDefaults.itemShape(index, modes.size),
-                        ) { Text(approvalLabel(mode)) }
-                    }
-                }
-                Text(
-                    stringResource(R.string.bot_info_approval_note),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                InfoRow(
-                    title = stringResource(R.string.bot_mode_approval_open_full),
-                    value = "",
-                    onClick = { nav.navigate(Screen.SettingToolApprovals) },
-                )
-            }
+            com.clma.app.ui.pages.bot.settings.BotProfileSettings(
+                bot = bot,
+                bots = settings.assistants.filter { it.isBot },
+            )
 
             // App connections
             BotCollapsibleGroup(
@@ -534,15 +513,6 @@ fun BotInfoPage(botId: String, conversationId: String?) {
         }
     }
 }
-
-@Composable
-private fun approvalLabel(mode: ApprovalMode): String = stringResource(
-    when (mode) {
-        ApprovalMode.MANUAL -> R.string.bot_mode_approval_manual
-        ApprovalMode.SEMI -> R.string.bot_mode_approval_semi
-        ApprovalMode.AUTO -> R.string.bot_mode_approval_auto
-    },
-)
 
 @Composable
 private fun InfoRow(title: String, value: String, onClick: () -> Unit, icon: ImageVector = Lucide.ChevronRight) {

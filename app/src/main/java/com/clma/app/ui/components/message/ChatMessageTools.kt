@@ -1,5 +1,7 @@
 package com.clma.app.ui.components.message
 
+import com.clma.app.data.botmode.settings.canGrantForBot
+
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.heightIn
@@ -1373,10 +1375,7 @@ private fun ToolApprovalForm(
                 )
             }
         }
-        // Three-button row: Allow (once) / Allow for this chat / Deny. Order
-        // matches the Telegram inline-keyboard layout so the user sees the same
-        // mental model on both surfaces. There is no persistent "always" button:
-        // the blacklist (Settings → Tool approvals) is where a tool stops asking.
+        // Keep the classic chat grant and offer a persistent grant on Bot cards.
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -1398,19 +1397,23 @@ private fun ToolApprovalForm(
                     }
                 },
             )
-            if (!com.clma.app.connectors.ConnectorWriteApproval.requiresApproval(tool.toolName)) {
+            if (!com.clma.app.connectors.ConnectorWriteApproval.requiresApproval(tool.toolName) &&
+                (!botLabels || tool.canGrantForBot())
+            ) {
                 ApprovalButton(
                     label = stringResource(
-                        if (botLabels) R.string.bot_approval_remember_chat else R.string.chat_message_tool_allow_chat,
+                        if (botLabels) R.string.bot_settings_allow_for_bot else R.string.chat_message_tool_allow_chat,
                     ),
                     emoji = "💬",
                     enabled = !inFlight,
                     onClick = {
                         if (!inFlight) {
-                            inFlight = true
+                            // A refused save leaves this card pending and available for another choice.
+                            if (!botLabels) inFlight = true
                             onToolApproval(
                                 tool.toolCallId, true, "",
-                                com.clma.app.service.ChatService.ApprovalScope.ChatScope,
+                                if (botLabels) com.clma.app.service.ChatService.ApprovalScope.BotScope
+                                else com.clma.app.service.ChatService.ApprovalScope.ChatScope,
                                 tool.toolName,
                             )
                         }
