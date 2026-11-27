@@ -5,6 +5,7 @@ import com.clma.ai.ui.UIMessagePart
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -13,7 +14,7 @@ import org.junit.Test
  *
  * Contract: a `<context_reminder>` is produced only once the estimated request context reaches
  * the assistant's configured reminder percentage (of the model context window), and it is injected
- * as a synthetic user message immediately before the LAST user message.
+ * as a synthetic user message at the request tail.
  *
  * Estimator facts relied on here (ContextBudgetPlanner): an ASCII string costs `ceil(len / 3)`
  * tokens, and every message adds a fixed 8-token overhead.
@@ -55,19 +56,23 @@ class ContextBudgetReminderTransformerTest {
     }
 
     @Test
-    fun `inject inserts the reminder before the last user message`() {
-        val messages = listOf(
-            UIMessage.user("first"),
-            UIMessage.assistant("reply"),
-            UIMessage.user("second"),
-        )
+    fun `changing the reminder after a tool step leaves the conversation prefix untouched`() {
+        val messages = listOf(UIMessage.user("first"), UIMessage.assistant("reply"), UIMessage.user("second"))
         val result = injectContextReminder(messages, "<context_reminder>x</context_reminder>")
-        assertEquals(4, result.size)
-        assertEquals("first", getMessageText(result[0]))
-        assertEquals("reply", getMessageText(result[1]))
-        assertTrue(result[2].isSynthetic)
-        assertTrue(getMessageText(result[2]).contains("<context_reminder>"))
-        assertEquals("second", getMessageText(result[3]))
+        val toolStep = UIMessage.assistant("").copy(parts = listOf(UIMessagePart.Tool(
+            toolCallId = "call-1",
+            toolName = "test_tool",
+            input = "{}",
+            output = listOf(UIMessagePart.Text("result")),
+        )))
+        val next = injectContextReminder(messages + toolStep, "<context_reminder>y</context_reminder>")
+
+        assertEquals(messages, result.dropLast(1))
+        assertEquals(messages + toolStep, next.dropLast(1))
+        assertSame(toolStep, next[next.lastIndex - 1])
+        assertTrue(result.last().isSynthetic)
+        assertTrue(next.last().isSynthetic)
+        assertEquals("<context_reminder>y</context_reminder>", getMessageText(next.last()))
     }
 
     @Test

@@ -82,6 +82,9 @@ class PromptCacheSystemSections(internal val inputs: Map<PromptCacheSystemSectio
 /** Also used by wire diagnostics to recognize projected tool results without logging the reference. */
 const val TOOL_OUTPUT_PROJECTION_MARKER = "[Tool output compacted]"
 
+/** Recognizable wire text for the synthetic, request-only context budget reminder. */
+const val CONTEXT_BUDGET_REMINDER_PREFIX = "<context_reminder>Context budget: ~"
+
 @Serializable
 data class TextGenerationParams(
     val model: Model,
