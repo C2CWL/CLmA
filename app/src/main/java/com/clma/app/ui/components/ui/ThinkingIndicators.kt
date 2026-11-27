@@ -97,7 +97,15 @@ private fun ThinkingLabel(
 ) {
     val phaseText = generationPhaseLabel(phase)
     val text = processingStatus ?: if (ellipsis) "$phaseText…" else phaseText
-    val color = MaterialTheme.colorScheme.secondary
+    // Model-routing / retry-failure status is diagnostic text, not decoration: keep it at full
+    // onSurface contrast and drop the shimmer, so a highlight band never washes out the words.
+    val isStatus = processingStatus != null
+    val color = if (isStatus) {
+        MaterialTheme.colorScheme.onSurface
+    } else {
+        MaterialTheme.colorScheme.secondary
+    }
+    val effectiveShimmer = if (isStatus) null else shimmerPhase
     val highlight = MaterialTheme.colorScheme.primary
     Crossfade(targetState = text, label = "thinking-label") { shown ->
         Text(
@@ -107,27 +115,29 @@ private fun ThinkingLabel(
             color = color,
             // Deliberately no maxLines / overflow: the status text (retry failure reasons in
             // particular) must be readable in full, even when that means several lines.
-            modifier = if (shimmerPhase == null) modifier else modifier
-                // Offscreen so SrcAtop paints the band onto the glyphs only.
-                .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
-                .drawWithContent {
-                    drawContent()
-                    val band = size.width * 0.4f
-                    val sweep = (shimmerPhase() * 2f) % 1f
-                    val start = -band + sweep * (size.width + band * 2f)
-                    drawRect(
-                        brush = Brush.horizontalGradient(
-                            colorStops = arrayOf(
-                                0f to Color.Transparent,
-                                0.5f to highlight.copy(alpha = 0.85f),
-                                1f to Color.Transparent,
+            modifier = effectiveShimmer?.let { shimmer ->
+                modifier
+                    // Offscreen so SrcAtop paints the band onto the glyphs only.
+                    .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
+                    .drawWithContent {
+                        drawContent()
+                        val band = size.width * 0.4f
+                        val sweep = (shimmer() * 2f) % 1f
+                        val start = -band + sweep * (size.width + band * 2f)
+                        drawRect(
+                            brush = Brush.horizontalGradient(
+                                colorStops = arrayOf(
+                                    0f to Color.Transparent,
+                                    0.5f to highlight.copy(alpha = 0.85f),
+                                    1f to Color.Transparent,
+                                ),
+                                startX = start,
+                                endX = start + band,
                             ),
-                            startX = start,
-                            endX = start + band,
-                        ),
-                        blendMode = BlendMode.SrcAtop,
-                    )
-                },
+                            blendMode = BlendMode.SrcAtop,
+                        )
+                    }
+            } ?: modifier,
         )
     }
 }
