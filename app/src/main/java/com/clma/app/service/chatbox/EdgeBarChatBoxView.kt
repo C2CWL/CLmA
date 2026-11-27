@@ -120,6 +120,7 @@ internal class EdgeBarChatBoxView(
         val mode: Mode,
         val items: List<ChatBoxItem>,
         val conversations: List<ConversationOption> = emptyList(),
+        val keepScreenOn: Boolean = false,
     )
 
     /** Where the bar is, in screen pixels (its window bounds), and the screen it is on. */
@@ -249,6 +250,7 @@ internal class EdgeBarChatBoxView(
         dialog = d
         dismissNotified = false
         state = newState
+        applyKeepScreenOn(newState.keepScreenOn)
         try {
             render(newState)
             applyBackground()
@@ -285,8 +287,18 @@ internal class EdgeBarChatBoxView(
         val stick = isNearBottom()
         if (state?.conversations != newState.conversations) conversationMenu?.dismiss()
         state = newState
+        applyKeepScreenOn(newState.keepScreenOn)
         render(newState)
         if (stick) scrollToBottom()
+    }
+
+    private fun applyKeepScreenOn(enabled: Boolean) {
+        val window = dialog?.window ?: return
+        if (enabled) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        } else {
+            window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
     }
 
     /** Light / dark changed while open: rebuild with the new palette, keeping the typed text. */

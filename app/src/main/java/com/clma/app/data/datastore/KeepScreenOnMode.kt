@@ -37,6 +37,19 @@ enum class KeepScreenOnMode(val serialName: String) {
     }
 }
 
+/**
+ * 是否应在聊天界面保持屏幕常亮。
+ *
+ * [inChat] 由调用方保证当前确实处于聊天界面；[generating] 表示当前会话是否正在生成回复。
+ */
+fun KeepScreenOnMode.shouldKeepScreenOn(inChat: Boolean, generating: Boolean): Boolean =
+    inChat &&
+        when (this) {
+            KeepScreenOnMode.NEVER -> false
+            KeepScreenOnMode.WHILE_GENERATING -> generating
+            KeepScreenOnMode.ALWAYS_IN_CHAT -> true
+        }
+
 object KeepScreenOnModeSerializer : KSerializer<KeepScreenOnMode> {
     override val descriptor: SerialDescriptor =
         PrimitiveSerialDescriptor("com.clma.app.data.datastore.KeepScreenOnMode", PrimitiveKind.STRING)
