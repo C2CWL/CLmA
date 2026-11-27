@@ -1,0 +1,10 @@
+## CLmA 4.6
+
+- 在提示词缓存诊断中标明前缀变化来自哪个系统提示分区。
+- 在诊断中标明旧工具结果是否被换成文件引用。
+- 不记录提示词、工具输出或文件引用内容。
+
+## Changes
+- Label changed system prompt sections in cache diagnostics.
+- Mark projected tool outputs in cache diagnostics.
+- Avoid logging prompts, tool output, or file references.
