@@ -3,21 +3,14 @@ package com.clma.app.ui.pages.bot
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -25,42 +18,46 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clma.app.R
+import com.clma.app.data.botmode.BotRoutineForm
+import com.clma.app.data.botmode.BotRoutineKind
+import com.clma.app.data.botmode.routine.CheckBack
+import com.clma.app.data.botmode.routine.CheckBackDelivery
+import com.clma.app.data.botmode.routine.RoutineOptions
+import com.clma.app.data.botmode.routine.RoutineStore
+import com.clma.app.data.botmode.routine.routineZone
+import com.clma.app.data.repository.ScheduledJobRunRepository
+import com.clma.app.ui.pages.bot.routine.BotRoutineEditorDialog
+import com.clma.app.ui.pages.bot.routine.RoutineEdit
+import com.clma.app.ui.pages.bot.routine.PendingCheckBacks
+import com.clma.app.ui.pages.bot.routine.RoutineBackupModel
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import com.clma.app.data.botmode.settings.BotModeSettings
 import com.clma.app.data.botmode.settings.BotModeSettingsStore
 import com.clma.app.ui.components.ScheduledTaskReliabilityCard
-import com.clma.app.data.botmode.BotRoutineForm
 import com.clma.app.data.botmode.BotRoutineEventKind
 import com.clma.app.data.botmode.BotRoutineTrigger
 import com.clma.app.data.model.Assistant
 import com.clma.app.service.BotRoutineEvents
-import com.clma.app.data.botmode.BotRoutineFormError
-import com.clma.app.data.botmode.BotRoutineKind
 import com.clma.app.data.botmode.BotRoutineRowSummary
 import com.clma.app.data.botmode.BotRoutineSchedule
 import com.clma.app.data.botmode.ParkedRoutineRun
 import com.clma.app.data.botmode.botRoutineClock
 import com.clma.app.data.botmode.botRoutineFormFrom
 import com.clma.app.data.botmode.parseBotRoutineSchedule
-import com.clma.app.data.botmode.validate
 import com.clma.app.data.db.entity.ScheduledJobEntity
-import java.time.DayOfWeek
 import java.time.Instant
 import java.time.ZoneId
-import java.time.format.TextStyle
-import java.util.Locale
 import kotlin.uuid.Uuid
 import org.koin.compose.koinInject
 
@@ -96,11 +93,12 @@ fun botRoutineScheduleText(schedule: BotRoutineSchedule): String {
 }
 
 @Composable
-private fun botRoutineTimingText(job: ScheduledJobEntity): String {
+private fun botRoutineTimingText(job: ScheduledJobEntity, intervalMinutes: Int?): String {
     val trigger = BotRoutineTrigger.from(job)
     return when {
         trigger != null -> stringResource(botRoutineTriggerLabel(trigger.kind))
         job.scheduleType == BotRoutineTrigger.SCHEDULE_TYPE -> stringResource(R.string.bot_trigger_type)
+        intervalMinutes != null -> stringResource(R.string.bot_routine_sched_every_minutes, intervalMinutes)
         else -> botRoutineScheduleText(parseBotRoutineSchedule(job))
     }
 }
@@ -108,7 +106,11 @@ private fun botRoutineTimingText(job: ScheduledJobEntity): String {
 /** The bot list's routine line: "自动任务 · 工作日 9:00" (+N when the bot has more). */
 @Composable
 fun botRoutineRowText(summary: BotRoutineRowSummary): String {
-    val schedule = botRoutineTimingText(summary.next)
+    val store = koinInject<RoutineStore>()
+    val snapshot by store.snapshots.collectAsStateWithLifecycle()
+    LaunchedEffect(store) { store.read() }
+    val interval = snapshot.routines[summary.next.id]?.options?.interval
+    val schedule = botRoutineTimingText(summary.next, interval?.minutes)
     return if (summary.others > 0) {
         stringResource(R.string.bot_routine_row_more, schedule, summary.others)
     } else {
@@ -123,12 +125,14 @@ fun botRoutineRowText(summary: BotRoutineRowSummary): String {
  * delete, runs waiting on the user's approval, and background reliability guidance.
  */
 @Composable
-fun BotRoutinesGroup(
-    owner: Uuid,
+internal fun BotRoutinesGroup(
     sourceBots: List<Assistant>,
     routines: List<ScheduledJobEntity>,
     parkedRuns: List<ParkedRoutineRun>,
-    onSave: (BotRoutineForm, String?) -> Unit,
+    botId: Uuid,
+    timezone: String?,
+    models: List<Pair<String, String>>,
+    onSave: (RoutineEdit, String?) -> Unit,
     onSetEnabled: (String, Boolean) -> Unit,
     onRunNow: (String, (Boolean) -> Unit) -> Unit,
     onDelete: (String) -> Unit,
@@ -136,6 +140,12 @@ fun BotRoutinesGroup(
 ) {
     val context = LocalContext.current
     val withPermission = rememberBotRoutinePermission()
+    val store = koinInject<RoutineStore>()
+    val historyRepo = koinInject<ScheduledJobRunRepository>()
+    val scope = rememberCoroutineScope()
+    val snapshot by store.snapshots.collectAsStateWithLifecycle()
+    LaunchedEffect(store) { store.read() }
+    val zone = routineZone(timezone)
     val botSettingsStore = koinInject<BotModeSettingsStore>()
     val botSettings by botSettingsStore.settings.collectAsStateWithLifecycle(initialValue = BotModeSettings())
     var editing by remember { mutableStateOf<ScheduledJobEntity?>(null) }
@@ -177,6 +187,23 @@ fun BotRoutinesGroup(
                 }
             }
         }
+        RoutineBackupModel(models, snapshot.backupModels[botId.toString()]) { model ->
+            scope.launch {
+                store.update {
+                    val assistantId = botId.toString()
+                    val updated = if (model == null) it.backupModels - assistantId
+                        else it.backupModels + (assistantId to model)
+                    it.copy(backupModels = updated)
+                }
+            }
+        }
+        PendingCheckBacks(
+            snapshot.checkBacks.values.filter { it.assistantId == botId.toString() },
+            zone, onOpenConversation,
+            onCancel = { item: CheckBack ->
+                scope.launch { CheckBackDelivery.cancel(context, store, item.id, item.conversationId) }
+            },
+        )
         if (routines.isEmpty()) {
             Text(
                 stringResource(R.string.bot_routine_empty),
@@ -187,6 +214,8 @@ fun BotRoutinesGroup(
         routines.forEach { job ->
             BotRoutineRow(
                 job = job,
+                intervalMinutes = snapshot.routines[job.id]?.options?.interval?.minutes,
+                zone = zone,
                 onToggle = { enabled ->
                     if (enabled) withPermission(BotRoutineTrigger.from(job)) { onSetEnabled(job.id, true) }
                     else onSetEnabled(job.id, false)
@@ -212,29 +241,47 @@ fun BotRoutinesGroup(
     if (creating) {
         BotRoutineEditorDialog(
             initial = BotRoutineForm(),
-            owner = owner,
+            owner = botId,
             sourceBots = sourceBots,
             isNew = true,
+            initialOptions = RoutineOptions(),
+            endAtMs = null,
+            onceAtMs = null,
+            zone = zone,
+            history = emptyList(),
+            onOpenConversation = onOpenConversation,
             onDismiss = { creating = false },
-            onSave = { form ->
-                withPermission(form.trigger) {
+            onSave = { edit ->
+                withPermission(edit.form.trigger) {
                     creating = false
-                    onSave(form, null)
+                    onSave(edit, null)
                 }
             },
         )
     }
     editing?.let { job ->
+        val options = snapshot.routines[job.id]?.options ?: RoutineOptions()
+        val history by remember(job.id) { historyRepo.observeRecent(job.id, 30) }
+            .collectAsStateWithLifecycle(initialValue = emptyList())
         BotRoutineEditorDialog(
-            initial = remember(job.id) { botRoutineFormFrom(job) },
-            owner = owner,
+            initial = remember(job.id, options.interval, zone) {
+                val form = botRoutineFormFrom(job, routineZone(job.timezone ?: timezone))
+                options.interval?.let { form.copy(kind = BotRoutineKind.EVERY_MINUTES, interval = it.minutes) } ?: form
+            },
+            owner = botId,
             sourceBots = sourceBots,
             isNew = false,
+            initialOptions = options,
+            endAtMs = job.endAtUnixMs,
+            onceAtMs = job.atUnixMs?.takeIf { it > System.currentTimeMillis() },
+            zone = routineZone(job.timezone ?: timezone),
+            history = history,
+            onOpenConversation = { editing = null; onOpenConversation(it) },
             onDismiss = { editing = null },
-            onSave = { form ->
-                withPermission(form.trigger.takeIf { job.enabled }) {
+            onSave = { edit ->
+                withPermission(edit.form.trigger.takeIf { job.enabled }) {
                     editing = null
-                    onSave(form, job.id)
+                    onSave(edit, job.id)
                 }
             },
         )
@@ -257,6 +304,8 @@ fun BotRoutinesGroup(
 @Composable
 private fun BotRoutineRow(
     job: ScheduledJobEntity,
+    intervalMinutes: Int?,
+    zone: ZoneId,
     onToggle: (Boolean) -> Unit,
     onRunNow: () -> Unit,
     onEdit: () -> Unit,
@@ -282,7 +331,7 @@ private fun BotRoutineRow(
                 Column(Modifier.weight(1f)) {
                     Text(job.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(
-                        botRoutineTimingText(job) + nextRunSuffix(job),
+                        botRoutineTimingText(job, intervalMinutes) + nextRunSuffix(job, zone),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
@@ -312,206 +361,12 @@ private fun BotRoutineRow(
 }
 
 @Composable
-private fun nextRunSuffix(job: ScheduledJobEntity): String {
+private fun nextRunSuffix(job: ScheduledJobEntity, zone: ZoneId): String {
     if (!job.enabled) return " · " + stringResource(R.string.bot_routine_paused)
     val next = job.nextRunAtMs ?: return ""
-    val at = Instant.ofEpochMilli(next).atZone(ZoneId.systemDefault())
+    val at = Instant.ofEpochMilli(next).atZone(zone)
     return " · " + stringResource(
         R.string.bot_routine_next_at,
         "${at.monthValue}/${at.dayOfMonth} ${botRoutineClock(at.hour, at.minute)}",
     )
-}
-
-// ------------------------------------------------------------------ editor
-
-private fun parseClock(text: String): Pair<Int, Int>? {
-    val m = Regex("^\\s*(\\d{1,2})\\s*[:：.]\\s*(\\d{1,2})\\s*$").find(text) ?: return null
-    val h = m.groupValues[1].toIntOrNull() ?: return null
-    val min = m.groupValues[2].toIntOrNull() ?: return null
-    return if (h in 0..23 && min in 0..59) h to min else null
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun BotRoutineEditorDialog(
-    initial: BotRoutineForm,
-    owner: Uuid,
-    sourceBots: List<Assistant>,
-    isNew: Boolean,
-    onDismiss: () -> Unit,
-    onSave: (BotRoutineForm) -> Unit,
-) {
-    var form by remember { mutableStateOf(initial) }
-    var clockText by remember { mutableStateOf(botRoutineClock(initial.hour, initial.minute)) }
-    var intervalText by remember { mutableStateOf(initial.interval.toString()) }
-    var showErrors by remember { mutableIntStateOf(0) }
-    val locale = Locale.getDefault()
-
-    val clock = parseClock(clockText)
-    val interval = intervalText.trim().toIntOrNull()
-    val scheduled = form.trigger == null
-    val usesClock = scheduled && form.kind in setOf(
-        BotRoutineKind.DAILY, BotRoutineKind.WEEKDAYS, BotRoutineKind.WEEKLY, BotRoutineKind.ONCE,
-    )
-    val usesInterval = scheduled && form.kind in setOf(BotRoutineKind.EVERY_MINUTES, BotRoutineKind.EVERY_HOURS)
-    val candidate = form.copy(
-        hour = clock?.first ?: form.hour,
-        minute = clock?.second ?: form.minute,
-        interval = interval ?: 0,
-    )
-    val error: BotRoutineFormError? = candidate.validate()
-    val clockBad = usesClock && clock == null
-    val trigger = form.trigger
-    val ownPackage = LocalContext.current.packageName
-    val triggerBad = trigger != null && (!trigger.validFor(owner.toString()) || trigger.source == ownPackage ||
-        (trigger.kind == BotRoutineEventKind.BOT_FINISHED && sourceBots.none { it.id.toString() == trigger.source }))
-    val canSave = error == null && !clockBad && !triggerBad
-
-    // When switching between minutes and hours, keep the interval inside the new range.
-    LaunchedEffect(form.kind) {
-        if (form.kind == BotRoutineKind.EVERY_HOURS && (interval == null || interval !in 1..23)) intervalText = "1"
-        if (form.kind == BotRoutineKind.EVERY_MINUTES && (interval == null || interval !in 1..59)) intervalText = "30"
-    }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(if (isNew) R.string.bot_routine_new_title else R.string.bot_routine_edit_title)) },
-        text = {
-            Column(
-                modifier = Modifier.verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                OutlinedTextField(
-                    value = form.name,
-                    onValueChange = { form = form.copy(name = it.take(BotRoutineForm.NAME_MAX)) },
-                    label = { Text(stringResource(R.string.bot_routine_field_name)) },
-                    singleLine = true,
-                    isError = showErrors > 0 && error == BotRoutineFormError.NAME,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                OutlinedTextField(
-                    value = form.prompt,
-                    onValueChange = { form = form.copy(prompt = it.take(BotRoutineForm.PROMPT_MAX)) },
-                    label = { Text(stringResource(R.string.bot_routine_field_prompt)) },
-                    placeholder = { Text(stringResource(R.string.bot_routine_field_prompt_hint)) },
-                    minLines = 3,
-                    maxLines = 8,
-                    isError = showErrors > 0 && error == BotRoutineFormError.PROMPT,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                BotRoutineTriggerFields(trigger, sourceBots) { form = form.copy(trigger = it) }
-                if (showErrors > 0 && triggerBad) {
-                    Text(stringResource(R.string.bot_trigger_invalid_source), color = MaterialTheme.colorScheme.error)
-                }
-                if (scheduled) {
-                    Text(stringResource(R.string.bot_routine_field_when), style = MaterialTheme.typography.labelLarge)
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        BotRoutineKind.entries.forEach { kind ->
-                            FilterChip(
-                                selected = form.kind == kind,
-                                onClick = { form = form.copy(kind = kind) },
-                                label = { Text(stringResource(kindLabel(kind))) },
-                            )
-                        }
-                    }
-                }
-                if (scheduled && form.kind == BotRoutineKind.WEEKLY) {
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        DayOfWeek.values().forEach { day ->
-                            FilterChip(
-                                selected = day in form.days,
-                                onClick = {
-                                    form = form.copy(days = if (day in form.days) form.days - day else form.days + day)
-                                },
-                                label = { Text(day.getDisplayName(TextStyle.SHORT, locale)) },
-                            )
-                        }
-                    }
-                    if (error == BotRoutineFormError.DAYS) {
-                        Text(
-                            stringResource(R.string.bot_routine_error_days),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error,
-                        )
-                    }
-                }
-                if (usesClock) {
-                    OutlinedTextField(
-                        value = clockText,
-                        onValueChange = { clockText = it.take(5) },
-                        label = { Text(stringResource(R.string.bot_routine_field_time)) },
-                        supportingText = {
-                            Text(
-                                stringResource(
-                                    if (form.kind == BotRoutineKind.ONCE) R.string.bot_routine_field_time_once_hint
-                                    else R.string.bot_routine_field_time_hint,
-                                ),
-                            )
-                        },
-                        singleLine = true,
-                        isError = clockBad,
-                        modifier = Modifier.width(200.dp),
-                    )
-                }
-                if (usesInterval) {
-                    OutlinedTextField(
-                        value = intervalText,
-                        onValueChange = { intervalText = it.filter(Char::isDigit).take(2) },
-                        label = {
-                            Text(
-                                stringResource(
-                                    if (form.kind == BotRoutineKind.EVERY_HOURS) R.string.bot_routine_field_hours
-                                    else R.string.bot_routine_field_minutes,
-                                ),
-                            )
-                        },
-                        supportingText = {
-                            Text(
-                                stringResource(
-                                    if (form.kind == BotRoutineKind.EVERY_HOURS) R.string.bot_routine_field_hours_hint
-                                    else R.string.bot_routine_field_minutes_hint,
-                                ),
-                            )
-                        },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        isError = error == BotRoutineFormError.INTERVAL,
-                        modifier = Modifier.width(200.dp),
-                    )
-                }
-                if (scheduled && form.kind == BotRoutineKind.CUSTOM) {
-                    OutlinedTextField(
-                        value = form.cron,
-                        onValueChange = { form = form.copy(cron = it.take(120)) },
-                        label = { Text(stringResource(R.string.bot_routine_field_cron)) },
-                        supportingText = { Text(stringResource(R.string.bot_routine_field_cron_hint)) },
-                        singleLine = true,
-                        isError = form.cron.isNotBlank() && error == BotRoutineFormError.CRON,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-                Text(
-                    stringResource(R.string.bot_routine_editor_note),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                if (canSave) onSave(candidate) else showErrors++
-            }) { Text(stringResource(R.string.bot_mode_channels_save)) }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.bot_home_cancel)) } },
-    )
-}
-
-private fun kindLabel(kind: BotRoutineKind): Int = when (kind) {
-    BotRoutineKind.DAILY -> R.string.bot_routine_kind_daily
-    BotRoutineKind.WEEKDAYS -> R.string.bot_routine_kind_weekdays
-    BotRoutineKind.WEEKLY -> R.string.bot_routine_kind_weekly
-    BotRoutineKind.EVERY_MINUTES -> R.string.bot_routine_kind_every_minutes
-    BotRoutineKind.EVERY_HOURS -> R.string.bot_routine_kind_every_hours
-    BotRoutineKind.ONCE -> R.string.bot_routine_kind_once
-    BotRoutineKind.CUSTOM -> R.string.bot_routine_kind_custom
 }

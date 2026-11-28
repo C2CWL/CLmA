@@ -86,7 +86,6 @@ fun BotInfoPage(botId: String, conversationId: String?) {
     val scope = rememberCoroutineScope()
     val settings by vm.settings.collectAsStateWithLifecycle()
     val conversations by vm.conversations.collectAsStateWithLifecycle()
-    val memoryCount by vm.memoryCount.collectAsStateWithLifecycle()
     val routines by vm.routines.collectAsStateWithLifecycle()
     val parkedRuns by vm.parkedRuns.collectAsStateWithLifecycle()
     val activity by vm.activity.collectAsStateWithLifecycle()
@@ -263,10 +262,17 @@ fun BotInfoPage(botId: String, conversationId: String?) {
 
             // Routines (自动任务): this bot's scheduled jobs, on the existing scheduler.
             BotRoutinesGroup(
-                owner = bot.id,
                 sourceBots = settings.assistants.filter { it.isBot && it.id != bot.id },
                 routines = routines,
                 parkedRuns = parkedRuns,
+                botId = bot.id,
+                timezone = settings.customTimezone,
+                models = settings.providers.filter { it.enabled }.flatMap { provider ->
+                    provider.models.filter {
+                        it.type == com.clma.ai.provider.ModelType.CHAT &&
+                            it.id != com.clma.app.data.datastore.DEFAULT_AUTO_MODEL_ID
+                    }.map { it.id.toString() to it.displayName.ifBlank { it.modelId } }
+                },
                 onSave = { form, existingId -> vm.saveRoutine(form, existingId) },
                 onSetEnabled = { jobId, enabled -> vm.setRoutineEnabled(jobId, enabled) },
                 onRunNow = { jobId, onResult -> vm.runRoutineNow(jobId, onResult) },
@@ -299,28 +305,11 @@ fun BotInfoPage(botId: String, conversationId: String?) {
                 com.clma.app.ui.pages.bot.settings.BotDescriptionSettings(bot.id.toString())
             }
 
-            BotCollapsibleGroup(
-                key = "memory",
-                title = stringResource(R.string.bot_settings_memory),
-                summary = stringResource(R.string.bot_info_memory_count, memoryCount),
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text(stringResource(R.string.bot_info_memory))
-                        Text(
-                            stringResource(R.string.bot_info_memory_count, memoryCount),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Switch(checked = bot.enableMemory, onCheckedChange = { vm.setMemoryEnabled(it) })
-                }
-                InfoRow(
-                    title = stringResource(R.string.bot_info_memory_manage),
-                    value = "",
-                    onClick = { nav.navigate(Screen.AssistantMemory(bot.id.toString())) },
-                )
-            }
+            InfoRow(
+                title = stringResource(R.string.bot_memory_title),
+                value = "",
+                onClick = { nav.navigate(Screen.AssistantMemory(bot.id.toString())) },
+            )
 
             // Cost saving (#261)
             BotCollapsibleGroup(

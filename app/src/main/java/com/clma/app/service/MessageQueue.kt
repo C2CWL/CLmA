@@ -16,6 +16,9 @@ data class QueuedMessage(
     val isEditing: Boolean = false,
     // Optional in-memory observer; null result means the queued message was withdrawn.
     val reply: CompletableDeferred<String?>? = null,
+    val botMessageId: Uuid? = null,
+    val botModelOverride: Uuid? = null,
+    val botRoutine: Boolean = false,
 )
 
 data class MessageQueueState(
