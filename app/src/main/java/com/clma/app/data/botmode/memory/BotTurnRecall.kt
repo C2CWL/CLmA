@@ -26,15 +26,17 @@ internal class BotTurnRecall private constructor(
     private val userMessageId: Uuid,
     private val contextText: String,
     private val sources: List<UIMessageAnnotation.RecalledThread>,
-) : InputMessageTransformer, OutputMessageTransformer {
+) : OutputMessageTransformer {
 
-    override suspend fun transform(ctx: TransformerContext, messages: List<UIMessage>): List<UIMessage> {
-        val user = messages.lastOrNull { it.role == MessageRole.USER && !it.isSynthetic }
-        if (user?.id != userMessageId) return messages
-        return messages.map { message ->
-            if (message.id == userMessageId) {
-                message.copy(parts = listOf(UIMessagePart.Text(contextText)) + message.parts)
-            } else message
+    val inputTransformer: InputMessageTransformer = object : InputMessageTransformer {
+        override suspend fun transform(ctx: TransformerContext, messages: List<UIMessage>): List<UIMessage> {
+            val user = messages.lastOrNull { it.role == MessageRole.USER && !it.isSynthetic }
+            if (user?.id != userMessageId) return messages
+            return messages.map { message ->
+                if (message.id == userMessageId) {
+                    message.copy(parts = listOf(UIMessagePart.Text(contextText)) + message.parts)
+                } else message
+            }
         }
     }
 
@@ -84,7 +86,6 @@ internal class BotTurnRecall private constructor(
                     ensureActive()
                     val message = readRecallData { repository.loadBotRecallMessage(hit, assistantId) } ?: continue
                     if (message.role != MessageRole.USER && message.role != MessageRole.ASSISTANT) continue
-                    if (message.role == MessageRole.USER && message.toText().startsWith("[Channel: ")) continue
                     val match = botRecallMatch(message.toText().take(10_000), query) ?: continue
                     val title = hit.title.lineSequence().joinToString(" ").trim().take(120)
                         .ifBlank { untitledThread }

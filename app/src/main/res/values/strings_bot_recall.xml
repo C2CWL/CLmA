@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bot_recall_source">Recalled from %1$s (%2$s)</string>
+    <string name="bot_recall_untitled_thread">Untitled conversation</string>
+</resources>

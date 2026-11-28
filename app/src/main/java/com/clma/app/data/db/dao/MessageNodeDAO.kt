@@ -28,6 +28,11 @@ interface MessageNodeDAO {
         JOIN conversationentity c ON c.id = mn.conversation_id
         WHERE mn.id = :nodeId AND c.id = :conversationId AND c.assistant_id = :assistantId
           AND c.parent_conversation_id = '' AND c.is_delegated_conversation = 0
+          AND NOT EXISTS (
+              SELECT 1 FROM message_node channel_node
+              WHERE channel_node.conversation_id = c.id
+                AND instr(channel_node.messages, '"text":"[Channel: ') > 0
+          )
     """)
     suspend fun getRecallNode(nodeId: String, conversationId: String, assistantId: String): MessageNodeEntity?
 

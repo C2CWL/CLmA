@@ -5,7 +5,7 @@ package com.clma.app.data.botmode.memory
 
 import java.util.Locale
 
-private val words = Regex("""[\p{IsHan}\p{IsHiragana}\p{IsKatakana}\p{IsHangul}]+|[\p{L}\p{N}]+""")
+private val words = Regex("""[\p{IsHan}\p{IsHiragana}\p{IsKatakana}\p{IsHangul}]+|[\p{L}\p{N}&&[^\p{IsHan}\p{IsHiragana}\p{IsKatakana}\p{IsHangul}]]+""")
 private val cjk = Regex("""[\p{IsHan}\p{IsHiragana}\p{IsKatakana}\p{IsHangul}]""")
 private val stopWords = setOf(
     "the", "that", "this", "with", "from", "about", "what", "when", "where", "which",

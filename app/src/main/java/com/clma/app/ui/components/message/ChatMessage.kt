@@ -887,7 +887,6 @@ private fun MessagePartsBlock(
     recalledThreads.forEach { thread ->
         Text(
             text = stringResource(R.string.bot_recall_source, thread.title, thread.date),
-            style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }

@@ -18,6 +18,7 @@ import com.clma.app.data.botmode.board.BotBoardTools
 import com.clma.app.data.botmode.BotPeerRuntime
 import com.clma.app.data.botmode.memory.BotMemoryStore
 import com.clma.app.data.botmode.memory.BotMemoryTools
+import com.clma.app.data.botmode.goalChannel
 import com.clma.app.data.botmode.memory.BotTurnRecall
 import com.clma.app.data.botmode.memory.buildPrompt
 import com.clma.app.data.botmode.memory.recordCompletedTurn
@@ -3006,6 +3007,7 @@ class ChatService(
                 conversation.assistantId == assistant.id && conversation.parentConversationId == null &&
                 !conversation.isDelegatedConversation &&
                 !com.clma.app.data.ai.tools.HeadlessConversations.isHeadless(conversationId) &&
+                settings.goalChannel(assistant.id, conversationId) == null &&
                 !recallUser.toText().startsWith("[Channel: ")
             ) {
                 BotTurnRecall.load(
@@ -3142,7 +3144,7 @@ class ChatService(
                     addAll(inputTransformers)
                     add(templateTransformer)
                     add(workspaceReminderTransformer)
-                    botRecall?.let(::add)
+                    botRecall?.inputTransformer?.let(::add)
                     // Before the budget reminder, so its estimate matches the masked request.
                     // Off is a no-op and does not copy the message list.
                     add(PrecisionObservationMaskTransformer)
