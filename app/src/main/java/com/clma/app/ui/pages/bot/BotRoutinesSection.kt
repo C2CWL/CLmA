@@ -36,7 +36,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clma.app.R
+import com.clma.app.data.botmode.settings.BotModeSettings
+import com.clma.app.data.botmode.settings.BotModeSettingsStore
 import com.clma.app.ui.components.ScheduledTaskReliabilityCard
 import com.clma.app.data.botmode.BotRoutineForm
 import com.clma.app.data.botmode.BotRoutineFormError
@@ -55,6 +58,7 @@ import java.time.ZoneId
 import java.time.format.TextStyle
 import java.util.Locale
 import kotlin.uuid.Uuid
+import org.koin.compose.koinInject
 
 // ------------------------------------------------------------------ labels
 
@@ -115,6 +119,8 @@ fun BotRoutinesGroup(
     onOpenConversation: (Uuid) -> Unit,
 ) {
     val context = LocalContext.current
+    val botSettingsStore = koinInject<BotModeSettingsStore>()
+    val botSettings by botSettingsStore.settings.collectAsStateWithLifecycle(initialValue = BotModeSettings())
     var editing by remember { mutableStateOf<ScheduledJobEntity?>(null) }
     var creating by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf<ScheduledJobEntity?>(null) }
@@ -130,7 +136,9 @@ fun BotRoutinesGroup(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        ScheduledTaskReliabilityCard()
+        if (botSettings.showRoutineReliability) {
+            ScheduledTaskReliabilityCard()
+        }
         parkedRuns.filterNot { it.resuming }.forEach { run ->
             Surface(
                 shape = RoundedCornerShape(12.dp),

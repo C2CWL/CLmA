@@ -155,7 +155,19 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
         route = Screen.SettingBotMode,
         items = listOf(
             row(R.string.bot_mode_setting_title, R.string.bot_mode_setting_desc),
-            row(R.string.bot_mode_approval_tier_title, R.string.bot_mode_approval_tier_desc),
+        ),
+    ),
+    SettingsSearchPageSpec(
+        route = Screen.BotSettings,
+        parent = Screen.SettingBotMode,
+        titleRes = R.string.bot_settings_title,
+        items = listOf(
+            row(R.string.bot_settings_approval, null, R.string.bot_settings_ask, R.string.bot_settings_auto, R.string.bot_settings_full),
+            row(R.string.bot_settings_outbound, null, R.string.bot_settings_outbound_ask, R.string.bot_settings_outbound_allow),
+            row(R.string.bot_settings_replies),
+            row(R.string.bot_settings_routine_results),
+            row(R.string.bot_settings_approval_alerts),
+            row(R.string.bot_settings_reliability),
             row(R.string.bot_mode_channels_title, R.string.bot_mode_channels_desc),
             row(R.string.bot_mode_apps_title, R.string.bot_mode_apps_desc),
             row(R.string.bot_mode_team_title, R.string.bot_mode_team_desc),

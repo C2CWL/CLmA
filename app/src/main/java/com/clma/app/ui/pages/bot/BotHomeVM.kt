@@ -7,7 +7,9 @@ import com.clma.app.data.botmode.botPreviewLine
 import com.clma.app.data.botmode.botUnreadConversationId
 import com.clma.app.data.botmode.botUnreadCount
 import com.clma.app.data.botmode.botsForContactList
-import com.clma.app.data.botmode.hasPendingApproval
+import com.clma.app.data.botmode.settings.BotActivity
+import com.clma.app.data.botmode.settings.BotActivitySnapshot
+import com.clma.app.data.botmode.settings.observeBotActivity
 import com.clma.app.data.botmode.isBotPinned
 import com.clma.app.data.botmode.latestTopLevelConversation
 import com.clma.app.data.botmode.resolveBotOpenConversationId
@@ -54,14 +56,19 @@ class BotHomeVM(
     val settings: StateFlow<Settings> = settingsStore.settingsFlow
 
     /** Latest top-level conversation of each visible bot, with its messages loaded for the preview. */
-    private val latestByBot: Flow<Map<Uuid, Conversation?>> = settingsStore.settingsFlow
+    private val latestByBot: Flow<Map<Uuid, Pair<Conversation?, BotActivitySnapshot>>> = settingsStore.settingsFlow
         .map { s -> s.botsForContactList().map { it.id } }
         .distinctUntilChanged()
         .flatMapLatest { ids ->
             if (ids.isEmpty()) {
                 flowOf(emptyMap())
             } else {
-                combine(ids.map { id -> latestConversationOf(id).map { id to it } }) { it.toMap() }
+                combine(ids.map { id ->
+                    combine(
+                        latestConversationOf(id),
+                        observeBotActivity(id, conversationRepo, chatService),
+                    ) { latest, activity -> id to (latest to activity) }
+                }) { it.toMap() }
             }
         }
 
@@ -74,23 +81,17 @@ class BotHomeVM(
                 summary?.let { runCatching { conversationRepo.getConversationById(it.id) }.getOrNull() ?: it }
             }
 
-    private val generatingIds: Flow<Set<Uuid>> = chatService.getConversationJobs()
-        .map { jobs -> jobs.filterValues { it?.isActive == true }.keys }
-        .distinctUntilChanged()
-
     private val routineJobs = scheduledJobRepository.observeAll()
 
     val items: StateFlow<List<BotHomeItem>> = combine(
         settingsStore.settingsFlow,
         latestByBot,
-        generatingIds,
         routineJobs,
-        com.clma.app.data.botmode.BotRoutineApprovals.parked,
-    ) { s, latest, generating, jobs, parked ->
+    ) { s, latest, jobs ->
         val ds = s.displaySetting
         val bots = s.botsForContactList()
         val rows = bots.map { bot ->
-            val conv = latest[bot.id]
+            val (conv, activity) = latest[bot.id] ?: (null to BotActivitySnapshot())
             BotHomeRow(
                 assistantId = bot.id,
                 latestConversationId = conv?.id,
@@ -98,11 +99,9 @@ class BotHomeVM(
                 updatedAt = conv?.updateAt,
                 unread = ds.botUnreadCount(bot.id),
                 pinned = ds.isBotPinned(bot.id),
-                // A routine run parked on an approval card counts even when it is not the
-                // bot's latest conversation.
-                pendingApproval = hasPendingApproval(conv) ||
-                    parked.any { it.assistantId == bot.id.toString() && !it.resuming },
-                generating = conv?.id != null && conv.id in generating,
+                pendingApproval = activity.activity == BotActivity.WAITING,
+                generating = activity.activity == BotActivity.WORKING,
+                waitingConversationId = activity.waitingConversationId,
                 routine = com.clma.app.data.botmode.botRoutineRowSummary(jobs, bot.id),
             )
         }
@@ -162,19 +161,14 @@ class BotHomeVM(
 
     /**
      * Opening a bot: make it the current assistant and clear its unread, then hand back the
-     * conversation to show. Prefer the conversation that produced the unread badge (often a
-     * Peer thread), then the home-row latest top-level chat, else a fresh id.
+     * conversation to show. Prefer a conversation waiting for approval, then the unread conversation,
+     * the latest top-level chat or a fresh id.
      */
     fun open(row: BotHomeRow, onReady: (conversationId: Uuid) -> Unit) = viewModelScope.launch {
         var openId: Uuid? = null
         settingsStore.update { s ->
-            // A routine run waiting on the user's yes opens first, then the unread badge's chat.
-            val parkedId = com.clma.app.data.botmode.BotRoutineApprovals.parked.value
-                .lastOrNull { it.assistantId == row.assistantId.toString() && !it.resuming }
-                ?.conversationId
-                ?.let { runCatching { Uuid.parse(it) }.getOrNull() }
             openId = resolveBotOpenConversationId(
-                unreadConversationId = parkedId ?: s.displaySetting.botUnreadConversationId(row.assistantId),
+                unreadConversationId = row.waitingConversationId ?: s.displaySetting.botUnreadConversationId(row.assistantId),
                 latestConversationId = row.latestConversationId,
             )
             s.copy(

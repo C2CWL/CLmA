@@ -54,7 +54,7 @@ fun reconcileRootStack(
         // Bot chats, bot info and channel pages belong to Bot mode too; classic opens
         // conversations in its own page.
         stack.removeAll {
-            it == Screen.BotHome || it is Screen.BotChat || it is Screen.BotInfo || it is Screen.BotChannel
+            it == Screen.BotHome || it == Screen.BotSettings || it is Screen.BotChat || it is Screen.BotInfo || it is Screen.BotChannel
         }
         if (!useHomeAsStartPage && stack.firstOrNull() !is Screen.Chat) stack.add(0, newChat())
     }

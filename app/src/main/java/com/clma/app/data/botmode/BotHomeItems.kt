@@ -23,6 +23,7 @@ data class BotHomeRow(
     val generating: Boolean,
     /** The bot's soonest enabled routine (自动任务), shown under the preview. */
     val routine: BotRoutineRowSummary? = null,
+    val waitingConversationId: Uuid? = null,
 )
 
 /** Latest top-level (non sub-agent) conversation by update time, ignoring the pinned-first DAO order. */

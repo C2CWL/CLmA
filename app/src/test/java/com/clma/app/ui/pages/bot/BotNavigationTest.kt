@@ -110,12 +110,13 @@ class BotNavigationTest {
     }
 
     @Test
-    fun `turning bot mode off drops bot info and channel pages too`() {
+    fun `turning bot mode off drops bot info channel and settings pages`() {
         val stack = mutableListOf<NavKey>(
             Screen.BotHome,
             Screen.BotChat("b", "c"),
             Screen.BotInfo("b", "c"),
             Screen.BotChannel("ch"),
+            Screen.BotSettings,
             Screen.Setting,
         )
         reconcileRootStack(stack, botMode = false, newChat = newChat)

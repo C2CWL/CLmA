@@ -254,6 +254,9 @@ val appModule = module {
         )
     }
 
+    single { com.clma.app.data.botmode.settings.BotModeSettingsStore(get<android.app.Application>()) }
+    single { com.clma.app.data.botmode.settings.BotProfileStore(get<android.app.Application>()) }
+
     single {
         ChatService(
             context = get(),
@@ -272,6 +275,8 @@ val appModule = module {
             filesManager = get(),
             skillManager = get(),
             toolApprovalPreferences = get(),
+            botModeSettingsStore = get(),
+            botProfileStore = get(),
             workspaceRepository = get(),
             folderRepository = get(),
         )
