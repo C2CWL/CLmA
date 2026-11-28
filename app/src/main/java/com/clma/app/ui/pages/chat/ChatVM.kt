@@ -259,6 +259,28 @@ class ChatVM(
 
     fun clearAllErrors() = chatService.clearAllErrors()
 
+    internal val botQuotaWait = chatService.observeBotQuotaWait(_conversationId)
+
+    internal fun observeBotPaused(botId: Uuid) = chatService.observeBotPaused(botId)
+
+    internal fun cancelBotQuotaWait(id: String) = runQuotaAction {
+        chatService.cancelBotQuotaWait(_conversationId, id)
+    }
+
+    internal fun retryBotQuotaWait(id: String) = runQuotaAction {
+        chatService.resumeBotQuotaWait(_conversationId, id, automatic = false)
+    }
+
+    private fun runQuotaAction(action: suspend () -> Unit) = viewModelScope.launch {
+        try {
+            action()
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            chatService.addError(e, _conversationId, title = context.getString(R.string.error_title_operation))
+        }
+    }
+
     val messageQueue = chatService.getMessageQueueFlow(_conversationId)
 
     fun removeQueuedMessage(id: Uuid) = chatService.removeQueuedMessage(_conversationId, id)
