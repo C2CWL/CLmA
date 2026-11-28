@@ -8,7 +8,7 @@ import com.clma.app.connectors.ConnectorWriteApproval
 import com.clma.app.data.datastore.Settings
 import com.clma.app.data.model.Assistant
 import com.clma.app.data.model.AssistantLibrary
-import com.clma.app.data.model.AssistantMemory
+import com.clma.app.data.botmode.memory.BotManagedMemory
 import com.clma.app.data.model.isBot
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -16,7 +16,6 @@ import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
@@ -24,7 +23,7 @@ import kotlin.uuid.Uuid
 
 /**
  * Where the main assistant's bot-management tools read and write. Production wiring
- * (ChatService) backs it with SettingsStore + MemoryRepository; tests use an in-memory fake.
+ * (ChatService) backs it with SettingsStore + per-bot files; tests use an in-memory fake.
  */
 interface BotMainToolStore {
     suspend fun settings(): Settings
@@ -32,9 +31,9 @@ interface BotMainToolStore {
     /** Atomically transforms the stored settings and returns the result. */
     suspend fun updateSettings(transform: (Settings) -> Settings): Settings
 
-    suspend fun memories(botId: Uuid): List<AssistantMemory>
-    suspend fun addMemory(botId: Uuid, content: String): AssistantMemory
-    suspend fun deleteMemory(memoryId: Int)
+    suspend fun memories(botId: Uuid): List<BotManagedMemory>
+    suspend fun addMemory(botId: Uuid, content: String): BotManagedMemory
+    suspend fun deleteMemory(botId: Uuid, memoryId: String): Boolean
 }
 
 /**
@@ -149,10 +148,7 @@ object BotMainTools {
             parameters = {
                 schema(required = listOf("bot_id", "memory_id")) {
                     str("bot_id", "Id of the bot, from bot_list")
-                    put("memory_id", buildJsonObject {
-                        put("type", "integer")
-                        put("description", "Memory record id from bot_list")
-                    })
+                    str("memory_id", "Memory record id from bot_list")
                 }
             },
             needsApproval = { true },
@@ -198,7 +194,7 @@ object BotMainTools {
                     put("is_main", bot.id == mainId)
                     put("model_id", bot.chatModelId?.toString())
                     put("system_prompt_preview", bot.systemPrompt.take(300))
-                    put("memory_enabled", bot.enableMemory && !bot.useGlobalMemory)
+                    put("memory_enabled", bot.enableMemory)
                     put("memories", buildJsonArray {
                         store.memories(bot.id).forEach { m ->
                             add(buildJsonObject {
@@ -275,7 +271,7 @@ object BotMainTools {
             put("created", true)
             put("bot_id", bot.id.toString())
             put("memory_id", memory.id)
-            if (!bot.enableMemory || bot.useGlobalMemory) {
+            if (!bot.enableMemory) {
                 put("note", "Stored in the bot's own memory. That bot's memory switch is off, so it will see it only after the user turns its memory on.")
             }
         }
@@ -283,13 +279,12 @@ object BotMainTools {
 
     private suspend fun deleteMemory(store: BotMainToolStore, args: JsonObject): JsonObject {
         val botId = args.botId()
-        val memoryId = args["memory_id"]?.jsonPrimitive?.let { it.intOrNull ?: it.contentOrNull?.toIntOrNull() }
+        val memoryId = args.text("memory_id")
             ?: throw IllegalArgumentException("memory_id is required")
         val bot = store.settings().botAssistants().find { it.id == botId } ?: return notFound()
-        if (store.memories(bot.id).none { it.id == memoryId }) {
+        if (!store.deleteMemory(bot.id, memoryId)) {
             return error("memory_not_found", "That memory id does not belong to this bot. Call bot_list for its ids.")
         }
-        store.deleteMemory(memoryId)
         return buildJsonObject {
             put("deleted", true)
             put("bot_id", bot.id.toString())
@@ -303,6 +298,7 @@ object BotMainTools {
         systemPrompt = systemPrompt.trim(),
         chatModelId = chatModelId,
         library = AssistantLibrary.BOT,
+        enableMemory = true,
     )
 
     private fun notFound() = error("bot_not_found", "No Bot-mode bot has that id. Call bot_list for ids.")

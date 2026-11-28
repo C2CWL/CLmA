@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bot_memory_title">记忆</string>
+    <string name="bot_memory_save">保存</string>
+    <string name="bot_memory_topics">主题文件</string>
+    <string name="bot_memory_logs">每日日志</string>
+    <string name="bot_memory_delete">删除</string>
+    <string name="bot_memory_empty">还没有。</string>
+    <string name="bot_memory_placeholder">还没有记住任何内容。机器人会把长期笔记写在这里，你也可以自行添加。</string>
+    <string name="bot_memory_organize">立即整理</string>
+    <string name="bot_memory_organizing">正在整理…</string>
+    <string name="bot_memory_never">尚未整理。</string>
+    <string name="bot_memory_enabled">使用记忆</string>
+    <string name="bot_memory_auto">自动整理记忆</string>
+    <string name="bot_memory_auto_hint">设备空闲且充电时每日整理，使用机器人的聊天模型。</string>
+    <string name="bot_memory_last">上次整理于 %1$s</string>
+    <string name="bot_memory_capacity">加载到对话：%1$d / %2$d 行，%3$d / %4$d 字节</string>
+    <string name="bot_memory_confirm_delete">要删除 %1$s 吗？</string>
+    <string name="bot_memory_conflict">你编辑期间此文件有改动，请重新加载后再保存。</string>
+    <string name="bot_memory_reload">重新加载</string>
+    <string name="bot_memory_error">无法完成记忆操作。</string>
+    <string name="bot_memory_too_large">此文件超过 256 KiB 上限。</string>
+    <string name="bot_memory_recent_hint">最近的每日日志可能会加入机器人的对话上下文。</string>
+</resources>

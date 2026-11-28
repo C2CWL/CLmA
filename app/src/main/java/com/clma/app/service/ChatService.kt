@@ -11,6 +11,10 @@ import com.clma.app.data.botmode.settings.notificationSettings
 import com.clma.app.data.botmode.settings.requiresBotToolConsent
 import com.clma.app.data.repository.memoryScopeId
 import com.clma.app.data.botmode.BotPeerRuntime
+import com.clma.app.data.botmode.memory.BotMemoryStore
+import com.clma.app.data.botmode.memory.BotMemoryTools
+import com.clma.app.data.botmode.memory.buildPrompt
+import com.clma.app.data.botmode.memory.recordCompletedTurn
 import com.clma.app.data.botmode.BotPeerTools
 import com.clma.app.data.botmode.BotPeerToolPolicy
 import com.clma.app.data.botmode.PeerHost
@@ -2279,6 +2283,37 @@ class ChatService(
         ) + checkBack
     }
 
+    private val botMemoryMigration = Mutex()
+
+    internal suspend fun loadBotMemory(id: Uuid): BotMemoryStore = withContext(Dispatchers.IO) {
+        val assistant = settingsStore.settingsFlow.value.assistants.firstOrNull { it.id == id && it.isBot }
+            ?: error("Bot memory is unavailable")
+        val store = BotMemoryStore(context.filesDir, id.toString())
+        if (!store.legacyMigrationDone()) botMemoryMigration.withLock {
+            if (!store.legacyMigrationDone()) {
+                val personal = memoryRepository.getMemoriesOfAssistant(id.toString())
+                val shared = if (assistant.useGlobalMemory) {
+                    memoryRepository.getMemoriesOfAssistant(MemoryRepository.BOT_GLOBAL_MEMORY_ID)
+                } else emptyList()
+                val cold = assistantColdMemoryDirectory(assistant)?.let { (directory, _) ->
+                    AssistantColdMemoryStore.listFiles(directory).associate { it.name to it.readText() }
+                }.orEmpty()
+                store.migrateLegacy((personal + shared).map { it.content }, cold)
+            }
+        }
+        store
+    }
+
+    private fun botMemoryToolsFor(assistant: Assistant, conversationId: Uuid): List<Tool> {
+        if (!assistant.isBot || !assistant.enableMemory || getConversationFlow(conversationId).value.isTemporary) {
+            return emptyList()
+        }
+        return BotMemoryTools.build({ loadBotMemory(assistant.id) }, conversationId.toString()) {
+            settingsStore.settingsFlow.value.assistants.any { it.id == assistant.id && it.isBot && it.enableMemory } &&
+                getConversationFlow(conversationId).value.assistantId == assistant.id
+        }
+    }
+
     private val botMainToolStore = object : com.clma.app.data.botmode.BotMainToolStore {
         override suspend fun settings(): Settings = settingsStore.settingsFlow.value
 
@@ -2287,12 +2322,18 @@ class ChatService(
             return settingsStore.settingsFlow.value
         }
 
-        override suspend fun memories(botId: Uuid) = memoryRepository.getMemoriesOfAssistant(botId.toString())
+        override suspend fun memories(botId: Uuid) = withContext(Dispatchers.IO) {
+            loadBotMemory(botId).managedEntries()
+        }
 
-        override suspend fun addMemory(botId: Uuid, content: String) =
-            memoryRepository.addMemory(botId.toString(), content, source = "tool")
+        override suspend fun addMemory(botId: Uuid, content: String) = withContext(Dispatchers.IO) {
+            val store = loadBotMemory(botId)
+            store.managedEntry(store.remember(content, maxChars = com.clma.app.data.botmode.BotMainTools.MAX_MEMORY_CHARS))
+        }
 
-        override suspend fun deleteMemory(memoryId: Int) = memoryRepository.deleteMemory(memoryId, source = "tool")
+        override suspend fun deleteMemory(botId: Uuid, memoryId: String): Boolean = withContext(Dispatchers.IO) {
+            loadBotMemory(botId).deleteManagedEntry(memoryId)
+        }
     }
 
     /**
@@ -2380,13 +2421,14 @@ class ChatService(
         // The Bot-mode main assistant's bot-management tools are added after it on purpose:
         // they exist only for the current main bot (see BotMainTools), in either chat mode.
         val allowed = ChatModeTools.filterTools(fixedTools)
-        val botMainTools = botMainToolsFor(surfaceAssistant, settings, conversationId) +
-            botPeerToolsFor(surfaceAssistant, conversationId)
+        val botTools = botMainToolsFor(surfaceAssistant, settings, conversationId) +
+            botPeerToolsFor(surfaceAssistant, conversationId) +
+            botMemoryToolsFor(surfaceAssistant, conversationId)
         return ChatToolSurface(
             fixed = com.clma.app.subagent.SubAgentSurface.apply(
                 conversationId = conversationId,
                 tools = allowed,
-            ).let { ChatModeTools.filterTools(it) } + botMainTools,
+            ).let { ChatModeTools.filterTools(it) } + botTools,
         )
     }
 
@@ -2525,6 +2567,7 @@ class ChatService(
             // Bot mode: the current main bot manages the Bot library (approval per write).
             addAll(botMainToolsFor(surfaceAssistant, settings, conversationId))
             addAll(botPeerToolsFor(surfaceAssistant, conversationId))
+            addAll(botMemoryToolsFor(surfaceAssistant, conversationId))
             // Fidelity Trio: spilled output reader & current conversation search (SQLite FTS5)
             add(com.clma.app.data.ai.tools.createToolOutputReadTool(context))
             add(
@@ -2893,6 +2936,26 @@ class ChatService(
                 }
             }
 
+            val botMemory = if (assistant.isBot && assistant.enableMemory && !conversation.isTemporary &&
+                surfaceAssistant.id == assistant.id && !BotPeerToolPolicy.isPeer(conversationId)
+            ) {
+                try {
+                    loadBotMemory(assistant.id)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Log.w(TAG, "Could not load bot memory (${e.javaClass.simpleName})")
+                    null
+                }
+            } else null
+            val botMemoryPrompt = botMemory?.let { store ->
+                withContext(Dispatchers.IO) {
+                    runCatching { store.buildPrompt() }.onFailure {
+                        Log.w(TAG, "Could not load bot memory prompt (${it.javaClass.simpleName})")
+                    }.getOrNull()
+                }
+            }
+
             generationLoop.generateText(
                 settings = settings,
                 model = generationModel,
@@ -2909,8 +2972,8 @@ class ChatService(
                 // having to plumb a parameter all the way through sendMessage. Returns null
                 // for in-app conversations that didn't register one.
                 systemAddendum = buildEffectiveSystemAddendum(conversationId, surfaceAssistant).let { base ->
-                    if (profileAddendum == null) base
-                    else listOfNotNull(base, profileAddendum).joinToString("\n\n")
+                    listOfNotNull(base, profileAddendum, botMemoryPrompt)
+                        .takeIf { it.isNotEmpty() }?.joinToString("\n\n")
                 },
                 enforceBotApproval = botId != null,
                 isToolAutoApproved = { toolName ->
@@ -3016,7 +3079,7 @@ class ChatService(
                 conversationModeInjectionIds = conversation.modeInjectionIds,
                 conversationLorebookIds = conversation.lorebookIds,
                 workspaceCwd = conversation.workspaceCwd,
-                memories = memoryRepository.getMemoriesOfAssistant(assistant.memoryScopeId()),
+                memories = if (assistant.isBot) emptyList() else memoryRepository.getMemoriesOfAssistant(assistant.memoryScopeId()),
                 inputTransformers = buildList {
                     addAll(inputTransformers)
                     add(templateTransformer)
@@ -3039,7 +3102,8 @@ class ChatService(
                 allowedToolNames = if (conversation.agentModeEnabled) {
                     null
                 } else {
-                    ChatModeTools.ALLOWED_TOOL_NAMES
+                    ChatModeTools.ALLOWED_TOOL_NAMES + toolSurface.tools()
+                        .map { it.name }.filter { assistant.isBot && it in BotMemoryTools.NAMES }
                 },
                 // A catalogued-but-not-activated call is answered with the real schema instead of
                 // a bare tool_not_found (see GenerationLoop).
@@ -3080,6 +3144,16 @@ class ChatService(
                     onFinished = { persistenceSession.releasePersistence() },
                 ) {
                     persistStreamingStateNow(conversationId, updateSearchIndex = true)
+                }
+
+                if (completionCause == null && botMemory != null &&
+                    settingsStore.settingsFlow.value.assistants.any { it.id == assistant.id && it.isBot && it.enableMemory }
+                ) {
+                    withContext(Dispatchers.IO) {
+                        runCatching {
+                            botMemory.recordCompletedTurn(updatedConversation.currentMessages, conversationId.toString())
+                        }.onFailure { Log.w(TAG, "Could not append bot log (${it.javaClass.simpleName})") }
+                    }
                 }
 
                 // A Pending tool is an intentional pause, not a completed response. Surface the
@@ -3451,14 +3525,20 @@ class ChatService(
         return createWorkspaceTools(workspaceId, workspaceRepository, cwd)
     }
 
+    private fun assistantColdMemoryDirectory(assistant: Assistant): Pair<File, String>? {
+        val relative = ColdMemoryRules.normalizeDir(assistant.coldMemoryDir ?: "memory") ?: return null
+        val root = File(context.filesDir.canonicalFile, "assistant_memory/${assistant.id}")
+        if (assistant.isBot) require(root.canonicalFile == root) { "Invalid Bot cold memory scope" }
+        val directory = File(root, relative).canonicalFile
+        require(directory.toPath().startsWith(root.canonicalFile.toPath()))
+        return directory to relative
+    }
+
     private suspend fun coldMemoryStore(assistant: Assistant): AssistantColdMemoryStore? =
         withContext(Dispatchers.IO) {
-            val relative = ColdMemoryRules.normalizeDir(assistant.coldMemoryDir ?: "memory")
-                ?: return@withContext null
-            val root = File(context.filesDir, "assistant_memory/${assistant.id}")
-            val directory = File(root, relative).canonicalFile
-            require(directory.toPath().startsWith(root.canonicalFile.toPath()))
-            if (assistant.isBot || File(directory, ".migrated").isFile) {
+            if (assistant.isBot) return@withContext null
+            val (directory, relative) = assistantColdMemoryDirectory(assistant) ?: return@withContext null
+            if (File(directory, ".migrated").isFile) {
                 return@withContext AssistantColdMemoryStore(directory, null, memoryRepository.history, "${assistant.id}/$relative")
             }
             // Resolve the old workspace only for the non-destructive, one-time copy.

@@ -57,7 +57,6 @@ val viewModelModule = module {
             botId = it.get(),
             settingsStore = get(),
             conversationRepo = get(),
-            memoryRepository = get(),
             scheduledJobRepository = get(),
             scheduledJobRunRepository = get(),
             chatService = get(),
