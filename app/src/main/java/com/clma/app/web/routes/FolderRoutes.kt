@@ -1,4 +1,8 @@
 package com.clma.app.web.routes
+import com.clma.app.data.botmode.isInActiveLibrary
+import com.clma.app.data.botmode.activeLibraryIsBot
+import com.clma.app.data.botmode.withAssistantInLibrary
+
 
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.request.receive
@@ -27,7 +31,7 @@ fun Route.folderRoutes(
     route("/folders") {
         // GET /api/folders - List folders of current assistant
         get {
-            val settings = settingsStore.settingsFlow.first()
+            val settings = settingsStore.settingsFlow.first { !it.init }.let { it.withAssistantInLibrary(it.activeLibraryIsBot()) }
             val folders = folderRepo.getFoldersOfAssistant(settings.assistantId).first()
             call.respond(folders.map { it.toDto() })
         }
@@ -40,7 +44,7 @@ fun Route.folderRoutes(
                 throw BadRequestException("Folder name must not be blank")
             }
 
-            val settings = settingsStore.settingsFlow.first()
+            val settings = settingsStore.settingsFlow.first { !it.init }.let { it.withAssistantInLibrary(it.activeLibraryIsBot()) }
             val folder = folderRepo.createFolder(settings.assistantId, name)
             call.respond(HttpStatusCode.Created, folder.toDto())
         }
@@ -54,7 +58,7 @@ fun Route.folderRoutes(
                 throw BadRequestException("Folder name must not be blank")
             }
 
-            folderRepo.getFolderById(uuid) ?: throw NotFoundException("Folder not found")
+            folderRepo.getFolderById(uuid)?.takeIf { settingsStore.settingsFlow.value.isInActiveLibrary(it.assistantId) } ?: throw NotFoundException("Folder not found")
             folderRepo.renameFolder(uuid, name)
             call.respond(HttpStatusCode.OK, mapOf("status" to "updated"))
         }
@@ -62,7 +66,7 @@ fun Route.folderRoutes(
         // DELETE /api/folders/{id} - Delete a folder (conversations are kept, just unfiled)
         delete("/{id}") {
             val uuid = call.parameters["id"].toUuid("folder id")
-            folderRepo.getFolderById(uuid) ?: throw NotFoundException("Folder not found")
+            folderRepo.getFolderById(uuid)?.takeIf { settingsStore.settingsFlow.value.isInActiveLibrary(it.assistantId) } ?: throw NotFoundException("Folder not found")
 
             // Refuse to delete while a conversation inside is still generating
             if (chatService.hasGeneratingConversationInFolder(uuid)) {

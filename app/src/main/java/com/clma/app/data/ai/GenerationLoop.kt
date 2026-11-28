@@ -1,5 +1,7 @@
 package com.clma.app.data.ai
 
+import com.clma.app.data.repository.memoryScopeId
+
 import android.content.Context
 import android.content.Intent
 import android.os.Handler
@@ -1002,11 +1004,7 @@ class GenerationLoop(
             val toolsInternal = if (finalSummaryStep) emptyList() else buildList {
                 Log.i(TAG, "generateInternal: build tools($assistant)")
                 if (assistant.enableMemory) {
-                    val memoryAssistantId = if (assistant.useGlobalMemory) {
-                        MemoryRepository.GLOBAL_MEMORY_ID
-                    } else {
-                        assistant.id.toString()
-                    }
+                    val memoryAssistantId = assistant.memoryScopeId()
                     buildMemoryTools(
                         json = json,
                         existing = { memoryRepo.getMemoriesOfAssistant(memoryAssistantId) },

@@ -32,6 +32,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clma.app.R
+import com.clma.app.data.botmode.activeLibraryScope
+import com.clma.app.ui.context.LocalSettings
+import androidx.compose.runtime.key
 import com.clma.app.data.db.entity.ContextOperationLogEntity
 import com.clma.app.data.db.entity.ContextOperationResult
 import com.clma.app.data.db.entity.ContextOperationType
@@ -50,8 +53,13 @@ import java.util.Locale
 @Composable
 fun ContextOperationLogPage() {
     val repository = koinInject<ConversationRepository>()
-    val logs by repository.observeContextOperationLogs()
-        .collectAsStateWithLifecycle(initialValue = emptyList<ContextOperationLogEntity>())
+    val settings = LocalSettings.current
+    val library = settings.activeLibraryScope()
+    val logs by key(settings.init, library) {
+        val flow = remember(library) { repository.observeContextOperationLogs(library) }
+        flow.collectAsStateWithLifecycle(initialValue = emptyList<ContextOperationLogEntity>())
+    }
+    if (settings.init) return
     val scope = rememberCoroutineScope()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
@@ -63,7 +71,7 @@ fun ContextOperationLogPage() {
                 actions = {
                     if (logs.isNotEmpty()) {
                         IconButton(onClick = {
-                            scope.launch { repository.deleteContextOperationLogs() }
+                            scope.launch { repository.deleteContextOperationLogs(library) }
                         }) {
                             Icon(
                                 HugeIcons.Delete01,

@@ -1,5 +1,7 @@
 package com.clma.app.data.ai.tools
 
+import com.clma.app.data.repository.memoryScopeId
+
 import com.clma.app.data.botmode.libraryScopeOf
 import com.clma.app.data.plugins.PluginRepository
 import android.util.Log
@@ -53,11 +55,7 @@ class ChatToolFactory(
         workspaceCwd: String? = null,
     ): List<Tool> = buildList {
         if (assistant.enableMemory) {
-            val memoryAssistantId = if (assistant.useGlobalMemory) {
-                MemoryRepository.GLOBAL_MEMORY_ID
-            } else {
-                assistant.id.toString()
-            }
+            val memoryAssistantId = assistant.memoryScopeId()
             addAll(
                 buildMemoryTools(
                     json = json,

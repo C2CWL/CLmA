@@ -1,5 +1,6 @@
 package com.clma.app.data.usage
 
+import com.clma.app.data.botmode.AssistantScope
 import java.io.File
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.add
@@ -36,7 +37,11 @@ private const val EXPORT_DEFAULT_DIR = "~/exports"
  * approval set: it cannot reach user data or the network, and the rows it writes are the
  * ones the user is already paying for.
  */
-fun usageExportTool(usageRecordDao: UsageRecordDao): Tool = Tool(
+fun usageExportTool(
+    usageRecordDao: UsageRecordDao,
+    scope: () -> AssistantScope,
+    assistantOfConversation: suspend (String) -> String?,
+): Tool = Tool(
     name = "usage_export",
     description = """
         Export the usage ledger to CSV and/or JSON. One row per model round trip: purpose, provider, model, input/output/cached tokens, and the cost frozen when the call was made. Metadata only, never message content. Writes into the agent workspace and replies with the file paths, the row count and the totals.
@@ -72,7 +77,14 @@ fun usageExportTool(usageRecordDao: UsageRecordDao): Tool = Tool(
         val now = System.currentTimeMillis()
         val sinceMs = if (sinceDays <= 0) 0L else now - sinceDays * 86_400_000L
 
-        val rows = usageRecordDao.since(sinceMs, UsageLedgerDefaults.QUERY_LIMIT)
+        val library = scope()
+        val owners = mutableMapOf<String, String?>()
+        val rows = usageRecordDao.since(sinceMs, UsageLedgerDefaults.QUERY_LIMIT).filter { row ->
+            val assistantId = row.assistantId ?: row.conversationId?.let { id ->
+                owners.getOrPut(id) { assistantOfConversation(id) }
+            }
+            library.allows(assistantId.orEmpty())
+        }
         val dir = File(
             AgentWorkspace.expand(
                 args["path"]?.jsonPrimitive?.contentOrNull ?: EXPORT_DEFAULT_DIR

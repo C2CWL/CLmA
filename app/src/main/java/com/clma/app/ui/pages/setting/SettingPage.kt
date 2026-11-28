@@ -323,7 +323,11 @@ private fun HubLeafGroup(
     onOpen: (SettingsHubItemId) -> Unit,
 ) {
     // Resolve composable summaries before entering CardGroup's non-@Composable DSL builder.
-    val rows = itemIds.map { itemId ->
+    val visibleItems = if (settings.displaySetting.botModeEnabled) {
+        itemIds - setOf(SettingsHubItemId.ASSISTANT, SettingsHubItemId.SCHEDULED)
+    } else itemIds
+    if (visibleItems.isEmpty()) return
+    val rows = visibleItems.map { itemId ->
         val summary = if (itemId == SettingsHubItemId.BOT_MODE) {
             stringResource(
                 if (settings.displaySetting.botModeEnabled) R.string.setting_hub_summary_on

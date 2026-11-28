@@ -3,6 +3,7 @@ package com.clma.app.ui.pages.bot
 import androidx.navigation3.runtime.NavKey
 import com.clma.app.Screen
 import com.clma.app.data.botmode.isBotAssistantId
+import com.clma.app.data.botmode.withAssistantInLibrary
 import com.clma.app.data.datastore.Settings
 import kotlin.uuid.Uuid
 
@@ -98,26 +99,18 @@ fun NavKey.routeConversationId(): String? = when (this) {
     else -> null
 }
 
-/**
- * Where "open conversation [conversationId]" goes on the current root. [owner] is the assistant
- * the stored conversation is bound to (null: not created yet, it will belong to the current
- * assistant). Returns null when the conversation lives in the other library: the link is
- * refused instead of switching mode behind the user's back (switching stays an explicit setting).
- */
+/** Resolve links using the stored owner, or the active library for a new conversation. */
 fun conversationLinkTarget(
-    botRoot: Boolean,
     conversationId: String,
     owner: Uuid?,
     settings: Settings,
-): Screen? {
-    if (owner == null) {
-        return if (botRoot) Screen.BotChat(settings.assistantId.toString(), conversationId) else Screen.Chat(conversationId)
-    }
-    val ownerIsBot = settings.isBotAssistantId(owner)
-    return when {
-        botRoot && ownerIsBot -> Screen.BotChat(owner.toString(), conversationId)
-        !botRoot && !ownerIsBot -> Screen.Chat(conversationId)
-        else -> null
+): Screen {
+    val botMode = owner?.let(settings::isBotAssistantId) ?: settings.displaySetting.botModeEnabled
+    return if (botMode) {
+        val botId = owner ?: settings.withAssistantInLibrary(botMode = true).assistantId
+        Screen.BotChat(botId.toString(), conversationId)
+    } else {
+        Screen.Chat(conversationId)
     }
 }
 

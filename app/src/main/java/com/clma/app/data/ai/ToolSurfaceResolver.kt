@@ -53,7 +53,7 @@ object ToolSurfaceResolver {
         context: ToolInvocationContext,
     ): List<Tool> = localTools.getTools(
         options = assistant.localTools,
-        invocationContext = context,
+        invocationContext = context.copy(callerAssistantId = assistant.id.toString()),
         // P2-02 - the per-tool deny-list rides along with the option list it refines.
         disabledToolNames = assistant.disabledLocalTools,
         enabledSshHosts = assistant.enabledSshHosts,
@@ -83,7 +83,7 @@ object ToolSurfaceResolver {
             group = option,
             tools = localTools.getTools(
                 options = listOf(option),
-                invocationContext = context,
+                invocationContext = context.copy(callerAssistantId = assistant.id.toString()),
                 disabledToolNames = assistant.disabledLocalTools,
                 enabledSshHosts = assistant.enabledSshHosts,
             ),

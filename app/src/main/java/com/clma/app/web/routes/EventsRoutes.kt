@@ -1,4 +1,8 @@
 package com.clma.app.web.routes
+import com.clma.app.data.botmode.isInActiveLibrary
+import com.clma.app.data.botmode.activeLibraryIsBot
+import com.clma.app.data.botmode.withAssistantInLibrary
+
 
 import io.ktor.server.routing.Route
 import io.ktor.server.sse.heartbeat
@@ -6,6 +10,7 @@ import io.ktor.server.sse.sse
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import com.clma.app.data.datastore.SettingsStore
@@ -42,13 +47,23 @@ fun Route.eventsRoutes(
         }
 
         // Full settings snapshot; StateFlow emits the current value immediately on connect.
-        val settingsEvents = settingsStore.settingsFlow.map { settings ->
-            EventPayload(event = "settings", json = JsonInstant.encodeToString(settings))
+        val settingsEvents = settingsStore.settingsFlow.filter { !it.init }.map { settings ->
+            EventPayload(event = "settings", json = JsonInstant.encodeToString(settings.withAssistantInLibrary(settings.activeLibraryIsBot()).copy(
+                assistants = settings.assistants.filter { settings.isInActiveLibrary(it.id) },
+                displaySetting = if (settings.activeLibraryIsBot()) settings.displaySetting else settings.displaySetting.copy(
+                    botPinnedAssistantIds = emptyList(),
+                    botHiddenAssistantIds = emptyList(),
+                    botUnreadEntries = emptyList(),
+                    botChannels = emptyList(),
+                    botMainAssistantId = null,
+                ),
+            )))
         }
 
         // Conversation list invalidation, scoped to the currently selected assistant.
         val conversationListEvents = settingsStore.settingsFlow
-            .map { it.assistantId }
+            .filter { !it.init }
+            .map { it.withAssistantInLibrary(it.activeLibraryIsBot()).assistantId }
             .distinctUntilChanged()
             .flatMapLatest { assistantId ->
                 combine(
@@ -87,7 +102,8 @@ fun Route.eventsRoutes(
 
         // Folder list for the currently selected assistant (Room flow emits on any change).
         val folderEvents = settingsStore.settingsFlow
-            .map { it.assistantId }
+            .filter { !it.init }
+            .map { it.withAssistantInLibrary(it.activeLibraryIsBot()).assistantId }
             .distinctUntilChanged()
             .flatMapLatest { assistantId ->
                 folderRepo.getFoldersOfAssistant(assistantId).map { folders ->

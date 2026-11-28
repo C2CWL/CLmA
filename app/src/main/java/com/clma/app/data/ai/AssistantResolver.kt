@@ -1,5 +1,7 @@
 package com.clma.app.data.ai
 
+import com.clma.app.data.botmode.classicAssistants
+import com.clma.app.data.botmode.isBotAssistantId
 import com.clma.app.data.ai.tools.LocalToolOption
 import com.clma.app.data.datastore.Settings
 import com.clma.app.data.model.Assistant
@@ -107,8 +109,15 @@ object AssistantResolver {
     fun current(settings: Settings): Assistant = current(settings.assistants, settings.assistantId)
 
     fun forConversation(settings: Settings, conversationAssistantId: Uuid): Resolution =
-        forConversation(settings.assistants, conversationAssistantId, settings.assistantId)
+        forConversation(
+            if (settings.isBotAssistantId(conversationAssistantId)) settings.assistants
+            else settings.classicAssistants().ifEmpty { com.clma.app.data.datastore.DEFAULT_ASSISTANTS },
+            conversationAssistantId,
+            settings.assistantId,
+        )
 
     fun forWorkflow(settings: Settings, authoringAssistantId: String?): Resolution? =
-        forWorkflow(settings.assistants, authoringAssistantId)
+        settings.assistants.firstOrNull { it.id.toString() == authoringAssistantId }
+            ?.let { Resolution(it, Source.WORKFLOW_AUTHOR) }
+            ?: forWorkflow(settings.classicAssistants(), authoringAssistantId)
 }
