@@ -2760,29 +2760,39 @@ class ChatService(
         // Bot cost-saving defaults (automatic + precision compaction). Request-scoped only: this
         // copy is never written back. Classic assistants get storedSettings unchanged.
         val settings = BotCostPolicy.effectiveSettings(storedSettings, assistant)
-        val model = resolveGenerationModel(
-            settings, initialConversation, overrideModelId, peerFallbackModels[conversationId],
-        )
-            ?: throw IllegalStateException(
-                "No chat model selected. Pick one in Settings → Default models, or send /model in Telegram."
+        val (model, resolvedProvider) = runCatching {
+            val model = resolveGenerationModel(
+                settings, initialConversation, overrideModelId, peerFallbackModels[conversationId],
             )
-        // Defence against an upstream-Settings bug where disabling all providers can leave
-        // the assistant's chatModelId pointing at a model whose provider has enabled=false:
-        // the model lookup walks every provider regardless of state, so without this gate
-        // inference fires (and bills) against the "disabled" provider's API key. Surface
-        // the disabled state clearly instead of silently spending tokens.
-        val resolvedProvider = model.findProvider(settings.providers)
-        if (resolvedProvider == null) {
-            throw IllegalStateException(
-                "Selected model '${model.displayName.ifBlank { model.modelId }}' has no matching provider. " +
-                    "Pick a different model in Settings or with /model."
-            )
-        }
-        if (!resolvedProvider.enabled) {
-            throw IllegalStateException(
-                "Provider '${resolvedProvider.name}' is disabled — refusing to send. " +
-                    "Re-enable it in Settings → Providers, or pick a different model with /model."
-            )
+                ?: throw IllegalStateException(
+                    "No chat model selected. Pick one in Settings → Default models, or send /model in Telegram."
+                )
+            // Defence against an upstream-Settings bug where disabling all providers can leave
+            // the assistant's chatModelId pointing at a model whose provider has enabled=false:
+            // the model lookup walks every provider regardless of state, so without this gate
+            // inference fires (and bills) against the "disabled" provider's API key. Surface
+            // the disabled state clearly instead of silently spending tokens.
+            val resolvedProvider = model.findProvider(settings.providers)
+            if (resolvedProvider == null) {
+                throw IllegalStateException(
+                    "Selected model '${model.displayName.ifBlank { model.modelId }}' has no matching provider. " +
+                        "Pick a different model in Settings or with /model."
+                )
+            }
+            if (!resolvedProvider.enabled) {
+                throw IllegalStateException(
+                    "Provider '${resolvedProvider.name}' is disabled — refusing to send. " +
+                        "Re-enable it in Settings → Providers, or pick a different model with /model."
+                )
+            }
+            model to resolvedProvider
+        }.getOrElse { error ->
+            if (error !is CancellationException && assistant.isBot && !botRoutine &&
+                !com.clma.app.data.ai.tools.HeadlessConversations.canParkForApproval(conversationId)
+            ) {
+                notifyBotTurn(conversationId, assistant.name, BotFeedbackEvent.FAILED)
+            }
+            throw error
         }
 
         val senderName = if (assistant.useAssistantAvatar) {
@@ -3164,7 +3174,7 @@ class ChatService(
                 if (
                     completionCause == null &&
                     !isForeground.value &&
-                    (botId != null || settings.displaySetting.enableNotificationOnMessageGeneration) &&
+                    botId == null && settings.displaySetting.enableNotificationOnMessageGeneration &&
                     // Bot routine runs post their own result / approval notification.
                     !com.clma.app.data.ai.tools.HeadlessConversations.canParkForApproval(conversationId)
                 ) {
@@ -3174,14 +3184,13 @@ class ChatService(
                         .flatMap { it.parts.asReversed().asSequence() }
                         .filterIsInstance<UIMessagePart.Tool>()
                         .firstOrNull { it.isPending }
-                    val botNotifications = botId?.let { botModeSettingsStore.notificationSettings() }
-                    if (pendingTool != null && botNotifications?.notifyApprovals != false) {
+                    if (pendingTool != null) {
                         sendToolApprovalRequiredNotification(
                             conversationId = conversationId,
                             senderName = senderName,
                             pendingTool = pendingTool,
                         )
-                    } else if (pendingTool == null && botNotifications?.notifyReplies != false) {
+                    } else {
                         sendGenerationDoneNotification(conversationId, senderName)
                     }
                 }
@@ -3363,6 +3372,8 @@ class ChatService(
             }
         }
 
+        val deliverBotFeedback = assistant.isBot && !botRoutine &&
+            !com.clma.app.data.ai.tools.HeadlessConversations.canParkForApproval(conversationId)
         generationResult.onFailure {
             if (it is CancellationException) throw it
             sessions[conversationId]?.messageQueue?.pause()
@@ -3396,10 +3407,22 @@ class ChatService(
 
             it.printStackTrace()
             addError(it, conversationId, title = context.getString(R.string.error_title_generation))
+            if (deliverBotFeedback) {
+                notifyBotTurn(conversationId, assistant.name, BotFeedbackEvent.FAILED)
+            }
             Logging.log(TAG, "handleMessageComplete: $it")
             Logging.log(TAG, it.stackTraceToString())
         }.onSuccess {
             val finalConversation = getConversationFlow(conversationId).value
+
+            if (deliverBotFeedback) {
+                val pending = finalConversation.currentMessages.asReversed().asSequence()
+                    .flatMap { it.parts.asReversed().asSequence() }
+                    .filterIsInstance<UIMessagePart.Tool>()
+                    .firstOrNull { it.isPending }
+                val event = pending?.let { BotFeedbackEvent.pending(it.toolName) } ?: BotFeedbackEvent.DONE
+                notifyBotTurn(conversationId, assistant.name, event)
+            }
 
             if (isStalledTurn(succeeded = true, lastMessage = finalConversation.currentMessages.lastOrNull())) {
                 // A stalled success (reasoning/tool-only turn) needs a way forward, not topic
@@ -5058,6 +5081,37 @@ class ChatService(
     }
 
     // ---- 通知 ----
+
+    private suspend fun notifyBotTurn(conversationId: Uuid, botName: String, event: BotFeedbackEvent) {
+        val display = settingsStore.settingsFlow.value.displaySetting
+        BotFeedback.deliver(
+            context = context,
+            settings = botModeSettingsStore.notificationSettings(),
+            event = event,
+            channelId = CHAT_COMPLETED_NOTIFICATION_CHANNEL_ID,
+            showNotification = !isForeground.value && display.enableNotificationOnMessageGeneration,
+            allowVibration = display.enableMessageGenerationHapticEffect,
+        ) {
+            val name = botName.ifBlank { context.getString(R.string.assistant_page_default_assistant) }
+            val titleRes = when (event) {
+                BotFeedbackEvent.APPROVAL -> R.string.bot_feedback_approval_title
+                BotFeedbackEvent.QUESTION -> R.string.bot_feedback_question_title
+                BotFeedbackEvent.FAILED -> R.string.bot_feedback_failed_title
+                else -> R.string.bot_feedback_done_title
+            }
+            context.sendNotification(CHAT_COMPLETED_NOTIFICATION_CHANNEL_ID, getLiveUpdateNotificationId(conversationId) + 2_000_000) {
+                title = context.getString(titleRes, name)
+                if (event == BotFeedbackEvent.DONE) {
+                    content = getConversationFlow(conversationId).value.currentMessages
+                        .lastOrNull()?.toText()?.trim()?.take(120).orEmpty()
+                }
+                autoCancel = true
+                silent = true
+                category = NotificationCompat.CATEGORY_MESSAGE
+                contentIntent = getPendingIntent(context, conversationId)
+            }
+        }
+    }
 
     private fun sendGenerationDoneNotification(conversationId: Uuid, senderName: String) {
         // 先取消 Live Update 通知

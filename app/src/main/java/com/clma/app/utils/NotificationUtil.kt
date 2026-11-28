@@ -34,6 +34,7 @@ class NotificationConfig {
 
     // 默认通知效果
     var useDefaults: Boolean = false
+    var silent: Boolean = false
 
     // 不确定进度条（生成中）与额外的操作按钮（如「停止」）
     var indeterminateProgress: Boolean = false
@@ -103,6 +104,8 @@ object NotificationUtil {
             if (config.useBigTextStyle) {
                 setStyle(NotificationCompat.BigTextStyle().bigText(config.content))
             }
+
+            if (config.silent) setSilent(true)
 
             if (config.useDefaults) {
                 setDefaults(NotificationCompat.DEFAULT_ALL)

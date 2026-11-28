@@ -64,7 +64,12 @@ internal suspend fun BotModeSettingsStore.notificationSettings(): BotModeSetting
         settings.first()
     } catch (e: java.io.IOException) {
         android.util.Log.w("BotModeSettingsStore", "Could not read notification settings", e)
-        BotModeSettings(notifyReplies = false, notifyRoutineResults = false, notifyApprovals = false)
+        BotModeSettings(
+            notifyReplies = false,
+            notifyRoutineResults = false,
+            notifyApprovals = false,
+            notifyFailures = false,
+        )
     }
 
 internal fun requiresBotToolConsent(toolName: String): Boolean =
