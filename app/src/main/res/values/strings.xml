@@ -3528,4 +3528,12 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="setting_plugins_market_install_warning">Plugin code runs in the host process with host permissions; install only trusted sources. The installer validates the manifest again.</string>
   <string name="setting_plugins_market_installing">Installing…</string>
   <string name="setting_plugins_market_install_failed">Install failed: %1$s</string>
+
+  <string name="setting_plugins_market_runtime">Runtime: %1$s</string>
+  <string name="setting_plugins_runtime_native_apk">CLmA native APK loader</string>
+  <string name="setting_plugins_runtime_dsh_cli">External dsh CLI</string>
+  <string name="setting_plugins_runtime_js_planned">JS runtime adapter planned; not executable here</string>
+  <string name="setting_plugins_runtime_source_only">Source only; no runtime</string>
+  <string name="setting_plugins_compat_js_runtime">JS/TS runtime adapter required</string>
+  <string name="setting_plugins_step_use_js_runtime">Wait for the JS runtime adapter or build a native APK</string>
 </resources>

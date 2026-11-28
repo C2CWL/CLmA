@@ -2,6 +2,7 @@ package com.clma.app.data.plugins
 
 enum class PluginPackageKind {
     NATIVE_APK,
+    JS_TS_PACKAGE,
     DSH_GO_PACKAGE,
     GITHUB_SOURCE,
     UNKNOWN,
@@ -9,6 +10,7 @@ enum class PluginPackageKind {
 
 enum class PluginInstallability {
     DIRECT_APK,
+    RUNTIME_ADAPTER_REQUIRED,
     MANUAL_BUILD_REQUIRED,
     EXTERNAL_RUNTIME_ONLY,
     SOURCE_ONLY,
@@ -16,6 +18,7 @@ enum class PluginInstallability {
 
 enum class PluginPackageNextStep {
     INSTALL_APK,
+    USE_JS_RUNTIME_ADAPTER,
     BUILD_NATIVE_APK,
     USE_EXTERNAL_RUNTIME,
     OPEN_SOURCE,
@@ -47,6 +50,18 @@ class NativeApkPackageAdapter : PluginPackageAdapter {
         installability = PluginInstallability.DIRECT_APK,
         canInstallInApp = true,
         nextStep = PluginPackageNextStep.INSTALL_APK,
+    )
+}
+
+class JsRuntimePackageAdapter : PluginPackageAdapter {
+    override fun supports(entry: PluginMarketEntry): Boolean =
+        entry.packageKind == PluginPackageKind.JS_TS_PACKAGE
+
+    override fun plan(entry: PluginMarketEntry): PluginPackagePlan = PluginPackagePlan(
+        installability = PluginInstallability.RUNTIME_ADAPTER_REQUIRED,
+        canInstallInApp = false,
+        nextStep = PluginPackageNextStep.USE_JS_RUNTIME_ADAPTER,
+        toolchain = "CLmA JS runtime adapter (planned)",
     )
 }
 

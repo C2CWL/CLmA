@@ -3516,4 +3516,12 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="setting_plugins_market_install_warning">插件代码在宿主进程中运行，拥有宿主权限；请只安装可信来源。安装器会再次校验清单。</string>
   <string name="setting_plugins_market_installing">安装中…</string>
   <string name="setting_plugins_market_install_failed">安装失败：%1$s</string>
+
+  <string name="setting_plugins_market_runtime">运行时：%1$s</string>
+  <string name="setting_plugins_runtime_native_apk">CLmA 原生 APK 加载器</string>
+  <string name="setting_plugins_runtime_dsh_cli">外部 dsh CLI</string>
+  <string name="setting_plugins_runtime_js_planned">JS 运行时适配待实现；当前不可执行</string>
+  <string name="setting_plugins_runtime_source_only">仅源码；无运行时</string>
+  <string name="setting_plugins_compat_js_runtime">需要 JS/TS 运行时适配器</string>
+  <string name="setting_plugins_step_use_js_runtime">等待 JS 运行时适配器，或构建原生 APK</string>
 </resources>

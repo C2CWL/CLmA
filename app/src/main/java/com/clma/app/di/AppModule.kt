@@ -255,8 +255,19 @@ val appModule = module {
         com.clma.app.data.plugins.PluginPackageAdapterRegistry(
             adapters = listOf(
                 com.clma.app.data.plugins.NativeApkPackageAdapter(),
+                com.clma.app.data.plugins.JsRuntimePackageAdapter(),
                 com.clma.app.data.plugins.DshGoPackageAdapter(),
                 com.clma.app.data.plugins.GitHubSourcePackageAdapter(),
+            ),
+        )
+    }
+    single {
+        com.clma.app.data.plugins.PluginRuntimeAdapterRegistry(
+            adapters = listOf(
+                com.clma.app.data.plugins.NativeApkRuntimeAdapter(),
+                com.clma.app.data.plugins.DshCliRuntimeAdapter(),
+                com.clma.app.data.plugins.JsRuntimeAdapter(),
+                com.clma.app.data.plugins.SourceOnlyRuntimeAdapter(),
             ),
         )
     }

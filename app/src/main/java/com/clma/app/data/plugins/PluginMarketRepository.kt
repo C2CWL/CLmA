@@ -330,11 +330,27 @@ class GitHubTopicMarketSourceAdapter(
         val name = fullName.substringAfter('/').ifBlank { fullName }
         val asset = release?.assets?.firstOrNull { it.name.endsWith(".apk", ignoreCase = true) }
         val directlyInstallable = asset != null && asset.browserDownloadUrl.isNotBlank()
+        val haystack = listOf(name, description.orEmpty())
+            .plus(topics)
+            .joinToString(" ")
+            .lowercase()
+        val words = haystack.split(Regex("[^a-z0-9+#_-]+"))
+            .filter { it.isNotBlank() }
+            .toSet()
+        val jsRuntime = asset == null && (
+            words.any { it in setOf("js", "javascript", "typescript", "node", "nodejs", "clma-js") } ||
+                haystack.contains("typescript") ||
+                haystack.contains("javascript")
+            )
         return PluginMarketEntry(
             key = "github-topic:$fullName",
             sourceKey = "github-topic",
             sourceLabel = "GitHub topic:clma-plugin",
-            type = if (directlyInstallable) "clma-plugin-apk" else "clma-plugin-repository",
+            type = when {
+                directlyInstallable -> "clma-plugin-apk"
+                jsRuntime -> "clma-plugin-js"
+                else -> "clma-plugin-repository"
+            },
             id = fullName,
             name = name,
             description = description.orEmpty(),
@@ -345,8 +361,16 @@ class GitHubTopicMarketSourceAdapter(
             repoUrl = htmlUrl.takeIf { it.isNotBlank() } ?: "https://github.com/$fullName",
             tags = topics,
             coordinate = fullName,
-            packageKind = if (directlyInstallable) PluginPackageKind.NATIVE_APK else PluginPackageKind.GITHUB_SOURCE,
-            installability = if (directlyInstallable) PluginInstallability.DIRECT_APK else PluginInstallability.SOURCE_ONLY,
+            packageKind = when {
+                directlyInstallable -> PluginPackageKind.NATIVE_APK
+                jsRuntime -> PluginPackageKind.JS_TS_PACKAGE
+                else -> PluginPackageKind.GITHUB_SOURCE
+            },
+            installability = when {
+                directlyInstallable -> PluginInstallability.DIRECT_APK
+                jsRuntime -> PluginInstallability.RUNTIME_ADAPTER_REQUIRED
+                else -> PluginInstallability.SOURCE_ONLY
+            },
             installCommand = null,
             downloadUrl = asset?.browserDownloadUrl?.takeIf { it.isNotBlank() },
             assetName = asset?.name?.takeIf { it.isNotBlank() },

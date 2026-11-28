@@ -44,6 +44,8 @@ import com.clma.app.data.plugins.PluginMarketRepository
 import com.clma.app.data.plugins.PluginPackageAdapterRegistry
 import com.clma.app.data.plugins.PluginPackageNextStep
 import com.clma.app.data.plugins.PluginRepository
+import com.clma.app.data.plugins.PluginRuntimeAdapterRegistry
+import com.clma.app.data.plugins.PluginRuntimeKind
 import java.io.File
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
@@ -53,6 +55,7 @@ fun SettingPluginsPage() {
     val repository: PluginRepository = koinInject()
     val marketRepository: PluginMarketRepository = koinInject()
     val packageAdapters: PluginPackageAdapterRegistry = koinInject()
+    val runtimeAdapters: PluginRuntimeAdapterRegistry = koinInject()
     val marketDownloader: PluginMarketDownloader = koinInject()
     val state by repository.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
@@ -231,6 +234,14 @@ fun SettingPluginsPage() {
                                     text = stringResource(
                                         R.string.setting_plugins_market_next_step,
                                         nextStepLabel(plan.nextStep),
+                                    ),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Text(
+                                    text = stringResource(
+                                        R.string.setting_plugins_market_runtime,
+                                        runtimeLabel(runtimeAdapters.plan(entry).runtime),
                                     ),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -442,7 +453,6 @@ fun SettingPluginsPage() {
             },
         )
     }
-}
 
     pendingMarketInstall?.let { entry ->
         AlertDialog(
@@ -515,11 +525,13 @@ fun SettingPluginsPage() {
             },
         )
     }
+}
 
 @Composable
 private fun installabilityLabel(value: PluginInstallability): String = stringResource(
     when (value) {
         PluginInstallability.DIRECT_APK -> R.string.setting_plugins_compat_direct_apk
+        PluginInstallability.RUNTIME_ADAPTER_REQUIRED -> R.string.setting_plugins_compat_js_runtime
         PluginInstallability.MANUAL_BUILD_REQUIRED -> R.string.setting_plugins_compat_manual_build
         PluginInstallability.EXTERNAL_RUNTIME_ONLY -> R.string.setting_plugins_compat_external_runtime
         PluginInstallability.SOURCE_ONLY -> R.string.setting_plugins_compat_source_only
@@ -527,9 +539,20 @@ private fun installabilityLabel(value: PluginInstallability): String = stringRes
 )
 
 @Composable
+private fun runtimeLabel(value: PluginRuntimeKind): String = stringResource(
+    when (value) {
+        PluginRuntimeKind.NATIVE_APK -> R.string.setting_plugins_runtime_native_apk
+        PluginRuntimeKind.DSH_CLI -> R.string.setting_plugins_runtime_dsh_cli
+        PluginRuntimeKind.JS_RUNTIME -> R.string.setting_plugins_runtime_js_planned
+        PluginRuntimeKind.SOURCE_ONLY -> R.string.setting_plugins_runtime_source_only
+    },
+)
+
+@Composable
 private fun nextStepLabel(value: PluginPackageNextStep): String = stringResource(
     when (value) {
         PluginPackageNextStep.INSTALL_APK -> R.string.setting_plugins_step_install_apk
+        PluginPackageNextStep.USE_JS_RUNTIME_ADAPTER -> R.string.setting_plugins_step_use_js_runtime
         PluginPackageNextStep.BUILD_NATIVE_APK -> R.string.setting_plugins_step_build_native
         PluginPackageNextStep.USE_EXTERNAL_RUNTIME -> R.string.setting_plugins_step_external
         PluginPackageNextStep.OPEN_SOURCE -> R.string.setting_plugins_step_open_source

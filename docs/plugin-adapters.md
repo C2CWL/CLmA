@@ -26,6 +26,19 @@ A package adapter answers one question: what can CLmA safely do with this normal
 
 The conversion layer keeps package-format decisions out of the UI and out of the source adapters.
 
+## Runtime adapters
+
+A runtime adapter is a separate, non-executing decision layer. It answers what would be needed to run an entry:
+
+| Runtime | Executable in CLmA today | Meaning |
+| --- | --- | --- |
+| native APK | yes | existing `PluginRepository` loader |
+| dsh CLI | no | external DSH runtime only |
+| JS runtime | no | planned CLmA JS/TS adapter |
+| source only | no | repository discovery only |
+
+JS/TS entries are normalized as `JS_TS_PACKAGE`, shown as requiring a runtime adapter, and never passed to `PluginRepository.install`. This PR does not add a JS engine, does not compile TypeScript at runtime, and does not execute external code.
+
 ## Conversion boundary
 
 Automatic JS/TS-to-APK conversion is not a simple repack step. A real converter needs:
