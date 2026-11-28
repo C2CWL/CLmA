@@ -104,6 +104,9 @@ class LifetimeUsageTest {
         override suspend fun tokensForParentRun(parentRunId: String) = 0L
         override suspend fun tokensSince(sinceMs: Long) = 0L
         override suspend fun forConversation(conversationId: String, limit: Int) = emptyList<UsageRecordEntity>()
+        override suspend fun botUsageSince(botId: String, sinceMs: Long) =
+            com.clma.app.data.botmode.BotUsageTotal(0, 0.0)
+
         override suspend fun deleteOlderThan(cutoffMs: Long): Int {
             val before = rows.size
             rows.removeAll { it.createdAtMs < cutoffMs }

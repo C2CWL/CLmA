@@ -3,6 +3,7 @@
 // (third_party/openmausbot/LICENSE). Modified: ported to Kotlin and changed for CLmA.
 package com.clma.app.data.botmode.settings
 
+import com.clma.app.data.botmode.BotUsageCaps
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlin.uuid.Uuid
@@ -21,6 +22,7 @@ data class BotModeSettings(
     val notifyRoutineResults: Boolean = true,
     val notifyApprovals: Boolean = true,
     val showRoutineReliability: Boolean = true,
+    val allBotsPaused: Boolean = false,
 )
 
 const val BOT_SOUL_MAX_LENGTH = 24_000
@@ -35,6 +37,9 @@ data class BotProfile(
     val description: String = "",
     val chiefOfStaff: Boolean = false,
     val reportsTo: String? = null,
+    val paused: Boolean = false,
+    val backupModelId: Uuid? = null,
+    val usageCaps: BotUsageCaps = BotUsageCaps(),
 )
 
 internal object BotSettingsCodec {

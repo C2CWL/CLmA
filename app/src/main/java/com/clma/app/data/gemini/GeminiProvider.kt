@@ -1,5 +1,6 @@
 package com.clma.app.data.gemini
 
+import com.clma.ai.util.withHttpFailureMetadata
 import android.util.Log
 import kotlin.coroutines.resume
 import kotlinx.coroutines.Dispatchers
@@ -331,7 +332,10 @@ class GeminiProvider(
                 val detailResult = runCatching { response?.takeUnless { it.isSuccessful }?.body?.stringSafe() }
                 val cause = resolveStreamFailureCause(t, response?.code, json) { detailResult.getOrThrow() }
                 val classification = classifyGeminiError(response?.code, detailResult.getOrNull(), json)
-                resumeOnce(GeminiStreamAttemptOutcome.Failure(cause, emitted, classification))
+                val failure = cause.withHttpFailureMetadata(
+                    response, detailResult.getOrNull(), enabled = params.captureQuotaRefusal, outputStarted = emitted,
+                ) ?: cause
+                resumeOnce(GeminiStreamAttemptOutcome.Failure(failure, emitted, classification))
             }
 
             override fun onClosed(eventSource: EventSource) {

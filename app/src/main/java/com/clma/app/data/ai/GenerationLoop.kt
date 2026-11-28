@@ -431,6 +431,7 @@ private fun isMeaningfulStreamChunk(chunk: StreamChunk): Boolean = when (chunk) 
 private suspend fun <T> retryGenerationTransportRequest(
     maxRetries: Int,
     onRetry: (retryNumber: Long, failure: Throwable) -> Unit = { _, _ -> },
+    isDeferredFailure: ((Throwable) -> Boolean)? = null,
     request: suspend () -> T,
 ): T {
     var retryAttempt = 0L
@@ -438,7 +439,7 @@ private suspend fun <T> retryGenerationTransportRequest(
         try {
             return request()
         } catch (failure: Throwable) {
-            if (!shouldRetryGenerationStreamFailure(
+            if (isDeferredFailure?.invoke(failure) == true || !shouldRetryGenerationStreamFailure(
                     failure = failure,
                     retryAttempt = retryAttempt,
                     maxRetries = maxRetries,
@@ -898,6 +899,8 @@ class GenerationLoop(
         // result. ChatService uses this to reassert the foreground service before a background
         // continuation opens a new socket.
         onBeforeModelRequest: suspend () -> Unit = {},
+        onTurnOutput: () -> Unit = {},
+        isDeferredFailure: ((Throwable) -> Boolean)? = null,
         // 用户插话（steer）：生成中投递的新用户消息。hasPendingSteer 在每个 stream chunk
         // 到达时检查，用于立刻收尾当前 step；drainSteerMessages 只在即将发起模型请求前
         // 调用（见 pendingTools.isEmpty 分支），返回的消息会并入 messages 并 emit，
@@ -1136,6 +1139,8 @@ class GenerationLoop(
                             "<system-reminder>${it.reminder}</system-reminder>"
                         }),
                         hasPendingSteer = hasPendingSteer,
+                        onTurnOutput = onTurnOutput,
+                        isDeferredFailure = isDeferredFailure,
                         onUpdateMessages = {
                             messages = it.transforms(
                                 transformers = outputTransformers,
@@ -1456,6 +1461,7 @@ class GenerationLoop(
             }
 
             // Handle tools (execute approved tools, handle denied tools)
+            if (toolsToProcess.isNotEmpty()) onTurnOutput()
             val executedTools = arrayListOf<UIMessagePart.Tool>()
             val resultFingerprints = mutableMapOf<String, String>()
             // 工具执行期同样要能被打断：一个工具跑几十秒时，chunk 驱动的检查根本不会触发。
@@ -2172,6 +2178,8 @@ class GenerationLoop(
         outputProjection: MicroCompaction,
         // 每个 stream chunk 到达时检查是否有待处理的用户插话（见 generateText 的同名参数）。
         hasPendingSteer: () -> Boolean = { false },
+        onTurnOutput: () -> Unit,
+        isDeferredFailure: ((Throwable) -> Boolean)?,
     ): Boolean {
         // 本 step 是否被用户插话打断（SteerInterrupt）。调用方据此决定是否继续下一 step。
         var steered = false
@@ -2305,6 +2313,7 @@ class GenerationLoop(
         val preStreamMessages = messages
         var messages: List<UIMessage> = preStreamMessages
         val params = TextGenerationParams(
+            captureQuotaRefusal = isDeferredFailure != null,
             model = model,
             temperature = assistant.temperature,
             topP = assistant.topP,
@@ -2472,7 +2481,7 @@ class GenerationLoop(
                                             )
                                         }
                                     }.retryWhen { cause, retryAttempt ->
-                                        val shouldRetry = shouldRetryGenerationStreamFailure(
+                                        val shouldRetry = isDeferredFailure?.invoke(cause) != true && shouldRetryGenerationStreamFailure(
                                             failure = cause,
                                             retryAttempt = retryAttempt,
                                             maxRetries = params.maxStreamRetries,
@@ -2516,6 +2525,7 @@ class GenerationLoop(
                                         receivedAnyChunk = true
                                         val meaningful = isMeaningfulStreamChunk(it)
                                         if (meaningful) {
+                                            onTurnOutput()
                                             receivedMeaningfulOutput = true
                                             everReceivedMeaningfulOutput = true
                                             clearRetryStatus(processingStatus)
@@ -2561,7 +2571,7 @@ class GenerationLoop(
                         // would produce a dangling call and no result, which providers reject.
                         val partial = messages.lastOrNull()
                             ?.takeIf { it.role == MessageRole.ASSISTANT }
-                        if (canContinueFromPartial(partial) &&
+                        if (isDeferredFailure?.invoke(failure) != true && canContinueFromPartial(partial) &&
                             shouldContinueGenerationStream(
                                 failure = failure,
                                 receivedMeaningfulOutput = receivedMeaningfulOutput,
@@ -2609,6 +2619,7 @@ class GenerationLoop(
                 aiLoggingManager.recordGeneration(params, requestMessages, stream = false, memoryPrompt = inspectionMemoryPrompt)
                 val result = retryGenerationTransportRequest(
                     maxRetries = params.maxStreamRetries,
+                    isDeferredFailure = isDeferredFailure,
                     onRetry = { retryNumber, failure ->
                         processingStatus.value = retryStatusText(
                             context = context,
@@ -2634,6 +2645,7 @@ class GenerationLoop(
                         params = params,
                     ) }
                 }
+                onTurnOutput()
                 messages = messages.handleTextGenerationResult(result = result, model = model)
                 onUpdateMessages(messages)
             }

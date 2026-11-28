@@ -52,6 +52,9 @@ class UsageCallRecorderTest {
                 .take(limit)
         override suspend fun tokensForParentRun(parentRunId: String) = 0L
         override suspend fun tokensSince(sinceMs: Long) = 0L
+        override suspend fun botUsageSince(botId: String, sinceMs: Long) =
+            com.clma.app.data.botmode.BotUsageTotal(0, 0.0)
+
         override suspend fun deleteOlderThan(cutoffMs: Long) = 0
     }
 
