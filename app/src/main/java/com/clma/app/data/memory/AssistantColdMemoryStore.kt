@@ -1,6 +1,8 @@
 package com.clma.app.data.memory
 
 import java.io.File
+import java.io.IOException
+import java.nio.file.Files
 
 /** Assistant-owned files. Legacy Markdown is copied once, never moved or overwritten. */
 internal class AssistantColdMemoryStore(
@@ -22,8 +24,16 @@ internal class AssistantColdMemoryStore(
         }
     }
 
-    fun listFiles(): List<File> = directory.listFiles().orEmpty().filter {
-        it.isFile && it.extension.equals("md", true) && it.canonicalFile.parentFile == directory.canonicalFile
+    fun listFiles(): List<File> = listFiles(directory)
+
+    companion object {
+        fun listFiles(directory: File): List<File> {
+            if (Files.notExists(directory.toPath())) return emptyList()
+            val files = directory.listFiles() ?: throw IOException("Cannot list cold memory directory")
+            return files.filter {
+                it.isFile && it.extension.equals("md", true) && it.canonicalFile.parentFile == directory.canonicalFile
+            }
+        }
     }
 
     fun readText(name: String): String? = child(name).takeIf { it.isFile }?.readText()

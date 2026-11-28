@@ -15,6 +15,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import com.clma.app.data.botmode.routine.RoutineRunDelivery
+import com.clma.app.data.botmode.routine.RoutineStore
+import com.clma.app.data.model.isBot
 import com.clma.app.data.datastore.SettingsStore
 import com.clma.app.data.db.entity.ScheduledJobRunEntity
 import com.clma.app.data.repository.ScheduledJobRepository
@@ -34,6 +37,7 @@ class CronBootReceiver : BroadcastReceiver(), KoinComponent {
     private val repo: ScheduledJobRepository by inject()
     private val runRepo: ScheduledJobRunRepository by inject()
     private val settingsStore: SettingsStore by inject()
+    private val routineStore: RoutineStore by inject()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -46,6 +50,7 @@ class CronBootReceiver : BroadcastReceiver(), KoinComponent {
         val pending = goAsync()
         scope.launch {
             try {
+                RoutineRunDelivery.recoverOnBoot(context, routineStore)
                 if (alarmPermissionChanged) {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
                         context.getSystemService(AlarmManager::class.java).canScheduleExactAlarms()
@@ -130,9 +135,20 @@ class CronBootReceiver : BroadcastReceiver(), KoinComponent {
     private suspend fun applyCatchupAndSchedule(context: Context) {
         val nowMs = System.currentTimeMillis()
         val wm = WorkManager.getInstance(context)
-        val customTz = settingsStore.settingsFlowRaw.first().customTimezone
+        val settings = settingsStore.settingsFlowRaw.first()
+        val customTz = settings.customTimezone
+        val bots = settings.assistants.filter { it.isBot }.mapTo(hashSetOf()) { it.id.toString() }
         val defaultZone = customTz?.let { runCatching { java.time.ZoneId.of(it) }.getOrNull() } ?: java.time.ZoneId.systemDefault()
+        val routineStates = runCatching { routineStore.read().routines }.getOrDefault(emptyMap())
         for (job in repo.getEnabled()) {
+            // The cron expression on interval rows is a compatibility placeholder.
+            if (job.mode == "llm" && job.assistantId in bots && routineStates[job.id]?.let {
+                    it.options.interval != null || job.scheduleType == "once" && it.quota != null
+                } == true
+            ) {
+                if (job.scheduleType != "once") scheduler.schedule(job)
+                continue
+            }
             // Compute catchup plan based on the job's last fire vs now.
             val plan = CatchupPlanner.plan(job, lastRunMs = job.lastRunAtMs, nowMs = nowMs, defaultZone = defaultZone)
 
@@ -144,6 +160,9 @@ class CronBootReceiver : BroadcastReceiver(), KoinComponent {
                     .setInitialDelay(delayMs, TimeUnit.MILLISECONDS)
                     .setInputData(Data.Builder()
                         .putString(CronJobWorker.KEY_JOB_ID, job.id)
+                        .apply {
+                            if (job.mode == "llm" && job.assistantId in bots) putBoolean(RoutineRunDelivery.CATCHUP, true)
+                        }
                         // Once shares its original slot with the regular fallback; cron
                         // catchups each own their planned recovery time, not the next tick.
                         .putLong(
