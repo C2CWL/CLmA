@@ -30,7 +30,19 @@ internal data class BotDataCard(
                         put("title", buildJsonObject { put("type", "string") })
                         put("kind", Json.parseToJsonElement("""{"type":"string","enum":["table","chart"]}"""))
                         put("columns", Json.parseToJsonElement("""{"type":"array","items":{"type":"string"}}"""))
-                        put("rows", Json.parseToJsonElement("""{"type":"array","items":{"type":"array","items":{"type":["string","number","boolean","null"]}}}"""))
+                        put("rows", buildJsonObject {
+                            put("type", "array")
+                            put("items", buildJsonObject {
+                                put("type", "array")
+                                put("items", buildJsonObject {
+                                    put("anyOf", buildJsonArray {
+                                        for (type in listOf("string", "number", "boolean", "null")) {
+                                            add(buildJsonObject { put("type", type) })
+                                        }
+                                    })
+                                })
+                            })
+                        })
                     },
                     required = listOf("columns", "rows"),
                 )

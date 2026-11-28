@@ -6,6 +6,7 @@ package com.clma.app.data.botmode.settings
 import com.clma.ai.core.Tool
 import com.clma.ai.provider.BuiltInTools
 import com.clma.ai.provider.Model
+import com.clma.ai.provider.ModelAbility
 import com.clma.app.data.ai.ContextCompactionPlanner
 import com.clma.app.data.botmode.data.BotDataCard
 import com.clma.app.data.model.Assistant
@@ -25,12 +26,15 @@ internal enum class BotToolGroup(val key: String) {
     DATA("data"),
 }
 
+private val WEB_TOOLS = setOf("search_web", "scrape_web", "web_fetch", "web_extract")
+private val IMAGE_TOOLS = setOf("generate_image", "edit_image", "show_image", "conversation_image")
+
 private fun groupOf(name: String): BotToolGroup? = when {
     name == BotDataCard.TOOL_NAME -> BotToolGroup.DATA
-    name.startsWith("mcp__") -> BotToolGroup.APPS
+    name.startsWith("mcp__") || name.startsWith("plugin__") -> BotToolGroup.APPS
     name.startsWith("workspace_") -> BotToolGroup.WORKSPACE
-    name in setOf("search_web", "scrape_web", "web_fetch", "web_extract") -> BotToolGroup.WEB
-    name in setOf("generate_image", "edit_image", "show_image", "conversation_image") -> BotToolGroup.IMAGES
+    name.startsWith("browser_") || name in WEB_TOOLS -> BotToolGroup.WEB
+    name in IMAGE_TOOLS -> BotToolGroup.IMAGES
     else -> null
 }
 
@@ -66,19 +70,20 @@ internal object BotToolBudgets {
     val state = snapshots.asStateFlow()
 
     fun record(key: Key, assistant: Assistant, model: Model, tools: List<Tool>) {
-        val definitions = tools.map { tool ->
-            val schema = runCatching { Json.encodeToString(tool.parameters()) }.getOrDefault("")
-            val tokens = ContextCompactionPlanner.estimateTokens(
-                Json.encodeToString(tool.name) + Json.encodeToString(tool.description) + schema
-            )
-            groupOf(tool.name) to tokens
+        val advertisedFunctions = if (ModelAbility.TOOL in model.abilities) tools else emptyList()
+        val definitions = advertisedFunctions.map { tool ->
+            val schema = runCatching { Json.encodeToString(tool.parameters()) }.getOrDefault("null")
+            val name = Json.encodeToString(tool.name)
+            val description = Json.encodeToString(tool.description)
+            val definition = """{"name":$name,"description":$description,"parameters":$schema}"""
+            groupOf(tool.name) to ContextCompactionPlanner.estimateTokens(definition)
         }
         val groups = (definitions + model.tools.map { groupOf(it) to 0 })
             .groupBy({ it.first }, { it.second })
             .mapNotNull { (group, tokens) -> group?.let { it to BotToolCost(tokens.size, tokens.sum()) } }
             .toMap()
         val budget = BotToolBudget(
-            assistant.botToolGroupsOff, tools.size, model.tools.size, definitions.sumOf { it.second }, groups,
+            assistant.botToolGroupsOff, advertisedFunctions.size, model.tools.size, definitions.sumOf { it.second }, groups,
         )
         snapshots.update { current -> ((current - key) + (key to budget)).entries.toList().takeLast(64)
             .associate { it.key to it.value } }

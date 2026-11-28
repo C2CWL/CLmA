@@ -2669,6 +2669,26 @@ class ChatService(
             else -> mcpManager.getAllAvailableTools()
         }
 
+        // Upstream name validation: a server name that isn't pure English+digits would produce an
+        // invalid `mcp__<name>__tool` surface, so surface it as an error rather than emit a tool
+        // the model can't address.
+        val invalidMcpNames = allMcpTools
+            .map { it.second }
+            .distinct()
+            .filter { name -> name.isEmpty() || !name.all { it in 'a'..'z' || it in 'A'..'Z' || it in '0'..'9' } }
+        if (invalidMcpNames.isNotEmpty() && abortOnInvalidMcpNames && (allowCatalog || surfaceAssistant.isBot)) {
+            addError(
+                error = IllegalStateException(
+                    context.getString(
+                        R.string.error_mcp_invalid_server_name,
+                        invalidMcpNames.joinToString(", "),
+                    )
+                ),
+                conversationId = conversationId,
+            )
+            return null
+        }
+
         if (!allowCatalog) {
             // Nothing here is model-facing, so there is nothing to catalogue and a malformed
             // server name cannot reach a request — the rerun path just gets the full list.
@@ -2683,26 +2703,6 @@ class ChatService(
                     tools = surfaceAssistant.filterBotTools(fixedTools + mcpTools),
                 ),
             )
-        }
-
-        // Upstream name validation: a server name that isn't pure English+digits would produce an
-        // invalid `mcp__<name>__tool` surface, so surface it as an error rather than emit a tool
-        // the model can't address.
-        val invalidMcpNames = allMcpTools
-            .map { it.second }
-            .distinct()
-            .filter { name -> name.isEmpty() || !name.all { it in 'a'..'z' || it in 'A'..'Z' || it in '0'..'9' } }
-        if (invalidMcpNames.isNotEmpty() && abortOnInvalidMcpNames) {
-            addError(
-                error = IllegalStateException(
-                    context.getString(
-                        R.string.error_mcp_invalid_server_name,
-                        invalidMcpNames.joinToString(", "),
-                    )
-                ),
-                conversationId = conversationId,
-            )
-            return null
         }
 
         val catalogEntries = buildList {
@@ -2852,9 +2852,15 @@ class ChatService(
             // nearly every assistant has something to advertise, and an unguarded warning would
             // fire on every single turn.
             if (!model.abilities.contains(ModelAbility.TOOL)) {
-                val advertisesTools = useExternalWebSearch ||
-                    mcpManager.getAllAvailableTools().isNotEmpty() ||
-                    assistant.localTools.isNotEmpty()
+                val advertisesTools = if (assistant.isBot) {
+                    (useExternalWebSearch && assistant.allowsBotTool("search_web")) ||
+                        (assistant.allowsBotTool("mcp__") && mcpManager.getAllAvailableTools(assistant).isNotEmpty()) ||
+                        assistant.localTools.isNotEmpty() ||
+                        assistant.allowsBotTool(BotDataCard.TOOL_NAME)
+                } else {
+                    useExternalWebSearch || mcpManager.getAllAvailableTools().isNotEmpty() ||
+                        assistant.localTools.isNotEmpty()
+                }
                 if (advertisesTools && toolUnavailableWarned.add(conversationId)) {
                     addError(
                         IllegalStateException(context.getString(R.string.tools_warning)),
@@ -2868,7 +2874,7 @@ class ChatService(
             checkInvalidMessages(conversationId)
             val conversation = getConversationFlow(conversationId).value
 
-            try {
+            if (!assistant.isBot) try {
                 chatToolFactory.validateMcpServerNames()
             } catch (error: InvalidMcpServerNamesException) {
                 sessions[conversationId]?.messageQueue?.pause()
