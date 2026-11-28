@@ -146,6 +146,7 @@ fun BotChannelEditDialog(
 ) {
     var name by rememberSaveable { mutableStateOf(initial?.name.orEmpty()) }
     var desc by rememberSaveable { mutableStateOf(initial?.description.orEmpty()) }
+    var goal by rememberSaveable { mutableStateOf(initial?.goal.orEmpty()) }
     val botIds = remember(bots) { bots.map { it.id }.toSet() }
     var members by remember { mutableStateOf(initial?.memberAssistantIds.orEmpty().filter { it in botIds }.toSet()) }
     AlertDialog(
@@ -169,6 +170,14 @@ fun BotChannelEditDialog(
                     value = desc,
                     onValueChange = { desc = it },
                     label = { Text(stringResource(R.string.bot_mode_channels_desc_hint)) },
+                    minLines = 2,
+                    maxLines = 5,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = goal,
+                    onValueChange = { goal = it.take(com.clma.app.data.botmode.BOT_GOAL_MAX_LENGTH) },
+                    label = { Text(stringResource(R.string.bot_goal_channel)) },
                     minLines = 2,
                     maxLines = 5,
                     modifier = Modifier.fillMaxWidth(),
@@ -198,6 +207,12 @@ fun BotChannelEditDialog(
                             name = name.trim(),
                             description = desc.trim(),
                             memberAssistantIds = ordered,
+                            goal = goal.trim(),
+                            goalUpdatedAtMs = if (goal.trim() == initial?.goal.orEmpty()) {
+                                initial?.goalUpdatedAtMs ?: 0
+                            } else {
+                                System.currentTimeMillis()
+                            },
                         )
                     )
                 },

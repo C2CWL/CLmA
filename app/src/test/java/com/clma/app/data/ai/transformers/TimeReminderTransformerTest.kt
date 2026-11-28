@@ -18,10 +18,8 @@ import kotlin.uuid.Uuid
 /**
  * Coverage for [applyTimeReminder].
  *
- * Contract (since the f5336e69 behavior change): a `<time_reminder>` is injected
- * before the FIRST user message unconditionally (no "since last message" text),
- * and before any later user message whose gap from the previous message exceeds
- * 1 hour (with the gap spelled out). Non-user messages never get a reminder.
+ * Contract: reminders are appended at the request tail so that changing clock/gap text never
+ * rewrites an earlier message and breaks the prompt cache prefix.
  */
 class TimeReminderTransformerTest {
 
@@ -35,73 +33,66 @@ class TimeReminderTransformerTest {
         msg.parts.filterIsInstance<UIMessagePart.Text>().joinToString("") { it.text }
 
     @Test
-    fun `single user message gets a reminder injected before it`() {
+    fun `single user message gets a reminder appended at tail`() {
         val messages = listOf(userMessage("Hello", LocalDateTime(2026, 2, 22, 10, 0, 0)))
         val result = applyTimeReminder(messages)
-        // reminder + original message
         assertEquals(2, result.size)
-        assertTrue(result[0].isSynthetic)
-        val injected = getMessageText(result[0])
+        assertEquals("Hello", getMessageText(result[0]))
+        assertTrue(result[1].isSynthetic)
+        val injected = getMessageText(result[1])
         assertTrue(injected.contains("<time_reminder>"))
-        // first-message reminder carries no gap text
         assertFalse(injected.contains("since last message"))
-        assertEquals("Hello", getMessageText(result[1]))
     }
 
     @Test
-    fun `gap less than 1 hour injects only the first-message reminder`() {
+    fun `gap less than 1 hour appends only the first-message reminder`() {
         val messages = listOf(
             userMessage("Hello", LocalDateTime(2026, 2, 22, 10, 0, 0)),
-            userMessage("World", LocalDateTime(2026, 2, 22, 10, 30, 0)), // 30 min gap
+            userMessage("World", LocalDateTime(2026, 2, 22, 10, 30, 0)),
         )
         val result = applyTimeReminder(messages)
-        // first-message reminder + Hello + World (no second reminder, gap < 1h)
         assertEquals(3, result.size)
-        assertTrue(getMessageText(result[0]).contains("<time_reminder>"))
-        assertEquals("Hello", getMessageText(result[1]))
-        assertEquals("World", getMessageText(result[2]))
+        assertEquals("Hello", getMessageText(result[0]))
+        assertEquals("World", getMessageText(result[1]))
+        assertTrue(getMessageText(result[2]).contains("<time_reminder>"))
     }
 
     @Test
-    fun `gap exactly 1 hour injects only the first-message reminder`() {
+    fun `gap exactly 1 hour appends only the first-message reminder`() {
         val messages = listOf(
             userMessage("Hello", LocalDateTime(2026, 2, 22, 10, 0, 0)),
-            userMessage("World", LocalDateTime(2026, 2, 22, 11, 0, 0)), // exactly 1 hour
+            userMessage("World", LocalDateTime(2026, 2, 22, 11, 0, 0)),
         )
         val result = applyTimeReminder(messages)
-        // threshold is strict (> 3600s), so exactly 1h does not trigger
         assertEquals(3, result.size)
-        assertTrue(getMessageText(result[0]).contains("<time_reminder>"))
-        assertEquals("Hello", getMessageText(result[1]))
-        assertEquals("World", getMessageText(result[2]))
+        assertTrue(getMessageText(result[2]).contains("<time_reminder>"))
     }
 
     @Test
-    fun `gap more than 1 hour injects a reminder before the second message`() {
+    fun `gap more than 1 hour appends a reminder at tail with gap text`() {
         val messages = listOf(
             userMessage("Hello", LocalDateTime(2026, 2, 22, 10, 0, 0)),
-            userMessage("World", LocalDateTime(2026, 2, 22, 12, 0, 0)), // 2 hours
+            userMessage("World", LocalDateTime(2026, 2, 22, 12, 0, 0)),
         )
         val result = applyTimeReminder(messages)
-        // first-message reminder + Hello + gap reminder + World
         assertEquals(4, result.size)
-        assertTrue(getMessageText(result[0]).contains("<time_reminder>"))
-        assertEquals("Hello", getMessageText(result[1]))
-        val injected = getMessageText(result[2])
-        assertTrue(injected.contains("<time_reminder>"))
-        assertTrue(injected.contains("since last message"))
-        assertEquals("World", getMessageText(result[3]))
+        assertEquals("Hello", getMessageText(result[0]))
+        assertEquals("World", getMessageText(result[1]))
+        assertTrue(getMessageText(result[2]).contains("<time_reminder>"))
+        assertFalse(getMessageText(result[2]).contains("since last message"))
+        val gapReminder = getMessageText(result[3])
+        assertTrue(gapReminder.contains("<time_reminder>"))
+        assertTrue(gapReminder.contains("since last message"))
     }
 
     @Test
-    fun `injected gap reminder contains day of week and gap in hours`() {
+    fun `appended gap reminder contains day of week and gap in hours`() {
         val messages = listOf(
             userMessage("Hello", LocalDateTime(2026, 2, 22, 10, 0, 0)),
-            userMessage("World", LocalDateTime(2026, 2, 22, 12, 0, 0)), // 2 hours
+            userMessage("World", LocalDateTime(2026, 2, 22, 12, 0, 0)),
         )
         val result = applyTimeReminder(messages)
-        val injected = getMessageText(result[2])
-        // day-of-week and time are comma-separated
+        val injected = getMessageText(result[3])
         assertTrue(injected.contains(","))
         assertTrue(injected.contains("2 h since last message"))
     }
@@ -110,29 +101,27 @@ class TimeReminderTransformerTest {
     fun `gap in days formats correctly`() {
         val messages = listOf(
             userMessage("Hello", LocalDateTime(2026, 2, 20, 10, 0, 0)),
-            userMessage("World", LocalDateTime(2026, 2, 22, 10, 0, 0)), // 2 days
+            userMessage("World", LocalDateTime(2026, 2, 22, 10, 0, 0)),
         )
         val result = applyTimeReminder(messages)
-        val injected = getMessageText(result[2])
-        assertTrue(injected.contains("2 d since last message"))
+        assertTrue(getMessageText(result[3]).contains("2 d since last message"))
     }
 
     @Test
-    fun `multiple large gaps inject multiple reminders`() {
+    fun `multiple large gaps append reminders at tail in order`() {
         val messages = listOf(
             userMessage("Msg 1", LocalDateTime(2026, 2, 20, 10, 0, 0)),
-            userMessage("Msg 2", LocalDateTime(2026, 2, 21, 10, 0, 0)), // 1 day
-            userMessage("Msg 3", LocalDateTime(2026, 2, 22, 10, 0, 0)), // 1 day
+            userMessage("Msg 2", LocalDateTime(2026, 2, 21, 10, 0, 0)),
+            userMessage("Msg 3", LocalDateTime(2026, 2, 22, 10, 0, 0)),
         )
         val result = applyTimeReminder(messages)
-        // first-message reminder + Msg 1 + gap reminder + Msg 2 + gap reminder + Msg 3
         assertEquals(6, result.size)
-        assertTrue(getMessageText(result[0]).contains("<time_reminder>"))
-        assertEquals("Msg 1", getMessageText(result[1]))
-        assertTrue(getMessageText(result[2]).contains("<time_reminder>"))
-        assertEquals("Msg 2", getMessageText(result[3]))
-        assertTrue(getMessageText(result[4]).contains("<time_reminder>"))
-        assertEquals("Msg 3", getMessageText(result[5]))
+        assertEquals("Msg 1", getMessageText(result[0]))
+        assertEquals("Msg 2", getMessageText(result[1]))
+        assertEquals("Msg 3", getMessageText(result[2]))
+        assertTrue(getMessageText(result[3]).contains("<time_reminder>"))
+        assertTrue(getMessageText(result[4]).contains("1 d since last message"))
+        assertTrue(getMessageText(result[5]).contains("1 d since last message"))
     }
 
     @Test
@@ -144,7 +133,7 @@ class TimeReminderTransformerTest {
         assertEquals(3, applyTimeReminder(messages, intervalMinutes = 30).size)
         val result = applyTimeReminder(messages, intervalMinutes = 15)
         assertEquals(4, result.size)
-        assertTrue(getMessageText(result[2]).contains("30 min since last message"))
+        assertTrue(getMessageText(result[3]).contains("30 min since last message"))
     }
 
     @Test
@@ -159,33 +148,16 @@ class TimeReminderTransformerTest {
 
     @Test
     fun `empty messages should return empty`() {
-        val result = applyTimeReminder(emptyList())
-        assertEquals(0, result.size)
+        assertEquals(0, applyTimeReminder(emptyList()).size)
     }
 
     @Test
-    fun `applying the time reminder over the compacted view is identical across two builds`() {
-        val nodes = listOf("one", "two", "three").map { text ->
-            MessageNode(messages = listOf(UIMessage.user(text)))
-        }
-        val conversation = Conversation(
-            assistantId = Uuid.random(),
-            messageNodes = nodes,
+    fun `tail placement keeps original history bytes identical`() {
+        val messages = listOf(
+            userMessage("Hello", LocalDateTime(2026, 2, 22, 10, 0, 0)),
+            userMessage("World", LocalDateTime(2026, 2, 22, 10, 30, 0)),
         )
-        val compaction = ConversationCompaction(
-            conversationId = conversation.id,
-            summary = "summary of one",
-            tailStartNodeId = nodes[1].id,
-            sourceEndNodeId = nodes[0].id,
-            summaryModelId = Uuid.random(),
-            isAuto = true,
-            sourceTokenEstimate = 100,
-            createdAt = Instant.now(),
-        )
-
-        val firstResult = applyTimeReminder(ContextCompactionView.build(conversation, compaction).messages)
-        val secondResult = applyTimeReminder(ContextCompactionView.build(conversation, compaction).messages)
-
-        assertEquals(firstResult.map { getMessageText(it) }, secondResult.map { getMessageText(it) })
+        val result = applyTimeReminder(messages)
+        assertEquals(messages.map(::getMessageText), result.take(messages.size).map(::getMessageText))
     }
 }
