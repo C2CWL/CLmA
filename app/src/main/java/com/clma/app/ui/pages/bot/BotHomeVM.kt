@@ -138,15 +138,21 @@ class BotHomeVM(
     }
 
     /** New bot in the Bot library; returns its id once stored. */
-    fun createBot(name: String, systemPrompt: String, makeMain: Boolean, onCreated: (Uuid) -> Unit) =
-        viewModelScope.launch {
-            val bot = com.clma.app.data.botmode.BotMainTools.newBot(name = name, systemPrompt = systemPrompt)
-            settingsStore.update { s ->
-                val added = s.copy(assistants = s.assistants + bot)
-                if (makeMain) added.withMainBot(bot.id) else added
-            }
-            onCreated(bot.id)
+    fun createBot(
+        name: String,
+        systemPrompt: String,
+        makeMain: Boolean,
+        skills: Set<String>,
+        onCreated: (Uuid) -> Unit,
+    ) = viewModelScope.launch {
+        val bot = com.clma.app.data.botmode.BotMainTools.newBot(name = name, systemPrompt = systemPrompt)
+            .let { it.copy(enabledSkills = it.enabledSkills + skills) }
+        settingsStore.update { s ->
+            val added = s.copy(assistants = s.assistants + bot)
+            if (makeMain) added.withMainBot(bot.id) else added
         }
+        if (settings.value.assistants.any { it.id == bot.id }) onCreated(bot.id)
+    }
 
     /** Marks the bot unread (its latest conversation); clears it when it already is. */
     fun toggleUnread(row: BotHomeRow) = viewModelScope.launch {

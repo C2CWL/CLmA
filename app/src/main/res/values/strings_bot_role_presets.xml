@@ -10,7 +10,8 @@
     <string name="bot_presets_export">Export role preset (JSON)</string>
     <string name="bot_presets_export_done">Role preset saved.</string>
     <string name="bot_presets_export_failed">Could not save the role preset.</string>
-    <string name="bot_presets_skills">Suggested skills: %1$s. You can enable installed skills in the Bot settings after creating it.</string>
+    <string name="bot_presets_enable_skills">Enable the installed skills referenced by this preset: %1$s</string>
+    <string name="bot_presets_missing_skills">Skills to install separately: %1$s</string>
     <string name="bot_presets_assistant">General assistant</string>
     <string name="bot_presets_assistant_prompt">Answer plainly and concisely. Lead with the answer, ask one clarifying question when needed, and flag anything you could not verify.</string>
     <string name="bot_presets_research">Researcher</string>

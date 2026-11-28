@@ -27,6 +27,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -42,6 +43,10 @@ import com.clma.app.data.botmode.botAssistants
 import com.clma.app.data.botmode.BOT_ROLE_NAME_LIMIT
 import com.clma.app.data.botmode.BOT_ROLE_PROMPT_LIMIT
 import com.clma.app.ui.pages.bot.settings.BotHomeAnnouncement
+import com.clma.app.data.files.SkillManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.koin.compose.koinInject
 import com.composables.icons.lucide.Bot
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.Plus
@@ -63,7 +68,7 @@ fun BotHomePage(vm: BotHomeVM = koinViewModel()) {
     val items by vm.items.collectAsStateWithLifecycle()
     var tab by rememberSaveable { mutableStateOf(BotHomeTab.BOTS) }
     val assistantVm: AssistantVM = koinViewModel()
-    var showNewBot by remember { mutableStateOf(false) }
+    var showNewBot by rememberSaveable { mutableStateOf(false) }
     var showNewChannel by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf<BotHomeItem?>(null) }
 
@@ -151,9 +156,9 @@ fun BotHomePage(vm: BotHomeVM = koinViewModel()) {
     if (showNewBot) {
         NewBotDialog(
             onDismiss = { showNewBot = false },
-            onCreate = { name, prompt, makeMain ->
+            onCreate = { name, prompt, makeMain, skills ->
                 showNewBot = false
-                vm.createBot(name, prompt, makeMain) { id ->
+                vm.createBot(name, prompt, makeMain, skills) { id ->
                     // Avatar, model and the rest are set on the bot's info page.
                     nav.navigate(Screen.BotInfo(botId = id.toString()))
                 }
@@ -197,12 +202,22 @@ fun BotHomePage(vm: BotHomeVM = koinViewModel()) {
 @Composable
 private fun NewBotDialog(
     onDismiss: () -> Unit,
-    onCreate: (name: String, systemPrompt: String, makeMain: Boolean) -> Unit,
+    onCreate: (name: String, systemPrompt: String, makeMain: Boolean, skills: Set<String>) -> Unit,
 ) {
     var name by rememberSaveable { mutableStateOf("") }
     var prompt by rememberSaveable { mutableStateOf("") }
     var makeMain by rememberSaveable { mutableStateOf(false) }
-    var skillNames by rememberSaveable { mutableStateOf("") }
+    var skillNames by rememberSaveable { mutableStateOf(arrayListOf<String>()) }
+    var enableSkills by rememberSaveable { mutableStateOf(false) }
+    var importing by remember { mutableStateOf(false) }
+    val skillManager = koinInject<SkillManager>()
+    val installedSkills by produceState(emptySet<String>(), skillManager, skillNames) {
+        value = if (skillNames.isEmpty()) emptySet() else withContext(Dispatchers.IO) {
+            skillNames.filterTo(mutableSetOf()) { skillManager.getSkillMetadata(it) != null }
+        }
+    }
+    val available = skillNames.filter(installedSkills::contains)
+    val unavailable = skillNames - installedSkills
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.bot_new_title)) },
@@ -211,14 +226,21 @@ private fun NewBotDialog(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                BotRolePresetPicker { preset ->
+                BotRolePresetPicker(onImporting = { importing = it }) { preset ->
                     name = preset.name
                     prompt = preset.prompt
-                    skillNames = preset.skills.joinToString(", ")
+                    skillNames = ArrayList(preset.skills.distinct())
+                    enableSkills = false
                 }
-                if (skillNames.isNotEmpty()) {
+                if (available.isNotEmpty()) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = enableSkills, onCheckedChange = { enableSkills = it })
+                        Text(stringResource(R.string.bot_presets_enable_skills, available.joinToString(", ")))
+                    }
+                }
+                if (unavailable.isNotEmpty()) {
                     Text(
-                        stringResource(R.string.bot_presets_skills, skillNames),
+                        stringResource(R.string.bot_presets_missing_skills, unavailable.joinToString(", ")),
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
@@ -249,7 +271,10 @@ private fun NewBotDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = { onCreate(name, prompt, makeMain) }, enabled = name.isNotBlank()) {
+            TextButton(
+                onClick = { onCreate(name, prompt, makeMain, if (enableSkills) available.toSet() else emptySet()) },
+                enabled = name.isNotBlank() && !importing,
+            ) {
                 Text(stringResource(R.string.bot_new_create))
             }
         },

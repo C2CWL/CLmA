@@ -39,7 +39,7 @@ private val roleChoices = listOf(
 )
 
 @Composable
-internal fun BotRolePresetPicker(onPick: (BotRolePreset) -> Unit) {
+internal fun BotRolePresetPicker(onImporting: (Boolean) -> Unit, onPick: (BotRolePreset) -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var choosing by remember { mutableStateOf(false) }
@@ -47,6 +47,7 @@ internal fun BotRolePresetPicker(onPick: (BotRolePreset) -> Unit) {
     val importFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
         importing = true
+        onImporting(true)
         scope.launch {
             try {
                 val preset = withContext(Dispatchers.IO) {
@@ -60,6 +61,7 @@ internal fun BotRolePresetPicker(onPick: (BotRolePreset) -> Unit) {
                 Toast.makeText(context, R.string.bot_presets_import_failed, Toast.LENGTH_SHORT).show()
             } finally {
                 importing = false
+                onImporting(false)
             }
         }
     }
