@@ -1,5 +1,6 @@
 package com.clma.app.data.ai.tools
 
+import com.clma.app.data.botmode.memory.BotMemoryTools
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -52,7 +53,7 @@ class ToolDisplayNamesTest {
             "subagent_create", "subagent_update", "subagent_delete",
             "board_list", "board_get", "board_add", "board_claim",
             "board_update", "board_comment", "board_assign",
-        )
+        ) + BotMemoryTools.NAMES
         assertEquals(emptyList<String>(), names.filter { ToolDisplayNames.resFor(it) == null })
     }
 
