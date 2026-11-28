@@ -1,5 +1,6 @@
 package com.clma.ai.provider.providers.openai
 
+import com.clma.ai.util.withHttpFailureMetadata
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -129,7 +130,9 @@ class ChatCompletionsAPI(
             if (response.code == 413) {
                 throw RequestTooLargeException("Failed to get response: 413 $errorBody")
             }
-            throw Exception("Failed to get response: ${response.code} $errorBody")
+            throw Exception("Failed to get response: ${response.code} $errorBody").apply {
+                withHttpFailureMetadata(response, errorBody, enabled = params.captureQuotaRefusal)
+            }
         }
 
         val bodyStr = response.body.string()
@@ -297,7 +300,7 @@ class ChatCompletionsAPI(
                         statusCode = response?.code,
                     )
                 } finally {
-                    close(exception)
+                    close(exception.withHttpFailureMetadata(response, bodyRaw, enabled = params.captureQuotaRefusal))
                 }
             }
 

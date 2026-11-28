@@ -1,5 +1,7 @@
 package com.clma.ai.provider.providers.openai
 
+import com.clma.ai.util.HttpFailureMetadata
+import com.clma.ai.util.withHttpFailureMetadata
 import android.util.Log
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -131,6 +133,8 @@ private fun JsonObject.responseErrorText(name: String): String? = runCatching {
 internal fun parseResponseStreamError(
     payload: JsonObject,
     eventType: String?,
+    captureQuotaRefusal: Boolean = false,
+    outputStarted: Boolean = false,
 ): ResponseStreamErrorException {
     val code = payload.responseErrorText("code")
     val message = runCatching {
@@ -149,7 +153,11 @@ internal fun parseResponseStreamError(
         append(": ")
         append(message)
     }
-    return ResponseStreamErrorException(code = code, message = detail)
+    return ResponseStreamErrorException(code = code, message = detail).apply {
+        if (captureQuotaRefusal) {
+            addSuppressed(HttpFailureMetadata(200, null, emptyList(), payload.toString().take(8_192), outputStarted))
+        }
+    }
 }
 
 internal fun shouldRetryResponseStream(
@@ -224,7 +232,9 @@ class ResponseAPI(
         // await() waits for the response headers; reading the body can still block.
         client.newCall(request).await().use { response ->
             if (!response.isSuccessful) {
-                throw Exception("Failed to get response: ${response.code} ${response.body.string()}")
+                throw Exception("Failed to get response: ${response.code} ${response.body.string()}").apply {
+                    withHttpFailureMetadata(response, enabled = params.captureQuotaRefusal)
+                }
             }
 
             val bodyStr = response.body.string()
@@ -311,7 +321,12 @@ class ResponseAPI(
                 }
                 val eventType = json["type"]?.jsonPrimitive?.contentOrNull ?: type
                 if (eventType == "error" || eventType == "response.failed") {
-                    close(parseResponseStreamError(json, eventType))
+                    close(parseResponseStreamError(
+                        json,
+                        eventType,
+                        captureQuotaRefusal = params.captureQuotaRefusal,
+                        outputStarted = receivedMeaningfulOutput.get(),
+                    ))
                     return
                 }
                 try {
@@ -372,7 +387,11 @@ class ResponseAPI(
                         cause = exception,
                     )
                 }
-                close(exception)
+                close(exception.withHttpFailureMetadata(
+                    response, bodyRaw,
+                    enabled = params.captureQuotaRefusal,
+                    outputStarted = receivedMeaningfulOutput.get(),
+                ))
             }
 
             override fun onClosed(eventSource: EventSource) {

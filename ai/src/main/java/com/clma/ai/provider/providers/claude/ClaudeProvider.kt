@@ -1,5 +1,6 @@
 package com.clma.ai.provider.providers.claude
 
+import com.clma.ai.util.withHttpFailureMetadata
 import android.content.Context
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
@@ -373,7 +374,9 @@ class ClaudeProvider(private val client: OkHttpClient, context: Context? = null)
 
         val response = client.newCall(request).await()
         if (!response.isSuccessful) {
-            throw Exception("Failed to get response: ${response.code} ${response.body.string()}")
+            throw Exception("Failed to get response: ${response.code} ${response.body.string()}").apply {
+                withHttpFailureMetadata(response, enabled = params.captureQuotaRefusal)
+            }
         }
 
         val bodyStr = response.body.string()
@@ -475,7 +478,7 @@ class ClaudeProvider(private val client: OkHttpClient, context: Context? = null)
                 } catch (e: Throwable) {
                     Log.w(TAG, "onFailure: failed to parse from $bodyRaw", e)
                 } finally {
-                    close(exception)
+                    close(exception.withHttpFailureMetadata(response, bodyRaw, enabled = params.captureQuotaRefusal))
                 }
             }
 

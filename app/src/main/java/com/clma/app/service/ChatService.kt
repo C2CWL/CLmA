@@ -14,6 +14,7 @@ import com.clma.app.data.botmode.BotPeerRuntime
 import com.clma.app.data.botmode.BotPeerTools
 import com.clma.app.data.botmode.BotPeerToolPolicy
 import com.clma.app.data.botmode.PeerHost
+import com.clma.app.data.botmode.PeerOrigin
 import com.clma.app.data.botmode.PeerSnapshot
 import com.clma.app.data.botmode.PeerStore
 import com.clma.app.data.botmode.PeerTask
@@ -29,6 +30,12 @@ import android.content.Context
 import android.os.SystemClock
 import android.util.Log
 import androidx.core.net.toUri
+import com.clma.app.data.ai.tools.HeadlessConversations
+import com.clma.app.data.botmode.botQuotaLimit
+import com.clma.app.data.botmode.reachedUntil
+import com.clma.app.data.usage.UsageRecordDao
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.CompletableDeferred
@@ -83,6 +90,7 @@ import com.clma.ai.ui.canResumeToolExecution
 import com.clma.ai.ui.finishPendingTools
 import com.clma.ai.ui.finishReasoning
 import com.clma.ai.ui.isEmptyInputMessage
+import com.clma.ai.ui.isEmptyUIMessage
 import com.clma.ai.ui.limitContext
 import com.clma.common.android.Logging
 import com.clma.app.AppScope
@@ -591,12 +599,143 @@ class ChatService(
     private val folderRepository: FolderRepository,
     private val botModeSettingsStore: BotModeSettingsStore,
     private val botProfileStore: BotProfileStore,
+    private val usageRecordDao: UsageRecordDao,
 ) {
     // workspace 系统提示注入 (依赖 workspaceRepository, 故在类内构造)
     private val workspaceReminderTransformer = WorkspaceReminderTransformer(workspaceRepository)
 
     // 统一会话管理
     private val sessions = ConcurrentHashMap<Uuid, ConversationSession>()
+    private val quotaWaits = BotQuotaWaitStore(context)
+    private val botPauseMutex = Mutex()
+
+    internal fun observeBotQuotaWait(conversationId: Uuid) = quotaWaits.observe(conversationId)
+
+    internal fun observeBotPaused(botId: Uuid): Flow<Boolean> =
+        combine(botModeSettingsStore.settings, botProfileStore.profiles) { settings, profiles ->
+            settings.allBotsPaused || profiles[botId.toString()]?.paused == true
+        }.distinctUntilChanged()
+
+    internal suspend fun cancelBotQuotaWait(conversationId: Uuid, waitId: String) {
+        quotaWaits.cancel(conversationId, waitId)
+    }
+
+    internal suspend fun resumeBotQuotaWait(
+        conversationId: Uuid,
+        waitId: String,
+        automatic: Boolean,
+    ): Boolean {
+        val wait = quotaWaits.get(conversationId)?.takeIf { it.id == waitId } ?: return true
+        if (conversationId in deletedConversationIds) {
+            quotaWaits.remove(conversationId, waitId)
+            return true
+        }
+        if (automatic && System.currentTimeMillis() < (wait.retryAt ?: return true)) return false
+        val saved = conversationRepo.getConversationById(conversationId)
+            ?: sessions[conversationId]?.state?.value?.takeIf { !automatic && it.isTemporary }
+        val settings = withTimeoutOrNull(5_000) { settingsStore.settingsFlow.first { !it.init } }
+            ?: return false
+        val bot = settings.assistants.find { it.isBot && it.id.toString() == wait.botId }
+        if (saved == null || bot == null || !wait.matches(saved)) {
+            quotaWaits.remove(conversationId, waitId)
+            return true
+        }
+        if (isBotPaused(bot.id)) {
+            if (automatic) {
+                quotaWaits.remove(conversationId, waitId)
+            } else {
+                cancelBotQuotaWait(conversationId, waitId)
+            }
+            return true
+        }
+        val session = getOrCreateSession(conversationId)
+        ensureHydrated(conversationId)
+        val job = synchronized(session) {
+            if (session.getJob() != null) return !automatic
+            if (!wait.matches(session.state.value)) return@synchronized null
+            val generation = launchGenerationJob(conversationId) {
+                try {
+                    // The atomic claim is shared by the UI and the worker. Claim before inference
+                    // so a process death during replay can never execute the same tools twice.
+                    val claimed = quotaWaits.remove(conversationId, waitId) ?: return@launchGenerationJob
+                    if (!automatic) quotaWaits.cancelWork(claimed)
+                    if (!claimed.matches(session.state.value)) return@launchGenerationJob
+                    session.messageQueue.resume()
+                    handleMessageComplete(
+                        conversationId,
+                        botQuotaRecovery = true,
+                        allowAutomaticQuotaRetry = !automatic,
+                    )
+                    _generationDoneFlow.emit(conversationId)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    session.messageQueue.pause()
+                    addError(e, conversationId, title = context.getString(R.string.error_title_generation))
+                }
+            }
+            auxJobs.cancelAll(conversationId)
+            session.setJob(generation)
+            generation
+        }
+        if (job == null) {
+            quotaWaits.remove(conversationId, waitId)
+        } else if (automatic) {
+            try {
+                job.join()
+            } finally {
+                if (!job.isCompleted) job.cancel()
+            }
+        }
+        return true
+    }
+
+    internal suspend fun setBotPaused(botId: Uuid, paused: Boolean) = botPauseMutex.withLock {
+        if (settingsStore.settingsFlow.first().assistants.none { it.id == botId && it.isBot }) return@withLock
+        botProfileStore.update(botId.toString()) { it.copy(paused = paused) }
+        if (paused) stopPausedBots(setOf(botId))
+    }
+
+    internal suspend fun setAllBotsPaused(paused: Boolean) = botPauseMutex.withLock {
+        botModeSettingsStore.update { it.copy(allBotsPaused = paused) }
+        if (paused) {
+            val bots = settingsStore.settingsFlow.first().assistants.filter { it.isBot }.map { it.id }.toSet()
+            stopPausedBots(bots, all = true)
+        }
+    }
+
+    private suspend fun stopPausedBots(botIds: Set<Uuid>, all: Boolean = false) {
+        BotRoutineStops.stop(botIds)
+        coroutineScope {
+            sessions.values.filter { it.state.value.assistantId in botIds }.map { session ->
+                auxJobs.cancelAll(session.id)
+                async { stopGeneration(session.id, cancelQuotaWait = false) }
+            }.awaitAll()
+        }
+        val affected = if (all) null else botIds.map { it.toString() }.toSet()
+        quotaWaits.cancelForBots(affected)
+    }
+
+    internal suspend fun isBotPaused(botId: Uuid): Boolean =
+        botModeSettingsStore.settings.first().allBotsPaused || botProfileStore.profile(botId.toString()).paused
+
+    internal suspend fun botAvailabilityError(botId: Uuid, unattended: Boolean): String? {
+        val profile = botProfileStore.profile(botId.toString())
+        if (profile.paused || botModeSettingsStore.settings.first().allBotsPaused) {
+            return context.getString(R.string.bot_quota_paused_message)
+        }
+        val reset = profile.usageCaps.reachedUntil(unattended) { since ->
+            usageRecordDao.botUsageSince(botId.toString(), since)
+        } ?: return null
+        return context.getString(
+            R.string.bot_quota_cap_reached,
+            java.time.format.DateTimeFormatter.ofPattern("MM-dd HH:mm")
+                .withZone(java.time.ZoneId.systemDefault()).format(reset),
+        )
+    }
+
+    private fun botPausedError() = IllegalStateException(context.getString(R.string.bot_quota_paused_message))
+
     // Per-peer-turn fallback only; never persist it as a target conversation override.
     private val peerFallbackModels = ConcurrentHashMap<Uuid, Uuid>()
     private val _sessionsVersion = MutableStateFlow(0L)
@@ -1373,6 +1512,10 @@ class ChatService(
                     settings = settings,
                     conversationAssistantId = currentConversation.assistantId,
                 ).assistant
+                if (assistant.isBot) {
+                    botAvailabilityError(assistant.id, unattended = false)?.let { throw IllegalStateException(it) }
+                    quotaWaits.cancel(conversationId)
+                }
                 val processedContent = preprocessUserInputParts(content, assistant)
 
                 // 添加消息到列表
@@ -1382,7 +1525,10 @@ class ChatService(
                         parts = processedContent,
                     ).toMessageNode(),
                 )
-                saveConversation(conversationId, withUser)
+                val savedUser = saveConversation(conversationId, withUser)
+                if (!savedUser && assistant.isBot) {
+                    throw IllegalStateException(context.getString(R.string.error_title_send_message))
+                }
                 session.submittingMessage = null
 
                 // Phase 16 — fast-path router. If the assistant has it enabled and the user's
@@ -1396,7 +1542,12 @@ class ChatService(
 
                 // 开始补全 — only if router didn't handle the turn
                 if (answer && !routedHandled) {
-                    handleMessageComplete(conversationId)
+                    handleMessageComplete(
+                        conversationId,
+                        botQuotaRecovery = assistant.isBot && queued.reply == null &&
+                            !HeadlessConversations.isHeadless(conversationId) &&
+                            !BotPeerToolPolicy.isPeer(conversationId),
+                    )
                 }
 
                 queued.reply?.completeWith(runCatching {
@@ -1602,6 +1753,14 @@ class ChatService(
                     Log.w(TAG, "regenerateAtMessage: node for message ${message.id} not in conversation; skipping")
                     return@launch
                 }
+                val bot = settingsStore.settingsFlow.value.assistants.any {
+                    it.isBot && it.id == conversation.assistantId
+                }
+                if (bot && (message.role == MessageRole.USER || regenerateAssistantMsg)) {
+                    botAvailabilityError(conversation.assistantId, unattended = false)
+                        ?.let { throw IllegalStateException(it) }
+                    quotaWaits.cancel(conversationId)
+                }
                 if (message.role == MessageRole.USER) {
                     // 如果是用户消息，则截止到当前消息
                     val newConversation = conversation.copy(
@@ -1614,7 +1773,11 @@ class ChatService(
                         reason = "regenerate from user message",
                     )
                     saveConversation(conversationId, newConversation)
-                    handleMessageComplete(conversationId)
+                    handleMessageComplete(
+                        conversationId,
+                        botQuotaRecovery = bot && !HeadlessConversations.isHeadless(conversationId) &&
+                            !BotPeerToolPolicy.isPeer(conversationId),
+                    )
                 } else {
                     if (regenerateAssistantMsg) {
                         clearCompactionIfPrefixChanged(
@@ -1711,6 +1874,10 @@ class ChatService(
                         // Restore persisted approval cards before mutating the conversation.
                         ensureHydrated(conversationId)
                         val conversation = session.state.value
+                        if (approved && settingsStore.settingsFlow.value.assistants.any {
+                                it.id == conversation.assistantId && it.isBot
+                            } && isBotPaused(conversation.assistantId)
+                        ) throw botPausedError()
                         // Ignore double taps and stale approvals for completed or inactive tools.
                         if (conversation.currentMessages.none { message ->
                                 message.getTools().any { it.toolCallId == toolCallId && it.isPending }
@@ -1935,6 +2102,9 @@ class ChatService(
 
                 ensureHydrated(conversationId)
                 val conversation = liveSession.state.value
+                if (settingsStore.settingsFlow.value.assistants.any { it.id == conversation.assistantId && it.isBot } &&
+                    isBotPaused(conversation.assistantId)
+                ) return RerunToolResult.Failure(context.getString(R.string.bot_quota_paused_message))
                 val toolPart = findToolCallPart(conversation, toolCallId)
                     ?: return RerunToolResult.Failure("tool call not found")
                 if (com.clma.app.connectors.ConnectorWriteApproval.requiresApproval(toolPart.toolName)) {
@@ -2115,6 +2285,8 @@ class ChatService(
                 val id = Uuid.parse(thread.conversationId)
                 val conversation = conversationRepo.getConversationById(id) ?: error("peer_conversation_missing")
                 require(conversation.assistantId.toString() == task.botId) { "peer_target_changed" }
+                botAvailabilityError(conversation.assistantId, unattended = task.origin == PeerOrigin.OUTSIDE)
+                    ?.let { throw IllegalStateException(it) }
                 updateConversation(id, conversation)
                 val requesterId = Uuid.parse(task.requester)
                 val requester = sessions[requesterId]?.state?.value
@@ -2619,6 +2791,8 @@ class ChatService(
         // (routed) model continues from the partial assistant text left by the
         // failed generation, instead of starting over.
         continuationFromPartial: Boolean = false,
+        botQuotaRecovery: Boolean = false,
+        allowAutomaticQuotaRetry: Boolean = true,
     ) {
         com.clma.common.android.Logging.log(TAG, "handleMessageComplete triggered for conversation: $conversationId")
         // A generation is one "turn" for read_window_tree's snapshot: within it a re-read can be
@@ -2635,6 +2809,13 @@ class ChatService(
             settings = storedSettings,
             conversationAssistantId = initialConversation.assistantId,
         ).assistant
+        val botProfile = if (assistant.isBot) botProfileStore.profile(assistant.id.toString()) else null
+        if (botProfile != null && (botProfile.paused || botModeSettingsStore.settings.first().allBotsPaused)) {
+            throw botPausedError()
+        }
+        val quotaAnchor = initialConversation.currentMessages.lastOrNull()
+            ?.takeIf { botQuotaRecovery && assistant.isBot && messageRange == null && it.role == MessageRole.USER }
+        val turnProducedOutput = AtomicBoolean(false)
         // Bot cost-saving defaults (automatic + precision compaction). Request-scoped only: this
         // copy is never written back. Classic assistants get storedSettings unchanged.
         val settings = BotCostPolicy.effectiveSettings(storedSettings, assistant)
@@ -2852,6 +3033,10 @@ class ChatService(
                             mcpRequireApproval = snapshot.mcpRequireApproval,
                         )
                     }
+                },
+                onTurnOutput = { if (quotaAnchor != null) turnProducedOutput.set(true) },
+                isDeferredFailure = if (quotaAnchor == null) null else { failure ->
+                    failure.botQuotaLimit(System.currentTimeMillis()) != null
                 },
                 onAfterToolExecution = { generatedMessages ->
                     if (messageRange != null || !settings.enableAutoCompaction) {
@@ -3081,6 +3266,48 @@ class ChatService(
         }
 
         val generationFailure = generationResult.exceptionOrNull()
+        val quotaLimit = generationFailure?.takeIf { quotaAnchor != null }
+            ?.botQuotaLimit(System.currentTimeMillis())
+        if (quotaLimit != null && !quotaLimit.outputStarted && !turnProducedOutput.get()) {
+            currentCoroutineContext().ensureActive()
+            val conversation = getConversationFlow(conversationId).value
+            val originalNodes = initialConversation.messageNodes
+            val extraNodes = conversation.messageNodes.drop(originalNodes.size)
+            if (conversation.assistantId == assistant.id &&
+                conversation.currentMessages.take(originalNodes.size) == initialConversation.currentMessages &&
+                extraNodes.all { node ->
+                    node.messages.size == 1 && node.role == MessageRole.ASSISTANT &&
+                        node.currentMessage.parts.isEmptyUIMessage()
+                }
+            ) {
+                val unchangedTurn = conversation.copy(messageNodes = conversation.messageNodes.take(originalNodes.size))
+                if (!saveConversation(conversationId, unchangedTurn)) throw checkNotNull(generationFailure)
+                val backup = botProfile?.backupModelId?.let { settings.findModelById(it) }
+                    ?.takeIf {
+                        it.id != model.id && it.id !in routeAttempts && it.id != DEFAULT_AUTO_MODEL_ID &&
+                            it.findProvider(settings.providers)?.enabled == true
+                    }
+                if (backup != null) {
+                    getOrCreateSession(conversationId).processingStatus.value = context.getString(
+                        R.string.bot_quota_backup_continuing, backup.displayName.ifBlank { backup.modelId },
+                    )
+                    handleMessageComplete(
+                        conversationId,
+                        allowContextRetry = false,
+                        overrideModelId = backup.id,
+                        routeAttempts = routeAttempts + model.id,
+                        botQuotaRecovery = true,
+                        allowAutomaticQuotaRetry = allowAutomaticQuotaRetry,
+                    )
+                    return
+                }
+                val session = getOrCreateSession(conversationId)
+                session.messageQueue.pause()
+                session.processingStatus.value = null
+                quotaWaits.park(unchangedTurn, quotaLimit, allowAutomaticQuotaRetry)
+                return
+            }
+        }
         // A failed request emits no message chunk, so check here as well.
         surfaceDocumentTruncations(conversationId)
         // Screen-automation experience memory: whatever the agent just did to an app is written
@@ -3096,6 +3323,7 @@ class ChatService(
                 lastMessage.getTools().any { it.isExecuted }
         if (
             allowContextRetry &&
+            quotaLimit == null &&
             messageRange == null &&
             settings.enableAutoCompaction &&
             generationFailure != null &&
@@ -3139,6 +3367,8 @@ class ChatService(
                     conversationId = conversationId,
                     messageRange = null,
                     allowContextRetry = false,
+                    botQuotaRecovery = botQuotaRecovery,
+                    allowAutomaticQuotaRetry = allowAutomaticQuotaRetry,
                 )
                 return
             }
@@ -3156,6 +3386,7 @@ class ChatService(
         // The autoModelRouting setting gates the whole path, including cooldown.
         if (
             settings.autoModelRouting &&
+            quotaLimit == null &&
             messageRange == null &&
             generationFailure != null &&
             generationFailure !is CancellationException &&
@@ -5175,6 +5406,12 @@ class ChatService(
         ids.forEach { id ->
             persistenceMutexFor(id).withLock {
                 val conversation = conversationRepo.getConversationById(id) ?: return@withLock
+                if (settingsStore.settingsFlow.value.assistants.any { it.id == conversation.assistantId && it.isBot }) {
+                    runCatching { quotaWaits.cancel(id) }.onFailure {
+                        if (it is CancellationException) throw it
+                        Log.w(TAG, "Could not clear quota wait for deleted conversation", it)
+                    }
+                }
                 conversationRepo.deleteConversation(conversation)
             }
         }
@@ -5658,7 +5895,9 @@ class ChatService(
     }
 
     // 停止当前会话生成任务（不清理会话缓存）
-    suspend fun stopGeneration(conversationId: Uuid) {
+    suspend fun stopGeneration(conversationId: Uuid) = stopGeneration(conversationId, cancelQuotaWait = true)
+
+    private suspend fun stopGeneration(conversationId: Uuid, cancelQuotaWait: Boolean) {
         val diagnosticStart = SystemClock.elapsedRealtime()
         // 用户主动停止：未消费的插话一并丢弃，避免下一轮突然冒出来。
         ConversationSteers.clear(conversationId)
@@ -5673,6 +5912,10 @@ class ChatService(
             session.cancelJobs()
         }
         jobs.forEach { it.join() }
+        if (cancelQuotaWait && settingsStore.settingsFlow.value.assistants.any {
+                it.id == session.state.value.assistantId && it.isBot
+            }
+        ) quotaWaits.cancel(conversationId)
 
         val convMutex = mutexFor(conversationId)
         convMutex.withLock {

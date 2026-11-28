@@ -118,6 +118,8 @@ data class TextGenerationParams(
     @Transient val promptCacheDiagnosticPurpose: PromptCacheDiagnosticPurpose = PromptCacheDiagnosticPurpose.UNSPECIFIED,
     /** System assembly inputs, only populated when cache diagnostics are enabled. Never sent. */
     @Transient val promptCacheSystemSections: PromptCacheSystemSections? = null,
+    /** Retain refusal metadata for chat turns that can wait for a quota reset. */
+    @Transient val captureQuotaRefusal: Boolean = false,
 )
 
 @Serializable

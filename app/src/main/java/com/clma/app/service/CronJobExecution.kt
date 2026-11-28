@@ -31,6 +31,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import com.clma.ai.ui.UIMessagePart
 import com.clma.app.data.agentrun.AgentRunKind
+import com.clma.app.R
 import com.clma.app.RouteActivity
 import com.clma.app.data.botmode.BotRoutineApprovalRules
 import com.clma.app.data.botmode.BotRoutineApprovals
@@ -291,11 +292,21 @@ internal class CronJobExecution(
 
             // Bot-library owners get parkable runs: approvals wait for the user instead of
             // being refused, and every finished run posts a short notification.
-            val botRoutine = job.mode == "llm" && isBotJob(job)
-            val (outcome, errorMessage, convIdMaybe) = when (job.mode) {
-                "llm"    -> runLlm(job, parkable = botRoutine)
-                "direct" -> runDirect(job)
-                else     -> Triple("failed", "unknown_mode:${job.mode}", null)
+            val isBot = isBotJob(job)
+            val botRoutine = job.mode == "llm" && isBot
+            val blocked = if (isBot) {
+                chatService.botAvailabilityError(Uuid.parse(job.assistantId), unattended = !isManual)
+            } else null
+            val (outcome, errorMessage, convIdMaybe) = when {
+                blocked != null -> Triple(if (isManual) "failed" else "skipped", blocked, null)
+                job.mode == "llm" -> runLlm(job, parkable = botRoutine)
+                job.mode == "direct" && isBot -> {
+                    val botId = Uuid.parse(job.assistantId)
+                    BotRoutineStops.run(botId, { chatService.isBotPaused(botId) }) { runDirect(job) }
+                        ?: Triple("cancelled", applicationContext.getString(R.string.bot_quota_paused_message), null)
+                }
+                job.mode == "direct" -> runDirect(job)
+                else -> Triple("failed", "unknown_mode:${job.mode}", null)
             }
 
             runRepo.update(ScheduledJobRunEntity(
@@ -343,7 +354,7 @@ internal class CronJobExecution(
 
                 if (botRoutine && convIdMaybe != null) {
                     notifyBotRoutineFinished(job.assistantId, job.name, convIdMaybe, outcome, errorMessage)
-                } else if (outcome != "success") {
+                } else if (outcome != "success" && outcome != "skipped") {
                     // Failure notification (post once per failure; the existing channel handles dedup)
                     postFailureNotification(
                         job.id, job.name, "$outcome: ${errorMessage.orEmpty()}", convIdMaybe,
@@ -410,6 +421,9 @@ internal class CronJobExecution(
                 flow = chatService.getGenerationJobStateFlow(conv.id),
                 timeoutMs = BotRoutineApprovalRules.RUN_LIMIT_MS,
             )
+            if (parkable && chatService.isBotPaused(assistantUuid)) {
+                return Triple("cancelled", applicationContext.getString(R.string.bot_quota_paused_message), conv.id)
+            }
             // A parkable run that stopped on an approval card is waiting, not finished.
             if (completed && parkable && pendingToolName(conv.id) != null) {
                 return Triple(OUTCOME_AWAITING_APPROVAL, null, conv.id)
@@ -454,7 +468,7 @@ internal class CronJobExecution(
 
     private suspend fun isBotJob(job: ScheduledJobEntity): Boolean {
         val id = runCatching { Uuid.parse(job.assistantId) }.getOrNull() ?: return false
-        val settings = settingsStore.settingsFlow.first()
+        val settings = settingsStore.settingsFlow.first { !it.init }
         return AssistantResolver.byId(settings, id)?.isBot == true
     }
 
@@ -569,7 +583,10 @@ internal class CronJobExecution(
         var errorMessage: String? = null
         HeadlessConversations.markParkable(convId)
         try {
-            if (budgetMs <= 0L) {
+            if (chatService.isBotPaused(Uuid.parse(parkedRun.assistantId))) {
+                outcome = "cancelled"
+                errorMessage = applicationContext.getString(R.string.bot_quota_paused_message)
+            } else if (budgetMs <= 0L) {
                 outcome = "timed_out"
                 errorMessage = "llm turn exceeded the run limit"
             } else {
