@@ -219,6 +219,15 @@ fun BotChannelPage(channelId: String) {
                     )
                 }
             }
+            if (ch.goal.isNotBlank()) {
+                item(key = "goal") {
+                    Text(
+                        stringResource(R.string.bot_goal_display, ch.goal),
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+                    )
+                }
+            }
             item(key = "hint") {
                 Text(
                     stringResource(R.string.bot_channel_how_it_works),

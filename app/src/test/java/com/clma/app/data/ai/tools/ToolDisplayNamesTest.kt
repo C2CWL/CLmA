@@ -51,6 +51,8 @@ class ToolDisplayNamesTest {
             "browser_open", "browser_eval_js", "browser_done", "request_secret",
             "generate_image", "edit_image", "generate_video",
             "subagent_create", "subagent_update", "subagent_delete",
+            "board_list", "board_get", "board_add", "board_claim",
+            "board_update", "board_comment", "board_assign",
         ) + BotMemoryTools.NAMES
         assertEquals(emptyList<String>(), names.filter { ToolDisplayNames.resFor(it) == null })
     }

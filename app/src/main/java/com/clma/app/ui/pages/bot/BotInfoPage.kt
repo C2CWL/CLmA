@@ -225,6 +225,8 @@ fun BotInfoPage(botId: String, conversationId: String?) {
                 }
             }
 
+            BotBriefSettings(settings, bot.id, conversationId?.let(Uuid::parseOrNull))
+
             // Conversations
             BotCollapsibleGroup(
                 key = "conversations",

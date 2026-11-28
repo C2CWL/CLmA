@@ -70,3 +70,26 @@ class HelloPlugin : ClmaPlugin {
 - 设置界面仅支持原生 `View`，不支持 Compose 直接作为插件边界。
 - 插件升级采用同 id 覆盖安装，不保留旧版本回滚包。
 - CI 负责编译验证；本 PR 未在本地执行构建。
+
+## Plugin sources and adapters
+
+Settings center → Plugins includes source discovery backed by adapters:
+
+- `DshGoMarketSourceAdapter`: public DSH Go Marketplace API V2.
+- `GitHubTopicMarketSourceAdapter`: GitHub repositories using the `clma-plugin` topic.
+- More ecosystems can be added as source adapters without changing the UI.
+
+Source adapters normalize external metadata into `PluginMarketEntry`. Package adapters then decide what the host can do with each entry:
+
+- native APK → direct install through the existing plugin loader; GitHub release APK assets get a one-click download/install action;
+- DSH Go package → external CLI command only;
+- GitHub repository → source discovery and manual adaptation;
+- unknown package → manual build required.
+
+This conversion layer is intentionally separate from discovery. JS/TS-to-APK conversion needs its own runtime adapter, permission bridge, build pipeline, and security review.
+
+## Known limitations
+
+- Marketplace discovery itself is read-only and never auto-installs anything; one-click download/install requires explicit confirmation and is available only for native APK release entries.
+- DSH Package Protocol V2 artifacts and GitHub source repositories are not CLmA native APK plugins.
+- CI compiles and verifies changes; this PR was not built locally.
