@@ -41,10 +41,11 @@ val appModule = module {
     single { com.clma.app.data.ai.tools.local.SafPickerResultBuffer() }
     single { com.clma.app.data.storage.StorageVolumeGrantStore(get()) }
 
-    single { ScheduledJobRepository(get<com.clma.app.data.db.AppDatabase>().scheduledJobDao()) }
+    single { com.clma.app.data.botmode.routine.RoutineStore(get()) }
+    single { ScheduledJobRepository(get<com.clma.app.data.db.AppDatabase>().scheduledJobDao(), get()) }
     single { com.clma.app.data.repository.ScheduledJobRunRepository(get<com.clma.app.data.db.AppDatabase>().scheduledJobRunDao()) }
     single { com.clma.app.service.DirectModeActionRunner(get()) }
-    single { CronJobScheduler(get(), get(), get()) }
+    single { CronJobScheduler(get(), get(), get(), get()) }
     single { SshHostRepository(get<com.clma.app.data.db.AppDatabase>().sshHostDao()) }
     single { com.clma.app.browser.BrowserPreferences(get()) }
     single { com.clma.app.data.preferences.TermuxPreferences(get()) }
