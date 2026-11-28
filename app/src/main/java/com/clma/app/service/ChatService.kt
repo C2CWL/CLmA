@@ -3932,7 +3932,10 @@ class ChatService(
             ?.takeIf { it.isNotBlank() } ?: return false
         if (sessions[id]?.isGenerating == true) return false
         val latest = conversationRepo.getConversationById(id) ?: return false
-        if (latest.assistantId != botId || latest.title != conversation.title) return false
+        if (latest.assistantId != botId || !isBotVisibleTopic(latest) ||
+            latest.title != conversation.title || latest.currentMessages != conversation.currentMessages ||
+            settingsStore.settingsFlow.value.assistants.none { it.id == botId && it.isBot }
+        ) return false
         renameConversation(id, title)
         return true
     }

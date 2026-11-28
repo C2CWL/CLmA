@@ -46,6 +46,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clma.app.R
 import com.clma.app.Screen
 import com.clma.app.data.botmode.BotTaskStepStatus
+import com.clma.app.data.botmode.botChatLocalModels
 import com.clma.app.data.botmode.botTaskChipSummary
 import com.clma.app.data.botmode.latestReplyBoundary
 import com.clma.app.data.botmode.questionBefore
@@ -154,6 +155,14 @@ fun BotChatPage(botId: Uuid, conversationId: Uuid, text: String? = null, files: 
         }
     }
 
+    fun jumpToMessage(id: Uuid) {
+        val node = vm.conversation.value.getMessageNodeByMessageId(id) ?: return
+        if (node.currentMessage.id != id) {
+            vm.selectMessageBranch(node.id, node.messages.indexOfFirst { it.id == id })
+        }
+        jumpToNode(node.id)
+    }
+
     val unread = setting.displaySetting.botUnreadEntries.firstOrNull {
         it.conversationId == conversationId && it.assistantId == botId
     }
@@ -162,9 +171,9 @@ fun BotChatPage(botId: Uuid, conversationId: Uuid, text: String? = null, files: 
     LaunchedEffect(ownedBotChat, unread, hasMessages) {
         if (ownedBotChat && unread != null && hasMessages) {
             val messages = conversation.currentMessages
-            val boundary = unread.firstReplyId?.takeIf { id -> messages.any { it.id == id } }
-                ?: messages.latestReplyBoundary()?.id
-            val boundaryIndex = messages.indexOfFirst { it.id == boundary }
+            val boundary = unread.firstReplyId ?: messages.latestReplyBoundary()?.id
+            val boundaryNode = boundary?.let(conversation::getMessageNodeByMessageId)
+            val boundaryIndex = conversation.messageNodes.indexOfFirst { it.id == boundaryNode?.id }
             val question = messages.questionBefore(boundaryIndex)
             contextNodeId = question?.let { conversation.getMessageNodeByMessageId(it.id)?.id?.toString() }
             vm.clearBotChatUnread(unread)
@@ -186,13 +195,19 @@ fun BotChatPage(botId: Uuid, conversationId: Uuid, text: String? = null, files: 
     }
 
     val latestMessage = conversation.messageNodes.lastOrNull()?.currentMessage
-    val maySuggest = ownedBotChat && setting.enableSuggestion && loadingJob == null &&
-        vm.inputState.isEmpty() && !vm.inputState.isEditing()
-    var replySuggestion by remember(conversationId, latestMessage) { mutableStateOf<String?>(null) }
-    LaunchedEffect(maySuggest, latestMessage) {
-        if (maySuggest && latestMessage != null && replySuggestion == null) {
+    val localModels = remember(setting.providers) { setting.botChatLocalModels() }
+    val maySuggest = ownedBotChat && localModels.isNotEmpty() && setting.enableSuggestion &&
+        loadingJob == null && vm.inputState.isEmpty() && !vm.inputState.isEditing()
+    val latestQuestion = remember(conversation.messageNodes) {
+        conversation.currentMessages.run { questionBefore(lastIndex) }
+    }
+    var replySuggestion by remember(conversationId, latestMessage, latestQuestion, localModels) { mutableStateOf<String?>(null) }
+    var suggestionRequested by remember(conversationId, latestMessage, latestQuestion, localModels) { mutableStateOf(false) }
+    LaunchedEffect(conversationId, maySuggest, latestMessage, latestQuestion, localModels) {
+        if (maySuggest && latestMessage != null && latestQuestion != null && !suggestionRequested) {
             delay(400)
             replySuggestion = vm.suggestBotReply(conversation)
+            suggestionRequested = true
         }
     }
 
@@ -271,16 +286,8 @@ fun BotChatPage(botId: Uuid, conversationId: Uuid, text: String? = null, files: 
                         BotHistoryMenu(
                             nodes = conversation.messageNodes,
                             pinnedMessages = pinnedMessages,
-                            onJumpToPin = { id ->
-                                vm.conversation.value.getMessageNodeByMessageId(id)?.let { node ->
-                                    if (node.currentMessage.id != id) {
-                                        vm.selectMessageBranch(node.id, node.messages.indexOfFirst { it.id == id })
-                                    }
-                                    jumpToNode(node.id)
-                                }
-                            },
+                            onJumpToMessage = ::jumpToMessage,
                             onUnpin = ::unpin,
-                            onJumpToAttachment = ::jumpToNode,
                         )
                     }
                     IconButton(onClick = { nav.navigate(Screen.BotInfo(botId = bot.id.toString(), conversationId = conversation.id.toString())) }) {

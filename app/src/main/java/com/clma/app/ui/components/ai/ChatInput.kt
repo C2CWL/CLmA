@@ -1,3 +1,7 @@
+// Adapted from OpenMausBot (https://github.com/milind-soni/OpenMausBot), src/components/SuggestedReplyGhost.tsx, src/components/use-suggested-reply.ts
+// Copyright 2026 Milind Soni and OpenMausBot contributors, Apache License 2.0 (third_party/openmausbot/LICENSE).
+// Modified: ported to Kotlin and changed for CLmA.
+
 package com.clma.app.ui.components.ai
 
 import androidx.compose.animation.core.FastOutSlowInEasing

@@ -80,9 +80,8 @@ private fun messagePreview(message: UIMessage): String =
 internal fun BotHistoryMenu(
     nodes: List<MessageNode>,
     pinnedMessages: List<UIMessage>,
-    onJumpToPin: (Uuid) -> Unit,
+    onJumpToMessage: (Uuid) -> Unit,
     onUnpin: (Uuid) -> Unit,
-    onJumpToAttachment: (Uuid) -> Unit,
 ) {
     var showMenu by remember { mutableStateOf(false) }
     var showGallery by remember { mutableStateOf(false) }
@@ -115,7 +114,7 @@ internal fun BotHistoryMenu(
                             Column {
                                 Text(messagePreview(message), maxLines = 3, overflow = TextOverflow.Ellipsis)
                                 Row {
-                                    TextButton(onClick = { showPin = false; onJumpToPin(message.id) }) {
+                                    TextButton(onClick = { showPin = false; onJumpToMessage(message.id) }) {
                                         Text(stringResource(R.string.bot_pinned_jump))
                                     }
                                     TextButton(onClick = { onUnpin(message.id) }) {
@@ -132,7 +131,7 @@ internal fun BotHistoryMenu(
             },
         )
     }
-    if (showGallery) BotAttachmentGallery(nodes, onJumpToAttachment) { showGallery = false }
+    if (showGallery) BotAttachmentGallery(nodes, onJumpToMessage) { showGallery = false }
 }
 
 @Composable
@@ -144,7 +143,8 @@ private fun BotAttachmentGallery(
     val context = LocalContext.current
     val files = remember(nodes) {
         nodes.asReversed().asSequence().flatMap { node ->
-            node.currentMessage.parts.historyAttachments().map { node.id to it }
+            sequenceOf(node.currentMessage).plus(node.messages.asSequence().filter { it.id != node.currentMessage.id })
+                .flatMap { message -> message.parts.historyAttachments().map { message.id to it } }
         }.distinctBy { (_, file) -> file.url }.toList()
     }
     AlertDialog(
@@ -156,7 +156,7 @@ private fun BotAttachmentGallery(
             } else {
                 LazyColumn(Modifier.heightIn(max = 420.dp)) {
                     items(files.size) { index ->
-                        val (nodeId, file) = files[index]
+                        val (messageId, file) = files[index]
                         val image = file.mime.startsWith("image/")
                         val name = file.name?.takeIf { it.isNotBlank() }
                             ?: file.url.takeUnless { it.startsWith("data:") }?.toUri()?.lastPathSegment
@@ -179,7 +179,7 @@ private fun BotAttachmentGallery(
                                     }
                                 }
                             }
-                            TextButton(onClick = { onDismiss(); onJumpToSource(nodeId) }) {
+                            TextButton(onClick = { onDismiss(); onJumpToSource(messageId) }) {
                                 Text(stringResource(R.string.bot_unread_jump))
                             }
                         }
