@@ -1,5 +1,9 @@
 package com.clma.app.service
 
+import com.clma.app.data.botmode.data.BotDataCard
+import com.clma.app.data.botmode.settings.allowsBotTool
+import com.clma.app.data.botmode.settings.filterBotBuiltIns
+import com.clma.app.data.botmode.settings.filterBotTools
 import com.clma.app.data.botmode.settings.BotModeSettingsStore
 import com.clma.app.data.botmode.settings.BotProfileStore
 import com.clma.app.data.botmode.settings.BotTeamMember
@@ -2421,14 +2425,15 @@ class ChatService(
         // The Bot-mode main assistant's bot-management tools are added after it on purpose:
         // they exist only for the current main bot (see BotMainTools), in either chat mode.
         val allowed = ChatModeTools.filterTools(fixedTools)
-        val botTools = botMainToolsFor(surfaceAssistant, settings, conversationId) +
+        val botTools = listOfNotNull(BotDataCard.toolFor(surfaceAssistant)) +
+            botMainToolsFor(surfaceAssistant, settings, conversationId) +
             botPeerToolsFor(surfaceAssistant, conversationId) +
             botMemoryToolsFor(surfaceAssistant, conversationId)
         return ChatToolSurface(
             fixed = com.clma.app.subagent.SubAgentSurface.apply(
                 conversationId = conversationId,
                 tools = allowed,
-            ).let { ChatModeTools.filterTools(it) } + botTools,
+            ).let { surfaceAssistant.filterBotTools(ChatModeTools.filterTools(it) + botTools) },
         )
     }
 
@@ -2485,7 +2490,9 @@ class ChatService(
             val readTools = (ToolSurfaceResolver.resolve(localTools, surfaceAssistant, localContext) +
                 if (includeSearchTools) createSearchTools(settings) else emptySet())
                 .filter { BotPeerToolPolicy.allows(it.name) }
-            return ChatToolSurface(fixed = readTools + botPeerToolsFor(surfaceAssistant, conversationId))
+            return ChatToolSurface(
+                fixed = surfaceAssistant.filterBotTools(readTools + botPeerToolsFor(surfaceAssistant, conversationId)),
+            )
         }
         // 聊天模式：只保留 ChatModeTools 白名单里的工具（搜索 / 热记忆 / 时间 /
         // ask_user / TTS / 剪贴板 / 图视频生成 / 会话检索 / 压缩 / token 用量），且仍受各自原有
@@ -2568,6 +2575,7 @@ class ChatService(
             addAll(botMainToolsFor(surfaceAssistant, settings, conversationId))
             addAll(botPeerToolsFor(surfaceAssistant, conversationId))
             addAll(botMemoryToolsFor(surfaceAssistant, conversationId))
+            BotDataCard.toolFor(surfaceAssistant)?.let { add(it) }
             // Fidelity Trio: spilled output reader & current conversation search (SQLite FTS5)
             add(com.clma.app.data.ai.tools.createToolOutputReadTool(context))
             add(
@@ -2619,10 +2627,11 @@ class ChatService(
             }
         }
 
-        val allMcpTools = if (mcpScope == null) {
-            mcpManager.getAllAvailableTools()
-        } else {
-            mcpManager.getAllAvailableTools(mcpScope)
+        val allMcpTools = when {
+            !surfaceAssistant.allowsBotTool("mcp__") -> emptyList()
+            surfaceAssistant.isBot -> mcpManager.getAllAvailableTools(surfaceAssistant)
+            mcpScope != null -> mcpManager.getAllAvailableTools(mcpScope)
+            else -> mcpManager.getAllAvailableTools()
         }
 
         if (!allowCatalog) {
@@ -2636,7 +2645,7 @@ class ChatService(
             return ChatToolSurface(
                 fixed = com.clma.app.subagent.SubAgentSurface.apply(
                     conversationId = conversationId,
-                    tools = fixedTools + mcpTools,
+                    tools = surfaceAssistant.filterBotTools(fixedTools + mcpTools),
                 ),
             )
         }
@@ -2664,7 +2673,7 @@ class ChatService(
         val catalogEntries = buildList {
                 localToolsFull.forEach { tool ->
                     val group = groupOfTool[tool.name] ?: return@forEach
-                    if (group in CORE_LOCAL_TOOL_GROUPS) return@forEach
+                    if (group in CORE_LOCAL_TOOL_GROUPS || !surfaceAssistant.allowsBotTool(tool.name)) return@forEach
                     add(
                         ToolCatalogEntry(
                             name = tool.name,
@@ -2716,7 +2725,7 @@ class ChatService(
         }
         return ChatToolSurface(
             fixed = com.clma.app.subagent.SubAgentSurface
-                .apply(conversationId = conversationId, tools = fixedTools),
+                .apply(conversationId = conversationId, tools = surfaceAssistant.filterBotTools(fixedTools)),
             catalog = catalog,
             activation = activation,
             rankedNames = ranked,
@@ -2914,11 +2923,10 @@ class ChatService(
             ) ?: return
 
             // 聊天模式保留 provider 内置 Search / UrlContext / ImageGeneration，去掉其它内置工具。
-            val generationModel = if (conversation.agentModeEnabled) {
-                model
-            } else {
-                model.copy(tools = ChatModeTools.filterBuiltIns(model.tools))
-            }
+            val generationModel = assistant.filterBotBuiltIns(
+                if (conversation.agentModeEnabled) model
+                else model.copy(tools = ChatModeTools.filterBuiltIns(model.tools)),
+            )
 
             val botId = assistant.id.toString().takeIf { assistant.isBot }
             val botProfiles = if (botId == null) emptyMap() else botProfileStore.profiles.first()
@@ -3103,7 +3111,7 @@ class ChatService(
                     null
                 } else {
                     ChatModeTools.ALLOWED_TOOL_NAMES + toolSurface.tools()
-                        .map { it.name }.filter { assistant.isBot && it in BotMemoryTools.NAMES }
+                        .map { it.name }.filter { assistant.isBot && (it in BotMemoryTools.NAMES || it == BotDataCard.TOOL_NAME) }
                 },
                 // A catalogued-but-not-activated call is answered with the real schema instead of
                 // a bare tool_not_found (see GenerationLoop).

@@ -193,6 +193,8 @@ data class Assistant(
      */
     @EncodeDefault(EncodeDefault.Mode.NEVER)
     val botCostSaving: Boolean? = null,
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val botToolGroupsOff: Set<String> = emptySet(),
 )
 
 /** Classic assistants vs Bot-mode bots; see [Assistant.library]. */

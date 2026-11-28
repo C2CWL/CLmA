@@ -1,5 +1,6 @@
 package com.clma.app.ui.pages.bot
 
+import com.clma.app.data.botmode.settings.BotToolGroup
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clma.app.data.botmode.isBotHidden
@@ -84,6 +85,10 @@ class BotInfoVM(
 
     /** null = the Bot default (on); only an explicit "off" is stored (same as the detail page). */
     fun setCostSaving(enabled: Boolean) = updateBot { it.copy(botCostSaving = if (enabled) null else false) }
+
+    internal fun setToolGroup(group: BotToolGroup, enabled: Boolean) = updateBot { bot ->
+        bot.copy(botToolGroupsOff = if (enabled) bot.botToolGroupsOff - group.key else bot.botToolGroupsOff + group.key)
+    }
 
     fun toggleMcpServer(serverId: Uuid) = updateBot { bot ->
         bot.copy(mcpServers = if (serverId in bot.mcpServers) bot.mcpServers - serverId else bot.mcpServers + serverId)
