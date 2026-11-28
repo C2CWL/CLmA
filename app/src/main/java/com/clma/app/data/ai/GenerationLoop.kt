@@ -1,5 +1,6 @@
 package com.clma.app.data.ai
 
+import com.clma.app.data.botmode.settings.BotToolBudgets
 import com.clma.app.data.model.isBot
 import com.clma.app.data.repository.memoryScopeId
 
@@ -1126,6 +1127,11 @@ class GenerationLoop(
                         SubAgentCompletionNotice.format(it, null)
                     }
                     videoBridge?.prepareStep(messages, toolsInternal)
+                    if (assistant.isBot && conversationId != null && !finalSummaryStep) {
+                        BotToolBudgets.record(
+                            BotToolBudgets.Key(assistant.id, conversationId, model.id), assistant, model, toolsInternal,
+                        )
+                    }
                     val repeatReminder = queuedRepeatReminders.maxByOrNull { it.ordinal }
                     suspend fun requestModel() = generateInternal(
                         assistant = assistant,

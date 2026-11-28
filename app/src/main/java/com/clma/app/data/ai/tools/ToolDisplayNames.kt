@@ -249,6 +249,7 @@ object ToolDisplayNames {
         "keystore_verify" to Res(R.string.tool_display_name_keystore_verify, R.string.tool_display_desc_keystore_verify),
         "nfc_read_tag" to Res(R.string.tool_display_name_nfc_read_tag, R.string.tool_display_desc_nfc_read_tag),
         "nfc_write_tag" to Res(R.string.tool_display_name_nfc_write_tag, R.string.tool_display_desc_nfc_write_tag),
+        "data_show" to Res(R.string.tool_display_name_data_show, R.string.tool_display_desc_data_show),
         "check_back" to Res(R.string.tool_display_name_check_back, R.string.tool_display_desc_check_back),
         "schedule_job" to Res(R.string.tool_display_name_schedule_job, R.string.tool_display_desc_schedule_job),
         "list_jobs" to Res(R.string.tool_display_name_list_jobs, R.string.tool_display_desc_list_jobs),

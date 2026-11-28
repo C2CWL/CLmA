@@ -596,4 +596,6 @@
   <string name="tool_display_desc_board_comment">为团队任务添加评论</string>
   <string name="tool_display_name_board_assign">分配看板任务</string>
   <string name="tool_display_desc_board_assign">将团队任务分配给你负责协调的 Bot</string>
+    <string name="tool_display_name_data_show">显示对话数据</string>
+    <string name="tool_display_desc_data_show">在对话中创建表格或图表</string>
 </resources>

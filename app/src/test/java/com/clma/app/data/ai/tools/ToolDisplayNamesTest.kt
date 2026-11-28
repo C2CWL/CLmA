@@ -49,7 +49,7 @@ class ToolDisplayNamesTest {
         // Declared via constants rather than literals, so the source scan above misses them.
         val names = listOf(
             "browser_open", "browser_eval_js", "browser_done", "request_secret",
-            "generate_image", "edit_image", "generate_video",
+            "generate_image", "edit_image", "generate_video", "data_show",
             "subagent_create", "subagent_update", "subagent_delete",
             "board_list", "board_get", "board_add", "board_claim",
             "board_update", "board_comment", "board_assign",

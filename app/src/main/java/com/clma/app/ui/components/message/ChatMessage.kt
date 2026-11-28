@@ -1,5 +1,6 @@
 package com.clma.app.ui.components.message
 
+import com.clma.app.data.model.isBot
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.fadeIn
@@ -288,6 +289,10 @@ fun ChatMessage(
                             emptyList()
                         },
                 )
+            }
+
+            if (assistant?.isBot == true && message.role == MessageRole.ASSISTANT) {
+                BotMessageDataActions(message.getTools())
             }
 
             message.translation?.let { translation ->

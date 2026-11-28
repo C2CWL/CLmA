@@ -338,6 +338,13 @@ fun BotInfoPage(botId: String, conversationId: String?) {
                 bots = settings.assistants.filter { it.isBot },
             )
 
+            BotToolGroupsSection(
+                bot = bot,
+                settings = settings,
+                conversation = conversations.firstOrNull { it.id.toString() == conversationId } ?: conversations.firstOrNull(),
+                onSetEnabled = { group, enabled -> vm.setToolGroup(group, enabled) },
+            )
+
             // App connections
             BotCollapsibleGroup(
                 key = "apps",

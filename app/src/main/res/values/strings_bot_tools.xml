@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bot_tools_title">Tool groups</string>
+    <string name="bot_tools_model_context">%1$s · %2$d context tokens</string>
+    <string name="bot_tools_waiting">Send a message with these settings to see the tool budget.</string>
+    <string name="bot_tools_budget">Last request: %1$d function tools, %2$d built-in tools · ~%3$d tokens for function definitions</string>
+    <string name="bot_tools_group_cost">%1$s · %2$d tools · ~%3$d definition tokens</string>
+    <string name="bot_tools_web">Web</string>
+    <string name="bot_tools_images">Images</string>
+    <string name="bot_tools_workspace">Workspace</string>
+    <string name="bot_tools_apps">App connections</string>
+    <string name="bot_tools_data">Conversation data</string>
+</resources>
