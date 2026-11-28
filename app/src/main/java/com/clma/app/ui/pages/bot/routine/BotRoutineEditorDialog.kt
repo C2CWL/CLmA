@@ -77,6 +77,7 @@ internal fun BotRoutineEditorDialog(
     onOpenConversation: (Uuid) -> Unit,
     onDismiss: () -> Unit,
     onSave: (RoutineEdit) -> Unit,
+    mascot: com.clma.app.data.model.BotMascotChoice = com.clma.app.data.model.BotMascotChoice.NONE,
 ) {
     var form by remember { mutableStateOf(initial) }
     var clockText by remember { mutableStateOf(botRoutineClock(initial.hour, initial.minute)) }
@@ -295,7 +296,7 @@ internal fun BotRoutineEditorDialog(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                if (!isNew) RoutineRunHistory(history, zone, onOpenConversation)
+                if (!isNew) RoutineRunHistory(history, zone, mascot, onOpenConversation)
             }
         },
         confirmButton = {

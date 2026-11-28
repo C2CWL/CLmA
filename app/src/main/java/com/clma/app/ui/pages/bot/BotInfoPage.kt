@@ -178,7 +178,10 @@ fun BotInfoPage(botId: String, conversationId: String?) {
                         }
                     }
                 }
-                com.clma.app.ui.pages.bot.settings.BotActivityLabel(activity)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    BotMascot(activity.mascotState(), bot.botMascot)
+                    com.clma.app.ui.pages.bot.settings.BotActivityLabel(activity)
+                }
                 if (bot.systemPrompt.isNotBlank()) {
                     Text(
                         bot.systemPrompt.lineSequence().firstOrNull { it.isNotBlank() }.orEmpty(),
@@ -265,6 +268,7 @@ fun BotInfoPage(botId: String, conversationId: String?) {
                 routines = routines,
                 parkedRuns = parkedRuns,
                 botId = bot.id,
+                mascot = bot.botMascot,
                 timezone = settings.customTimezone,
                 models = settings.providers.filter { it.enabled }.flatMap { provider ->
                     provider.models.filter {
@@ -333,6 +337,8 @@ fun BotInfoPage(botId: String, conversationId: String?) {
                 bot = bot,
                 bots = settings.assistants.filter { it.isBot },
             )
+
+            com.clma.app.ui.pages.bot.settings.BotMascotSetting(bot.botMascot, vm::setMascot)
 
             // App connections
             BotCollapsibleGroup(

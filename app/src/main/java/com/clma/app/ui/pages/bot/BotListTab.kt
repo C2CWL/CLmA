@@ -217,6 +217,11 @@ private fun BotListRow(
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f),
                     )
+                    BotMascot(
+                        com.clma.app.data.botmode.settings.botActivity(row.generating, row.pendingApproval).mascotState(),
+                        bot.botMascot,
+                        Modifier.size(28.dp),
+                    )
                     BotRowStatus(
                         generating = row.generating,
                         pendingApproval = row.pendingApproval,
