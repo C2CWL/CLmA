@@ -98,6 +98,15 @@ object BotRoutineRuns {
         }
     }
 
+    fun notifyBrief(context: Context, conversationId: String) {
+        post(
+            context,
+            conversationId,
+            context.getString(R.string.bot_brief_title),
+            context.getString(R.string.bot_brief_notification),
+        )
+    }
+
     /** A run finished: always posted for Bot routines, with a short line of the result. */
     fun notifyDone(context: Context, conversationId: String, botName: String, jobName: String, summary: String) {
         val line = summary.replace(Regex("\\s+"), " ").trim().take(120)

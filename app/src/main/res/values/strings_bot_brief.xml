@@ -1,0 +1,32 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<resources>
+  <string name="bot_brief_activity">Bot activity</string>
+  <string name="bot_brief_activity_count">%1$s · New replies: %2$d</string>
+  <string name="bot_brief_approval">%1$s · %2$s — Waiting for your approval</string>
+  <string name="bot_brief_goal_line">%1$s · %2$s — %3$s — %4$s</string>
+  <string name="bot_brief_goals">Goal progress</string>
+  <string name="bot_brief_more">And %1$d more</string>
+  <string name="bot_brief_needs">Needs you</string>
+  <string name="bot_brief_no_activity">%1$s · No new replies</string>
+  <string name="bot_brief_no_progress">No progress reported yet</string>
+  <string name="bot_brief_no_routines">No routine results in this period.</string>
+  <string name="bot_brief_nothing_needs">Nothing needs your attention right now.</string>
+  <string name="bot_brief_notification">Your daily brief is ready.</string>
+  <string name="bot_brief_question">%1$s · %2$s — Waiting for your reply</string>
+  <string name="bot_brief_routine_done">%1$s — Finished</string>
+  <string name="bot_brief_routine_failed">%1$s — Did not finish</string>
+  <string name="bot_brief_routine_skipped">%1$s — Skipped</string>
+  <string name="bot_brief_routines">Routines</string>
+  <string name="bot_brief_schedule_help">Delivered daily at your local time. Android may delay delivery.</string>
+  <string name="bot_brief_set_time">Set time</string>
+  <string name="bot_brief_title">Your brief</string>
+  <string name="bot_brief_topic_line">%1$s · %2$s</string>
+  <string name="bot_brief_turn_off">Turn off daily brief</string>
+  <string name="bot_brief_unavailable">This brief is unavailable.</string>
+  <string name="bot_brief_untitled">Untitled conversation</string>
+  <string name="bot_goal_channel">Channel goal</string>
+  <string name="bot_goal_conversation">Conversation goal</string>
+  <string name="bot_goal_display">Goal: %1$s</string>
+  <string name="bot_goal_edit">Edit</string>
+  <string name="bot_goal_help">The Bot keeps this goal in mind. Clear the text to remove it.</string>
+</resources>
