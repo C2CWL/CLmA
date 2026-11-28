@@ -978,7 +978,7 @@ class GenerationLoop(
                             parts = listOf(UIMessagePart.Text(VideoFrameBridgeTransformer.SPEECH_PROMPT), audio),
                         )),
                         params = TextGenerationParams(
-                            model = model.copy(tools = emptyList()),
+                            model = model.copy(tools = emptySet()),
                             maxTokens = 1024,
                             customHeaders = model.customHeaders,
                             customBody = model.customBodies,
