@@ -43,9 +43,11 @@ import com.clma.ai.provider.PromptCacheSystemSection
 import com.clma.ai.provider.PromptCacheSystemSections
 import com.clma.ai.provider.Provider
 import com.clma.ai.provider.ProviderManager
+import com.clma.ai.provider.Modality
 import com.clma.ai.provider.ProviderSetting
 import com.clma.ai.provider.TextGenerationParams
 import com.clma.ai.provider.providers.openai.PromptCacheDiagnostics
+import com.clma.ai.provider.providers.openai.supportsResponseAudioVideo
 import com.clma.ai.provider.providers.openai.ResponseStreamErrorException
 import com.clma.ai.registry.ModelRegistry
 import com.clma.ai.ui.UIMessage
@@ -64,6 +66,8 @@ import com.clma.app.subagent.SubAgentCompletionNotice
 import com.clma.app.data.ai.transformers.InputMessageTransformer
 import com.clma.app.data.ai.transformers.MessageTransformer
 import com.clma.app.data.ai.transformers.OutputMessageTransformer
+import com.clma.app.data.ai.transformers.VideoAttachmentTransformer
+import com.clma.app.data.ai.transformers.VideoFrameBridgeTransformer
 import com.clma.app.data.files.FileFolders
 import com.clma.app.data.ai.transformers.onGenerationFinish
 import com.clma.app.data.ai.transformers.transforms
@@ -82,6 +86,7 @@ import com.clma.app.data.model.Assistant
 import com.clma.app.data.botmode.BotCostPolicy
 import com.clma.app.data.model.AssistantMemory
 import com.clma.app.data.repository.MemoryRepository
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import java.io.File
 import java.io.IOException
 import kotlin.time.Clock
@@ -956,6 +961,39 @@ class GenerationLoop(
         val outputProjection = conversationId?.let(::toolOutputProjection) ?: MicroCompaction()
         turnEvents.append(TurnEvent.Started(diagnosticRun.toString()))
         var answerFinished = false
+        val videoBridge = if (VideoAttachmentTransformer in inputTransformers) {
+            val supportsAudio = Modality.AUDIO in model.inputModalities && when (provider) {
+                is ProviderSetting.Google, is ProviderSetting.GeminiOAuth -> true
+                is ProviderSetting.OpenAI -> !provider.useResponseApi || supportsResponseAudioVideo(
+                    provider.baseUrl, provider.baseUrl.toHttpUrlOrNull()?.host.orEmpty(), model.modelId,
+                )
+                else -> false
+            }
+            val transcribe: (suspend (UIMessagePart.Audio) -> String)? = if (supportsAudio) {
+                { audio ->
+                    providerImpl.generateText(
+                        providerSetting = provider,
+                        messages = listOf(UIMessage(
+                            role = MessageRole.USER,
+                            parts = listOf(UIMessagePart.Text(VideoFrameBridgeTransformer.SPEECH_PROMPT), audio),
+                        )),
+                        params = TextGenerationParams(
+                            model = model.copy(tools = emptySet()),
+                            maxTokens = 1024,
+                            customHeaders = model.customHeaders,
+                            customBody = model.customBodies,
+                        ),
+                    ).message.parts.filterIsInstance<UIMessagePart.Text>().joinToString("\n") { it.text }
+                }
+            } else null
+            val detailName = VideoFrameBridgeTransformer.DETAIL_TOOL
+            val allowDetail = detailName !in assistant.disabledLocalTools &&
+                (allowedToolNames == null || detailName in allowedToolNames)
+            VideoFrameBridgeTransformer(context, provider, model, allowDetail, transcribe)
+        } else null
+        val turnInputTransformers = inputTransformers.map {
+            if (it === VideoAttachmentTransformer && videoBridge != null) videoBridge else it
+        }
         try {
         val turnStartMs = android.os.SystemClock.elapsedRealtime()
         var loopGuardTripCount = 0
@@ -1021,7 +1059,10 @@ class GenerationLoop(
                 addAll(toolsProvider?.invoke() ?: tools)
             }.let { built ->
                 val allow = allowedToolNames
-                if (allow == null) built else built.filter { it.name in allow }
+                val available = if (allow == null) built else built.filter { it.name in allow }
+                val detail = videoBridge?.toolFor(messages)
+                    ?.takeUnless { available.any { tool -> tool.name == it.name } }
+                available + listOfNotNull(detail)
             }
 
             // Check if we have tool calls ready to continue after user interaction.
@@ -1079,8 +1120,9 @@ class GenerationLoop(
                     val injections = delivery?.runs.orEmpty().map {
                         SubAgentCompletionNotice.format(it, null)
                     }
+                    videoBridge?.prepareStep(messages, toolsInternal)
                     val repeatReminder = queuedRepeatReminders.maxByOrNull { it.ordinal }
-                    steered = generateInternal(
+                    suspend fun requestModel() = generateInternal(
                         assistant = assistant,
                         settings = settings,
                         systemAddendum = if (finalSummaryStep) {
@@ -1112,7 +1154,7 @@ class GenerationLoop(
                                 )
                             )
                         },
-                        transformers = inputTransformers,
+                        transformers = turnInputTransformers,
                         model = model,
                         providerImpl = providerImpl,
                         stepIndex = stepIndex,
@@ -1133,6 +1175,15 @@ class GenerationLoop(
                         turnEvents = turnEvents,
                         outputProjection = outputProjection,
                     )
+                    val beforeRequest = messages
+                    steered = try {
+                        requestModel()
+                    } catch (failure: Exception) {
+                        if (messages != beforeRequest || videoBridge?.fallBackAfterSizeRejection(failure) != true) {
+                            throw failure
+                        }
+                        requestModel()
+                    }
                     if (!steered) delivery?.let { subAgentRegistry.acknowledge(it) }
                 } catch (t: Throwable) {
                     // CancellationException is honoured verbatim — stopGeneration has its
@@ -1993,6 +2044,7 @@ class GenerationLoop(
             if (failure !is CancellationException) turnEvents.append(TurnEvent.Failed("turn", "generation", false))
             throw failure
         } finally {
+            videoBridge?.close()
             turnEvents.append(TurnEvent.Finished(answerFinished))
             GenerationDiagnostics.turnSummary(diagnosticRun, answerFinished, turnEvents.summary())
         }

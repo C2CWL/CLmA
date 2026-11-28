@@ -47,6 +47,7 @@ import com.clma.ai.provider.providers.PartGroup
 import com.clma.ai.provider.providers.google.vertex.ServiceAccountTokenProvider
 import com.clma.ai.provider.providers.groupPartsByToolBoundary
 import com.clma.ai.provider.stream.SseEvent
+import com.clma.ai.provider.providers.openai.OpenAIMultimodalParts
 import com.clma.ai.registry.ModelRegistry
 import com.clma.ai.ui.GoogleThoughtMetadata
 import com.clma.ai.ui.MessageChunk
@@ -63,6 +64,7 @@ import com.clma.ai.ui.toMetadata
 import com.clma.ai.util.KeyRoulette
 import com.clma.ai.util.configureReferHeaders
 import com.clma.ai.util.configureSessionHeaders
+import com.clma.ai.util.RequestTooLargeException
 import com.clma.ai.util.encodeBase64
 import com.clma.ai.util.json
 import com.clma.ai.util.mergeCustomBody
@@ -190,8 +192,10 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
                         return@mapNotNull null
                     }
 
+                    val modelId = modelObject["name"]!!.jsonPrimitive.content.substringAfter("/")
                     Model(
-                        modelId = modelObject["name"]!!.jsonPrimitive.content.substringAfter("/"),
+                        modelId = modelId,
+                        inputModalities = ModelRegistry.MODEL_INPUT_MODALITIES.getData(modelId),
                         displayName = modelObject["displayName"]!!.jsonPrimitive.content,
                         type = if ("generateContent" in supportedGenerationMethods) ModelType.CHAT else ModelType.EMBEDDING,
                         // `inputTokenLimit` is the window the API advertises for this model; without
@@ -331,6 +335,10 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
                 t: Throwable?,
                 response: Response?
             ) {
+                if (response?.code == 413) {
+                    close(RequestTooLargeException("Failed to get response: 413 Request too large"))
+                    return
+                }
                 var exception = t
 
                 Log.w(TAG, "onFailure: ${t?.message}", t)
@@ -930,7 +938,13 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
             result.getOrNull()?.let { base64Data ->
                 buildJsonObject {
                     put("inlineData", buildJsonObject {
-                        put("mimeType", "video/mp4")
+                        put("mimeType", when (OpenAIMultimodalParts.extensionOf(url)) {
+                        "mov" -> "video/mov"
+                        "avi" -> "video/avi"
+                        "wmv" -> "video/wmv"
+                        "m4v" -> "video/mp4"
+                        else -> OpenAIMultimodalParts.videoMimeType(url) ?: "video/mp4"
+                    })
                         put("data", base64Data)
                     })
                 }
@@ -945,7 +959,11 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
             result.getOrNull()?.let { base64Data ->
                 buildJsonObject {
                     put("inlineData", buildJsonObject {
-                        put("mimeType", "audio/mp3")
+                        put("mimeType", when (OpenAIMultimodalParts.audioFormatOf(url)) {
+                        "m4a" -> "audio/m4a"
+                        "mp3" -> "audio/mp3"
+                        else -> OpenAIMultimodalParts.audioMimeType(url)
+                    })
                         put("data", base64Data)
                     })
                 }

@@ -34,7 +34,7 @@ sealed interface PreSendContextDecision {
         val compact: Boolean,
     ) : PreSendContextDecision
 
-    /** A video/audio file in the message being sent is over [MediaLimits.MAX_INLINE_MEDIA_BYTES]. */
+    /** An audio file in the message being sent is over [MediaLimits.MAX_INLINE_MEDIA_BYTES]. */
     data class MediaTooLarge(val fileName: String, val sizeBytes: Long) : PreSendContextDecision
 }
 
@@ -109,7 +109,7 @@ object PreSendContextGuard {
         fileSize,
     )
 
-    /** [estimateRequestBytes] of [messages] exactly as given, without any request-only ageing. */
+    /** Estimate wire bytes before request-only ageing, with video bounded by the native upload budget. */
     @Suppress("DEPRECATION")
     fun rawRequestBytes(messages: List<UIMessage>, fileSize: (String) -> Long?): Long {
         fun base64(bytes: Long) = bytes / 3 * 4 + 4
@@ -117,11 +117,18 @@ object PreSendContextGuard {
             url.startsWith("data:") || url.startsWith("http") -> url.length.toLong()
             else -> base64(minOf(fileSize(url) ?: 0L, cap))
         }
+        var videoBudget = MediaLimits.MAX_NATIVE_VIDEO_BYTES
         fun part(part: UIMessagePart): Long = when (part) {
             is UIMessagePart.Text -> part.text.length.toLong()
             is UIMessagePart.Reasoning -> part.reasoning.length.toLong()
             is UIMessagePart.Image -> media(part.url, MAX_ESTIMATED_IMAGE_BYTES)
-            is UIMessagePart.Video -> media(part.url)
+            is UIMessagePart.Video -> {
+                val size = fileSize(part.url) ?: 0L
+                if (size in 1..videoBudget) {
+                    videoBudget -= size
+                    base64(size)
+                } else 0L
+            }
             is UIMessagePart.Audio -> media(part.url)
             is UIMessagePart.Document -> minOf(fileSize(part.url) ?: 0L, MAX_ESTIMATED_DOCUMENT_BYTES)
             is UIMessagePart.Tool -> part.input.length.toLong() + part.output.sumOf(::part)
@@ -134,12 +141,11 @@ object PreSendContextGuard {
         }
     }
 
-    /** The first video/audio in the last (user) message whose file is over the inline limit. */
+    /** The first audio attachment over the inline limit. Oversized video uses frame previews. */
     fun oversizedMedia(messages: List<UIMessage>, fileSize: (String) -> Long?): PreSendContextDecision.MediaTooLarge? {
         val last = messages.lastOrNull() ?: return null
         last.parts.forEach { part ->
             val (url, name) = when (part) {
-                is UIMessagePart.Video -> part.url to part.url.substringAfterLast('/')
                 is UIMessagePart.Audio -> part.url to part.url.substringAfterLast('/')
                 else -> return@forEach
             }

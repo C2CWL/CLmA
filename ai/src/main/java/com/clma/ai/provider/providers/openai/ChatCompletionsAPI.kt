@@ -267,6 +267,10 @@ class ChatCompletionsAPI(
             }
 
             override fun onFailure(eventSource: EventSource, t: Throwable?, response: Response?) {
+                if (response?.code == 413) {
+                    close(RequestTooLargeException("Failed to get response: 413 Request too large"))
+                    return
+                }
                 var exception = t
 
                 Log.w(TAG, "onFailure: ${t?.javaClass?.name} ${t?.message} / $response", t)
@@ -331,6 +335,7 @@ class ChatCompletionsAPI(
             includeHistoryReasoning = providerSetting.includeHistoryReasoning,
             openRouterCache = openRouterCache,
             includeOpenRouterReasoningDetails = isOpenRouter,
+            rawAudioBase64 = isOpenRouter,
             supportInputModalities = params.model.inputModalities,
         ).let {
             if (openRouterCache) insertOpenRouterCacheControl(it) else it
@@ -645,6 +650,7 @@ class ChatCompletionsAPI(
         messages: List<UIMessage>,
         includeHistoryReasoning: Boolean = true,
         openRouterCache: Boolean = false,
+        rawAudioBase64: Boolean = false,
         includeOpenRouterReasoningDetails: Boolean = false,
         supportInputModalities: List<Modality> = listOf(Modality.TEXT, Modality.IMAGE),
     ) = buildJsonArray {
@@ -662,6 +668,7 @@ class ChatCompletionsAPI(
                 addNonAssistantMessage(
                     message,
                     openRouterCache = openRouterCache,
+                    rawAudioBase64 = rawAudioBase64,
                     supportInputModalities = supportInputModalities,
                 )
             }
@@ -873,6 +880,7 @@ class ChatCompletionsAPI(
         message: UIMessage,
         openRouterCache: Boolean = false,
         supportInputModalities: List<Modality>,
+        rawAudioBase64: Boolean,
     ) {
         add(buildJsonObject {
             put("role", JsonPrimitive(message.role.name.lowercase()))
@@ -940,6 +948,7 @@ class ChatCompletionsAPI(
                                     OpenAIMultimodalParts.audioContentPart(
                                         supportsAudioInput = Modality.AUDIO in supportInputModalities,
                                         url = part.url,
+                                        rawBase64 = rawAudioBase64,
                                         encode = { part.encodeBase64(withPrefix = false).getOrNull() },
                                     )
                                 )

@@ -40,6 +40,16 @@ class ModelRegistryTest {
     }
 
     @Test
+    fun videoInputDefaults() {
+        assertTrue(Modality.VIDEO in ModelRegistry.MODEL_INPUT_MODALITIES.getData("gemini-2.5-flash"))
+        assertFalse(Modality.VIDEO in ModelRegistry.MODEL_INPUT_MODALITIES.getData("gemini-2.5-flash-image"))
+        assertTrue(Modality.VIDEO in ModelRegistry.MODEL_INPUT_MODALITIES.getData("qwen3-vl-plus"))
+        assertFalse(Modality.AUDIO in ModelRegistry.MODEL_INPUT_MODALITIES.getData("qwen3-vl-plus"))
+        assertTrue(Modality.AUDIO in ModelRegistry.MODEL_INPUT_MODALITIES.getData("qwen3.8-omni-flash"))
+        assertFalse(Modality.VIDEO in ModelRegistry.MODEL_INPUT_MODALITIES.getData("qwen3"))
+    }
+
+    @Test
     fun testClaudeSeries() {
         assertTrue(ModelRegistry.CLAUDE_SERIES.match("claude-sonnet-4.5-20250929"))
         assertTrue(ModelRegistry.CLAUDE_SERIES.match("claude-4.5-sonnet"))

@@ -53,6 +53,7 @@ import com.clma.ai.ui.toMetadata
 import com.clma.ai.util.KeyRoulette
 import com.clma.ai.util.configureReferHeaders
 import com.clma.ai.util.configureSessionHeaders
+import com.clma.ai.util.RequestTooLargeException
 import com.clma.ai.util.encodeBase64
 import com.clma.ai.util.json
 import com.clma.ai.util.mergeCustomBody
@@ -183,6 +184,10 @@ internal fun shouldRetryResponseStream(
 // model without image input support; reused here for consistency.
 private const val IMAGE_UNSUPPORTED_PLACEHOLDER =
     "[Image output omitted: current model does not support image input]"
+
+fun supportsResponseAudioVideo(baseUrl: String, host: String, modelId: String): Boolean =
+    host == "openrouter.ai" || (isDashScopeBaseUrl(baseUrl) &&
+        (modelId == "qwen3.8-omni-flash" || modelId.startsWith("qwen3.8-omni-flash-20")))
 
 class ResponseAPI(
     private val client: OkHttpClient,
@@ -332,6 +337,10 @@ class ResponseAPI(
 
             override fun onFailure(eventSource: EventSource, t: Throwable?, response: Response?) {
                 if (canceledByCollector.get() || completionReceived.get()) return
+                if (response?.code == 413 && !receivedMeaningfulOutput.get()) {
+                    close(RequestTooLargeException("Failed to get response: 413 Request too large"))
+                    return
+                }
 
                 var exception: Throwable = t ?: IOException(
                     "Response stream failed${response?.code?.let { " (HTTP $it)" }.orEmpty()}"
@@ -430,7 +439,10 @@ class ResponseAPI(
             }
 
             // messages
-            put("input", buildMessages(messages, supportInputModalities = params.model.inputModalities))
+            val inputModalities = if (supportsResponseAudioVideo(providerSetting.baseUrl, host, params.model.modelId)) {
+                params.model.inputModalities
+            } else params.model.inputModalities - Modality.VIDEO - Modality.AUDIO
+            put("input", buildMessages(messages, inputModalities, rawAudioBase64 = host == "openrouter.ai"))
 
             // reasoning
             if (params.model.abilities.contains(ModelAbility.REASONING)) {
@@ -499,6 +511,7 @@ class ResponseAPI(
     fun buildMessages(
         messages: List<UIMessage>,
         supportInputModalities: List<Modality> = listOf(Modality.TEXT, Modality.IMAGE),
+        rawAudioBase64: Boolean = false,
     ) = buildJsonArray {
         messages
             .filter { message ->
@@ -513,7 +526,7 @@ class ResponseAPI(
                 if (message.role == MessageRole.ASSISTANT) {
                     addAssistantItems(message, supportInputModalities)
                 } else {
-                    addUserItems(message, supportInputModalities)
+                    addUserItems(message, supportInputModalities, rawAudioBase64)
                 }
             }
     }
@@ -715,10 +728,18 @@ class ResponseAPI(
         })
     }
 
-    private fun JsonArrayBuilder.addUserItems(message: UIMessage, supportInputModalities: List<Modality>) {
-        val contentParts = message.parts.filter { it is UIMessagePart.Text || it is UIMessagePart.Image }
+    private fun JsonArrayBuilder.addUserItems(
+        message: UIMessage,
+        supportInputModalities: List<Modality>,
+        rawAudioBase64: Boolean,
+    ) {
+        val contentParts = message.parts.filter {
+            it is UIMessagePart.Text || it is UIMessagePart.Image ||
+                it is UIMessagePart.Video && Modality.VIDEO in supportInputModalities ||
+                it is UIMessagePart.Audio && Modality.AUDIO in supportInputModalities
+        }
         if (contentParts.isNotEmpty()) {
-            addContentItem(message.role, contentParts, supportInputModalities)
+            addContentItem(message.role, contentParts, supportInputModalities, rawAudioBase64)
         }
     }
 
@@ -726,6 +747,7 @@ class ResponseAPI(
         role: MessageRole,
         parts: List<UIMessagePart>,
         supportInputModalities: List<Modality>,
+        rawAudioBase64: Boolean = false,
     ) {
         if (parts.isEmpty()) return
 
@@ -760,6 +782,18 @@ class ResponseAPI(
                                             put("text", "Error: Failed to encode image to base64")
                                         }
                                     }
+                                })
+                            }
+
+                            is UIMessagePart.Audio -> if (Modality.AUDIO in supportInputModalities) {
+                                add(OpenAIMultimodalParts.responseAudioContentPart(part.url, rawAudioBase64) {
+                                    part.encodeBase64(false).getOrNull()
+                                })
+                            }
+
+                            is UIMessagePart.Video -> if (Modality.VIDEO in supportInputModalities) {
+                                add(OpenAIMultimodalParts.responseVideoContentPart(part.url) {
+                                    part.encodeBase64(false).getOrNull()
                                 })
                             }
 
