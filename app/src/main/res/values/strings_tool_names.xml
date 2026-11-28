@@ -426,6 +426,8 @@
   <string name="tool_display_desc_nfc_read_tag">Reads an NFC tag you hold to the phone</string>
   <string name="tool_display_name_nfc_write_tag">Write NFC tag</string>
   <string name="tool_display_desc_nfc_write_tag">Writes to an NFC tag, overwriting it</string>
+  <string name="tool_display_name_check_back">Schedule check-back</string>
+  <string name="tool_display_desc_check_back">Schedules, lists, or cancels follow-ups in this conversation</string>
   <string name="tool_display_name_schedule_job">Schedule job</string>
   <string name="tool_display_desc_schedule_job">Creates a one-off or recurring job</string>
   <string name="tool_display_name_list_jobs">List jobs</string>

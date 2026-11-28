@@ -264,6 +264,14 @@ fun BotInfoPage(botId: String, conversationId: String?) {
             BotRoutinesGroup(
                 routines = routines,
                 parkedRuns = parkedRuns,
+                botId = bot.id,
+                timezone = settings.customTimezone,
+                models = settings.providers.filter { it.enabled }.flatMap { provider ->
+                    provider.models.filter {
+                        it.type == com.clma.ai.provider.ModelType.CHAT &&
+                            it.id != com.clma.app.data.datastore.DEFAULT_AUTO_MODEL_ID
+                    }.map { it.id.toString() to it.displayName.ifBlank { it.modelId } }
+                },
                 onSave = { form, existingId -> vm.saveRoutine(form, existingId) },
                 onSetEnabled = { jobId, enabled -> vm.setRoutineEnabled(jobId, enabled) },
                 onRunNow = { jobId, onResult -> vm.runRoutineNow(jobId, onResult) },
