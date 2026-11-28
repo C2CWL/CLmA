@@ -241,6 +241,42 @@ val appModule = module {
     single { com.clma.llamacpp.LlamaCppProvider(context = get(), runtime = get(), prefs = get()) }
 
     single { com.clma.app.data.plugins.PluginRepository(context = get(), json = get()) }
+    single { com.clma.app.data.plugins.DshGoMarketSourceAdapter(client = get()) }
+    single { com.clma.app.data.plugins.GitHubTopicMarketSourceAdapter(client = get()) }
+    single {
+        com.clma.app.data.plugins.PluginMarketRepository(
+            adapters = listOf(
+                get<com.clma.app.data.plugins.DshGoMarketSourceAdapter>(),
+                get<com.clma.app.data.plugins.GitHubTopicMarketSourceAdapter>(),
+            ),
+        )
+    }
+    single {
+        com.clma.app.data.plugins.PluginPackageAdapterRegistry(
+            adapters = listOf(
+                com.clma.app.data.plugins.NativeApkPackageAdapter(),
+                com.clma.app.data.plugins.JsRuntimePackageAdapter(),
+                com.clma.app.data.plugins.DshGoPackageAdapter(),
+                com.clma.app.data.plugins.GitHubSourcePackageAdapter(),
+            ),
+        )
+    }
+    single {
+        com.clma.app.data.plugins.PluginRuntimeAdapterRegistry(
+            adapters = listOf(
+                com.clma.app.data.plugins.NativeApkRuntimeAdapter(),
+                com.clma.app.data.plugins.DshCliRuntimeAdapter(),
+                com.clma.app.data.plugins.JsRuntimeAdapter(),
+                com.clma.app.data.plugins.SourceOnlyRuntimeAdapter(),
+            ),
+        )
+    }
+    single {
+        com.clma.app.data.plugins.PluginMarketDownloader(
+            context = get(),
+            client = get(),
+        )
+    }
 
     single {
         ChatToolFactory(

@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /** Shared Miuix-inspired actions, retaining Material's dialog sizing and accessibility. */
 @Composable
@@ -35,8 +36,8 @@ fun AppAlertDialog(
         icon = icon,
         title = title,
         text = text,
-        shape = RoundedCornerShape(28.dp),
-        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        shape = RoundedCornerShape(20.dp),
+        containerColor = MiuixTheme.colorScheme.surfaceContainerHigh,
         tonalElevation = 0.dp,
         properties = properties,
         confirmButton = {
@@ -82,8 +83,8 @@ fun DialogPrimaryButton(
         shape = RoundedCornerShape(50),
         colors = if (destructive) {
             ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.error,
-                contentColor = MaterialTheme.colorScheme.onError,
+                containerColor = MiuixTheme.colorScheme.error,
+                contentColor = MiuixTheme.colorScheme.onError,
             )
         } else {
             ButtonDefaults.buttonColors()
@@ -105,8 +106,8 @@ fun DialogSecondaryButton(
         enabled = enabled,
         shape = RoundedCornerShape(50),
         colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-            contentColor = MaterialTheme.colorScheme.onSurface,
+            containerColor = MiuixTheme.colorScheme.secondaryContainer,
+            contentColor = MiuixTheme.colorScheme.onSecondaryContainer,
         ),
         content = content,
     )

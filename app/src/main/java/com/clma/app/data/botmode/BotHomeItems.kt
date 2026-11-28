@@ -29,7 +29,7 @@ data class BotHomeRow(
 /** Latest top-level (non sub-agent) conversation by update time, ignoring the pinned-first DAO order. */
 fun latestTopLevelConversation(conversations: List<Conversation>): Conversation? =
     conversations
-        .filter { it.parentConversationId == null }
+        .filter { it.parentConversationId == null && !isDailyBriefTopic(it.id) }
         .maxByOrNull { it.updateAt }
 
 /**
