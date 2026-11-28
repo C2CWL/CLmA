@@ -71,11 +71,25 @@ class HelloPlugin : ClmaPlugin {
 - 插件升级采用同 id 覆盖安装，不保留旧版本回滚包。
 - CI 负责编译验证；本 PR 未在本地执行构建。
 
-## Marketplace discovery
+## Plugin sources and adapters
 
-Settings center → Plugins includes a read-only marketplace discovery card backed by the public DSH Go Marketplace API V2:
+Settings center → Plugins includes read-only source discovery backed by adapters:
 
-- `GET https://dsh-go.pages.dev/api/v2/packages` for the authoritative package list.
-- `GET https://dsh-go.pages.dev/api/v2/search?q=...&limit=50` for text search.
+- `DshGoMarketSourceAdapter`: public DSH Go Marketplace API V2.
+- `GitHubTopicMarketSourceAdapter`: GitHub repositories using the `clma-plugin` topic.
+- More ecosystems can be added as source adapters without changing the UI.
 
-The adapter converts API metadata into a DSH package list with source links and a copyable `dsh package install <type>:<id>@<version>` command. It never downloads or installs a DSH package through the native plugin loader. DSH Package Protocol V2 artifacts are not CLmA native APK plugins, so automatic JS/TS-to-APK conversion is intentionally out of scope; that would require a JS runtime adapter, permission bridge, and separate security review.
+Source adapters normalize external metadata into `PluginMarketEntry`. Package adapters then decide what the host can do with each entry:
+
+- native APK → direct install through the existing plugin loader;
+- DSH Go package → external CLI command only;
+- GitHub repository → source discovery and manual adaptation;
+- unknown package → manual build required.
+
+This conversion layer is intentionally separate from discovery. JS/TS-to-APK conversion needs its own runtime adapter, permission bridge, build pipeline, and security review.
+
+## Known limitations
+
+- Marketplace discovery is read-only; it never downloads or auto-installs external packages.
+- DSH Package Protocol V2 artifacts and GitHub source repositories are not CLmA native APK plugins.
+- CI compiles and verifies changes; this PR was not built locally.

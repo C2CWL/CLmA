@@ -37,8 +37,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clma.app.R
+import com.clma.app.data.plugins.PluginInstallability
 import com.clma.app.data.plugins.PluginMarketEntry
 import com.clma.app.data.plugins.PluginMarketRepository
+import com.clma.app.data.plugins.PluginPackageAdapterRegistry
+import com.clma.app.data.plugins.PluginPackageNextStep
 import com.clma.app.data.plugins.PluginRepository
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
@@ -47,6 +50,7 @@ import org.koin.compose.koinInject
 fun SettingPluginsPage() {
     val repository: PluginRepository = koinInject()
     val marketRepository: PluginMarketRepository = koinInject()
+    val packageAdapters: PluginPackageAdapterRegistry = koinInject()
     val state by repository.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -66,7 +70,12 @@ fun SettingPluginsPage() {
             marketLoading = true
             marketError = null
             runCatching { marketRepository.load(query) }
-                .onSuccess { marketItems = it }
+                .onSuccess { result ->
+                    marketItems = result.items
+                    marketError = result.errors
+                        .joinToString("; ") { "${it.source}: ${it.message}" }
+                        .takeIf { it.isNotBlank() }
+                }
                 .onFailure { marketError = it.message ?: "Market load failed" }
             marketLoading = false
         }
@@ -190,8 +199,33 @@ fun SettingPluginsPage() {
                                 if (entry.description.isNotBlank()) {
                                     Text(entry.description, style = MaterialTheme.typography.bodyMedium)
                                 }
+                                val plan = packageAdapters.plan(entry)
                                 Text(
                                     text = stringResource(R.string.setting_plugins_market_type, entry.type),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Text(
+                                    text = stringResource(
+                                        R.string.setting_plugins_market_source,
+                                        entry.sourceLabel,
+                                    ),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Text(
+                                    text = stringResource(
+                                        R.string.setting_plugins_market_compat,
+                                        installabilityLabel(plan.installability),
+                                    ),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Text(
+                                    text = stringResource(
+                                        R.string.setting_plugins_market_next_step,
+                                        nextStepLabel(plan.nextStep),
+                                    ),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -228,12 +262,14 @@ fun SettingPluginsPage() {
                                             Text(stringResource(R.string.setting_plugins_market_open_source))
                                         }
                                     }
-                                    TextButton(
-                                        onClick = {
-                                            clipboard.setText(AnnotatedString(entry.installCommand))
-                                        },
-                                    ) {
-                                        Text(stringResource(R.string.setting_plugins_market_copy_command))
+                                    entry.installCommand?.let { command ->
+                                        TextButton(
+                                            onClick = {
+                                                clipboard.setText(AnnotatedString(command))
+                                            },
+                                        ) {
+                                            Text(stringResource(R.string.setting_plugins_market_copy_command))
+                                        }
                                     }
                                 }
                             }
@@ -390,3 +426,23 @@ fun SettingPluginsPage() {
         )
     }
 }
+
+@Composable
+private fun installabilityLabel(value: PluginInstallability): String = stringResource(
+    when (value) {
+        PluginInstallability.DIRECT_APK -> R.string.setting_plugins_compat_direct_apk
+        PluginInstallability.MANUAL_BUILD_REQUIRED -> R.string.setting_plugins_compat_manual_build
+        PluginInstallability.EXTERNAL_RUNTIME_ONLY -> R.string.setting_plugins_compat_external_runtime
+        PluginInstallability.SOURCE_ONLY -> R.string.setting_plugins_compat_source_only
+    },
+)
+
+@Composable
+private fun nextStepLabel(value: PluginPackageNextStep): String = stringResource(
+    when (value) {
+        PluginPackageNextStep.INSTALL_APK -> R.string.setting_plugins_step_install_apk
+        PluginPackageNextStep.BUILD_NATIVE_APK -> R.string.setting_plugins_step_build_native
+        PluginPackageNextStep.USE_EXTERNAL_RUNTIME -> R.string.setting_plugins_step_external
+        PluginPackageNextStep.OPEN_SOURCE -> R.string.setting_plugins_step_open_source
+    },
+)
