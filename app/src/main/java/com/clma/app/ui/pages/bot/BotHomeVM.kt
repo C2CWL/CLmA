@@ -3,6 +3,11 @@ package com.clma.app.ui.pages.bot
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clma.app.data.botmode.BotHomeRow
+import com.clma.app.data.botmode.BotPlace
+import com.clma.app.data.botmode.botAssistants
+import com.clma.app.data.botmode.saveBotPlace
+import com.clma.app.data.botmode.withBotChannelUpserted
+import com.clma.app.data.datastore.BotChannel
 import com.clma.app.data.botmode.botPreviewLine
 import com.clma.app.data.botmode.botUnreadConversationId
 import com.clma.app.data.botmode.botUnreadCount
@@ -21,7 +26,6 @@ import com.clma.app.data.botmode.withBotUnreadMarked
 import com.clma.app.data.datastore.Settings
 import com.clma.app.data.datastore.SettingsStore
 import com.clma.app.data.model.Assistant
-import com.clma.app.data.model.AssistantLibrary
 import com.clma.app.data.botmode.isMainBot
 import com.clma.app.data.botmode.mainBot
 import com.clma.app.data.botmode.withMainBot
@@ -112,8 +116,34 @@ class BotHomeVM(
             .mapNotNull { row -> byId[row.assistantId]?.let { BotHomeItem(it, row, isMain = it.id == mainId) } }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    fun updateDisplaySetting(next: com.clma.app.data.datastore.DisplaySetting) = viewModelScope.launch {
-        settingsStore.update { s -> s.copy(displaySetting = next) }
+    fun savePlace(initial: BotPlace?, draft: BotPlace, onSaved: (Boolean) -> Unit) = viewModelScope.launch {
+        settingsStore.update { s ->
+            val ds = s.displaySetting
+            val places = ds.botPlaces.saveBotPlace(
+                initial, draft,
+                s.botAssistants().map { it.id }.toSet(),
+                ds.botChannels.map { it.id }.toSet(),
+            )
+            s.copy(displaySetting = ds.copy(botPlaces = places))
+        }
+        onSaved(settings.value.displaySetting.botPlaces.any { it.id == draft.id && it.name == draft.name.trim() })
+    }
+
+    fun removePlace(id: Uuid) = viewModelScope.launch {
+        settingsStore.update { s ->
+            val ds = s.displaySetting
+            s.copy(displaySetting = ds.copy(botPlaces = ds.botPlaces.filterNot { it.id == id }))
+        }
+    }
+
+    fun createChannel(channel: BotChannel, placeId: Uuid?, onCreated: () -> Unit) = viewModelScope.launch {
+        settingsStore.update { s ->
+            val ds = s.displaySetting.withBotChannelUpserted(channel)
+            s.copy(displaySetting = ds.copy(botPlaces = ds.botPlaces.map { place ->
+                if (place.id == placeId) place.copy(channelIds = place.channelIds + channel.id) else place
+            }))
+        }
+        onCreated()
     }
 
     fun togglePin(bot: Assistant) = viewModelScope.launch {
@@ -135,11 +165,17 @@ class BotHomeVM(
     }
 
     /** New bot in the Bot library; returns its id once stored. */
-    fun createBot(name: String, systemPrompt: String, makeMain: Boolean, onCreated: (Uuid) -> Unit) =
+    fun createBot(name: String, systemPrompt: String, makeMain: Boolean, placeId: Uuid?, onCreated: (Uuid) -> Unit) =
         viewModelScope.launch {
             val bot = com.clma.app.data.botmode.BotMainTools.newBot(name = name, systemPrompt = systemPrompt)
             settingsStore.update { s ->
-                val added = s.copy(assistants = s.assistants + bot)
+                val ds = s.displaySetting
+                val added = s.copy(
+                    assistants = s.assistants + bot,
+                    displaySetting = ds.copy(botPlaces = ds.botPlaces.map { place ->
+                        if (place.id == placeId) place.copy(botIds = place.botIds + bot.id) else place
+                    }),
+                )
                 if (makeMain) added.withMainBot(bot.id) else added
             }
             onCreated(bot.id)
@@ -167,6 +203,7 @@ class BotHomeVM(
     fun open(row: BotHomeRow, onReady: (conversationId: Uuid) -> Unit) = viewModelScope.launch {
         var openId: Uuid? = null
         settingsStore.update { s ->
+            if (s.botAssistants().none { it.id == row.assistantId }) return@update s
             openId = resolveBotOpenConversationId(
                 unreadConversationId = row.waitingConversationId ?: s.displaySetting.botUnreadConversationId(row.assistantId),
                 latestConversationId = row.latestConversationId,
@@ -176,6 +213,6 @@ class BotHomeVM(
                 displaySetting = s.displaySetting.withBotUnreadClearedForAssistant(row.assistantId),
             )
         }
-        onReady(openId ?: resolveBotOpenConversationId(null, row.latestConversationId))
+        openId?.let(onReady)
     }
 }

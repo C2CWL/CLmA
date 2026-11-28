@@ -1489,6 +1489,7 @@ data class DisplaySetting(
      * Null until Bot mode first sets up its library.
      */
     val botMainAssistantId: Uuid? = null,
+    val botPlaces: List<com.clma.app.data.botmode.BotPlace> = emptyList(),
 )
 
 @Serializable

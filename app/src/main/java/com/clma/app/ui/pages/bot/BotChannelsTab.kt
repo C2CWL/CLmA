@@ -55,8 +55,8 @@ fun BotChannelsTab(
     settings: Settings,
     onOpen: (BotChannel) -> Unit,
     modifier: Modifier = Modifier,
+    channels: List<BotChannel> = settings.displaySetting.botChannels,
 ) {
-    val channels = settings.displaySetting.botChannels
     if (channels.isEmpty()) {
         Column(
             modifier = modifier.fillMaxSize().padding(32.dp),

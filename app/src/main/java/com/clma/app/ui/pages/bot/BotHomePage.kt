@@ -4,8 +4,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.AlertDialog
@@ -39,13 +37,14 @@ import com.clma.app.R
 import com.clma.app.Screen
 import com.clma.app.ui.context.LocalNavController
 import com.clma.app.data.botmode.botAssistants
-import com.clma.app.data.botmode.withBotChannelUpserted
+import com.clma.app.data.botmode.BotPlace
 import com.composables.icons.lucide.Bot
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.Plus
 import com.composables.icons.lucide.Users
 import com.composables.icons.lucide.Settings as LucideSettings
 import org.koin.androidx.compose.koinViewModel
+import kotlin.uuid.Uuid
 
 private enum class BotHomeTab { BOTS, CHANNELS }
 
@@ -64,6 +63,11 @@ fun BotHomePage(vm: BotHomeVM = koinViewModel()) {
     var showNewBot by remember { mutableStateOf(false) }
     var showNewChannel by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf<BotHomeItem?>(null) }
+    var selectedPlaceId by rememberSaveable { mutableStateOf<String?>(null) }
+    val places = settings.displaySetting.botPlaces
+    val selectedPlace = places.firstOrNull { it.id.toString() == selectedPlaceId }
+    var editorId by remember { mutableStateOf<Uuid?>(null) }
+    var editingPlace by remember { mutableStateOf<BotPlace?>(null) }
 
     Scaffold(
         topBar = {
@@ -118,31 +122,72 @@ fun BotHomePage(vm: BotHomeVM = koinViewModel()) {
             }
         },
     ) { padding ->
-        when (tab) {
-            BotHomeTab.BOTS -> BotListTab(
-                items = items,
-                hiddenCount = settings.botsHiddenForManage().size,
-                onOpen = { item ->
-                    vm.open(item.row) { conversationId ->
-                        nav.navigate(Screen.BotChat(item.bot.id.toString(), conversationId.toString()))
-                    }
+        Column(Modifier.padding(padding).fillMaxSize()) {
+            BotPlacesNavigation(
+                places = places,
+                selected = selectedPlace,
+                onSelect = { selectedPlaceId = it?.id?.toString() },
+                onAdd = {
+                    editingPlace = null
+                    editorId = Uuid.random()
                 },
-                onTogglePin = { vm.togglePin(it.bot) },
-                onToggleUnread = { vm.toggleUnread(it.row) },
-                onHide = { vm.hide(it.bot) },
-                onDetail = { nav.navigate(Screen.BotInfo(botId = it.bot.id.toString())) },
-                onSetMain = { vm.setMain(it.bot) },
-                onDelete = { deleting = it },
-                onManageHidden = { nav.navigate(Screen.SettingChatLayout) },
-                modifier = Modifier.padding(padding),
+                onEdit = {
+                    editingPlace = it
+                    editorId = it.id
+                },
+                enabled = !settings.init,
             )
+            when (tab) {
+                BotHomeTab.BOTS -> BotListTab(
+                    items = selectedPlace?.let { place -> items.filter { it.bot.id in place.botIds } } ?: items,
+                    hiddenCount = settings.botsHiddenForManage().size,
+                    onOpen = { item ->
+                        vm.open(item.row) { conversationId ->
+                            nav.navigate(Screen.BotChat(item.bot.id.toString(), conversationId.toString()))
+                        }
+                    },
+                    onTogglePin = { vm.togglePin(it.bot) },
+                    onToggleUnread = { vm.toggleUnread(it.row) },
+                    onHide = { vm.hide(it.bot) },
+                    onDetail = { nav.navigate(Screen.BotInfo(botId = it.bot.id.toString())) },
+                    onSetMain = { vm.setMain(it.bot) },
+                    onDelete = { deleting = it },
+                    onManageHidden = { nav.navigate(Screen.SettingChatLayout) },
+                    modifier = Modifier.weight(1f),
+                )
 
-            BotHomeTab.CHANNELS -> BotChannelsTab(
-                settings = settings,
-                onOpen = { channel -> nav.navigate(Screen.BotChannel(channel.id.toString())) },
-                modifier = Modifier.padding(padding),
-            )
+                BotHomeTab.CHANNELS -> BotChannelsTab(
+                    settings = settings,
+                    channels = settings.displaySetting.botChannels.filter { selectedPlace == null || it.id in selectedPlace.channelIds },
+                    onOpen = { channel -> nav.navigate(Screen.BotChannel(channel.id.toString())) },
+                    modifier = Modifier.weight(1f),
+                )
+            }
         }
+    }
+
+    editorId?.let { id ->
+        val initial = editingPlace
+        BotPlaceEditor(
+            draftId = id,
+            initial = initial,
+            settings = settings,
+            onDismiss = { editorId = null },
+            onSave = { draft, onResult ->
+                vm.savePlace(initial, draft) { saved ->
+                    onResult(saved)
+                    if (saved) {
+                        selectedPlaceId = id.toString()
+                        editorId = null
+                    }
+                }
+            },
+            onRemove = {
+                vm.removePlace(it)
+                selectedPlaceId = null
+                editorId = null
+            },
+        )
     }
 
     if (showNewBot) {
@@ -150,7 +195,7 @@ fun BotHomePage(vm: BotHomeVM = koinViewModel()) {
             onDismiss = { showNewBot = false },
             onCreate = { name, prompt, makeMain ->
                 showNewBot = false
-                vm.createBot(name, prompt, makeMain) { id ->
+                vm.createBot(name, prompt, makeMain, selectedPlace?.id) { id ->
                     // Avatar, model and the rest are set on the bot's info page.
                     nav.navigate(Screen.BotInfo(botId = id.toString()))
                 }
@@ -165,8 +210,9 @@ fun BotHomePage(vm: BotHomeVM = koinViewModel()) {
             onDismiss = { showNewChannel = false },
             onSave = { channel ->
                 showNewChannel = false
-                vm.updateDisplaySetting(settings.displaySetting.withBotChannelUpserted(channel))
-                nav.navigate(Screen.BotChannel(channel.id.toString()))
+                vm.createChannel(channel, selectedPlace?.id) {
+                    nav.navigate(Screen.BotChannel(channel.id.toString()))
+                }
             },
         )
     }
