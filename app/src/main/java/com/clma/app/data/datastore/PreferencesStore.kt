@@ -1346,6 +1346,7 @@ const val DEFAULT_CLEAN_LAYOUT_OPACITY = 0.4f
 data class BotUnreadEntry(
     val conversationId: Uuid,
     val assistantId: Uuid,
+    val firstReplyId: Uuid? = null,
 )
 
 @Serializable

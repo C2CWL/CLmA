@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<resources>
+  <string name="bot_pinned_empty">暂无置顶消息</string>
+  <string name="bot_pinned_jump">跳到置顶消息</string>
+  <string name="bot_pinned_pin_message">置顶消息</string>
+  <string name="bot_pinned_remove">取消置顶</string>
+  <string name="bot_pinned_title">置顶消息</string>
+  <string name="bot_pinned_unpin_message">取消置顶消息</string>
+</resources>

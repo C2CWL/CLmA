@@ -28,7 +28,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -43,7 +46,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clma.app.R
 import com.clma.app.Screen
 import com.clma.app.data.botmode.BotTaskStepStatus
+import com.clma.app.data.botmode.botChatLocalModels
 import com.clma.app.data.botmode.botTaskChipSummary
+import com.clma.app.data.botmode.latestReplyBoundary
+import com.clma.app.data.botmode.questionBefore
+import com.clma.app.data.model.isBot
+import com.clma.app.ui.hooks.rememberSharedPreferenceString
+import com.clma.app.ui.pages.chat.displayIndexForNode
+import com.clma.app.ui.pages.chat.groupAutomaticCompactionMessages
 import com.clma.app.data.botmode.buildBotTaskSteps
 import com.clma.app.data.botmode.isDailyBriefTopic
 import com.clma.app.data.datastore.getCurrentAssistant
@@ -63,6 +73,7 @@ import com.composables.icons.lucide.Info
 import com.composables.icons.lucide.Lucide
 import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ArrowLeft01
 import org.koin.androidx.compose.koinViewModel
@@ -117,6 +128,86 @@ fun BotChatPage(botId: Uuid, conversationId: Uuid, text: String? = null, files: 
         if (!vm.chatListInitialized && conversation.messageNodes.isNotEmpty()) {
             chatListState.requestScrollToItem(conversation.currentMessages.size + 5)
             vm.chatListInitialized = true
+        }
+    }
+
+    val ownedBotChat = bot.isBot && bot.id == botId &&
+        conversation.assistantId == botId && conversation.id == conversationId
+    val scope = rememberCoroutineScope()
+    var storedPin by androidx.compose.runtime.key(botId, conversationId) {
+        rememberSharedPreferenceString("bot_message_pin/$botId/$conversationId")
+    }
+    val pinnedIds = remember(storedPin) {
+        storedPin.orEmpty().split(',').mapNotNull { runCatching { Uuid.parse(it) }.getOrNull() }.toSet()
+    }
+    val pinnedMessages = remember(ownedBotChat, conversation.messageNodes, pinnedIds) {
+        if (ownedBotChat && pinnedIds.isNotEmpty()) {
+            conversation.messageNodes.flatMap { node -> node.messages.filter { it.id in pinnedIds } }
+        } else emptyList()
+    }
+    fun unpin(id: Uuid) {
+        storedPin = (pinnedIds - id).joinToString(",").ifEmpty { null }
+    }
+    fun jumpToNode(nodeId: Uuid) {
+        val current = vm.conversation.value
+        current.messageNodes.groupAutomaticCompactionMessages().displayIndexForNode(nodeId)?.let { index ->
+            scope.launch { chatListState.requestScrollToItem(index) }
+        }
+    }
+
+    fun jumpToMessage(id: Uuid) {
+        val node = vm.conversation.value.getMessageNodeByMessageId(id) ?: return
+        if (node.currentMessage.id != id) {
+            vm.selectMessageBranch(node.id, node.messages.indexOfFirst { it.id == id })
+        }
+        jumpToNode(node.id)
+    }
+
+    val unread = setting.displaySetting.botUnreadEntries.firstOrNull {
+        it.conversationId == conversationId && it.assistantId == botId
+    }
+    var contextNodeId by rememberSaveable(botId, conversationId) { mutableStateOf<String?>(null) }
+    val hasMessages = conversation.messageNodes.isNotEmpty()
+    LaunchedEffect(ownedBotChat, unread, hasMessages) {
+        if (ownedBotChat && unread != null && hasMessages) {
+            val messages = conversation.currentMessages
+            val boundary = unread.firstReplyId ?: messages.latestReplyBoundary()?.id
+            val boundaryNode = boundary?.let(conversation::getMessageNodeByMessageId)
+            val boundaryIndex = conversation.messageNodes.indexOfFirst { it.id == boundaryNode?.id }
+            val question = messages.questionBefore(boundaryIndex)
+            contextNodeId = question?.let { conversation.getMessageNodeByMessageId(it.id)?.id?.toString() }
+            vm.clearBotChatUnread(unread)
+        }
+    }
+    val contextNode = contextNodeId?.let { id -> conversation.messageNodes.find { it.id.toString() == id } }
+    val contextIndex = remember(conversation.messageNodes, contextNode?.id) {
+        contextNode?.let { conversation.messageNodes.groupAutomaticCompactionMessages().displayIndexForNode(it.id) }
+    }
+    val showUnreadContext by remember(chatListState, contextIndex) {
+        derivedStateOf {
+            val layout = chatListState.layoutInfo
+            contextIndex != null && layout.visibleItemsInfo.isNotEmpty() &&
+                layout.visibleItemsInfo.none {
+                    it.index == contextIndex && it.offset + it.size > 0 &&
+                        it.offset < layout.viewportEndOffset - layout.afterContentPadding
+                }
+        }
+    }
+
+    val latestMessage = conversation.messageNodes.lastOrNull()?.currentMessage
+    val localModels = remember(setting.providers) { setting.botChatLocalModels() }
+    val maySuggest = ownedBotChat && localModels.isNotEmpty() && setting.enableSuggestion &&
+        loadingJob == null && vm.inputState.isEmpty() && !vm.inputState.isEditing()
+    val latestQuestion = remember(conversation.messageNodes) {
+        conversation.currentMessages.run { questionBefore(lastIndex) }
+    }
+    var replySuggestion by remember(conversationId, latestMessage, latestQuestion, localModels) { mutableStateOf<String?>(null) }
+    var suggestionRequested by remember(conversationId, latestMessage, latestQuestion, localModels) { mutableStateOf(false) }
+    LaunchedEffect(conversationId, maySuggest, latestMessage, latestQuestion, localModels) {
+        if (maySuggest && latestMessage != null && latestQuestion != null && !suggestionRequested) {
+            delay(400)
+            replySuggestion = vm.suggestBotReply(conversation)
+            suggestionRequested = true
         }
     }
 
@@ -191,9 +282,27 @@ fun BotChatPage(botId: Uuid, conversationId: Uuid, text: String? = null, files: 
                             }
                         }
                     }
+                    if (ownedBotChat) {
+                        BotHistoryMenu(
+                            nodes = conversation.messageNodes,
+                            pinnedMessages = pinnedMessages,
+                            onJumpToMessage = ::jumpToMessage,
+                            onUnpin = ::unpin,
+                        )
+                    }
                     IconButton(onClick = { nav.navigate(Screen.BotInfo(botId = bot.id.toString(), conversationId = conversation.id.toString())) }) {
                         Icon(Lucide.Info, contentDescription = stringResource(R.string.bot_chat_info))
                     }
+                }
+                if (ownedBotChat && showUnreadContext && contextNode != null) {
+                    BotUnreadContextCard(
+                        message = contextNode.currentMessage,
+                        onJump = {
+                            contextNodeId = null
+                            jumpToNode(contextNode.id)
+                        },
+                        onDismiss = { contextNodeId = null },
+                    )
                 }
                 AnimatedVisibility(
                     visible = chipVisible && summary != null,
@@ -233,7 +342,17 @@ fun BotChatPage(botId: Uuid, conversationId: Uuid, text: String? = null, files: 
         errors = errors,
         onDismissError = { vm.dismissError(it) },
         onClearAllErrors = { vm.clearAllErrors() },
-        botChrome = BotChatChrome(topBar = topBar, onOpenConversation = openConversation),
+        botChrome = BotChatChrome(
+            topBar = topBar,
+            onOpenConversation = openConversation,
+            pinnedMessageIds = pinnedIds,
+            onTogglePin = if (ownedBotChat) {
+                { id ->
+                    if (id in pinnedIds) unpin(id) else storedPin = (pinnedIds + id).joinToString(",")
+                }
+            } else null,
+            replySuggestion = replySuggestion.takeIf { maySuggest },
+        ),
     )
 
     BotTaskProgressSheet(

@@ -365,6 +365,8 @@ fun ChatMessageActionsSheet(
     onSelectAndCopy: () -> Unit,
     isFavorite: Boolean = false,
     onToggleFavorite: (() -> Unit)? = null,
+    isPinnedMessage: Boolean = false,
+    onTogglePin: (() -> Unit)? = null,
     onWebViewPreview: () -> Unit,
     onDismissRequest: () -> Unit
 ) {
@@ -514,6 +516,24 @@ fun ChatMessageActionsSheet(
                     )
                     Text(
                         text = stringResource(R.string.create_fork),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                }
+            }
+
+            if (onTogglePin != null) {
+                Card(
+                    onClick = {
+                        onDismissRequest()
+                        onTogglePin()
+                    },
+                    shape = MaterialTheme.shapes.medium,
+                ) {
+                    Text(
+                        text = stringResource(
+                            if (isPinnedMessage) R.string.bot_pinned_unpin_message else R.string.bot_pinned_pin_message
+                        ),
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
                         style = MaterialTheme.typography.titleMedium,
                     )
                 }

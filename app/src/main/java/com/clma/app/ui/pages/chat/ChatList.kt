@@ -142,6 +142,8 @@ fun ChatList(
     turnFooters: Map<String, TurnFooter> = emptyMap(),
     /** 换会话时列表的显现透明度：落到底之前保持 0，避免露出半截列表再跳。 */
     revealAlpha: () -> Float = { 1f },
+    pinnedMessageIds: Set<Uuid> = emptySet(),
+    onTogglePin: ((Uuid) -> Unit)? = null,
 ) {
     ToolInteractionDialogHost(
         conversation,
@@ -187,6 +189,8 @@ fun ChatList(
                     onClearTranslation = onClearTranslation,
                     turnFooters = turnFooters,
                     revealAlpha = revealAlpha,
+                    pinnedMessageIds = pinnedMessageIds,
+                    onTogglePin = onTogglePin,
                     animatedVisibilityScope = this@AnimatedContent,
                     onToolApproval = onToolApproval,
                     onToolAnswer = onToolAnswer,
@@ -219,6 +223,8 @@ private fun ChatListNormal(
     onClickSuggestion: (String) -> Unit,
     onTranslate: ((UIMessage, java.util.Locale) -> Unit)?,
     onClearTranslation: (UIMessage) -> Unit,
+    pinnedMessageIds: Set<Uuid>,
+    onTogglePin: ((Uuid) -> Unit)?,
     animatedVisibilityScope: AnimatedVisibilityScope,
     onToolApproval: ((toolCallId: String, approved: Boolean, reason: String, scope: com.clma.app.service.ChatService.ApprovalScope, toolName: String) -> Unit)? = null,
     onToolAnswer: ((toolCallId: String, answer: String) -> Unit)? = null,
@@ -449,6 +455,8 @@ private fun ChatListNormal(
                                 onUpdateMessage(it)
                             },
                             isFavorite = node.isFavorite,
+                            isPinnedMessage = node.currentMessage.id in pinnedMessageIds,
+                            onTogglePin = onTogglePin?.let { toggle -> { toggle(node.currentMessage.id) } },
                             onToggleFavorite = {
                                 onToggleFavorite?.invoke(node)
                             },

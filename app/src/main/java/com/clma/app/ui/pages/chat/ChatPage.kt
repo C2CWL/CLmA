@@ -485,7 +485,7 @@ internal fun ChatPageContent(
     var showConversationSettings by remember { mutableStateOf(false) }
     // Clear Bot-mode unread for this conversation / assistant while the chat is open.
     LaunchedEffect(conversation.id, setting.assistantId, setting.displaySetting.botModeEnabled) {
-        if (!setting.displaySetting.botModeEnabled) return@LaunchedEffect
+        if (botChrome != null || !setting.displaySetting.botModeEnabled) return@LaunchedEffect
         val ds = setting.displaySetting
         val cleared = ds
             .withBotUnreadClearedConversation(conversation.id)
@@ -592,6 +592,7 @@ internal fun ChatPageContent(
                         settings = setting,
                         hazeState = hazeState,
                         completionProviders = completionProviders,
+                        botReplySuggestion = botChrome?.replySuggestion,
                         onCancelClick = {
                             vm.stopGeneration()
                         },
@@ -778,6 +779,8 @@ internal fun ChatPageContent(
                         onRerunTool = { toolCallId ->
                             vm.rerunTool(toolCallId)
                         },
+                        pinnedMessageIds = botChrome?.pinnedMessageIds.orEmpty(),
+                        onTogglePin = botChrome?.onTogglePin,
                         onToggleFavorite = { node ->
                             vm.toggleMessageFavorite(node)
                         },
