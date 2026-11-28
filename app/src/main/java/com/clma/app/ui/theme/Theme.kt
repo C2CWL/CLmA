@@ -5,7 +5,6 @@ import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialExpressiveTheme
-import androidx.compose.material3.LocalShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.MotionScheme
@@ -108,7 +107,6 @@ fun RikkahubTheme(
     CompositionLocalProvider(
         LocalDarkMode provides darkTheme,
         LocalExtendColors provides extendColors,
-        LocalShapes provides miuixShapes,
         LocalDensity provides appDensity,
         LocalBaseFontScale provides baseFontScale,
     ) {
@@ -119,6 +117,7 @@ fun RikkahubTheme(
             MaterialExpressiveTheme(
                 colorScheme = colorSchemeConverted,
                 typography = typography,
+                shapes = miuixShapes,
                 content = content,
                 motionScheme = MotionScheme.expressive()
             )

@@ -23,7 +23,11 @@ val skipLintVital = providers.gradleProperty("skipLintVital").isPresent
 
 android {
     namespace = "com.clma.app"
-    compileSdk = 37
+    compileSdk {
+        version = release(37) {
+            minorApiLevel = 2
+        }
+    }
 
     defaultConfig {
         applicationId = "com.clma.app"
