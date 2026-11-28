@@ -45,6 +45,7 @@ import com.clma.app.data.botmode.memory.BotMemoryStore
 import com.clma.app.data.botmode.memory.BotMemoryWorker
 import com.clma.app.data.datastore.SettingsStore
 import com.clma.app.data.model.isBot
+import com.clma.app.service.ChatService
 import com.clma.app.ui.context.LocalNavController
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -72,6 +73,7 @@ private fun BotMemoryStore.overview() = MemoryOverview(index(), topics(), logs()
 fun BotMemoryPage(botId: String) {
     val context = LocalContext.current.applicationContext
     val nav = LocalNavController.current
+    val chatService = koinInject<ChatService>()
     val settingsStore = koinInject<SettingsStore>()
     val settings by settingsStore.settingsFlow.collectAsStateWithLifecycle()
     val id = remember(botId) { Uuid.parse(botId) }
@@ -88,7 +90,7 @@ fun BotMemoryPage(botId: String) {
     var deleteTopic by remember { mutableStateOf<String?>(null) }
 
     suspend fun refresh(resetDraft: Boolean) {
-        val loaded = withContext(Dispatchers.IO) { store.overview() }
+        val loaded = withContext(Dispatchers.IO) { chatService.loadBotMemory(id).overview() }
         overview = loaded
         if (resetDraft || draft == null) {
             baseline = loaded.index
@@ -239,7 +241,7 @@ fun BotMemoryPage(botId: String) {
                 TextButton(enabled = !busy && !dirty, onClick = {
                     organizing = true
                     perform {
-                        BotMemoryOrganizer.run(context, id)
+                        BotMemoryOrganizer.run(id)
                         refresh(true)
                     }
                 }) {

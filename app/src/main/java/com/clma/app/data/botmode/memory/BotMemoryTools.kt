@@ -7,6 +7,7 @@ import com.clma.ai.core.InputSchema
 import com.clma.ai.core.Tool
 import com.clma.ai.ui.UIMessagePart
 import com.clma.common.android.DiagnosticRedactor
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonObject
@@ -19,30 +20,30 @@ import kotlinx.serialization.json.put
 internal object BotMemoryTools {
     val NAMES = setOf("memory_update", "memory_read_topic", "memory_list_topics", "memory_log")
 
-    fun build(store: BotMemoryStore, conversationId: String, eligible: () -> Boolean): List<Tool> = listOf(
+    fun build(load: suspend () -> BotMemoryStore, conversationId: String, eligible: () -> Boolean): List<Tool> = listOf(
         tool("memory_update",
             "Update your long-term notes. append saves one verified fact per call, stamped with today's date. " +
                 "Use a topic for longer-lived details. forget removes matching lines from MEMORY.md and topic notes.",
-            listOf("action", "text", "old_text", "topic"), listOf("action"), eligible,
-        ) { args ->
+            listOf("action", "text", "old_text", "topic"), listOf("action"), eligible, load,
+        ) { store, args ->
             when (args.required("action")) {
                 "append" -> { store.remember(args.required("text"), args["topic"]?.jsonPrimitive?.content); "Saved." }
                 "forget" -> "Removed ${store.forget(args.required("old_text"))} matching lines from notes."
                 else -> throw IllegalArgumentException("Use append or forget")
             }
         },
-        tool("memory_read_topic", "Read one of your own topic notes by name.", listOf("topic"), listOf("topic"), eligible) {
-            store.readTopic(it.required("topic")).ifBlank { "No notes in this topic." }
+        tool("memory_read_topic", "Read one of your own topic notes by name.", listOf("topic"), listOf("topic"), eligible, load) { store, args ->
+            store.readTopic(args.required("topic")).ifBlank { "No notes in this topic." }
         },
-        tool("memory_list_topics", "List your own memory topic names.", emptyList(), emptyList(), eligible) {
+        tool("memory_list_topics", "List your own memory topic names.", emptyList(), emptyList(), eligible, load) { store, _ ->
             store.topics().joinToString("\n").ifBlank { "No topics yet." }
         },
         tool("memory_log",
             "Write one line to today's log, stamped with the time and conversation. Use it for events worth a trace. " +
                 "A fact that should hold in future sessions goes to memory_update instead.",
-            listOf("text"), listOf("text"), eligible,
-        ) {
-            store.appendLog(DiagnosticRedactor.text(it.required("text")), conversationId)
+            listOf("text"), listOf("text"), eligible, load,
+        ) { store, args ->
+            store.appendLog(DiagnosticRedactor.text(args.required("text")), conversationId)
             "Logged."
         },
     )
@@ -53,7 +54,8 @@ internal object BotMemoryTools {
         fields: List<String>,
         required: List<String>,
         eligible: () -> Boolean,
-        execute: (JsonObject) -> String,
+        load: suspend () -> BotMemoryStore,
+        execute: (BotMemoryStore, JsonObject) -> String,
     ) = Tool(
         name = name,
         description = description,
@@ -72,10 +74,16 @@ internal object BotMemoryTools {
         },
         execute = { args ->
             val result = withContext(Dispatchers.IO) {
-                runCatching {
+                try {
                     check(eligible()) { "Bot memory is unavailable for this turn" }
-                    execute(args.jsonObject)
-                }.getOrElse { "Memory operation failed: ${it.message}" }
+                    val store = load()
+                    check(eligible()) { "Bot memory is unavailable for this turn" }
+                    execute(store, args.jsonObject)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    "Memory operation failed: ${e.message}"
+                }
             }
             listOf(UIMessagePart.Text(result))
         },

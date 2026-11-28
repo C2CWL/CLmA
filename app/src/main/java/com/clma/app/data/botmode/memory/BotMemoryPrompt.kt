@@ -3,8 +3,6 @@
 // (third_party/openmausbot/LICENSE). Modified: ported to Kotlin and changed for CLmA.
 package com.clma.app.data.botmode.memory
 
-import java.time.LocalDate
-
 internal fun BotMemoryStore.buildPrompt(): String = buildString {
     appendLine("Your private long-term memory is MEMORY.md, separate from your project files.")
     appendLine("Keep it short and curated. Use memory_update for verified facts, and memory_log to record events.")
@@ -28,9 +26,10 @@ internal fun BotMemoryStore.buildPrompt(): String = buildString {
     val today = today()
     val oldest = today.minusDays(2)
     var remaining = BotMemoryCaps.RECENT_LOG_BYTES
-    for (day in logs().filter { LocalDate.parse(it) in oldest..today }) {
+    for (day in recentLogs(oldest, today)) {
+        if (remaining <= 0) break
         val log = readLog(day)
-        if (log.isBlank() || remaining <= 0) continue
+        if (log.isBlank()) continue
         val tail = log.lineSequence().filter(String::isNotBlank).toList().asReversed()
             .takeWhileWithin(remaining).asReversed().joinToString("\n")
         if (tail.isBlank()) continue

@@ -59,14 +59,22 @@ internal class BotMemoryStore(filesDir: File, botId: String, private val clock: 
         markdownNames("memory").filter { runCatching { topicName(it) == it }.getOrDefault(false) }
     }
 
-    fun logs(): List<String> = synchronized(lock) {
-        markdownNames("log").filter { runCatching { LocalDate.parse(it).toString() == it }.getOrDefault(false) }
-            .sortedDescending()
-    }
+    fun logs(): List<String> = synchronized(lock) { logParts().map(LogPart::name) }
+
+    private fun logParts(): List<LogPart> = markdownNames("log").mapNotNull(LogPart::parse)
+        .sortedWith(compareByDescending<LogPart> { it.date }.thenByDescending { it.number })
 
     fun readTopic(name: String): String = synchronized(lock) { read(topicFile(name)) }
     fun deleteTopic(name: String) = synchronized(lock) { Files.deleteIfExists(topicFile(name).toPath()) }
-    fun readLog(day: String): String = synchronized(lock) { read(file("log/${LocalDate.parse(day)}.md")) }
+    fun readLog(name: String): String = synchronized(lock) {
+        val part = requireNotNull(LogPart.parse(name)) { "Invalid log name" }
+        read(file("log/${part.name}.md"))
+    }
+
+    fun recentLogs(oldest: LocalDate, newest: LocalDate): List<String> = synchronized(lock) {
+        logParts().filter { it.date in oldest..newest }.map(LogPart::name)
+    }
+
     fun today(): LocalDate = LocalDate.now(clock)
 
     fun remember(text: String, topic: String? = null, maxChars: Int = BotMemoryCaps.NOTE_CHARS): String = synchronized(lock) {
@@ -120,12 +128,75 @@ internal class BotMemoryStore(filesDir: File, botId: String, private val clock: 
 
     fun appendLog(text: String, conversationId: String? = null) = synchronized(lock) {
         val now = LocalDateTime.now(clock)
-        val target = file("log/${now.toLocalDate()}.md")
         val body = oneLine(text).take(BotMemoryCaps.LOG_ENTRY_CHARS)
         require(body.isNotBlank()) { "Write one non-blank event" }
         val time = now.format(DateTimeFormatter.ofPattern("HH:mm"))
         val source = conversationId?.let { " · ${UUID.fromString(it)}" }.orEmpty()
-        write(target, append(read(target), "- $time$source · $body"))
+        val date = now.toLocalDate()
+        val part = logParts().firstOrNull { it.date == date } ?: LogPart(date, 1)
+        val target = file("log/${part.name}.md")
+        val entry = "- $time$source · $body"
+        val updated = append(read(target), entry)
+        if (BotMemoryCaps.bytes(updated) <= BotMemoryCaps.FILE_BYTES) {
+            write(target, updated)
+        } else {
+            val next = part.copy(number = Math.incrementExact(part.number))
+            write(file("log/${next.name}.md"), append("", entry))
+        }
+    }
+
+    fun legacyMigrationDone(): Boolean = synchronized(lock) { read(file("legacy-memory-migrated")) == "1" }
+
+    fun migrateLegacy(room: List<String>, cold: Map<String, String>) = synchronized(lock) {
+        if (legacyMigrationDone()) return@synchronized
+        val before = index()
+        var updated = before
+        val seen = before.lineSequence().filter { datedEntry.containsMatchIn(it) }
+            .map { it.replaceFirst(datedEntry, "") }.toMutableSet()
+        val overflow = mutableListOf<String>()
+        for (content in room) {
+            if (content.isBlank() || !seen.add(content)) continue
+            if ('\n' in content || '\r' in content) {
+                overflow.add(content)
+                continue
+            }
+            val candidate = append(updated, "- ${today()} · $content").dropLast(1)
+            if (BotMemoryCaps.index(candidate) == candidate) {
+                updated = "$candidate\n"
+            } else {
+                overflow.add(content)
+            }
+        }
+
+        // Deterministic names and exact content matches let a retry reuse completed copies.
+        if (overflow.isNotEmpty()) importTopic("legacy-room", overflow.joinToString("\n\n"))
+        for ((name, content) in cold.toSortedMap()) {
+            val stem = Normalizer.normalize(name.substringBeforeLast('.'), Normalizer.Form.NFKC)
+                .lowercase(Locale.ROOT).replace(Regex("[^\\p{L}\\p{N}]+"), "-")
+            val label = BotMemoryCaps.prefix(stem, 36).trim('-').ifEmpty { "note" }
+            importTopic(topicName("legacy-cold-$label"), content)
+        }
+        if (updated != before) write(file("MEMORY.md"), updated)
+        write(file("legacy-memory-migrated"), "1")
+    }
+
+    private fun importTopic(base: String, content: String) {
+        var remaining = content
+        var part = 1
+        do {
+            val chunk = BotMemoryCaps.prefix(remaining, BotMemoryCaps.FILE_BYTES)
+            while (true) {
+                val name = if (part == 1) base else "$base-$part"
+                val target = topicFile(name)
+                part++
+                if (!Files.exists(target.toPath(), NOFOLLOW_LINKS)) {
+                    write(target, chunk)
+                    break
+                }
+                if (read(target) == chunk) break
+            }
+            remaining = remaining.substring(chunk.length)
+        } while (remaining.isNotEmpty())
     }
 
     fun upkeepEnabled(): Boolean = synchronized(lock) { read(file("upkeep-disabled")).isEmpty() }
@@ -149,7 +220,8 @@ internal class BotMemoryStore(filesDir: File, botId: String, private val clock: 
                 require(BotMemoryCaps.bytes(updated) <= BotMemoryCaps.FILE_BYTES) { "Topic is full" }
                 target to updated
             }
-            require((topics() + moves.keys).distinct().size <= BotMemoryCaps.TOPICS) { "Too many topics" }
+            val existingTopics = topics()
+            require((existingTopics + moves.keys).distinct().size <= maxOf(existingTopics.size, BotMemoryCaps.TOPICS)) { "Too many topics" }
             // Copy before removing anything from the index. Retrying skips entries already copied.
             updates.forEach { (target, updated) -> write(target, updated) }
             if (index != expected) write(file("MEMORY.md"), index)
@@ -221,6 +293,21 @@ internal class BotMemoryStore(filesDir: File, botId: String, private val clock: 
 
         private fun append(before: String, line: String) = if (before.isEmpty()) "$line\n"
             else "${before.trimEnd('\n')}\n$line\n"
+    }
+}
+
+private data class LogPart(val date: LocalDate, val number: Int) {
+    val name: String get() = if (number == 1) date.toString() else "$date-$number"
+
+    companion object {
+        private val pattern = Regex("(\\d{4}-\\d{2}-\\d{2})(?:-([1-9]\\d*))?")
+
+        fun parse(name: String): LogPart? {
+            val match = pattern.matchEntire(name) ?: return null
+            val date = runCatching { LocalDate.parse(match.groupValues[1]) }.getOrNull() ?: return null
+            val number = (match.groups[2]?.value ?: "1").toIntOrNull() ?: return null
+            return LogPart(date, number).takeIf { it.name == name }
+        }
     }
 }
 

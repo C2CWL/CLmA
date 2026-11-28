@@ -101,6 +101,75 @@ class BotMemoryStoreTest {
     }
 
     @Test
+    fun `legacy migration preserves existing files and runs once per bot`() {
+        val memory = store()
+        memory.remember("existing fact")
+        memory.remember("existing topic", "legacy-cold-project")
+        val cold = "# Project\n\nKeep this Markdown intact.\n"
+        val room = listOf("existing fact", "old fact", "old fact", "first line\nsecond line")
+        memory.migrateLegacy(room, mapOf("Project.md" to cold))
+
+        assertTrue(memory.legacyMigrationDone())
+        assertFalse(store(other).legacyMigrationDone())
+        assertEquals(listOf("existing fact", "old fact"), memory.managedEntries().map { it.content.substringAfter(" · ") })
+        assertEquals("first line\nsecond line", memory.readTopic("legacy-room"))
+        assertTrue(memory.readTopic("legacy-cold-project").contains("existing topic"))
+        assertEquals(cold, memory.readTopic("legacy-cold-project-2"))
+
+        memory.forget("old fact")
+        memory.deleteTopic("legacy-cold-project-2")
+        store().migrateLegacy(room + "later row", mapOf("Project.md" to cold))
+        assertEquals(1, memory.managedEntries().size)
+        assertEquals("", memory.readTopic("legacy-cold-project-2"))
+    }
+
+    @Test
+    fun `legacy migration retries after partial copy and preserves oversized UTF-8 notes`() {
+        val memory = store()
+        val existing = (1..BotMemoryCaps.INDEX_LINES).joinToString("\n") { "entry $it" }
+        memory.saveIndex(existing, "")
+        val large = "a".repeat(BotMemoryCaps.FILE_BYTES - 1) + "😀tail"
+        val cold = mapOf("large.md" to large, "z.md" to "last")
+        val obstruction = File(folder.root, "botmode/bots/$bot/memory/legacy-cold-z.md")
+        assertTrue(obstruction.mkdirs())
+
+        assertThrows(java.io.IOException::class.java) { memory.migrateLegacy(listOf("overflow"), cold) }
+        assertFalse(memory.legacyMigrationDone())
+        assertTrue(obstruction.delete())
+        memory.migrateLegacy(listOf("overflow"), cold)
+
+        assertTrue(memory.legacyMigrationDone())
+        assertEquals(existing, memory.index())
+        assertEquals(listOf("legacy-cold-large", "legacy-cold-large-2", "legacy-cold-z", "legacy-room"), memory.topics())
+        assertEquals(large, memory.readTopic("legacy-cold-large") + memory.readTopic("legacy-cold-large-2"))
+        assertEquals("overflow", memory.readTopic("legacy-room"))
+    }
+
+    @Test
+    fun `full daily logs roll over and recent excerpts prefer the newest numeric part`() {
+        val memory = store()
+        val dir = File(folder.root, "botmode/bots/$bot/log").apply { mkdirs() }
+        val day = "2026-11-28"
+        val full = "x".repeat(BotMemoryCaps.FILE_BYTES)
+        File(dir, "$day.md").writeText(full)
+        memory.appendLog("first rollover")
+        assertEquals(full, memory.readLog(day))
+        assertTrue(memory.readLog("$day-2").contains("first rollover"))
+        File(dir, "$day-9.md").writeText(full)
+        File(dir, "$day-01.md").writeText("invalid")
+        memory.appendLog("tenth part")
+        memory.appendLog("stays in newest part")
+
+        assertEquals(listOf("$day-10", "$day-9", "$day-2", day), memory.logs())
+        val prompt = memory.buildPrompt()
+        assertTrue(prompt.contains("tenth part") && prompt.contains("stays in newest part"))
+        assertTrue(prompt.indexOf("tenth part") < prompt.indexOf("first rollover"))
+        assertTrue(prompt.contains("first rollover"))
+        assertFalse(prompt.contains("invalid"))
+        assertThrows(IllegalArgumentException::class.java) { memory.readLog("../$day") }
+    }
+
+    @Test
     fun `management ids are scoped to the bot and reject changed content`() {
         val first = store()
         val second = store(other)

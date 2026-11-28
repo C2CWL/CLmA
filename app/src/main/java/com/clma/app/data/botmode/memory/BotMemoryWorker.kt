@@ -25,7 +25,7 @@ class BotMemoryWorker(context: Context, params: WorkerParameters) : CoroutineWor
     override suspend fun doWork(): Result {
         val id = inputData.getString(BOT_ID)?.let(Uuid::parse) ?: return Result.failure()
         return try {
-            BotMemoryOrganizer.run(applicationContext, id, automatic = true)
+            BotMemoryOrganizer.run(id, automatic = true)
             Result.success()
         } catch (e: CancellationException) {
             throw e

@@ -2205,13 +2205,32 @@ class ChatService(
         )
     }
 
-    private fun botMemoryStore(id: Uuid) = BotMemoryStore(context.filesDir, id.toString())
+    private val botMemoryMigration = Mutex()
+
+    internal suspend fun loadBotMemory(id: Uuid): BotMemoryStore = withContext(Dispatchers.IO) {
+        val assistant = settingsStore.settingsFlow.value.assistants.firstOrNull { it.id == id && it.isBot }
+            ?: error("Bot memory is unavailable")
+        val store = BotMemoryStore(context.filesDir, id.toString())
+        if (!store.legacyMigrationDone()) botMemoryMigration.withLock {
+            if (!store.legacyMigrationDone()) {
+                val personal = memoryRepository.getMemoriesOfAssistant(id.toString())
+                val shared = if (assistant.useGlobalMemory) {
+                    memoryRepository.getMemoriesOfAssistant(MemoryRepository.BOT_GLOBAL_MEMORY_ID)
+                } else emptyList()
+                val cold = assistantColdMemoryDirectory(assistant)?.let { (directory, _) ->
+                    AssistantColdMemoryStore.listFiles(directory).associate { it.name to it.readText() }
+                }.orEmpty()
+                store.migrateLegacy((personal + shared).map { it.content }, cold)
+            }
+        }
+        store
+    }
 
     private fun botMemoryToolsFor(assistant: Assistant, conversationId: Uuid): List<Tool> {
         if (!assistant.isBot || !assistant.enableMemory || getConversationFlow(conversationId).value.isTemporary) {
             return emptyList()
         }
-        return BotMemoryTools.build(botMemoryStore(assistant.id), conversationId.toString()) {
+        return BotMemoryTools.build({ loadBotMemory(assistant.id) }, conversationId.toString()) {
             settingsStore.settingsFlow.value.assistants.any { it.id == assistant.id && it.isBot && it.enableMemory } &&
                 getConversationFlow(conversationId).value.assistantId == assistant.id
         }
@@ -2226,16 +2245,16 @@ class ChatService(
         }
 
         override suspend fun memories(botId: Uuid) = withContext(Dispatchers.IO) {
-            botMemoryStore(botId).managedEntries()
+            loadBotMemory(botId).managedEntries()
         }
 
         override suspend fun addMemory(botId: Uuid, content: String) = withContext(Dispatchers.IO) {
-            val store = botMemoryStore(botId)
+            val store = loadBotMemory(botId)
             store.managedEntry(store.remember(content, maxChars = com.clma.app.data.botmode.BotMainTools.MAX_MEMORY_CHARS))
         }
 
         override suspend fun deleteMemory(botId: Uuid, memoryId: String): Boolean = withContext(Dispatchers.IO) {
-            botMemoryStore(botId).deleteManagedEntry(memoryId)
+            loadBotMemory(botId).deleteManagedEntry(memoryId)
         }
     }
 
@@ -2840,11 +2859,20 @@ class ChatService(
 
             val botMemory = if (assistant.isBot && assistant.enableMemory && !conversation.isTemporary &&
                 surfaceAssistant.id == assistant.id && !BotPeerToolPolicy.isPeer(conversationId)
-            ) botMemoryStore(assistant.id) else null
+            ) {
+                try {
+                    loadBotMemory(assistant.id)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Log.w(TAG, "Could not load bot memory (${e.javaClass.simpleName})")
+                    null
+                }
+            } else null
             val botMemoryPrompt = botMemory?.let { store ->
                 withContext(Dispatchers.IO) {
                     runCatching { store.buildPrompt() }.onFailure {
-                        Log.w(TAG, "Could not load bot memory (${it.javaClass.simpleName})")
+                        Log.w(TAG, "Could not load bot memory prompt (${it.javaClass.simpleName})")
                     }.getOrNull()
                 }
             }
@@ -3414,14 +3442,19 @@ class ChatService(
         return createWorkspaceTools(workspaceId, workspaceRepository, cwd)
     }
 
+    private fun assistantColdMemoryDirectory(assistant: Assistant): Pair<File, String>? {
+        val relative = ColdMemoryRules.normalizeDir(assistant.coldMemoryDir ?: "memory") ?: return null
+        val root = File(context.filesDir.canonicalFile, "assistant_memory/${assistant.id}")
+        if (assistant.isBot) require(root.canonicalFile == root) { "Invalid Bot cold memory scope" }
+        val directory = File(root, relative).canonicalFile
+        require(directory.toPath().startsWith(root.canonicalFile.toPath()))
+        return directory to relative
+    }
+
     private suspend fun coldMemoryStore(assistant: Assistant): AssistantColdMemoryStore? =
         withContext(Dispatchers.IO) {
             if (assistant.isBot) return@withContext null
-            val relative = ColdMemoryRules.normalizeDir(assistant.coldMemoryDir ?: "memory")
-                ?: return@withContext null
-            val root = File(context.filesDir, "assistant_memory/${assistant.id}")
-            val directory = File(root, relative).canonicalFile
-            require(directory.toPath().startsWith(root.canonicalFile.toPath()))
+            val (directory, relative) = assistantColdMemoryDirectory(assistant) ?: return@withContext null
             if (File(directory, ".migrated").isFile) {
                 return@withContext AssistantColdMemoryStore(directory, null, memoryRepository.history, "${assistant.id}/$relative")
             }

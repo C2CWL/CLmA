@@ -3,7 +3,6 @@
 // (third_party/openmausbot/LICENSE). Modified: ported to Kotlin and changed for CLmA.
 package com.clma.app.data.botmode.memory
 
-import android.content.Context
 import com.clma.ai.provider.ModelType
 import com.clma.ai.provider.ProviderManager
 import com.clma.ai.provider.TextGenerationParams
@@ -12,6 +11,7 @@ import com.clma.app.data.datastore.SettingsStore
 import com.clma.app.data.datastore.findProvider
 import com.clma.app.data.datastore.resolveChatModel
 import com.clma.app.data.model.isBot
+import com.clma.app.service.ChatService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.first
@@ -32,7 +32,7 @@ internal object BotMemoryOrganizer {
     private val bullet = Regex("^[-*+] \\S.*")
     private const val ARCHIVE = "archive"
 
-    suspend fun run(context: Context, botId: Uuid, automatic: Boolean = false): Unit = withContext(Dispatchers.IO) {
+    suspend fun run(botId: Uuid, automatic: Boolean = false): Unit = withContext(Dispatchers.IO) {
         mutex.withLock {
             val koin = GlobalContext.get()
             val settingsStore = koin.get<SettingsStore>()
@@ -42,7 +42,7 @@ internal object BotMemoryOrganizer {
             withTimeoutOrNull(5_000) { settingsStore.settingsFlow.first { !it.init } }
                 ?: error("Settings unavailable")
             if (!eligible()) return@withLock
-            val store = BotMemoryStore(context.filesDir, botId.toString())
+            val store = koin.get<ChatService>().loadBotMemory(botId)
             if (automatic && !store.upkeepEnabled()) return@withLock
 
             val before = store.index()
