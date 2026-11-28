@@ -566,6 +566,14 @@
   <string name="tool_display_desc_bot_memory_write">给某个 Bot 添加一条记忆</string>
   <string name="tool_display_name_bot_memory_delete">删除 Bot 记忆</string>
   <string name="tool_display_desc_bot_memory_delete">删除某个 Bot 的一条记忆</string>
+  <string name="tool_display_name_memory_update">更新 Bot 记忆</string>
+  <string name="tool_display_desc_memory_update">在 Bot 的长期记忆中添加或删除事实</string>
+  <string name="tool_display_name_memory_read_topic">读取记忆主题</string>
+  <string name="tool_display_desc_memory_read_topic">读取 Bot 指定主题的记忆笔记</string>
+  <string name="tool_display_name_memory_list_topics">列出记忆主题</string>
+  <string name="tool_display_desc_memory_list_topics">列出 Bot 的记忆主题</string>
+  <string name="tool_display_name_memory_log">写入 Bot 记忆日志</string>
+  <string name="tool_display_desc_memory_log">向 Bot 的每日日志添加一条带时间戳的记录</string>
   <string name="tool_display_name_read_attachment">读取附件</string>
   <string name="tool_display_desc_read_attachment">分片读取上传附件的文本或二进制内容</string>
   <string name="tool_display_name_deliver_file">交付文件</string>
