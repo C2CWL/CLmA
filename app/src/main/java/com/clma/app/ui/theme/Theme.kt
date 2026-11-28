@@ -2,10 +2,11 @@ package com.clma.app.ui.theme
 
 import android.app.Activity
 import android.os.Build
-import androidx.compose.foundation.LocalOverscrollFactory
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialExpressiveTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
@@ -17,6 +18,7 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
@@ -29,6 +31,7 @@ import kotlinx.serialization.Serializable
 import com.clma.app.ui.hooks.rememberAmoledDarkMode
 import com.clma.app.ui.hooks.rememberCurrentColorMode
 import com.clma.app.ui.hooks.rememberUserSettingsState
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private val ExtendLightColors = lightExtendColors()
 private val ExtendDarkColors = darkExtendColors()
@@ -109,19 +112,32 @@ fun RikkahubTheme(
     val typography = rememberAppTypography(settings.displaySetting)
     val (appDensity, baseFontScale) = rememberAppDensity(settings.displaySetting)
 
+    val miuixShapes = Shapes(
+        extraSmall = RoundedCornerShape(8.dp),
+        small = RoundedCornerShape(12.dp),
+        medium = RoundedCornerShape(16.dp),
+        large = RoundedCornerShape(20.dp),
+        extraLarge = RoundedCornerShape(28.dp),
+    )
+
     CompositionLocalProvider(
         LocalDarkMode provides darkTheme,
         LocalExtendColors provides extendColors,
-        LocalOverscrollFactory provides null,
         LocalDensity provides appDensity,
         LocalBaseFontScale provides baseFontScale,
     ) {
-        MaterialExpressiveTheme(
-            colorScheme = colorSchemeConverted,
-            typography = typography,
-            content = content,
-            motionScheme = MotionScheme.expressive()
-        )
+        MiuixTheme(
+            colors = colorSchemeConverted.toMiuixColors(darkTheme),
+            textStyles = typography.toMiuixTextStyles(),
+        ) {
+            MaterialExpressiveTheme(
+                colorScheme = colorSchemeConverted,
+                typography = typography,
+                shapes = miuixShapes,
+                content = content,
+                motionScheme = MotionScheme.expressive()
+            )
+        }
     }
 }
 
