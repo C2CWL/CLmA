@@ -54,7 +54,7 @@ private enum class BotHomeTab { BOTS, CHANNELS, AUTOMATIONS, BOARD }
 
 /**
  * Bot mode root, separate from the classic chat page and drawer: a chat-app style bot list,
- * channels, a team board, and a settings shortcut in a bottom bar. Classic mode never reaches this screen.
+ * channels, automations, a team board, and a settings shortcut in a bottom bar. Classic mode never reaches this screen.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

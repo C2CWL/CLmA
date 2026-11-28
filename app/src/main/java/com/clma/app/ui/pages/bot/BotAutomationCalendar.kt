@@ -176,11 +176,13 @@ internal fun BotAutomationCalendar(settings: Settings, modifier: Modifier = Modi
             it.jobId in jobs && it.at in fromMs until untilMs && (it.jobId to it.at) !in recordedSlots
         }).sortedBy { it.at }
     } else emptyList()
-    val openConversation: (String, String) -> Unit = { botId, id ->
+    val openConversation: (String, String, String?) -> Unit = { botId, id, jobId ->
         scope.launch {
             val parsed = runCatching { Uuid.parse(id) }.getOrNull() ?: return@launch
             if (conversationRepo.getAssistantIdOfConversation(parsed)?.toString() == botId) {
                 nav.navigate(Screen.BotChat(botId, id))
+            } else if (jobId != null) {
+                detailsId = jobId
             }
         }
     }
@@ -328,7 +330,7 @@ private fun AgendaCard(
     jobs: Map<String, ScheduledJobEntity>,
     zone: ZoneId,
     openJob: (String) -> Unit,
-    openChat: (String, String) -> Unit,
+    openChat: (String, String, String?) -> Unit,
 ) {
     val status = when {
         entry.run != null -> stringResource(runStatus(entry.run))
@@ -344,7 +346,7 @@ private fun AgendaCard(
         note = entry.note ?: entry.run?.errorMessage,
         onClick = {
             val chat = entry.conversationId
-            if (chat != null) openChat(entry.assistantId, chat)
+            if (chat != null) openChat(entry.assistantId, chat, entry.jobId)
             else entry.jobId?.let(openJob)
         },
     )
