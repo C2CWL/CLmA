@@ -5,6 +5,7 @@ import com.clma.app.data.db.entity.ScheduledJobRunEntity
 
 class ScheduledJobRunRepository(private val dao: ScheduledJobRunDao) {
     suspend fun getRecent(jobId: String, limit: Int) = dao.getRecent(jobId, limit)
+    suspend fun lastFinished(jobId: String, since: Long, until: Long) = dao.lastFinished(jobId, since, until)
     suspend fun getStranded(stalenessMs: Long) = dao.getStranded(stalenessMs)
     suspend fun insert(row: ScheduledJobRunEntity) = dao.insert(row)
     suspend fun update(row: ScheduledJobRunEntity) = dao.update(row)

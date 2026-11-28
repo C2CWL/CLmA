@@ -6,6 +6,8 @@ import com.clma.app.data.botmode.settings.BotTeamMember
 import com.clma.app.data.botmode.settings.canGrantForBot
 import com.clma.app.data.botmode.settings.LiveBotConversation
 import com.clma.app.data.botmode.settings.botAutoVerdict
+import com.clma.app.data.botmode.BotBriefStore
+import com.clma.app.data.botmode.botGoalPrompt
 import com.clma.app.data.botmode.settings.botProfilePrompt
 import com.clma.app.data.botmode.settings.notificationSettings
 import com.clma.app.data.botmode.settings.requiresBotToolConsent
@@ -1119,7 +1121,11 @@ class ChatService(
 
     // ---- 初始化对话 ----
 
-    suspend fun initializeConversation(conversationId: Uuid, isTemporary: Boolean = false) {
+    suspend fun initializeConversation(
+        conversationId: Uuid,
+        isTemporary: Boolean = false,
+        selectAssistant: Boolean = true,
+    ) {
         val session = getOrCreateSession(conversationId) // 确保 session 存在
         val conversation = conversationRepo.getConversationById(conversationId)
         if (conversation != null) {
@@ -1146,7 +1152,7 @@ class ChatService(
                 // Keep the live content but still follow the stored assistant binding.
                 updateConversationState(conversationId) { it.copy(assistantId = conversation.assistantId) }
             }
-            if (settingsStore.settingsFlow.value.isInActiveLibrary(conversation.assistantId)) {
+            if (selectAssistant && settingsStore.settingsFlow.value.isInActiveLibrary(conversation.assistantId)) {
                 settingsStore.updateAssistant(conversation.assistantId)
             }
         } else {
@@ -1171,25 +1177,26 @@ class ChatService(
         }
     }
 
-    /**
-     * Bot-mode channels: delivers [text] to one bot, in its latest top-level conversation (the
-     * same one its chat page opens), or in a new conversation bound to that bot when it has
-     * none. Only Bot-library assistants are reachable; returns null for anything else. The
-     * send itself is the ordinary [sendMessage] path (queue, approvals, compaction unchanged).
-     */
-    suspend fun sendToBotConversation(assistantId: Uuid, text: String): Uuid? {
+    /** Resolve the member's dedicated channel topic without switching the active assistant. */
+    suspend fun openBotChannelTopic(assistantId: Uuid, topicId: Uuid, title: String): Uuid? =
+        mutexFor(topicId).withLock {
+            val settings = settingsStore.settingsFlow.value
+            val bot = settings.assistants.find { it.id == assistantId && it.isBot } ?: return@withLock null
+            val existing = conversationRepo.getConversationById(topicId)
+            if (existing != null && existing.assistantId != bot.id) return@withLock null
+            if (existing == null) {
+                val conversation = Conversation(id = topicId, assistantId = bot.id, title = title, messageNodes = emptyList())
+                    .updateCurrentMessages(bot.presetMessages)
+                conversationRepo.insertConversation(conversation)
+            }
+            initializeConversation(topicId, selectAssistant = false)
+            topicId
+        }
+
+    /** Channel sends use the normal chat queue and Bot approval policy. */
+    suspend fun sendToBotConversation(assistantId: Uuid, text: String, topicId: Uuid, title: String): Uuid? {
         if (text.isBlank()) return null
-        val settings = settingsStore.settingsFlow.value
-        val bot = settings.assistants.find { it.id == assistantId && it.isBot } ?: return null
-        val latest = com.clma.app.data.botmode.latestTopLevelConversation(
-            conversationRepo.getConversationsOfAssistant(bot.id).first()
-        )
-        val conversationId = latest?.id ?: Conversation.ofId(
-            id = Uuid.random(),
-            assistantId = bot.id,
-            newConversation = true,
-        ).updateCurrentMessages(bot.presetMessages).also { conversationRepo.insertConversation(it) }.id
-        initializeConversation(conversationId)
+        val conversationId = openBotChannelTopic(assistantId, topicId, title) ?: return null
         sendMessage(conversationId, listOf(UIMessagePart.Text(text)))
         return conversationId
     }
@@ -2814,6 +2821,15 @@ class ChatService(
                 }
             }
 
+            val goalAddendum = if (botId != null && !conversation.isTemporary) {
+                try {
+                    BotBriefStore(context).goal(settings, assistant.id, conversationId)?.let(::botGoalPrompt)
+                } catch (e: java.io.IOException) {
+                    Log.w(TAG, "Could not read Bot conversation goal", e)
+                    null
+                }
+            } else null
+
             generationLoop.generateText(
                 settings = settings,
                 model = generationModel,
@@ -2830,8 +2846,8 @@ class ChatService(
                 // having to plumb a parameter all the way through sendMessage. Returns null
                 // for in-app conversations that didn't register one.
                 systemAddendum = buildEffectiveSystemAddendum(conversationId, surfaceAssistant).let { base ->
-                    if (profileAddendum == null) base
-                    else listOfNotNull(base, profileAddendum).joinToString("\n\n")
+                    listOfNotNull(base, profileAddendum, goalAddendum)
+                        .takeIf { it.isNotEmpty() }?.joinToString("\n\n")
                 },
                 enforceBotApproval = botId != null,
                 isToolAutoApproved = { toolName ->

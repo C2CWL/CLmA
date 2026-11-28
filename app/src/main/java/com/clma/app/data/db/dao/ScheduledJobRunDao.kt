@@ -12,6 +12,12 @@ interface ScheduledJobRunDao {
     @Query("SELECT * FROM scheduled_job_runs WHERE jobId = :jobId ORDER BY startedAtMs DESC LIMIT :limit")
     suspend fun getRecent(jobId: String, limit: Int): List<ScheduledJobRunEntity>
 
+    @Query(
+        "SELECT * FROM scheduled_job_runs WHERE jobId = :jobId AND finishedAtMs >= :since AND finishedAtMs < :until " +
+            "AND outcome <> 'awaiting_approval' ORDER BY finishedAtMs DESC, startedAtMs DESC LIMIT 1"
+    )
+    suspend fun lastFinished(jobId: String, since: Long, until: Long): ScheduledJobRunEntity?
+
     @Query("SELECT * FROM scheduled_job_runs WHERE finishedAtMs IS NULL AND startedAtMs < :stalenessMs")
     suspend fun getStranded(stalenessMs: Long): List<ScheduledJobRunEntity>
 

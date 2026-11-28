@@ -132,6 +132,9 @@ class ClmaApp : Application() {
         HeadlessConversations.init(this)
         // Bot routine runs parked on an approval card (they outlive the worker that parked them).
         com.clma.app.data.botmode.BotRoutineApprovals.init(this)
+        get<AppScope>().launch(Dispatchers.IO) {
+            com.clma.app.service.BotDailyBriefWorker.observeSchedule(this@ClmaApp)
+        }
 
         // Sweep orphan headless conversations created by workers that were killed mid-execute.
         sweepOrphanHeadlessConversations()
