@@ -10,6 +10,9 @@ import com.clma.app.data.botmode.settings.botProfilePrompt
 import com.clma.app.data.botmode.settings.notificationSettings
 import com.clma.app.data.botmode.settings.requiresBotToolConsent
 import com.clma.app.data.repository.memoryScopeId
+import com.clma.app.data.botmode.board.BotBoard
+import com.clma.app.data.botmode.board.BotBoardStore
+import com.clma.app.data.botmode.board.BotBoardTools
 import com.clma.app.data.botmode.BotPeerRuntime
 import com.clma.app.data.botmode.BotPeerTools
 import com.clma.app.data.botmode.BotPeerToolPolicy
@@ -1952,6 +1955,9 @@ class ChatService(
 
                 val settings = settingsStore.settingsFlow.first()
                 val assistant = AssistantResolver.forConversation(settings, conversation.assistantId).assistant
+                if (assistant.isBot && BotBoardTools.isWrite(toolPart.toolName)) {
+                    return RerunToolResult.Failure("board_write_requires_new_call")
+                }
                 val model = resolveGenerationModel(settings, conversation)
                     ?: return RerunToolResult.Failure("no chat model selected")
 
@@ -2201,6 +2207,26 @@ class ChatService(
         )
     }
 
+    private val botBoardStore by lazy { BotBoardStore(context) }
+
+    private fun botBoardToolsFor(assistant: Assistant, conversationId: Uuid): List<com.clma.ai.core.Tool> {
+        if (!assistant.isBot || com.clma.app.data.ai.tools.HeadlessConversations.isHeadless(conversationId)) {
+            return emptyList()
+        }
+        val actor = assistant.id.toString()
+        return BotBoardTools.build(botBoardStore, actor) {
+            val profiles = botProfileStore.profiles.first()
+            require(sessions[conversationId]?.state?.value?.assistantId == assistant.id &&
+                !com.clma.app.data.ai.tools.HeadlessConversations.isHeadless(conversationId)) {
+                "This conversation cannot access the team board."
+            }
+            val roster = settingsStore.settingsFlow.value.assistants.filter { it.isBot }
+                .associate { it.id.toString() to it.name }
+            val coordinators = roster.keys.filter { profiles[it]?.chiefOfStaff == true }.toSet()
+            BotBoard(roster.keys, profiles.mapValues { it.value.reportsTo }, coordinators) to roster
+        }
+    }
+
     private val botMainToolStore = object : com.clma.app.data.botmode.BotMainToolStore {
         override suspend fun settings(): Settings = settingsStore.settingsFlow.value
 
@@ -2303,7 +2329,7 @@ class ChatService(
         // they exist only for the current main bot (see BotMainTools), in either chat mode.
         val allowed = ChatModeTools.filterTools(fixedTools)
         val botMainTools = botMainToolsFor(surfaceAssistant, settings, conversationId) +
-            botPeerToolsFor(surfaceAssistant, conversationId)
+            botPeerToolsFor(surfaceAssistant, conversationId) + botBoardToolsFor(surfaceAssistant, conversationId)
         return ChatToolSurface(
             fixed = com.clma.app.subagent.SubAgentSurface.apply(
                 conversationId = conversationId,
@@ -2447,6 +2473,7 @@ class ChatService(
             // Bot mode: the current main bot manages the Bot library (approval per write).
             addAll(botMainToolsFor(surfaceAssistant, settings, conversationId))
             addAll(botPeerToolsFor(surfaceAssistant, conversationId))
+            addAll(botBoardToolsFor(surfaceAssistant, conversationId))
             // Fidelity Trio: spilled output reader & current conversation search (SQLite FTS5)
             add(com.clma.app.data.ai.tools.createToolOutputReadTool(context))
             add(
