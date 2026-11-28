@@ -1,0 +1,34 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<resources>
+  <string name="bot_calendar_all_bots">All bots</string>
+  <string name="bot_calendar_cancelled">Stopped</string>
+  <string name="bot_calendar_check_back">Check-back</string>
+  <string name="bot_calendar_check_error">Could not load check-backs</string>
+  <string name="bot_calendar_close">Close</string>
+  <string name="bot_calendar_completed">Completed</string>
+  <string name="bot_calendar_day">Calendar</string>
+  <string name="bot_calendar_empty">No automations yet</string>
+  <string name="bot_calendar_empty_day">No automations for this day</string>
+  <string name="bot_calendar_entry">%1$s · %2$s</string>
+  <string name="bot_calendar_event">Runs on an event</string>
+  <string name="bot_calendar_failed">Failed</string>
+  <string name="bot_calendar_interrupted">Interrupted</string>
+  <string name="bot_calendar_next">Next day</string>
+  <string name="bot_calendar_next_run">Next: %1$s</string>
+  <string name="bot_calendar_no_next">No next run scheduled</string>
+  <string name="bot_calendar_no_runs">No runs yet</string>
+  <string name="bot_calendar_other_result">Other result</string>
+  <string name="bot_calendar_overview">Overview</string>
+  <string name="bot_calendar_pause">Pause</string>
+  <string name="bot_calendar_previous">Previous day</string>
+  <string name="bot_calendar_resume">Resume</string>
+  <string name="bot_calendar_retry">Quota retry</string>
+  <string name="bot_calendar_run_limit">Showing the latest %1$d runs</string>
+  <string name="bot_calendar_running">Running</string>
+  <string name="bot_calendar_runs">Recent runs</string>
+  <string name="bot_calendar_scheduled">Scheduled</string>
+  <string name="bot_calendar_skipped">Skipped</string>
+  <string name="bot_calendar_timeout">Timed out</string>
+  <string name="bot_calendar_title">Automations</string>
+  <string name="bot_calendar_today">Today</string>
+</resources>
