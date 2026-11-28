@@ -1,6 +1,7 @@
 package com.clma.app.ui.pages.setting
 
-import com.clma.app.data.botmode.classicAssistants
+import com.clma.app.data.botmode.isInActiveLibrary
+import com.clma.app.Screen
 import android.content.Context
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.Box
@@ -87,13 +88,17 @@ fun SettingsSearchPage(vm: SettingVM = koinViewModel()) {
     val dynamicEntries = remember(entries, settings, workspaces, skills) {
         settingsSearchDynamicEntries(userContentOf(settings, workspaces, skills), entries)
     }
-    val filtered: List<SettingsSearchItem> = remember(entries, dynamicEntries, query) {
+    val botMode = settings.displaySetting.botModeEnabled
+    val filtered: List<SettingsSearchItem> = remember(entries, dynamicEntries, query, botMode) {
+        val visibleEntries = if (botMode) {
+            entries.filter { it.route != Screen.Assistant && it.route != Screen.SettingScheduledJobs }
+        } else entries
         val q = query.trim()
         if (q.isEmpty()) {
             // Empty query: hub pages only — nested rows would drown the list.
-            entries.filter { it.parentTitleRes == null }
+            visibleEntries.filter { it.parentTitleRes == null }
         } else {
-            rankSettingsSearch(q, entries + dynamicEntries, text, englishText).take(MAX_RESULTS)
+            rankSettingsSearch(q, visibleEntries + dynamicEntries, text, englishText).take(MAX_RESULTS)
         }
     }
 
@@ -218,7 +223,7 @@ private fun userContentOf(
     mcpServers = settings.mcpServers.map { SettingsSearchUserItem(it.id.toString(), it.commonOptions.name) },
     providers = settings.providers.map { SettingsSearchUserItem(it.id.toString(), it.name) },
     searchServices = settings.searchServices.map { SettingsSearchUserItem(it.id.toString(), it.displayName) },
-    assistants = settings.classicAssistants().map { SettingsSearchUserItem(it.id.toString(), it.name) },
+    assistants = settings.assistants.filter { settings.isInActiveLibrary(it.id) }.map { SettingsSearchUserItem(it.id.toString(), it.name) },
     ttsProviders = settings.ttsProviders.map { SettingsSearchUserItem(it.id.toString(), it.name) },
     asrProviders = settings.asrProviders.map { SettingsSearchUserItem(it.id.toString(), it.name) },
 )

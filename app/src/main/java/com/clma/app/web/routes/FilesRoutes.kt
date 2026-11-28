@@ -1,6 +1,10 @@
 package com.clma.app.web.routes
 
 import android.content.Context
+import com.clma.app.data.botmode.activeLibraryScope
+import com.clma.app.data.datastore.SettingsStore
+import com.clma.app.data.repository.ConversationRepository
+import kotlinx.coroutines.flow.first
 import androidx.core.net.toUri
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
@@ -40,8 +44,18 @@ private val ALLOWED_RELATIVE_PATH_ROOT_FOLDERS = setOf(
 
 fun Route.filesRoutes(
     filesManager: FilesManager,
-    context: Context
+    context: Context,
+    conversationRepo: ConversationRepository,
+    settingsStore: SettingsStore,
 ) {
+    suspend fun requireFileLibrary(file: File, deleting: Boolean = false) {
+        val owners = conversationRepo.getFileReferenceAssistantIds(file.toUri().toString())
+        val scope = settingsStore.settingsFlow.first { !it.init }.activeLibraryScope()
+        if (owners.isNotEmpty() && (owners.none(scope::allows) || (deleting && !owners.all(scope::allows)))) {
+            throw NotFoundException("File not found")
+        }
+    }
+
     route("/files") {
         // POST /api/files/upload - Upload files
         post("/upload") {
@@ -97,6 +111,8 @@ fun Route.filesRoutes(
             val id = idParam.toLongOrNull()
                 ?: throw BadRequestException("Invalid file id")
 
+            val entity = filesManager.get(id) ?: throw NotFoundException("File not found")
+            requireFileLibrary(filesManager.getFile(entity), deleting = true)
             val deleted = filesManager.delete(id, deleteFromDisk = true)
             if (!deleted) {
                 throw NotFoundException("File not found")
@@ -120,6 +136,7 @@ fun Route.filesRoutes(
                 throw NotFoundException("File not found on disk")
             }
 
+            requireFileLibrary(file)
             call.response.header("Content-Type", entity.mimeType)
             call.respondFile(file)
         }
@@ -157,6 +174,8 @@ fun Route.filesRoutes(
             if (!file.exists() || !file.isFile) {
                 throw NotFoundException("File not found")
             }
+
+            requireFileLibrary(File(canonicalPath))
 
             // Use managed file MIME type first because on-disk file names are UUID-only.
             val managedFileMime = filesManager.getByRelativePath(relativePath)?.mimeType

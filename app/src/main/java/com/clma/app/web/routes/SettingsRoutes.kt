@@ -1,4 +1,6 @@
 package com.clma.app.web.routes
+import com.clma.app.data.botmode.isInActiveLibrary
+
 
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.request.receive
@@ -31,6 +33,10 @@ fun Route.settingsRoutes(
             val request = call.receive<UpdateAssistantRequest>()
             val assistantId = request.assistantId.toUuid("assistantId")
 
+            val settings = settingsStore.settingsFlow.value
+            if (settings.assistants.none { it.id == assistantId && settings.isInActiveLibrary(it.id) }) {
+                throw NotFoundException("Assistant not found")
+            }
             settingsStore.updateAssistant(assistantId)
             call.respond(HttpStatusCode.OK, mapOf("status" to "ok"))
         }
@@ -41,7 +47,7 @@ fun Route.settingsRoutes(
             val modelId = request.modelId.toUuid("modelId")
 
             val settings = settingsStore.settingsFlow.value
-            if (settings.assistants.none { it.id == assistantId }) {
+            if (settings.assistants.none { it.id == assistantId && settings.isInActiveLibrary(it.id) }) {
                 throw NotFoundException("Assistant not found")
             }
 
@@ -60,7 +66,7 @@ fun Route.settingsRoutes(
             val assistantId = request.assistantId.toUuid("assistantId")
 
             val settings = settingsStore.settingsFlow.value
-            if (settings.assistants.none { it.id == assistantId }) {
+            if (settings.assistants.none { it.id == assistantId && settings.isInActiveLibrary(it.id) }) {
                 throw NotFoundException("Assistant not found")
             }
 
@@ -73,7 +79,7 @@ fun Route.settingsRoutes(
             val assistantId = request.assistantId.toUuid("assistantId")
 
             val settings = settingsStore.settingsFlow.value
-            if (settings.assistants.none { it.id == assistantId }) {
+            if (settings.assistants.none { it.id == assistantId && settings.isInActiveLibrary(it.id) }) {
                 throw NotFoundException("Assistant not found")
             }
 
@@ -92,7 +98,7 @@ fun Route.settingsRoutes(
             val assistantId = request.assistantId.toUuid("assistantId")
 
             val settings = settingsStore.settingsFlow.value
-            if (settings.assistants.none { it.id == assistantId }) {
+            if (settings.assistants.none { it.id == assistantId && settings.isInActiveLibrary(it.id) }) {
                 throw NotFoundException("Assistant not found")
             }
 
@@ -130,7 +136,7 @@ fun Route.settingsRoutes(
             val assistantId = request.assistantId.toUuid("assistantId")
 
             val settings = settingsStore.settingsFlow.value
-            if (settings.assistants.none { it.id == assistantId }) {
+            if (settings.assistants.none { it.id == assistantId && settings.isInActiveLibrary(it.id) }) {
                 throw NotFoundException("Assistant not found")
             }
 

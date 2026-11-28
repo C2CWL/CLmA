@@ -5,7 +5,11 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import com.clma.app.data.botmode.libraryScope
+import com.clma.app.data.botmode.activeLibraryIsBot
+import com.clma.app.data.datastore.SettingsStore
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.clma.app.data.db.entity.ScheduledJobEntity
@@ -27,14 +31,19 @@ class ScheduledJobsViewModel(
     private val repository: ScheduledJobRepository,
     private val runRepository: ScheduledJobRunRepository,
     private val scheduler: CronJobScheduler,
+    private val settingsStore: SettingsStore,
 ) : ViewModel() {
 
     val jobs: StateFlow<List<ScheduledJobEntity>> =
-        repository.observeAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        combine(repository.observeAll(), settingsStore.settingsFlow) { jobs, settings ->
+            if (settings.activeLibraryIsBot()) return@combine emptyList()
+            val scope = settings.libraryScope(bot = false)
+            jobs.filter { scope.allows(it.assistantId) }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun setEnabled(id: String, enabled: Boolean) {
         viewModelScope.launch(Dispatchers.IO) {
-            val job = repository.getById(id) ?: return@launch
+            val job = get(id) ?: return@launch
             val updated = job.copy(enabled = enabled)
             repository.update(updated)
             if (enabled) scheduler.schedule(updated) else scheduler.cancel(id)
@@ -43,6 +52,7 @@ class ScheduledJobsViewModel(
 
     fun delete(id: String, onDone: () -> Unit = {}) {
         viewModelScope.launch(Dispatchers.IO) {
+            get(id) ?: return@launch
             scheduler.cancel(id)
             runRepository.deleteAllForJob(id)
             repository.deleteById(id)
@@ -53,16 +63,19 @@ class ScheduledJobsViewModel(
 
     /** Manually fire — same path as the LLM's trigger_job_now tool. */
     suspend fun runNow(id: String): RunNowOutcome {
-        val job = repository.getById(id) ?: return RunNowOutcome.NotFound
+        val job = get(id) ?: return RunNowOutcome.NotFound
         if (!job.enabled) return RunNowOutcome.Disabled
         scheduler.triggerNow(id)
         return RunNowOutcome.Fired
     }
 
     suspend fun history(id: String, limit: Int = 20): List<ScheduledJobRunEntity> =
-        runRepository.getRecent(id, limit)
+        if (get(id) == null) emptyList() else runRepository.getRecent(id, limit)
 
-    suspend fun get(id: String): ScheduledJobEntity? = repository.getById(id)
+    suspend fun get(id: String): ScheduledJobEntity? = repository.getById(id)?.takeIf {
+        val settings = settingsStore.settingsFlow.value
+        !settings.activeLibraryIsBot() && settings.libraryScope(bot = false).allows(it.assistantId)
+    }
 
     enum class RunNowOutcome { Fired, NotFound, Disabled }
 }

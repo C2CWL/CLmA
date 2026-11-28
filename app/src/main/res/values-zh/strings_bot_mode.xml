@@ -190,9 +190,6 @@
   <string name="bot_routine_delete_confirm">删除「%1$s」及其运行记录？已经生成的话题会保留。</string>
   <string name="bot_routine_waiting_title">「%1$s」在等你批准</string>
   <string name="bot_routine_waiting_desc">点开后在审批卡上选择允许或拒绝，任务会接着运行。</string>
-  <string name="bot_routine_exact_alarm_title">自动任务可能会延迟</string>
-  <string name="bot_routine_exact_alarm_desc">本应用的「闹钟和提醒」权限未开启，系统可能推迟定时运行。开启后才能准点运行。</string>
-  <string name="bot_routine_exact_alarm_action">去开启</string>
   <string name="bot_routine_new_title">新建自动任务</string>
   <string name="bot_routine_edit_title">编辑自动任务</string>
   <string name="bot_routine_field_name">名称</string>

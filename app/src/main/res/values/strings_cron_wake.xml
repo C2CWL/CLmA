@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="cron_wake_running">Scheduled tasks running</string>
+    <string name="cron_wake_reliability">Background reliability</string>
+    <string name="cron_wake_exact_alarm_hint">Scheduled tasks may run late without access to exact alarms.</string>
+    <string name="cron_wake_exact_alarm_action">Allow exact alarms</string>
+    <string name="cron_wake_battery_hint">Battery optimization can delay tasks or interrupt their network access while the phone is idle.</string>
+    <string name="cron_wake_battery_action">Allow unrestricted battery use</string>
+    <string name="cron_wake_oem_hint">Some phones also require allowing background activity or auto-start in system settings.</string>
+</resources>

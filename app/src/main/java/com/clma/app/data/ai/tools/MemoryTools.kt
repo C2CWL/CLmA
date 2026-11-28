@@ -114,12 +114,14 @@ fun buildMemoryTools(
 
                 "edit" -> {
                     val id = params["id"]?.jsonPrimitive?.intOrNull ?: error("id is required")
+                    require(existing().any { it.id == id }) { "Memory record #$id not found" }
                     val content = params["content"]?.jsonPrimitive?.contentOrNull ?: error("content is required")
                     json.encodeToJsonElement(AssistantMemory.serializer(), onUpdate(id, content))
                 }
 
                 "delete" -> {
                     val id = params["id"]?.jsonPrimitive?.intOrNull ?: error("id is required")
+                    require(existing().any { it.id == id }) { "Memory record #$id not found" }
                     onDelete(id)
                     buildJsonObject {
                         put("success", true)

@@ -1,5 +1,7 @@
 package com.clma.app.ui.pages.assistant
 
+import com.clma.app.data.repository.memoryScopeId
+
 import com.clma.app.data.botmode.canDeleteAssistant
 import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
@@ -112,9 +114,5 @@ class AssistantVM(
     }
 
     fun getMemories(assistant: Assistant) =
-        if (assistant.useGlobalMemory) {
-            memoryRepository.getGlobalMemoriesFlow()
-        } else {
-            memoryRepository.getMemoriesOfAssistantFlow(assistant.id.toString())
-        }
+        memoryRepository.getMemoriesOfAssistantFlow(assistant.memoryScopeId())
 }
