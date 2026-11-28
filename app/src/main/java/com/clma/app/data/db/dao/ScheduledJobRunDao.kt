@@ -1,12 +1,12 @@
 package com.clma.app.data.db.dao
 
-import kotlinx.coroutines.flow.Flow
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.clma.app.data.db.entity.ScheduledJobRunEntity
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ScheduledJobRunDao {
@@ -19,6 +19,7 @@ interface ScheduledJobRunDao {
             "ORDER BY r.startedAtMs DESC, r.id DESC LIMIT :limit"
     )
     fun observeBotRuns(owners: List<String>, fromMs: Long, untilMs: Long, limit: Int): Flow<List<ScheduledJobRunEntity>>
+
     @Query("SELECT * FROM scheduled_job_runs WHERE jobId = :jobId ORDER BY startedAtMs DESC LIMIT :limit")
     fun observeRecent(jobId: String, limit: Int): Flow<List<ScheduledJobRunEntity>>
 

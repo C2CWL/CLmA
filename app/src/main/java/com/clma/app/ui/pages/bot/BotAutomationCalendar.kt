@@ -43,12 +43,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clma.app.R
 import com.clma.app.Screen
-import com.clma.app.data.botmode.BotCalendarSnapshot
 import com.clma.app.data.botmode.botAssistants
 import com.clma.app.data.botmode.calendarNextRun
 import com.clma.app.data.botmode.calendarSlots
-import com.clma.app.data.botmode.observeBotCalendar
 import com.clma.app.data.botmode.parseBotRoutineSchedule
+import com.clma.app.data.botmode.routine.RoutineStore
+import com.clma.app.data.botmode.routine.routineZone
 import com.clma.app.data.datastore.Settings
 import com.clma.app.data.db.entity.ScheduledJobEntity
 import com.clma.app.data.db.entity.ScheduledJobRunEntity
@@ -67,6 +67,9 @@ import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import java.io.IOException
+import kotlinx.serialization.SerializationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.androidx.compose.koinViewModel
@@ -86,6 +89,7 @@ private data class AgendaEntry(
     val conversationId: String? = null,
     val run: ScheduledJobRunEntity? = null,
     val note: String? = null,
+    val quotaRetry: Boolean = false,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -93,15 +97,28 @@ private data class AgendaEntry(
 internal fun BotAutomationCalendar(settings: Settings, modifier: Modifier = Modifier) {
     if (!settings.displaySetting.botModeEnabled) return
     val nav = LocalNavController.current
-    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val conversationRepo = koinInject<ConversationRepository>()
     val jobsRepo = koinInject<ScheduledJobRepository>()
     val runsRepo = koinInject<ScheduledJobRunRepository>()
     val allJobs by remember(jobsRepo) { jobsRepo.observeAll() }.collectAsStateWithLifecycle(emptyList())
-    val snapshot by remember(context.filesDir) {
-        observeBotCalendar(context.filesDir)
-    }.collectAsStateWithLifecycle(BotCalendarSnapshot())
+    val routineStore = koinInject<RoutineStore>()
+    val snapshot by routineStore.snapshots.collectAsStateWithLifecycle()
+    val checkBackReadFailed by produceState(false, routineStore) {
+        try {
+            routineStore.read()
+        } catch (_: IOException) {
+            value = true
+        } catch (_: SerializationException) {
+            value = true
+        }
+    }
+    val nowMs by produceState(System.currentTimeMillis()) {
+        while (true) {
+            value = System.currentTimeMillis()
+            delay(30_000)
+        }
+    }
     val bots = settings.botAssistants()
     var ownerFilter by rememberSaveable { mutableStateOf<String?>(null) }
     val selected = bots.firstOrNull { it.id.toString() == ownerFilter }
@@ -112,8 +129,8 @@ internal fun BotAutomationCalendar(settings: Settings, modifier: Modifier = Modi
     var choosingDate by rememberSaveable { mutableStateOf(false) }
     var detailsId by rememberSaveable { mutableStateOf<String?>(null) }
 
-    val zone = settings.customTimezone?.let { runCatching { ZoneId.of(it) }.getOrNull() } ?: ZoneId.systemDefault()
-    val today = Instant.ofEpochMilli(snapshot.nowMs).atZone(zone).toLocalDate()
+    val zone = routineZone(settings.customTimezone)
+    val today = Instant.ofEpochMilli(nowMs).atZone(zone).toLocalDate()
     val date = epochDay?.let(LocalDate::ofEpochDay) ?: today
     val fromMs = date.atStartOfDay(zone).toInstant().toEpochMilli()
     val untilMs = date.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
@@ -135,22 +152,27 @@ internal fun BotAutomationCalendar(settings: Settings, modifier: Modifier = Modi
             AgendaEntry("run:${run.id}", run.startedAtMs, job.assistantId, job.id, run.conversationId, run)
         }
     }
-    val checkBacks = snapshot.checkBacks.filter { it.assistantId in owners }.map {
+    val checkBacks = snapshot.checkBacks.values.filter { it.assistantId in owners }.map {
         AgendaEntry("check:${it.id}", it.atMs, it.assistantId, conversationId = it.conversationId, note = it.note)
     }
-    val forecast = produceState<List<AgendaEntry>?>(null, jobs, calendar, date, today, zone) {
+    val forecast = produceState<List<AgendaEntry>?>(null, jobs, snapshot.routines, calendar, date, today, zone) {
         value = null
         value = if (calendar && date >= today) withContext(Dispatchers.Default) {
             jobs.values.flatMap { job ->
-                calendarSlots(job, fromMs, untilMs, zone).map {
+                val interval = snapshot.routines[job.id]?.options?.interval
+                calendarSlots(job, fromMs, untilMs, zone, interval).map {
                     AgendaEntry("slot:${job.id}:$it", it, job.assistantId, job.id)
                 }
             }
         } else emptyList()
     }.value
     val recordedSlots = history.mapNotNull { entry -> entry.run?.let { it.jobId to it.scheduledAtMs } }.toSet()
+    val retries = jobs.values.mapNotNull { job ->
+        val quota = snapshot.routines[job.id]?.quota?.takeIf { job.enabled } ?: return@mapNotNull null
+        AgendaEntry("retry:${quota.runId}", quota.atMs, job.assistantId, job.id, quotaRetry = true)
+    }
     val timeline = if (calendar) {
-        (history + checkBacks.filter { it.at in fromMs until untilMs } + forecast.orEmpty().filter {
+        (history + (checkBacks + retries).filter { it.at in fromMs until untilMs } + forecast.orEmpty().filter {
             it.jobId in jobs && it.at in fromMs until untilMs && (it.jobId to it.at) !in recordedSlots
         }).sortedBy { it.at }
     } else emptyList()
@@ -183,7 +205,7 @@ internal fun BotAutomationCalendar(settings: Settings, modifier: Modifier = Modi
                 }
             }
         }
-        if (snapshot.checkBackReadFailed) {
+        if (checkBackReadFailed) {
             Text(stringResource(R.string.bot_calendar_check_error), color = MaterialTheme.colorScheme.error)
         }
         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -198,13 +220,18 @@ internal fun BotAutomationCalendar(settings: Settings, modifier: Modifier = Modi
                 if (jobs.isEmpty() && checkBacks.isEmpty()) {
                     item { Text(stringResource(R.string.bot_calendar_empty), Modifier.padding(12.dp)) }
                 }
-                items(jobs.values.sortedWith(compareBy({ it.calendarNextRun() ?: Long.MAX_VALUE }, { it.name })), key = { "job:${it.id}" }) { job ->
+                val nextByJob = jobs.mapValues { (_, job) ->
+                    val retryAt = snapshot.routines[job.id]?.quota?.atMs?.takeIf { job.enabled }
+                    listOfNotNull(job.calendarNextRun(), retryAt).minOrNull()
+                }
+                val orderedJobs = jobs.values.sortedWith(compareBy({ nextByJob[it.id] ?: Long.MAX_VALUE }, { it.name }))
+                items(orderedJobs, key = { "job:${it.id}" }) { job ->
                     val state = when {
                         !job.enabled -> stringResource(R.string.bot_routine_paused)
+                        nextByJob[job.id] != null ->
+                            stringResource(R.string.bot_calendar_next_run, calendarDateTime(nextByJob.getValue(job.id)!!, zone))
                         job.scheduleType == "event" -> stringResource(R.string.bot_calendar_event)
-                        else -> job.calendarNextRun()?.let {
-                            stringResource(R.string.bot_calendar_next_run, calendarDateTime(it, zone))
-                        } ?: stringResource(R.string.bot_calendar_no_next)
+                        else -> stringResource(R.string.bot_calendar_no_next)
                     }
                     CalendarCard(job.name, botName(owners[job.assistantId]), state, null) { detailsId = job.id }
                 }
@@ -259,10 +286,8 @@ internal fun BotAutomationCalendar(settings: Settings, modifier: Modifier = Modi
                     if (job.scheduleType == "cron" || job.scheduleType == "once") {
                         Text(botRoutineScheduleText(parseBotRoutineSchedule(job)))
                     }
-                    if (job.enabled) {
-                        TextButton(onClick = { info.setRoutineEnabled(job.id, false) }) {
-                            Text(stringResource(R.string.bot_calendar_pause))
-                        }
+                    TextButton(onClick = { info.setRoutineEnabled(job.id, !job.enabled) }) {
+                        Text(stringResource(if (job.enabled) R.string.bot_calendar_pause else R.string.bot_calendar_resume))
                     }
                 }
             },
@@ -307,6 +332,7 @@ private fun AgendaCard(
 ) {
     val status = when {
         entry.run != null -> stringResource(runStatus(entry.run))
+        entry.quotaRetry -> stringResource(R.string.bot_calendar_retry)
         entry.note != null -> stringResource(R.string.bot_calendar_check_back)
         else -> stringResource(R.string.bot_calendar_scheduled)
     }
@@ -352,12 +378,13 @@ private fun calendarDateTime(at: Long, zone: ZoneId): String {
 }
 
 private fun runStatus(run: ScheduledJobRunEntity): Int = when {
-    run.outcome == "awaiting_approval" -> R.string.bot_calendar_waiting
+    run.outcome == "awaiting_approval" -> R.string.routine2_waiting_approval
+    run.outcome == "waiting_quota" -> R.string.routine2_waiting_quota
     run.finishedAtMs == null -> R.string.bot_calendar_running
     else -> when (run.outcome) {
         "success" -> R.string.bot_calendar_completed
-        "approval_expired" -> R.string.bot_calendar_cancelled
-        "skipped_catchup", "concurrent_skip" -> R.string.bot_calendar_skipped
+        "approval_expired", "cancelled" -> R.string.bot_calendar_cancelled
+        "skipped", "skipped_catchup", "concurrent_skip" -> R.string.bot_calendar_skipped
         "timed_out" -> R.string.bot_calendar_timeout
         "process_killed_replay" -> R.string.bot_calendar_interrupted
         "failed" -> R.string.bot_calendar_failed

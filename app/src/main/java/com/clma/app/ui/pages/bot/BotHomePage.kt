@@ -41,11 +41,12 @@ import com.clma.app.ui.context.LocalNavController
 import com.clma.app.data.botmode.botAssistants
 import com.clma.app.data.botmode.withBotChannelUpserted
 import com.composables.icons.lucide.Bot
-import com.composables.icons.lucide.Calendar
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.Plus
 import com.composables.icons.lucide.Users
 import com.composables.icons.lucide.Settings as LucideSettings
+import me.rerere.hugeicons.HugeIcons
+import me.rerere.hugeicons.stroke.Calendar03
 import org.koin.androidx.compose.koinViewModel
 
 private enum class BotHomeTab { BOTS, CHANNELS, AUTOMATIONS }
@@ -112,7 +113,7 @@ fun BotHomePage(vm: BotHomeVM = koinViewModel()) {
                 NavigationBarItem(
                     selected = tab == BotHomeTab.AUTOMATIONS,
                     onClick = { tab = BotHomeTab.AUTOMATIONS },
-                    icon = { Icon(Lucide.Calendar, contentDescription = null) },
+                    icon = { Icon(HugeIcons.Calendar03, contentDescription = null) },
                     label = { Text(stringResource(R.string.bot_calendar_title)) },
                 )
                 NavigationBarItem(
