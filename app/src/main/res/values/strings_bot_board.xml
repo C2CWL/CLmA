@@ -1,0 +1,32 @@
+<!--
+  Adapted from OpenMausBot (https://github.com/milind-soni/OpenMausBot), src/locales/en.json, src/locales/zh.json.
+  Copyright 2026 Milind Soni and OpenMausBot contributors, Apache License 2.0
+  (third_party/openmausbot/LICENSE). Modified: ported to Kotlin and changed for CLmA.
+-->
+<resources>
+    <string name="bot_board_heading">Team task board</string>
+    <string name="bot_board_tab">Board</string>
+    <string name="bot_board_new">New task</string>
+    <string name="bot_board_all">All</string>
+    <string name="bot_board_todo">To do</string>
+    <string name="bot_board_in_progress">In progress</string>
+    <string name="bot_board_review">In review</string>
+    <string name="bot_board_done">Done</string>
+    <string name="bot_board_empty">No tasks to show</string>
+    <string name="bot_board_load_retry">Couldn’t load tasks. Retry</string>
+    <string name="bot_board_save_failed">Couldn’t save this change.</string>
+    <string name="bot_board_title">Title</string>
+    <string name="bot_board_description">Description</string>
+    <string name="bot_board_add">Add</string>
+    <string name="bot_board_cancel">Cancel</string>
+    <string name="bot_board_close">Close</string>
+    <string name="bot_board_row">%1$s · %2$s</string>
+    <string name="bot_board_status">Status: %1$s</string>
+    <string name="bot_board_owner">Owner: %1$s</string>
+    <string name="bot_board_created_by">Created by %1$s</string>
+    <string name="bot_board_unassigned">Unassigned</string>
+    <string name="bot_board_missing_bot">Unavailable Bot</string>
+    <string name="bot_board_user">User</string>
+    <string name="bot_board_comment">Comment</string>
+    <string name="bot_board_add_comment">Add comment</string>
+</resources>

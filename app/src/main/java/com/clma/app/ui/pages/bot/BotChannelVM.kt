@@ -7,7 +7,7 @@ import com.clma.app.data.botmode.botPreviewLine
 import com.clma.app.data.botmode.channelMessageText
 import com.clma.app.data.botmode.channelTargets
 import com.clma.app.data.botmode.hasPendingApproval
-import com.clma.app.data.botmode.latestTopLevelConversation
+import com.clma.app.data.botmode.channelConversationId
 import com.clma.app.data.botmode.withBotChannelRemoved
 import com.clma.app.data.datastore.BotChannel
 import com.clma.app.data.datastore.Settings
@@ -16,6 +16,7 @@ import com.clma.app.data.model.Assistant
 import com.clma.app.data.model.Conversation
 import com.clma.app.data.repository.ConversationRepository
 import com.clma.app.service.ChatService
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -74,7 +75,7 @@ class BotChannelVM(
             if (bots.isEmpty()) {
                 flowOf(emptyList())
             } else {
-                combine(bots.map { bot -> latestOf(bot.id).map { bot to it } }) { it.toList() }
+                combine(bots.map { bot -> channelTopic(bot.id).map { bot to it } }) { it.toList() }
             }
         }
         .let { latest ->
@@ -93,9 +94,9 @@ class BotChannelVM(
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    private fun latestOf(botId: Uuid): Flow<Conversation?> =
+    private fun channelTopic(botId: Uuid): Flow<Conversation?> =
         conversationRepo.getConversationsOfAssistant(botId)
-            .map { latestTopLevelConversation(it) }
+            .map { conversations -> conversations.find { it.id == channelConversationId(id, botId) } }
             .distinctUntilChanged { a, b -> a?.id == b?.id && a?.updateAt == b?.updateAt }
             .mapLatest { summary ->
                 summary?.let { runCatching { conversationRepo.getConversationById(it.id) }.getOrNull() ?: it }
@@ -114,8 +115,7 @@ class BotChannelVM(
     }
 
     /**
-     * Sends [text] to the targeted members, each into its own conversation, through the normal
-     * chat pipeline. The current assistant is restored afterwards so the bot list is unchanged.
+     * Sends [text] to each targeted member in its own topic for this channel.
      */
     fun send(text: String) = viewModelScope.launch {
         val s = settingsStore.settingsFlow.value
@@ -124,27 +124,34 @@ class BotChannelVM(
         val targets = targetsFor(text, bots)
         if (text.isBlank() || targets.isEmpty()) return@launch
         _sending.value = true
-        val previousAssistant = s.assistantId
         val names = bots.map { it.name }
         val message = channelMessageText(ch, names, text)
         val sent = mutableListOf<String>()
         val failed = mutableListOf<String>()
         try {
             targets.forEach { bot ->
-                val result = runCatching { chatService.sendToBotConversation(bot.id, message) }.getOrNull()
+                val result = try {
+                    chatService.sendToBotConversation(bot.id, message, channelConversationId(id, bot.id), ch.name)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    null
+                }
                 if (result != null) sent += bot.name else failed += bot.name
             }
         } finally {
-            settingsStore.update { cur -> if (cur.assistants.any { it.id == previousAssistant }) cur.copy(assistantId = previousAssistant) else cur }
             _sending.value = false
             _lastResult.value = BotChannelSendResult(sent, failed)
         }
     }
 
-    /** Opens a member's chat; the member becomes current first so a new chat binds to it. */
+    /** Open the same persisted topic that channel sends target. */
     fun openMember(row: BotChannelMemberRow, onReady: (Uuid) -> Unit) = viewModelScope.launch {
-        settingsStore.update { cur -> cur.copy(assistantId = row.bot.id) }
-        onReady(row.conversationId ?: Uuid.random())
+        val currentChannel = channel.value ?: return@launch
+        val topicId = chatService.openBotChannelTopic(
+            row.bot.id, channelConversationId(id, row.bot.id), currentChannel.name,
+        ) ?: return@launch
+        onReady(topicId)
     }
 
     fun save(next: BotChannel) = updateChannel { current ->

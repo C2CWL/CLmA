@@ -13,6 +13,13 @@ interface ScheduledJobRunDao {
     @Query("SELECT * FROM scheduled_job_runs WHERE jobId = :jobId ORDER BY startedAtMs DESC LIMIT :limit")
     suspend fun getRecent(jobId: String, limit: Int): List<ScheduledJobRunEntity>
 
+    @Query(
+        "SELECT * FROM scheduled_job_runs WHERE jobId = :jobId AND finishedAtMs >= :since AND finishedAtMs < :until " +
+            "AND outcome NOT IN ('awaiting_approval', 'waiting_quota') " +
+            "ORDER BY finishedAtMs DESC, startedAtMs DESC LIMIT 1"
+    )
+    suspend fun lastFinished(jobId: String, since: Long, until: Long): ScheduledJobRunEntity?
+
     @Query("SELECT * FROM scheduled_job_runs WHERE jobId = :jobId ORDER BY startedAtMs DESC LIMIT :limit")
     fun observeRecent(jobId: String, limit: Int): Flow<List<ScheduledJobRunEntity>>
 
