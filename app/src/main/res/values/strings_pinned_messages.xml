@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<resources>
+  <string name="bot_pinned_empty">No pinned messages</string>
+  <string name="bot_pinned_jump">Jump to pinned message</string>
+  <string name="bot_pinned_pin_message">Pin message</string>
+  <string name="bot_pinned_remove">Unpin</string>
+  <string name="bot_pinned_title">Pinned messages</string>
+  <string name="bot_pinned_unpin_message">Unpin message</string>
+</resources>

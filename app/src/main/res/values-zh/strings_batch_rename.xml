@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<resources>
+  <string name="bot_batch_local_model">请先设置端侧文本模型，再重命名对话。</string>
+  <string name="bot_batch_progress">正在重命名… %1$d/%2$d</string>
+  <string name="bot_batch_rename">按内容重命名</string>
+  <string name="bot_batch_result">已重命名：%1$d 个。失败：%2$d 个。</string>
+  <string name="bot_batch_select">选择对话</string>
+  <string name="bot_batch_select_all">全选</string>
+  <string name="bot_batch_selected">已选 %1$d 项</string>
+</resources>

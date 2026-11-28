@@ -12,7 +12,7 @@ import kotlin.uuid.Uuid
 class BotChatChrome(
     val topBar: @Composable () -> Unit,
     val onOpenConversation: (Uuid) -> Unit,
-    val pinnedMessageId: Uuid? = null,
+    val pinnedMessageIds: Set<Uuid> = emptySet(),
     val onTogglePin: ((Uuid) -> Unit)? = null,
     val replySuggestion: String? = null,
 )

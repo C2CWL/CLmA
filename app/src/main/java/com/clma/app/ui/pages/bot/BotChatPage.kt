@@ -131,11 +131,17 @@ fun BotChatPage(botId: Uuid, conversationId: Uuid, text: String? = null, files: 
     var storedPin by androidx.compose.runtime.key(botId, conversationId) {
         rememberSharedPreferenceString("bot_message_pin/$botId/$conversationId")
     }
-    val pinnedId = storedPin?.let { runCatching { Uuid.parse(it) }.getOrNull() }
-    val pinnedNode = remember(ownedBotChat, conversation.messageNodes, pinnedId) {
-        if (ownedBotChat && pinnedId != null) conversation.getMessageNodeByMessageId(pinnedId) else null
+    val pinnedIds = remember(storedPin) {
+        storedPin.orEmpty().split(',').mapNotNull { runCatching { Uuid.parse(it) }.getOrNull() }.toSet()
     }
-    val pinnedMessage = pinnedNode?.messages?.find { it.id == pinnedId }
+    val pinnedMessages = remember(ownedBotChat, conversation.messageNodes, pinnedIds) {
+        if (ownedBotChat && pinnedIds.isNotEmpty()) {
+            conversation.messageNodes.flatMap { node -> node.messages.filter { it.id in pinnedIds } }
+        } else emptyList()
+    }
+    fun unpin(id: Uuid) {
+        storedPin = (pinnedIds - id).joinToString(",").ifEmpty { null }
+    }
     fun jumpToNode(nodeId: Uuid) {
         val current = vm.conversation.value
         current.messageNodes.groupAutomaticCompactionMessages().displayIndexForNode(nodeId)?.let { index ->
@@ -146,12 +152,12 @@ fun BotChatPage(botId: Uuid, conversationId: Uuid, text: String? = null, files: 
     val unread = setting.displaySetting.botUnreadEntries.firstOrNull {
         it.conversationId == conversationId && it.assistantId == botId
     }
-    var contextNodeId by rememberSaveable(conversationId) { mutableStateOf<String?>(null) }
+    var contextNodeId by rememberSaveable(botId, conversationId) { mutableStateOf<String?>(null) }
     val hasMessages = conversation.messageNodes.isNotEmpty()
     LaunchedEffect(ownedBotChat, unread, hasMessages) {
         if (ownedBotChat && unread != null && hasMessages) {
             val messages = conversation.currentMessages
-            val boundary = unread.firstReplyId
+            val boundary = unread.firstReplyId?.takeIf { id -> messages.any { it.id == id } }
                 ?: messages.latestReplyBoundary()?.id
             val boundaryIndex = messages.indexOfFirst { it.id == boundary }
             val question = messages.questionBefore(boundaryIndex)
@@ -259,17 +265,17 @@ fun BotChatPage(botId: Uuid, conversationId: Uuid, text: String? = null, files: 
                     if (ownedBotChat) {
                         BotHistoryMenu(
                             nodes = conversation.messageNodes,
-                            pinnedMessage = pinnedMessage,
-                            onJumpToPin = {
-                                if (pinnedNode != null && pinnedMessage != null) {
-                                    if (pinnedNode.currentMessage.id != pinnedMessage.id) {
-                                        vm.selectMessageBranch(pinnedNode.id, pinnedNode.messages.indexOf(pinnedMessage))
-                                        vm.saveConversationAsync()
+                            pinnedMessages = pinnedMessages,
+                            onJumpToPin = { id ->
+                                vm.conversation.value.getMessageNodeByMessageId(id)?.let { node ->
+                                    if (node.currentMessage.id != id) {
+                                        vm.selectMessageBranch(node.id, node.messages.indexOfFirst { it.id == id })
                                     }
-                                    jumpToNode(pinnedNode.id)
+                                    jumpToNode(node.id)
                                 }
                             },
-                            onUnpin = { storedPin = null },
+                            onUnpin = ::unpin,
+                            onJumpToAttachment = ::jumpToNode,
                         )
                     }
                     IconButton(onClick = { nav.navigate(Screen.BotInfo(botId = bot.id.toString(), conversationId = conversation.id.toString())) }) {
@@ -327,9 +333,11 @@ fun BotChatPage(botId: Uuid, conversationId: Uuid, text: String? = null, files: 
         botChrome = BotChatChrome(
             topBar = topBar,
             onOpenConversation = openConversation,
-            pinnedMessageId = pinnedId,
+            pinnedMessageIds = pinnedIds,
             onTogglePin = if (ownedBotChat) {
-                { id -> storedPin = id.takeUnless { it == pinnedId }?.toString() }
+                { id ->
+                    if (id in pinnedIds) unpin(id) else storedPin = (pinnedIds + id).joinToString(",")
+                }
             } else null,
             replySuggestion = replySuggestion.takeIf { maySuggest },
         ),

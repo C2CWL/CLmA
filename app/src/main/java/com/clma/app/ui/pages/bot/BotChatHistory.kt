@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -27,6 +28,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -38,11 +40,13 @@ import com.clma.ai.ui.UIMessagePart
 import com.clma.app.R
 import com.clma.app.data.botmode.botChatText
 import com.clma.app.data.model.MessageNode
+import com.clma.app.ui.components.richtext.ZoomableAsyncImage
 import com.clma.app.utils.FileOpenUtil
 import com.composables.icons.lucide.EllipsisVertical
 import com.composables.icons.lucide.Lucide
+import kotlin.uuid.Uuid
 
-private data class HistoryAttachment(val url: String, val name: String?, val mime: String? = null)
+private data class HistoryAttachment(val url: String, val name: String?, val mime: String)
 
 private fun List<UIMessagePart>.historyAttachments(): Sequence<HistoryAttachment> = asSequence().flatMap { part ->
     when (part) {
@@ -53,7 +57,12 @@ private fun List<UIMessagePart>.historyAttachments(): Sequence<HistoryAttachment
         is UIMessagePart.Tool -> part.output.historyAttachments()
         else -> emptySequence()
     }
-}.filter { it.url.toUri().scheme in setOf("file", "content", "http", "https") }
+}.filter { file ->
+    val scheme = file.url.substringBefore(':')
+    scheme in setOf("file", "content", "http", "https") ||
+        (file.mime == "image/*" && file.url.startsWith("data:image/") &&
+            file.url.substringAfter(',', "").isNotBlank())
+}
 
 @Composable
 private fun messagePreview(message: UIMessage): String =
@@ -63,16 +72,17 @@ private fun messagePreview(message: UIMessage): String =
         ) {
             stringResource(R.string.bot_unread_images)
         } else {
-            stringResource(R.string.bot_gallery_title)
+            stringResource(R.string.bot_unread_files)
         }
     }
 
 @Composable
 internal fun BotHistoryMenu(
     nodes: List<MessageNode>,
-    pinnedMessage: UIMessage?,
-    onJumpToPin: () -> Unit,
-    onUnpin: () -> Unit,
+    pinnedMessages: List<UIMessage>,
+    onJumpToPin: (Uuid) -> Unit,
+    onUnpin: (Uuid) -> Unit,
+    onJumpToAttachment: (Uuid) -> Unit,
 ) {
     var showMenu by remember { mutableStateOf(false) }
     var showGallery by remember { mutableStateOf(false) }
@@ -97,40 +107,45 @@ internal fun BotHistoryMenu(
             onDismissRequest = { showPin = false },
             title = { Text(stringResource(R.string.bot_pinned_title)) },
             text = {
-                Text(
-                    pinnedMessage?.let { messagePreview(it) } ?: stringResource(R.string.bot_pinned_empty),
-                    maxLines = 5,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                if (pinnedMessages.isEmpty()) {
+                    Text(stringResource(R.string.bot_pinned_empty))
+                } else {
+                    LazyColumn(Modifier.heightIn(max = 420.dp)) {
+                        items(pinnedMessages, key = { it.id.toString() }) { message ->
+                            Column {
+                                Text(messagePreview(message), maxLines = 3, overflow = TextOverflow.Ellipsis)
+                                Row {
+                                    TextButton(onClick = { showPin = false; onJumpToPin(message.id) }) {
+                                        Text(stringResource(R.string.bot_pinned_jump))
+                                    }
+                                    TextButton(onClick = { onUnpin(message.id) }) {
+                                        Text(stringResource(R.string.bot_pinned_remove))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             },
             confirmButton = {
-                if (pinnedMessage != null) {
-                    TextButton(onClick = { showPin = false; onJumpToPin() }) {
-                        Text(stringResource(R.string.bot_pinned_jump))
-                    }
-                } else {
-                    TextButton(onClick = { showPin = false }) { Text(stringResource(R.string.bot_history_close)) }
-                }
-            },
-            dismissButton = {
-                if (pinnedMessage != null) {
-                    TextButton(onClick = { showPin = false; onUnpin() }) {
-                        Text(stringResource(R.string.bot_pinned_remove))
-                    }
-                }
+                TextButton(onClick = { showPin = false }) { Text(stringResource(R.string.bot_history_close)) }
             },
         )
     }
-    if (showGallery) BotAttachmentGallery(nodes) { showGallery = false }
+    if (showGallery) BotAttachmentGallery(nodes, onJumpToAttachment) { showGallery = false }
 }
 
 @Composable
-private fun BotAttachmentGallery(nodes: List<MessageNode>, onDismiss: () -> Unit) {
+private fun BotAttachmentGallery(
+    nodes: List<MessageNode>,
+    onJumpToSource: (Uuid) -> Unit,
+    onDismiss: () -> Unit,
+) {
     val context = LocalContext.current
     val files = remember(nodes) {
         nodes.asReversed().asSequence().flatMap { node ->
-            node.currentMessage.parts.historyAttachments()
-        }.distinctBy { it.url }.toList()
+            node.currentMessage.parts.historyAttachments().map { node.id to it }
+        }.distinctBy { (_, file) -> file.url }.toList()
     }
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -140,19 +155,33 @@ private fun BotAttachmentGallery(nodes: List<MessageNode>, onDismiss: () -> Unit
                 Text(stringResource(R.string.bot_gallery_empty))
             } else {
                 LazyColumn(Modifier.heightIn(max = 420.dp)) {
-                    items(files, key = { it.url }) { file ->
-                        val uri = file.url.toUri()
+                    items(files.size) { index ->
+                        val (nodeId, file) = files[index]
+                        val image = file.mime.startsWith("image/")
                         val name = file.name?.takeIf { it.isNotBlank() }
-                            ?: uri.lastPathSegment ?: stringResource(R.string.bot_gallery_title)
-                        TextButton(
-                            modifier = Modifier.fillMaxWidth(),
-                            onClick = {
-                                FileOpenUtil.openUri(context, uri, file.mime).onFailure {
-                                    Toast.makeText(context, R.string.attachment_open_failed, Toast.LENGTH_SHORT).show()
+                            ?: file.url.takeUnless { it.startsWith("data:") }?.toUri()?.lastPathSegment
+                            ?: stringResource(if (image) R.string.bot_unread_images else R.string.bot_unread_files)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(Modifier.weight(1f)) {
+                                if (image) {
+                                    ZoomableAsyncImage(
+                                        model = file.url,
+                                        contentDescription = name,
+                                        modifier = Modifier.fillMaxWidth().height(72.dp),
+                                    )
+                                } else {
+                                    TextButton(onClick = {
+                                        FileOpenUtil.openUri(context, file.url.toUri(), file.mime).onFailure {
+                                            Toast.makeText(context, R.string.attachment_open_failed, Toast.LENGTH_SHORT).show()
+                                        }
+                                    }) {
+                                        Text(name, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                    }
                                 }
-                            },
-                        ) {
-                            Text(name, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            }
+                            TextButton(onClick = { onDismiss(); onJumpToSource(nodeId) }) {
+                                Text(stringResource(R.string.bot_unread_jump))
+                            }
                         }
                     }
                 }

@@ -756,7 +756,7 @@ internal fun ChatPageContent(
                         onRerunTool = { toolCallId ->
                             vm.rerunTool(toolCallId)
                         },
-                        pinnedMessageId = botChrome?.pinnedMessageId,
+                        pinnedMessageIds = botChrome?.pinnedMessageIds.orEmpty(),
                         onTogglePin = botChrome?.onTogglePin,
                         onToggleFavorite = { node ->
                             vm.toggleMessageFavorite(node)

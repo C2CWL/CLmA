@@ -1,0 +1,5 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<resources>
+  <string name="bot_gallery_empty">此对话暂无附件</string>
+  <string name="bot_gallery_title">附件</string>
+</resources>
