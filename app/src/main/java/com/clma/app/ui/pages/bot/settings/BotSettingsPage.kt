@@ -64,7 +64,8 @@ fun BotSettingsPage(vm: SettingVM = koinViewModel()) {
     val nav = LocalNavController.current
     val appSettings by vm.settings.collectAsStateWithLifecycle()
     val store = koinInject<BotModeSettingsStore>()
-    val settings by store.settings.collectAsStateWithLifecycle(initialValue = BotModeSettings())
+    val loadedSettings by store.settings.collectAsStateWithLifecycle(initialValue = null)
+    val settings = loadedSettings ?: BotModeSettings()
     val save = rememberBotSettingsSaver()
     fun update(transform: (BotModeSettings) -> BotModeSettings) = save { store.update(transform) }
 
@@ -84,6 +85,8 @@ fun BotSettingsPage(vm: SettingVM = koinViewModel()) {
             Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState()).padding(vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            BotSharedSettings(settings, ready = loadedSettings != null, onUpdate = ::update)
+            BotAnnouncementsSettings(settings, onUpdate = ::update)
             BotCollapsibleGroup(key = "defaults", title = stringResource(R.string.bot_settings_defaults)) {
                 BotChoiceRow(
                     stringResource(R.string.bot_settings_approval),

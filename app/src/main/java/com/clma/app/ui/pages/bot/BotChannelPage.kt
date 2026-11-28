@@ -209,6 +209,9 @@ fun BotChannelPage(channelId: String) {
             modifier = Modifier.fillMaxSize().padding(padding),
             contentPadding = PaddingValues(vertical = 8.dp),
         ) {
+            item(key = "bulletin") {
+                ChannelBulletin(ch.bulletin, onSave = { vm.saveBulletin(it) })
+            }
             if (ch.description.isNotBlank()) {
                 item(key = "desc") {
                     Text(

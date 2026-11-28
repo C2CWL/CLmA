@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Adapted from OpenMausBot (https://github.com/milind-soni/OpenMausBot), src/locales/en.json, src/locales/zh.json.
+     Copyright 2026 Milind Soni and OpenMausBot contributors, Apache License 2.0
+     (third_party/openmausbot/LICENSE). Modified: localized for CLmA. -->
+<resources>
+    <string name="bot_presets_roles">Starting role</string>
+    <string name="bot_presets_import">Import JSON</string>
+    <string name="bot_presets_importing">Importing…</string>
+    <string name="bot_presets_import_failed">Could not read this Bot preset file.</string>
+    <string name="bot_presets_export">Export role preset (JSON)</string>
+    <string name="bot_presets_export_done">Role preset saved.</string>
+    <string name="bot_presets_export_failed">Could not save the role preset.</string>
+    <string name="bot_presets_skills">Suggested skills: %1$s. You can enable installed skills in the Bot settings after creating it.</string>
+    <string name="bot_presets_assistant">General assistant</string>
+    <string name="bot_presets_assistant_prompt">Answer plainly and concisely. Lead with the answer, ask one clarifying question when needed, and flag anything you could not verify.</string>
+    <string name="bot_presets_research">Researcher</string>
+    <string name="bot_presets_research_prompt">Research the question and write a brief with sources. Distinguish verified findings from inferences, and include what remains uncertain.</string>
+    <string name="bot_presets_writer">Writer</string>
+    <string name="bot_presets_writer_prompt">Draft and revise posts, emails, and documents in the user’s voice. Preserve their intent and adapt the structure to the audience.</string>
+</resources>

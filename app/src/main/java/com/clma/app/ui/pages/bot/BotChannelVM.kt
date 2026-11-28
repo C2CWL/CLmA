@@ -9,7 +9,6 @@ import com.clma.app.data.botmode.channelTargets
 import com.clma.app.data.botmode.hasPendingApproval
 import com.clma.app.data.botmode.latestTopLevelConversation
 import com.clma.app.data.botmode.withBotChannelRemoved
-import com.clma.app.data.botmode.withBotChannelUpserted
 import com.clma.app.data.datastore.BotChannel
 import com.clma.app.data.datastore.Settings
 import com.clma.app.data.datastore.SettingsStore
@@ -148,8 +147,19 @@ class BotChannelVM(
         onReady(row.conversationId ?: Uuid.random())
     }
 
-    fun save(next: BotChannel) = viewModelScope.launch {
-        settingsStore.update { cur -> cur.copy(displaySetting = cur.displaySetting.withBotChannelUpserted(next)) }
+    fun save(next: BotChannel) = updateChannel { current ->
+        current.copy(name = next.name, description = next.description, memberAssistantIds = next.memberAssistantIds)
+    }
+
+    fun saveBulletin(text: String) = updateChannel { it.copy(bulletin = text.trim()) }
+
+    private fun updateChannel(transform: (BotChannel) -> BotChannel) = viewModelScope.launch {
+        settingsStore.update { current ->
+            val display = current.displaySetting
+            current.copy(displaySetting = display.copy(botChannels = display.botChannels.map {
+                if (it.id == id) transform(it) else it
+            }))
+        }
     }
 
     fun delete(onDone: () -> Unit) = viewModelScope.launch {

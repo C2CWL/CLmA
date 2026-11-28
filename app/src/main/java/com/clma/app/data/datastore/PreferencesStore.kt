@@ -1354,6 +1354,7 @@ data class BotChannel(
     val name: String = "",
     val description: String = "",
     val memberAssistantIds: List<Uuid> = emptyList(),
+    val bulletin: String = "",
 )
 
 @Serializable

@@ -39,7 +39,9 @@ import com.clma.app.R
 import com.clma.app.Screen
 import com.clma.app.ui.context.LocalNavController
 import com.clma.app.data.botmode.botAssistants
-import com.clma.app.data.botmode.withBotChannelUpserted
+import com.clma.app.data.botmode.BOT_ROLE_NAME_LIMIT
+import com.clma.app.data.botmode.BOT_ROLE_PROMPT_LIMIT
+import com.clma.app.ui.pages.bot.settings.BotHomeAnnouncement
 import com.composables.icons.lucide.Bot
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.Plus
@@ -120,6 +122,7 @@ fun BotHomePage(vm: BotHomeVM = koinViewModel()) {
     ) { padding ->
         when (tab) {
             BotHomeTab.BOTS -> BotListTab(
+                announcement = { BotHomeAnnouncement() },
                 items = items,
                 hiddenCount = settings.botsHiddenForManage().size,
                 onOpen = { item ->
@@ -165,8 +168,7 @@ fun BotHomePage(vm: BotHomeVM = koinViewModel()) {
             onDismiss = { showNewChannel = false },
             onSave = { channel ->
                 showNewChannel = false
-                vm.updateDisplaySetting(settings.displaySetting.withBotChannelUpserted(channel))
-                nav.navigate(Screen.BotChannel(channel.id.toString()))
+                vm.createChannel(channel) { nav.navigate(Screen.BotChannel(channel.id.toString())) }
             },
         )
     }
@@ -200,21 +202,36 @@ private fun NewBotDialog(
     var name by rememberSaveable { mutableStateOf("") }
     var prompt by rememberSaveable { mutableStateOf("") }
     var makeMain by rememberSaveable { mutableStateOf(false) }
+    var skillNames by rememberSaveable { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.bot_new_title)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                BotRolePresetPicker { preset ->
+                    name = preset.name
+                    prompt = preset.prompt
+                    skillNames = preset.skills.joinToString(", ")
+                }
+                if (skillNames.isNotEmpty()) {
+                    Text(
+                        stringResource(R.string.bot_presets_skills, skillNames),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
                 OutlinedTextField(
                     value = name,
-                    onValueChange = { name = it },
+                    onValueChange = { if (it.length <= BOT_ROLE_NAME_LIMIT) name = it },
                     label = { Text(stringResource(R.string.bot_new_name)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedTextField(
                     value = prompt,
-                    onValueChange = { prompt = it },
+                    onValueChange = { if (it.length <= BOT_ROLE_PROMPT_LIMIT) prompt = it },
                     label = { Text(stringResource(R.string.bot_new_prompt)) },
                     minLines = 3,
                     maxLines = 6,

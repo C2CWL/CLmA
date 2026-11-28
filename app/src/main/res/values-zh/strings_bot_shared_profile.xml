@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Adapted from OpenMausBot (https://github.com/milind-soni/OpenMausBot), src/locales/en.json, src/locales/zh.json.
+     Copyright 2026 Milind Soni and OpenMausBot contributors, Apache License 2.0
+     (third_party/openmausbot/LICENSE). Modified: localized for CLmA. -->
+<resources>
+    <string name="bot_shared_title">个人资料</string>
+    <string name="bot_shared_about">关于我</string>
+    <string name="bot_shared_about_hint">会提供给一对一聊天和频道聊天中的每个机器人。</string>
+    <string name="bot_shared_rules">所有机器人的规则</string>
+    <string name="bot_shared_rules_hint">每个机器人都会遵守。如有冲突，以机器人自己的指令为准。</string>
+</resources>

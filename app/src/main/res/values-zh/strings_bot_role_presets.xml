@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Adapted from OpenMausBot (https://github.com/milind-soni/OpenMausBot), src/locales/en.json, src/locales/zh.json.
+     Copyright 2026 Milind Soni and OpenMausBot contributors, Apache License 2.0
+     (third_party/openmausbot/LICENSE). Modified: localized for CLmA. -->
+<resources>
+    <string name="bot_presets_roles">起始角色</string>
+    <string name="bot_presets_import">导入 JSON</string>
+    <string name="bot_presets_importing">正在导入…</string>
+    <string name="bot_presets_import_failed">无法读取此机器人预设文件。</string>
+    <string name="bot_presets_export">导出角色预设（JSON）</string>
+    <string name="bot_presets_export_done">角色预设已保存。</string>
+    <string name="bot_presets_export_failed">无法保存角色预设。</string>
+    <string name="bot_presets_skills">建议使用的技能：%1$s。创建后可在机器人设置中启用已安装的技能。</string>
+    <string name="bot_presets_assistant">通用助手</string>
+    <string name="bot_presets_assistant_prompt">直接、简洁地回答。先给出答案，必要时问一个澄清问题，并说明哪些内容无法核实。</string>
+    <string name="bot_presets_research">研究员</string>
+    <string name="bot_presets_research_prompt">调查问题并撰写注明来源的简报。区分已核实的发现和推断，并说明仍有哪些不确定之处。</string>
+    <string name="bot_presets_writer">写作者</string>
+    <string name="bot_presets_writer_prompt">用用户的语气起草和修改帖子、邮件和文档。保留原意，并根据读者调整结构。</string>
+</resources>

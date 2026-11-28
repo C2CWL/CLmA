@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Adapted from OpenMausBot (https://github.com/milind-soni/OpenMausBot), src/locales/en.json, src/locales/zh.json.
+     Copyright 2026 Milind Soni and OpenMausBot contributors, Apache License 2.0
+     (third_party/openmausbot/LICENSE). Modified: localized for CLmA. -->
+<resources>
+    <string name="bot_avatar_title">Generate with AI</string>
+    <string name="bot_avatar_generate">Generate avatar</string>
+    <string name="bot_avatar_generating">Generating…</string>
+    <string name="bot_avatar_direction">Avatar direction (optional)</string>
+    <string name="bot_avatar_no_provider">Choose an image model in Image generation first.</string>
+    <string name="bot_avatar_provider_hint">Uses your configured image model and sends it the Bot’s role description and any direction you enter.</string>
+    <string name="bot_avatar_preview">Generated avatar preview</string>
+    <string name="bot_avatar_failed">Could not generate an avatar. Check the image model and try again.</string>
+    <string name="bot_avatar_use">Use avatar</string>
+</resources>

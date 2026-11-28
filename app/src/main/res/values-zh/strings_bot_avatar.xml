@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Adapted from OpenMausBot (https://github.com/milind-soni/OpenMausBot), src/locales/en.json, src/locales/zh.json.
+     Copyright 2026 Milind Soni and OpenMausBot contributors, Apache License 2.0
+     (third_party/openmausbot/LICENSE). Modified: localized for CLmA. -->
+<resources>
+    <string name="bot_avatar_title">用 AI 生成</string>
+    <string name="bot_avatar_generate">生成头像</string>
+    <string name="bot_avatar_generating">正在生成…</string>
+    <string name="bot_avatar_direction">头像生成方向（可选）</string>
+    <string name="bot_avatar_no_provider">请先在“图片生成”中选择模型。</string>
+    <string name="bot_avatar_provider_hint">使用“图片生成”中设置的模型，并将机器人的角色描述和你填写的生成方向提供给该模型。</string>
+    <string name="bot_avatar_preview">生成的头像预览</string>
+    <string name="bot_avatar_failed">无法生成头像。请检查图片模型后重试。</string>
+    <string name="bot_avatar_use">使用头像</string>
+</resources>

@@ -7,6 +7,7 @@ import com.clma.app.data.botmode.settings.canGrantForBot
 import com.clma.app.data.botmode.settings.LiveBotConversation
 import com.clma.app.data.botmode.settings.botAutoVerdict
 import com.clma.app.data.botmode.settings.botProfilePrompt
+import com.clma.app.data.botmode.settings.botSharedContextPrompt
 import com.clma.app.data.botmode.settings.notificationSettings
 import com.clma.app.data.botmode.settings.requiresBotToolConsent
 import com.clma.app.data.repository.memoryScopeId
@@ -2800,6 +2801,7 @@ class ChatService(
 
             val botId = assistant.id.toString().takeIf { assistant.isBot }
             val botProfiles = if (botId == null) emptyMap() else botProfileStore.profiles.first()
+            val sharedBotContext = botId?.let { botSharedContextPrompt(botModeSettingsStore.settings.first()) }
             val profileAddendum = botId?.let { id ->
                 botProfiles[id]?.let { profile ->
                     botProfilePrompt(
@@ -2830,8 +2832,8 @@ class ChatService(
                 // having to plumb a parameter all the way through sendMessage. Returns null
                 // for in-app conversations that didn't register one.
                 systemAddendum = buildEffectiveSystemAddendum(conversationId, surfaceAssistant).let { base ->
-                    if (profileAddendum == null) base
-                    else listOfNotNull(base, profileAddendum).joinToString("\n\n")
+                    if (sharedBotContext == null && profileAddendum == null) base
+                    else listOfNotNull(base, sharedBotContext, profileAddendum).joinToString("\n\n")
                 },
                 enforceBotApproval = botId != null,
                 isToolAutoApproved = { toolName ->

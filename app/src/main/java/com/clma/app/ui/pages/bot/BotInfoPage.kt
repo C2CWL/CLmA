@@ -160,6 +160,7 @@ fun BotInfoPage(botId: String, conversationId: String?) {
                     modifier = Modifier.size(88.dp),
                     onUpdate = { vm.setAvatar(it) },
                 )
+                BotAvatarGenerator(bot, name, vm::saveGeneratedAvatar)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         name,
@@ -459,6 +460,7 @@ fun BotInfoPage(botId: String, conversationId: String?) {
                     value = "",
                     onClick = { nav.navigate(Screen.SettingChatLayout) },
                 )
+                BotRolePresetExport(bot, name)
                 exportNote?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
                 InfoRow(
                     title = stringResource(R.string.bot_info_advanced),

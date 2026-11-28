@@ -1,5 +1,7 @@
 package com.clma.app.ui.pages.bot
 
+import android.graphics.Bitmap
+import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clma.app.data.botmode.isBotHidden
@@ -13,6 +15,8 @@ import com.clma.app.data.botmode.withMainBot
 import com.clma.app.data.datastore.Settings
 import com.clma.app.data.datastore.SettingsStore
 import com.clma.app.data.model.Assistant
+import com.clma.app.data.model.Avatar
+import com.clma.app.data.files.FileFolders
 import com.clma.app.data.model.Conversation
 import com.clma.app.data.model.isBot
 import com.clma.app.data.repository.ConversationRepository
@@ -26,7 +30,9 @@ import com.clma.app.data.botmode.routinesOfBot
 import com.clma.app.data.botmode.toJob
 import com.clma.app.data.db.entity.ScheduledJobEntity
 import com.clma.app.service.CronJobScheduler
+import java.io.File
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -79,6 +85,24 @@ class BotInfoVM(
     }
 
     fun setAvatar(avatar: com.clma.app.data.model.Avatar) = updateBot { it.copy(avatar = avatar) }
+
+    suspend fun saveGeneratedAvatar(image: Bitmap): Boolean = withContext(Dispatchers.IO + NonCancellable) {
+        if (settings.value.assistants.none { it.id == id && it.isBot }) return@withContext false
+        val dir = appContext.filesDir.resolve(FileFolders.IMAGES).apply { mkdirs() }
+        val file = File.createTempFile("bot-avatar-", ".png", dir)
+        val avatar = Avatar.Image(file.toUri().toString())
+        try {
+            file.outputStream().use { check(image.compress(Bitmap.CompressFormat.PNG, 100, it)) }
+            settingsStore.update { current ->
+                current.copy(assistants = current.assistants.map {
+                    if (it.id == id && it.isBot) it.copy(avatar = avatar) else it
+                })
+            }
+            settings.value.assistants.any { it.id == id && it.isBot && it.avatar == avatar }
+        } finally {
+            if (settings.value.assistants.none { it.avatar == avatar }) file.delete()
+        }
+    }
 
     fun setModel(modelId: Uuid) = updateBot { it.copy(chatModelId = modelId) }
 

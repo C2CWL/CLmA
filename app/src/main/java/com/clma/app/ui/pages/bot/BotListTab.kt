@@ -69,6 +69,7 @@ internal fun BotListTab(
     onDelete: (BotHomeItem) -> Unit,
     onManageHidden: () -> Unit,
     modifier: Modifier = Modifier,
+    announcement: @Composable () -> Unit = {},
 ) {
     var query by rememberSaveable { mutableStateOf("") }
     val defaultName = stringResource(R.string.assistant_page_default_assistant)
@@ -82,6 +83,7 @@ internal fun BotListTab(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 16.dp),
     ) {
+        item(key = "announcement") { announcement() }
         item(key = "search") {
             OutlinedTextField(
                 value = query,
