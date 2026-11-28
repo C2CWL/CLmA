@@ -1,0 +1,23 @@
+<resources>
+  <string name="bot_places_all">全部</string>
+  <string name="bot_places_menu">管理分组</string>
+  <string name="bot_places_add">新建分组</string>
+  <string name="bot_places_edit">编辑分组</string>
+  <string name="bot_places_remove">移除分组</string>
+  <string name="bot_places_remove_confirm">要移除「%1$s」吗？其中的机器人和频道将回到未分组的列表。</string>
+  <string name="bot_places_name">名称</string>
+  <string name="bot_places_duplicate">已有其他分组使用这个名称，请换一个。</string>
+  <string name="bot_places_name_rule">请输入 1 至 60 个字符，请勿使用换行符或控制字符。</string>
+  <string name="bot_places_work">工作</string>
+  <string name="bot_places_personal">个人</string>
+  <string name="bot_places_project">项目</string>
+  <string name="bot_places_color">颜色</string>
+  <string name="bot_places_color_default">无</string>
+  <string name="bot_places_color_blue">蓝色</string>
+  <string name="bot_places_color_green">绿色</string>
+  <string name="bot_places_color_purple">紫色</string>
+  <string name="bot_places_color_orange">橙色</string>
+  <string name="bot_places_save_failed">没有成功，请稍后再试。</string>
+  <string name="bot_places_create">创建</string>
+  <string name="bot_places_save">保存</string>
+</resources>

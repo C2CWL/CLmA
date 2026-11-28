@@ -15,7 +15,10 @@ fun DisplaySetting.withBotChannelUpserted(channel: BotChannel): DisplaySetting {
 }
 
 fun DisplaySetting.withBotChannelRemoved(channelId: Uuid): DisplaySetting =
-    copy(botChannels = botChannels.filterNot { it.id == channelId })
+    copy(
+        botChannels = botChannels.filterNot { it.id == channelId },
+        botPlaces = botPlaces.map { it.copy(channelIds = it.channelIds - channelId) },
+    )
 
 fun BotChannel.memberAssistants(assistants: List<Assistant>): List<Assistant> {
     val byId = assistants.associateBy { it.id }

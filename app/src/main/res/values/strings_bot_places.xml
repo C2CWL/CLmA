@@ -1,0 +1,23 @@
+<resources>
+  <string name="bot_places_all">All</string>
+  <string name="bot_places_menu">Manage places</string>
+  <string name="bot_places_add">Add place</string>
+  <string name="bot_places_edit">Edit place</string>
+  <string name="bot_places_remove">Remove place</string>
+  <string name="bot_places_remove_confirm">Remove “%1$s”? Its bots and channels will return to the ungrouped library.</string>
+  <string name="bot_places_name">Name</string>
+  <string name="bot_places_duplicate">This name is already in use. Choose another.</string>
+  <string name="bot_places_name_rule">Enter 1–60 characters without line breaks or control characters.</string>
+  <string name="bot_places_work">Work</string>
+  <string name="bot_places_personal">Personal</string>
+  <string name="bot_places_project">Project</string>
+  <string name="bot_places_color">Color</string>
+  <string name="bot_places_color_default">None</string>
+  <string name="bot_places_color_blue">Blue</string>
+  <string name="bot_places_color_green">Green</string>
+  <string name="bot_places_color_purple">Purple</string>
+  <string name="bot_places_color_orange">Orange</string>
+  <string name="bot_places_save_failed">Couldn’t save. Try again.</string>
+  <string name="bot_places_create">Create</string>
+  <string name="bot_places_save">Save</string>
+</resources>
