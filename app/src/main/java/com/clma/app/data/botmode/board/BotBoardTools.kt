@@ -141,6 +141,7 @@ internal object BotBoardTools {
                     Action.UPDATE -> board.update(tasks, current, actor, status, optional("title"), optional("description"))
                     Action.COMMENT -> board.comment(current, actor, required("text"))
                     Action.ASSIGN -> board.assign(current, actor, required("bot_id"))
+                    Action.LIST, Action.GET, Action.ADD -> error("Action handled before task mutation")
                 }
             }
         }

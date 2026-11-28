@@ -572,4 +572,18 @@
   <string name="tool_display_desc_deliver_file">在聊天中附加可分享的文件，并可选导出到下载目录</string>
   <string name="tool_display_name_recognize_local_media">本地媒体识别</string>
   <string name="tool_display_desc_recognize_local_media">离线识别本地图片或视频稀疏关键帧，每次调用后释放模型</string>
+  <string name="tool_display_name_board_list">列出看板任务</string>
+  <string name="tool_display_desc_board_list">列出团队任务、Bot ID 和任务分配权限</string>
+  <string name="tool_display_name_board_get">查看看板任务</string>
+  <string name="tool_display_desc_board_get">查看任务详情和最近 20 条评论</string>
+  <string name="tool_display_name_board_add">创建看板任务</string>
+  <string name="tool_display_desc_board_add">在团队看板中创建待办任务</string>
+  <string name="tool_display_name_board_claim">认领看板任务</string>
+  <string name="tool_display_desc_board_claim">认领待办任务并将状态改为进行中</string>
+  <string name="tool_display_name_board_update">更新看板任务</string>
+  <string name="tool_display_desc_board_update">修改团队任务的状态、标题或说明</string>
+  <string name="tool_display_name_board_comment">评论看板任务</string>
+  <string name="tool_display_desc_board_comment">为团队任务添加评论</string>
+  <string name="tool_display_name_board_assign">分配看板任务</string>
+  <string name="tool_display_desc_board_assign">将团队任务分配给你负责协调的 Bot</string>
 </resources>
