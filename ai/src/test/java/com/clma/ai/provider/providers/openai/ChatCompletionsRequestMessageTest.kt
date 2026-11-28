@@ -51,6 +51,7 @@ class ChatCompletionsRequestMessageTest {
             Boolean::class.javaPrimitiveType,
             Boolean::class.javaPrimitiveType,
             Boolean::class.javaPrimitiveType,
+            Boolean::class.javaPrimitiveType,
             List::class.java
         )
         method.isAccessible = true
@@ -58,7 +59,8 @@ class ChatCompletionsRequestMessageTest {
             api,
             messages,
             includeHistoryReasoning,
-            false,
+            false, // openRouterCache
+            false, // rawAudioBase64
             includeOpenRouterReasoningDetails,
             supportInputModalities
         ) as JsonArray

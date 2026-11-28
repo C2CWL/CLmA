@@ -127,4 +127,25 @@ class OpenAIMultimodalPartsTest {
         val block = OpenAIMultimodalParts.videoContentPart(true, "file:///clip.mp4", encode = { null })
         assertEquals(OpenAIMultimodalParts.VIDEO_UNREADABLE_PLACEHOLDER, textOf(block))
     }
+    @Test
+    fun `responses video uses input_video with a flat data URL`() {
+        val part = OpenAIMultimodalParts.responseVideoContentPart("file:///sample.webm") { "YWJj" }
+        assertEquals("input_video", typeOf(part))
+        assertEquals("data:video/webm;base64,YWJj", part["video_url"]?.jsonPrimitive?.content)
+        val unavailable = OpenAIMultimodalParts.responseVideoContentPart("file:///sample.mp4") { null }
+        assertEquals("input_text", typeOf(unavailable))
+        assertEquals(OpenAIMultimodalParts.VIDEO_UNREADABLE_PLACEHOLDER, textOf(unavailable))
+    }
+
+    @Test
+    fun `OpenRouter audio uses raw base64 and responses reports failures as input text`() {
+        val part = OpenAIMultimodalParts.responseAudioContentPart("file:///speech.wav", rawBase64 = true) { "YWJj" }
+        assertEquals("input_audio", typeOf(part))
+        val audio = part["input_audio"]!!.jsonObject
+        assertEquals("YWJj", audio["data"]?.jsonPrimitive?.content)
+        assertEquals("wav", audio["format"]?.jsonPrimitive?.content)
+        val unavailable = OpenAIMultimodalParts.responseAudioContentPart("file:///speech.wav", rawBase64 = false) { null }
+        assertEquals("input_text", typeOf(unavailable))
+    }
+
 }

@@ -210,7 +210,7 @@ class PreSendContextGuardTest {
     }
 
     @Test
-    fun `a video over 20 MB in the message being sent is refused`() {
+    fun `a large video passes the pre-send guard for frame fallback`() {
         val messages = listOf(userWith(UIMessagePart.Video("file:///upload/clip.mp4")))
         val decision = PreSendContextGuard.decide(
             messages = messages,
@@ -219,7 +219,7 @@ class PreSendContextGuardTest {
             hardLimitTokens = null,
             fileSize = { 21L * mb },
         )
-        assertEquals(PreSendContextDecision.MediaTooLarge("clip.mp4", 21L * mb), decision)
+        assertEquals(PreSendContextDecision.Send, decision)
     }
 
     @Test

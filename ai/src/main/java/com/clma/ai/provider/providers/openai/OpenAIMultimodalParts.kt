@@ -61,11 +61,20 @@ object OpenAIMultimodalParts {
         "mov" to "video/quicktime",
         "mkv" to "video/x-matroska",
         "3gp" to "video/3gpp",
+        "mpeg" to "video/mpeg",
+        "mpg" to "video/mpeg",
+        "avi" to "video/x-msvideo",
+        "wmv" to "video/x-ms-wmv",
+        "flv" to "video/x-flv",
     )
 
     /** Lowercased extension of [url] with query/fragment stripped; "" when there is none. */
     fun extensionOf(url: String): String =
         url.substringBefore('?').substringBefore('#').substringAfterLast('.', "").lowercase()
+
+    fun videoMimeType(url: String): String? = VIDEO_MIME[extensionOf(url)]
+
+    fun audioMimeType(url: String): String = AUDIO_MIME.getValue(audioFormatOf(url))
 
     /**
      * `input_audio.format` — the container's own extension, or [DEFAULT_AUDIO_FORMAT] when it is
@@ -84,6 +93,7 @@ object OpenAIMultimodalParts {
     fun audioContentPart(
         supportsAudioInput: Boolean,
         url: String,
+        rawBase64: Boolean = false,
         encode: () -> String?,
     ): JsonObject {
         if (!supportsAudioInput) return textPart(AUDIO_UNSUPPORTED_PLACEHOLDER)
@@ -92,7 +102,7 @@ object OpenAIMultimodalParts {
         return buildJsonObject {
             put("type", "input_audio")
             put("input_audio", buildJsonObject {
-                put("data", dataUrl(AUDIO_MIME[format] ?: "audio/$format", raw))
+                put("data", if (rawBase64) raw else dataUrl(audioMimeType(url), raw))
                 put("format", format)
             })
         }
@@ -109,12 +119,31 @@ object OpenAIMultimodalParts {
     ): JsonObject {
         if (!supportsVideoInput) return textPart(VIDEO_UNSUPPORTED_PLACEHOLDER)
         val raw = encode() ?: return textPart(VIDEO_UNREADABLE_PLACEHOLDER)
-        val mime = VIDEO_MIME[extensionOf(url)] ?: "video/mp4"
+        val mime = videoMimeType(url) ?: "video/mp4"
         return buildJsonObject {
             put("type", "video_url")
             put("video_url", buildJsonObject {
                 put("url", dataUrl(mime, raw))
             })
+        }
+    }
+
+    fun responseAudioContentPart(url: String, rawBase64: Boolean, encode: () -> String?): JsonObject {
+        val raw = encode() ?: return buildJsonObject {
+            put("type", "input_text")
+            put("text", AUDIO_UNREADABLE_PLACEHOLDER)
+        }
+        return audioContentPart(true, url, rawBase64) { raw }
+    }
+
+    fun responseVideoContentPart(url: String, encode: () -> String?): JsonObject = buildJsonObject {
+        val raw = encode()
+        if (raw == null) {
+            put("type", "input_text")
+            put("text", VIDEO_UNREADABLE_PLACEHOLDER)
+        } else {
+            put("type", "input_video")
+            put("video_url", dataUrl(videoMimeType(url) ?: "video/mp4", raw))
         }
     }
 

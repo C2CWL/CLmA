@@ -38,6 +38,8 @@ object ChatModeTools {
         "generate_image",
         "edit_image",
         "generate_video",
+        // A follow-up reader for videos supplied in the conversation
+        "inspect_video_frames",
         // Chat history search
         "recent_chats",
         "conversation_search",

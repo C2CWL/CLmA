@@ -40,6 +40,16 @@ class OpenRouterModelParseTest {
     }
 
     @Test
+    fun preserves_advertised_video_and_audio_input() {
+        val json = """
+            {"id":"x/video","name":"Video Model",
+             "architecture":{"input_modalities":["text","image","audio","video"]}}
+        """.trimIndent()
+        val model = openRouterModelFromJson(Json.parseToJsonElement(json).jsonObject)!!
+        assertEquals(listOf(Modality.TEXT, Modality.IMAGE, Modality.AUDIO, Modality.VIDEO), model.inputModalities)
+    }
+
+    @Test
     fun text_only_model_has_no_image_or_tool() {
         val json = """
             {"id":"x/text-only","name":"Text Only",
