@@ -582,4 +582,18 @@
   <string name="tool_display_desc_deliver_file">Attaches a shareable file to chat and optionally exports to Downloads</string>
   <string name="tool_display_name_recognize_local_media">Recognize local media</string>
   <string name="tool_display_desc_recognize_local_media">Recognizes local images or sparse video keyframes offline and releases the model after each call</string>
+  <string name="tool_display_name_board_list">List board tasks</string>
+  <string name="tool_display_desc_board_list">Lists team tasks, Bot IDs and assignment permissions</string>
+  <string name="tool_display_name_board_get">View board task</string>
+  <string name="tool_display_desc_board_get">Shows task details and up to 20 recent comments</string>
+  <string name="tool_display_name_board_add">Create board task</string>
+  <string name="tool_display_desc_board_add">Creates a to-do task on the team board</string>
+  <string name="tool_display_name_board_claim">Claim board task</string>
+  <string name="tool_display_desc_board_claim">Claims a to-do task and moves it to In progress</string>
+  <string name="tool_display_name_board_update">Update board task</string>
+  <string name="tool_display_desc_board_update">Changes the status, title or description of a team task</string>
+  <string name="tool_display_name_board_comment">Comment on board task</string>
+  <string name="tool_display_desc_board_comment">Adds a comment to a team task</string>
+  <string name="tool_display_name_board_assign">Assign board task</string>
+  <string name="tool_display_desc_board_assign">Assigns a team task to a Bot you coordinate</string>
 </resources>
