@@ -10,6 +10,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 
 private const val MARKET_PAGE_SIZE = 50
+private const val GITHUB_RELEASE_LOOKUPS = 8
 
 data class PluginMarketEntry(
     val key: String,
@@ -28,6 +29,10 @@ data class PluginMarketEntry(
     val packageKind: PluginPackageKind,
     val installability: PluginInstallability,
     val installCommand: String?,
+    val downloadUrl: String? = null,
+    val assetName: String? = null,
+    val assetSize: Long? = null,
+    val downloadSha256: String? = null,
 )
 
 data class PluginMarketSourceError(
@@ -57,7 +62,8 @@ class PluginMarketRepository(
             .mapNotNull { (_, result) -> result.getOrNull() }
             .flatten()
             .sortedWith(
-                compareByDescending<PluginMarketEntry> { it.verified }
+                compareByDescending<PluginMarketEntry> { it.installability == PluginInstallability.DIRECT_APK }
+                    .thenByDescending { it.verified }
                     .thenBy { it.sourceLabel }
                     .thenBy { it.name.lowercase() },
             )
@@ -219,8 +225,11 @@ class DshGoMarketSourceAdapter(
 }
 
 /**
- * Finds CLmA plugin repositories through the GitHub topic `clma-plugin`.
- * This source needs no CLmA-maintained registry; the topic is the registry.
+ * Finds CLmA plugin repositories through GitHub topic `clma-plugin`.
+ *
+ * For the first results the adapter also checks the latest GitHub release for
+ * a native APK asset. Only those entries become directly installable; all
+ * other repositories remain source-discovery entries.
  */
 class GitHubTopicMarketSourceAdapter(
     private val client: OkHttpClient,
@@ -252,6 +261,20 @@ class GitHubTopicMarketSourceAdapter(
         val login: String? = null,
     )
 
+    @Serializable
+    private data class GitHubRelease(
+        @SerialName("tag_name") val tagName: String? = null,
+        val assets: List<GitHubReleaseAsset> = emptyList(),
+    )
+
+    @Serializable
+    private data class GitHubReleaseAsset(
+        val name: String = "",
+        @SerialName("browser_download_url") val browserDownloadUrl: String = "",
+        val size: Long = 0L,
+        val digest: String? = null,
+    )
+
     override suspend fun load(query: String): List<PluginMarketEntry> {
         val term = buildString {
             append("topic:clma-plugin")
@@ -266,13 +289,7 @@ class GitHubTopicMarketSourceAdapter(
             .addQueryParameter("per_page", MARKET_PAGE_SIZE.toString())
             .addQueryParameter("sort", "updated")
             .build()
-        val request = Request.Builder()
-            .url(url)
-            .header("Accept", "application/vnd.github+json")
-            .header("User-Agent", "CLmA Plugin Market")
-            .get()
-            .build()
-        val envelope = client.newCall(request).execute().use { response ->
+        val envelope = client.newCall(githubRequest(url)).execute().use { response ->
             if (!response.isSuccessful) error("GitHub topic request failed: HTTP ${response.code}")
             val body = response.body?.string().orEmpty()
             runCatching { json.decodeFromString<GitHubSearchEnvelope>(body) }
@@ -281,32 +298,62 @@ class GitHubTopicMarketSourceAdapter(
         return envelope.items
             .asSequence()
             .filter { it.fullName.isNotBlank() }
-            .map { it.toEntry() }
+            .mapIndexed { index, repo ->
+                val release = if (index < GITHUB_RELEASE_LOOKUPS) runCatching { latestRelease(repo.fullName) }.getOrNull() else null
+                repo.toEntry(release)
+            }
             .distinctBy { it.key }
             .take(MARKET_PAGE_SIZE)
             .toList()
     }
 
-    private fun GitHubRepositoryItem.toEntry(): PluginMarketEntry {
+    private fun latestRelease(fullName: String): GitHubRelease? {
+        val url = HttpUrl.Builder()
+            .scheme("https")
+            .host("api.github.com")
+            .addPathSegments("repos/$fullName/releases/latest")
+            .build()
+        return client.newCall(githubRequest(url)).execute().use { response ->
+            if (!response.isSuccessful) return null
+            runCatching { json.decodeFromString<GitHubRelease>(response.body?.string().orEmpty()) }.getOrNull()
+        }
+    }
+
+    private fun githubRequest(url: HttpUrl): Request = Request.Builder()
+        .url(url)
+        .header("Accept", "application/vnd.github+json")
+        .header("User-Agent", "CLmA Plugin Market")
+        .get()
+        .build()
+
+    private fun GitHubRepositoryItem.toEntry(release: GitHubRelease?): PluginMarketEntry {
         val name = fullName.substringAfter('/').ifBlank { fullName }
+        val asset = release?.assets?.firstOrNull { it.name.endsWith(".apk", ignoreCase = true) }
+        val directlyInstallable = asset != null && asset.browserDownloadUrl.isNotBlank()
         return PluginMarketEntry(
             key = "github-topic:$fullName",
             sourceKey = "github-topic",
             sourceLabel = "GitHub topic:clma-plugin",
-            type = "clma-plugin-repository",
+            type = if (directlyInstallable) "clma-plugin-apk" else "clma-plugin-repository",
             id = fullName,
             name = name,
             description = description.orEmpty(),
-            version = null,
+            version = release?.tagName?.takeIf { it.isNotBlank() },
             verified = false,
             publisher = owner?.login?.takeIf { it.isNotBlank() }
                 ?: fullName.substringBefore('/').takeIf { it.isNotBlank() },
             repoUrl = htmlUrl.takeIf { it.isNotBlank() } ?: "https://github.com/$fullName",
             tags = topics,
             coordinate = fullName,
-            packageKind = PluginPackageKind.GITHUB_SOURCE,
-            installability = PluginInstallability.SOURCE_ONLY,
+            packageKind = if (directlyInstallable) PluginPackageKind.NATIVE_APK else PluginPackageKind.GITHUB_SOURCE,
+            installability = if (directlyInstallable) PluginInstallability.DIRECT_APK else PluginInstallability.SOURCE_ONLY,
             installCommand = null,
+            downloadUrl = asset?.browserDownloadUrl?.takeIf { it.isNotBlank() },
+            assetName = asset?.name?.takeIf { it.isNotBlank() },
+            assetSize = asset?.size?.takeIf { it > 0L },
+            downloadSha256 = asset?.digest
+                ?.removePrefix("sha256:")
+                ?.takeIf { it.matches(Regex("[A-Fa-f0-9]{64}")) },
         )
     }
 }

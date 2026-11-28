@@ -3510,4 +3510,10 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="setting_plugins_step_open_source">打开源码检查，再进行适配</string>
   <string name="setting_plugins_market_open_source">打开源码</string>
   <string name="setting_plugins_market_copy_command">复制适配命令</string>
+  <string name="setting_plugins_market_install">一键下载安装</string>
+  <string name="setting_plugins_market_install_title">下载并安装插件</string>
+  <string name="setting_plugins_market_install_confirm">从 %1$s（%2$s）下载并安装插件 APK？</string>
+  <string name="setting_plugins_market_install_warning">插件代码在宿主进程中运行，拥有宿主权限；请只安装可信来源。安装器会再次校验清单。</string>
+  <string name="setting_plugins_market_installing">安装中…</string>
+  <string name="setting_plugins_market_install_failed">安装失败：%1$s</string>
 </resources>

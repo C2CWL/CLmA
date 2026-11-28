@@ -3522,4 +3522,10 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="setting_plugins_step_open_source">Open source to review, then adapt it</string>
   <string name="setting_plugins_market_open_source">Open source</string>
   <string name="setting_plugins_market_copy_command">Copy adapter command</string>
+  <string name="setting_plugins_market_install">One-click download</string>
+  <string name="setting_plugins_market_install_title">Download and install plugin</string>
+  <string name="setting_plugins_market_install_confirm">Download and install plugin APK from %1$s (%2$s)?</string>
+  <string name="setting_plugins_market_install_warning">Plugin code runs in the host process with host permissions; install only trusted sources. The installer validates the manifest again.</string>
+  <string name="setting_plugins_market_installing">Installing…</string>
+  <string name="setting_plugins_market_install_failed">Install failed: %1$s</string>
 </resources>

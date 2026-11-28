@@ -43,3 +43,16 @@ Until that exists, discovery entries are labeled honestly and are never passed t
 - Publisher, repository, source label, and adapter decision are shown to the user.
 - Market discovery never downloads code automatically.
 - Native APK installation remains a separate explicit user action.
+
+## One-click install path
+
+GitHub topic results in the first release lookup window may expose a native APK asset. Those entries are marked `DIRECT_APK`; the settings page then offers a one-click install button.
+
+The flow is:
+
+1. Download the APK asset into app-private storage.
+2. Verify GitHub-provided SHA-256 digest when available, with a 50 MB size cap.
+3. Pass the temporary file to `PluginRepository.install`, which reads `clma-plugin.json`, validates id/version/entry, checks host version, copies the APK into the plugin directory, and loads it.
+4. Delete the temporary download.
+
+This flow still requires a confirmation dialog because plugins run inside the host process. DSH Go packages remain external-runtime entries and never enter this installer.

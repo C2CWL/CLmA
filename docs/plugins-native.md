@@ -81,7 +81,7 @@ Settings center → Plugins includes read-only source discovery backed by adapte
 
 Source adapters normalize external metadata into `PluginMarketEntry`. Package adapters then decide what the host can do with each entry:
 
-- native APK → direct install through the existing plugin loader;
+- native APK → direct install through the existing plugin loader; GitHub release APK assets get a one-click download/install action;
 - DSH Go package → external CLI command only;
 - GitHub repository → source discovery and manual adaptation;
 - unknown package → manual build required.

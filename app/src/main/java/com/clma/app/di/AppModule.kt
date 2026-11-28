@@ -260,6 +260,12 @@ val appModule = module {
             ),
         )
     }
+    single {
+        com.clma.app.data.plugins.PluginMarketDownloader(
+            context = get(),
+            client = get(),
+        )
+    }
 
     single {
         ChatToolFactory(

@@ -38,11 +38,13 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clma.app.R
 import com.clma.app.data.plugins.PluginInstallability
+import com.clma.app.data.plugins.PluginMarketDownloader
 import com.clma.app.data.plugins.PluginMarketEntry
 import com.clma.app.data.plugins.PluginMarketRepository
 import com.clma.app.data.plugins.PluginPackageAdapterRegistry
 import com.clma.app.data.plugins.PluginPackageNextStep
 import com.clma.app.data.plugins.PluginRepository
+import java.io.File
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
@@ -51,6 +53,7 @@ fun SettingPluginsPage() {
     val repository: PluginRepository = koinInject()
     val marketRepository: PluginMarketRepository = koinInject()
     val packageAdapters: PluginPackageAdapterRegistry = koinInject()
+    val marketDownloader: PluginMarketDownloader = koinInject()
     val state by repository.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -64,6 +67,9 @@ fun SettingPluginsPage() {
     var marketItems by remember { mutableStateOf<List<PluginMarketEntry>>(emptyList()) }
     var marketLoading by remember { mutableStateOf(true) }
     var marketError by remember { mutableStateOf<String?>(null) }
+    var pendingMarketInstall by remember { mutableStateOf<PluginMarketEntry?>(null) }
+    var marketInstallError by remember { mutableStateOf<String?>(null) }
+    var marketInstalling by remember { mutableStateOf(false) }
 
     fun loadMarket(query: String) {
         scope.launch {
@@ -249,6 +255,17 @@ fun SettingPluginsPage() {
                                 Row(
                                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 ) {
+                                    if (plan.canInstallInApp && entry.downloadUrl != null) {
+                                        Button(
+                                            onClick = {
+                                                pendingMarketInstall = entry
+                                                marketInstallError = null
+                                            },
+                                            enabled = !marketInstalling,
+                                        ) {
+                                            Text(stringResource(R.string.setting_plugins_market_install))
+                                        }
+                                    }
                                     entry.repoUrl?.let { url ->
                                         TextButton(
                                             onClick = {
@@ -426,6 +443,78 @@ fun SettingPluginsPage() {
         )
     }
 }
+
+    pendingMarketInstall?.let { entry ->
+        AlertDialog(
+            onDismissRequest = { if (!marketInstalling) pendingMarketInstall = null },
+            title = { Text(stringResource(R.string.setting_plugins_market_install_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        stringResource(
+                            R.string.setting_plugins_market_install_confirm,
+                            entry.name,
+                            entry.sourceLabel,
+                        ),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        stringResource(R.string.setting_plugins_market_install_warning),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    marketInstallError?.let { error ->
+                        Text(
+                            stringResource(R.string.setting_plugins_market_install_failed, error),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !marketInstalling,
+                    onClick = {
+                        val target = entry
+                        marketInstalling = true
+                        marketInstallError = null
+                        scope.launch {
+                            var downloaded: File? = null
+                            runCatching {
+                                downloaded = marketDownloader.download(target)
+                                repository.install(Uri.fromFile(downloaded!!))
+                            }.onSuccess {
+                                pendingMarketInstall = null
+                            }.onFailure { error ->
+                                marketInstallError = error.message ?: "Install failed"
+                            }
+                            downloaded?.delete()
+                            marketInstalling = false
+                        }
+                    },
+                ) {
+                    Text(
+                        stringResource(
+                            if (marketInstalling) {
+                                R.string.setting_plugins_market_installing
+                            } else {
+                                R.string.setting_plugins_market_install
+                            },
+                        ),
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    enabled = !marketInstalling,
+                    onClick = { pendingMarketInstall = null },
+                ) {
+                    Text(stringResource(android.R.string.cancel))
+                }
+            },
+        )
+    }
 
 @Composable
 private fun installabilityLabel(value: PluginInstallability): String = stringResource(
