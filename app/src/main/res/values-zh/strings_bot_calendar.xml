@@ -1,0 +1,34 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<resources>
+  <string name="bot_calendar_all_bots">所有机器人</string>
+  <string name="bot_calendar_cancelled">已停止</string>
+  <string name="bot_calendar_check_back">回访</string>
+  <string name="bot_calendar_check_error">无法加载回访</string>
+  <string name="bot_calendar_close">关闭</string>
+  <string name="bot_calendar_completed">已完成</string>
+  <string name="bot_calendar_day">日历</string>
+  <string name="bot_calendar_empty">暂无自动化</string>
+  <string name="bot_calendar_empty_day">当天没有自动化记录</string>
+  <string name="bot_calendar_entry">%1$s · %2$s</string>
+  <string name="bot_calendar_event">由事件触发</string>
+  <string name="bot_calendar_failed">未能完成</string>
+  <string name="bot_calendar_interrupted">运行中断</string>
+  <string name="bot_calendar_next">下一天</string>
+  <string name="bot_calendar_next_run">下次：%1$s</string>
+  <string name="bot_calendar_no_next">尚未计划下次运行</string>
+  <string name="bot_calendar_no_runs">尚未运行。</string>
+  <string name="bot_calendar_other_result">其他结果</string>
+  <string name="bot_calendar_overview">总览</string>
+  <string name="bot_calendar_pause">暂停</string>
+  <string name="bot_calendar_previous">上一天</string>
+  <string name="bot_calendar_resume">恢复</string>
+  <string name="bot_calendar_retry">额度恢复后重试</string>
+  <string name="bot_calendar_run_limit">显示最近 %1$d 次运行</string>
+  <string name="bot_calendar_running">正在运行</string>
+  <string name="bot_calendar_runs">最近的执行</string>
+  <string name="bot_calendar_scheduled">已计划</string>
+  <string name="bot_calendar_skipped">已跳过</string>
+  <string name="bot_calendar_timeout">运行超时</string>
+  <string name="bot_calendar_title">自动化</string>
+  <string name="bot_calendar_today">今天</string>
+</resources>

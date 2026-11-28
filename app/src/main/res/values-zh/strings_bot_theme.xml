@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<resources>
+  <string name="bot_theme_create">新建主题</string>
+  <string name="bot_theme_default">默认</string>
+  <string name="bot_theme_delete">删除「%1$s」？</string>
+  <string name="bot_theme_title">自定义主题</string>
+</resources>

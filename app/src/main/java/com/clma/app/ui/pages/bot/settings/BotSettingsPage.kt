@@ -113,6 +113,7 @@ fun BotSettingsPage(vm: SettingVM = koinViewModel()) {
                     update { it.copy(showRoutineReliability = enabled) }
                 }
             }
+            BotThemeSettings(settings, ::update)
             BotModeExtrasSection(
                 settings = appSettings,
                 displaySetting = appSettings.displaySetting,

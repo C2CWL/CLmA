@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<resources>
+  <string name="bot_theme_create">New theme</string>
+  <string name="bot_theme_default">Default</string>
+  <string name="bot_theme_delete">Delete “%1$s”?</string>
+  <string name="bot_theme_title">Custom themes</string>
+</resources>

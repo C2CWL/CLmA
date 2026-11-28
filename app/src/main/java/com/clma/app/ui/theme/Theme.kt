@@ -22,6 +22,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.clma.app.data.model.isBot
+import com.clma.app.data.botmode.settings.BotModeSettings
+import com.clma.app.data.botmode.settings.BotModeSettingsStore
+import org.koin.compose.koinInject
 import kotlinx.serialization.Serializable
 import com.clma.app.ui.hooks.rememberAmoledDarkMode
 import com.clma.app.ui.hooks.rememberCurrentColorMode
@@ -44,6 +49,7 @@ enum class ColorMode {
 @Composable
 fun RikkahubTheme(
     colorMode: ColorMode = rememberCurrentColorMode(),
+    useBotColors: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val settings by rememberUserSettingsState()
@@ -55,7 +61,17 @@ fun RikkahubTheme(
     }
     val amoledDarkMode by rememberAmoledDarkMode()
 
+    val botTheme = if (
+        useBotColors && settings.displaySetting.botModeEnabled &&
+        settings.assistants.any { it.id == settings.assistantId && it.isBot }
+    ) {
+        val store = koinInject<BotModeSettingsStore>()
+        val botSettings by store.settings.collectAsStateWithLifecycle(initialValue = BotModeSettings())
+        botSettings.customThemes.firstOrNull { it.id == botSettings.activeThemeId }
+    } else null
+
     val colorScheme = when {
+        botTheme != null -> remember(botTheme, darkTheme) { botTheme.generateColorScheme(darkTheme) }
         settings.dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)

@@ -22,6 +22,8 @@ data class BotModeSettings(
     val notifyRoutineResults: Boolean = true,
     val notifyApprovals: Boolean = true,
     val showRoutineReliability: Boolean = true,
+    val customThemes: List<com.clma.app.ui.theme.CustomTheme> = emptyList(),
+    val activeThemeId: String? = null,
     val allBotsPaused: Boolean = false,
 )
 

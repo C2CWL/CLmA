@@ -239,7 +239,7 @@ class RouteActivity : FragmentActivity() {
             handleIntent(intent)
         }
         setContent {
-            RikkahubTheme {
+            RikkahubTheme(useBotColors = true) {
                 @OptIn(coil3.annotation.ExperimentalCoilApi::class)
                 setSingletonImageLoaderFactory { context ->
                     ImageLoader.Builder(context)
@@ -678,6 +678,7 @@ class RouteActivity : FragmentActivity() {
                                 if (botModeEnabled && settings.isInLibrary(Uuid.parse(key.botId), bot = true)) com.clma.app.ui.pages.bot.BotInfoPage(
                                     botId = key.botId,
                                     conversationId = key.conversationId,
+                                    routineId = key.routineId,
                                 )
                             }
 
@@ -1067,7 +1068,11 @@ sealed interface Screen : NavKey {
 
     /** A bot's info page in Bot mode (model, prompt, memory, approvals, apps, displays...). */
     @Serializable
-    data class BotInfo(val botId: String, val conversationId: String? = null) : Screen
+    data class BotInfo(
+        val botId: String,
+        val conversationId: String? = null,
+        val routineId: String? = null,
+    ) : Screen
 
     /** One Bot-mode channel: its members and a message box that reaches them. */
     @Serializable

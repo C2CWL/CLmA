@@ -168,6 +168,7 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
             row(R.string.bot_settings_routine_results),
             row(R.string.bot_settings_approval_alerts),
             row(R.string.bot_settings_reliability),
+            row(R.string.bot_theme_title),
             row(R.string.bot_mode_channels_title, R.string.bot_mode_channels_desc),
             row(R.string.bot_mode_apps_title, R.string.bot_mode_apps_desc),
             row(R.string.bot_mode_team_title, R.string.bot_mode_team_desc),

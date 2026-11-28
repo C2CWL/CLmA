@@ -78,7 +78,7 @@ import kotlin.uuid.Uuid
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BotInfoPage(botId: String, conversationId: String?) {
+fun BotInfoPage(botId: String, conversationId: String?, routineId: String? = null) {
     val vm: BotInfoVM = koinViewModel(key = "bot-info-$botId", parameters = { parametersOf(botId) })
     val assistantVm: AssistantVM = koinViewModel()
     val nav = LocalNavController.current
@@ -266,6 +266,7 @@ fun BotInfoPage(botId: String, conversationId: String?) {
             BotRoutinesGroup(
                 routines = routines,
                 parkedRuns = parkedRuns,
+                initialRoutineId = routineId,
                 botId = bot.id,
                 timezone = settings.customTimezone,
                 models = settings.providers.filter { it.enabled }.flatMap { provider ->
