@@ -1,5 +1,7 @@
 package com.clma.app.data.ai.tools.local
 
+import com.clma.app.data.botmode.BotRoutineTrigger
+
 import com.clma.app.data.botmode.AssistantScope
 import kotlin.uuid.Uuid
 import kotlinx.serialization.json.JsonElement
@@ -295,7 +297,7 @@ fun listJobsTool(repo: ScheduledJobRepository, scope: () -> AssistantScope): Too
         val mode = (obj["mode"] as? JsonPrimitive)?.contentOrNull
         val enabled = (obj["enabled"] as? JsonPrimitive)?.booleanOrNull
         val library = scope()
-        val rows = repo.listFiltered(tag, mode, enabled).filter { library.allows(it.assistantId) }
+        val rows = repo.listFiltered(tag, mode, enabled).filter { it.scheduleType != BotRoutineTrigger.SCHEDULE_TYPE && library.allows(it.assistantId) }
         textPart(buildJsonObject {
             put("jobs", buildJsonArray { rows.forEach { add(jobToJson(it)) } })
         }.toString())
@@ -321,7 +323,7 @@ fun deleteJobTool(
     execute = { input ->
         val id = input.jsonObject["id"]?.jsonPrimitive?.contentOrNull
             ?: return@Tool textPart(errEnvelope("missing_id", "id is required"))
-        repo.getById(id)?.takeIf { scope().allows(it.assistantId) }
+        repo.getById(id)?.takeIf { it.scheduleType != BotRoutineTrigger.SCHEDULE_TYPE && scope().allows(it.assistantId) }
             ?: return@Tool textPart(errEnvelope("not_found", "no job with id '$id'"))
         scheduler.cancel(id)
         runRepo.deleteAllForJob(id)
@@ -342,7 +344,7 @@ fun pauseJobTool(repo: ScheduledJobRepository, scheduler: CronJobScheduler, scop
     execute = { input ->
         val id = input.jsonObject["id"]?.jsonPrimitive?.contentOrNull
             ?: return@Tool textPart(errEnvelope("missing_id", "id is required"))
-        val job = repo.getById(id)?.takeIf { scope().allows(it.assistantId) }
+        val job = repo.getById(id)?.takeIf { it.scheduleType != BotRoutineTrigger.SCHEDULE_TYPE && scope().allows(it.assistantId) }
             ?: return@Tool textPart(errEnvelope("not_found", "no job with id '$id'"))
         repo.update(job.copy(enabled = false))
         scheduler.cancel(id)
@@ -362,7 +364,7 @@ fun resumeJobTool(repo: ScheduledJobRepository, scheduler: CronJobScheduler, sco
     execute = { input ->
         val id = input.jsonObject["id"]?.jsonPrimitive?.contentOrNull
             ?: return@Tool textPart(errEnvelope("missing_id", "id is required"))
-        val job = repo.getById(id)?.takeIf { scope().allows(it.assistantId) }
+        val job = repo.getById(id)?.takeIf { it.scheduleType != BotRoutineTrigger.SCHEDULE_TYPE && scope().allows(it.assistantId) }
             ?: return@Tool textPart(errEnvelope("not_found", "no job with id '$id'"))
         val updated = job.copy(enabled = true)
         repo.update(updated)
@@ -387,7 +389,7 @@ fun triggerJobNowTool(
     execute = { input ->
         val id = input.jsonObject["id"]?.jsonPrimitive?.contentOrNull
             ?: return@Tool textPart(errEnvelope("missing_id", "id is required"))
-        val job = repo.getById(id)?.takeIf { scope().allows(it.assistantId) }
+        val job = repo.getById(id)?.takeIf { it.scheduleType != BotRoutineTrigger.SCHEDULE_TYPE && scope().allows(it.assistantId) }
             ?: return@Tool textPart(errEnvelope("not_found", "no job with id '$id'"))
         if (!job.enabled) {
             return@Tool textPart(errEnvelope("job_disabled",
@@ -421,7 +423,7 @@ fun getJobHistoryTool(
     execute = { input ->
         val id = input.jsonObject["id"]?.jsonPrimitive?.contentOrNull
             ?: return@Tool textPart(errEnvelope("missing_id", "id is required"))
-        repo.getById(id)?.takeIf { scope().allows(it.assistantId) }
+        repo.getById(id)?.takeIf { it.scheduleType != BotRoutineTrigger.SCHEDULE_TYPE && scope().allows(it.assistantId) }
             ?: return@Tool textPart(errEnvelope("not_found", "no job with id '$id'"))
         val limit = (input.jsonObject["limit"] as? JsonPrimitive)?.intOrNull?.coerceIn(1, 100) ?: 20
         val rows = runRepo.getRecent(id, limit)

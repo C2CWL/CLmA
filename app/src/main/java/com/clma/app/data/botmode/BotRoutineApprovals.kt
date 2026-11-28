@@ -40,6 +40,7 @@ data class ParkedRoutineRun(
     val expiresAtMs: Long,
     /** True while a resume worker is driving the turn again (the user answered every card). */
     val resuming: Boolean = false,
+    val fromBotCompletion: Boolean = false,
 )
 
 /** Pure rules for parked runs; kept apart from the store so they are unit-testable. */

@@ -62,6 +62,11 @@ class CronBootReceiver : BroadcastReceiver(), KoinComponent {
 
                 sweepStrandedRunRows(context)
                 applyCatchupAndSchedule(context)
+                if (action == Intent.ACTION_BOOT_COMPLETED || action == "android.intent.action.QUICKBOOT_POWERON") {
+                    runCatching {
+                        BotRoutineEvents.dispatch(context, com.clma.app.data.botmode.BotRoutineEventKind.BOOT)
+                    }
+                }
 
                 // Phase 12 — fire any boot-completed workflows. The dispatcher reads the
                 // boot trigger family which has been bound to current matching workflows
@@ -141,6 +146,7 @@ class CronBootReceiver : BroadcastReceiver(), KoinComponent {
         val defaultZone = customTz?.let { runCatching { java.time.ZoneId.of(it) }.getOrNull() } ?: java.time.ZoneId.systemDefault()
         val routineStates = runCatching { routineStore.read().routines }.getOrDefault(emptyMap())
         for (job in repo.getEnabled()) {
+            if (job.scheduleType == com.clma.app.data.botmode.BotRoutineTrigger.SCHEDULE_TYPE) continue
             // The cron expression on interval rows is a compatibility placeholder.
             if (job.mode == "llm" && job.assistantId in bots && routineStates[job.id]?.let {
                     it.options.interval != null || job.scheduleType == "once" && it.quota != null

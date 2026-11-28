@@ -45,6 +45,10 @@ import kotlinx.coroutines.launch
 import com.clma.app.data.botmode.settings.BotModeSettings
 import com.clma.app.data.botmode.settings.BotModeSettingsStore
 import com.clma.app.ui.components.ScheduledTaskReliabilityCard
+import com.clma.app.data.botmode.BotRoutineEventKind
+import com.clma.app.data.botmode.BotRoutineTrigger
+import com.clma.app.data.model.Assistant
+import com.clma.app.service.BotRoutineEvents
 import com.clma.app.data.botmode.BotRoutineRowSummary
 import com.clma.app.data.botmode.BotRoutineSchedule
 import com.clma.app.data.botmode.ParkedRoutineRun
@@ -52,7 +56,6 @@ import com.clma.app.data.botmode.botRoutineClock
 import com.clma.app.data.botmode.botRoutineFormFrom
 import com.clma.app.data.botmode.parseBotRoutineSchedule
 import com.clma.app.data.db.entity.ScheduledJobEntity
-import java.time.DayOfWeek
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.TextStyle
@@ -91,6 +94,17 @@ fun botRoutineScheduleText(schedule: BotRoutineSchedule): String {
     }
 }
 
+@Composable
+private fun botRoutineTimingText(job: ScheduledJobEntity, intervalMinutes: Int?): String {
+    val trigger = BotRoutineTrigger.from(job)
+    return when {
+        trigger != null -> stringResource(botRoutineTriggerLabel(trigger.kind))
+        job.scheduleType == BotRoutineTrigger.SCHEDULE_TYPE -> stringResource(R.string.bot_trigger_type)
+        intervalMinutes != null -> stringResource(R.string.bot_routine_sched_every_minutes, intervalMinutes)
+        else -> botRoutineScheduleText(parseBotRoutineSchedule(job))
+    }
+}
+
 /** The bot list's routine line: "自动任务 · 工作日 9:00" (+N when the bot has more). */
 @Composable
 fun botRoutineRowText(summary: BotRoutineRowSummary): String {
@@ -98,8 +112,7 @@ fun botRoutineRowText(summary: BotRoutineRowSummary): String {
     val snapshot by store.snapshots.collectAsStateWithLifecycle()
     LaunchedEffect(store) { store.read() }
     val interval = snapshot.routines[summary.next.id]?.options?.interval
-    val schedule = interval?.let { stringResource(R.string.bot_routine_sched_every_minutes, it.minutes) }
-        ?: botRoutineScheduleText(parseBotRoutineSchedule(summary.next))
+    val schedule = botRoutineTimingText(summary.next, interval?.minutes)
     return if (summary.others > 0) {
         stringResource(R.string.bot_routine_row_more, schedule, summary.others)
     } else {
@@ -115,6 +128,7 @@ fun botRoutineRowText(summary: BotRoutineRowSummary): String {
  */
 @Composable
 internal fun BotRoutinesGroup(
+    sourceBots: List<Assistant>,
     routines: List<ScheduledJobEntity>,
     parkedRuns: List<ParkedRoutineRun>,
     botId: Uuid,
@@ -127,6 +141,7 @@ internal fun BotRoutinesGroup(
     onOpenConversation: (Uuid) -> Unit,
 ) {
     val context = LocalContext.current
+    val withPermission = rememberBotRoutinePermission()
     val store = koinInject<RoutineStore>()
     val historyRepo = koinInject<ScheduledJobRunRepository>()
     val scope = rememberCoroutineScope()
@@ -203,7 +218,10 @@ internal fun BotRoutinesGroup(
                 job = job,
                 intervalMinutes = snapshot.routines[job.id]?.options?.interval?.minutes,
                 zone = zone,
-                onToggle = { onSetEnabled(job.id, it) },
+                onToggle = { enabled ->
+                    if (enabled) withPermission(BotRoutineTrigger.from(job)) { onSetEnabled(job.id, true) }
+                    else onSetEnabled(job.id, false)
+                },
                 onRunNow = {
                     onRunNow(job.id) { fired ->
                         Toast.makeText(
@@ -225,6 +243,8 @@ internal fun BotRoutinesGroup(
     if (creating) {
         BotRoutineEditorDialog(
             initial = BotRoutineForm(),
+            owner = botId,
+            sourceBots = sourceBots,
             isNew = true,
             initialOptions = RoutineOptions(),
             endAtMs = null,
@@ -233,7 +253,12 @@ internal fun BotRoutinesGroup(
             history = emptyList(),
             onOpenConversation = onOpenConversation,
             onDismiss = { creating = false },
-            onSave = { form -> creating = false; onSave(form, null) },
+            onSave = { edit ->
+                withPermission(edit.form.trigger) {
+                    creating = false
+                    onSave(edit, null)
+                }
+            },
         )
     }
     editing?.let { job ->
@@ -245,6 +270,8 @@ internal fun BotRoutinesGroup(
                 val form = botRoutineFormFrom(job, routineZone(job.timezone ?: timezone))
                 options.interval?.let { form.copy(kind = BotRoutineKind.EVERY_MINUTES, interval = it.minutes) } ?: form
             },
+            owner = botId,
+            sourceBots = sourceBots,
             isNew = false,
             initialOptions = options,
             endAtMs = job.endAtUnixMs,
@@ -253,7 +280,12 @@ internal fun BotRoutinesGroup(
             history = history,
             onOpenConversation = { editing = null; onOpenConversation(it) },
             onDismiss = { editing = null },
-            onSave = { form -> editing = null; onSave(form, job.id) },
+            onSave = { edit ->
+                withPermission(edit.form.trigger.takeIf { job.enabled }) {
+                    editing = null
+                    onSave(edit, job.id)
+                }
+            },
         )
     }
     confirmDelete?.let { job ->
@@ -283,6 +315,14 @@ private fun BotRoutineRow(
 ) {
     // Direct-mode jobs (fixed tool actions, made by the model) are listed but not editable here.
     val editable = job.mode == "llm"
+    val trigger = BotRoutineTrigger.from(job)
+    val context = LocalContext.current
+    var permissionGranted by remember(trigger) {
+        mutableStateOf(trigger == null || BotRoutineEvents.hasPermission(context, trigger.kind))
+    }
+    androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+        permissionGranted = trigger == null || BotRoutineEvents.hasPermission(context, trigger.kind)
+    }
     Surface(
         shape = RoundedCornerShape(12.dp),
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -293,8 +333,7 @@ private fun BotRoutineRow(
                 Column(Modifier.weight(1f)) {
                     Text(job.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(
-                        (intervalMinutes?.let { stringResource(R.string.bot_routine_sched_every_minutes, it) }
-                            ?: botRoutineScheduleText(parseBotRoutineSchedule(job))) + nextRunSuffix(job, zone),
+                        botRoutineTimingText(job, intervalMinutes) + nextRunSuffix(job, zone),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
@@ -303,6 +342,13 @@ private fun BotRoutineRow(
                 }
                 Switch(checked = job.enabled, onCheckedChange = onToggle)
             }
+            if (job.enabled && trigger != null && !permissionGranted) {
+                val withPermission = rememberBotRoutinePermission()
+                TextButton(onClick = { withPermission(trigger) { permissionGranted = true } }) {
+                    Text(stringResource(R.string.bot_trigger_permission_required))
+                }
+            }
+            if (trigger?.kind == BotRoutineEventKind.WEBHOOK) BotRoutineWebhookCopy(job.id, trigger)
             Row(horizontalArrangement = Arrangement.spacedBy(0.dp)) {
                 TextButton(onClick = onRunNow, enabled = job.enabled) { Text(stringResource(R.string.bot_routine_run_now)) }
                 if (editable) {

@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import com.clma.app.data.botmode.BotRoutineTrigger
 import com.clma.app.data.botmode.libraryScope
 import com.clma.app.data.botmode.activeLibraryIsBot
 import com.clma.app.data.datastore.SettingsStore
@@ -38,7 +39,7 @@ class ScheduledJobsViewModel(
         combine(repository.observeAll(), settingsStore.settingsFlow) { jobs, settings ->
             if (settings.activeLibraryIsBot()) return@combine emptyList()
             val scope = settings.libraryScope(bot = false)
-            jobs.filter { scope.allows(it.assistantId) }
+            jobs.filter { it.scheduleType != BotRoutineTrigger.SCHEDULE_TYPE && scope.allows(it.assistantId) }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun setEnabled(id: String, enabled: Boolean) {
@@ -74,7 +75,8 @@ class ScheduledJobsViewModel(
 
     suspend fun get(id: String): ScheduledJobEntity? = repository.getById(id)?.takeIf {
         val settings = settingsStore.settingsFlow.value
-        !settings.activeLibraryIsBot() && settings.libraryScope(bot = false).allows(it.assistantId)
+        it.scheduleType != BotRoutineTrigger.SCHEDULE_TYPE &&
+            !settings.activeLibraryIsBot() && settings.libraryScope(bot = false).allows(it.assistantId)
     }
 
     enum class RunNowOutcome { Fired, NotFound, Disabled }

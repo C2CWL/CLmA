@@ -264,6 +264,7 @@ fun BotInfoPage(botId: String, conversationId: String?) {
 
             // Routines (自动任务): this bot's scheduled jobs, on the existing scheduler.
             BotRoutinesGroup(
+                sourceBots = settings.assistants.filter { it.isBot && it.id != bot.id },
                 routines = routines,
                 parkedRuns = parkedRuns,
                 botId = bot.id,

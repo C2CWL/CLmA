@@ -25,10 +25,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.clma.app.R
+import com.clma.app.data.botmode.BotRoutineEventKind
 import com.clma.app.data.botmode.BotRoutineForm
 import com.clma.app.data.botmode.BotRoutineFormError
 import com.clma.app.data.botmode.BotRoutineKind
@@ -43,6 +45,8 @@ import com.clma.app.data.botmode.routine.RoutineInterval
 import com.clma.app.data.botmode.routine.RoutineOptions
 import com.clma.app.data.botmode.routine.RoutineOverlap
 import com.clma.app.data.db.entity.ScheduledJobRunEntity
+import com.clma.app.data.model.Assistant
+import com.clma.app.ui.pages.bot.BotRoutineTriggerFields
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -68,6 +72,8 @@ private fun parseClock(text: String): Pair<Int, Int>? {
 @Composable
 internal fun BotRoutineEditorDialog(
     initial: BotRoutineForm,
+    owner: Uuid,
+    sourceBots: List<Assistant>,
     isNew: Boolean,
     initialOptions: RoutineOptions,
     endAtMs: Long?,
@@ -103,8 +109,13 @@ internal fun BotRoutineEditorDialog(
 
     val clock = parseClock(clockText)
     val interval = intervalText.trim().toIntOrNull()
-    val usesClock = form.kind in setOf(BotRoutineKind.DAILY, BotRoutineKind.WEEKDAYS, BotRoutineKind.WEEKLY, BotRoutineKind.ONCE)
-    val usesInterval = form.kind == BotRoutineKind.EVERY_MINUTES || form.kind == BotRoutineKind.EVERY_HOURS
+    val trigger = form.trigger
+    val scheduled = trigger == null
+    val ownPackage = LocalContext.current.packageName
+    val triggerBad = trigger != null && (!trigger.validFor(owner.toString()) || trigger.source == ownPackage ||
+        (trigger.kind == BotRoutineEventKind.BOT_FINISHED && sourceBots.none { it.id.toString() == trigger.source }))
+    val usesClock = scheduled && form.kind in setOf(BotRoutineKind.DAILY, BotRoutineKind.WEEKDAYS, BotRoutineKind.WEEKLY, BotRoutineKind.ONCE)
+    val usesInterval = scheduled && form.kind in setOf(BotRoutineKind.EVERY_MINUTES, BotRoutineKind.EVERY_HOURS)
     val candidate = form.copy(
         hour = clock?.first ?: form.hour,
         minute = clock?.second ?: form.minute,
@@ -125,10 +136,10 @@ internal fun BotRoutineEditorDialog(
     val intervalBad = usesInterval && (start == null || end == null || start >= end ||
         intervalMinutes != null && end - start < intervalMinutes ||
         endDate.isNotBlank() && (until == null || until < System.currentTimeMillis()))
-    val onceBad = form.kind == BotRoutineKind.ONCE && onceDate.isNotBlank() &&
+    val onceBad = scheduled && form.kind == BotRoutineKind.ONCE && onceDate.isNotBlank() &&
         (once == null || once < System.currentTimeMillis())
-    val urlBad = options.changedUrl.isNotBlank() && options.changedUrl.trim().toHttpUrlOrNull() == null
-    val canSave = error == null && !clockBad && !intervalBad && !onceBad && !urlBad
+    val urlBad = scheduled && options.changedUrl.isNotBlank() && options.changedUrl.trim().toHttpUrlOrNull() == null
+    val canSave = error == null && !clockBad && !intervalBad && !onceBad && !urlBad && !triggerBad
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -156,145 +167,151 @@ internal fun BotRoutineEditorDialog(
                     isError = showErrors > 0 && error == BotRoutineFormError.PROMPT,
                     modifier = Modifier.fillMaxWidth(),
                 )
-                Text(stringResource(R.string.bot_routine_field_when), style = MaterialTheme.typography.labelLarge)
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    BotRoutineKind.entries.forEach { kind ->
-                        FilterChip(
-                            selected = form.kind == kind,
-                            onClick = {
-                                if (form.kind != kind && kind == BotRoutineKind.EVERY_HOURS && (interval == null || interval !in 1..23)) {
-                                    intervalText = "1"
-                                }
-                                form = form.copy(kind = kind)
+                BotRoutineTriggerFields(trigger, sourceBots) { form = form.copy(trigger = it) }
+                if (showErrors > 0 && triggerBad) {
+                    Text(stringResource(R.string.bot_trigger_invalid_source), color = MaterialTheme.colorScheme.error)
+                }
+                if (scheduled) {
+                    Text(stringResource(R.string.bot_routine_field_when), style = MaterialTheme.typography.labelLarge)
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        BotRoutineKind.entries.forEach { kind ->
+                            FilterChip(
+                                selected = form.kind == kind,
+                                onClick = {
+                                    if (form.kind != kind && kind == BotRoutineKind.EVERY_HOURS && (interval == null || interval !in 1..23)) {
+                                        intervalText = "1"
+                                    }
+                                    form = form.copy(kind = kind)
+                                },
+                                label = { Text(stringResource(kindLabel(kind))) },
+                            )
+                        }
+                    }
+                    if (form.kind == BotRoutineKind.WEEKLY) {
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            DayOfWeek.values().forEach { day ->
+                                FilterChip(
+                                    selected = day in form.days,
+                                    onClick = {
+                                        form = form.copy(days = if (day in form.days) form.days - day else form.days + day)
+                                    },
+                                    label = { Text(day.getDisplayName(TextStyle.SHORT, locale)) },
+                                )
+                            }
+                        }
+                        if (error == BotRoutineFormError.DAYS) {
+                            Text(
+                                stringResource(R.string.bot_routine_error_days),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                    }
+                    if (usesClock) {
+                        OutlinedTextField(
+                            value = clockText,
+                            onValueChange = { clockText = it.take(5) },
+                            label = { Text(stringResource(R.string.bot_routine_field_time)) },
+                            supportingText = {
+                                Text(
+                                    stringResource(
+                                        if (form.kind == BotRoutineKind.ONCE && onceDate.isBlank()) R.string.bot_routine_field_time_once_hint
+                                        else R.string.bot_routine_field_time_hint,
+                                    ),
+                                )
                             },
-                            label = { Text(stringResource(kindLabel(kind))) },
+                            singleLine = true,
+                            isError = clockBad,
+                            modifier = Modifier.width(200.dp),
                         )
                     }
-                }
-                if (form.kind == BotRoutineKind.WEEKLY) {
+                    if (form.kind == BotRoutineKind.ONCE) {
+                        RoutineField(onceDate, { onceDate = it }, R.string.routine2_once_date, showErrors > 0 && onceBad)
+                    }
+                    if (usesInterval) {
+                        OutlinedTextField(
+                            value = intervalText,
+                            onValueChange = { intervalText = it.filter(Char::isDigit).take(4) },
+                            label = {
+                                Text(
+                                    stringResource(
+                                        if (form.kind == BotRoutineKind.EVERY_HOURS) R.string.bot_routine_field_hours
+                                        else R.string.bot_routine_field_minutes,
+                                    ),
+                                )
+                            },
+                            supportingText = {
+                                Text(
+                                    stringResource(
+                                        if (form.kind == BotRoutineKind.EVERY_HOURS) R.string.bot_routine_field_hours_hint
+                                        else R.string.routine2_minutes_hint,
+                                    ),
+                                )
+                            },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            isError = error == BotRoutineFormError.INTERVAL,
+                            modifier = Modifier.width(200.dp),
+                        )
+                        Text(stringResource(R.string.routine2_interval_days), style = MaterialTheme.typography.labelLarge)
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            DayOfWeek.entries.forEach { day ->
+                                FilterChip(
+                                    selected = day.value in intervalDays,
+                                    onClick = {
+                                        intervalDays = if (day.value in intervalDays) intervalDays - day.value else intervalDays + day.value
+                                    },
+                                    label = { Text(day.getDisplayName(TextStyle.SHORT, locale)) },
+                                )
+                            }
+                        }
+                        RoutineField(windowStart, { windowStart = it }, R.string.routine2_window_start, showErrors > 0 && intervalBad)
+                        RoutineField(windowEnd, { windowEnd = it }, R.string.routine2_window_end, showErrors > 0 && intervalBad)
+                        RoutineField(endDate, { endDate = it }, R.string.routine2_end_date, showErrors > 0 && intervalBad)
+                        if (showErrors > 0 && intervalBad) {
+                            Text(stringResource(R.string.routine2_interval_error), color = MaterialTheme.colorScheme.error)
+                        }
+                    }
+                    if (form.kind == BotRoutineKind.CUSTOM) {
+                        OutlinedTextField(
+                            value = form.cron,
+                            onValueChange = { form = form.copy(cron = it.take(120)) },
+                            label = { Text(stringResource(R.string.bot_routine_field_cron)) },
+                            supportingText = { Text(stringResource(R.string.bot_routine_field_cron_hint)) },
+                            singleLine = true,
+                            isError = form.cron.isNotBlank() && error == BotRoutineFormError.CRON,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                    RoutineField(options.condition, { options = options.copy(condition = it.take(1000)) }, R.string.routine2_only_if)
+                    RoutineField(options.changedUrl, { options = options.copy(changedUrl = it.take(2000)) }, R.string.routine2_changed_url,
+                        showErrors > 0 && urlBad)
+                    Text(stringResource(R.string.routine2_overlap), style = MaterialTheme.typography.labelLarge)
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        DayOfWeek.values().forEach { day ->
+                        RoutineOverlap.entries.forEach { overlap ->
                             FilterChip(
-                                selected = day in form.days,
-                                onClick = {
-                                    form = form.copy(days = if (day in form.days) form.days - day else form.days + day)
-                                },
-                                label = { Text(day.getDisplayName(TextStyle.SHORT, locale)) },
+                                selected = options.overlap == overlap,
+                                onClick = { options = options.copy(overlap = overlap) },
+                                label = { Text(stringResource(if (overlap == RoutineOverlap.SKIP) R.string.routine2_skip else R.string.routine2_queue)) },
                             )
                         }
                     }
-                    if (error == BotRoutineFormError.DAYS) {
-                        Text(
-                            stringResource(R.string.bot_routine_error_days),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error,
-                        )
-                    }
-                }
-                if (usesClock) {
-                    OutlinedTextField(
-                        value = clockText,
-                        onValueChange = { clockText = it.take(5) },
-                        label = { Text(stringResource(R.string.bot_routine_field_time)) },
-                        supportingText = {
-                            Text(
-                                stringResource(
-                                    if (form.kind == BotRoutineKind.ONCE && onceDate.isBlank()) R.string.bot_routine_field_time_once_hint
-                                    else R.string.bot_routine_field_time_hint,
-                                ),
-                            )
-                        },
-                        singleLine = true,
-                        isError = clockBad,
-                        modifier = Modifier.width(200.dp),
-                    )
-                }
-                if (form.kind == BotRoutineKind.ONCE) {
-                    RoutineField(onceDate, { onceDate = it }, R.string.routine2_once_date, showErrors > 0 && onceBad)
-                }
-                if (usesInterval) {
-                    OutlinedTextField(
-                        value = intervalText,
-                        onValueChange = { intervalText = it.filter(Char::isDigit).take(4) },
-                        label = {
-                            Text(
-                                stringResource(
-                                    if (form.kind == BotRoutineKind.EVERY_HOURS) R.string.bot_routine_field_hours
-                                    else R.string.bot_routine_field_minutes,
-                                ),
-                            )
-                        },
-                        supportingText = {
-                            Text(
-                                stringResource(
-                                    if (form.kind == BotRoutineKind.EVERY_HOURS) R.string.bot_routine_field_hours_hint
-                                    else R.string.routine2_minutes_hint,
-                                ),
-                            )
-                        },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        isError = error == BotRoutineFormError.INTERVAL,
-                        modifier = Modifier.width(200.dp),
-                    )
-                    Text(stringResource(R.string.routine2_interval_days), style = MaterialTheme.typography.labelLarge)
+                    Text(stringResource(R.string.routine2_destination), style = MaterialTheme.typography.labelLarge)
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        DayOfWeek.entries.forEach { day ->
+                        listOf(false, true).forEach { same ->
                             FilterChip(
-                                selected = day.value in intervalDays,
-                                onClick = {
-                                    intervalDays = if (day.value in intervalDays) intervalDays - day.value else intervalDays + day.value
-                                },
-                                label = { Text(day.getDisplayName(TextStyle.SHORT, locale)) },
+                                selected = options.sameConversation == same,
+                                onClick = { options = options.copy(sameConversation = same) },
+                                label = { Text(stringResource(if (same) R.string.routine2_same_topic else R.string.routine2_new_topic)) },
                             )
                         }
                     }
-                    RoutineField(windowStart, { windowStart = it }, R.string.routine2_window_start, showErrors > 0 && intervalBad)
-                    RoutineField(windowEnd, { windowEnd = it }, R.string.routine2_window_end, showErrors > 0 && intervalBad)
-                    RoutineField(endDate, { endDate = it }, R.string.routine2_end_date, showErrors > 0 && intervalBad)
-                    if (showErrors > 0 && intervalBad) {
-                        Text(stringResource(R.string.routine2_interval_error), color = MaterialTheme.colorScheme.error)
-                    }
-                }
-                if (form.kind == BotRoutineKind.CUSTOM) {
-                    OutlinedTextField(
-                        value = form.cron,
-                        onValueChange = { form = form.copy(cron = it.take(120)) },
-                        label = { Text(stringResource(R.string.bot_routine_field_cron)) },
-                        supportingText = { Text(stringResource(R.string.bot_routine_field_cron_hint)) },
-                        singleLine = true,
-                        isError = form.cron.isNotBlank() && error == BotRoutineFormError.CRON,
-                        modifier = Modifier.fillMaxWidth(),
+                    Text(
+                        stringResource(R.string.routine2_schedule_note),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                RoutineField(options.condition, { options = options.copy(condition = it.take(1000)) }, R.string.routine2_only_if)
-                RoutineField(options.changedUrl, { options = options.copy(changedUrl = it.take(2000)) }, R.string.routine2_changed_url,
-                    showErrors > 0 && urlBad)
-                Text(stringResource(R.string.routine2_overlap), style = MaterialTheme.typography.labelLarge)
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    RoutineOverlap.entries.forEach { overlap ->
-                        FilterChip(
-                            selected = options.overlap == overlap,
-                            onClick = { options = options.copy(overlap = overlap) },
-                            label = { Text(stringResource(if (overlap == RoutineOverlap.SKIP) R.string.routine2_skip else R.string.routine2_queue)) },
-                        )
-                    }
-                }
-                Text(stringResource(R.string.routine2_destination), style = MaterialTheme.typography.labelLarge)
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    listOf(false, true).forEach { same ->
-                        FilterChip(
-                            selected = options.sameConversation == same,
-                            onClick = { options = options.copy(sameConversation = same) },
-                            label = { Text(stringResource(if (same) R.string.routine2_same_topic else R.string.routine2_new_topic)) },
-                        )
-                    }
-                }
-                Text(
-                    stringResource(R.string.routine2_schedule_note),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
                 if (!isNew) RoutineRunHistory(history, zone, onOpenConversation)
             }
         },
@@ -305,8 +322,11 @@ internal fun BotRoutineEditorDialog(
                         RoutineInterval(requireNotNull(intervalMinutes), 0, intervalDays, requireNotNull(start), requireNotNull(end))
                     } else null
                     onSave(RoutineEdit(
-                        candidate, options.copy(interval = intervalSpec, changedUrl = options.changedUrl.trim()),
-                        until.takeIf { usesInterval }, once.takeIf { form.kind == BotRoutineKind.ONCE },
+                        form = candidate,
+                        options = if (scheduled) options.copy(interval = intervalSpec, changedUrl = options.changedUrl.trim())
+                            else RoutineOptions(),
+                        endAtMs = until.takeIf { usesInterval },
+                        onceAtMs = once.takeIf { scheduled && form.kind == BotRoutineKind.ONCE },
                     ))
                 } else showErrors++
             }) { Text(stringResource(R.string.bot_mode_channels_save)) }

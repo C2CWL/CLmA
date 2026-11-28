@@ -61,6 +61,7 @@ interface PeerHost {
     suspend fun createConversation(botId: String, requester: String): String
     suspend fun turn(thread: PeerThread, task: PeerTask): String
     suspend fun stop(conversationId: String)
+    fun onCompleted(task: PeerTask, result: String) {}
 }
 
 /** A separate bounded lane; generic sub-agent recursion remains forbidden. */
@@ -202,8 +203,10 @@ class BotPeerRuntime(private val scope: CoroutineScope, private val store: PeerS
                     host.stop(thread.conversationId)
                 } finally {
                     active.remove(thread.conversationId)
-                    try { change(task.id, status, result, detail) }
-                    finally { lock.withLock { jobs.remove(task.id); settling.remove(task.id) } }
+                    try {
+                        change(task.id, status, result, detail)
+                        if (status == PeerStatus.COMPLETED) host.onCompleted(task, result)
+                    } finally { lock.withLock { jobs.remove(task.id); settling.remove(task.id) } }
                 }
             }
         }

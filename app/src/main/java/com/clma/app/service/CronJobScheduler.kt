@@ -41,6 +41,10 @@ class CronJobScheduler(
     private val wm get() = WorkManager.getInstance(context)
 
     suspend fun schedule(job: ScheduledJobEntity, fromWorker: Boolean = false) {
+        if (job.scheduleType == com.clma.app.data.botmode.BotRoutineTrigger.SCHEDULE_TYPE) {
+            cancel(job.id)
+            return
+        }
         val nowMs = System.currentTimeMillis()
         val isBot = isBotRoutine(job)
         val defaultZone = resolveDefaultZone()
@@ -55,11 +59,11 @@ class CronJobScheduler(
             interval.nextAt(maxOf(basis, job.startAtUnixMs ?: 0L), zone, job.endAtUnixMs)
         } else null
         if (nextRun == null) {
-            repo.update(terminalJobUpdate(job))
+            if (!repo.updateIfSameScheduleType(terminalJobUpdate(job))) return
             if (fromWorker || isBot) cancelExactAlarm(job.id) else cancel(job.id)
             return
         }
-        repo.update(job.copy(nextRunAtMs = nextRun))
+        if (!repo.updateIfSameScheduleType(job.copy(nextRunAtMs = nextRun))) return
         val delayMs = max(0L, nextRun - nowMs)
         val req = OneTimeWorkRequestBuilder<CronJobWorker>()
             .setInitialDelay(delayMs, TimeUnit.MILLISECONDS)

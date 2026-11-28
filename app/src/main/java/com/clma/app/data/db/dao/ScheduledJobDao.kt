@@ -5,6 +5,7 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 import com.clma.app.data.db.entity.ScheduledJobEntity
@@ -28,6 +29,14 @@ interface ScheduledJobDao {
 
     @Update
     suspend fun update(job: ScheduledJobEntity)
+
+    /** A stale timed worker must not overwrite a routine whose trigger type changed. */
+    @Transaction
+    suspend fun updateIfSameScheduleType(job: ScheduledJobEntity): Boolean {
+        if (getById(job.id)?.scheduleType != job.scheduleType) return false
+        update(job)
+        return true
+    }
 
     @Delete
     suspend fun delete(job: ScheduledJobEntity)
