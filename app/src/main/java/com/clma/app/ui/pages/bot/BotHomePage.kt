@@ -130,20 +130,22 @@ fun BotHomePage(vm: BotHomeVM = koinViewModel()) {
         },
     ) { padding ->
         Column(Modifier.padding(padding).fillMaxSize()) {
-            BotPlacesNavigation(
-                places = places,
-                selected = selectedPlace,
-                onSelect = { selectedPlaceId = it?.id?.toString() },
-                onAdd = {
-                    editingPlace = null
-                    editorId = Uuid.random()
-                },
-                onEdit = {
-                    editingPlace = it
-                    editorId = it.id
-                },
-                enabled = !settings.init,
-            )
+            if (tab != BotHomeTab.BOARD) {
+                BotPlacesNavigation(
+                    places = places,
+                    selected = selectedPlace,
+                    onSelect = { selectedPlaceId = it?.id?.toString() },
+                    onAdd = {
+                        editingPlace = null
+                        editorId = Uuid.random()
+                    },
+                    onEdit = {
+                        editingPlace = it
+                        editorId = it.id
+                    },
+                    enabled = !settings.init,
+                )
+            }
             when (tab) {
                 BotHomeTab.BOTS -> BotListTab(
                     items = selectedPlace?.let { place -> items.filter { it.bot.id in place.botIds } } ?: items,

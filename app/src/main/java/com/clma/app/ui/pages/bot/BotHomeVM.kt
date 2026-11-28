@@ -32,6 +32,7 @@ import com.clma.app.data.botmode.withMainBot
 import com.clma.app.data.model.Conversation
 import com.clma.app.data.repository.ConversationRepository
 import com.clma.app.service.ChatService
+import java.io.IOException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
@@ -117,16 +118,22 @@ class BotHomeVM(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun savePlace(initial: BotPlace?, draft: BotPlace, onSaved: (Boolean) -> Unit) = viewModelScope.launch {
-        settingsStore.update { s ->
-            val ds = s.displaySetting
-            val places = ds.botPlaces.saveBotPlace(
-                initial, draft,
-                s.botAssistants().map { it.id }.toSet(),
-                ds.botChannels.map { it.id }.toSet(),
-            )
-            s.copy(displaySetting = ds.copy(botPlaces = places))
+        var accepted = false
+        try {
+            settingsStore.update { s ->
+                val ds = s.displaySetting
+                val places = ds.botPlaces.saveBotPlace(
+                    initial, draft,
+                    s.botAssistants().map { it.id }.toSet(),
+                    ds.botChannels.map { it.id }.toSet(),
+                )
+                accepted = places !== ds.botPlaces
+                if (accepted) s.copy(displaySetting = ds.copy(botPlaces = places)) else s
+            }
+        } catch (_: IOException) {
+            accepted = false
         }
-        onSaved(settings.value.displaySetting.botPlaces.any { it.id == draft.id && it.name == draft.name.trim() })
+        onSaved(accepted)
     }
 
     fun removePlace(id: Uuid) = viewModelScope.launch {
