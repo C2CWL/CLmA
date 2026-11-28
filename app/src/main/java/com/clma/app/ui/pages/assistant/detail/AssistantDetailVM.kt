@@ -1,5 +1,7 @@
 package com.clma.app.ui.pages.assistant.detail
 
+import com.clma.app.data.repository.memoryScopeId
+
 import android.util.Log
 import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
@@ -74,18 +76,14 @@ class AssistantDetailVM(
 
     val memories = assistant
         .flatMapLatest { currentAssistant ->
-            if (currentAssistant.useGlobalMemory) {
-                memoryRepository.getGlobalMemoriesFlow()
-            } else {
-                memoryRepository.getMemoriesOfAssistantFlow(assistantId.toString())
-            }
+            memoryRepository.getMemoriesOfAssistantFlow(currentAssistant.memoryScopeId())
         }
         .stateIn(
             scope = viewModelScope, started = SharingStarted.Eagerly, initialValue = emptyList()
         )
 
     val memoryHistory = combine(assistant, memoryRepository.history.entries) { current, entries ->
-        val hotScope = if (current.useGlobalMemory) MemoryRepository.GLOBAL_MEMORY_ID else assistantId.toString()
+        val hotScope = current.memoryScopeId()
         val coldDir = com.clma.app.data.ai.tools.ColdMemoryRules.normalizeDir(current.coldMemoryDir ?: "memory")
         entries.filter {
             (it.category == "hot" && it.scope == hotScope) ||
@@ -259,11 +257,7 @@ class AssistantDetailVM(
 
     fun addMemory(memory: AssistantMemory) {
         viewModelScope.launch {
-            val memoryAssistantId = if (assistant.value.useGlobalMemory) {
-                MemoryRepository.GLOBAL_MEMORY_ID
-            } else {
-                assistantId.toString()
-            }
+            val memoryAssistantId = assistant.value.memoryScopeId()
             memoryRepository.addMemory(
                 assistantId = memoryAssistantId,
                 content = memory.content,

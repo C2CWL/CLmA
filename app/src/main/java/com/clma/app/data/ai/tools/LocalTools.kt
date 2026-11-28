@@ -1,5 +1,9 @@
 package com.clma.app.data.ai.tools
 
+import com.clma.app.data.botmode.activeLibraryIsBot
+import com.clma.app.data.botmode.libraryScope
+import com.clma.app.data.botmode.libraryScopeOf
+import com.clma.app.data.botmode.withAssistantInLibrary
 import android.content.Context
 import com.whl.quickjs.wrapper.QuickJSContext
 import com.whl.quickjs.wrapper.QuickJSObject
@@ -820,8 +824,19 @@ class LocalTools(
             tools.add(batteryTool(context))
         }
 
+        val callerId = invocationContext.callerAssistantId ?: settingsStore.settingsFlow.value
+            .let { it.withAssistantInLibrary(it.activeLibraryIsBot()).assistantId.toString() }
+        val scope = {
+            val settings = settingsStore.settingsFlow.value
+            val caller = runCatching { kotlin.uuid.Uuid.parse(callerId) }.getOrNull()
+            if (caller == null) settings.libraryScope(settings.activeLibraryIsBot())
+            else settings.libraryScopeOf(caller)
+        }
         if (options.contains(LocalToolOption.UsageLedger)) {
-            tools.add(com.clma.app.data.usage.usageExportTool(usageRecordDao))
+            tools.add(com.clma.app.data.usage.usageExportTool(usageRecordDao, scope) { raw ->
+                runCatching { kotlin.uuid.Uuid.parse(raw) }.getOrNull()
+                    ?.let { conversationRepo.getAssistantIdOfConversation(it)?.toString() }
+            })
             tools.add(com.clma.app.data.usage.usageGetPricesTool(settingsStore))
             tools.add(com.clma.app.data.usage.usageSetPricesTool(settingsStore, agentRunRepository))
         }
@@ -931,14 +946,14 @@ class LocalTools(
             tools.add(com.clma.app.data.ai.tools.local.virtualDisplayTextTool(context))
         }
         if (options.contains(LocalToolOption.CronJobs)) {
-            tools.add(com.clma.app.data.ai.tools.local.scheduleJobTool(scheduledJobRepository, cronJobScheduler, settingsStore,
+            tools.add(com.clma.app.data.ai.tools.local.scheduleJobTool(scheduledJobRepository, cronJobScheduler, callerId, scope,
                 knownToolNamesProvider = { tools.map { it.name } }))
-            tools.add(com.clma.app.data.ai.tools.local.listJobsTool(scheduledJobRepository))
-            tools.add(com.clma.app.data.ai.tools.local.deleteJobTool(scheduledJobRepository, scheduledJobRunRepository, cronJobScheduler))
-            tools.add(com.clma.app.data.ai.tools.local.pauseJobTool(scheduledJobRepository, cronJobScheduler))
-            tools.add(com.clma.app.data.ai.tools.local.resumeJobTool(scheduledJobRepository, cronJobScheduler))
-            tools.add(com.clma.app.data.ai.tools.local.triggerJobNowTool(scheduledJobRepository, cronJobScheduler))
-            tools.add(com.clma.app.data.ai.tools.local.getJobHistoryTool(scheduledJobRepository, scheduledJobRunRepository))
+            tools.add(com.clma.app.data.ai.tools.local.listJobsTool(scheduledJobRepository, scope))
+            tools.add(com.clma.app.data.ai.tools.local.deleteJobTool(scheduledJobRepository, scheduledJobRunRepository, cronJobScheduler, scope))
+            tools.add(com.clma.app.data.ai.tools.local.pauseJobTool(scheduledJobRepository, cronJobScheduler, scope))
+            tools.add(com.clma.app.data.ai.tools.local.resumeJobTool(scheduledJobRepository, cronJobScheduler, scope))
+            tools.add(com.clma.app.data.ai.tools.local.triggerJobNowTool(scheduledJobRepository, cronJobScheduler, scope))
+            tools.add(com.clma.app.data.ai.tools.local.getJobHistoryTool(scheduledJobRepository, scheduledJobRunRepository, scope))
         }
         if (options.contains(LocalToolOption.ScreenAutomation)) {
             tools.add(tapTool(invocationContext, interactiveToolStreamer))
@@ -1097,7 +1112,7 @@ class LocalTools(
             tools.add(com.clma.app.subagent.subagentCancelTool(subAgentRegistry, invocationContext))
         }
         if (options.contains(LocalToolOption.CostGuards)) {
-            tools.add(com.clma.app.costguards.checkTokenUsageTool(settingsStore, conversationRepo))
+            tools.add(com.clma.app.costguards.checkTokenUsageTool(settingsStore, conversationRepo, invocationContext.callerAssistantId))
         }
         if (options.contains(LocalToolOption.SkillImport)) {
             tools.add(com.clma.app.skills.skillInstallFromUrlTool(skillUrlImporter, settingsStore, skillManager))
@@ -1123,18 +1138,20 @@ class LocalTools(
             tools.add(com.clma.app.workflow.tools.workflowCreateTool(
                 workflowRepository,
                 knownToolNamesProvider = { tools.map { it.name } },
-                callerContext = invocationContext,
+                callerContext = invocationContext.copy(callerAssistantId = callerId),
+                scope = scope,
             ))
-            tools.add(com.clma.app.workflow.tools.workflowListTool(workflowRepository))
-            tools.add(com.clma.app.workflow.tools.workflowGetTool(workflowRepository))
+            tools.add(com.clma.app.workflow.tools.workflowListTool(workflowRepository, scope))
+            tools.add(com.clma.app.workflow.tools.workflowGetTool(workflowRepository, scope))
             tools.add(com.clma.app.workflow.tools.workflowUpdateTool(
                 workflowRepository,
                 knownToolNamesProvider = { tools.map { it.name } },
-                callerContext = invocationContext,
+                callerContext = invocationContext.copy(callerAssistantId = callerId),
+                scope = scope,
             ))
-            tools.add(com.clma.app.workflow.tools.workflowDeleteTool(workflowRepository))
-            tools.add(com.clma.app.workflow.tools.workflowSetEnabledTool(workflowRepository))
-            tools.add(com.clma.app.workflow.tools.workflowRunTool(workflowEngine, workflowRepository))
+            tools.add(com.clma.app.workflow.tools.workflowDeleteTool(workflowRepository, scope))
+            tools.add(com.clma.app.workflow.tools.workflowSetEnabledTool(workflowRepository, scope))
+            tools.add(com.clma.app.workflow.tools.workflowRunTool(workflowEngine, workflowRepository, scope))
         }
         if (options.contains(LocalToolOption.Browser)) {
             // Per-tool registration. The user can grant only the tools they trust — read

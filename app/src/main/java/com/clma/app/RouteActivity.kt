@@ -32,6 +32,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -47,7 +48,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavKey
 import androidx.lifecycle.lifecycleScope
-import android.widget.Toast
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import androidx.navigation3.runtime.entryProvider
@@ -172,6 +172,9 @@ import com.clma.app.utils.openUsageAccessSettings
 import com.clma.app.utils.resolveInitialChatStack
 import com.clma.app.ui.pages.bot.BOT_MODE_ROOT_PREF_KEY
 import com.clma.app.data.botmode.ensureBotLibrary
+import com.clma.app.data.botmode.isInLibrary
+import com.clma.app.data.botmode.isInActiveLibrary
+import com.clma.app.data.botmode.activeLibraryScope
 import com.clma.app.data.botmode.withAssistantInLibrary
 import com.clma.app.ui.pages.bot.BotHomePage
 import com.clma.app.ui.pages.bot.BotChatPage
@@ -313,38 +316,32 @@ class RouteActivity : FragmentActivity() {
     }
 
     /**
-     * "Open this conversation" (edge bar tap, notification, shortcut): Bot mode opens Bot
-     * conversations in the Bot chat page, classic opens classic ones in the classic page, and a
-     * conversation of the other library is refused with a hint — the mode is never switched
-     * implicitly (the explicit Bot-mode switch is untouched).
+     * Open a conversation link in the library of its stored assistant.
      */
     private fun openConversationLink(backStack: MutableList<NavKey>, conversationId: String) {
         lifecycleScope.launch {
+            val id = runCatching { Uuid.parse(conversationId) }.getOrNull() ?: return@launch
+            val owner = conversationRepo.getAssistantIdOfConversation(id)
             val settings = settingsStore.settingsFlow.first { !it.init }
-            val owner = runCatching { Uuid.parse(conversationId) }.getOrNull()
-                ?.let { conversationRepo.getAssistantIdOfConversation(it) }
-            val destination = conversationLinkTarget(
-                botRoot = backStack.firstOrNull() == Screen.BotHome,
-                conversationId = conversationId,
-                owner = owner,
-                settings = settings,
-            )
-            if (destination == null) {
-                Toast.makeText(
-                    this@RouteActivity,
-                    if (settings.displaySetting.botModeEnabled) {
-                        R.string.bot_library_link_classic_conversation
-                    } else {
-                        R.string.bot_library_link_bot_conversation
-                    },
-                    Toast.LENGTH_SHORT,
-                ).show()
-                return@launch
+            val destination = conversationLinkTarget(conversationId, owner, settings)
+            val botMode = destination is Screen.BotChat
+            if (botMode != settings.displaySetting.botModeEnabled) {
+                settingsStore.update { current ->
+                    current.copy(displaySetting = current.displaySetting.copy(botModeEnabled = botMode))
+                        .withAssistantInLibrary(botMode)
+                }
+            }
+            if (botMode != (backStack.firstOrNull() == Screen.BotHome)) {
+                backStack.clear()
+                if (botMode) backStack.add(Screen.BotHome)
             }
             // Replaces the stack — the same semantics as the drawer's clearAndNavigate — instead
             // of stacking another chat: repeated taps used to pile up chat entries.
             if (!isStackResetTo(backStack, destination)) {
                 resetStackTo(backStack, destination)
+                if (!botMode && readBooleanPreference(HOME_AS_START_PAGE_PREF_KEY, false)) {
+                    backStack.add(0, Screen.Home)
+                }
             }
         }
     }
@@ -432,7 +429,10 @@ class RouteActivity : FragmentActivity() {
                 }
                 withLibrary.withAssistantInLibrary(botModeEnabled)
             }
-            if (fix(settings) != settings) settingsStore.update(fix)
+            if (fix(settings) != settings) settingsStore.update { current ->
+                if (current.displaySetting.botModeEnabled == botModeEnabled) fix(current) else current
+            }
+            if (settingsStore.settingsFlow.value.displaySetting.botModeEnabled != botModeEnabled) return@LaunchedEffect
             reconcileRootStack(backStack, botModeEnabled, useHomeAsStartPage) {
                 Screen.Chat(
                     if (readBooleanPreference("create_new_conversation_on_start", true)) {
@@ -532,14 +532,36 @@ class RouteActivity : FragmentActivity() {
                                     fadeIn(Motion.enter(Motion.PAGE)) togetherWith fadeOut(Motion.exit(Motion.FAST))
                                 }
                             ) { key ->
-                                ChatPage(
-                                    id = Uuid.parse(key.id),
-                                    text = key.text,
-                                    files = key.files.map { it.toUri() },
-                                    nodeId = key.nodeId?.let { Uuid.parse(it) },
-                                    messageId = key.messageId?.let { Uuid.parse(it) },
-                                    isTemporary = key.isTemporary,
-                                )
+                                val target by produceState<Screen?>(null, key, settings.init, settings.activeLibraryScope()) {
+                                    value = null
+                                    if (!settings.init) {
+                                        val owner = conversationRepo.getAssistantIdOfConversation(Uuid.parse(key.id))
+                                        if (owner == null || settings.isInLibrary(owner, botModeEnabled)) {
+                                            value = if (botModeEnabled) {
+                                                conversationLinkTarget(key.id, owner, settings)
+                                            } else key
+                                        }
+                                    }
+                                }
+                                when (val route = target) {
+                                    is Screen.BotChat -> if (botModeEnabled) BotChatPage(
+                                        botId = Uuid.parse(route.botId),
+                                        conversationId = Uuid.parse(route.conversationId),
+                                        text = key.text,
+                                        files = key.files.map { it.toUri() },
+                                    )
+                                    is Screen.Chat -> if (!botModeEnabled) {
+                                        ChatPage(
+                                            id = Uuid.parse(key.id),
+                                            text = key.text,
+                                            files = key.files.map { it.toUri() },
+                                            nodeId = key.nodeId?.let { Uuid.parse(it) },
+                                            messageId = key.messageId?.let { Uuid.parse(it) },
+                                            isTemporary = key.isTemporary,
+                                        )
+                                    }
+                                    else -> Unit
+                                }
                             }
 
                             entry<Screen.ShareHandler> { key ->
@@ -562,43 +584,61 @@ class RouteActivity : FragmentActivity() {
                             }
 
                             entry<Screen.Assistant> {
-                                AssistantPage()
+                                if (!botModeEnabled) AssistantPage()
                             }
 
                             entry<Screen.AssistantDetail> { key ->
-                                AssistantDetailPage(key.id)
+                                if (!settings.init && settings.isInActiveLibrary(Uuid.parse(key.id))) {
+                                    AssistantDetailPage(key.id)
+                                }
                             }
 
                             entry<Screen.AssistantBasic> { key ->
-                                AssistantBasicPage(key.id)
+                                if (!settings.init && settings.isInActiveLibrary(Uuid.parse(key.id))) {
+                                    AssistantBasicPage(key.id)
+                                }
                             }
 
                             entry<Screen.AssistantPrompt> { key ->
-                                AssistantPromptPage(key.id)
+                                if (!settings.init && settings.isInActiveLibrary(Uuid.parse(key.id))) {
+                                    AssistantPromptPage(key.id)
+                                }
                             }
 
                             entry<Screen.AssistantMemory> { key ->
-                                AssistantMemoryPage(key.id)
+                                if (!settings.init && settings.isInActiveLibrary(Uuid.parse(key.id))) {
+                                    AssistantMemoryPage(key.id)
+                                }
                             }
 
                             entry<Screen.AssistantRequest> { key ->
-                                AssistantRequestPage(key.id)
+                                if (!settings.init && settings.isInActiveLibrary(Uuid.parse(key.id))) {
+                                    AssistantRequestPage(key.id)
+                                }
                             }
 
                             entry<Screen.AssistantMcp> { key ->
-                                AssistantMcpPage(key.id)
+                                if (!settings.init && settings.isInActiveLibrary(Uuid.parse(key.id))) {
+                                    AssistantMcpPage(key.id)
+                                }
                             }
 
                             entry<Screen.AssistantLocalTool> { key ->
-                                AssistantLocalToolPage(key.id)
+                                if (!settings.init && settings.isInActiveLibrary(Uuid.parse(key.id))) {
+                                    AssistantLocalToolPage(key.id)
+                                }
                             }
 
                             entry<Screen.AssistantSsh> { key ->
-                                AssistantSshPage(key.id)
+                                if (!settings.init && settings.isInActiveLibrary(Uuid.parse(key.id))) {
+                                    AssistantSshPage(key.id)
+                                }
                             }
 
                             entry<Screen.AssistantInjections> { key ->
-                                AssistantExtensionsPage(key.id)
+                                if (!settings.init && settings.isInActiveLibrary(Uuid.parse(key.id))) {
+                                    AssistantExtensionsPage(key.id)
+                                }
                             }
 
                             entry<Screen.Translator> {
@@ -610,23 +650,31 @@ class RouteActivity : FragmentActivity() {
                             }
 
                             entry<Screen.BotChat> { key ->
-                                BotChatPage(
-                                    botId = Uuid.parse(key.botId),
-                                    conversationId = Uuid.parse(key.conversationId),
-                                    text = key.text,
-                                    files = key.files.map { it.toUri() },
-                                )
+                                val permitted by produceState(false, key, settings.init, settings.activeLibraryScope()) {
+                                    value = false
+                                    if (settings.init) return@produceState
+                                    val owner = conversationRepo.getAssistantIdOfConversation(Uuid.parse(key.conversationId))
+                                    value = botModeEnabled && settings.isInLibrary(owner ?: Uuid.parse(key.botId), bot = true)
+                                }
+                                if (botModeEnabled && permitted) {
+                                    BotChatPage(
+                                        botId = Uuid.parse(key.botId),
+                                        conversationId = Uuid.parse(key.conversationId),
+                                        text = key.text,
+                                        files = key.files.map { it.toUri() },
+                                    )
+                                }
                             }
 
                             entry<Screen.BotInfo> { key ->
-                                com.clma.app.ui.pages.bot.BotInfoPage(
+                                if (botModeEnabled && settings.isInLibrary(Uuid.parse(key.botId), bot = true)) com.clma.app.ui.pages.bot.BotInfoPage(
                                     botId = key.botId,
                                     conversationId = key.conversationId,
                                 )
                             }
 
                             entry<Screen.BotChannel> { key ->
-                                com.clma.app.ui.pages.bot.BotChannelPage(channelId = key.channelId)
+                                if (botModeEnabled) com.clma.app.ui.pages.bot.BotChannelPage(channelId = key.channelId)
                             }
 
                             entry<Screen.Setting> {
@@ -772,7 +820,7 @@ class RouteActivity : FragmentActivity() {
                             }
 
                             entry<Screen.SettingScheduledJobs> {
-                                com.clma.app.ui.pages.setting.scheduledjobs.ScheduledJobsScreen()
+                                if (!botModeEnabled) com.clma.app.ui.pages.setting.scheduledjobs.ScheduledJobsScreen()
                             }
 
                             entry<Screen.SettingBrowser> {
@@ -792,7 +840,7 @@ class RouteActivity : FragmentActivity() {
                             }
 
                             entry<Screen.ScheduledJobDetail> { key ->
-                                com.clma.app.ui.pages.setting.scheduledjobs.ScheduledJobDetailScreen(jobId = key.id)
+                                if (!botModeEnabled) com.clma.app.ui.pages.setting.scheduledjobs.ScheduledJobDetailScreen(jobId = key.id)
                             }
 
                             entry<Screen.SettingDoctor> {

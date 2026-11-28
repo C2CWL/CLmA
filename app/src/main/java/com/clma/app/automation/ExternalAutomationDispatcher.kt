@@ -1,5 +1,7 @@
 package com.clma.app.automation
 
+import com.clma.app.data.botmode.activeLibraryIsBot
+import com.clma.app.data.botmode.withAssistantInLibrary
 import android.content.Context
 import android.content.Intent
 import android.util.Log
@@ -7,7 +9,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import com.clma.ai.ui.UIMessagePart
@@ -132,11 +133,13 @@ class ExternalAutomationDispatcher(
             recentRequestIds[dedupKey] = nowMs
         }
 
+        val settings = settingsStore.settingsFlow.first { !it.init }
+        val assistant = settings.withAssistantInLibrary(settings.activeLibraryIsBot()).getCurrentAssistant()
         sendCallback(returnAction, returnPackage, requestId, "accepted", null)
         log(callerPackage, "RUN_TASK", "accepted", requestId)
 
         appScope.launch(Dispatchers.IO) {
-            runHeadless(parsedPrompt, requestId, returnAction, returnPackage)
+            runHeadless(parsedPrompt, assistant.id, requestId, returnAction, returnPackage)
         }
 
         return "accepted"
@@ -144,16 +147,14 @@ class ExternalAutomationDispatcher(
 
     private suspend fun runHeadless(
         prompt: String,
+        assistantId: Uuid,
         requestId: String?,
         returnAction: String?,
         returnPackage: String?,
     ) {
-        val assistant = withContext(Dispatchers.IO) {
-            settingsStore.settingsFlow.first().getCurrentAssistant()
-        }
         val conv = Conversation.ofId(
             id = Uuid.random(),
-            assistantId = assistant.id,
+            assistantId = assistantId,
             newConversation = true,
         ).copy(title = "[External] ${prompt.take(40).ifBlank { "(empty)" }}")
         conversationRepo.insertConversation(conv)

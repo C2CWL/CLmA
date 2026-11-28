@@ -1,5 +1,6 @@
 package com.clma.app.data.db.dao
 
+import com.clma.app.data.botmode.AssistantScope
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
@@ -15,6 +16,9 @@ interface MessageNodeDAO {
     // 使用与 messages 相同的 JSON 编码，保守保留所有分支中出现的 URL。
     @Query("SELECT EXISTS(SELECT 1 FROM message_node WHERE instr(messages, :encodedFileUrl) > 0)")
     suspend fun hasFileReference(encodedFileUrl: String): Boolean
+
+    @Query("SELECT DISTINCT c.assistant_id FROM message_node mn JOIN conversationentity c ON c.id = mn.conversation_id WHERE instr(mn.messages, :encodedFileUrl) > 0")
+    suspend fun getFileReferenceAssistantIds(encodedFileUrl: String): List<String>
 
     @Query("SELECT * FROM message_node WHERE conversation_id = :conversationId ORDER BY node_index ASC")
     suspend fun getNodesOfConversation(conversationId: String): List<MessageNodeEntity>
@@ -102,11 +106,25 @@ private val TOKEN_STATS_SQL = SimpleSQLiteQuery(
 
 suspend fun MessageNodeDAO.getTokenStats(): MessageTokenStats = getTokenStatsRaw(TOKEN_STATS_SQL)
 
-private val MESSAGE_COUNT_SQL = SimpleSQLiteQuery(
-    "SELECT COUNT(*) FROM message_node mn WHERE json_array_length($VALID_MESSAGES_JSON) > 0"
-)
-
-suspend fun MessageNodeDAO.countVisibleMessages(): Int = countVisibleMessagesRaw(MESSAGE_COUNT_SQL)
+suspend fun MessageNodeDAO.countVisibleMessages(scope: AssistantScope = AssistantScope.ALL): Int {
+    if (scope.isEmpty) return 0
+    val predicates = mutableListOf<String>()
+    val args = mutableListOf<String>()
+    scope.include?.let {
+        predicates += "c.assistant_id IN (${it.joinToString(",") { "?" }})"
+        args.addAll(it)
+    }
+    if (scope.exclude.isNotEmpty()) {
+        predicates += "c.assistant_id NOT IN (${scope.exclude.joinToString(",") { "?" }})"
+        args.addAll(scope.exclude)
+    }
+    val filter = predicates.joinToString("") { " AND $it" }
+    return countVisibleMessagesRaw(SimpleSQLiteQuery(
+        "SELECT COUNT(*) FROM message_node mn JOIN conversationentity c ON c.id = mn.conversation_id " +
+            "WHERE json_array_length($VALID_MESSAGES_JSON) > 0$filter",
+        args.toTypedArray(),
+    ))
+}
 
 // 按用户消息的 createdAt 字段（LocalDateTime ISO 字符串前10位即日期）统计每日消息数
 // 同样只算选中分支：编辑一条用户消息会在同一个 node 里留下旧版本，那不是"这一天多了一条消息"
