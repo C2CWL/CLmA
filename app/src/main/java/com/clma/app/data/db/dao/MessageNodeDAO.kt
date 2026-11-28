@@ -23,6 +23,14 @@ interface MessageNodeDAO {
     @Query("SELECT * FROM message_node WHERE conversation_id = :conversationId ORDER BY node_index ASC")
     suspend fun getNodesOfConversation(conversationId: String): List<MessageNodeEntity>
 
+    @Query("""
+        SELECT mn.* FROM message_node mn
+        JOIN conversationentity c ON c.id = mn.conversation_id
+        WHERE mn.id = :nodeId AND c.id = :conversationId AND c.assistant_id = :assistantId
+          AND c.parent_conversation_id = '' AND c.is_delegated_conversation = 0
+    """)
+    suspend fun getRecallNode(nodeId: String, conversationId: String, assistantId: String): MessageNodeEntity?
+
     /**
      * Nodes holding a part whose `finishedAt` is still null, i.e. a stream that was cut off before
      * it could close the part (a killed process). Matches on the serialized marker so the scan

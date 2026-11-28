@@ -11,4 +11,12 @@ sealed class UIMessageAnnotation {
         val title: String,
         val url: String
     ) : UIMessageAnnotation()
+
+    @Serializable
+    @SerialName("recalled_thread")
+    data class RecalledThread(
+        val conversationId: String,
+        val title: String,
+        val date: String,
+    ) : UIMessageAnnotation()
 }

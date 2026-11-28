@@ -13,6 +13,7 @@ import com.clma.app.data.repository.memoryScopeId
 import com.clma.app.data.botmode.BotPeerRuntime
 import com.clma.app.data.botmode.memory.BotMemoryStore
 import com.clma.app.data.botmode.memory.BotMemoryTools
+import com.clma.app.data.botmode.memory.BotTurnRecall
 import com.clma.app.data.botmode.memory.buildPrompt
 import com.clma.app.data.botmode.memory.recordCompletedTurn
 import com.clma.app.data.botmode.BotPeerTools
@@ -2956,6 +2957,19 @@ class ChatService(
                 }
             }
 
+            val recallUser = messagesForGeneration.lastOrNull { it.role == MessageRole.USER && !it.isSynthetic }
+            val botRecall = if (botMemory != null && recallUser != null &&
+                conversation.assistantId == assistant.id && conversation.parentConversationId == null &&
+                !conversation.isDelegatedConversation &&
+                !com.clma.app.data.ai.tools.HeadlessConversations.isHeadless(conversationId) &&
+                !recallUser.toText().startsWith("[Channel: ")
+            ) {
+                BotTurnRecall.load(
+                    recallUser, botMemory, conversationRepo, assistant.id, conversationId,
+                    context.getString(R.string.bot_recall_untitled_thread),
+                )
+            } else null
+
             generationLoop.generateText(
                 settings = settings,
                 model = generationModel,
@@ -3084,13 +3098,14 @@ class ChatService(
                     addAll(inputTransformers)
                     add(templateTransformer)
                     add(workspaceReminderTransformer)
+                    botRecall?.let(::add)
                     // Before the budget reminder, so its estimate matches the masked request.
                     // Off is a no-op and does not copy the message list.
                     add(PrecisionObservationMaskTransformer)
                     // 放在最后: 估算的是已注入模板 / workspace 引导之后的最终请求上下文
                     add(ContextBudgetReminderTransformer)
                 },
-                outputTransformers = outputTransformers,
+                outputTransformers = if (botRecall == null) outputTransformers else outputTransformers + botRecall,
                 // P2-05 — a snapshot plus a per-step provider: `tools` is what the first request
                 // of this turn sends, `toolsProvider` is re-read before every later step so a
                 // `tool_open` result is honoured inside the SAME turn instead of costing the
