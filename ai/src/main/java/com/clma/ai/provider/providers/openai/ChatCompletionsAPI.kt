@@ -1,5 +1,6 @@
 package com.clma.ai.provider.providers.openai
 
+import com.clma.ai.util.quotaException
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -124,6 +125,7 @@ class ChatCompletionsAPI(
         val response = client.newCall(request).await()
         if (!response.isSuccessful) {
             val errorBody = response.body.string()
+            response.quotaException("Failed to get response: ${response.code} $errorBody", errorBody)?.let { throw it }
             // 413 is the same problem the local size checks model, seen from the server side:
             // compaction can still fix it, so keep it distinguishable from a generic error.
             if (response.code == 413) {
@@ -297,7 +299,8 @@ class ChatCompletionsAPI(
                         statusCode = response?.code,
                     )
                 } finally {
-                    close(exception)
+                    val quota = response?.quotaException(exception?.message.orEmpty(), bodyRaw)
+                    close(quota ?: exception)
                 }
             }
 

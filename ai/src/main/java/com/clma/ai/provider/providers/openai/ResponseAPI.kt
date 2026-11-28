@@ -1,5 +1,6 @@
 package com.clma.ai.provider.providers.openai
 
+import com.clma.ai.util.quotaException
 import android.util.Log
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -224,7 +225,9 @@ class ResponseAPI(
         // await() waits for the response headers; reading the body can still block.
         client.newCall(request).await().use { response ->
             if (!response.isSuccessful) {
-                throw Exception("Failed to get response: ${response.code} ${response.body.string()}")
+                val detail = response.body.string()
+                val message = "Failed to get response: ${response.code} $detail"
+                throw (response.quotaException(message, detail) ?: Exception(message))
             }
 
             val bodyStr = response.body.string()
@@ -365,6 +368,7 @@ class ResponseAPI(
                 } catch (e: Throwable) {
                     Log.w(TAG, "onFailure: failed to parse from $bodyRaw", e)
                 }
+                exception = response?.quotaException(exception.message.orEmpty(), bodyRaw) ?: exception
                 if (receivedMeaningfulOutput.get()) {
                     exception = ResponseStreamFailureException(
                         receivedMeaningfulOutput = true,
