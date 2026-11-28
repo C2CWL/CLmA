@@ -163,7 +163,11 @@ fun BotHomePage(vm: BotHomeVM = koinViewModel()) {
                     modifier = Modifier.weight(1f),
                 )
 
-<<<<<<< HEAD
+                BotHomeTab.BOARD -> BotBoardTab(
+                    bots = settings.botAssistants(),
+                    modifier = Modifier.weight(1f),
+                )
+
                 BotHomeTab.CHANNELS -> BotChannelsTab(
                     settings = settings,
                     channels = settings.displaySetting.botChannels.filter { selectedPlace == null || it.id in selectedPlace.channelIds },
@@ -171,18 +175,6 @@ fun BotHomePage(vm: BotHomeVM = koinViewModel()) {
                     modifier = Modifier.weight(1f),
                 )
             }
-=======
-            BotHomeTab.BOARD -> BotBoardTab(
-                bots = settings.botAssistants(),
-                modifier = Modifier.padding(padding),
-            )
-
-            BotHomeTab.CHANNELS -> BotChannelsTab(
-                settings = settings,
-                onOpen = { channel -> nav.navigate(Screen.BotChannel(channel.id.toString())) },
-                modifier = Modifier.padding(padding),
-            )
->>>>>>> origin/main
         }
     }
 
