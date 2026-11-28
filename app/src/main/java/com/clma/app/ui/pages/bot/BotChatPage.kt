@@ -45,6 +45,7 @@ import com.clma.app.Screen
 import com.clma.app.data.botmode.BotTaskStepStatus
 import com.clma.app.data.botmode.botTaskChipSummary
 import com.clma.app.data.botmode.buildBotTaskSteps
+import com.clma.app.data.botmode.isDailyBriefTopic
 import com.clma.app.data.datastore.getCurrentAssistant
 import com.clma.app.subagent.SubAgentRegistry
 import com.clma.app.ui.components.ui.AssistantAvatar
@@ -79,6 +80,10 @@ private const val TaskChipLingerMs = 2_500L
  */
 @Composable
 fun BotChatPage(botId: Uuid, conversationId: Uuid, text: String? = null, files: List<Uri> = emptyList()) {
+    if (isDailyBriefTopic(conversationId)) {
+        BotBriefConversationPage(botId, conversationId)
+        return
+    }
     val vm: ChatVM = koinViewModel(parameters = { parametersOf(conversationId.toString(), false) })
     val filesManager: FilesManager = koinInject()
     LaunchedEffect(files, text) {
