@@ -194,6 +194,7 @@ internal fun BotRoutinesGroup(
             },
         )
         if (routines.isEmpty()) {
+            BotMascot(BotMascotState.IDLE, mascot)
             Text(
                 stringResource(R.string.bot_routine_empty),
                 style = MaterialTheme.typography.bodySmall,

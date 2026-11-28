@@ -86,6 +86,10 @@ import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.launch
 import com.clma.ai.ui.UIMessage
 import com.clma.app.R
+import com.clma.app.data.model.BotMascotChoice
+import com.clma.app.ui.components.ui.GenerationPhase
+import com.clma.app.ui.pages.bot.BotMascot
+import com.clma.app.ui.pages.bot.BotMascotState
 import com.clma.app.data.datastore.ChatLayout
 import com.clma.app.data.datastore.Settings
 import com.clma.app.data.datastore.effectiveChatLayout
@@ -142,6 +146,7 @@ fun ChatList(
     turnFooters: Map<String, TurnFooter> = emptyMap(),
     /** 换会话时列表的显现透明度：落到底之前保持 0，避免露出半截列表再跳。 */
     revealAlpha: () -> Float = { 1f },
+    botMascot: BotMascotChoice = BotMascotChoice.NONE,
 ) {
     ToolInteractionDialogHost(
         conversation,
@@ -187,6 +192,7 @@ fun ChatList(
                     onClearTranslation = onClearTranslation,
                     turnFooters = turnFooters,
                     revealAlpha = revealAlpha,
+                    botMascot = botMascot,
                     animatedVisibilityScope = this@AnimatedContent,
                     onToolApproval = onToolApproval,
                     onToolAnswer = onToolAnswer,
@@ -227,6 +233,7 @@ private fun ChatListNormal(
     onConversationSystemPromptChange: ((String?) -> Unit)? = null,
     turnFooters: Map<String, TurnFooter> = emptyMap(),
     revealAlpha: () -> Float = { 1f },
+    botMascot: BotMascotChoice = BotMascotChoice.NONE,
 ) {
     val scope = rememberCoroutineScope()
     val loadingState by rememberUpdatedState(loading)
@@ -507,18 +514,39 @@ private fun ChatListNormal(
                             fadeOutSpec = Motion.exit(Motion.FAST),
                         )
                     ) {
-                        ChatLoadingIndicator(
-                            processingStatus = processingStatus,
-                            phase = generationPhase,
-                            photoShown = photoShown,
-                            hazeState = hazeState,
-                        )
+                        val indicator: @Composable () -> Unit = {
+                            ChatLoadingIndicator(
+                                processingStatus = processingStatus,
+                                phase = generationPhase,
+                                photoShown = photoShown,
+                                hazeState = hazeState,
+                            )
+                        }
+                        if (botMascot == BotMascotChoice.NONE) {
+                            indicator()
+                        } else {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                BotMascot(
+                                    if (generationPhase == GenerationPhase.THINKING) BotMascotState.THINKING
+                                    else BotMascotState.WORKING,
+                                    botMascot,
+                                    Modifier.padding(end = 4.dp).size(32.dp),
+                                    bob = true,
+                                )
+                                indicator()
+                            }
+                        }
                     }
                 }
             }
 
             // 为了能正确滚动到这
             item(ScrollBottomKey) {
+                if (!loading && conversation.messageNodes.isEmpty() && botMascot != BotMascotChoice.NONE) {
+                    Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                        BotMascot(BotMascotState.IDLE, botMascot, Modifier.size(96.dp))
+                    }
+                }
                 Spacer(
                     Modifier
                         .fillMaxWidth()

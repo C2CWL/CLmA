@@ -104,6 +104,7 @@ import me.rerere.hugeicons.stroke.Cancel01
 import me.rerere.hugeicons.stroke.LeftToRightListBullet
 import me.rerere.hugeicons.stroke.PlusSign
 import com.clma.app.R
+import com.clma.app.data.model.BotMascotChoice
 import com.clma.app.costguards.TokenBudgetTracker
 import com.clma.app.data.usage.TurnFooter
 import com.clma.app.data.datastore.ChatLayout
@@ -681,6 +682,7 @@ internal fun ChatPageContent(
                 Box(modifier = Modifier.fillMaxSize()) {
                     ChatList(
                         revealAlpha = { listReveal.value },
+                        botMascot = botChrome?.mascot ?: BotMascotChoice.NONE,
                         innerPadding = listInset,
                         conversation = conversation,
                         turnFooters = turnFooters,
