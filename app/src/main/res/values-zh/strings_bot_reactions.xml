@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<resources>
+  <string name="bot_reaction_celebrate">庆祝</string>
+  <string name="bot_reaction_dislike">点踩</string>
+  <string name="bot_reaction_laugh">大笑</string>
+  <string name="bot_reaction_like">点赞</string>
+  <string name="bot_reaction_looking">眼睛</string>
+  <string name="bot_reaction_love">爱心</string>
+  <string name="bot_reactions">表情回应</string>
+</resources>

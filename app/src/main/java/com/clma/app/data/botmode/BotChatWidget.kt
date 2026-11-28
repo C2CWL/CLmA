@@ -60,7 +60,10 @@ internal data class BotChatWidget(
 
     fun selection(buttonId: String?, date: String?): String? = when {
         buttonId != null && date == null -> buttons.find { it.id == buttonId }?.let { button ->
-            buildJsonObject { put("button_id", button.id); put("label", button.label) }.toString()
+            buildJsonObject {
+                put("button_id", button.id)
+                put("label", button.label)
+            }.toString()
         }
         buttonId == null && date != null && datePicker != null && widgetDate(date) != null ->
             buildJsonObject { put("date", date) }.toString()
@@ -88,7 +91,7 @@ internal fun decodeBotChatWidget(input: JsonElement): BotChatWidget? {
 
 internal fun UIMessagePart.Tool.botChatWidget(): BotChatWidget? {
     if (toolName != BOT_WIDGET_TOOL || input.length > MAX_WIDGET_LENGTH + 128 ||
-        (output.singleOrNull() as? UIMessagePart.Text)?.text != WIDGET_SHOWN
+        (output.firstOrNull() as? UIMessagePart.Text)?.text != WIDGET_SHOWN
     ) return null
     return decodeBotChatWidget(inputAsJsonObject())
 }

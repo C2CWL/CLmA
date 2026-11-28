@@ -681,6 +681,17 @@ internal fun ChatPageContent(
                 Box(modifier = Modifier.fillMaxSize()) {
                     ChatList(
                         revealAlpha = { listReveal.value },
+                        botMessageContent = if (botChrome != null) {
+                            { message ->
+                                BotChatMessageContent(
+                                    message = message,
+                                    conversation = conversation,
+                                    loading = loadingJob != null,
+                                    onReaction = vm::toggleBotReaction,
+                                    onWidgetResponse = vm::submitBotWidget,
+                                )
+                            }
+                        } else null,
                         innerPadding = listInset,
                         conversation = conversation,
                         turnFooters = turnFooters,

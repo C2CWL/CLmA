@@ -1347,7 +1347,7 @@ class ChatService(
                         ) return@synchronized null
                         val messages = current.currentMessages
                         val index = messages.indexOfFirst {
-                            it.id == messageId && it.role == MessageRole.ASSISTANT
+                            it.id == messageId && it.role == MessageRole.ASSISTANT && !it.isSynthetic
                         }
                         if (index < 0) return@synchronized null
                         val message = messages[index]
@@ -3082,8 +3082,7 @@ class ChatService(
             val reactionFeedback = if (assistant.isBot && surfaceAssistant.id == assistant.id &&
                 !BotPeerToolPolicy.isPeer(conversationId)
             ) {
-                botReactionFeedback(conversation.currentMessages.take(messageRange?.let { it.endInclusive + 1 }
-                    ?: conversation.messageNodes.size))
+                botReactionFeedback(messagesForGeneration)
             } else null
 
             generationLoop.generateText(
