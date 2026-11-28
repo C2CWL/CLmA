@@ -31,8 +31,9 @@ import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import com.clma.ai.ui.UIMessagePart
-import com.clma.app.data.agentrun.AgentRunKind
+import com.clma.app.R
 import com.clma.app.RouteActivity
+import com.clma.app.data.agentrun.AgentRunKind
 import com.clma.app.data.botmode.BotRoutineEventKind
 import com.clma.app.data.botmode.BotRoutineTrigger
 import com.clma.app.data.botmode.BotRoutineApprovalRules
@@ -359,13 +360,23 @@ internal class CronJobExecution(
 
             // Bot-library owners get parkable runs: approvals wait for the user instead of
             // being refused, and every finished run posts a short notification.
-            val (outcome, errorMessage, convIdMaybe) = when {
+            val botId = if (isBotJob(job)) Uuid.parse(job.assistantId) else null
+            val blocked = botId?.let { chatService.botAvailabilityError(it, unattended = !manualRun) }
+
+            suspend fun runJob(): Triple<String, String?, Uuid?> = when {
                 eventRoutine -> runLlm(job, parkable = true, eventContext = eventContext)
                 routine != null -> BotRoutineTurn(routineStore, repo, conversationRepo, chatService, CRON_DELIVERY_DIRECTIVE)
                     .run(job, routine, routine.quota.takeIf { quotaRun != null }, quotaRow?.conversationId, runRowId, manualRun)
                 job.mode == "llm" -> runLlm(job)
                 job.mode == "direct" -> runDirect(job)
                 else -> Triple("failed", "unknown_mode:${job.mode}", null)
+            }
+
+            val (outcome, errorMessage, convIdMaybe) = when {
+                blocked != null -> Triple(if (manualRun) "failed" else "skipped", blocked, null)
+                botId == null -> runJob()
+                else -> BotRoutineStops.run(botId, { chatService.isBotPaused(botId) }) { runJob() }
+                    ?: Triple("cancelled", applicationContext.getString(R.string.bot_quota_paused_message), null)
             }
 
             runRepo.update(ScheduledJobRunEntity(
@@ -423,7 +434,7 @@ internal class CronJobExecution(
                             job.assistantId, job.name, convIdMaybe, outcome, errorMessage, fromBotCompletion,
                         )
                     }
-                } else if (outcome != "success") {
+                } else if (outcome != "success" && outcome != "skipped") {
                     // Failure notification (post once per failure; the existing channel handles dedup)
                     postFailureNotification(
                         job.id, job.name, "$outcome: ${errorMessage.orEmpty()}", convIdMaybe,
@@ -779,7 +790,10 @@ internal class CronJobExecution(
         var errorMessage: String? = null
         HeadlessConversations.markParkable(convId)
         try {
-            if (budgetMs <= 0L) {
+            if (chatService.isBotPaused(Uuid.parse(parkedRun.assistantId))) {
+                outcome = "cancelled"
+                errorMessage = applicationContext.getString(R.string.bot_quota_paused_message)
+            } else if (budgetMs <= 0L) {
                 outcome = "timed_out"
                 errorMessage = "llm turn exceeded the run limit"
             } else {

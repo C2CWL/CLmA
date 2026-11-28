@@ -314,6 +314,7 @@ val appModule = module {
             toolApprovalPreferences = get(),
             botModeSettingsStore = get(),
             botProfileStore = get(),
+            usageRecordDao = get(),
             workspaceRepository = get(),
             folderRepository = get(),
         )
