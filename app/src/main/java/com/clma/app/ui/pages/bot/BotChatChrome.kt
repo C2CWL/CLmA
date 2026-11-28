@@ -2,6 +2,7 @@ package com.clma.app.ui.pages.bot
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import com.clma.app.data.model.BotMascotChoice
 import kotlin.uuid.Uuid
 
 /**
@@ -12,4 +13,5 @@ import kotlin.uuid.Uuid
 class BotChatChrome(
     val topBar: @Composable () -> Unit,
     val onOpenConversation: (Uuid) -> Unit,
+    val mascot: BotMascotChoice = BotMascotChoice.NONE,
 )

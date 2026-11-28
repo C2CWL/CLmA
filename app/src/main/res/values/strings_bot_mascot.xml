@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bot_mascot_title">Mascot</string>
+    <string name="bot_mascot_cat">Cat</string>
+    <string name="bot_mascot_dog">Dog</string>
+    <string name="bot_mascot_none">None</string>
+</resources>

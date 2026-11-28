@@ -17,6 +17,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.clma.app.R
+import com.clma.app.data.model.BotMascotChoice
+import com.clma.app.ui.pages.bot.BotMascot
+import com.clma.app.ui.pages.bot.BotMascotState
 import com.clma.app.data.db.entity.ScheduledJobRunEntity
 import java.time.Instant
 import java.time.ZoneId
@@ -27,6 +30,7 @@ import kotlin.uuid.Uuid
 internal fun RoutineRunHistory(
     runs: List<ScheduledJobRunEntity>,
     zone: ZoneId,
+    mascot: BotMascotChoice,
     onOpenConversation: (Uuid) -> Unit,
 ) {
     val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(zone)
@@ -51,6 +55,14 @@ internal fun RoutineRunHistory(
         }
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                val mascotState = when (label) {
+                    R.string.routine2_running -> BotMascotState.WORKING
+                    R.string.routine2_success -> BotMascotState.DONE
+                    R.string.routine2_waiting_approval -> BotMascotState.WAITING
+                    R.string.routine2_waiting_quota, R.string.routine2_failed -> BotMascotState.BLOCKED
+                    else -> null
+                }
+                mascotState?.let { BotMascot(it, mascot) }
                 Surface(shape = MaterialTheme.shapes.small, color = color) {
                     Text(stringResource(label), Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelSmall)

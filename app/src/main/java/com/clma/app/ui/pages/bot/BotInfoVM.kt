@@ -78,6 +78,8 @@ class BotInfoVM(
         if (trimmed.isNotEmpty()) updateBot { it.copy(name = trimmed) }
     }
 
+    fun setMascot(choice: com.clma.app.data.model.BotMascotChoice) = updateBot { it.copy(botMascot = choice) }
+
     fun setAvatar(avatar: com.clma.app.data.model.Avatar) = updateBot { it.copy(avatar = avatar) }
 
     fun setModel(modelId: Uuid) = updateBot { it.copy(chatModelId = modelId) }

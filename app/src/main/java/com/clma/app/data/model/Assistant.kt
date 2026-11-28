@@ -193,7 +193,15 @@ data class Assistant(
      */
     @EncodeDefault(EncodeDefault.Mode.NEVER)
     val botCostSaving: Boolean? = null,
+    val botMascot: BotMascotChoice = BotMascotChoice.CAT,
 )
+
+@Serializable
+enum class BotMascotChoice {
+    @SerialName("cat") CAT,
+    @SerialName("dog") DOG,
+    @SerialName("none") NONE,
+}
 
 /** Classic assistants vs Bot-mode bots; see [Assistant.library]. */
 @Serializable

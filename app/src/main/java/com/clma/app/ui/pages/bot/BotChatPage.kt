@@ -233,7 +233,11 @@ fun BotChatPage(botId: Uuid, conversationId: Uuid, text: String? = null, files: 
         errors = errors,
         onDismissError = { vm.dismissError(it) },
         onClearAllErrors = { vm.clearAllErrors() },
-        botChrome = BotChatChrome(topBar = topBar, onOpenConversation = openConversation),
+        botChrome = BotChatChrome(
+            topBar = topBar,
+            onOpenConversation = openConversation,
+            mascot = bot.botMascot,
+        ),
     )
 
     BotTaskProgressSheet(

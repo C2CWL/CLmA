@@ -118,6 +118,7 @@ internal fun BotRoutinesGroup(
     routines: List<ScheduledJobEntity>,
     parkedRuns: List<ParkedRoutineRun>,
     botId: Uuid,
+    mascot: com.clma.app.data.model.BotMascotChoice,
     timezone: String?,
     models: List<Pair<String, String>>,
     onSave: (RoutineEdit, String?) -> Unit,
@@ -161,6 +162,7 @@ internal fun BotRoutinesGroup(
                 onClick = { runCatching { Uuid.parse(run.conversationId) }.getOrNull()?.let(onOpenConversation) },
             ) {
                 Column(Modifier.padding(12.dp)) {
+                    BotMascot(BotMascotState.WAITING, mascot)
                     Text(
                         stringResource(R.string.bot_routine_waiting_title, run.jobName),
                         style = MaterialTheme.typography.titleSmall,
@@ -192,6 +194,7 @@ internal fun BotRoutinesGroup(
             },
         )
         if (routines.isEmpty()) {
+            BotMascot(BotMascotState.IDLE, mascot)
             Text(
                 stringResource(R.string.bot_routine_empty),
                 style = MaterialTheme.typography.bodySmall,
@@ -251,6 +254,7 @@ internal fun BotRoutinesGroup(
             onceAtMs = job.atUnixMs?.takeIf { it > System.currentTimeMillis() },
             zone = routineZone(job.timezone ?: timezone),
             history = history,
+            mascot = mascot,
             onOpenConversation = { editing = null; onOpenConversation(it) },
             onDismiss = { editing = null },
             onSave = { form -> editing = null; onSave(form, job.id) },
