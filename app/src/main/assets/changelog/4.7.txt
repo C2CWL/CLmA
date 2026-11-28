@@ -1,0 +1,35 @@
+## CLmA 4.7
+
+Bot 模式暂不完善，不建议使用。
+- 修复锁屏后定时任务不按时运行的问题，新增前台服务唤醒与后台运行设置引导。
+- 修复 Bot 模式与普通模式之间的记忆、搜索、定时任务、通知、Web 和工作流内容串号。
+- 新增 Bot 模式独立设置页，可配置默认审批、发送与通知偏好以及每个 Bot 的审批档位。
+- 新增每个 Bot 的 SOUL 常驻指令、汇报关系和团队协调员，并展示工作、待审批和空闲状态。
+- 新增 Bot 自动任务的间隔与时间窗口、重叠处理、前置检查、回访安排和运行结果集中。
+- 新增按 Bot 隔离的长期记忆、主题笔记、每日日志和记忆整理入口。
+- 新增原生 Android 插件系统基础能力，可安装、启用、禁用和管理插件 APK。
+- 新增向兼容模型直接发送整段视频，并在超限或接口不支持时改发按画面变化选出的截图。
+- 新增截图预览中的对白或旁白转写，并允许模型按时间段请求补充截图。
+- 优化历史聊天参考与上下文预算提醒，减少请求前缀变化，并批量投影压力下的旧工具结果。
+- 修复 `ask_user` 回答后丢失原始问题文本的问题。
+- 优化屏幕常亮设置，使其覆盖 EdgeBar 悬浮聊天窗。
+- 修复 GFM 自动链接吞掉后续中文导致链接与正文样式混合的问题。
+- 调整会话设置面板和新建会话菜单的动画。
+
+## Changes
+
+Bot mode is incomplete and is not recommended yet.
+- Fixed scheduled jobs on locked screens with foreground service and guidance.
+- Fixed content crossover between Bot mode and normal mode across core services.
+- Added dedicated Bot settings for approvals, notifications, and outbound messages.
+- Added per-Bot SOUL instructions, reporting roles, and a team coordinator.
+- Added Bot routine intervals, time windows, pre-checks, and check-backs.
+- Added private long-term memory, topic notes, and daily logs for each Bot.
+- Added native Android plugin install, enable, disable, and management support.
+- Added full-video input for compatible models with frame previews as fallback.
+- Added dialogue and narration transcripts to video frame previews.
+- Optimized past-chat references and context-budget reminders to reduce prefix churn.
+- Fixed ask_user answers hiding the original question text.
+- Applied keep-screen-on to the EdgeBar floating chat window.
+- Fixed GFM autolinks swallowing Chinese text and mixing link styles.
+- Refined animations for the settings panel and new-chat menu.
