@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bot_tools_title">工具选择</string>
+    <string name="bot_tools_model_context">%1$s · %2$d 个上下文 token</string>
+    <string name="bot_tools_waiting">使用当前设置发送消息后，即可查看工具占用。</string>
+    <string name="bot_tools_budget">上次请求：%1$d 个函数工具、%2$d 个内置工具 · 函数定义约占 %3$d 个 token</string>
+    <string name="bot_tools_group_cost">%1$s · %2$d 个工具 · 定义约占 %3$d 个 token</string>
+    <string name="bot_tools_web">网页</string>
+    <string name="bot_tools_images">图片</string>
+    <string name="bot_tools_workspace">工作区</string>
+    <string name="bot_tools_apps">应用连接</string>
+    <string name="bot_tools_data">对话数据</string>
+</resources>

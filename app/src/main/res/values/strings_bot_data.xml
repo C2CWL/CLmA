@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bot_data_title">Data workbench</string>
+    <string name="bot_data_open">Open in Data</string>
+    <string name="bot_data_close">Close</string>
+    <string name="bot_data_table">Table</string>
+    <string name="bot_data_chart">Chart</string>
+    <string name="bot_data_sql">SQL</string>
+    <string name="bot_data_sql_hint">Query the data table with SELECT or WITH.</string>
+    <string name="bot_data_run">Run query</string>
+    <string name="bot_data_cancel">Cancel</string>
+    <string name="bot_data_reset">Show original data</string>
+    <string name="bot_data_filter">Filter rows</string>
+    <string name="bot_data_counts">%1$d of %2$d rows · %3$d columns</string>
+    <string name="bot_data_truncated">The query result reached the display limit.</string>
+    <string name="bot_data_null">NULL</string>
+    <string name="bot_data_chart_empty">No numeric values to chart.</string>
+    <string name="bot_data_chart_limit">Showing the first 100 numeric rows.</string>
+    <string name="bot_data_chart_value">Values: %1$s</string>
+    <string name="bot_data_query_failed">The query failed.</string>
+</resources>

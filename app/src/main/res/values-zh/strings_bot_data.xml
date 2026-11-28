@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bot_data_title">数据工作台</string>
+    <string name="bot_data_open">在「数据」中打开</string>
+    <string name="bot_data_close">关闭</string>
+    <string name="bot_data_table">表格</string>
+    <string name="bot_data_chart">图表</string>
+    <string name="bot_data_sql">SQL</string>
+    <string name="bot_data_sql_hint">使用 SELECT 或 WITH 查询 data 表。</string>
+    <string name="bot_data_run">运行查询</string>
+    <string name="bot_data_cancel">取消</string>
+    <string name="bot_data_reset">显示原始数据</string>
+    <string name="bot_data_filter">筛选行</string>
+    <string name="bot_data_counts">%1$d 行，共 %2$d 行 · %3$d 列</string>
+    <string name="bot_data_truncated">查询结果已在上限处截断。</string>
+    <string name="bot_data_null">空</string>
+    <string name="bot_data_chart_empty">没有可绘制的数值。</string>
+    <string name="bot_data_chart_limit">显示前 100 个含数值的行。</string>
+    <string name="bot_data_chart_value">数值：%1$s</string>
+    <string name="bot_data_query_failed">此查询失败</string>
+</resources>
