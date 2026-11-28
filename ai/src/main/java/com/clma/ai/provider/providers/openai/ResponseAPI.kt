@@ -1,6 +1,5 @@
 package com.clma.ai.provider.providers.openai
 
-import com.clma.ai.util.quotaException
 import android.util.Log
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -51,6 +50,9 @@ import com.clma.ai.ui.UIMessage
 import com.clma.ai.ui.UIMessagePart
 import com.clma.ai.ui.metadataAs
 import com.clma.ai.ui.toMetadata
+import com.clma.ai.util.HttpFailureMetadata
+import com.clma.ai.util.quotaException
+import com.clma.ai.util.withHttpFailureMetadata
 import com.clma.ai.util.KeyRoulette
 import com.clma.ai.util.configureReferHeaders
 import com.clma.ai.util.configureSessionHeaders
@@ -132,6 +134,8 @@ private fun JsonObject.responseErrorText(name: String): String? = runCatching {
 internal fun parseResponseStreamError(
     payload: JsonObject,
     eventType: String?,
+    captureQuotaRefusal: Boolean = false,
+    outputStarted: Boolean = false,
 ): ResponseStreamErrorException {
     val code = payload.responseErrorText("code")
     val message = runCatching {
@@ -150,7 +154,11 @@ internal fun parseResponseStreamError(
         append(": ")
         append(message)
     }
-    return ResponseStreamErrorException(code = code, message = detail)
+    return ResponseStreamErrorException(code = code, message = detail).apply {
+        if (captureQuotaRefusal) {
+            addSuppressed(HttpFailureMetadata(200, null, emptyList(), payload.toString().take(8_192), outputStarted))
+        }
+    }
 }
 
 internal fun shouldRetryResponseStream(
@@ -227,7 +235,9 @@ class ResponseAPI(
             if (!response.isSuccessful) {
                 val detail = response.body.string()
                 val message = "Failed to get response: ${response.code} $detail"
-                throw (response.quotaException(message, detail) ?: Exception(message))
+                throw (response.quotaException(message, detail) ?: Exception(message)).apply {
+                    withHttpFailureMetadata(response, detail, enabled = params.captureQuotaRefusal)
+                }
             }
 
             val bodyStr = response.body.string()
@@ -314,7 +324,12 @@ class ResponseAPI(
                 }
                 val eventType = json["type"]?.jsonPrimitive?.contentOrNull ?: type
                 if (eventType == "error" || eventType == "response.failed") {
-                    close(parseResponseStreamError(json, eventType))
+                    close(parseResponseStreamError(
+                        json,
+                        eventType,
+                        captureQuotaRefusal = params.captureQuotaRefusal,
+                        outputStarted = receivedMeaningfulOutput.get(),
+                    ))
                     return
                 }
                 try {
@@ -376,7 +391,11 @@ class ResponseAPI(
                         cause = exception,
                     )
                 }
-                close(exception)
+                close(exception.withHttpFailureMetadata(
+                    response, bodyRaw,
+                    enabled = params.captureQuotaRefusal,
+                    outputStarted = receivedMeaningfulOutput.get(),
+                ))
             }
 
             override fun onClosed(eventSource: EventSource) {
