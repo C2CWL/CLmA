@@ -22,6 +22,10 @@ data class BotModeSettings(
     val notifyRoutineResults: Boolean = true,
     val notifyApprovals: Boolean = true,
     val showRoutineReliability: Boolean = true,
+    val aboutMe: String = "",
+    val everyBotRules: String = "",
+    val showAnnouncementCards: Boolean = true,
+    val dismissedAnnouncementIds: Set<String> = emptySet(),
     val allBotsPaused: Boolean = false,
 )
 

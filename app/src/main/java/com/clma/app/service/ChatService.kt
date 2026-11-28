@@ -9,6 +9,7 @@ import com.clma.app.data.botmode.settings.botAutoVerdict
 import com.clma.app.data.botmode.BotBriefStore
 import com.clma.app.data.botmode.botGoalPrompt
 import com.clma.app.data.botmode.settings.botProfilePrompt
+import com.clma.app.data.botmode.settings.botSharedContextPrompt
 import com.clma.app.data.botmode.settings.notificationSettings
 import com.clma.app.data.botmode.settings.requiresBotToolConsent
 import com.clma.app.data.repository.memoryScopeId
@@ -3137,6 +3138,7 @@ class ChatService(
 
             val botId = assistant.id.toString().takeIf { assistant.isBot }
             val botProfiles = if (botId == null) emptyMap() else botProfileStore.profiles.first()
+            val sharedBotContext = botId?.let { botSharedContextPrompt(botModeSettingsStore.settings.first()) }
             val profileAddendum = botId?.let { id ->
                 botProfiles[id]?.let { profile ->
                     botProfilePrompt(
@@ -3196,7 +3198,7 @@ class ChatService(
                 // having to plumb a parameter all the way through sendMessage. Returns null
                 // for in-app conversations that didn't register one.
                 systemAddendum = buildEffectiveSystemAddendum(conversationId, surfaceAssistant).let { base ->
-                    listOfNotNull(base, profileAddendum, goalAddendum, botMemoryPrompt)
+                    listOfNotNull(base, sharedBotContext, profileAddendum, goalAddendum, botMemoryPrompt)
                         .takeIf { it.isNotEmpty() }?.joinToString("\n\n")
                 },
                 enforceBotApproval = botId != null,

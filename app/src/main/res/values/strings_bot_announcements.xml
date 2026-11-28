@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Adapted from OpenMausBot (https://github.com/milind-soni/OpenMausBot), src/locales/en.json, src/locales/zh.json.
+     Copyright 2026 Milind Soni and OpenMausBot contributors, Apache License 2.0
+     (third_party/openmausbot/LICENSE). Modified: localized for CLmA. -->
+<resources>
+    <string name="bot_notices_title">Announcements</string>
+    <string name="bot_notices_show_cards">Show announcement cards</string>
+    <string name="bot_notices_history">Release notes history</string>
+    <string name="bot_notices_dismiss">Dismiss</string>
+    <string name="bot_notices_current">%1$s (current version)</string>
+    <string name="bot_notices_config_title">New Bot settings</string>
+    <string name="bot_notices_config_body">Create Bots from role presets, generate avatars, and add a shared profile or rules in Bot settings.</string>
+</resources>

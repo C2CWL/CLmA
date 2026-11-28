@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Adapted from OpenMausBot (https://github.com/milind-soni/OpenMausBot), src/locales/en.json, src/locales/zh.json.
+     Copyright 2026 Milind Soni and OpenMausBot contributors, Apache License 2.0
+     (third_party/openmausbot/LICENSE). Modified: localized for CLmA. -->
+<resources>
+    <string name="bot_config_save">保存</string>
+    <string name="bot_bulletin_title">频道公告</string>
+    <string name="bot_bulletin_add">添加频道说明…</string>
+    <string name="bot_bulletin_hint">这个频道里的每个机器人都会遵守这些说明，例如分工、语气和目标。</string>
+</resources>

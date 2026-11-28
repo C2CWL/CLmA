@@ -63,5 +63,8 @@ fun channelMessageText(channel: BotChannel, memberNames: List<String>, text: Str
     append('\n')
     if (channel.description.isNotBlank()) append("Channel note: ").append(channel.description.trim()).append('\n')
     append('\n')
+    if (channel.bulletin.isNotBlank()) {
+        append("Channel bulletin: ").append(channel.bulletin.trim()).append("\n\n")
+    }
     append(text.trim())
 }

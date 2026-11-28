@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Adapted from OpenMausBot (https://github.com/milind-soni/OpenMausBot), src/locales/en.json, src/locales/zh.json.
+     Copyright 2026 Milind Soni and OpenMausBot contributors, Apache License 2.0
+     (third_party/openmausbot/LICENSE). Modified: localized for CLmA. -->
+<resources>
+    <string name="bot_config_save">Save</string>
+    <string name="bot_bulletin_title">Channel bulletin</string>
+    <string name="bot_bulletin_add">Add channel instructions…</string>
+    <string name="bot_bulletin_hint">Shared instructions for every Bot in this channel, such as roles, tone, and goals.</string>
+</resources>

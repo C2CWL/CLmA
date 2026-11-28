@@ -18,6 +18,8 @@ import com.clma.app.data.botmode.withBotHidden
 import com.clma.app.data.botmode.withBotPinned
 import com.clma.app.data.botmode.withBotUnreadClearedForAssistant
 import com.clma.app.data.botmode.withBotUnreadMarked
+import com.clma.app.data.botmode.withBotChannelUpserted
+import com.clma.app.data.datastore.BotChannel
 import com.clma.app.data.datastore.Settings
 import com.clma.app.data.datastore.SettingsStore
 import com.clma.app.data.model.Assistant
@@ -112,8 +114,9 @@ class BotHomeVM(
             .mapNotNull { row -> byId[row.assistantId]?.let { BotHomeItem(it, row, isMain = it.id == mainId) } }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    fun updateDisplaySetting(next: com.clma.app.data.datastore.DisplaySetting) = viewModelScope.launch {
-        settingsStore.update { s -> s.copy(displaySetting = next) }
+    fun createChannel(channel: BotChannel, onCreated: () -> Unit) = viewModelScope.launch {
+        settingsStore.update { s -> s.copy(displaySetting = s.displaySetting.withBotChannelUpserted(channel)) }
+        if (settings.value.displaySetting.botChannels.any { it.id == channel.id }) onCreated()
     }
 
     fun togglePin(bot: Assistant) = viewModelScope.launch {
@@ -135,15 +138,21 @@ class BotHomeVM(
     }
 
     /** New bot in the Bot library; returns its id once stored. */
-    fun createBot(name: String, systemPrompt: String, makeMain: Boolean, onCreated: (Uuid) -> Unit) =
-        viewModelScope.launch {
-            val bot = com.clma.app.data.botmode.BotMainTools.newBot(name = name, systemPrompt = systemPrompt)
-            settingsStore.update { s ->
-                val added = s.copy(assistants = s.assistants + bot)
-                if (makeMain) added.withMainBot(bot.id) else added
-            }
-            onCreated(bot.id)
+    fun createBot(
+        name: String,
+        systemPrompt: String,
+        makeMain: Boolean,
+        skills: Set<String>,
+        onCreated: (Uuid) -> Unit,
+    ) = viewModelScope.launch {
+        val bot = com.clma.app.data.botmode.BotMainTools.newBot(name = name, systemPrompt = systemPrompt)
+            .let { it.copy(enabledSkills = it.enabledSkills + skills) }
+        settingsStore.update { s ->
+            val added = s.copy(assistants = s.assistants + bot)
+            if (makeMain) added.withMainBot(bot.id) else added
         }
+        if (settings.value.assistants.any { it.id == bot.id }) onCreated(bot.id)
+    }
 
     /** Marks the bot unread (its latest conversation); clears it when it already is. */
     fun toggleUnread(row: BotHomeRow) = viewModelScope.launch {

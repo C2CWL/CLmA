@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Adapted from OpenMausBot (https://github.com/milind-soni/OpenMausBot), src/locales/en.json, src/locales/zh.json.
+     Copyright 2026 Milind Soni and OpenMausBot contributors, Apache License 2.0
+     (third_party/openmausbot/LICENSE). Modified: localized for CLmA. -->
+<resources>
+    <string name="bot_shared_title">Profile</string>
+    <string name="bot_shared_about">About me</string>
+    <string name="bot_shared_about_hint">Shared with every Bot in private and channel chats.</string>
+    <string name="bot_shared_rules">Rules for every bot</string>
+    <string name="bot_shared_rules_hint">Every bot follows these. A bot\'s own instructions win where they differ.</string>
+</resources>
