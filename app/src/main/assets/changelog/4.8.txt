@@ -1,0 +1,22 @@
+## CLmA 4.8
+
+- 新增 Bot 每日简报
+- 新增 Bot 频道目标
+- 新增插件多源发现
+- 新增插件适配器
+- 新增原生 APK 安装能力
+- 新增插件运行时协议
+- 修复 AI 请求中的时间提醒位置
+- 接入 Miuix 主题桥接层
+- 保留项目自定义字体
+
+## Changes
+- Add daily Bot briefs.
+- Add Bot channel goals.
+- Add multi-source plugin discovery.
+- Add plugin adapters.
+- Add native APK installation.
+- Add plugin runtime protocol.
+- Keep time reminders at the end of AI requests.
+- Bridge Miuix theming into MaterialTheme.
+- Keep the app's custom font settings.
