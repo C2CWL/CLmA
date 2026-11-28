@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
+import com.clma.app.data.botmode.BotUsageTotal
 
 @Dao
 interface UsageRecordDao {
@@ -73,6 +74,13 @@ interface UsageRecordDao {
             "ORDER BY created_at_ms ASC LIMIT :limit"
     )
     suspend fun forConversation(conversationId: String, limit: Int): List<UsageRecordEntity>
+
+    @Query(
+        "SELECT COALESCE(SUM(MAX(input_tokens - cached_tokens, 0) + MAX(output_tokens, 0)), 0) AS tokens, " +
+            "COALESCE(SUM(COALESCE(provider_cost_usd, cost_micros / 1000000.0, 0)), 0.0) AS usd " +
+            "FROM usage_records WHERE assistant_id = :botId AND created_at_ms >= :sinceMs"
+    )
+    suspend fun botUsageSince(botId: String, sinceMs: Long): BotUsageTotal
 
     /** Retention sweep; returns the number of rows removed. */
     @Query("DELETE FROM usage_records WHERE created_at_ms < :cutoffMs")
