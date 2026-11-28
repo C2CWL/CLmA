@@ -23,7 +23,11 @@ val skipLintVital = providers.gradleProperty("skipLintVital").isPresent
 
 android {
     namespace = "com.clma.app"
-    compileSdk = 37
+    compileSdk {
+        version = release(37) {
+            minorApiLevel = 2
+        }
+    }
 
     defaultConfig {
         applicationId = "com.clma.app"
@@ -228,6 +232,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation("top.yukonga.miuix.kmp:miuix-ui:0.9.5-rc02")
     implementation(libs.androidx.material3.adaptive)
     implementation(libs.androidx.material3.adaptive.layout)
 
