@@ -142,6 +142,7 @@ fun ChatList(
     turnFooters: Map<String, TurnFooter> = emptyMap(),
     /** 换会话时列表的显现透明度：落到底之前保持 0，避免露出半截列表再跳。 */
     revealAlpha: () -> Float = { 1f },
+    botMessageContent: (@Composable (UIMessage) -> Unit)? = null,
 ) {
     ToolInteractionDialogHost(
         conversation,
@@ -187,6 +188,7 @@ fun ChatList(
                     onClearTranslation = onClearTranslation,
                     turnFooters = turnFooters,
                     revealAlpha = revealAlpha,
+                    botMessageContent = botMessageContent,
                     animatedVisibilityScope = this@AnimatedContent,
                     onToolApproval = onToolApproval,
                     onToolAnswer = onToolAnswer,
@@ -227,6 +229,7 @@ private fun ChatListNormal(
     onConversationSystemPromptChange: ((String?) -> Unit)? = null,
     turnFooters: Map<String, TurnFooter> = emptyMap(),
     revealAlpha: () -> Float = { 1f },
+    botMessageContent: (@Composable (UIMessage) -> Unit)? = null,
 ) {
     val scope = rememberCoroutineScope()
     val loadingState by rememberUpdatedState(loading)
@@ -459,6 +462,9 @@ private fun ChatListNormal(
                             onRerunTool = onRerunTool,
                             lastMessage = node.id == lastMessageNodeId,
                         )
+                        if (assistant?.isBot == true) {
+                            group.nodes.forEach { source -> botMessageContent?.invoke(source.currentMessage) }
+                        }
                     }
                 }
             }

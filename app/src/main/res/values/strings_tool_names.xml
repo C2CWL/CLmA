@@ -596,4 +596,6 @@
   <string name="tool_display_desc_board_comment">Adds a comment to a team task</string>
   <string name="tool_display_name_board_assign">Assign board task</string>
   <string name="tool_display_desc_board_assign">Assigns a team task to a Bot you coordinate</string>
+  <string name="tool_display_name_show_widget">Show widget</string>
+  <string name="tool_display_desc_show_widget">Show buttons, a date picker, a table, or a chart in the Bot chat.</string>
 </resources>

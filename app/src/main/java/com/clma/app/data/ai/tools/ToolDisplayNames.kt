@@ -240,6 +240,7 @@ object ToolDisplayNames {
         "memory_write" to Res(R.string.tool_display_name_memory_write, R.string.tool_display_desc_memory_write),
         "memory_delete" to Res(R.string.tool_display_name_memory_delete, R.string.tool_display_desc_memory_delete),
         "memory_search" to Res(R.string.tool_display_name_memory_search, R.string.tool_display_desc_memory_search),
+        "show_widget" to Res(R.string.tool_display_name_show_widget, R.string.tool_display_desc_show_widget),
         "keystore_generate_key" to Res(R.string.tool_display_name_keystore_generate_key, R.string.tool_display_desc_keystore_generate_key),
         "keystore_list_keys" to Res(R.string.tool_display_name_keystore_list_keys, R.string.tool_display_desc_keystore_list_keys),
         "keystore_delete_key" to Res(R.string.tool_display_name_keystore_delete_key, R.string.tool_display_desc_keystore_delete_key),

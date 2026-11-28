@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<resources>
+  <string name="bot_reaction_celebrate">Celebrate</string>
+  <string name="bot_reaction_dislike">Thumbs down</string>
+  <string name="bot_reaction_laugh">Laughing</string>
+  <string name="bot_reaction_like">Like</string>
+  <string name="bot_reaction_looking">Eyes</string>
+  <string name="bot_reaction_love">Heart</string>
+  <string name="bot_reactions">Reactions</string>
+</resources>

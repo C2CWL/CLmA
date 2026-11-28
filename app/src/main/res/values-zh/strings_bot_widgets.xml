@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<resources>
+  <string name="bot_widget_chart_point">%1$s：%2$s</string>
+  <string name="bot_widget_choose">选择</string>
+  <string name="bot_widget_response">卡片「%1$s」的选择：%2$s</string>
+  <string name="bot_widget_send_failed">未能发送。请重试。</string>
+  <string name="bot_widget_sent">已发送</string>
+</resources>
