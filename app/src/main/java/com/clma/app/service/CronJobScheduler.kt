@@ -10,9 +10,13 @@ import androidx.work.Data
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import com.clma.app.data.botmode.routine.RoutineStore
+import com.clma.app.data.botmode.routine.nextAt
 import com.clma.app.data.datastore.SettingsStore
 import com.clma.app.data.db.entity.ScheduledJobEntity
+import com.clma.app.data.model.isBot
 import com.clma.app.data.repository.ScheduledJobRepository
+import kotlinx.coroutines.flow.first
 import java.time.Instant
 import java.time.ZoneId
 import java.util.concurrent.TimeUnit
@@ -32,16 +36,27 @@ class CronJobScheduler(
     private val context: Context,
     private val repo: ScheduledJobRepository,
     private val settingsStore: SettingsStore? = null,
+    private val routineStore: RoutineStore? = null,
 ) {
     private val wm get() = WorkManager.getInstance(context)
 
     suspend fun schedule(job: ScheduledJobEntity, fromWorker: Boolean = false) {
         val nowMs = System.currentTimeMillis()
+        val isBot = isBotRoutine(job)
         val defaultZone = resolveDefaultZone()
-        val nextRun = nextRunMs(job, nowMs, defaultZone)
+        val state = if (isBot) routineStore?.read()?.routines?.get(job.id) else null
+        if (job.scheduleType == "once" && state?.quota != null) return
+        val interval = state?.options?.interval
+        val basis = if (isBot) maxOf(nowMs, (job.lastRunAtMs ?: 0L) + 1) else nowMs
+        val nextRun = if (interval == null) {
+            nextRunMs(job, basis, defaultZone)
+        } else if (job.enabled && (job.maxRuns == null || job.runsSoFar < job.maxRuns)) {
+            val zone = job.timezone?.let { runCatching { ZoneId.of(it) }.getOrNull() } ?: defaultZone
+            interval.nextAt(maxOf(basis, job.startAtUnixMs ?: 0L), zone, job.endAtUnixMs)
+        } else null
         if (nextRun == null) {
             repo.update(terminalJobUpdate(job))
-            if (fromWorker) cancelExactAlarm(job.id) else cancel(job.id)
+            if (fromWorker || isBot) cancelExactAlarm(job.id) else cancel(job.id)
             return
         }
         repo.update(job.copy(nextRunAtMs = nextRun))
@@ -52,7 +67,14 @@ class CronJobScheduler(
                 .putString(CronJobWorker.KEY_JOB_ID, job.id)
                 .putLong(CronJobWorker.KEY_SCHEDULED_AT_MS, nextRun)
                 .build())
+            .apply { if (isBot) addTag(botWorkTag(job.id)) }
             .build()
+        if (isBot) {
+            // Per-slot work lets the next occurrence reach the overlap gate while this slot runs.
+            wm.enqueueUniqueWork("${workNameFor(job.id)}_$nextRun", ExistingWorkPolicy.KEEP, req)
+            setExactAlarm(job.id, nextRun)
+            return
+        }
         // A worker must not REPLACE (cancel) itself while scheduling its successor.
         // A service execution can replace its old fallback with the next slot.
         // External edits also replace both old delivery paths.
@@ -75,11 +97,13 @@ class CronJobScheduler(
                 .putBoolean(CronJobWorker.KEY_MANUAL, true)
                 .build())
             .build()
-        wm.enqueueUniqueWork(manualWorkNameFor(jobId), ExistingWorkPolicy.REPLACE, req)
+        if (repo.getById(jobId)?.let { isBotRoutine(it) } == true) wm.enqueue(req)
+        else wm.enqueueUniqueWork(manualWorkNameFor(jobId), ExistingWorkPolicy.REPLACE, req)
     }
 
     fun cancel(jobId: String) {
         wm.cancelUniqueWork(workNameFor(jobId))
+        wm.cancelAllWorkByTag(botWorkTag(jobId))
         wm.cancelUniqueWork("cron_job_${jobId}_alarm")
         cancelExactAlarm(jobId)
     }
@@ -87,6 +111,10 @@ class CronJobScheduler(
     suspend fun scheduleAllEnabled() {
         repo.getEnabled().forEach { schedule(it) }
     }
+
+    private suspend fun isBotRoutine(job: ScheduledJobEntity): Boolean =
+        job.mode == "llm" && settingsStore?.settingsFlow?.first { !it.init }?.assistants
+            ?.any { it.isBot && it.id.toString() == job.assistantId } == true
 
     private fun resolveDefaultZone(): ZoneId {
         val customTz = settingsStore?.settingsFlow?.value?.customTimezone
@@ -123,7 +151,7 @@ class CronJobScheduler(
         }
     }
 
-    private fun cancelExactAlarm(jobId: String) {
+    internal fun cancelExactAlarm(jobId: String) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
         val pendingIntent = getAlarmPendingIntent(jobId)
         try {
@@ -133,6 +161,7 @@ class CronJobScheduler(
         }
     }
 
+    private fun botWorkTag(jobId: String) = "bot_routine_slots_$jobId"
     private fun workNameFor(jobId: String) = "cron_job_$jobId"
     private fun manualWorkNameFor(jobId: String) = "cron_job_${jobId}_manual"
 

@@ -117,6 +117,9 @@ class ClmaApp : Application() {
         installProxyAwareNetworkClients()
         observeLocalSnapshots()
         initWorkManager()
+        get<AppScope>().launch(Dispatchers.IO) {
+            com.clma.app.data.botmode.memory.BotMemoryWorker.observeBots(this@ClmaApp, get<SettingsStore>())
+        }
         // Retire the periodic probe persisted by older builds.
         WorkManager.getInstance(this).cancelUniqueWork("telegram_bot_health")
         this.createNotificationChannel()

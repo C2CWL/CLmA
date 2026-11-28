@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bot_memory_title">Memory</string>
+    <string name="bot_memory_save">Save</string>
+    <string name="bot_memory_topics">Topic files</string>
+    <string name="bot_memory_logs">Daily logs</string>
+    <string name="bot_memory_delete">Delete</string>
+    <string name="bot_memory_empty">None yet.</string>
+    <string name="bot_memory_placeholder">Nothing remembered yet. The bot writes durable notes here, or add your own.</string>
+    <string name="bot_memory_organize">Tidy up now</string>
+    <string name="bot_memory_organizing">Tidying…</string>
+    <string name="bot_memory_never">Not tidied yet.</string>
+    <string name="bot_memory_enabled">Use memory</string>
+    <string name="bot_memory_auto">Organize memory automatically</string>
+    <string name="bot_memory_auto_hint">Daily while the device is idle and charging. Uses the bot’s chat model.</string>
+    <string name="bot_memory_last">Last organized %1$s</string>
+    <string name="bot_memory_capacity">%1$d / %2$d lines · %3$d / %4$d bytes loaded into chat</string>
+    <string name="bot_memory_confirm_delete">Delete %1$s?</string>
+    <string name="bot_memory_conflict">This file changed while you were editing. Reload before saving.</string>
+    <string name="bot_memory_reload">Reload</string>
+    <string name="bot_memory_error">Could not complete the memory operation.</string>
+    <string name="bot_memory_too_large">This file exceeds the 256 KiB limit.</string>
+    <string name="bot_memory_recent_hint">Recent daily logs can appear in the bot’s chat context.</string>
+</resources>
