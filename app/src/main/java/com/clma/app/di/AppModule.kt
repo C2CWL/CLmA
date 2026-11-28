@@ -241,6 +241,7 @@ val appModule = module {
     single { com.clma.llamacpp.LlamaCppProvider(context = get(), runtime = get(), prefs = get()) }
 
     single { com.clma.app.data.plugins.PluginRepository(context = get(), json = get()) }
+    single { com.clma.app.data.plugins.PluginMarketRepository(client = get()) }
 
     single {
         ChatToolFactory(

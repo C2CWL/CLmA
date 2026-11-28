@@ -3497,4 +3497,18 @@ HARDLINE protections still apply: rm -rf /, mkfs, shutdown / reboot, dd to block
   <string name="chat_context_op_result_failed">Failed</string>
   <string name="chat_context_op_result_cancelled">Cancelled</string>
   <string name="chat_context_op_tokens">%1$d tokens</string>
+  <string name="setting_plugins_market_title">Plugin marketplace (discovery)</string>
+  <string name="setting_plugins_market_not_native">Discovery only. DSH packages are not CLmA native APK plugins and cannot be installed directly here.</string>
+  <string name="setting_plugins_market_search_hint">Search DSH packages</string>
+  <string name="setting_plugins_market_search">Search</string>
+  <string name="setting_plugins_market_clear">Clear</string>
+  <string name="setting_plugins_market_loading">Loading marketplace…</string>
+  <string name="setting_plugins_market_empty">No DSH packages found.</string>
+  <string name="setting_plugins_market_error">Market error: %1$s</string>
+  <string name="setting_plugins_market_name_version">%1$s · v%2$s</string>
+  <string name="setting_plugins_market_type">Type: %1$s</string>
+  <string name="setting_plugins_market_publisher">Publisher: %1$s</string>
+  <string name="setting_plugins_market_verified">Verified</string>
+  <string name="setting_plugins_market_open_source">Open source</string>
+  <string name="setting_plugins_market_copy_command">Copy install command</string>
 </resources>

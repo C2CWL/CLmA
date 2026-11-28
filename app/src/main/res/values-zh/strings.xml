@@ -3485,4 +3485,18 @@ HARDLINE 保护仍然生效：rm -rf /、mkfs、shutdown / reboot、向块设备
   <string name="chat_context_op_result_failed">失败</string>
   <string name="chat_context_op_result_cancelled">已取消</string>
   <string name="chat_context_op_tokens">%1$d tokens</string>
+  <string name="setting_plugins_market_title">插件市场（发现）</string>
+  <string name="setting_plugins_market_not_native">仅用于发现。DSH 包不是 CLmA 原生 APK 插件，无法在此直接安装。</string>
+  <string name="setting_plugins_market_search_hint">搜索 DSH 包</string>
+  <string name="setting_plugins_market_search">搜索</string>
+  <string name="setting_plugins_market_clear">清除</string>
+  <string name="setting_plugins_market_loading">加载市场中…</string>
+  <string name="setting_plugins_market_empty">未找到 DSH 包。</string>
+  <string name="setting_plugins_market_error">市场错误：%1$s</string>
+  <string name="setting_plugins_market_name_version">%1$s · v%2$s</string>
+  <string name="setting_plugins_market_type">类型：%1$s</string>
+  <string name="setting_plugins_market_publisher">发布者：%1$s</string>
+  <string name="setting_plugins_market_verified">已验证</string>
+  <string name="setting_plugins_market_open_source">打开源码</string>
+  <string name="setting_plugins_market_copy_command">复制安装命令</string>
 </resources>

@@ -1,5 +1,6 @@
 package com.clma.app.ui.pages.setting
 
+import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -12,11 +13,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -24,11 +28,17 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clma.app.R
+import com.clma.app.data.plugins.PluginMarketEntry
+import com.clma.app.data.plugins.PluginMarketRepository
 import com.clma.app.data.plugins.PluginRepository
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
@@ -36,12 +46,33 @@ import org.koin.compose.koinInject
 @Composable
 fun SettingPluginsPage() {
     val repository: PluginRepository = koinInject()
+    val marketRepository: PluginMarketRepository = koinInject()
     val state by repository.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val clipboard = LocalClipboardManager.current
 
     var pendingInstall by remember { mutableStateOf<Uri?>(null) }
     var pendingUninstall by remember { mutableStateOf<String?>(null) }
     var installError by remember { mutableStateOf<String?>(null) }
+
+    var marketQuery by remember { mutableStateOf("") }
+    var marketItems by remember { mutableStateOf<List<PluginMarketEntry>>(emptyList()) }
+    var marketLoading by remember { mutableStateOf(true) }
+    var marketError by remember { mutableStateOf<String?>(null) }
+
+    fun loadMarket(query: String) {
+        scope.launch {
+            marketLoading = true
+            marketError = null
+            runCatching { marketRepository.load(query) }
+                .onSuccess { marketItems = it }
+                .onFailure { marketError = it.message ?: "Market load failed" }
+            marketLoading = false
+        }
+    }
+
+    LaunchedEffect(Unit) { loadMarket("") }
 
     val pickPlugin = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument(),
@@ -74,6 +105,139 @@ fun SettingPluginsPage() {
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error,
                         )
+                    }
+                }
+            }
+        }
+
+        item {
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.setting_plugins_market_title),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    Text(
+                        text = stringResource(R.string.setting_plugins_market_not_native),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    OutlinedTextField(
+                        value = marketQuery,
+                        onValueChange = { marketQuery = it },
+                        label = { Text(stringResource(R.string.setting_plugins_market_search_hint)) },
+                        singleLine = true,
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                            imeAction = ImeAction.Search,
+                        ),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Button(
+                            onClick = { loadMarket(marketQuery) },
+                            enabled = !marketLoading,
+                        ) {
+                            Text(stringResource(R.string.setting_plugins_market_search))
+                        }
+                        TextButton(
+                            onClick = {
+                                marketQuery = ""
+                                loadMarket("")
+                            },
+                            enabled = !marketLoading,
+                        ) {
+                            Text(stringResource(R.string.setting_plugins_market_clear))
+                        }
+                    }
+                    if (marketLoading) {
+                        CircularProgressIndicator()
+                    }
+                    marketError?.let { error ->
+                        Text(
+                            text = stringResource(R.string.setting_plugins_market_error, error),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                    if (!marketLoading && marketError == null && marketItems.isEmpty()) {
+                        Text(
+                            text = stringResource(R.string.setting_plugins_market_empty),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    marketItems.forEach { entry ->
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp),
+                            ) {
+                                Text(
+                                    text = stringResource(
+                                        R.string.setting_plugins_market_name_version,
+                                        entry.name,
+                                        entry.version ?: "—",
+                                    ),
+                                    style = MaterialTheme.typography.titleSmall,
+                                )
+                                if (entry.description.isNotBlank()) {
+                                    Text(entry.description, style = MaterialTheme.typography.bodyMedium)
+                                }
+                                Text(
+                                    text = stringResource(R.string.setting_plugins_market_type, entry.type),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                entry.publisher?.let { publisher ->
+                                    Text(
+                                        text = stringResource(
+                                            R.string.setting_plugins_market_publisher,
+                                            publisher,
+                                        ),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                                if (entry.verified) {
+                                    Text(
+                                        text = stringResource(R.string.setting_plugins_market_verified),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.primary,
+                                    )
+                                }
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    entry.repoUrl?.let { url ->
+                                        TextButton(
+                                            onClick = {
+                                                runCatching {
+                                                    context.startActivity(
+                                                        Intent(Intent.ACTION_VIEW, Uri.parse(url)),
+                                                    )
+                                                }
+                                            },
+                                        ) {
+                                            Text(stringResource(R.string.setting_plugins_market_open_source))
+                                        }
+                                    }
+                                    TextButton(
+                                        onClick = {
+                                            clipboard.setText(AnnotatedString(entry.installCommand))
+                                        },
+                                    ) {
+                                        Text(stringResource(R.string.setting_plugins_market_copy_command))
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
