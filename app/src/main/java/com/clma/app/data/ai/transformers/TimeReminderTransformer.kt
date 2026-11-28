@@ -14,7 +14,8 @@ import kotlin.time.toJavaInstant
 /**
  * 时间提醒注入转换器
  *
- * 在时间间隔较大的消息之前自动注入 <time_reminder>，帮助 AI 了解对话的时间间隔
+ * 在请求末尾追加 <time_reminder>，避免改写历史消息前缀。时间提醒仍然用于帮助模型理解
+ * 对话时间间隔，但其字节变化只影响尾部，不会打断 prompt cache 的稳定前缀。
  */
 object TimeReminderTransformer : InputMessageTransformer {
     override suspend fun transform(
@@ -36,7 +37,7 @@ internal fun applyTimeReminder(
     zoneId: ZoneId = ZoneId.systemDefault(),
 ): List<UIMessage> {
     val thresholdSeconds = intervalMinutes.coerceAtLeast(1).toLong() * 60
-    val result = mutableListOf<UIMessage>()
+    val reminders = mutableListOf<UIMessage>()
     val tz = runCatching { TimeZone.of(zoneId.id) }.getOrElse { TimeZone.currentSystemDefault() }
 
     var firstUserFound = false
@@ -46,21 +47,19 @@ internal fun applyTimeReminder(
             val currInstant = current.createdAt.toInstant(tz)
             if (!firstUserFound) {
                 firstUserFound = true
-                result.add(buildTimeReminderMessage(null, currInstant, zoneId))
+                reminders.add(buildTimeReminderMessage(null, currInstant, zoneId))
             } else {
                 val previous = messages[i - 1]
                 val prevInstant = previous.createdAt.toInstant(tz)
                 val gapSeconds = (currInstant - prevInstant).inWholeSeconds
-
                 if (gapSeconds > thresholdSeconds) {
-                    result.add(buildTimeReminderMessage(gapSeconds, currInstant, zoneId))
+                    reminders.add(buildTimeReminderMessage(gapSeconds, currInstant, zoneId))
                 }
             }
         }
-        result.add(current)
     }
 
-    return result
+    return messages + reminders
 }
 
 private fun buildTimeReminderMessage(gapSeconds: Long?, instant: Instant, zoneId: ZoneId): UIMessage {
