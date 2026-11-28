@@ -73,7 +73,7 @@ class HelloPlugin : ClmaPlugin {
 
 ## Plugin sources and adapters
 
-Settings center → Plugins includes read-only source discovery backed by adapters:
+Settings center → Plugins includes source discovery backed by adapters:
 
 - `DshGoMarketSourceAdapter`: public DSH Go Marketplace API V2.
 - `GitHubTopicMarketSourceAdapter`: GitHub repositories using the `clma-plugin` topic.
@@ -90,6 +90,6 @@ This conversion layer is intentionally separate from discovery. JS/TS-to-APK con
 
 ## Known limitations
 
-- Marketplace discovery is read-only; it never downloads or auto-installs external packages.
+- Marketplace discovery itself is read-only and never auto-installs anything; one-click download/install requires explicit confirmation and is available only for native APK release entries.
 - DSH Package Protocol V2 artifacts and GitHub source repositories are not CLmA native APK plugins.
 - CI compiles and verifies changes; this PR was not built locally.

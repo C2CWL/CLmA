@@ -27,35 +27,39 @@ class PluginMarketDownloader(
             .header("Accept", "application/vnd.android.package-archive")
             .get()
             .build()
-        client.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) error("Download failed: HTTP ${response.code}")
-            val body = response.body ?: error("Empty download response")
-            val declaredSize = entry.assetSize ?: body.contentLength()
-            if (declaredSize > MAX_BYTES) error("Plugin APK exceeds ${MAX_BYTES / 1024 / 1024} MB limit")
-            body.byteStream().use { input ->
-                FileOutputStream(file).use { output ->
-                    val buffer = ByteArray(16 * 1024)
-                    var total = 0L
-                    while (true) {
-                        val read = input.read(buffer)
-                        if (read < 0) break
-                        total += read
-                        if (total > MAX_BYTES) error("Plugin APK exceeds ${MAX_BYTES / 1024 / 1024} MB limit")
-                        output.write(buffer, 0, read)
+        try {
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) error("Download failed: HTTP ${response.code}")
+                val body = response.body ?: error("Empty download response")
+                val declaredSize = entry.assetSize ?: body.contentLength()
+                if (declaredSize > MAX_BYTES) error("Plugin APK exceeds ${MAX_BYTES / 1024 / 1024} MB limit")
+                body.byteStream().use { input ->
+                    FileOutputStream(file).use { output ->
+                        val buffer = ByteArray(16 * 1024)
+                        var total = 0L
+                        while (true) {
+                            val read = input.read(buffer)
+                            if (read < 0) break
+                            total += read
+                            if (total > MAX_BYTES) error("Plugin APK exceeds ${MAX_BYTES / 1024 / 1024} MB limit")
+                            output.write(buffer, 0, read)
+                        }
                     }
                 }
             }
-        }
 
-        val expectedSha256 = entry.downloadSha256
-        if (!expectedSha256.isNullOrBlank()) {
-            val actualSha256 = sha256(file)
-            if (!actualSha256.equals(expectedSha256, ignoreCase = true)) {
-                file.delete()
-                error("SHA256 mismatch")
+            val expectedSha256 = entry.downloadSha256
+            if (!expectedSha256.isNullOrBlank()) {
+                val actualSha256 = sha256(file)
+                if (!actualSha256.equals(expectedSha256, ignoreCase = true)) {
+                    error("SHA256 mismatch")
+                }
             }
+            file
+        } catch (t: Throwable) {
+            file.delete()
+            throw t
         }
-        file
     }
 
     private fun sha256(file: File): String {
