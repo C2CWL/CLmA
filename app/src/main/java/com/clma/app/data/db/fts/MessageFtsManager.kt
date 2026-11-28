@@ -109,6 +109,8 @@ class MessageFtsManager(private val database: AppDatabase) {
         limit: Int = 50,
         offset: Int = 0,
         scope: AssistantScope = AssistantScope.ALL,
+        recallTerms: List<String> = emptyList(),
+        excludeConversationId: String? = null,
     ): List<MessageSearchResult> = withContext(Dispatchers.IO) {
         require(limit in 1..201 && offset >= 0)
         val results = mutableListOf<MessageSearchResult>()
@@ -154,12 +156,26 @@ class MessageFtsManager(private val database: AppDatabase) {
         } else {
             ""
         }
+        val recallFilter = if (excludeConversationId != null) {
+            """
+            AND message_fts.conversation_id != ?
+            AND EXISTS (
+                SELECT 1 FROM conversationentity AS source
+                WHERE source.id = message_fts.conversation_id
+                  AND source.parent_conversation_id = ''
+                  AND source.is_delegated_conversation = 0
+            )
+            """.trimIndent()
+        } else ""
+        val matchQuery = if (recallTerms.isEmpty()) "jieba_query(?)"
+            else recallTerms.joinToString(" || ' OR ' || ") { "jieba_query(?)" }
         val args = buildList<Any> {
-            add(keyword)
+            if (recallTerms.isEmpty()) add(keyword) else addAll(recallTerms)
             if (assistantId != null) add(assistantId)
             if (conversationId != null) add(conversationId)
             includeIds?.let { addAll(it) }
             addAll(excludeIds)
+            excludeConversationId?.let { add(it) }
             add(limit)
             add(offset)
         }.toTypedArray()
@@ -168,11 +184,12 @@ class MessageFtsManager(private val database: AppDatabase) {
             SELECT node_id, message_id, conversation_id, title, update_at,
                    simple_snippet(message_fts, 0, '[', ']', '...', 30) AS snippet
             FROM message_fts
-            WHERE text MATCH jieba_query(?)
+            WHERE text MATCH ($matchQuery)
             $assistantFilter
             $conversationFilter
             $includeFilter
             $excludeFilter
+            $recallFilter
             ORDER BY ${sort.orderBy}, rowid
             LIMIT ? OFFSET ?
             """.trimIndent(),

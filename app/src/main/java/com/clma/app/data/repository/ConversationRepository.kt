@@ -516,6 +516,26 @@ class ConversationRepository(
         scope: AssistantScope = AssistantScope.ALL,
     ) = messageFtsManager.search(keyword, sort, assistantId?.toString(), conversationId?.toString(), limit, offset, scope)
 
+    internal suspend fun searchBotRecall(terms: List<String>, assistantId: Uuid, conversationId: Uuid) =
+        messageFtsManager.search(
+            keyword = "",
+            assistantId = assistantId.toString(),
+            recallTerms = terms,
+            excludeConversationId = conversationId.toString(),
+            limit = 32,
+        )
+
+    internal suspend fun loadBotRecallMessage(
+        hit: com.clma.app.data.db.fts.MessageSearchResult,
+        assistantId: Uuid,
+    ): UIMessage? {
+        val node = messageNodeDAO.getRecallNode(hit.nodeId, hit.conversationId, assistantId.toString())
+            ?: return null
+        val messages = JsonInstant.decodeFromString<List<UIMessage>>(node.messages)
+        return (messages.getOrNull(node.selectIndex) ?: messages.firstOrNull())
+            ?.takeIf { it.id.toString() == hit.messageId }
+    }
+
     /** Assistant a conversation is bound to, without loading its messages (null if it does not exist yet). */
     suspend fun getAssistantIdOfConversation(conversationId: Uuid): Uuid? =
         conversationDAO.getAssistantIdOf(conversationId.toString())?.let { runCatching { Uuid.parse(it) }.getOrNull() }
