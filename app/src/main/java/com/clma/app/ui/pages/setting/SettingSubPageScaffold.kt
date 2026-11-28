@@ -5,16 +5,13 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.material3.LargeFlexibleTopAppBar
+import top.yukonga.miuix.kmp.basic.TopAppBar as MiuixTopAppBar
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
+import top.yukonga.miuix.kmp.basic.Scaffold as MiuixScaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarColors
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 import com.clma.app.ui.components.nav.BackButton
 import com.clma.app.ui.theme.LocalDarkMode
@@ -83,20 +80,6 @@ internal fun blendOver(foreground: Color, background: Color, alpha: Float): Colo
     )
 }
 
-@Composable
-internal fun settingsTopBarColors(): TopAppBarColors {
-    val bg = settingsPageContainerColor()
-    val title = settingsPrimaryTextColor()
-    val icon = settingsIconTint()
-    return TopAppBarDefaults.topAppBarColors(
-        containerColor = bg,
-        scrolledContainerColor = bg,
-        titleContentColor = title,
-        navigationIconContentColor = icon,
-        actionIconContentColor = icon,
-    )
-}
-
 /**
  * The frame every simple settings sub-page shares: large collapsing title, back button and a
  * lazy column of card groups. Pages split out of the old 「界面偏好设置」/「主题」/「模型设置」 use
@@ -107,20 +90,19 @@ internal fun SettingSubPageScaffold(
     title: String,
     content: LazyListScope.() -> Unit,
 ) {
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val pageColor = settingsPageContainerColor()
-    val topBarColors = settingsTopBarColors()
     val titleColor = settingsPrimaryTextColor()
-    Scaffold(
+    MiuixScaffold(
         topBar = {
-            LargeFlexibleTopAppBar(
-                title = { Text(title, color = titleColor) },
+            MiuixTopAppBar(
+                title = title,
+                largeTitle = title,
+                color = pageColor,
+                titleColor = titleColor,
+                largeTitleColor = titleColor,
                 navigationIcon = { BackButton() },
-                scrollBehavior = scrollBehavior,
-                colors = topBarColors,
             )
         },
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = pageColor,
     ) { contentPadding ->
         LazyColumn(
