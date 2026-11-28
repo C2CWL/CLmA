@@ -1,0 +1,49 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- Adapted from OpenMausBot (https://github.com/milind-soni/OpenMausBot), src/locales/en.json, src/locales/zh.json.
+     Copyright 2026 Milind Soni and OpenMausBot contributors, Apache License 2.0
+     (third_party/openmausbot/LICENSE). Modified for CLmA Android resources. -->
+<resources>
+  <string name="routine2_backup_model">用量达到上限时使用的备用模型</string>
+  <string name="routine2_cancelled">已取消</string>
+  <string name="routine2_changed_url">仅在此网址内容有变化时运行（可选）</string>
+  <string name="routine2_check_back_cancelled">已取消 %1$d 个回访。</string>
+  <string name="routine2_check_back_empty">此对话没有待处理的回访。</string>
+  <string name="routine2_check_back_gate">仅在满足此条件时行动。无法确认时不要采取行动。条件：%1$s</string>
+  <string name="routine2_check_back_invalid">请输入将来的时间和备注，或输入要取消的回访 ID。</string>
+  <string name="routine2_check_back_limit">此对话已有 20 个待处理的回访。</string>
+  <string name="routine2_check_back_pending">将在 %1$s 回访：%2$s</string>
+  <string name="routine2_check_back_title">待处理的回访</string>
+  <string name="routine2_check_back_turn">[定时回访] 按约定继续此对话。备注：%1$s</string>
+  <string name="routine2_check_not_met">未满足检查条件</string>
+  <string name="routine2_check_paced">已达到每日检查运行上限，或正在等待重试</string>
+  <string name="routine2_check_unavailable">无法完成检查</string>
+  <string name="routine2_conversation_busy">对话正在处理其他消息</string>
+  <string name="routine2_destination">将结果发布到</string>
+  <string name="routine2_end_date">间隔任务结束日期（YYYY-MM-DD，可选）</string>
+  <string name="routine2_failed">失败</string>
+  <string name="routine2_history">运行记录</string>
+  <string name="routine2_history_empty">暂无运行记录</string>
+  <string name="routine2_interval_days">运行星期（未选择时每天运行）</string>
+  <string name="routine2_minutes_hint">1–1440</string>
+  <string name="routine2_new_topic">每次运行新建对话</string>
+  <string name="routine2_none">无</string>
+  <string name="routine2_once_date">日期（YYYY-MM-DD，可选）</string>
+  <string name="routine2_only_if">仅在满足以下条件时运行（可选）</string>
+  <string name="routine2_open_result">打开对话</string>
+  <string name="routine2_overlap">若上次运行仍在进行</string>
+  <string name="routine2_overlap_reason">上一次运行仍在进行</string>
+  <string name="routine2_queue">排入一次运行</string>
+  <string name="routine2_quota_resumes">将在 %1$s 恢复</string>
+  <string name="routine2_running">运行中</string>
+  <string name="routine2_same_topic">同一个对话</string>
+  <string name="routine2_skip">略过这次调度</string>
+  <string name="routine2_skipped">已跳过</string>
+  <string name="routine2_success">已完成</string>
+  <string name="routine2_waiting_approval">等待审批</string>
+  <string name="routine2_waiting_quota">等待用量重置</string>
+  <string name="routine2_window_end">时间窗口结束（HH:mm，可选）</string>
+  <string name="routine2_window_start">时间窗口开始（HH:mm，可选）</string>
+  <string name="routine2_cron">Cron</string>
+  <string name="routine2_interval_error">请选择将来的结束日期，且时间窗口至少应覆盖一个运行间隔。</string>
+  <string name="routine2_schedule_note">使用该 Bot 的工具和记忆在本设备运行。设备空闲时，Android 可能延迟运行。</string>
+</resources>

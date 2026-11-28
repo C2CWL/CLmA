@@ -10,6 +10,9 @@ import kotlinx.serialization.json.jsonPrimitive
 class HttpException(
     message: String,
     val statusCode: Int? = null,
+    val retryAfter: String? = null,
+    val rateLimitReset: String? = null,
+    val responseDetail: String? = null,
 ) : RuntimeException(message)
 
 fun JsonElement.parseErrorDetail(): HttpException {
@@ -44,4 +47,16 @@ fun JsonElement.parseErrorDetail(): HttpException {
             HttpException(this.jsonPrimitive.content)
         }
     }
+}
+
+
+/** Preserve scheduling metadata at the boundary where the HTTP response still exists. */
+fun okhttp3.Response.quotaException(message: String, detail: String? = null): HttpException? {
+    val retry = header("Retry-After")
+    val reset = header("x-ratelimit-reset") ?: header("x-ratelimit-reset-requests")
+        ?: header("x-ratelimit-reset-tokens") ?: header("anthropic-ratelimit-requests-reset") ?: header("anthropic-ratelimit-tokens-reset")
+    val quota = code == 429 || (code in 400..499 &&
+        Regex("quota|rate.limit|usage.limit|resource.exhausted", RegexOption.IGNORE_CASE)
+            .containsMatchIn(detail ?: message))
+    return if (quota) HttpException(message, code, retry, reset, detail) else null
 }

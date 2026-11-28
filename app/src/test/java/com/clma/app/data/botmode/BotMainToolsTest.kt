@@ -10,14 +10,13 @@ import com.clma.app.data.datastore.DisplaySetting
 import com.clma.app.data.datastore.Settings
 import com.clma.app.data.model.Assistant
 import com.clma.app.data.model.AssistantLibrary
-import com.clma.app.data.model.AssistantMemory
+import com.clma.app.data.botmode.memory.BotManagedMemory
 import com.clma.app.data.model.isBot
 import com.clma.app.utils.JsonInstant
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -51,7 +50,7 @@ class BotMainToolsTest {
     /** In-memory store whose settings go through the real JSON encoding on every write. */
     private class FakeStore(initial: Settings) : BotMainToolStore {
         var current: Settings = initial
-        val memoriesByBot = mutableMapOf<Uuid, MutableList<AssistantMemory>>()
+        val memoriesByBot = mutableMapOf<Uuid, MutableList<BotManagedMemory>>()
         private var nextId = 1
         var writes = 0
 
@@ -64,13 +63,14 @@ class BotMainToolsTest {
             return current
         }
         override suspend fun memories(botId: Uuid) = memoriesByBot[botId].orEmpty().toList()
-        override suspend fun addMemory(botId: Uuid, content: String): AssistantMemory {
+        override suspend fun addMemory(botId: Uuid, content: String): BotManagedMemory {
             writes++
-            return AssistantMemory(nextId++, content).also { memoriesByBot.getOrPut(botId) { mutableListOf() } += it }
+            return BotManagedMemory((nextId++).toString(), content).also { memoriesByBot.getOrPut(botId) { mutableListOf() } += it }
         }
-        override suspend fun deleteMemory(memoryId: Int) {
-            writes++
-            memoriesByBot.values.forEach { list -> list.removeAll { it.id == memoryId } }
+        override suspend fun deleteMemory(botId: Uuid, memoryId: String): Boolean {
+            val deleted = memoriesByBot[botId]?.removeAll { it.id == memoryId } == true
+            if (deleted) writes++
+            return deleted
         }
     }
 
@@ -135,7 +135,7 @@ class BotMainToolsTest {
             BotMainTools.CREATE to buildJsonObject { put("name", "New") ; put("system_prompt", "p") },
             BotMainTools.UPDATE_PROMPT to buildJsonObject { put("bot_id", other.id.toString()); put("system_prompt", "new") },
             BotMainTools.MEMORY_WRITE to buildJsonObject { put("bot_id", other.id.toString()); put("content", "m") },
-            BotMainTools.MEMORY_DELETE to buildJsonObject { put("bot_id", other.id.toString()); put("memory_id", 1) },
+            BotMainTools.MEMORY_DELETE to buildJsonObject { put("bot_id", other.id.toString()); put("memory_id", "1") },
         )
         calls.forEach { (name, args) ->
             assertEquals(name, "approval_required", t.getValue(name).run(args).error())
@@ -170,7 +170,7 @@ class BotMainToolsTest {
         val mem = t.getValue(BotMainTools.MEMORY_WRITE).run(buildJsonObject {
             put("bot_id", other.id.toString()); put("content", "likes tea")
         })
-        val memId = mem.getValue("memory_id").jsonPrimitive.intOrNull!!
+        val memId = mem.getValue("memory_id").jsonPrimitive.content
         assertEquals(listOf("likes tea"), store.memoriesByBot.getValue(other.id).map { it.content })
 
         // A memory id of another bot is refused.
@@ -194,7 +194,7 @@ class BotMainToolsTest {
             put("bot_id", classic.id.toString()); put("content", "x")
         }).error())
         assertEquals("bot_not_found", t.getValue(BotMainTools.MEMORY_DELETE).run(buildJsonObject {
-            put("bot_id", classic.id.toString()); put("memory_id", 1)
+            put("bot_id", classic.id.toString()); put("memory_id", "1")
         }).error())
         assertEquals("classic prompt", store.current.assistants.first { it.id == classic.id }.systemPrompt)
         assertTrue(store.memoriesByBot[classic.id].isNullOrEmpty())

@@ -5,12 +5,19 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import kotlinx.coroutines.flow.Flow
 import com.clma.app.data.db.entity.ScheduledJobRunEntity
 
 @Dao
 interface ScheduledJobRunDao {
     @Query("SELECT * FROM scheduled_job_runs WHERE jobId = :jobId ORDER BY startedAtMs DESC LIMIT :limit")
     suspend fun getRecent(jobId: String, limit: Int): List<ScheduledJobRunEntity>
+
+    @Query("SELECT * FROM scheduled_job_runs WHERE jobId = :jobId ORDER BY startedAtMs DESC LIMIT :limit")
+    fun observeRecent(jobId: String, limit: Int): Flow<List<ScheduledJobRunEntity>>
+
+    @Query("SELECT * FROM scheduled_job_runs WHERE id = :id")
+    suspend fun getById(id: String): ScheduledJobRunEntity?
 
     @Query("SELECT * FROM scheduled_job_runs WHERE finishedAtMs IS NULL AND startedAtMs < :stalenessMs")
     suspend fun getStranded(stalenessMs: Long): List<ScheduledJobRunEntity>
@@ -39,7 +46,7 @@ interface ScheduledJobRunDao {
             "AND outcome <> 'success' ORDER BY startedAtMs DESC LIMIT :keep) " +
             // A Bot routine run parked on an approval is still open; its row is rewritten
             // with the real outcome when it settles, so it must survive trimming until then.
-            "AND outcome <> 'awaiting_approval'"
+            "AND outcome NOT IN ('awaiting_approval', 'waiting_quota')"
     )
     suspend fun trim(jobId: String, keep: Int)
 

@@ -20,11 +20,15 @@ import com.clma.app.data.files.FileFolders
 import com.clma.app.data.model.Conversation
 import com.clma.app.data.model.isBot
 import com.clma.app.data.repository.ConversationRepository
-import com.clma.app.data.repository.MemoryRepository
 import com.clma.app.data.repository.ScheduledJobRepository
 import com.clma.app.data.repository.ScheduledJobRunRepository
 import com.clma.app.data.botmode.BotRoutineApprovals
-import com.clma.app.data.botmode.BotRoutineForm
+import com.clma.app.data.botmode.BotRoutineKind
+import com.clma.app.data.botmode.routine.RoutineStore
+import com.clma.app.data.botmode.routine.INTERVAL_CRON_PLACEHOLDER
+import com.clma.app.data.botmode.routine.RoutineCheckPacing
+import com.clma.app.data.botmode.routine.routineZone
+import com.clma.app.ui.pages.bot.routine.RoutineEdit
 import com.clma.app.data.botmode.ParkedRoutineRun
 import com.clma.app.data.botmode.routinesOfBot
 import com.clma.app.data.botmode.toJob
@@ -46,11 +50,11 @@ class BotInfoVM(
     botId: String,
     private val settingsStore: SettingsStore,
     conversationRepo: ConversationRepository,
-    memoryRepository: MemoryRepository,
     chatService: com.clma.app.service.ChatService,
     private val scheduledJobRepository: ScheduledJobRepository,
     private val scheduledJobRunRepository: ScheduledJobRunRepository,
     private val cronJobScheduler: CronJobScheduler,
+    private val routineStore: RoutineStore,
     private val appContext: android.content.Context,
 ) : ViewModel() {
     val id: Uuid = Uuid.parse(botId)
@@ -68,10 +72,6 @@ class BotInfoVM(
     val conversations: StateFlow<List<Conversation>> = conversationRepo.getConversationsOfAssistant(id)
         .map { list -> list.filter(::isBotVisibleTopic).sortedByDescending { it.updateAt } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    val memoryCount: StateFlow<Int> = memoryRepository.getMemoriesOfAssistantFlow(id.toString())
-        .map { it.size }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
     private fun updateBot(transform: (Assistant) -> Assistant) = viewModelScope.launch {
         settingsStore.update { s ->
@@ -108,8 +108,6 @@ class BotInfoVM(
 
     /** null = the Bot default (on); only an explicit "off" is stored (same as the detail page). */
     fun setCostSaving(enabled: Boolean) = updateBot { it.copy(botCostSaving = if (enabled) null else false) }
-
-    fun setMemoryEnabled(enabled: Boolean) = updateBot { it.copy(enableMemory = enabled) }
 
     fun toggleMcpServer(serverId: Uuid) = updateBot { bot ->
         bot.copy(mcpServers = if (serverId in bot.mcpServers) bot.mcpServers - serverId else bot.mcpServers + serverId)
@@ -155,11 +153,38 @@ class BotInfoVM(
         scheduledJobRepository.getById(jobId)?.takeIf { it.assistantId == id.toString() }
 
     /** Create ([existingId] null) or edit a routine, then (re)arm it with the existing scheduler. */
-    fun saveRoutine(form: BotRoutineForm, existingId: String?) = viewModelScope.launch(Dispatchers.IO) {
+    internal fun saveRoutine(edit: RoutineEdit, existingId: String?) = viewModelScope.launch(Dispatchers.IO) {
+        if (settings.value.assistants.none { it.id == id && it.isBot }) return@launch
         val existing = existingId?.let { ownJob(it) }
         if (existingId != null && existing == null) return@launch
-        val job = form.toJob(assistantId = id, existing = existing, nowMs = System.currentTimeMillis())
-        scheduledJobRepository.upsert(job)
+        val now = System.currentTimeMillis()
+        val zone = routineZone(existing?.timezone ?: settings.value.customTimezone)
+        val form = edit.form
+        val previous = existing?.let { routineStore.read().routines[it.id] }
+        val job = form.toJob(assistantId = id, existing = existing, nowMs = now, zone = zone).let {
+            when {
+                edit.options.interval != null -> it.copy(
+                    cronExpression = INTERVAL_CRON_PLACEHOLDER,
+                    endAtUnixMs = edit.endAtMs,
+                )
+                form.kind == BotRoutineKind.ONCE -> it.copy(atUnixMs = edit.onceAtMs ?: it.atUnixMs, endAtUnixMs = null)
+                else -> it.copy(endAtUnixMs = existing?.endAtUnixMs.takeIf { previous?.options?.interval == null })
+            }
+        }
+        val newAnchor = (now / 60_000 + 1) * 60_000
+        routineStore.edit(job.id) { current ->
+            val sameCheck = current.options.changedUrl == edit.options.changedUrl && current.options.condition == edit.options.condition
+            val previous = current.options.interval
+            val candidate = edit.options.interval
+            val interval = if (candidate != null && previous?.copy(anchorMs = 0) == candidate) previous
+                else candidate?.copy(anchorMs = newAnchor)
+            current.copy(
+                options = edit.options.copy(interval = interval),
+                pageHash = current.pageHash.takeIf { current.options.changedUrl == edit.options.changedUrl },
+                checkPacing = if (sameCheck) current.checkPacing else RoutineCheckPacing(),
+            )
+        }
+        if (existing == null) scheduledJobRepository.upsert(job) else scheduledJobRepository.update(job)
         if (job.enabled) cronJobScheduler.schedule(job) else cronJobScheduler.cancel(job.id)
     }
 
@@ -167,7 +192,14 @@ class BotInfoVM(
         val job = ownJob(jobId) ?: return@launch
         val updated = job.copy(enabled = enabled)
         scheduledJobRepository.update(updated)
-        if (enabled) cronJobScheduler.schedule(updated) else cronJobScheduler.cancel(jobId)
+        if (enabled) cronJobScheduler.schedule(updated) else {
+            val quota = routineStore.read().routines[jobId]?.quota
+            routineStore.editExisting(jobId) { it.copy(quota = null, queuedSlot = null, queuedManual = false) }
+            quota?.let { scheduledJobRunRepository.getById(it.runId) }
+                ?.takeIf { it.outcome == "waiting_quota" }
+                ?.let { scheduledJobRunRepository.update(it.copy(outcome = "cancelled", errorMessage = null)) }
+            cronJobScheduler.cancel(jobId)
+        }
     }
 
     /** Fire now (same path as trigger_job_now); false when the routine is paused or gone. */

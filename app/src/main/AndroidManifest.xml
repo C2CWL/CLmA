@@ -393,6 +393,8 @@
       </intent-filter>
     </service>
 
+    <receiver android:name=".data.botmode.routine.CheckBackAlarmReceiver" android:exported="false" />
+
     <receiver
       android:name=".service.CronAlarmReceiver"
       android:enabled="true"

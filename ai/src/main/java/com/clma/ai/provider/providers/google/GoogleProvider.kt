@@ -1,5 +1,6 @@
 package com.clma.ai.provider.providers.google
 
+import com.clma.ai.util.quotaException
 import android.content.Context
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
@@ -243,7 +244,9 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
 
         val response = client.newCall(request).await()
         if (!response.isSuccessful) {
-            throw Exception("Failed to get response: ${response.code} ${response.body.string()}")
+            val detail = response.body.string()
+            val message = "Failed to get response: ${response.code} $detail"
+            throw (response.quotaException(message, detail) ?: Exception(message))
         }
 
         val bodyStr = response.body.string()
@@ -343,9 +346,11 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
 
                 Log.w(TAG, "onFailure: ${t?.message}", t)
 
+                var detail: String? = null
                 try {
-                    if (t == null && response != null) {
+                    if (response != null && (t == null || response.code == 429)) {
                         val bodyStr = response.body.stringSafe()
+                        detail = bodyStr
                         if (!bodyStr.isNullOrEmpty()) {
                             val bodyElement = json.parseToJsonElement(bodyStr)
                             Log.d(TAG, "onFailure: error body $bodyElement")
@@ -363,7 +368,8 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
                     Log.w(TAG, "onFailure: failed to parse error body", e)
                     exception = e
                 } finally {
-                    close(exception ?: Exception("Stream failed"))
+                    val quota = response?.quotaException(exception?.message.orEmpty(), detail)
+                    close(quota ?: exception ?: Exception("Stream failed"))
                 }
             }
 
