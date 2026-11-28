@@ -1,6 +1,5 @@
 package com.clma.ai.provider.providers.google
 
-import com.clma.ai.util.withHttpFailureMetadata
 import android.content.Context
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
@@ -62,6 +61,8 @@ import com.clma.ai.ui.UIMessageAnnotation
 import com.clma.ai.ui.UIMessagePart
 import com.clma.ai.ui.metadataAs
 import com.clma.ai.ui.toMetadata
+import com.clma.ai.util.quotaException
+import com.clma.ai.util.withHttpFailureMetadata
 import com.clma.ai.util.KeyRoulette
 import com.clma.ai.util.configureReferHeaders
 import com.clma.ai.util.configureSessionHeaders
@@ -244,8 +245,10 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
 
         val response = client.newCall(request).await()
         if (!response.isSuccessful) {
-            throw Exception("Failed to get response: ${response.code} ${response.body.string()}").apply {
-                withHttpFailureMetadata(response, enabled = params.captureQuotaRefusal)
+            val detail = response.body.string()
+            val message = "Failed to get response: ${response.code} $detail"
+            throw (response.quotaException(message, detail) ?: Exception(message)).apply {
+                withHttpFailureMetadata(response, detail, enabled = params.captureQuotaRefusal)
             }
         }
 
@@ -348,7 +351,7 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
                 Log.w(TAG, "onFailure: ${t?.message}", t)
 
                 try {
-                    if (t == null && response != null) {
+                    if (response != null && (t == null || response.code == 429)) {
                         bodyStr = response.body.stringSafe()
                         if (!bodyStr.isNullOrEmpty()) {
                             val bodyElement = json.parseToJsonElement(bodyStr)
@@ -367,7 +370,8 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
                     Log.w(TAG, "onFailure: failed to parse error body", e)
                     exception = e
                 } finally {
-                    val failure = exception ?: Exception("Stream failed")
+                    val quota = response?.quotaException(exception?.message.orEmpty(), bodyStr)
+                    val failure = quota ?: exception ?: Exception("Stream failed")
                     close(failure.withHttpFailureMetadata(response, bodyStr, enabled = params.captureQuotaRefusal))
                 }
             }

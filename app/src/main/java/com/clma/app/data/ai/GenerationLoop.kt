@@ -1,5 +1,6 @@
 package com.clma.app.data.ai
 
+import com.clma.app.data.model.isBot
 import com.clma.app.data.repository.memoryScopeId
 
 import android.content.Context
@@ -1044,7 +1045,7 @@ class GenerationLoop(
             )
             val toolsInternal = if (finalSummaryStep) emptyList() else buildList {
                 Log.i(TAG, "generateInternal: build tools($assistant)")
-                if (assistant.enableMemory) {
+                if (!assistant.isBot && assistant.enableMemory) {
                     val memoryAssistantId = assistant.memoryScopeId()
                     buildMemoryTools(
                         json = json,
@@ -2219,7 +2220,7 @@ class GenerationLoop(
                 } else {
                     assistant.systemPrompt
                 }
-            val memoryPrompt = if (assistant.enableMemory) {
+            val memoryPrompt = if (!assistant.isBot && assistant.enableMemory) {
                 buildMemoryPrompt(memories = memories)
             } else ""
             inspectionMemoryPrompt = memoryPrompt

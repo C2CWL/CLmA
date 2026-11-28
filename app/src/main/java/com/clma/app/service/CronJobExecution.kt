@@ -22,6 +22,7 @@ import com.clma.app.service.CronJobWorker.Companion.OUTCOME_AWAITING_APPROVAL
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.uuid.Uuid
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.Flow
@@ -36,6 +37,14 @@ import com.clma.app.RouteActivity
 import com.clma.app.data.botmode.BotRoutineApprovalRules
 import com.clma.app.data.botmode.BotRoutineApprovals
 import com.clma.app.data.botmode.ParkedRoutineRun
+import com.clma.app.data.botmode.routine.BotRoutineTurn
+import com.clma.app.data.botmode.routine.RoutineAdmission
+import com.clma.app.data.botmode.routine.RoutineRunDelivery
+import com.clma.app.data.botmode.routine.RoutineState
+import com.clma.app.data.botmode.routine.RoutineStore
+import com.clma.app.data.botmode.routine.routineAdmission
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import com.clma.app.data.botmode.settings.BotModeSettingsStore
 import com.clma.app.data.botmode.settings.notificationSettings
 import com.clma.app.data.model.isBot
@@ -173,6 +182,9 @@ internal fun historyRetentionFor(maxRuns: Int?, baseline: Int = 100): Int =
  */
 private object CronJobRunningTracker {
     private val running = ConcurrentHashMap.newKeySet<String>()
+    val botAdmission = Mutex()
+    val botSlots = ConcurrentHashMap<String, Long>()
+    fun isRunning(jobId: String): Boolean = jobId in running
     fun start(jobId: String): Boolean = running.add(jobId)
     fun stop(jobId: String) { running.remove(jobId) }
 }
@@ -192,6 +204,7 @@ internal class CronJobExecution(
     private val localTools: LocalTools by inject()
     private val directRunner: DirectModeActionRunner by inject()
     private val agentRunRepo: AgentRunRepository by inject()
+    private val routineStore: RoutineStore by inject()
 
     suspend fun execute(inputData: Data): Result {
         // Bot routines: the same worker resumes a parked run once its cards are answered, and
@@ -203,14 +216,21 @@ internal class CronJobExecution(
         val isManual = inputData.getBoolean(KEY_MANUAL, false)
         val enqueuedSlotMs = inputData.keyValueMap[KEY_SCHEDULED_AT_MS] as? Long
 
-        if (!CronJobRunningTracker.start(jobId)) {
+        val botRoutine = repo.getById(jobId)?.let { it.mode == "llm" && isBotJob(it) } == true
+        val queuedSlot = inputData.keyValueMap[RoutineRunDelivery.QUEUED] as? Long
+        val quotaRun = inputData.getString(RoutineRunDelivery.QUOTA)
+        val isCatchup = inputData.getBoolean(RoutineRunDelivery.CATCHUP, false)
+        if (!botRoutine && (queuedSlot != null || quotaRun != null)) return Result.success()
+        if (botRoutine) {
+            admitBotRun(jobId, enqueuedSlotMs, isManual, queuedSlot, quotaRun, isCatchup)?.let { return it }
+        } else if (!CronJobRunningTracker.start(jobId)) {
             recordRun(jobId, scheduledAtMs = enqueuedSlotMs ?: System.currentTimeMillis(),
                 outcome = "concurrent_skip", mode = "?", convId = null, errorMessage = null)
             return Result.success()
         }
 
         val nowMs = System.currentTimeMillis()
-        val runRowId = Uuid.random().toString()
+        val runRowId = quotaRun ?: Uuid.random().toString()
 
         try {
             val job = repo.getById(jobId) ?: return Result.success()
@@ -222,11 +242,18 @@ internal class CronJobExecution(
                 return Result.success()
             }
 
-            val scheduledAtMs = computeRunSlot(isManual, job.nextRunAtMs, nowMs, enqueuedSlotMs)
+            val routine = if (botRoutine) routineStore.read().routines[jobId] ?: RoutineState() else null
+            val quotaRow = if (quotaRun == null) null else runRepo.getById(quotaRun)
+                ?.takeIf { it.jobId == jobId && it.outcome == "waiting_quota" } ?: return Result.success()
+            val manualRun = isManual || quotaRun != null && routine?.quota?.manual == true ||
+                queuedSlot != null && routine?.queuedManual == true
+            val scheduledAtMs = quotaRow?.scheduledAtMs ?: queuedSlot
+                ?: computeRunSlot(isManual, job.nextRunAtMs, nowMs, enqueuedSlotMs)
+            val regularFire = !isManual && queuedSlot == null && quotaRun == null
 
             // Replay guard runs BEFORE the optimistic insert, else the insert self-matches.
             // Manual fires skip the guard so the user can always force a fresh fire.
-            if (!isManual) {
+            if (regularFire) {
                 val priorRow = runRepo.getForSlot(jobId, scheduledAtMs)
                 if (priorRow != null && shouldSuppressAsReplay(
                         priorRow, scheduledAtMs, nowMs, slotIsExplicit = enqueuedSlotMs != null,
@@ -253,7 +280,7 @@ internal class CronJobExecution(
                     ))
                     // Recover a process death between executing the task and rearming it.
                     // If the cursor already advanced, leave that successor alone.
-                    if (job.nextRunAtMs == scheduledAtMs) {
+                    if (job.nextRunAtMs == scheduledAtMs && priorRow.outcome != "waiting_quota") {
                         val priorOutcome = if (priorRow.finishedAtMs == null) "process_killed_replay" else priorRow.outcome
                         advanceSchedule(job, priorRow.startedAtMs, priorOutcome)
                     }
@@ -269,12 +296,24 @@ internal class CronJobExecution(
                 jobId = jobId,
                 mode = job.mode,
                 scheduledAtMs = scheduledAtMs,
-                startedAtMs = nowMs,
+                startedAtMs = quotaRow?.startedAtMs ?: nowMs,
                 finishedAtMs = null,
                 outcome = "success",                          // optimistic
                 conversationId = null,
                 errorMessage = null,
             ))
+
+            if (regularFire && botRoutine && job.scheduleType != "once" && !isCatchup) {
+                advanceSchedule(job, maxOf(nowMs, scheduledAtMs), "started")
+            }
+
+            if (queuedSlot != null || quotaRun != null) routineStore.editExisting(jobId) {
+                it.copy(
+                    queuedSlot = if (queuedSlot == null) it.queuedSlot else null,
+                    queuedManual = queuedSlot == null && it.queuedManual,
+                    quota = if (quotaRun == null) it.quota else null,
+                )
+            }
 
             // Phase 24 — open the cross-pillar ledger row alongside the domain detail row.
             // domain_id is keyed per-fire (jobId:slot) so a replay or a later fire of the
@@ -286,27 +325,26 @@ internal class CronJobExecution(
                 metadata = buildJsonObject {
                     put("job_name", job.name)
                     put("mode", job.mode)
-                    put("manual", isManual)
+                    put("manual", manualRun)
                 },
             )
 
-            // Bot-library owners get parkable runs: approvals wait for the user instead of
-            // being refused, and every finished run posts a short notification.
-            val isBot = isBotJob(job)
-            val botRoutine = job.mode == "llm" && isBot
-            val blocked = if (isBot) {
-                chatService.botAvailabilityError(Uuid.parse(job.assistantId), unattended = !isManual)
-            } else null
-            val (outcome, errorMessage, convIdMaybe) = when {
-                blocked != null -> Triple(if (isManual) "failed" else "skipped", blocked, null)
-                job.mode == "llm" -> runLlm(job, parkable = botRoutine)
-                job.mode == "direct" && isBot -> {
-                    val botId = Uuid.parse(job.assistantId)
-                    BotRoutineStops.run(botId, { chatService.isBotPaused(botId) }) { runDirect(job) }
-                        ?: Triple("cancelled", applicationContext.getString(R.string.bot_quota_paused_message), null)
-                }
+            val botId = if (isBotJob(job)) Uuid.parse(job.assistantId) else null
+            val blocked = botId?.let { chatService.botAvailabilityError(it, unattended = !manualRun) }
+
+            suspend fun runJob(): Triple<String, String?, Uuid?> = when {
+                routine != null -> BotRoutineTurn(routineStore, repo, conversationRepo, chatService, CRON_DELIVERY_DIRECTIVE)
+                    .run(job, routine, routine.quota.takeIf { quotaRun != null }, quotaRow?.conversationId, runRowId, manualRun)
+                job.mode == "llm" -> runLlm(job)
                 job.mode == "direct" -> runDirect(job)
                 else -> Triple("failed", "unknown_mode:${job.mode}", null)
+            }
+
+            val (outcome, errorMessage, convIdMaybe) = when {
+                blocked != null -> Triple(if (manualRun) "failed" else "skipped", blocked, null)
+                botId == null -> runJob()
+                else -> BotRoutineStops.run(botId, { chatService.isBotPaused(botId) }) { runJob() }
+                    ?: Triple("cancelled", applicationContext.getString(R.string.bot_quota_paused_message), null)
             }
 
             runRepo.update(ScheduledJobRunEntity(
@@ -314,7 +352,7 @@ internal class CronJobExecution(
                 jobId = jobId,
                 mode = job.mode,
                 scheduledAtMs = scheduledAtMs,
-                startedAtMs = nowMs,
+                startedAtMs = quotaRow?.startedAtMs ?: nowMs,
                 finishedAtMs = System.currentTimeMillis(),
                 outcome = outcome,
                 conversationId = convIdMaybe?.toString(),
@@ -338,13 +376,18 @@ internal class CronJobExecution(
                         runId = runRowId,
                         mode = job.mode,
                         scheduledAtMs = scheduledAtMs,
-                        startedAtMs = nowMs,
+                        startedAtMs = quotaRow?.startedAtMs ?: nowMs,
                         ledgerId = ledgerId,
                         workedMs = System.currentTimeMillis() - nowMs,
                         parkedAtMs = 0L,
                         expiresAtMs = 0L,
                     )
                 )
+            } else if (outcome == "waiting_quota") {
+                routineStore.read().routines[jobId]?.quota?.let {
+                    RoutineRunDelivery.quota(applicationContext, jobId, it)
+                }
+                agentRunRepo.markTerminal(ledgerId, AgentRunStatus.failed, outcome)
             } else {
                 agentRunRepo.markTerminal(
                     id = ledgerId,
@@ -352,8 +395,10 @@ internal class CronJobExecution(
                     lastError = if (outcome == "success") null else "$outcome: ${errorMessage.orEmpty()}",
                 )
 
-                if (botRoutine && convIdMaybe != null) {
-                    notifyBotRoutineFinished(job.assistantId, job.name, convIdMaybe, outcome, errorMessage)
+                if (botRoutine) {
+                    if (convIdMaybe != null && outcome != "skipped") {
+                        notifyBotRoutineFinished(job.assistantId, job.name, convIdMaybe, outcome, errorMessage)
+                    }
                 } else if (outcome != "success" && outcome != "skipped") {
                     // Failure notification (post once per failure; the existing channel handles dedup)
                     postFailureNotification(
@@ -365,16 +410,118 @@ internal class CronJobExecution(
             // Manual fires (trigger_job_now) are bonus — they get a history row but
             // don't bump runs_so_far or lastRunAtMs (per spec Decision 13). The regular
             // schedule continues unaffected.
-            if (!isManual) {
+            if (!botRoutine && !isManual) {
                 advanceSchedule(job, nowMs, outcome)
+            } else if (botRoutine && !manualRun && job.scheduleType == "once" && outcome != "waiting_quota"
+            ) {
+                repo.getById(jobId)?.takeIf { it.scheduleType == "once" && it.atUnixMs == job.atUnixMs }
+                    ?.let { advanceSchedule(it, nowMs, outcome) }
+            } else if (botRoutine && outcome == "success") {
+                updateBotSuccessCount(jobId)
             }
 
             // Trim history at the end so this row's insert/update is reflected in the cap.
             runRepo.trim(jobId, keep = historyRetentionFor(job.maxRuns))
 
             return Result.success()
+        } catch (cancelled: CancellationException) {
+            if (botRoutine) withContext(NonCancellable) {
+                runRepo.getById(runRowId)?.takeIf { it.finishedAtMs == null }?.let {
+                    runRepo.update(it.copy(
+                        finishedAtMs = System.currentTimeMillis(), outcome = "cancelled",
+                    ))
+                }
+            }
+            throw cancelled
         } finally {
-            CronJobRunningTracker.stop(jobId)
+            if (botRoutine) withContext(NonCancellable) {
+                CronJobRunningTracker.botAdmission.withLock {
+                    CronJobRunningTracker.botSlots.remove(jobId)
+                    CronJobRunningTracker.stop(jobId)
+                }
+                dispatchQueued(jobId)
+            } else {
+                CronJobRunningTracker.stop(jobId)
+            }
+        }
+    }
+
+    private suspend fun admitBotRun(
+        jobId: String,
+        enqueuedSlot: Long?,
+        manual: Boolean,
+        queuedSlot: Long?,
+        quotaRun: String?,
+        isCatchup: Boolean,
+    ): Result? = CronJobRunningTracker.botAdmission.withLock {
+        val job = repo.getById(jobId) ?: return@withLock Result.success()
+        if (!job.enabled) return@withLock Result.success()
+        var state = routineStore.read().routines[jobId] ?: RoutineState()
+        val active = CronJobRunningTracker.isRunning(jobId)
+        val quota = state.quota
+        if (!active && quota != null && runRepo.getById(quota.runId)?.outcome != "waiting_quota") {
+            state = state.copy(quota = null)
+            routineStore.editExisting(jobId) { it.copy(quota = null) }
+        }
+        val now = System.currentTimeMillis()
+        val deferred = queuedSlot != null || quotaRun != null
+        val slot = queuedSlot ?: computeRunSlot(manual, job.nextRunAtMs, now, enqueuedSlot)
+        if (!manual && !deferred && !isCatchup && enqueuedSlot != null && enqueuedSlot != job.nextRunAtMs) {
+            return@withLock Result.success()
+        }
+        if (queuedSlot != null && state.queuedSlot != queuedSlot) return@withLock Result.success()
+        if (quotaRun != null) {
+            val retry = state.quota?.takeIf { it.runId == quotaRun } ?: return@withLock Result.success()
+            if (retry.atMs > now) return@withLock Result.retry()
+        }
+
+        val parked = BotRoutineApprovals.ofJob(jobId).isNotEmpty()
+        val blocked = active || parked ||
+            (state.quota != null && quotaRun == null) ||
+            (state.queuedSlot != null && !deferred)
+        if (deferred && blocked) return@withLock Result.retry()
+        val decision = routineAdmission(blocked, state.options.overlap, state.queuedSlot != null)
+        if (decision == RoutineAdmission.RUN) {
+            check(CronJobRunningTracker.start(jobId))
+            CronJobRunningTracker.botSlots[jobId] = slot
+            return@withLock null
+        }
+
+        if (!manual && (CronJobRunningTracker.botSlots[jobId] == slot || state.queuedSlot == slot ||
+                runRepo.getForSlot(jobId, slot) != null)
+        ) return@withLock Result.success()
+
+        if (decision == RoutineAdmission.QUEUE) {
+            routineStore.edit(jobId) { it.copy(queuedSlot = slot, queuedManual = manual) }
+        } else {
+            recordRun(jobId, slot, "skipped", job.mode, null, "overlap")
+            runRepo.trim(jobId, keep = historyRetentionFor(job.maxRuns))
+        }
+        if (!manual && job.nextRunAtMs == slot &&
+            (job.scheduleType == "once" && decision == RoutineAdmission.SKIP || !isCatchup && job.scheduleType != "once")
+        ) {
+            advanceSchedule(job, maxOf(now, slot), "skipped")
+        }
+        if (!active && !parked) dispatchQueued(jobId)
+        Result.success()
+    }
+
+    private suspend fun updateBotSuccessCount(jobId: String) = CronJobRunningTracker.botAdmission.withLock {
+        val current = repo.getById(jobId) ?: return@withLock
+        val count = runRepo.countSuccessful(jobId)
+        val enabled = current.enabled && (current.maxRuns == null || count < current.maxRuns)
+        repo.update(current.copy(runsSoFar = count, enabled = enabled, nextRunAtMs = current.nextRunAtMs.takeIf { enabled }))
+        if (current.enabled && !enabled) {
+            routineStore.editExisting(jobId) { it.copy(queuedSlot = null, queuedManual = false) }
+            scheduler.cancelExactAlarm(jobId)
+        }
+    }
+
+    private suspend fun dispatchQueued(jobId: String) {
+        if (BotRoutineApprovals.ofJob(jobId).isNotEmpty()) return
+        val state = routineStore.read().routines[jobId] ?: return
+        if (state.quota == null && repo.getById(jobId)?.enabled == true) {
+            state.queuedSlot?.let { RoutineRunDelivery.queued(applicationContext, jobId, it) }
         }
     }
 
@@ -400,7 +547,7 @@ internal class CronJobExecution(
         return false
     }
 
-    private suspend fun runLlm(job: ScheduledJobEntity, parkable: Boolean = false): Triple<String, String?, Uuid?> {
+    private suspend fun runLlm(job: ScheduledJobEntity): Triple<String, String?, Uuid?> {
         val prompt = job.prompt ?: return Triple("failed", "missing_prompt_for_llm_mode", null)
         val assistantUuid = runCatching { Uuid.parse(job.assistantId) }.getOrNull()
             ?: return Triple("failed", "bad_assistant_id:${job.assistantId}", null)
@@ -412,7 +559,7 @@ internal class CronJobExecution(
         ).copy(title = "[Scheduled] ${job.name}")
         conversationRepo.insertConversation(conv)
         chatService.initializeConversation(conv.id)
-        if (parkable) HeadlessConversations.markParkable(conv.id) else HeadlessConversations.mark(conv.id)
+        HeadlessConversations.mark(conv.id)
         try {
             chatService.sendMessage(conv.id, listOf(UIMessagePart.Text(CRON_DELIVERY_DIRECTIVE + "\n\n" + prompt)))
             // Wait for the generation job to clear, with a 15-min wall-clock cap.
@@ -421,13 +568,6 @@ internal class CronJobExecution(
                 flow = chatService.getGenerationJobStateFlow(conv.id),
                 timeoutMs = BotRoutineApprovalRules.RUN_LIMIT_MS,
             )
-            if (parkable && chatService.isBotPaused(assistantUuid)) {
-                return Triple("cancelled", applicationContext.getString(R.string.bot_quota_paused_message), conv.id)
-            }
-            // A parkable run that stopped on an approval card is waiting, not finished.
-            if (completed && parkable && pendingToolName(conv.id) != null) {
-                return Triple(OUTCOME_AWAITING_APPROVAL, null, conv.id)
-            }
             return finishRunLlm(completed, conv.id) {
                 runCatching { chatService.stopGeneration(conv.id) }
                     .onFailure { Log.w(TAG, "runLlm: stopGeneration failed after timeout for ${job.id}", it) }
@@ -665,6 +805,8 @@ internal class CronJobExecution(
                 lastError = if (outcome == "success") null else "$outcome: ${errorMessage.orEmpty()}",
             )
         }
+        if (outcome == "success") updateBotSuccessCount(parkedRun.jobId)
+        dispatchQueued(parkedRun.jobId)
         if (notify) notifyBotRoutineFinished(parkedRun.assistantId, parkedRun.jobName, convId, outcome, errorMessage)
     }
 
@@ -700,6 +842,7 @@ internal class CronJobExecution(
             parkedRun.ledgerId?.let { agentRunRepo.markTerminal(it, AgentRunStatus.cancelled, "routine_deleted") }
             return Result.success()
         }
+        dispatchQueued(parkedRun.jobId)
         writeRunRow(parkedRun, OUTCOME_APPROVAL_EXPIRED, "no answer within ${BotRoutineApprovalRules.APPROVAL_TTL_MS / 3_600_000L}h")
         parkedRun.ledgerId?.let { agentRunRepo.markTerminal(it, AgentRunStatus.cancelled, OUTCOME_APPROVAL_EXPIRED) }
         if (botModeSettingsStore.notificationSettings().notifyRoutineResults) {

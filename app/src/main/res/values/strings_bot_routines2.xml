@@ -1,0 +1,49 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- Adapted from OpenMausBot (https://github.com/milind-soni/OpenMausBot), src/locales/en.json, src/locales/zh.json.
+     Copyright 2026 Milind Soni and OpenMausBot contributors, Apache License 2.0
+     (third_party/openmausbot/LICENSE). Modified for CLmA Android resources. -->
+<resources>
+  <string name="routine2_backup_model">Backup model for usage limits</string>
+  <string name="routine2_cancelled">Cancelled</string>
+  <string name="routine2_changed_url">Only if this URL changed (optional)</string>
+  <string name="routine2_check_back_cancelled">Cancelled %1$d check-back(s).</string>
+  <string name="routine2_check_back_empty">No pending check-backs in this conversation.</string>
+  <string name="routine2_check_back_gate">Act only if this condition holds. If you cannot confirm it, take no action. Condition: %1$s</string>
+  <string name="routine2_check_back_invalid">Enter a future time and a note, or enter an ID to cancel.</string>
+  <string name="routine2_check_back_limit">This conversation already has 20 pending check-backs.</string>
+  <string name="routine2_check_back_pending">Will check back %1$s: %2$s</string>
+  <string name="routine2_check_back_title">Pending check-backs</string>
+  <string name="routine2_check_back_turn">[Scheduled check-back] Continue this conversation as requested. Note: %1$s</string>
+  <string name="routine2_check_not_met">Check not met</string>
+  <string name="routine2_check_paced">Check deferred by its daily limit or after a failure</string>
+  <string name="routine2_check_unavailable">The check could not run</string>
+  <string name="routine2_conversation_busy">Conversation is busy</string>
+  <string name="routine2_destination">Post results to</string>
+  <string name="routine2_end_date">Interval end date (YYYY-MM-DD, optional)</string>
+  <string name="routine2_failed">Failed</string>
+  <string name="routine2_history">Run history</string>
+  <string name="routine2_history_empty">No runs yet</string>
+  <string name="routine2_interval_days">Days of the week (none selected means every day)</string>
+  <string name="routine2_minutes_hint">1–1440</string>
+  <string name="routine2_new_topic">New conversation each run</string>
+  <string name="routine2_none">None</string>
+  <string name="routine2_once_date">Date (YYYY-MM-DD, optional)</string>
+  <string name="routine2_only_if">Only if (optional)</string>
+  <string name="routine2_open_result">Open conversation</string>
+  <string name="routine2_overlap">If the previous run is still working</string>
+  <string name="routine2_overlap_reason">Another run is still active</string>
+  <string name="routine2_queue">Queue one run</string>
+  <string name="routine2_quota_resumes">Resumes at %1$s</string>
+  <string name="routine2_running">Running</string>
+  <string name="routine2_same_topic">Same conversation</string>
+  <string name="routine2_skip">Skip this occurrence</string>
+  <string name="routine2_skipped">Skipped</string>
+  <string name="routine2_success">Completed</string>
+  <string name="routine2_waiting_approval">Waiting for approval</string>
+  <string name="routine2_waiting_quota">Waiting for quota reset</string>
+  <string name="routine2_window_end">Window end (HH:mm, optional)</string>
+  <string name="routine2_window_start">Window start (HH:mm, optional)</string>
+  <string name="routine2_cron">Cron</string>
+  <string name="routine2_interval_error">Choose an end date in the future and a window at least as long as the interval.</string>
+  <string name="routine2_schedule_note">Runs on this device with the bot’s tools and memory. Android may delay runs while idle.</string>
+</resources>

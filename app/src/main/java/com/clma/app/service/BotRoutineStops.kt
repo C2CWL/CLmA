@@ -12,7 +12,7 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.supervisorScope
 import kotlin.uuid.Uuid
 
-/** Direct routines run tools outside a chat session and need their own stopping handle. */
+/** Cancels scheduled Bot work, including direct tools and routine checks outside a chat session. */
 internal object BotRoutineStops {
     private class BotPaused : CancellationException()
 

@@ -1,7 +1,5 @@
 package com.clma.ai.provider.providers.openai
 
-import com.clma.ai.util.HttpFailureMetadata
-import com.clma.ai.util.withHttpFailureMetadata
 import android.util.Log
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -52,6 +50,9 @@ import com.clma.ai.ui.UIMessage
 import com.clma.ai.ui.UIMessagePart
 import com.clma.ai.ui.metadataAs
 import com.clma.ai.ui.toMetadata
+import com.clma.ai.util.HttpFailureMetadata
+import com.clma.ai.util.quotaException
+import com.clma.ai.util.withHttpFailureMetadata
 import com.clma.ai.util.KeyRoulette
 import com.clma.ai.util.configureReferHeaders
 import com.clma.ai.util.configureSessionHeaders
@@ -232,8 +233,10 @@ class ResponseAPI(
         // await() waits for the response headers; reading the body can still block.
         client.newCall(request).await().use { response ->
             if (!response.isSuccessful) {
-                throw Exception("Failed to get response: ${response.code} ${response.body.string()}").apply {
-                    withHttpFailureMetadata(response, enabled = params.captureQuotaRefusal)
+                val detail = response.body.string()
+                val message = "Failed to get response: ${response.code} $detail"
+                throw (response.quotaException(message, detail) ?: Exception(message)).apply {
+                    withHttpFailureMetadata(response, detail, enabled = params.captureQuotaRefusal)
                 }
             }
 
@@ -380,6 +383,7 @@ class ResponseAPI(
                 } catch (e: Throwable) {
                     Log.w(TAG, "onFailure: failed to parse from $bodyRaw", e)
                 }
+                exception = response?.quotaException(exception.message.orEmpty(), bodyRaw) ?: exception
                 if (receivedMeaningfulOutput.get()) {
                     exception = ResponseStreamFailureException(
                         receivedMeaningfulOutput = true,
