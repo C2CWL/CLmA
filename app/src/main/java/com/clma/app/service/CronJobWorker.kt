@@ -25,7 +25,7 @@ class CronJobWorker(
                 Log.w("CronJobWorker", "Unable to promote scheduled work", it)
             }
         }
-        return CronJobExecution(applicationContext, fromWorker = true).execute(inputData)
+        return CronJobExecution(applicationContext, fromWorker = true).execute(inputData, workId = id.toString())
     }
 
     private val notificationId = (id.hashCode() and 0x3FFFFFFF) or 0x40000000

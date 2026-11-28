@@ -21,6 +21,11 @@ import com.clma.app.data.repository.ScheduledJobRepository
 import com.clma.app.data.repository.ScheduledJobRunRepository
 import com.clma.app.data.botmode.BotRoutineApprovals
 import com.clma.app.data.botmode.BotRoutineForm
+import com.clma.app.data.botmode.BotRoutineEventKind
+import com.clma.app.data.botmode.BotRoutineTrigger
+import com.clma.app.data.botmode.validate
+import com.clma.app.service.BotRoutineEvents
+import kotlinx.coroutines.flow.first
 import com.clma.app.data.botmode.ParkedRoutineRun
 import com.clma.app.data.botmode.routinesOfBot
 import com.clma.app.data.botmode.toJob
@@ -134,16 +139,32 @@ class BotInfoVM(
     fun saveRoutine(form: BotRoutineForm, existingId: String?) = viewModelScope.launch(Dispatchers.IO) {
         val existing = existingId?.let { ownJob(it) }
         if (existingId != null && existing == null) return@launch
+        if (form.validate() != null) return@launch
         val job = form.toJob(assistantId = id, existing = existing, nowMs = System.currentTimeMillis())
+        if (form.trigger != null && !canConfigureTrigger(form.trigger, job.enabled)) return@launch
         scheduledJobRepository.upsert(job)
         if (job.enabled) cronJobScheduler.schedule(job) else cronJobScheduler.cancel(job.id)
     }
 
     fun setRoutineEnabled(jobId: String, enabled: Boolean) = viewModelScope.launch(Dispatchers.IO) {
         val job = ownJob(jobId) ?: return@launch
-        val updated = job.copy(enabled = enabled)
+        val trigger = BotRoutineTrigger.from(job)
+        if (enabled && job.scheduleType == BotRoutineTrigger.SCHEDULE_TYPE &&
+            (trigger == null || !canConfigureTrigger(trigger, enabling = true))
+        ) return@launch
+        val configuration = if (!enabled && trigger != null) {
+            trigger.copy(revision = Uuid.random().toString()).encode()
+        } else job.cronExpression
+        val updated = job.copy(enabled = enabled, cronExpression = configuration)
         scheduledJobRepository.update(updated)
         if (enabled) cronJobScheduler.schedule(updated) else cronJobScheduler.cancel(jobId)
+    }
+
+    private suspend fun canConfigureTrigger(trigger: BotRoutineTrigger, enabling: Boolean): Boolean {
+        val bots = settingsStore.settingsFlowRaw.first().assistants.filter { it.isBot }
+        return bots.any { it.id == id } && trigger.validFor(id.toString()) && trigger.source != appContext.packageName &&
+            (trigger.kind != BotRoutineEventKind.BOT_FINISHED || bots.any { it.id.toString() == trigger.source }) &&
+            (!enabling || BotRoutineEvents.hasPermission(appContext, trigger.kind))
     }
 
     /** Fire now (same path as trigger_job_now); false when the routine is paused or gone. */

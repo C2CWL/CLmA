@@ -65,6 +65,7 @@ internal fun parseCronDays(field: String): Set<DayOfWeek>? {
 /** Reads a job's schedule into one of the shapes the Bot UI can show and edit. */
 fun parseBotRoutineSchedule(job: ScheduledJobEntity): BotRoutineSchedule {
     if (job.scheduleType == "once") return BotRoutineSchedule.Once(job.atUnixMs ?: 0L)
+    if (job.scheduleType == BotRoutineTrigger.SCHEDULE_TYPE) return BotRoutineSchedule.Custom("")
     val expr = job.cronExpression?.trim().orEmpty()
     return parseBotRoutineCron(expr)
 }
@@ -144,6 +145,7 @@ data class BotRoutineForm(
     val days: Set<DayOfWeek> = setOf(DayOfWeek.MONDAY),
     val interval: Int = 30,
     val cron: String = "",
+    val trigger: BotRoutineTrigger? = null,
 ) {
     companion object {
         const val NAME_MAX = 80
@@ -154,6 +156,7 @@ data class BotRoutineForm(
 /** Form pre-filled from an existing job (edit), using [zone] for a one-time job's clock time. */
 fun botRoutineFormFrom(job: ScheduledJobEntity, zone: ZoneId = ZoneId.systemDefault()): BotRoutineForm {
     val base = BotRoutineForm(name = job.name, prompt = job.prompt.orEmpty())
+    BotRoutineTrigger.from(job)?.let { return base.copy(trigger = it) }
     return when (val s = parseBotRoutineSchedule(job)) {
         is BotRoutineSchedule.Daily -> base.copy(kind = BotRoutineKind.DAILY, hour = s.hour, minute = s.minute)
         is BotRoutineSchedule.Weekdays -> base.copy(kind = BotRoutineKind.WEEKDAYS, hour = s.hour, minute = s.minute)
@@ -182,6 +185,7 @@ fun BotRoutineForm.cronExpression(): String? = when (kind) {
 fun BotRoutineForm.validate(): BotRoutineFormError? = when {
     name.isBlank() || name.trim().length > BotRoutineForm.NAME_MAX -> BotRoutineFormError.NAME
     prompt.isBlank() || prompt.trim().length > BotRoutineForm.PROMPT_MAX -> BotRoutineFormError.PROMPT
+    trigger != null -> null
     kind == BotRoutineKind.WEEKLY && days.isEmpty() -> BotRoutineFormError.DAYS
     kind == BotRoutineKind.EVERY_MINUTES && interval !in 1..59 -> BotRoutineFormError.INTERVAL
     kind == BotRoutineKind.EVERY_HOURS && interval !in 1..23 -> BotRoutineFormError.INTERVAL
@@ -226,11 +230,28 @@ fun BotRoutineForm.toJob(
         // one-time routine that already fired, switches it on.
         enabled = when {
             existing == null -> true
-            kind == BotRoutineKind.ONCE && existing.scheduleType == "once" && existing.lastRunAtMs != null -> true
+            trigger == null && kind == BotRoutineKind.ONCE && existing.scheduleType == "once" && existing.lastRunAtMs != null -> true
             else -> existing.enabled
         },
         nextRunAtMs = null,
     )
+    trigger?.let {
+        val previous = existing?.let(BotRoutineTrigger::from)
+        val sameSource = previous?.takeIf { old -> old.kind == it.kind && old.source == it.source }
+        val revision = sameSource?.takeIf { existing.name == named.name && existing.prompt == named.prompt }
+            ?.revision ?: Uuid.random().toString()
+        val secret = if (it.kind == BotRoutineEventKind.WEBHOOK) {
+            sameSource?.webhookSecret ?: Uuid.random().toString()
+        } else ""
+        return named.copy(
+            scheduleType = BotRoutineTrigger.SCHEDULE_TYPE,
+            cronExpression = it.copy(revision = revision, webhookSecret = secret).encode(),
+            atUnixMs = null,
+            startAtUnixMs = null,
+            endAtUnixMs = null,
+            maxRuns = null,
+        )
+    }
     return if (kind == BotRoutineKind.ONCE) {
         // A one-time job fires only while lastRunAtMs is null, so a re-armed one starts fresh.
         named.copy(

@@ -57,6 +57,11 @@ class CronBootReceiver : BroadcastReceiver(), KoinComponent {
 
                 sweepStrandedRunRows(context)
                 applyCatchupAndSchedule(context)
+                if (action == Intent.ACTION_BOOT_COMPLETED || action == "android.intent.action.QUICKBOOT_POWERON") {
+                    runCatching {
+                        BotRoutineEvents.dispatch(context, com.clma.app.data.botmode.BotRoutineEventKind.BOOT)
+                    }
+                }
 
                 // Phase 12 — fire any boot-completed workflows. The dispatcher reads the
                 // boot trigger family which has been bound to current matching workflows
@@ -133,6 +138,7 @@ class CronBootReceiver : BroadcastReceiver(), KoinComponent {
         val customTz = settingsStore.settingsFlowRaw.first().customTimezone
         val defaultZone = customTz?.let { runCatching { java.time.ZoneId.of(it) }.getOrNull() } ?: java.time.ZoneId.systemDefault()
         for (job in repo.getEnabled()) {
+            if (job.scheduleType == com.clma.app.data.botmode.BotRoutineTrigger.SCHEDULE_TYPE) continue
             // Compute catchup plan based on the job's last fire vs now.
             val plan = CatchupPlanner.plan(job, lastRunMs = job.lastRunAtMs, nowMs = nowMs, defaultZone = defaultZone)
 

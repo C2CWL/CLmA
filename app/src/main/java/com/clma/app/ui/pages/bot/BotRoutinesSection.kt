@@ -42,6 +42,10 @@ import com.clma.app.data.botmode.settings.BotModeSettings
 import com.clma.app.data.botmode.settings.BotModeSettingsStore
 import com.clma.app.ui.components.ScheduledTaskReliabilityCard
 import com.clma.app.data.botmode.BotRoutineForm
+import com.clma.app.data.botmode.BotRoutineEventKind
+import com.clma.app.data.botmode.BotRoutineTrigger
+import com.clma.app.data.model.Assistant
+import com.clma.app.service.BotRoutineEvents
 import com.clma.app.data.botmode.BotRoutineFormError
 import com.clma.app.data.botmode.BotRoutineKind
 import com.clma.app.data.botmode.BotRoutineRowSummary
@@ -91,10 +95,20 @@ fun botRoutineScheduleText(schedule: BotRoutineSchedule): String {
     }
 }
 
+@Composable
+private fun botRoutineTimingText(job: ScheduledJobEntity): String {
+    val trigger = BotRoutineTrigger.from(job)
+    return when {
+        trigger != null -> stringResource(botRoutineTriggerLabel(trigger.kind))
+        job.scheduleType == BotRoutineTrigger.SCHEDULE_TYPE -> stringResource(R.string.bot_trigger_type)
+        else -> botRoutineScheduleText(parseBotRoutineSchedule(job))
+    }
+}
+
 /** The bot list's routine line: "自动任务 · 工作日 9:00" (+N when the bot has more). */
 @Composable
 fun botRoutineRowText(summary: BotRoutineRowSummary): String {
-    val schedule = botRoutineScheduleText(parseBotRoutineSchedule(summary.next))
+    val schedule = botRoutineTimingText(summary.next)
     return if (summary.others > 0) {
         stringResource(R.string.bot_routine_row_more, schedule, summary.others)
     } else {
@@ -110,6 +124,8 @@ fun botRoutineRowText(summary: BotRoutineRowSummary): String {
  */
 @Composable
 fun BotRoutinesGroup(
+    owner: Uuid,
+    sourceBots: List<Assistant>,
     routines: List<ScheduledJobEntity>,
     parkedRuns: List<ParkedRoutineRun>,
     onSave: (BotRoutineForm, String?) -> Unit,
@@ -119,6 +135,7 @@ fun BotRoutinesGroup(
     onOpenConversation: (Uuid) -> Unit,
 ) {
     val context = LocalContext.current
+    val withPermission = rememberBotRoutinePermission()
     val botSettingsStore = koinInject<BotModeSettingsStore>()
     val botSettings by botSettingsStore.settings.collectAsStateWithLifecycle(initialValue = BotModeSettings())
     var editing by remember { mutableStateOf<ScheduledJobEntity?>(null) }
@@ -170,7 +187,10 @@ fun BotRoutinesGroup(
         routines.forEach { job ->
             BotRoutineRow(
                 job = job,
-                onToggle = { onSetEnabled(job.id, it) },
+                onToggle = { enabled ->
+                    if (enabled) withPermission(BotRoutineTrigger.from(job)) { onSetEnabled(job.id, true) }
+                    else onSetEnabled(job.id, false)
+                },
                 onRunNow = {
                     onRunNow(job.id) { fired ->
                         Toast.makeText(
@@ -192,17 +212,31 @@ fun BotRoutinesGroup(
     if (creating) {
         BotRoutineEditorDialog(
             initial = BotRoutineForm(),
+            owner = owner,
+            sourceBots = sourceBots,
             isNew = true,
             onDismiss = { creating = false },
-            onSave = { form -> creating = false; onSave(form, null) },
+            onSave = { form ->
+                withPermission(form.trigger) {
+                    creating = false
+                    onSave(form, null)
+                }
+            },
         )
     }
     editing?.let { job ->
         BotRoutineEditorDialog(
             initial = remember(job.id) { botRoutineFormFrom(job) },
+            owner = owner,
+            sourceBots = sourceBots,
             isNew = false,
             onDismiss = { editing = null },
-            onSave = { form -> editing = null; onSave(form, job.id) },
+            onSave = { form ->
+                withPermission(form.trigger.takeIf { job.enabled }) {
+                    editing = null
+                    onSave(form, job.id)
+                }
+            },
         )
     }
     confirmDelete?.let { job ->
@@ -230,6 +264,14 @@ private fun BotRoutineRow(
 ) {
     // Direct-mode jobs (fixed tool actions, made by the model) are listed but not editable here.
     val editable = job.mode == "llm"
+    val trigger = BotRoutineTrigger.from(job)
+    val context = LocalContext.current
+    var permissionGranted by remember(trigger) {
+        mutableStateOf(trigger == null || BotRoutineEvents.hasPermission(context, trigger.kind))
+    }
+    androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+        permissionGranted = trigger == null || BotRoutineEvents.hasPermission(context, trigger.kind)
+    }
     Surface(
         shape = RoundedCornerShape(12.dp),
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -240,7 +282,7 @@ private fun BotRoutineRow(
                 Column(Modifier.weight(1f)) {
                     Text(job.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(
-                        botRoutineScheduleText(parseBotRoutineSchedule(job)) + nextRunSuffix(job),
+                        botRoutineTimingText(job) + nextRunSuffix(job),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
@@ -249,6 +291,13 @@ private fun BotRoutineRow(
                 }
                 Switch(checked = job.enabled, onCheckedChange = onToggle)
             }
+            if (job.enabled && trigger != null && !permissionGranted) {
+                val withPermission = rememberBotRoutinePermission()
+                TextButton(onClick = { withPermission(trigger) { permissionGranted = true } }) {
+                    Text(stringResource(R.string.bot_trigger_permission_required))
+                }
+            }
+            if (trigger?.kind == BotRoutineEventKind.WEBHOOK) BotRoutineWebhookCopy(job.id, trigger)
             Row(horizontalArrangement = Arrangement.spacedBy(0.dp)) {
                 TextButton(onClick = onRunNow, enabled = job.enabled) { Text(stringResource(R.string.bot_routine_run_now)) }
                 if (editable) {
@@ -286,6 +335,8 @@ private fun parseClock(text: String): Pair<Int, Int>? {
 @Composable
 private fun BotRoutineEditorDialog(
     initial: BotRoutineForm,
+    owner: Uuid,
+    sourceBots: List<Assistant>,
     isNew: Boolean,
     onDismiss: () -> Unit,
     onSave: (BotRoutineForm) -> Unit,
@@ -298,8 +349,11 @@ private fun BotRoutineEditorDialog(
 
     val clock = parseClock(clockText)
     val interval = intervalText.trim().toIntOrNull()
-    val usesClock = form.kind in setOf(BotRoutineKind.DAILY, BotRoutineKind.WEEKDAYS, BotRoutineKind.WEEKLY, BotRoutineKind.ONCE)
-    val usesInterval = form.kind == BotRoutineKind.EVERY_MINUTES || form.kind == BotRoutineKind.EVERY_HOURS
+    val scheduled = form.trigger == null
+    val usesClock = scheduled && form.kind in setOf(
+        BotRoutineKind.DAILY, BotRoutineKind.WEEKDAYS, BotRoutineKind.WEEKLY, BotRoutineKind.ONCE,
+    )
+    val usesInterval = scheduled && form.kind in setOf(BotRoutineKind.EVERY_MINUTES, BotRoutineKind.EVERY_HOURS)
     val candidate = form.copy(
         hour = clock?.first ?: form.hour,
         minute = clock?.second ?: form.minute,
@@ -307,7 +361,11 @@ private fun BotRoutineEditorDialog(
     )
     val error: BotRoutineFormError? = candidate.validate()
     val clockBad = usesClock && clock == null
-    val canSave = error == null && !clockBad
+    val trigger = form.trigger
+    val ownPackage = LocalContext.current.packageName
+    val triggerBad = trigger != null && (!trigger.validFor(owner.toString()) || trigger.source == ownPackage ||
+        (trigger.kind == BotRoutineEventKind.BOT_FINISHED && sourceBots.none { it.id.toString() == trigger.source }))
+    val canSave = error == null && !clockBad && !triggerBad
 
     // When switching between minutes and hours, keep the interval inside the new range.
     LaunchedEffect(form.kind) {
@@ -341,17 +399,23 @@ private fun BotRoutineEditorDialog(
                     isError = showErrors > 0 && error == BotRoutineFormError.PROMPT,
                     modifier = Modifier.fillMaxWidth(),
                 )
-                Text(stringResource(R.string.bot_routine_field_when), style = MaterialTheme.typography.labelLarge)
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    BotRoutineKind.entries.forEach { kind ->
-                        FilterChip(
-                            selected = form.kind == kind,
-                            onClick = { form = form.copy(kind = kind) },
-                            label = { Text(stringResource(kindLabel(kind))) },
-                        )
+                BotRoutineTriggerFields(trigger, sourceBots) { form = form.copy(trigger = it) }
+                if (showErrors > 0 && triggerBad) {
+                    Text(stringResource(R.string.bot_trigger_invalid_source), color = MaterialTheme.colorScheme.error)
+                }
+                if (scheduled) {
+                    Text(stringResource(R.string.bot_routine_field_when), style = MaterialTheme.typography.labelLarge)
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        BotRoutineKind.entries.forEach { kind ->
+                            FilterChip(
+                                selected = form.kind == kind,
+                                onClick = { form = form.copy(kind = kind) },
+                                label = { Text(stringResource(kindLabel(kind))) },
+                            )
+                        }
                     }
                 }
-                if (form.kind == BotRoutineKind.WEEKLY) {
+                if (scheduled && form.kind == BotRoutineKind.WEEKLY) {
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         DayOfWeek.values().forEach { day ->
                             FilterChip(
@@ -415,7 +479,7 @@ private fun BotRoutineEditorDialog(
                         modifier = Modifier.width(200.dp),
                     )
                 }
-                if (form.kind == BotRoutineKind.CUSTOM) {
+                if (scheduled && form.kind == BotRoutineKind.CUSTOM) {
                     OutlinedTextField(
                         value = form.cron,
                         onValueChange = { form = form.copy(cron = it.take(120)) },

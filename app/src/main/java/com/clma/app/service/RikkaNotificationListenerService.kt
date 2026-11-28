@@ -64,6 +64,7 @@ open class RikkaNotificationListenerService : NotificationListenerService() {
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         sbn ?: return
         val entry = sbn.toEntry(packageManager) ?: return
+        BotRoutineEvents.notification(this, entry.packageName, entry.title, entry.text)
         if (shouldDrop(entry)) return
 
         // Active-list cache is now stale — force the next listActive() to re-fetch.

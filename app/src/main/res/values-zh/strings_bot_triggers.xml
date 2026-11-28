@@ -1,0 +1,27 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- Adapted from OpenMausBot (https://github.com/milind-soni/OpenMausBot), src/locales/zh.json.
+     Copyright 2026 Milind Soni and OpenMausBot contributors, Apache License 2.0 (third_party/openmausbot/LICENSE). Modified: ported to Kotlin and changed for CLmA. -->
+<resources>
+  <string name="bot_trigger_boot">设备启动时</string>
+  <string name="bot_trigger_bot_finished">其他机器人完成任务时</string>
+  <string name="bot_trigger_context_hint">事件详情会写入例行任务的对话，并发送给所选模型。</string>
+  <string name="bot_trigger_copy_webhook">复制地址</string>
+  <string name="bot_trigger_email">邮件通知</string>
+  <string name="bot_trigger_invalid_source">请选择来源机器人，或填写其他应用的有效包名。</string>
+  <string name="bot_trigger_network_available">网络连接恢复时</string>
+  <string name="bot_trigger_network_lost">网络连接断开时</string>
+  <string name="bot_trigger_no_source_bot">添加另一个机器人后即可使用此触发条件。</string>
+  <string name="bot_trigger_notification">应用通知</string>
+  <string name="bot_trigger_package">Android 应用包名</string>
+  <string name="bot_trigger_package_hint">请输入完整包名，例如 com.example.mail。</string>
+  <string name="bot_trigger_permission_required">授予触发所需权限</string>
+  <string name="bot_trigger_power_connected">接通电源时</string>
+  <string name="bot_trigger_power_disconnected">断开电源时</string>
+  <string name="bot_trigger_process_hint">CLmA 运行时，Android 会发送这些事件。</string>
+  <string name="bot_trigger_schedule">按调度运行</string>
+  <string name="bot_trigger_sms">收到短信时</string>
+  <string name="bot_trigger_source_bot">来源机器人</string>
+  <string name="bot_trigger_type">触发条件</string>
+  <string name="bot_trigger_webhook">Webhook</string>
+  <string name="bot_trigger_webhook_hint">保存后可复制地址，并在 CLmA 运行时从本机发送 POST。地址包含密钥，请求正文最多为 1,000 字节。</string>
+</resources>

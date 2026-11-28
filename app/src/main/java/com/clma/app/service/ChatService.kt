@@ -2172,6 +2172,13 @@ class ChatService(
             }
 
             override suspend fun stop(conversationId: String) { stopGeneration(Uuid.parse(conversationId)) }
+
+            override fun onCompleted(task: PeerTask, result: String) {
+                BotRoutineEvents.emit(
+                    context, com.clma.app.data.botmode.BotRoutineEventKind.BOT_FINISHED,
+                    task.botId, title = task.id, body = result,
+                )
+            }
         })
     }
 
@@ -3001,6 +3008,24 @@ class ChatService(
                     onFinished = { persistenceSession.releasePersistence() },
                 ) {
                     persistStreamingStateNow(conversationId, updateSearchIndex = true)
+                }
+
+                if (completionCause == null && botId != null &&
+                    !com.clma.app.data.ai.tools.HeadlessConversations.isHeadless(conversationId)
+                ) {
+                    val reply = updatedConversation.currentMessages.lastOrNull()
+                    if (reply?.role == MessageRole.ASSISTANT &&
+                        reply.parts.filterIsInstance<UIMessagePart.Tool>().none { it.isPending }
+                    ) {
+                        val text = reply.parts.filterIsInstance<UIMessagePart.Text>()
+                            .joinToString(" ") { it.text.take(1000) }
+                        if (text.isNotBlank()) {
+                            BotRoutineEvents.emit(
+                                context, com.clma.app.data.botmode.BotRoutineEventKind.BOT_FINISHED,
+                                botId, updatedConversation.title, text,
+                            )
+                        }
+                    }
                 }
 
                 // A Pending tool is an intentional pause, not a completed response. Surface the

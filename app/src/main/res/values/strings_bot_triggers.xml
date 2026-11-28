@@ -1,0 +1,25 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<resources>
+  <string name="bot_trigger_boot">Device startup</string>
+  <string name="bot_trigger_bot_finished">Another Bot finishes</string>
+  <string name="bot_trigger_context_hint">Event details are included in the routine conversation and sent to the configured model.</string>
+  <string name="bot_trigger_copy_webhook">Copy webhook address</string>
+  <string name="bot_trigger_email">Email notification</string>
+  <string name="bot_trigger_invalid_source">Choose a source Bot or enter a valid package name for another app.</string>
+  <string name="bot_trigger_network_available">Network available</string>
+  <string name="bot_trigger_network_lost">Network lost</string>
+  <string name="bot_trigger_no_source_bot">Create another Bot to use this trigger.</string>
+  <string name="bot_trigger_notification">App notification</string>
+  <string name="bot_trigger_package">Android app package</string>
+  <string name="bot_trigger_package_hint">Use the exact package name, such as com.example.mail.</string>
+  <string name="bot_trigger_permission_required">Grant trigger permission</string>
+  <string name="bot_trigger_power_connected">Power connected</string>
+  <string name="bot_trigger_power_disconnected">Power disconnected</string>
+  <string name="bot_trigger_process_hint">Android delivers these events while CLmA is running.</string>
+  <string name="bot_trigger_schedule">Schedule</string>
+  <string name="bot_trigger_sms">SMS received</string>
+  <string name="bot_trigger_source_bot">Source Bot</string>
+  <string name="bot_trigger_type">Trigger</string>
+  <string name="bot_trigger_webhook">Webhook</string>
+  <string name="bot_trigger_webhook_hint">After saving, copy the address and send a POST from this device while CLmA is running. The address contains the secret. The body can be up to 1,000 bytes.</string>
+</resources>

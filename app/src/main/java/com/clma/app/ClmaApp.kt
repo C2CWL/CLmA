@@ -192,6 +192,7 @@ class ClmaApp : Application() {
         // table and reconciles broadcast receivers / time_cron schedules with
         // every change. With zero enabled workflows, no receivers are registered.
         startWorkflowRegistry()
+        com.clma.app.service.BotRoutineEvents.start(this)
 
         // Phase-17 stability — register a network-change monitor that evicts OkHttp's
         // connection pool on every default-network transition. Fixes the post-Termux-

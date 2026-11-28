@@ -6,7 +6,7 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 
 /**
- * A persistent scheduled job. Two modes (llm / direct) and two timing types (once / cron).
+ * A persistent scheduled job. Two modes (llm / direct) and three timing types (once / cron / event).
  *
  * v20 → v21 migration:
  *  - Adds: mode, actionsJson, cronExpression, timezone, startAtUnixMs, endAtUnixMs,
@@ -23,7 +23,7 @@ data class ScheduledJobEntity(
     /** Required iff mode='llm'. Nullable since v21 (mode='direct' has no prompt). */
     val prompt: String? = null,
     val assistantId: String,
-    /** "once" | "cron". v20's "interval" rows migrate to "cron" + "@every Ns". */
+    /** "once" | "cron" | "event" (Bot library only). v20's "interval" rows migrate to "cron" + "@every Ns". */
     val scheduleType: String,
     val atUnixMs: Long? = null,
     /** v20→v21 migrated to cron_expression='@every Ns'. Read-only history; never written. */
@@ -36,7 +36,7 @@ data class ScheduledJobEntity(
     @ColumnInfo(defaultValue = "'llm'")
     val mode: String = "llm",                       // "llm" | "direct"
     val actionsJson: String? = null,                // JSON array; required iff mode='direct'
-    val cronExpression: String? = null,             // required iff scheduleType='cron'
+    val cronExpression: String? = null,             // cron expression or encoded Bot event trigger
     val timezone: String? = null,                   // optional IANA id; null = device default
     val startAtUnixMs: Long? = null,                // optional, cron only
     val endAtUnixMs: Long? = null,                  // optional, cron only

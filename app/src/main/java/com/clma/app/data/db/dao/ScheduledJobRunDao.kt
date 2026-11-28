@@ -9,6 +9,9 @@ import com.clma.app.data.db.entity.ScheduledJobRunEntity
 
 @Dao
 interface ScheduledJobRunDao {
+    @Query("SELECT * FROM scheduled_job_runs WHERE id = :id")
+    suspend fun getById(id: String): ScheduledJobRunEntity?
+
     @Query("SELECT * FROM scheduled_job_runs WHERE jobId = :jobId ORDER BY startedAtMs DESC LIMIT :limit")
     suspend fun getRecent(jobId: String, limit: Int): List<ScheduledJobRunEntity>
 
