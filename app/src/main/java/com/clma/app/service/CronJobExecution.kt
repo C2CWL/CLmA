@@ -638,13 +638,27 @@ internal class CronJobExecution(
         outcome: String,
         errorMessage: String?,
     ) {
-        if (!botModeSettingsStore.notificationSettings().notifyRoutineResults) return
         val name = botName(assistantId)
-        if (outcome == "success") {
-            BotRoutineRuns.notifyDone(applicationContext, convId.toString(), name, jobName, lastReplyLine(convId))
-        } else {
-            BotRoutineRuns.notifyFailed(applicationContext, convId.toString(), name, jobName, "$outcome ${errorMessage.orEmpty()}".trim())
+        deliverRoutineFeedback(BotFeedbackEvent.ROUTINE_RESULT) {
+            if (outcome == "success") {
+                BotRoutineRuns.notifyDone(applicationContext, convId.toString(), name, jobName, lastReplyLine(convId))
+            } else {
+                BotRoutineRuns.notifyFailed(applicationContext, convId.toString(), name, jobName, "$outcome ${errorMessage.orEmpty()}".trim())
+            }
         }
+    }
+
+    private suspend fun deliverRoutineFeedback(event: BotFeedbackEvent, postNotification: () -> Unit) {
+        val display = settingsStore.settingsFlow.first { !it.init }.displaySetting
+        BotFeedback.deliver(
+            context = applicationContext,
+            settings = botModeSettingsStore.notificationSettings(),
+            event = event,
+            channelId = BOT_ROUTINE_NOTIFICATION_CHANNEL_ID,
+            showNotification = display.enableNotificationOnMessageGeneration,
+            allowVibration = display.enableMessageGenerationHapticEffect,
+            postNotification = postNotification,
+        )
     }
 
     /** Save a run that stopped on an approval card, arm its give-up timer and tell the user. */
@@ -657,13 +671,15 @@ internal class CronJobExecution(
         )
         BotRoutineApprovals.put(parked)
         BotRoutineRuns.scheduleExpiry(applicationContext, parked.conversationId, BotRoutineApprovalRules.APPROVAL_TTL_MS)
-        if (!botModeSettingsStore.notificationSettings().notifyApprovals) return
-        val convId = Uuid.parse(parked.conversationId)
-        val tool = pendingToolName(convId).orEmpty()
-            .removePrefix("mcp__")
-        BotRoutineRuns.notifyApprovalNeeded(
-            applicationContext, parked.conversationId, botName(parked.assistantId), parked.jobName, tool,
-        )
+        val tool = pendingToolName(Uuid.parse(parked.conversationId)).orEmpty()
+        val event = BotFeedbackEvent.pending(tool)
+        val name = botName(parked.assistantId)
+        deliverRoutineFeedback(event) {
+            BotRoutineRuns.notifyInputNeeded(
+                applicationContext, parked.conversationId, name, parked.jobName, tool.removePrefix("mcp__"),
+                isQuestion = event == BotFeedbackEvent.QUESTION,
+            )
+        }
     }
 
     private suspend fun writeRunRow(run: ParkedRoutineRun, outcome: String, errorMessage: String?) {
@@ -833,8 +849,9 @@ internal class CronJobExecution(
         dispatchQueued(parkedRun.jobId)
         writeRunRow(parkedRun, OUTCOME_APPROVAL_EXPIRED, "no answer within ${BotRoutineApprovalRules.APPROVAL_TTL_MS / 3_600_000L}h")
         parkedRun.ledgerId?.let { agentRunRepo.markTerminal(it, AgentRunStatus.cancelled, OUTCOME_APPROVAL_EXPIRED) }
-        if (botModeSettingsStore.notificationSettings().notifyRoutineResults) {
-            BotRoutineRuns.notifyExpired(applicationContext, conversationId, botName(parkedRun.assistantId), parkedRun.jobName)
+        val name = botName(parkedRun.assistantId)
+        deliverRoutineFeedback(BotFeedbackEvent.ROUTINE_RESULT) {
+            BotRoutineRuns.notifyExpired(applicationContext, conversationId, name, parkedRun.jobName)
         }
         return Result.success()
     }

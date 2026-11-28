@@ -88,10 +88,19 @@ class BotDailyBriefWorker(context: Context, params: WorkerParameters) :
         }
 
         val owner = existing?.assistantId ?: coordinator
-        if (settingsStore.settingsFlowRaw.first().botAssistants().any { it.id == owner } &&
-            notifications.notificationSettings().notifyRoutineResults
-        ) {
-            BotRoutineRuns.notifyBrief(applicationContext, briefId.toString())
+        val currentSettings = settingsStore.settingsFlowRaw.first()
+        if (currentSettings.botAssistants().any { it.id == owner }) {
+            val display = currentSettings.displaySetting
+            BotFeedback.deliver(
+                context = applicationContext,
+                settings = notifications.notificationSettings(),
+                event = BotFeedbackEvent.ROUTINE_RESULT,
+                channelId = BOT_ROUTINE_NOTIFICATION_CHANNEL_ID,
+                showNotification = display.enableNotificationOnMessageGeneration,
+                allowVibration = display.enableMessageGenerationHapticEffect,
+            ) {
+                BotRoutineRuns.notifyBrief(applicationContext, briefId.toString())
+            }
         }
         store.markDelivered(window.day)
     }

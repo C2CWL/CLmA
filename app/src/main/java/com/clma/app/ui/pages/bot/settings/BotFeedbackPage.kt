@@ -1,8 +1,12 @@
+// Adapted from OpenMausBot (https://github.com/milind-soni/OpenMausBot), src/components/NotificationSettingsRows.tsx, src/locales/zh.json
+// Copyright 2026 Milind Soni and OpenMausBot contributors, Apache License 2.0 (third_party/openmausbot/LICENSE). Modified: ported to Kotlin and changed for CLmA.
+
 // Adapted from OpenMausBot (https://github.com/milind-soni/OpenMausBot), src/components/NotificationSettingsRows.tsx, src/locales/en.json, src/locales/zh.json,
 // Copyright 2026 Milind Soni and OpenMausBot contributors, Apache License 2.0
 // (third_party/openmausbot/LICENSE). Modified: ported to Kotlin and changed for CLmA.
 package com.clma.app.ui.pages.bot.settings
 
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -25,7 +29,7 @@ fun BotFeedbackPage() {
     SettingSubPageScaffold(title = stringResource(R.string.bot_feedback_title)) {
         item {
             BotCollapsibleGroup("feedback_notifications", stringResource(R.string.bot_feedback_notifications)) {
-                Text(stringResource(R.string.bot_feedback_notification_dependency))
+                FeedbackDescription(R.string.bot_feedback_notification_dependency)
                 BotSwitchRow(R.string.bot_feedback_approval, settings.notifyApprovals) { enabled ->
                     update {
                         it.copy(notifyApprovals = enabled, notifyQuestions = it.notifyQuestions ?: it.notifyApprovals)
@@ -47,8 +51,8 @@ fun BotFeedbackPage() {
         }
         item {
             BotCollapsibleGroup("feedback_vibration", stringResource(R.string.bot_feedback_vibration)) {
-                Text(stringResource(R.string.bot_feedback_haptic_dependency))
-                BotSwitchRow(R.string.bot_feedback_vibration, settings.feedbackVibration) { enabled ->
+                FeedbackDescription(R.string.bot_feedback_haptic_dependency)
+                BotSwitchRow(R.string.bot_feedback_enable_vibration, settings.feedbackVibration) { enabled ->
                     update { it.copy(feedbackVibration = enabled) }
                 }
                 FeedbackLevelRow(R.string.bot_feedback_strength, settings.feedbackStrength) { level ->
@@ -58,7 +62,7 @@ fun BotFeedbackPage() {
         }
         item {
             BotCollapsibleGroup("feedback_sound", stringResource(R.string.bot_feedback_sound)) {
-                BotSwitchRow(R.string.bot_feedback_sound, settings.feedbackSound) { enabled ->
+                BotSwitchRow(R.string.bot_feedback_enable_sound, settings.feedbackSound) { enabled ->
                     update { it.copy(feedbackSound = enabled) }
                 }
                 FeedbackLevelRow(R.string.bot_feedback_volume, settings.feedbackVolume) { level ->
@@ -76,5 +80,14 @@ private fun FeedbackLevelRow(title: Int, value: Int, onSelect: (Int) -> Unit) {
         value = stringResource(R.string.bot_feedback_percent, value),
         options = (25..100 step 25).map { it to stringResource(R.string.bot_feedback_percent, it) },
         onSelect = onSelect,
+    )
+}
+
+@Composable
+private fun FeedbackDescription(text: Int) {
+    Text(
+        text = stringResource(text),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }

@@ -47,7 +47,7 @@ internal object BotFeedback {
         allowVibration: Boolean,
         postNotification: () -> Unit,
     ) {
-        val manager = context.getSystemService(NotificationManager::class.java)
+        val manager = context.getSystemService(NotificationManager::class.java) ?: return
         val channel = manager.getNotificationChannel(channelId)
         val notificationsAllowed = channel?.importance != NotificationManager.IMPORTANCE_NONE &&
             NotificationManagerCompat.from(context).areNotificationsEnabled()
@@ -59,7 +59,7 @@ internal object BotFeedback {
         if ((!settings.feedbackSound && !settings.feedbackVibration) ||
             manager.currentInterruptionFilter != NotificationManager.INTERRUPTION_FILTER_ALL
         ) return
-        val audio = context.getSystemService(AudioManager::class.java)
+        val audio = context.getSystemService(AudioManager::class.java) ?: return
         if (audio.ringerMode == AudioManager.RINGER_MODE_SILENT) return
 
         if (settings.feedbackVibration && allowVibration && Settings.System.getInt(
@@ -76,10 +76,10 @@ internal object BotFeedback {
     @Suppress("DEPRECATION")
     private fun vibrate(context: Context, strength: Int) {
         val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            context.getSystemService(VibratorManager::class.java).defaultVibrator
+            context.getSystemService(VibratorManager::class.java)?.defaultVibrator
         } else {
             context.getSystemService(Vibrator::class.java)
-        }
+        } ?: return
         if (!vibrator.hasVibrator()) return
         val level = strength.coerceIn(1, 100)
         val effect = if (vibrator.hasAmplitudeControl()) {

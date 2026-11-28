@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="bot_feedback_title">Bot feedback</string>
+  <string name="bot_feedback_notifications">Notifications on this device</string>
+  <string name="bot_feedback_notification_dependency">Uses CLmA’s message completion notification setting and Android notification permissions.</string>
+  <string name="bot_feedback_approval">Needs approval</string>
+  <string name="bot_feedback_question">Question</string>
+  <string name="bot_feedback_done">Completed</string>
+  <string name="bot_feedback_failed">Failed</string>
+  <string name="bot_feedback_routine">Scheduled report notifications</string>
+  <string name="bot_feedback_vibration">Vibration</string>
+  <string name="bot_feedback_enable_vibration">Vibrate for Bot events</string>
+  <string name="bot_feedback_haptic_dependency">Uses CLmA’s message generation haptic setting and Android haptic preferences.</string>
+  <string name="bot_feedback_strength">Vibration strength</string>
+  <string name="bot_feedback_sound">Notification sounds</string>
+  <string name="bot_feedback_enable_sound">Play sound for Bot events</string>
+  <string name="bot_feedback_volume">Sound volume</string>
+  <string name="bot_feedback_percent">%1$d%%</string>
+  <string name="bot_feedback_approval_title">%1$s needs approval</string>
+  <string name="bot_feedback_question_title">%1$s has a question</string>
+  <string name="bot_feedback_failed_title">%1$s encountered a problem</string>
+  <string name="bot_feedback_done_title">%1$s finished</string>
+</resources>
