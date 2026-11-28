@@ -255,6 +255,12 @@ class ChatVM(
     // 错误状态
     val errors: StateFlow<List<ChatError>> = chatService.errors
 
+    fun toggleBotReaction(messageId: Uuid, emoji: String) =
+        chatService.toggleBotReaction(_conversationId, messageId, emoji)
+
+    fun submitBotWidget(messageId: Uuid, toolCallId: String, buttonId: String?, date: String?) =
+        chatService.submitBotWidget(_conversationId, messageId, toolCallId, buttonId, date)
+
     fun dismissError(id: Uuid) = chatService.dismissError(id)
 
     fun clearAllErrors() = chatService.clearAllErrors()

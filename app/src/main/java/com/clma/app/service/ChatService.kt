@@ -16,6 +16,12 @@ import com.clma.app.data.botmode.memory.BotMemoryTools
 import com.clma.app.data.botmode.memory.buildPrompt
 import com.clma.app.data.botmode.memory.recordCompletedTurn
 import com.clma.app.data.botmode.BotPeerTools
+import com.clma.app.data.botmode.BOT_WIDGET_TOOL
+import com.clma.app.data.botmode.botChatWidget
+import com.clma.app.data.botmode.botReactionEmoji
+import com.clma.app.data.botmode.botReactionFeedback
+import com.clma.app.data.botmode.createBotWidgetTool
+import com.clma.app.data.botmode.widgetReplyId
 import com.clma.app.data.botmode.BotPeerToolPolicy
 import com.clma.app.data.botmode.PeerHost
 import com.clma.app.data.botmode.PeerSnapshot
@@ -1318,6 +1324,77 @@ class ChatService(
         return answer.message.toText().trim().equals("YES", ignoreCase = true)
     }
 
+    fun toggleBotReaction(conversationId: Uuid, messageId: Uuid, emoji: String) {
+        if (emoji !in botReactionEmoji) return
+        appScope.launch {
+            val session = getOrCreateSession(conversationId)
+            try {
+                persistenceMutexFor(conversationId).withLock {
+                    val updated = synchronized(session) {
+                        val current = session.state.value
+                        if (!isBotChat(current) || session.getJob() != null ||
+                            conversationId in deletedConversationIds || conversationId in messageDeleteBarriers
+                        ) return@synchronized null
+                        val messages = current.currentMessages
+                        val index = messages.indexOfFirst {
+                            it.id == messageId && it.role == MessageRole.ASSISTANT
+                        }
+                        if (index < 0) return@synchronized null
+                        val message = messages[index]
+                        val nextMessages = messages.toMutableList()
+                        nextMessages[index] = message.copy(botReaction = emoji.takeUnless { it == message.botReaction })
+                        current.updateCurrentMessages(nextMessages).also {
+                            updateConversation(conversationId, it, checkFiles = false)
+                        }
+                    } ?: return@withLock
+                    if (!updated.isTemporary) persistConversationSnapshot(conversationId, updated, updateSearchIndex = false)
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                addError(e, conversationId)
+            }
+        }
+    }
+
+    fun submitBotWidget(
+        conversationId: Uuid,
+        messageId: Uuid,
+        toolCallId: String,
+        buttonId: String?,
+        date: String?,
+    ): Boolean {
+        val session = getOrCreateSession(conversationId)
+        return synchronized(session) {
+            val conversation = session.state.value
+            if (!isBotChat(conversation) || session.getJob() != null ||
+                session.messageQueue.state.value.messages.isNotEmpty() ||
+                conversationId in deletedConversationIds || conversationId in messageDeleteBarriers
+            ) return@synchronized false
+            val messages = conversation.currentMessages
+            if (messages.any { message -> message.getTools().any { it.isPending } }) return@synchronized false
+            val message = messages.firstOrNull { it.id == messageId && it.role == MessageRole.ASSISTANT }
+            val widget = message?.getTools()?.firstOrNull { it.toolCallId == toolCallId }?.botChatWidget()
+                ?: return@synchronized false
+            val selection = widget.selection(buttonId, date) ?: return@synchronized false
+            val replyId = widgetReplyId(conversationId, messageId, toolCallId)
+            if (messages.any { it.id == replyId }) return@synchronized false
+            val text = context.getString(R.string.bot_widget_response, widget.title, selection)
+            sendQueuedMessage(session, QueuedMessage(parts = listOf(UIMessagePart.Text(text)), botMessageId = replyId))
+            true
+        }
+    }
+
+    private fun isBotChat(conversation: Conversation): Boolean =
+        settingsStore.settingsFlow.value.assistants.any { it.id == conversation.assistantId && it.isBot }
+
+    private fun botWidgetToolsFor(assistant: Assistant, conversationId: Uuid): List<Tool> {
+        val conversation = getConversationFlow(conversationId).value
+        return if (assistant.isBot && assistant.id == conversation.assistantId && !conversation.isDelegatedConversation &&
+            !com.clma.app.data.ai.tools.HeadlessConversations.isHeadless(conversationId)
+        ) listOf(createBotWidgetTool()) else emptyList()
+    }
+
     fun sendMessage(conversationId: Uuid, content: List<UIMessagePart>, answer: Boolean = true) {
         if (content.isEmptyInputMessage()) return
         FunctionalDiagnostics.event("message.enqueue")
@@ -2423,7 +2500,7 @@ class ChatService(
         val allowed = ChatModeTools.filterTools(fixedTools)
         val botTools = botMainToolsFor(surfaceAssistant, settings, conversationId) +
             botPeerToolsFor(surfaceAssistant, conversationId) +
-            botMemoryToolsFor(surfaceAssistant, conversationId)
+            botMemoryToolsFor(surfaceAssistant, conversationId) + botWidgetToolsFor(surfaceAssistant, conversationId)
         return ChatToolSurface(
             fixed = com.clma.app.subagent.SubAgentSurface.apply(
                 conversationId = conversationId,
@@ -2568,6 +2645,7 @@ class ChatService(
             addAll(botMainToolsFor(surfaceAssistant, settings, conversationId))
             addAll(botPeerToolsFor(surfaceAssistant, conversationId))
             addAll(botMemoryToolsFor(surfaceAssistant, conversationId))
+            addAll(botWidgetToolsFor(surfaceAssistant, conversationId))
             // Fidelity Trio: spilled output reader & current conversation search (SQLite FTS5)
             add(com.clma.app.data.ai.tools.createToolOutputReadTool(context))
             add(
@@ -2956,6 +3034,13 @@ class ChatService(
                 }
             }
 
+            val reactionFeedback = if (assistant.isBot && surfaceAssistant.id == assistant.id &&
+                !BotPeerToolPolicy.isPeer(conversationId)
+            ) {
+                botReactionFeedback(conversation.currentMessages.take(messageRange?.let { it.endInclusive + 1 }
+                    ?: conversation.messageNodes.size))
+            } else null
+
             generationLoop.generateText(
                 settings = settings,
                 model = generationModel,
@@ -2972,7 +3057,7 @@ class ChatService(
                 // having to plumb a parameter all the way through sendMessage. Returns null
                 // for in-app conversations that didn't register one.
                 systemAddendum = buildEffectiveSystemAddendum(conversationId, surfaceAssistant).let { base ->
-                    listOfNotNull(base, profileAddendum, botMemoryPrompt)
+                    listOfNotNull(base, profileAddendum, botMemoryPrompt, reactionFeedback)
                         .takeIf { it.isNotEmpty() }?.joinToString("\n\n")
                 },
                 enforceBotApproval = botId != null,
@@ -3103,7 +3188,7 @@ class ChatService(
                     null
                 } else {
                     ChatModeTools.ALLOWED_TOOL_NAMES + toolSurface.tools()
-                        .map { it.name }.filter { assistant.isBot && it in BotMemoryTools.NAMES }
+                        .map { it.name }.filter { assistant.isBot && (it in BotMemoryTools.NAMES || it == BOT_WIDGET_TOOL) }
                 },
                 // A catalogued-but-not-activated call is answered with the real schema instead of
                 // a bare tool_not_found (see GenerationLoop).
