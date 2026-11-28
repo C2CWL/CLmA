@@ -12,12 +12,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
+import top.yukonga.miuix.kmp.basic.TopAppBar as MiuixTopAppBar
+import top.yukonga.miuix.kmp.basic.Scaffold as MiuixScaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -29,7 +28,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -58,7 +56,9 @@ fun SettingsSearchPage(vm: SettingVM = koinViewModel()) {
     val navController = LocalNavController.current
     val context = LocalContext.current
     val settings by vm.settings.collectAsStateWithLifecycle()
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val pageColor = settingsPageContainerColor()
+    val title = stringResource(R.string.settings_search_page_title)
+    val titleColor = settingsPrimaryTextColor()
     val focusRequester = remember { FocusRequester() }
     var query by remember { mutableStateOf("") }
 
@@ -102,17 +102,18 @@ fun SettingsSearchPage(vm: SettingVM = koinViewModel()) {
         }
     }
 
-    Scaffold(
+    MiuixScaffold(
         topBar = {
-            LargeFlexibleTopAppBar(
+            MiuixTopAppBar(
+                title = title,
+                largeTitle = title,
+                color = pageColor,
+                titleColor = titleColor,
+                largeTitleColor = titleColor,
                 navigationIcon = { BackButton() },
-                title = { Text(stringResource(R.string.settings_search_page_title), color = settingsPrimaryTextColor()) },
-                scrollBehavior = scrollBehavior,
-                colors = settingsTopBarColors(),
             )
         },
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        containerColor = settingsPageContainerColor(),
+        containerColor = pageColor,
     ) { contentPadding ->
         Column(
             modifier = Modifier
