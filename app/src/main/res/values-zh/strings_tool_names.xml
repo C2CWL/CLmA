@@ -426,6 +426,8 @@
   <string name="tool_display_desc_nfc_read_tag">把标签贴近手机即可读取内容</string>
   <string name="tool_display_name_nfc_write_tag">写入 NFC</string>
   <string name="tool_display_desc_nfc_write_tag">把内容写入 NFC 标签，覆盖原内容</string>
+  <string name="tool_display_name_check_back">安排定时回访</string>
+  <string name="tool_display_desc_check_back">安排、查看或取消当前对话中的定时回访</string>
   <string name="tool_display_name_schedule_job">创建定时任务</string>
   <string name="tool_display_desc_schedule_job">创建一次性或周期任务，到时自动执行</string>
   <string name="tool_display_name_list_jobs">列出定时任务</string>
