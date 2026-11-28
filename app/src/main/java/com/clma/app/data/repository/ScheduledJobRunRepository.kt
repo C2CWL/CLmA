@@ -7,6 +7,8 @@ class ScheduledJobRunRepository(private val dao: ScheduledJobRunDao) {
     fun observeBotRuns(owners: List<String>, fromMs: Long, untilMs: Long, limit: Int) =
         dao.observeBotRuns(owners, fromMs, untilMs, limit)
 
+    fun observeRecent(jobId: String, limit: Int) = dao.observeRecent(jobId, limit)
+    suspend fun getById(id: String) = dao.getById(id)
     suspend fun getRecent(jobId: String, limit: Int) = dao.getRecent(jobId, limit)
     suspend fun getStranded(stalenessMs: Long) = dao.getStranded(stalenessMs)
     suspend fun insert(row: ScheduledJobRunEntity) = dao.insert(row)

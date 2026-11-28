@@ -423,7 +423,7 @@ class RouteActivity : FragmentActivity() {
             val mainPrompt = getString(R.string.bot_main_default_prompt)
             val fix: (Settings) -> Settings = { s ->
                 val withLibrary = if (botModeEnabled) {
-                    s.ensureBotLibrary { Assistant(name = mainName, systemPrompt = mainPrompt) }
+                    s.ensureBotLibrary { Assistant(name = mainName, systemPrompt = mainPrompt, enableMemory = true) }
                 } else {
                     s
                 }
@@ -607,7 +607,11 @@ class RouteActivity : FragmentActivity() {
 
                             entry<Screen.AssistantMemory> { key ->
                                 if (!settings.init && settings.isInActiveLibrary(Uuid.parse(key.id))) {
-                                    AssistantMemoryPage(key.id)
+                                    if (settings.isInLibrary(Uuid.parse(key.id), bot = true)) {
+                                        com.clma.app.ui.pages.bot.memory.BotMemoryPage(key.id)
+                                    } else {
+                                        AssistantMemoryPage(key.id)
+                                    }
                                 }
                             }
 
