@@ -536,7 +536,8 @@ internal class CronJobExecution(
         if (current.scheduleType == BotRoutineTrigger.SCHEDULE_TYPE) return@withLock
         val count = runRepo.countSuccessful(jobId)
         val enabled = current.enabled && (current.maxRuns == null || count < current.maxRuns)
-        repo.update(current.copy(runsSoFar = count, enabled = enabled, nextRunAtMs = current.nextRunAtMs.takeIf { enabled }))
+        val updated = current.copy(runsSoFar = count, enabled = enabled, nextRunAtMs = current.nextRunAtMs.takeIf { enabled })
+        if (!repo.updateIfSameScheduleType(updated)) return@withLock
         if (current.enabled && !enabled) {
             routineStore.editExisting(jobId) { it.copy(queuedSlot = null, queuedManual = false) }
             scheduler.cancelExactAlarm(jobId)
