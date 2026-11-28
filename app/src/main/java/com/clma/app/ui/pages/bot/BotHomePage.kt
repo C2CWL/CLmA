@@ -26,8 +26,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -223,13 +223,14 @@ private fun NewBotDialog(
     var enableSkills by rememberSaveable { mutableStateOf(false) }
     var importing by remember { mutableStateOf(false) }
     val skillManager = koinInject<SkillManager>()
-    val installedSkills by produceState(emptySet<String>(), skillManager, skillNames) {
-        value = if (skillNames.isEmpty()) emptySet() else withContext(Dispatchers.IO) {
+    var installedSkills by remember(skillNames) { mutableStateOf<Set<String>?>(null) }
+    LaunchedEffect(skillManager, skillNames) {
+        installedSkills = if (skillNames.isEmpty()) emptySet() else withContext(Dispatchers.IO) {
             skillNames.filterTo(mutableSetOf()) { skillManager.getSkillMetadata(it) != null }
         }
     }
-    val available = skillNames.filter(installedSkills::contains)
-    val unavailable = skillNames - installedSkills
+    val available = skillNames.filter(installedSkills.orEmpty()::contains)
+    val unavailable = installedSkills?.let { skillNames - it }.orEmpty()
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.bot_new_title)) },
@@ -285,7 +286,7 @@ private fun NewBotDialog(
         confirmButton = {
             TextButton(
                 onClick = { onCreate(name, prompt, makeMain, if (enableSkills) available.toSet() else emptySet()) },
-                enabled = name.isNotBlank() && !importing,
+                enabled = name.isNotBlank() && !importing && (skillNames.isEmpty() || installedSkills != null),
             ) {
                 Text(stringResource(R.string.bot_new_create))
             }

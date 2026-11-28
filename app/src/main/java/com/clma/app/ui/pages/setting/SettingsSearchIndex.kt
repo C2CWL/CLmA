@@ -171,6 +171,7 @@ val settingsSearchPages: List<SettingsSearchPageSpec> = listOf(
             row(R.string.bot_shared_about),
             row(R.string.bot_shared_rules),
             row(R.string.bot_notices_title),
+            row(R.string.bot_notices_history),
             row(R.string.bot_notices_show_cards),
             row(R.string.bot_mode_channels_title, R.string.bot_mode_channels_desc),
             row(R.string.bot_mode_apps_title, R.string.bot_mode_apps_desc),
