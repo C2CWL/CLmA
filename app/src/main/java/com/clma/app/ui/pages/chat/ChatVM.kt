@@ -286,6 +286,17 @@ class ChatVM(
         }
     }
 
+    internal suspend fun clearBotChatUnread(entry: com.clma.app.data.datastore.BotUnreadEntry) {
+        if (entry.conversationId != _conversationId) return
+        settingsStore.update { settings ->
+            val display = settings.displaySetting
+            settings.copy(displaySetting = display.copy(botUnreadEntries = display.botUnreadEntries - entry))
+        }
+    }
+
+    internal suspend fun suggestBotReply(source: Conversation): String? =
+        if (source.id == _conversationId) chatService.suggestBotReply(source) else null
+
     fun setSearchMode(mode: SearchMode) {
         val target = conversation.value
         viewModelScope.launch {

@@ -130,9 +130,10 @@ fun DisplaySetting.withBotUnreadMarked(
     conversationId: Uuid,
     assistantId: Uuid,
     maxEntries: Int = 200,
+    firstReplyId: Uuid? = null,
 ): DisplaySetting {
     if (botUnreadEntries.any { it.conversationId == conversationId }) return this
-    val next = botUnreadEntries + BotUnreadEntry(conversationId, assistantId)
+    val next = botUnreadEntries + BotUnreadEntry(conversationId, assistantId, firstReplyId)
     return copy(botUnreadEntries = if (next.size <= maxEntries) next else next.takeLast(maxEntries))
 }
 

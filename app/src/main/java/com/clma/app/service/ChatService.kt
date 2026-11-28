@@ -128,6 +128,13 @@ import com.clma.app.data.ai.compaction.tomc.TomcTurn
 import com.clma.app.data.ai.compaction.tomc.TomcAgentCompiler
 import com.clma.app.data.datastore.CompactionEngine
 import com.clma.app.data.botmode.withBotUnreadMarked
+import com.clma.app.data.botmode.latestReplyBoundary
+import com.clma.app.data.botmode.botChatText
+import com.clma.app.data.botmode.botChatLocalModels
+import com.clma.app.data.botmode.isBotVisibleTopic
+import com.clma.app.data.botmode.botTitlePrompt
+import com.clma.app.data.botmode.botReplyPrompt
+import com.clma.app.data.botmode.questionBefore
 import com.clma.app.data.ai.CompactedMessageView
 import com.clma.app.data.ai.ContextCompactionView
 import com.clma.app.data.ai.ToolSurfaceResolver
@@ -922,6 +929,7 @@ class ChatService(
                                         displaySetting = settings.displaySetting.withBotUnreadMarked(
                                             conversationId = conv.id,
                                             assistantId = conv.assistantId,
+                                            firstReplyId = conv.currentMessages.latestReplyBoundary()?.id,
                                         )
                                     )
                                 }
@@ -3704,6 +3712,72 @@ class ChatService(
         }
 
         applyTitle(fallback)
+    }
+
+    internal suspend fun renameBotTopicByContent(botId: Uuid, id: Uuid): Boolean {
+        val conversation = conversationRepo.getConversationById(id) ?: return false
+        if (conversation.assistantId != botId || !isBotVisibleTopic(conversation) ||
+            sessions[id]?.isGenerating == true
+        ) return false
+        val prompt = botTitlePrompt(conversation.currentMessages) ?: return false
+        val title = generateBotChatText(conversation, prompt, UsagePurpose.TITLE, 30_000)
+            ?.lineSequence()?.firstOrNull()?.trim(' ', '"', '\'')?.take(80)
+            ?.takeIf { it.isNotBlank() } ?: return false
+        if (sessions[id]?.isGenerating == true) return false
+        val latest = conversationRepo.getConversationById(id) ?: return false
+        if (latest.assistantId != botId || latest.title != conversation.title) return false
+        renameConversation(id, title)
+        return true
+    }
+
+    internal suspend fun suggestBotReply(conversation: Conversation): String? {
+        if (sessions[conversation.id]?.isGenerating == true) return null
+        val messages = conversation.currentMessages
+        val reply = messages.lastOrNull()?.takeIf { message ->
+            message.role == MessageRole.ASSISTANT &&
+                message.parts.none { it is UIMessagePart.Tool && it.isPending }
+        }?.botChatText()?.takeIf { it.isNotBlank() } ?: return null
+        val ask = messages.questionBefore(messages.lastIndex)?.botChatText()
+            ?.takeIf { it.isNotBlank() } ?: return null
+        return generateBotChatText(conversation, botReplyPrompt(ask, reply), UsagePurpose.SUGGESTION, 20_000)
+            ?.takeIf { it.length <= 160 && it.lines().size == 1 && !it.equals("NONE", ignoreCase = true) }
+    }
+
+    private suspend fun generateBotChatText(
+        conversation: Conversation,
+        prompt: String,
+        purpose: UsagePurpose,
+        timeoutMs: Long,
+    ): String? = withContext(Dispatchers.IO) {
+        val settings = settingsStore.settingsFlow.value
+        val assistant = settings.assistants.firstOrNull { it.id == conversation.assistantId && it.isBot }
+            ?: return@withContext null
+        val selected = listOfNotNull(conversation.chatModelId, assistant.chatModelId, settings.compressModelId)
+        val candidates = settings.botChatLocalModels()
+        val (provider, model) = selected.firstNotNullOfOrNull { id -> candidates.find { it.second.id == id } }
+            ?: candidates.firstOrNull() ?: return@withContext null
+        try {
+            withTimeoutOrNull(timeoutMs) {
+                withContext(UsageCallContext(purpose, conversation.id.toString(), assistant.id.toString())) {
+                    providerManager.getProviderByType(provider).generateText(
+                        providerSetting = provider,
+                        messages = listOf(UIMessage.user(prompt)),
+                        params = TextGenerationParams(
+                            model = model,
+                            maxTokens = 64,
+                            enableThinking = false,
+                            textToolCallParsing = false,
+                            releaseLocalModelAfterRequest = true,
+                        ),
+                    ).message.botChatText().takeIf { it.isNotBlank() }
+                }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(TAG, "On-device Bot text generation failed", e)
+            null
+        }
     }
 
     // ---- 生成建议 ----

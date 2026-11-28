@@ -200,6 +200,7 @@ fun ChatInput(
     // Reports the text field's focus to the page, e.g. so opening the drawer only clears focus
     // when the field really holds it. Defaults to a no-op for callers that do not care.
     onInputFocusChanged: (Boolean) -> Unit = {},
+    botReplySuggestion: String? = null,
 ) {
     val toaster = LocalToaster.current
     val assistant = settings.getCurrentAssistant()
@@ -541,6 +542,9 @@ fun ChatInput(
                         center = {
                             TextInputRow(
                                 state = state,
+                                botReplySuggestion = botReplySuggestion?.takeIf {
+                                    !loading && state.isEmpty() && !state.isEditing() && messageQueue.messages.none { it.isEditing }
+                                },
                                 completionProviders = completionProviders,
                                 onSendMessage = { sendMessage() },
                                 onFocusChanged = {
@@ -920,6 +924,7 @@ private fun rememberChatInputHint(): Int = remember { chatInputHints.random() }
 @Composable
 private fun TextInputRow(
     state: ChatInputState,
+    botReplySuggestion: String?,
     completionProviders: List<ChatCompletionProvider>,
     onSendMessage: () -> Unit,
     modifier: Modifier = Modifier,
@@ -1052,11 +1057,25 @@ private fun TextInputRow(
                 },
             shape = MaterialTheme.shapes.largeIncreased,
             placeholder = {
-                Text(
-                    text = stringResource(hint),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                if (botReplySuggestion == null) {
+                    Text(
+                        text = stringResource(hint),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                } else {
+                    Text(
+                        text = botReplySuggestion,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.clickable(
+                            onClickLabel = stringResource(R.string.bot_reply_use),
+                        ) {
+                            if (state.isEmpty() && !state.isEditing()) state.setMessageText(botReplySuggestion)
+                        },
+                    )
+                }
             },
             lineLimits = TextFieldLineLimits.MultiLine(maxHeightInLines = 5),
             keyboardOptions = KeyboardOptions(

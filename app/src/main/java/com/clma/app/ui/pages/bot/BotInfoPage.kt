@@ -239,6 +239,11 @@ fun BotInfoPage(botId: String, conversationId: String?) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 } else {
+                    BotBatchRenameButton(
+                        conversations = conversations,
+                        localModelAvailable = vm.hasLocalRenameModel(settings),
+                        rename = vm::renameTopicsByContent,
+                    )
                     val shown = if (showAllConversations) conversations else conversations.take(5)
                     shown.forEach { conv ->
                         val current = conv.id.toString() == conversationId

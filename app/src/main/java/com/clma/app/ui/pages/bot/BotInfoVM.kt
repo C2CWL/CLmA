@@ -6,6 +6,8 @@ import com.clma.app.data.botmode.isBotHidden
 import com.clma.app.data.botmode.isBotPinned
 import com.clma.app.data.botmode.isBotVisibleTopic
 import com.clma.app.data.botmode.isMainBot
+import com.clma.app.data.botmode.botChatLocalModels
+import kotlinx.coroutines.CancellationException
 import com.clma.app.data.botmode.toTeamPackMarkdown
 import com.clma.app.data.botmode.withBotHidden
 import com.clma.app.data.botmode.withBotPinned
@@ -41,7 +43,7 @@ class BotInfoVM(
     private val settingsStore: SettingsStore,
     conversationRepo: ConversationRepository,
     memoryRepository: MemoryRepository,
-    chatService: com.clma.app.service.ChatService,
+    private val chatService: com.clma.app.service.ChatService,
     private val scheduledJobRepository: ScheduledJobRepository,
     private val scheduledJobRunRepository: ScheduledJobRunRepository,
     private val cronJobScheduler: CronJobScheduler,
@@ -113,6 +115,25 @@ class BotInfoVM(
             if (s.assistants.none { it.id == id && it.isBot }) s else s.copy(assistantId = id)
         }
         onReady(conversationId)
+    }
+
+    internal fun hasLocalRenameModel(settings: Settings): Boolean = settings.botChatLocalModels().isNotEmpty()
+
+    internal suspend fun renameTopicsByContent(ids: List<Uuid>, onProgress: (Int) -> Unit): Set<Uuid> {
+        val failed = mutableSetOf<Uuid>()
+        ids.distinct().forEachIndexed { index, conversationId ->
+            val renamed = try {
+                chatService.renameBotTopicByContent(id, conversationId)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                android.util.Log.w("BotInfoVM", "Could not rename Bot topic", e)
+                false
+            }
+            if (!renamed) failed.add(conversationId)
+            onProgress(index + 1)
+        }
+        return failed
     }
 
     // ------------------------------------------------------------ routines (自动任务)
