@@ -1,6 +1,5 @@
 package com.clma.ai.provider.providers.claude
 
-import com.clma.ai.util.quotaException
 import android.content.Context
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
@@ -58,6 +57,8 @@ import com.clma.ai.ui.UIMessagePart
 import com.clma.ai.ui.handleTextGenerationResult
 import com.clma.ai.ui.metadataAs
 import com.clma.ai.ui.toMetadata
+import com.clma.ai.util.quotaException
+import com.clma.ai.util.withHttpFailureMetadata
 import com.clma.ai.util.HttpException
 import com.clma.ai.util.KeyRoulette
 import com.clma.ai.util.configureReferHeaders
@@ -376,7 +377,9 @@ class ClaudeProvider(private val client: OkHttpClient, context: Context? = null)
         if (!response.isSuccessful) {
             val detail = response.body.string()
             val message = "Failed to get response: ${response.code} $detail"
-            throw (response.quotaException(message, detail) ?: Exception(message))
+            throw (response.quotaException(message, detail) ?: Exception(message)).apply {
+                withHttpFailureMetadata(response, detail, enabled = params.captureQuotaRefusal)
+            }
         }
 
         val bodyStr = response.body.string()
@@ -479,7 +482,7 @@ class ClaudeProvider(private val client: OkHttpClient, context: Context? = null)
                     Log.w(TAG, "onFailure: failed to parse from $bodyRaw", e)
                 } finally {
                     val quota = response?.quotaException(exception?.message.orEmpty(), bodyRaw)
-                    close(quota ?: exception)
+                    close((quota ?: exception).withHttpFailureMetadata(response, bodyRaw, enabled = params.captureQuotaRefusal))
                 }
             }
 

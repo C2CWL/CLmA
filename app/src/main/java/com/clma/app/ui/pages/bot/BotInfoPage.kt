@@ -331,6 +331,8 @@ fun BotInfoPage(botId: String, conversationId: String?) {
                 }
             }
 
+            com.clma.app.ui.pages.bot.settings.BotAvailabilitySettings(bot.id, settings.providers)
+
             com.clma.app.ui.pages.bot.settings.BotProfileSettings(
                 bot = bot,
                 bots = settings.assistants.filter { it.isBot },

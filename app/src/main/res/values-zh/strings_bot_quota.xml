@@ -1,0 +1,28 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- Adapted from OpenMausBot (https://github.com/milind-soni/OpenMausBot), src/locales/en.json, src/locales/zh.json.
+     Copyright 2026 Milind Soni and OpenMausBot contributors, Apache License 2.0
+     (third_party/openmausbot/LICENSE). Modified: ported to Kotlin and changed for CLmA. -->
+<resources>
+  <string name="bot_quota_availability">可用性</string>
+  <string name="bot_quota_backup">备用 AI</string>
+  <string name="bot_quota_backup_continuing">达到使用上限后改在 %1$s 上继续</string>
+  <string name="bot_quota_cancel_turn">取消本轮</string>
+  <string name="bot_quota_cap_hint">上限按 UTC 日期或月份重置。留空或设为 0 表示不限。</string>
+  <string name="bot_quota_cap_interactive">同时限制对话和手动运行</string>
+  <string name="bot_quota_cap_reached">此机器人已达到用量上限，将在 %1$s 重置。</string>
+  <string name="bot_quota_choose_backup">选择备用 AI</string>
+  <string name="bot_quota_clear_backup">移除备用 AI</string>
+  <string name="bot_quota_daily_tokens">每日 token 上限</string>
+  <string name="bot_quota_daily_usd">每日上限（美元）</string>
+  <string name="bot_quota_monthly_tokens">每月 token 上限</string>
+  <string name="bot_quota_monthly_usd">每月上限（美元）</string>
+  <string name="bot_quota_pause_all">暂停所有机器人</string>
+  <string name="bot_quota_pause_bot">暂停机器人</string>
+  <string name="bot_quota_paused">已暂停</string>
+  <string name="bot_quota_paused_message">此机器人已暂停。请在机器人资料页恢复。</string>
+  <string name="bot_quota_reached">额度已用完</string>
+  <string name="bot_quota_reset_at">额度已用完，将在 %1$s 重置</string>
+  <string name="bot_quota_resumes_at">额度在 %1$s 重置后自动继续</string>
+  <string name="bot_quota_retry_now">立即重试</string>
+  <string name="bot_quota_usage_caps">用量上限</string>
+</resources>

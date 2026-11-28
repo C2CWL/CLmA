@@ -1,0 +1,28 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- Adapted from OpenMausBot (https://github.com/milind-soni/OpenMausBot), src/locales/en.json, src/locales/zh.json.
+     Copyright 2026 Milind Soni and OpenMausBot contributors, Apache License 2.0
+     (third_party/openmausbot/LICENSE). Modified: ported to Kotlin and changed for CLmA. -->
+<resources>
+  <string name="bot_quota_availability">Availability</string>
+  <string name="bot_quota_backup">Backup model</string>
+  <string name="bot_quota_backup_continuing">Continuing on %1$s after reaching the quota</string>
+  <string name="bot_quota_cancel_turn">Cancel turn</string>
+  <string name="bot_quota_cap_hint">Caps reset at the start of the UTC day or month. Leave a cap blank or set it to 0 to disable it.</string>
+  <string name="bot_quota_cap_interactive">Also stop chats and manual runs</string>
+  <string name="bot_quota_cap_reached">This bot reached its usage cap. It resets at %1$s.</string>
+  <string name="bot_quota_choose_backup">Choose backup model</string>
+  <string name="bot_quota_clear_backup">Remove backup model</string>
+  <string name="bot_quota_daily_tokens">Daily token cap</string>
+  <string name="bot_quota_daily_usd">Daily cost cap (USD)</string>
+  <string name="bot_quota_monthly_tokens">Monthly token cap</string>
+  <string name="bot_quota_monthly_usd">Monthly cost cap (USD)</string>
+  <string name="bot_quota_pause_all">Pause every bot</string>
+  <string name="bot_quota_pause_bot">Pause bot</string>
+  <string name="bot_quota_paused">Paused</string>
+  <string name="bot_quota_paused_message">This bot is paused. Resume it in its bot profile.</string>
+  <string name="bot_quota_reached">Quota reached</string>
+  <string name="bot_quota_reset_at">Quota reached. Resets at %1$s</string>
+  <string name="bot_quota_resumes_at">Quota reached. Resumes at %1$s</string>
+  <string name="bot_quota_retry_now">Retry now</string>
+  <string name="bot_quota_usage_caps">Usage caps</string>
+</resources>

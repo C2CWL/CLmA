@@ -1,6 +1,5 @@
 package com.clma.ai.provider.providers.openai
 
-import com.clma.ai.util.quotaException
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -51,6 +50,8 @@ import com.clma.ai.ui.UIMessageAnnotation
 import com.clma.ai.ui.UIMessagePart
 import com.clma.ai.ui.metadataAs
 import com.clma.ai.ui.toMetadata
+import com.clma.ai.util.quotaException
+import com.clma.ai.util.withHttpFailureMetadata
 import com.clma.ai.util.HttpException
 import com.clma.ai.util.KeyRoulette
 import com.clma.ai.util.RequestTooLargeException
@@ -125,13 +126,15 @@ class ChatCompletionsAPI(
         val response = client.newCall(request).await()
         if (!response.isSuccessful) {
             val errorBody = response.body.string()
-            response.quotaException("Failed to get response: ${response.code} $errorBody", errorBody)?.let { throw it }
             // 413 is the same problem the local size checks model, seen from the server side:
             // compaction can still fix it, so keep it distinguishable from a generic error.
             if (response.code == 413) {
                 throw RequestTooLargeException("Failed to get response: 413 $errorBody")
             }
-            throw Exception("Failed to get response: ${response.code} $errorBody")
+            val message = "Failed to get response: ${response.code} $errorBody"
+            throw (response.quotaException(message, errorBody) ?: Exception(message)).apply {
+                withHttpFailureMetadata(response, errorBody, enabled = params.captureQuotaRefusal)
+            }
         }
 
         val bodyStr = response.body.string()
@@ -300,7 +303,7 @@ class ChatCompletionsAPI(
                     )
                 } finally {
                     val quota = response?.quotaException(exception?.message.orEmpty(), bodyRaw)
-                    close(quota ?: exception)
+                    close((quota ?: exception).withHttpFailureMetadata(response, bodyRaw, enabled = params.captureQuotaRefusal))
                 }
             }
 

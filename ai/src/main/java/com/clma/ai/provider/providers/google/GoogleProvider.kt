@@ -1,6 +1,5 @@
 package com.clma.ai.provider.providers.google
 
-import com.clma.ai.util.quotaException
 import android.content.Context
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
@@ -62,6 +61,8 @@ import com.clma.ai.ui.UIMessageAnnotation
 import com.clma.ai.ui.UIMessagePart
 import com.clma.ai.ui.metadataAs
 import com.clma.ai.ui.toMetadata
+import com.clma.ai.util.quotaException
+import com.clma.ai.util.withHttpFailureMetadata
 import com.clma.ai.util.KeyRoulette
 import com.clma.ai.util.configureReferHeaders
 import com.clma.ai.util.configureSessionHeaders
@@ -246,7 +247,9 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
         if (!response.isSuccessful) {
             val detail = response.body.string()
             val message = "Failed to get response: ${response.code} $detail"
-            throw (response.quotaException(message, detail) ?: Exception(message))
+            throw (response.quotaException(message, detail) ?: Exception(message)).apply {
+                withHttpFailureMetadata(response, detail, enabled = params.captureQuotaRefusal)
+            }
         }
 
         val bodyStr = response.body.string()
@@ -343,14 +346,13 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
                     return
                 }
                 var exception = t
+                var bodyStr: String? = null
 
                 Log.w(TAG, "onFailure: ${t?.message}", t)
 
-                var detail: String? = null
                 try {
                     if (response != null && (t == null || response.code == 429)) {
-                        val bodyStr = response.body.stringSafe()
-                        detail = bodyStr
+                        bodyStr = response.body.stringSafe()
                         if (!bodyStr.isNullOrEmpty()) {
                             val bodyElement = json.parseToJsonElement(bodyStr)
                             Log.d(TAG, "onFailure: error body $bodyElement")
@@ -368,8 +370,9 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
                     Log.w(TAG, "onFailure: failed to parse error body", e)
                     exception = e
                 } finally {
-                    val quota = response?.quotaException(exception?.message.orEmpty(), detail)
-                    close(quota ?: exception ?: Exception("Stream failed"))
+                    val quota = response?.quotaException(exception?.message.orEmpty(), bodyStr)
+                    val failure = quota ?: exception ?: Exception("Stream failed")
+                    close(failure.withHttpFailureMetadata(response, bodyStr, enabled = params.captureQuotaRefusal))
                 }
             }
 
