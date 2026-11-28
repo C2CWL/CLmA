@@ -41,17 +41,18 @@ import com.clma.app.ui.context.LocalNavController
 import com.clma.app.data.botmode.botAssistants
 import com.clma.app.data.botmode.withBotChannelUpserted
 import com.composables.icons.lucide.Bot
+import com.composables.icons.lucide.LayoutGrid
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.Plus
 import com.composables.icons.lucide.Users
 import com.composables.icons.lucide.Settings as LucideSettings
 import org.koin.androidx.compose.koinViewModel
 
-private enum class BotHomeTab { BOTS, CHANNELS }
+private enum class BotHomeTab { BOTS, CHANNELS, BOARD }
 
 /**
  * Bot mode root, separate from the classic chat page and drawer: a chat-app style bot list,
- * channels, and a settings shortcut in a bottom bar. Classic mode never reaches this screen.
+ * channels, a team board, and a settings shortcut in a bottom bar. Classic mode never reaches this screen.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,10 +71,10 @@ fun BotHomePage(vm: BotHomeVM = koinViewModel()) {
             TopAppBar(
                 title = {
                     Text(
-                        text = if (tab == BotHomeTab.BOTS) {
-                            stringResource(R.string.bot_home_title)
-                        } else {
-                            stringResource(R.string.bot_home_tab_channels)
+                        text = when (tab) {
+                            BotHomeTab.BOTS -> stringResource(R.string.bot_home_title)
+                            BotHomeTab.CHANNELS -> stringResource(R.string.bot_home_tab_channels)
+                            BotHomeTab.BOARD -> stringResource(R.string.bot_board_heading)
                         },
                         fontWeight = FontWeight.Bold,
                     )
@@ -86,7 +87,7 @@ fun BotHomePage(vm: BotHomeVM = koinViewModel()) {
                         IconButton(onClick = { showNewBot = true }) {
                             Icon(Lucide.Plus, contentDescription = stringResource(R.string.bot_home_new_bot))
                         }
-                    } else {
+                    } else if (tab == BotHomeTab.CHANNELS) {
                         IconButton(onClick = { showNewChannel = true }) {
                             Icon(Lucide.Plus, contentDescription = stringResource(R.string.bot_channel_new))
                         }
@@ -107,6 +108,12 @@ fun BotHomePage(vm: BotHomeVM = koinViewModel()) {
                     onClick = { tab = BotHomeTab.CHANNELS },
                     icon = { Icon(Lucide.Users, contentDescription = null) },
                     label = { Text(stringResource(R.string.bot_home_tab_channels)) },
+                )
+                NavigationBarItem(
+                    selected = tab == BotHomeTab.BOARD,
+                    onClick = { tab = BotHomeTab.BOARD },
+                    icon = { Icon(Lucide.LayoutGrid, contentDescription = null) },
+                    label = { Text(stringResource(R.string.bot_board_tab)) },
                 )
                 NavigationBarItem(
                     // Settings is the existing settings hub, pushed on top; the tab never stays selected.
@@ -134,6 +141,11 @@ fun BotHomePage(vm: BotHomeVM = koinViewModel()) {
                 onSetMain = { vm.setMain(it.bot) },
                 onDelete = { deleting = it },
                 onManageHidden = { nav.navigate(Screen.SettingChatLayout) },
+                modifier = Modifier.padding(padding),
+            )
+
+            BotHomeTab.BOARD -> BotBoardTab(
+                bots = settings.botAssistants(),
                 modifier = Modifier.padding(padding),
             )
 
