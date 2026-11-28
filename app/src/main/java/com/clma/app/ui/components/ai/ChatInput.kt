@@ -200,6 +200,7 @@ fun ChatInput(
     // Reports the text field's focus to the page, e.g. so opening the drawer only clears focus
     // when the field really holds it. Defaults to a no-op for callers that do not care.
     onInputFocusChanged: (Boolean) -> Unit = {},
+    statusContent: (@Composable () -> Unit)? = null,
 ) {
     val toaster = LocalToaster.current
     val assistant = settings.getCurrentAssistant()
@@ -361,6 +362,7 @@ fun ChatInput(
                 .padding(bottom = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            statusContent?.invoke()
             MessageQueuePanel(
                 state = messageQueue,
                 onRemove = onRemoveQueuedMessage,
