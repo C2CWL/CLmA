@@ -25,6 +25,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.WindowInsets
+import com.clma.app.data.botmode.isBotAssistantId
+import com.clma.app.ui.pages.chat.botmode.BotQuotaCard
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -556,7 +558,27 @@ internal fun ChatPageContent(
                 bottomBar = {
                     val messageQueue by vm.messageQueue.collectAsStateWithLifecycle()
                     val voiceState by vm.voiceSession.state.collectAsStateWithLifecycle()
+                    val botChat = setting.isBotAssistantId(conversation.assistantId)
+                    val quotaWait = if (botChat) vm.botQuotaWait.collectAsStateWithLifecycle(initialValue = null).value else null
+                    val visibleQuotaWait = remember(quotaWait, conversation.assistantId, conversation.messageNodes) {
+                        quotaWait?.takeIf { it.matches(conversation) }
+                    }
+                    val botPaused = if (botChat) {
+                        val pauseState = remember(vm, conversation.assistantId) { vm.observeBotPaused(conversation.assistantId) }
+                        pauseState.collectAsStateWithLifecycle(initialValue = false).value
+                    } else false
                     ChatInput(
+                        statusContent = {
+                            if (botPaused) Text(stringResource(R.string.bot_quota_paused_message))
+                            visibleQuotaWait?.let { wait ->
+                                BotQuotaCard(
+                                    wait = wait,
+                                    busy = loadingJob != null || botPaused,
+                                    onCancel = { vm.cancelBotQuotaWait(wait.id) },
+                                    onRetry = { vm.retryBotQuotaWait(wait.id) },
+                                )
+                            }
+                        },
                         onStartVoiceMode = onStartVoiceMode,
                         onInputFocusChanged = onInputFocusChanged,
                         voiceState = voiceState,
@@ -577,7 +599,7 @@ internal fun ChatPageContent(
                         onSendClick = {
                             // Settings.dummy() is still standing in for the real settings: nothing
                             // resolves yet, so do nothing (the draft stays) rather than misreport.
-                            if (setting.init) return@ChatInput
+                            if (setting.init || (botPaused && !inputState.isEditing())) return@ChatInput
                             if (currentChatModel == null) {
                                 toaster.show(
                                     context.getString(R.string.chat_select_model_first),
@@ -604,6 +626,7 @@ internal fun ChatPageContent(
                             inputState.clearInput()
                         },
                         onLongSendClick = {
+                            if (botPaused && !inputState.isEditing()) return@ChatInput
                             if (inputState.isEditing()) {
                                 vm.handleMessageEdit(
                                     parts = inputState.getContents(),
