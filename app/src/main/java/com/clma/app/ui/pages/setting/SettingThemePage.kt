@@ -383,7 +383,7 @@ private fun CustomThemeItem(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun CustomThemeEditSheet(
+internal fun CustomThemeEditSheet(
     theme: CustomTheme?,
     onDismiss: () -> Unit,
     onSave: (CustomTheme) -> Unit,

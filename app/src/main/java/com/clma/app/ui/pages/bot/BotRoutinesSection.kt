@@ -29,6 +29,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -117,11 +118,21 @@ fun BotRoutinesGroup(
     onRunNow: (String, (Boolean) -> Unit) -> Unit,
     onDelete: (String) -> Unit,
     onOpenConversation: (Uuid) -> Unit,
+    initialRoutineId: String? = null,
 ) {
     val context = LocalContext.current
     val botSettingsStore = koinInject<BotModeSettingsStore>()
     val botSettings by botSettingsStore.settings.collectAsStateWithLifecycle(initialValue = BotModeSettings())
     var editing by remember { mutableStateOf<ScheduledJobEntity?>(null) }
+    var openedInitialRoutine by rememberSaveable(initialRoutineId) { mutableStateOf(false) }
+    LaunchedEffect(initialRoutineId, routines) {
+        if (!openedInitialRoutine && initialRoutineId != null) {
+            routines.firstOrNull { it.id == initialRoutineId && it.mode == "llm" }?.let {
+                editing = it
+                openedInitialRoutine = true
+            }
+        }
+    }
     var creating by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf<ScheduledJobEntity?>(null) }
 
