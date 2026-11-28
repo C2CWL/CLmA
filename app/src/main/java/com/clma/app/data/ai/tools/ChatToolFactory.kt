@@ -23,6 +23,7 @@ import com.clma.app.data.datastore.Settings
 import com.clma.app.data.datastore.findProvider
 import com.clma.app.data.files.SkillManager
 import com.clma.app.data.model.Assistant
+import com.clma.app.data.model.isBot
 import com.clma.app.data.repository.ConversationRepository
 import com.clma.app.data.repository.MemoryRepository
 import com.clma.app.data.repository.WorkspaceRepository
@@ -54,7 +55,7 @@ class ChatToolFactory(
         model: Model,
         workspaceCwd: String? = null,
     ): List<Tool> = buildList {
-        if (assistant.enableMemory) {
+        if (!assistant.isBot && assistant.enableMemory) {
             val memoryAssistantId = assistant.memoryScopeId()
             addAll(
                 buildMemoryTools(

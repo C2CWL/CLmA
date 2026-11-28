@@ -1,5 +1,6 @@
 package com.clma.app.ui.pages.assistant.detail
 
+import com.clma.app.data.model.isBot
 import com.clma.app.data.repository.memoryScopeId
 
 import android.util.Log
@@ -12,6 +13,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -76,13 +78,15 @@ class AssistantDetailVM(
 
     val memories = assistant
         .flatMapLatest { currentAssistant ->
-            memoryRepository.getMemoriesOfAssistantFlow(currentAssistant.memoryScopeId())
+            if (currentAssistant.isBot) flowOf(emptyList())
+            else memoryRepository.getMemoriesOfAssistantFlow(currentAssistant.memoryScopeId())
         }
         .stateIn(
             scope = viewModelScope, started = SharingStarted.Eagerly, initialValue = emptyList()
         )
 
     val memoryHistory = combine(assistant, memoryRepository.history.entries) { current, entries ->
+        if (current.isBot) return@combine emptyList()
         val hotScope = current.memoryScopeId()
         val coldDir = com.clma.app.data.ai.tools.ColdMemoryRules.normalizeDir(current.coldMemoryDir ?: "memory")
         entries.filter {
@@ -257,6 +261,7 @@ class AssistantDetailVM(
 
     fun addMemory(memory: AssistantMemory) {
         viewModelScope.launch {
+            if (assistant.value.isBot) return@launch
             val memoryAssistantId = assistant.value.memoryScopeId()
             memoryRepository.addMemory(
                 assistantId = memoryAssistantId,
@@ -268,6 +273,7 @@ class AssistantDetailVM(
 
     fun updateMemory(memory: AssistantMemory) {
         viewModelScope.launch {
+            if (assistant.value.isBot) return@launch
             runCatching {
                 memoryRepository.updateContent(id = memory.id, content = memory.content, source = "manual")
             }.onFailure {
@@ -280,6 +286,7 @@ class AssistantDetailVM(
 
     fun deleteMemory(memory: AssistantMemory) {
         viewModelScope.launch {
+            if (assistant.value.isBot) return@launch
             memoryRepository.deleteMemory(id = memory.id, source = "manual")
         }
     }
