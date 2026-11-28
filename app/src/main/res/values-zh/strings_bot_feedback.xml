@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="bot_feedback_title">Bot 反馈</string>
+  <string name="bot_feedback_notifications">此设备上的通知</string>
+  <string name="bot_feedback_notification_dependency">需开启 CLmA 的「生成消息后启用通知」，并在 Android 中允许通知。</string>
+  <string name="bot_feedback_approval">需要批准</string>
+  <string name="bot_feedback_question">提问</string>
+  <string name="bot_feedback_done">已完成</string>
+  <string name="bot_feedback_failed">失败</string>
+  <string name="bot_feedback_routine">定时报告通知</string>
+  <string name="bot_feedback_vibration">振动</string>
+  <string name="bot_feedback_enable_vibration">机器人有新动态时振动</string>
+  <string name="bot_feedback_haptic_dependency">需开启 CLmA 的消息生成触觉反馈，并在 Android 中开启触觉反馈。</string>
+  <string name="bot_feedback_strength">振动强度</string>
+  <string name="bot_feedback_sound">通知音效</string>
+  <string name="bot_feedback_enable_sound">机器人完成工作或需要你时播放提示音</string>
+  <string name="bot_feedback_volume">音量</string>
+  <string name="bot_feedback_percent">%1$d%%</string>
+  <string name="bot_feedback_approval_title">%1$s 需要批准</string>
+  <string name="bot_feedback_question_title">%1$s 有一个问题</string>
+  <string name="bot_feedback_failed_title">%1$s 遇到了问题</string>
+  <string name="bot_feedback_done_title">%1$s 已完成</string>
+</resources>

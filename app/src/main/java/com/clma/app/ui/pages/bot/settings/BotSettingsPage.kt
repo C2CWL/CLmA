@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clma.app.AppScope
 import com.clma.app.R
+import com.clma.app.Screen
 import com.clma.app.data.botmode.botsHiddenForManage
 import com.clma.app.data.botmode.withBotHidden
 import com.clma.app.data.botmode.settings.BotActivity
@@ -97,16 +98,11 @@ fun BotSettingsPage(vm: SettingVM = koinViewModel()) {
                     BotOutboundPolicy.entries.map { it to outboundLabel(it) },
                 ) { outbound -> update { it.copy(outbound = outbound) } }
             }
-            BotCollapsibleGroup(key = "notifications", title = stringResource(R.string.bot_settings_notifications)) {
-                BotSwitchRow(R.string.bot_settings_replies, settings.notifyReplies) { enabled ->
-                    update { it.copy(notifyReplies = enabled) }
-                }
-                BotSwitchRow(R.string.bot_settings_routine_results, settings.notifyRoutineResults) { enabled ->
-                    update { it.copy(notifyRoutineResults = enabled) }
-                }
-                BotSwitchRow(R.string.bot_settings_approval_alerts, settings.notifyApprovals) { enabled ->
-                    update { it.copy(notifyApprovals = enabled) }
-                }
+            TextButton(
+                onClick = { nav.navigate(Screen.BotFeedback) },
+                modifier = Modifier.padding(horizontal = 12.dp),
+            ) {
+                Text(stringResource(R.string.bot_feedback_title))
             }
             BotCollapsibleGroup(key = "routines", title = stringResource(R.string.bot_settings_routines)) {
                 BotSwitchRow(R.string.bot_settings_reliability, settings.showRoutineReliability) { enabled ->
@@ -237,7 +233,7 @@ internal fun <T> BotChoiceRow(
 @Composable
 internal fun BotSwitchRow(title: Int, value: Boolean, onChange: (Boolean) -> Unit) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(stringResource(title), Modifier.weight(1f))
+        Text(stringResource(title), Modifier.weight(1f).padding(end = 12.dp))
         Switch(checked = value, onCheckedChange = onChange)
     }
 }

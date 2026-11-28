@@ -90,7 +90,7 @@ object BotRoutineRuns {
                 this.title = title
                 content = text
                 autoCancel = true
-                useDefaults = true
+                silent = true
                 useBigTextStyle = true
                 category = NotificationCompat.CATEGORY_MESSAGE
                 contentIntent = openChatIntent(context, conversationId)
@@ -107,7 +107,7 @@ object BotRoutineRuns {
         )
     }
 
-    /** A run finished: always posted for Bot routines, with a short line of the result. */
+    /** Include a short line of the result when available. */
     fun notifyDone(context: Context, conversationId: String, botName: String, jobName: String, summary: String) {
         val line = summary.replace(Regex("\\s+"), " ").trim().take(120)
         post(
@@ -127,12 +127,20 @@ object BotRoutineRuns {
         )
     }
 
-    fun notifyApprovalNeeded(context: Context, conversationId: String, botName: String, jobName: String, toolName: String) {
+    fun notifyInputNeeded(
+        context: Context,
+        conversationId: String,
+        botName: String,
+        jobName: String,
+        toolName: String,
+        isQuestion: Boolean,
+    ) {
+        val title = if (isQuestion) R.string.bot_feedback_question_title else R.string.bot_feedback_approval_title
         post(
             context,
             conversationId,
-            context.getString(R.string.bot_routine_notify_approval_title, botName),
-            context.getString(R.string.bot_routine_notify_approval_text, jobName, toolName),
+            context.getString(title, botName),
+            if (isQuestion) jobName else context.getString(R.string.bot_routine_notify_approval_text, jobName, toolName),
         )
     }
 

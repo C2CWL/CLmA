@@ -81,12 +81,12 @@
   <string name="bot_home_tab_channels">频道</string>
   <string name="bot_home_tab_settings">设置</string>
   <string name="bot_home_new_bot">新建 Bot</string>
-  <string name="bot_home_search_hint">搜索 Bot</string>
+  <string name="bot_home_search_hint">搜索机器人</string>
   <string name="bot_home_empty">还没有 Bot，点右上角 + 新建一个。</string>
   <string name="bot_home_no_match">没有匹配的 Bot。</string>
   <string name="bot_home_no_messages">还没有消息</string>
   <string name="bot_home_time_yesterday">昨天</string>
-  <string name="bot_home_pending_approval">待审批</string>
+  <string name="bot_home_pending_approval">等待你的回应…</string>
   <string name="bot_home_running">进行中</string>
   <string name="bot_home_menu_mark_unread">标为未读</string>
   <string name="bot_home_menu_mark_read">标为已读</string>
@@ -108,7 +108,7 @@
   <string name="bot_chat_switch_model">切换模型</string>
   <string name="bot_chat_info">Bot 信息</string>
   <string name="bot_chat_task_running">任务进行中 · 第 %1$d/%2$d 步：%3$s</string>
-  <string name="bot_chat_task_done">任务已完成</string>
+  <string name="bot_chat_task_done">已完成</string>
   <string name="bot_chat_task_paused">已暂停</string>
   <string name="bot_chat_task_details">详情</string>
   <string name="bot_approval_card_title">需要你批准</string>

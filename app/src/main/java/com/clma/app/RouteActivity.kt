@@ -649,6 +649,9 @@ class RouteActivity : FragmentActivity() {
                                 TranslatorPage()
                             }
 
+                            entry<Screen.BotFeedback> {
+                                com.clma.app.ui.pages.bot.settings.BotFeedbackPage()
+                            }
                             entry<Screen.BotSettings> {
                                 com.clma.app.ui.pages.bot.settings.BotSettingsPage()
                             }
@@ -1051,6 +1054,9 @@ sealed interface Screen : NavKey {
     /** Bot mode root: bot list / channels / settings tabs. Classic mode never shows it. */
     @Serializable
     data object BotHome : Screen
+
+    @Serializable
+    data object BotFeedback : Screen
 
     @Serializable
     data object BotSettings : Screen

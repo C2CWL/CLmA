@@ -22,6 +22,12 @@ data class BotModeSettings(
     val notifyRoutineResults: Boolean = true,
     val notifyApprovals: Boolean = true,
     val showRoutineReliability: Boolean = true,
+    val notifyQuestions: Boolean? = null,
+    val notifyFailures: Boolean = true,
+    val feedbackVibration: Boolean = false,
+    val feedbackStrength: Int = 50,
+    val feedbackSound: Boolean = false,
+    val feedbackVolume: Int = 50,
     val allBotsPaused: Boolean = false,
 )
 
