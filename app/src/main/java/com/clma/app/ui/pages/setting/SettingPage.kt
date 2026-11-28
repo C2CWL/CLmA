@@ -25,12 +25,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LargeFlexibleTopAppBar
+import top.yukonga.miuix.kmp.basic.TopAppBar as MiuixTopAppBar
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
+import top.yukonga.miuix.kmp.basic.Scaffold as MiuixScaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -41,7 +40,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -123,17 +121,21 @@ fun SettingPage(
     sectionId: SettingsHubSectionId? = null,
     vm: SettingVM = koinViewModel(),
 ) {
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val navController = LocalNavController.current
     val settings by vm.settings.collectAsStateWithLifecycle()
     val section = settingsHubSections.firstOrNull { it.id == sectionId }
     val pageColor = settingsPageContainerColor()
-    val topBarColors = settingsTopBarColors()
+    val title = stringResource(section?.titleRes ?: R.string.settings)
+    val titleColor = settingsPrimaryTextColor()
 
-    Scaffold(
+    MiuixScaffold(
         topBar = {
-            LargeFlexibleTopAppBar(
-                title = { Text(stringResource(section?.titleRes ?: R.string.settings), color = settingsPrimaryTextColor()) },
+            MiuixTopAppBar(
+                title = title,
+                largeTitle = title,
+                color = pageColor,
+                titleColor = titleColor,
+                largeTitleColor = titleColor,
                 navigationIcon = { BackButton() },
                 actions = {
                     if (section != null) {
@@ -147,11 +149,8 @@ fun SettingPage(
                         }
                     }
                 },
-                scrollBehavior = scrollBehavior,
-                colors = topBarColors,
             )
         },
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = pageColor,
     ) { innerPadding ->
         val context = LocalContext.current
